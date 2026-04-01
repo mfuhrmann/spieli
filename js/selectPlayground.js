@@ -35,7 +35,10 @@ export function selectPlayground(coord, distance, multiSelect, feature = null) {
         if (geojson) {
             // Spielplatzgeometrie in der source-Variable speichern
             sourceSelected = new Vector({
-                features: new GeoJSON().readFeatures(geojson),
+                features: new GeoJSON().readFeatures(geojson, {
+                    dataProjection: 'EPSG:4326',
+                    featureProjection: 'EPSG:3857'
+                }),
             });
 
             // Spielplatzattribute in der Infobox anzeigen
@@ -84,7 +87,10 @@ function showSelection(coord, backupGeojson) {
         }
         // Spielplatzgeometrie in der Source speichern
         sourceSelected = new Vector({
-            features: new GeoJSON().readFeatures(geojson),
+            features: new GeoJSON().readFeatures(geojson, {
+                dataProjection: 'EPSG:4326',
+                featureProjection: 'EPSG:3857'
+            }),
         });
         // bestehende Auswahl entfernen
         removeSelection(false);
