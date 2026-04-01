@@ -21,13 +21,16 @@ import { objDevices } from './objPlaygroundEquipment.js';
 import { objColors } from '../style/VectorStyles.js';
 
 import { geoServer, geoServerWorkspace } from './config.js';
+import { fetchPlaygroundGeom } from './overpass.js';
 
 export var sourceSelected; // globale Variable, in der der jeweils ausgewählte Spielplatz enthalten ist
+var lastSelectedFeature = null; // zuletzt angeklicktes OpenLayers-Feature (für Overpass-Nachfrage)
 
 var targetZoom;
-export function selectPlayground(coord, distance, multiSelect) {
+export function selectPlayground(coord, distance, multiSelect, feature = null) {
     // GeoJSON der selektierten Spielplatzgeometrie erzeugen, um zu dessen Extent zu zoomen und dessen Attribute in der Infobox anzuzeigen
     // TODO multiSelect
+    if (feature !== undefined) lastSelectedFeature = feature;
     return getPlaygroundGeom(coord)
     .then((geojson) => {
         if (geojson) {
@@ -118,28 +121,21 @@ function expandExtent(extent, amount) {
 
 // Feature eines Kartenlayers an einer bestimmten Position als JSON zurückgeben
 function getPlaygroundGeom(coord) {
-    // getFeatureInfo-Request an der Stelle der Mausposition
-    const url = dataPlaygrounds.getSource().getFeatureInfoUrl(
-        coord,
-        map.getView().getResolution(),
-        map.getView().getProjection(),
-        {'INFO_FORMAT': 'application/json'}, // Mögliche Formate: text/plain, application/vnd.ogc.gml, text/xml, application/vnd.ogc.gml/3.1.1, text/xml; subtype=gml/3.1.1, text/html, application/json
-    );
-    // getFeatureInfo-Request auflösen und in ein GeoJSON umwandeln (falls es Daten/Features enthält)
-    if (url) {
-        return fetch(url)
-        .then((response) => response.text())
-        .then((json) => {
-            var geoJSON = JSON.parse(json);
-            if (geoJSON.features[0]) {
-                return geoJSON;
-            } else {
-                return false;
-            }
+    const feature = lastSelectedFeature;
+    if (!feature) return Promise.resolve(false);
+
+    const osmType = feature.get('osm_type');
+    const osmId = feature.get('osm_id');
+    const props = { ...feature.getProperties() };
+    delete props.geometry; // OL geometry-Objekt entfernen
+
+    return fetchPlaygroundGeom(osmType, osmId)
+        .then(geojson => {
+            if (!geojson) return false;
+            // OSM-Tags aus dem Centroid-Feature in die Geometrie übernehmen
+            Object.assign(geojson.features[0].properties, props);
+            return geojson;
         });
-    } else {
-        return false;
-    }
 }
 
 // Spielgerätelayer anzeigen

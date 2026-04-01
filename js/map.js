@@ -8,11 +8,13 @@ import { Popover, Toast } from 'bootstrap';
 import $ from 'jquery';
 import '../css/style.css';
 import { Map, View } from 'ol';
-import { Image as ImageLayer, Tile as TileLayer } from 'ol/layer.js';
+import { Image as ImageLayer, Tile as TileLayer, Vector as VectorLayer } from 'ol/layer.js';
 import ImageWMS from 'ol/source/ImageWMS.js';
+import VectorSource from 'ol/source/Vector.js';
 import XYZ from 'ol/source/XYZ.js';
 import SourceOSM from 'ol/source/OSM';
 import GeoJSON from 'ol/format/GeoJSON.js';
+import { Circle as CircleStyle, Fill, Stroke, Style } from 'ol/style.js';
 import { transform, transformExtent } from 'ol/proj';
 import MousePosition from 'ol/control/MousePosition.js';
 import { ScaleLine, defaults as defaultControls } from 'ol/control.js';
@@ -25,6 +27,8 @@ import { showPopup } from './popup.js';
 
 import { mapCenter, mapExtent, mapZoom, mapMinZoom, geoServer, geoServerWorkspace } from './config.js';
 export { mapCenter, mapExtent, geoServer };
+
+import { fetchPlaygrounds } from './overpass.js';
 
 // Basemaps
 //----------
@@ -77,25 +81,34 @@ let basemapEsriWorldImagery = new TileLayer({
 // Daten-Layer
 //-------------
 
-// Spielplatzblasen
-var sourcePlaygrounds = new ImageWMS({
-    url: geoServer + 'geoserver/wms',
-    params: {
-        'LAYERS': `${geoServerWorkspace}:playgrounds`,
-        'CQL_FILTER': getFilter()
-    },
-    ratio: 1,
-    serverType: 'geoserver',
-    crossOrigin: 'anonymous'
+// Spielplatzblasen (Overpass API)
+const playgroundStyle = new Style({
+    image: new CircleStyle({
+        radius: 8,
+        fill: new Fill({ color: 'rgba(34, 139, 34, 0.55)' }),
+        stroke: new Stroke({ color: '#155215', width: 1.5 })
+    })
 });
 
-export var dataPlaygrounds = new ImageLayer({
+const playgroundSource = new VectorSource();
+export var dataPlaygrounds = new VectorLayer({
     title: 'Spielplätze',
     type: 'playgrounds',
     visible: true,
-    source: sourcePlaygrounds,
+    source: playgroundSource,
     zIndex: 10,
+    style: playgroundStyle
 });
+
+fetchPlaygrounds()
+    .then(geojson => {
+        const features = new GeoJSON().readFeatures(geojson, {
+            dataProjection: 'EPSG:4326',
+            featureProjection: 'EPSG:3857'
+        });
+        playgroundSource.addFeatures(features);
+    })
+    .catch(err => console.error('Overpass: Spielplätze konnten nicht geladen werden:', err));
 
 // Datenprobleme
 var sourceIssues = new ImageWMS({
@@ -240,7 +253,16 @@ map.on('click', function(evt) {
         // TODO: Bei gedrückter Strg-Taste eine Mehrfachauswahl erzeugen
         const multiSelect = evt.originalEvent.ctrlKey;
 
-        selectPlayground(coordinate, distance, multiSelect);
+        // Spielplatz-Feature am Klickpunkt ermitteln (Vector Layer)
+        let playgroundFeature = null;
+        map.forEachFeatureAtPixel(evt.pixel, function(feature, layer) {
+            if (layer === dataPlaygrounds) {
+                playgroundFeature = feature;
+                return true;
+            }
+        }, { hitTolerance: 8 });
+
+        selectPlayground(coordinate, distance, multiSelect, playgroundFeature);
 
         // Popovers ausblenden
         const element = popup.getElement();
@@ -248,7 +270,7 @@ map.on('click', function(evt) {
         if (popover) {
             popover.hide();
         }
-    }    
+    }
 });
 
 // Mouse-Move-Events (Popups anzeigen, Cursor ändern)
@@ -311,37 +333,35 @@ map.on('pointermove', function(evt) {
         }
     }
 
-    // falls an Mausposition kein Spielplatzequipment vorhanden ist (oder ein Datenproblem vorhanden ist), auf WMS-Popup für Spielplatz (oder Datenproblem) prüfen
+    // falls an Mausposition kein Spielplatzequipment vorhanden ist (oder ein Datenproblem vorhanden ist), Spielplatz oder Datenproblem prüfen
     if (!popupFeature) {
-        // um Infos zum Datenproblem oder Namen des Spielplatzes als Popup anzeigen
-        const data_playgrounds = dataPlaygrounds.getData(pixel);
-        var active = "playgrounds";
-        var data = dataPlaygrounds.getData(pixel);
-        if (dataIssues.get("visible")) {
-            data = dataIssues.getData(pixel);
-            active = "issues";
-        }
-        const hit_playgrounds = data_playgrounds && data_playgrounds[3] > 0; // transparent pixels have zero for data[3]
+        // Spielplatz-Feature am Mauszeiger ermitteln (Vector Layer)
+        let hoveredPlayground = null;
+        map.forEachFeatureAtPixel(pixel, function(feature, layer) {
+            if (layer === dataPlaygrounds) {
+                hoveredPlayground = feature;
+                return true;
+            }
+        }, { hitTolerance: 5 });
+
+        const hit_playgrounds = !!hoveredPlayground;
 
         if (hit_playgrounds) {
             map.getTargetElement().style.cursor = 'pointer';
+            // Spielplatz-Popup sofort aus Vector-Feature anzeigen (kein Server-Request nötig)
+            var coord = hoveredPlayground.getGeometry().getCoordinates();
+            var popup_coord = [coord[0], coord[1] + 20]; // etwas oberhalb des Punktes
+            showPopup('playground', popup, popup_coord, { properties: hoveredPlayground.getProperties() });
         }
         if (hit_issues) {
             map.getTargetElement().style.cursor = 'help';
         }
-        if (hit_playgrounds | hit_issues) {
-
-            // WMS-Popups erst mit Verzögerung anzeigen, falls sich die Maus nicht mehr (so schnell) bewegt, um Datenabfragen an Mapserver zu reduzieren
-            var delay = 200; // Verzögerung 200ms
+        if (!hit_playgrounds && hit_issues) {
+            // WMS-Popup für Datenprobleme (verzögert, da Server-Request)
+            var delay = 200;
             timer = setTimeout(() => {
                 if (pixel == pixel_last && coordinate == coordinate_last) {
-                    var src;
-                    if (active == "playgrounds") {
-                        src = sourcePlaygrounds;
-                    } else {
-                        src = sourceIssues;
-                    }
-                    const url = src.getFeatureInfoUrl(
+                    const url = sourceIssues.getFeatureInfoUrl(
                         coordinate, map.getView().getResolution(), 'EPSG:3857',
                         { 'INFO_FORMAT': 'application/json' }
                     );
@@ -350,32 +370,19 @@ map.on('pointermove', function(evt) {
                             .then(response => response.json())
                             .then(data => {
                                 if (data.features.length > 0) {
-        
-                                    // Popup für WMS-Layer soll sich nicht an Mausposition, sondern in Featuremitte befinden, da WMS zu langsam reagiert
-                                    // -> Ausdehung der Geometrie des Features an Mausposition ermitteln / Mittelpunkt ableiten
                                     const feature = data.features[0];
                                     var extent = new GeoJSON().readFeature(feature).getGeometry().getExtent();
-        
                                     var x = extent[0] + (extent[2] - extent[0]) / 2;
-                                    var y = extent[3] - (extent[3] - extent[1]) / 5; // Popup weiter oben anzeigen, damit es möglichst nicht im Weg ist beim klicken
-                                    // TODO: Bei Klick auf das Popup wird ebenfalls der Spielplatz selektiert
-                                    var popup_coord = [x, y];
-        
-                                    if (active == "playgrounds") {
-                                        showPopup('playground', popup, popup_coord, feature);
-                                    } else {
-                                        showPopup('issues', popup, popup_coord, feature);
-                                    }
+                                    var y = extent[3] - (extent[3] - extent[1]) / 5;
+                                    showPopup('issues', popup, [x, y], feature);
                                 }
                             })
-                            .catch(error => {
-                                console.error('Error fetching feature info:', error);
-                            });
-                    }  
+                            .catch(error => console.error('Error fetching feature info:', error));
+                    }
                 }
             }, delay);
-  
-        } else {
+        }
+        if (!hit_playgrounds && !hit_issues) {
             map.getTargetElement().style.cursor = '';
             if (popover) {
                 popover.hide();

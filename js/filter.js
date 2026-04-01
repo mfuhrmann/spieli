@@ -50,7 +50,10 @@ function updateFilter(layer) {
     if (layer == "completeness") {
         lyr = dataIssues;
     }
-    return lyr.getSource().updateParams({'CQL_FILTER': cqlExpression});
+    // updateParams ist nur bei WMS-Quellen verfügbar (nicht bei VectorSource)
+    if (lyr.getSource().updateParams) {
+        return lyr.getSource().updateParams({'CQL_FILTER': cqlExpression});
+    }
 }
 
 // Spielplatzfilter
