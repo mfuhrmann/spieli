@@ -857,17 +857,17 @@ function showPlaygroundInfo(json) {
         $("#info-opening-hours").hide();
     }
 
-    // Kontakt (E-Mail und Telefon)
+    // Kontakt (E-Mail und Telefon) + MapComplete-Link
     var email = attr["contact:email"] || attr["email"];
     var phone = attr["contact:phone"] || attr["phone"];
+    const mcOsmType = ({ W: 'way', R: 'relation', N: 'node' })[attr['osm_type']] ?? 'way';
+    const mcOsmId = attr['osm_id'];
+    const mcUrl = `https://mapcomplete.org/playgrounds.html#${mcOsmType}/${mcOsmId}`;
     var contactParts = [];
     if (phone) contactParts.push(`<a href="tel:${phone}" class="link-secondary">${phone}</a>`);
     if (email) contactParts.push(`<a href="mailto:${email}" class="link-secondary">${email}</a>`);
-    if (contactParts.length > 0) {
-        $("#info-contact").html(contactParts.join(' · ')).show();
-    } else {
-        $("#info-contact").hide();
-    }
+    contactParts.push(`<a href="${mcUrl}" target="_blank" rel="noopener" class="mc-add-link"><span class="bi bi-pencil"></span> MapComplete</a>`);
+    $("#info-contact").html(contactParts.join(' · ')).show();
 
     // Spielgeräte: werden async per Overpass geladen (updateEquipmentPanel befüllt das nach dem Laden)
     $("#info-equipment").html('<ul><li><i>Wird geladen …</i></li></ul>');
@@ -1031,8 +1031,10 @@ function showAttributes(visibility) {
         $("#info-base").hide();
         $("#info-accordion").hide();
 
-        // Bottom sheet auf mobil wieder einfahren
-        $("#info").removeClass("panel-open");
+        // Bottom sheet auf mobil wieder einfahren — aber offen lassen wenn die Nähe-Liste noch Inhalt hat
+        if ($('#info-more').is(':empty')) {
+            $("#info").removeClass("panel-open");
+        }
     
         // Bildergalerie leeren und ausblenden
         $('#info-galery-items').empty();

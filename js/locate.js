@@ -83,7 +83,7 @@ positionFeature.setStyle(
 geolocation.on('change:position', function () {
     const coordinates = geolocation.getPosition();
     positionFeature.setGeometry(coordinates ? new Point(coordinates) : null);
-    map.getView().animate({ center: coordinates });
+    map.getView().animate({ center: coordinates, zoom: Math.max(map.getView().getZoom(), 14) });
     if (coordinates && !nearbyShownForLocation) {
         nearbyShownForLocation = true;
         const [lon, lat] = transform(coordinates, 'EPSG:3857', 'EPSG:4326');
