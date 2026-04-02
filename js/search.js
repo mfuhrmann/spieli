@@ -44,14 +44,10 @@ export async function searchLocation(query) {
             map.getView().animate({ center: coord, zoom: 18 }, searchPulse);
 
             // Notification zum gesuchten Ort ausgeben
-            var coord_4326 = transform(coord, 'EPSG:3857', 'EPSG:4326');
-            coord_4326 = `${coord_4326[0].toFixed(5)}, ${coord_4326[1].toFixed(5)}`;
-            var notification = `"${query}" gefunden`;
             var addr_suburb = result.address.suburb;
-            if (addr_suburb) {
-                notification += ` in ${addr_suburb}`;
-            }
-            notification += ` (${coord_4326}).`;
+            var addr_city = result.address.city || result.address.town || result.address.village;
+            var locationHint = addr_suburb ? `${addr_suburb}, ${addr_city || ''}` : addr_city;
+            var notification = locationHint ? `„${query}" in ${locationHint}` : `„${query}" gefunden`;
             showNotification(notification);
 
             // Spielplätze in der Nähe des Suchergebnisses anzeigen

@@ -257,6 +257,20 @@ ul {
     color: var(--bs-primary);
 }
 
+#toast {
+    background: rgba(30, 30, 30, 0.85);
+    backdrop-filter: blur(6px);
+    border-radius: 12px;
+    max-width: 260px;
+}
+
+#toast .toast-body {
+    color: #fff;
+    font-size: 13px;
+    font-family: system-ui, sans-serif;
+    padding: 10px 14px;
+}
+
 
 /* ===========================
    Mouse Position Display

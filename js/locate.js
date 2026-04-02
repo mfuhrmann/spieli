@@ -15,39 +15,25 @@ import map from './map.js';
 import { showNearbyPlaygrounds } from './selectPlayground.js';
 import { transform } from 'ol/proj';
 
-const btnLocator = $('#btn-location')[0];
-var btnLocatorActive = false;
-var nearbyShownForLocation = false;
-
-// Standort verfolgen de-/aktivieren
+// Einmalige Standortbestimmung: Karte zentrieren, Spielplätze in der Nähe anzeigen
 $('#btn-location').on('click', function() {
-    btnLocatorActive = !btnLocatorActive;
-    if (btnLocatorActive) {
-        btnLocator.classList.add("buttonActive");
-        showLocation();
-    } else {
-        btnLocator.classList.remove("buttonActive");
-        hideLocation();
-    }
+    geolocation.setTracking(true);
+    locatorLayer.setProperties({"visible": true});
 });
 
-// Standortverfolgung aktivieren
 export function showLocation() {
     geolocation.setTracking(true);
     locatorLayer.setProperties({"visible": true});
 }
 
-// Standortverfolgung deaktivieren
 export function hideLocation() {
     geolocation.setTracking(false);
     locatorLayer.setProperties({"visible": false});
     locatorLayer.getSource().changed();
-    nearbyShownForLocation = false;
 }
 
 // Geolocation-Handling
 const geolocation = new Geolocation({
-    // enableHighAccuracy must be set to true to have the heading value.
     trackingOptions: {
         enableHighAccuracy: true,
     },
@@ -80,15 +66,18 @@ positionFeature.setStyle(
     }),
 );
 
-geolocation.on('change:position', function () {
+geolocation.once('change:position', function () {
     const coordinates = geolocation.getPosition();
-    positionFeature.setGeometry(coordinates ? new Point(coordinates) : null);
+    if (!coordinates) return;
+
+    positionFeature.setGeometry(new Point(coordinates));
     map.getView().animate({ center: coordinates, zoom: Math.max(map.getView().getZoom(), 14) });
-    if (coordinates && !nearbyShownForLocation) {
-        nearbyShownForLocation = true;
-        const [lon, lat] = transform(coordinates, 'EPSG:3857', 'EPSG:4326');
-        showNearbyPlaygrounds(lon, lat, 'deinem Standort');
-    }
+
+    // Tracking wieder stoppen — einmalige Positionsbestimmung
+    geolocation.setTracking(false);
+
+    const [lon, lat] = transform(coordinates, 'EPSG:3857', 'EPSG:4326');
+    showNearbyPlaygrounds(lon, lat, 'deinem Standort');
 });
 
 const locatorLayer = new VectorLayer({
