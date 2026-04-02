@@ -3,25 +3,43 @@ import $ from 'jquery';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import '../css/bootstrap_custom.css';
 
-import { transformExtent } from 'ol/proj';
-
 import map from './map.js';
-import { getMapScale, mapExtent } from './map.js';
+import { applyRegionInfo } from './map.js';
 
 import { setCurrentDate } from './shadow.js';
 import { showLocation, hideLocation } from './locate.js';
 import { searchLocation } from './search.js';
-import { regionName, regionPlaygroundWikiUrl, regionChatUrl, regionChatName,
-         projectAuthorName, projectAuthorOsmUrl, projectRepoUrl } from './config.js';
+import { osmRelationId, regionPlaygroundWikiUrl, regionChatUrl } from './config.js';
+import { fetchRegionInfo } from './region.js';
 
-// Seitenname aus Konfiguration setzen
-const appTitle = `${regionName}er Spielplatzkarte`;
-document.title = appTitle;
-$('.navbar-brand b').text(appTitle);
+const projectAuthorOsmUrl = 'https://www.openstreetmap.org/user/Supaplex030/';
+const projectRepoUrl = null; // TODO: set when moved to Codeberg
+
+const DEFAULT_PLAYGROUND_WIKI_URL = 'https://wiki.openstreetmap.org/wiki/DE:Tag:leisure%3Dplayground';
+
+// Async init — fetch region info from Nominatim, then set up the app
+(async function init() {
+    let region = { name: 'Spielplatzkarte', extent: null, center: null };
+    try {
+        region = await fetchRegionInfo(osmRelationId);
+        applyRegionInfo(region);
+    } catch (e) {
+        console.warn('Region info could not be fetched from Nominatim:', e);
+    }
+
+    // Seitenname aus Konfiguration setzen
+    const appTitle = `${region.name}er Spielplatzkarte`;
+    document.title = appTitle;
+    $('.navbar-brand b').text(appTitle);
+
+    buildDatenErgaenzenModal(region.name);
+    buildUeberModal();
+}());
 
 // "Daten ergänzen"-Modal dynamisch befüllen
-(function buildDatenErgaenzenModal() {
+function buildDatenErgaenzenModal(regionName) {
     const l = (text) => `<span class="info-label">${text}</span>`;
+    const wikiUrl = regionPlaygroundWikiUrl || DEFAULT_PLAYGROUND_WIKI_URL;
 
     let html = `
         ${l('OpenStreetMap')}
@@ -30,14 +48,8 @@ $('.navbar-brand b').text(appTitle);
 
         ${l('Spielplätze beitragen')}
         <p>Jede und jeder kann mitmachen. Einen Einstieg bietet <a href="https://learnosm.org/de/beginner/" class="link-secondary">LearnOSM.org</a>.
-        Die relevanten Tags sind im <a href="https://wiki.openstreetmap.org/wiki/Tag:leisure%3Dplayground" class="link-secondary">OSM-Wiki</a>
-        und auf der Seite zur <a href="https://wiki.openstreetmap.org/wiki/Key:playground" class="link-secondary">Erfassung einzelner Spielgeräte</a> dokumentiert.`;
-
-    if (regionPlaygroundWikiUrl) {
-        html += ` Informationen speziell zu Spielplätzen in ${regionName} gibt es <a href="${regionPlaygroundWikiUrl}" class="link-secondary" target="_blank" rel="noopener">im OSM-Wiki</a>.`;
-    }
-
-    html += `</p>
+        Die relevanten Tags sind im <a href="${wikiUrl}" class="link-secondary" target="_blank" rel="noopener">OSM-Wiki</a>
+        und auf der Seite zur <a href="https://wiki.openstreetmap.org/wiki/Key:playground" class="link-secondary">Erfassung einzelner Spielgeräte</a> dokumentiert.</p>
 
         ${l('Fotos hinzufügen')}
         <p>Fotos lassen sich direkt über <a href="https://mapcomplete.org/playgrounds" class="link-secondary" target="_blank" rel="noopener">MapComplete</a>
@@ -48,16 +60,16 @@ $('.navbar-brand b').text(appTitle);
         html += `
         ${l('Community')}
         <p>Fragen oder mitmachen? Die lokale OSM-Community ist erreichbar über den
-        <a href="${regionChatUrl}" class="link-secondary" target="_blank" rel="noopener">${regionChatName}</a>.</p>`;
+        <a href="${regionChatUrl}" class="link-secondary" target="_blank" rel="noopener">lokalen OSM-Community-Chat</a>.</p>`;
     }
 
     $('#modalDatenErgaenzen .modal-body').html(html);
-}());
+}
 
 // "Über das Projekt"-Modal dynamisch befüllen
-(function buildUeberModal() {
+function buildUeberModal() {
     const l = (text) => `<span class="info-label">${text}</span>`;
-    const authorLink = `<a href="${projectAuthorOsmUrl}" class="link-secondary" target="_blank" rel="noopener">${projectAuthorName}</a>`;
+    const authorLink = `<a href="${projectAuthorOsmUrl}" class="link-secondary" target="_blank" rel="noopener">Alex Seidel (Supaplex030)</a>`;
 
     let html = `
         ${l('Geschichte')}
@@ -79,7 +91,7 @@ $('.navbar-brand b').text(appTitle);
     }
 
     $('#modalUeberDasProjekt .modal-body').html(html);
-}());
+}
 
 // Schieberegler der Schattenberechnung auf aktuelles Datum setzen
 setCurrentDate();

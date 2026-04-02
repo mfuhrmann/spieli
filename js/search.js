@@ -5,8 +5,7 @@
 import $ from 'jquery';
 import { fromLonLat, transform } from 'ol/proj';
 import map from './map.js';
-import { mapExtent } from './map.js';
-import { showNotification } from './map.js';
+import { getRegionExtent, showNotification } from './map.js';
 import { pulse } from './pulse.js';
 import { showNearbyPlaygrounds } from './selectPlayground.js';
 
@@ -32,7 +31,8 @@ var coord = null;
 // Funktion zur Suche
 export async function searchLocation(query) {
     // Suche auf mapExtent beschränken und zum ersten Treffer zoomen
-    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&addressdetails=1&limit=1&viewbox=${mapExtent[0]},${mapExtent[1]},${mapExtent[2]},${mapExtent[3]}`;
+    const [minLon, minLat, maxLon, maxLat] = getRegionExtent();
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&addressdetails=1&limit=1&viewbox=${minLon},${minLat},${maxLon},${maxLat}`;
     try {
         const response = await fetch(url);
         const results = await response.json();

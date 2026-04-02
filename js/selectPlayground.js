@@ -24,7 +24,9 @@ import { addShadowLayer, fillShadowMatrix } from './shadow.js';
 import { objDevices } from './objPlaygroundEquipment.js';
 import { objColors } from '../style/VectorStyles.js';
 
-import { geoServer, geoServerWorkspace } from './config.js';
+// TODO (GeoServer): hardcoded until GeoServer integration is restored
+const geoServer = 'https://osmbln.uber.space/';
+const geoServerWorkspace = 'spielplatzkarte';
 import { fetchPlaygroundEquipment, fetchNearbyPOIs } from './overpass.js';
 import { panoramaxViewerUrl, panoramaxThumbUrl } from './panoramax.js';
 

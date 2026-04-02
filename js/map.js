@@ -26,8 +26,24 @@ import { getFilter } from './filter.js';
 import { selectPlayground, getSelectedPlaygroundSource, getSelectionExtent, checkZoomDeselection } from './selectPlayground.js';
 import { showPopup } from './popup.js';
 
-import { mapCenter, mapExtent, mapZoom, mapMinZoom, geoServer, geoServerWorkspace } from './config.js';
-export { mapCenter, mapExtent, geoServer };
+import { mapZoom, mapMinZoom } from './config.js';
+
+// TODO (GeoServer): hardcoded until GeoServer integration is restored
+const geoServer = 'https://osmbln.uber.space/';
+const geoServerWorkspace = 'spielplatzkarte';
+
+// Region extent in EPSG:4326 — updated after Nominatim fetch via applyRegionInfo()
+let regionExtent = [5.87, 47.27, 15.04, 55.06]; // Germany fallback
+export function getRegionExtent() { return regionExtent; }
+
+// Called from main.js after fetchRegionInfo() resolves
+export function applyRegionInfo({ center, extent }) {
+    regionExtent = extent;
+    view.fit(transformExtent(extent, 'EPSG:4326', 'EPSG:3857'), {
+        padding: [20, 390, 20, 20], // leave room for info panel on desktop
+        duration: 0
+    });
+}
 
 import { fetchPlaygrounds } from './overpass.js';
 
@@ -145,32 +161,13 @@ const scaleControl = new ScaleLine({
 
 // Karte im DOM erzeugen
 //-----------------------
-var map = null; // map schon vor der View leer definieren, damit check auf die Variable in View -> calcMapCenter() funktioniert
+var map = null;
 const view = new View({
-    center: calcMapCenter(),
+    // Germany center as initial fallback — applyRegionInfo() will fit to the actual region
+    center: transform([10.5, 51.2], 'EPSG:4326', 'EPSG:3857'),
     zoom: mapZoom,
     minZoom: mapMinZoom,
-    extent: transformExtent(mapExtent, 'EPSG:4326', 'EPSG:3857')
 });
-
-// Kartenzentrum je nach Breite des Infofensters verschieben
-// (sodass sich das Zentrum auf den Raum neben dem Infofenster bezieht, nicht auf die Gesamtkarte, die hinter dem Infofenster weitergeht)
-function calcMapCenter() {
-    var center = transform(mapCenter, 'EPSG:4326', 'EPSG:3857');
-    var resolution;
-    if (map) {
-        resolution = map.getView().getResolution();
-    } else {
-        // bei Ermittlung des Kartenzentrums für View beim Starten der Seite
-        var maxResolution = 156543.03392804097; // höchste Auflösung bei Zoomstufe 0 (vgl. https://openlayers.org/en/latest/apidoc/module-ol_View.html)
-        resolution = maxResolution / Math.pow(2, mapZoom);
-    }
-    var infoWidth = $('#info')[0].offsetWidth;
-    var offset = resolution * infoWidth;
-
-    center = [center[0] + offset / 3, center[1]];
-    return center;
-}
 
 var popup = new Overlay({
     element: $('#popup')[0]

@@ -11,7 +11,10 @@ import map from './map.js';
 import { showNotification } from './map.js';
 import { sourceSelected } from './selectPlayground.js';
 
-import { mapCenter, geoServer, geoServerWorkspace } from './config.js';
+// TODO (GeoServer): hardcoded until GeoServer integration is restored
+const geoServer = 'https://osmbln.uber.space/';
+const geoServerWorkspace = 'spielplatzkarte';
+import { transform } from 'ol/proj';
 
 // Slider auf aktuellen Monat und Uhrzeit einstellen
 var shadowSliderInit = true;
@@ -205,8 +208,7 @@ $('.matrix').on('click', function() {
 
 function getSunParam(day, hour) {
     // Deklination der Sonne
-    const lat = mapCenter[1];
-    const lon = mapCenter[0];
+    const [lon, lat] = transform(map.getView().getCenter(), 'EPSG:3857', 'EPSG:4326');
     const K = Math.PI / 180;
 
     const deklination = 23.45 * Math.sin(((360 * K) / 365) * (day - 81));
