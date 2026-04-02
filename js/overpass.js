@@ -140,6 +140,8 @@ export async function fetchNearbyPOIs(lat, lon, radiusM = 500, osmId = null) {
   node["amenity"="doctors"]["emergency"="yes"]${around};
   node["emergency"="yes"]["emergency"!="fire_hydrant"]${around};
   node["shop"="chemist"]${around};
+  node["shop"="supermarket"]${around};
+  node["shop"="convenience"]${around};
 );
 out body;`;
 

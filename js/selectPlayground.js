@@ -538,6 +538,11 @@ const POI_CATEGORIES = [
         fallback: 'Eisdiele'
     },
     {
+        icon: '🛒', label: 'Einkaufen',
+        match: t => t.shop === 'supermarket' || t.shop === 'convenience',
+        fallback: 'Einkaufsmöglichkeit'
+    },
+    {
         icon: '🧴', label: 'Drogerie',
         match: t => t.shop === 'chemist',
         fallback: 'Drogerie'
