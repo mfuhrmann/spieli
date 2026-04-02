@@ -40,8 +40,14 @@ var targetZoom;
 var nearbyListFeatures = []; // für Klick-Handler der Nähe-Liste
 
 export function showNearbyPlaygrounds(lon, lat, label = 'diesem Ort') {
-    const features = dataPlaygrounds.getSource ? dataPlaygrounds.getSource().getFeatures() : [];
-    if (!features.length) return;
+    const source = dataPlaygrounds.getSource ? dataPlaygrounds.getSource() : null;
+    if (!source) return;
+    const features = source.getFeatures();
+    if (!features.length) {
+        // Overpass still loading — retry once it's done
+        source.once('change', () => showNearbyPlaygrounds(lon, lat, label));
+        return;
+    }
 
     const withDist = features.map(f => {
         const ext = f.getGeometry().getExtent();
@@ -593,10 +599,14 @@ function updateUmfeldPanel(pois, playLat, playLon) {
         for (const poi of matches) {
             const name = poi.tags.name || cat.fallback;
             const hint = cat.hint ? `<span class="text-muted ms-1" style="font-size:0.7rem;">(${cat.hint(poi, playLat, playLon)})</span>` : '';
-            const routeUrl = `https://www.openstreetmap.org/directions?engine=fossgis_osrm_foot&route=${playLat},${playLon};${poi.lat},${poi.lon}`;
+            const geoUrl = `geo:${poi.lat},${poi.lon}?q=${poi.lat},${poi.lon}(${encodeURIComponent(name)})`;
+            const osmUrl = `https://www.openstreetmap.org/directions?engine=fossgis_osrm_foot&route=${playLat},${playLon};${poi.lat},${poi.lon}`;
             html += `<div class="d-flex justify-content-between align-items-baseline mt-1">
                 <span style="font-size:smaller;">${name}${hint}</span>
-                <a href="${routeUrl}" target="_blank" rel="noopener" class="text-muted ms-2 text-decoration-none" style="white-space:nowrap;font-size:smaller;">${formatDistance(poi.dist)} ↗</a>
+                <span class="ms-2 text-nowrap">
+                    <a href="${geoUrl}" class="text-muted text-decoration-none" style="font-size:smaller;" title="In Navigations-App öffnen">${formatDistance(poi.dist)} ↗</a>
+                    <a href="${osmUrl}" target="_blank" rel="noopener" class="text-muted text-decoration-none ms-1" style="font-size:smaller;" title="Im Browser navigieren">🗺</a>
+                </span>
             </div>`;
         }
         html += '</div>';
