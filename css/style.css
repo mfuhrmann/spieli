@@ -1,11 +1,22 @@
 @import "../node_modules/ol/ol.css";
+@import "../node_modules/bootstrap-icons/font/bootstrap-icons.css";
 @import "../css/ol_controls.css";
 @import "../css/bootstrap_custom.css";
 
-/* Listeneinzug reduzieren */
-ul {
-    padding-left: 13px;
+/* ===========================
+   Reset & Base
+   =========================== */
+
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+html, body {
+    height: 100%;
     margin: 0;
+    padding: 0;
+    overflow: hidden;
+    font-family: system-ui, -apple-system, sans-serif;
 }
 
 /* Mauszeiger über Text soll nicht Textauswahl-Cursor sein */
@@ -13,26 +24,380 @@ p, h1, h2, h3, h4, h5, h6, ul, ol, .cursor-default {
     cursor: default;
 }
 
-/* CSS für Infobox */
-#info {
-    position: absolute;
-    right: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 350px;
-    background-color: rgba(240,240,240,0.85);
-    box-shadow: 0 0 10px rgba(0,0,0,0.15);
-    overflow-y: auto;
+ul {
+    padding-left: 13px;
+    margin: 0;
 }
 
-/* CSS für Popup */
+/* ===========================
+   Map (full screen)
+   =========================== */
+
+#map {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+}
+
+/* ===========================
+   Floating Search Bar
+   =========================== */
+
+#search-bar {
+    position: fixed;
+    top: 14px;
+    left: 14px;
+    right: 14px;
+    max-width: 420px;
+    height: 52px;
+    background: white;
+    border-radius: 26px;
+    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.22);
+    display: flex;
+    align-items: center;
+    padding: 0 14px 0 16px;
+    gap: 8px;
+    z-index: 100;
+}
+
+.search-logo {
+    flex-shrink: 0;
+    opacity: 0.85;
+}
+
+.search-icon {
+    color: #9ca3af;
+    font-size: 15px;
+    flex-shrink: 0;
+}
+
+.search-input {
+    flex: 1;
+    border: none;
+    outline: none;
+    font-size: 15px;
+    color: #1f2937;
+    background: transparent;
+    min-width: 0;
+}
+
+.search-input::placeholder {
+    color: #9ca3af;
+}
+
+.search-nav-links {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.search-nav-link {
+    font-size: 13px;
+    color: #6b7280;
+    text-decoration: none;
+    white-space: nowrap;
+    padding: 4px 8px;
+    border-radius: 14px;
+    transition: background 0.15s, color 0.15s;
+}
+
+.search-nav-link:hover {
+    background: #f3f4f6;
+    color: #1f2937;
+}
+
+/* Mobile menu button — hidden on desktop */
+.search-menu-btn {
+    display: none;
+    border: none;
+    background: transparent;
+    padding: 4px 6px;
+    color: #6b7280;
+    font-size: 18px;
+    cursor: pointer;
+    border-radius: 50%;
+    line-height: 1;
+}
+
+.search-menu-btn:hover {
+    background: #f3f4f6;
+}
+
+/* ===========================
+   Info Panel
+   =========================== */
+
+#info {
+    position: fixed;
+    top: 80px;
+    left: 14px;
+    width: 370px;
+    max-height: calc(100vh - 94px);
+    background: white;
+    border-radius: 18px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.16);
+    overflow-y: auto;
+    z-index: 100;
+    /* smooth appear when switching between playgrounds */
+    transition: box-shadow 0.2s ease;
+}
+
+#info::-webkit-scrollbar {
+    width: 4px;
+}
+#info::-webkit-scrollbar-track {
+    background: transparent;
+}
+#info::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 2px;
+}
+
+/* Drag handle — only shown on mobile */
+#info-drag-handle {
+    display: none;
+}
+
+/* Nearby playgrounds list */
+.nearby-panel {
+    padding: 16px 14px 8px;
+}
+
+.nearby-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 10px;
+    margin-top: 6px;
+    border-radius: 10px;
+    cursor: pointer;
+    background: #f9fafb;
+    transition: background 0.15s;
+}
+
+.nearby-item:hover {
+    background: #fff3e8;
+}
+
+.nearby-name {
+    font-size: 13px;
+    color: #1f2937;
+    font-weight: 500;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding-right: 8px;
+}
+
+.nearby-dist {
+    font-size: 12px;
+    color: #9ca3af;
+    flex-shrink: 0;
+}
+
+/* Empty state hint */
+.info-more-hint {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 32px 24px;
+    color: #9ca3af;
+    text-align: center;
+}
+
+.info-more-hint .bi {
+    font-size: 32px;
+    color: #d1d5db;
+}
+
+.info-more-hint p {
+    margin: 0;
+    font-size: 14px;
+}
+
+/* ===========================
+   Floating Action Buttons
+   =========================== */
+
+#map-fabs {
+    position: fixed;
+    bottom: 20px;
+    right: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 100;
+}
+
+.map-fab {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: none;
+    background: white;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    color: #374151;
+    cursor: pointer;
+    transition: background 0.15s, box-shadow 0.15s;
+}
+
+.map-fab:hover {
+    background: #f9fafb;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+}
+
+.map-fab.active {
+    color: var(--bs-primary);
+}
+
+
+/* ===========================
+   Mouse Position Display
+   =========================== */
+
+#mouse-position-display {
+    position: fixed;
+    bottom: 42px;
+    left: 14px;
+    font-size: 11px;
+    color: #9ca3af;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    line-height: 1.4;
+    pointer-events: none;
+    text-shadow: 0 1px 3px rgba(255,255,255,0.8);
+}
+
+/* ===========================
+   Info Panel — Header & Content
+   =========================== */
+
+/* Override Bootstrap bg-primary/text-light on the header block */
+#info-base {
+    background: white !important;
+    color: #1f2937 !important;
+    padding: 16px 14px 12px !important;
+    border-bottom: 1px solid #f3f4f6;
+    position: relative;
+}
+
+
+#info-name {
+    color: #111827 !important;
+    font-size: 17px !important;
+    line-height: 1.3;
+}
+
+#info-location {
+    color: #6b7280 !important;
+    font-size: 13px;
+    border-bottom-color: #f3f4f6 !important;
+}
+
+#info-area,
+#info-access,
+#info-age,
+#info-operator,
+#info-opening-hours,
+#info-contact,
+#info-description {
+    color: #4b5563 !important;
+    font-size: 13px;
+    font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* Modal sections — same label style as the info panel */
+.modal-body .info-label {
+    display: block;
+    margin-top: 16px;
+    margin-bottom: 4px;
+}
+
+.modal-body .info-label:first-child {
+    margin-top: 0;
+}
+
+.modal-body p {
+    font-size: 13px;
+    color: #4b5563;
+    margin-bottom: 0;
+}
+
+/* Subtle MapComplete contribution links */
+.mc-add-link {
+    font-size: 11px;
+    color: #9ca3af;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.mc-add-link:hover {
+    color: var(--bs-primary);
+    text-decoration: underline;
+}
+
+/* Key-value label (e.g. "Zugänglichkeit:") */
+.info-label {
+    color: #9ca3af;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+/* OSM link button in the header */
+#info-base #info-osm-url {
+    color: #9ca3af !important;
+    border-color: #e5e7eb !important;
+    font-size: 11px;
+}
+
+#info-base #info-osm-url:hover {
+    background: #f3f4f6 !important;
+    color: #374151 !important;
+    border-color: #d1d5db !important;
+}
+
+/* Accordion body spacing */
+.accordion-body {
+    padding: 10px 14px 12px !important;
+}
+
+.accordion-item {
+    border: none !important;
+}
+
+/* ===========================
+   Popup (hover tooltip)
+   =========================== */
+
 #popup {
     background-color: white;
     position: absolute;
     bottom: 5px;
 }
 
-/* Eigene Klassen zur Anzeige verschiedener Cursor */
+#mini-popup {
+    position: absolute;
+    display: none;
+    padding: 3px;
+    background-color: #F0F0F0;
+    border-radius: 3px;
+    z-index: 100;
+    pointer-events: none;
+}
+
+/* ===========================
+   Cursor helpers
+   =========================== */
+
 .grab {
     cursor: grab;
 }
@@ -49,22 +414,94 @@ p, h1, h2, h3, h4, h5, h6, ul, ol, .cursor-default {
     cursor: col-resize;
 }
 
-/* Rahmen bei Hover über Schattenmatrix */
+/* ===========================
+   Shadow matrix hover
+   =========================== */
+
 .matrix:hover {
     border: 2px solid #F0F0F0 !important;
 }
 
-#mini-popup {
-    position: absolute;
-    display: none;
-    padding: 3px;
-    background-color: #F0F0F0;
-    border-radius: 3px;
-    z-index: 100;
-    pointer-events: none;
-}
+/* ===========================
+   Mobile — Bottom Sheet
+   =========================== */
 
-/* TODO: Accordeon-Hintergrund leicht transparent machen (wird bisher noch von irgendeinem Element überdeckt) */
-/* .collapse.show {
-    background-color: rgba(240,240,240,0.5);
-} */
+@media (max-width: 768px) {
+
+    /* Search bar goes full-width, leaves room for FAB */
+    #search-bar {
+        max-width: none;
+        right: 70px;
+        left: 10px;
+        top: 10px;
+        height: 48px;
+    }
+
+    .search-nav-links {
+        display: none;
+    }
+
+    .search-menu-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Info panel becomes a bottom sheet */
+    #info {
+        top: auto;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 100%;
+        max-width: 100%;
+        max-height: 75vh;
+        border-radius: 20px 20px 0 0;
+        transform: translateY(100%);
+        transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+        /* always show empty state slightly peeking in */
+    }
+
+    #info.panel-open {
+        transform: translateY(0);
+    }
+
+    /* Drag handle visible on mobile */
+    #info-drag-handle {
+        display: block;
+        width: 36px;
+        height: 4px;
+        background: #d1d5db;
+        border-radius: 2px;
+        margin: 10px auto 6px;
+    }
+
+    .info-more-hint {
+        display: none; /* hide hint text on mobile when sheet is off-screen */
+    }
+
+    /* FABs go top-right next to search bar */
+    #map-fabs {
+        top: 10px;
+        bottom: auto;
+        right: 10px;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .map-fab {
+        width: 48px;
+        height: 48px;
+    }
+
+    /* Map controls at bottom-center on mobile */
+    #map-controls {
+        bottom: 10px;
+        right: 10px;
+        left: auto;
+    }
+
+    #mouse-position-display {
+        display: none;
+    }
+}

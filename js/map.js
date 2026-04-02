@@ -16,6 +16,7 @@ import SourceOSM from 'ol/source/OSM';
 import GeoJSON from 'ol/format/GeoJSON.js';
 import { Fill, Stroke, Style } from 'ol/style.js';
 import { transform, transformExtent } from 'ol/proj';
+import { getArea } from 'ol/sphere.js';
 import MousePosition from 'ol/control/MousePosition.js';
 import { ScaleLine, defaults as defaultControls } from 'ol/control.js';
 import Overlay from 'ol/Overlay.js';
@@ -38,43 +39,13 @@ import dataDate from '../data/data_date.js';
 const dataDateStr = ` | Datenstand Spielplätze: ${dataDate}`;
 
 // TODO: Mit einer LayerGroup arbeiten, die alle Basemaps gruppiert?
-let basemapGeofabrikBasicColor = new TileLayer({
-    title: 'Geofabrik Basic Color',
-    type: 'base',
-    visible: false,
-    source: new XYZ({
-        url: 'https://tile.geofabrik.de/f4b99c53772daf077663f1032c85fb9e/{z}/{x}/{y}.png',
-        attributions: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors | &copy; <a href="https://www.geofabrik.de/">Geofabrik</a>' + dataDateStr,
-    })
-});
-
 let basemapCartoDBVoyager = new TileLayer({
     title: 'CartoDB Voyager',
     type: 'base',
-    visible: false,
+    visible: true,
     source: new XYZ({
         url: 'https://{a-d}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
         attributions: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors | &copy; <a href="https://carto.com/attributions">CARTO</a>' + dataDateStr,
-    })
-});
-
-let basemapOpenStreetMapMapnik = new TileLayer({
-    title: 'OpenStreetMap Mapnik',
-    type: 'base',
-    visible: true,
-    source: new SourceOSM({
-        attributions: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' + dataDateStr,
-    }),
-    opacity: 0.67 // etwas transparent, da sonst zu dunkel
-});
-
-let basemapEsriWorldImagery = new TileLayer({
-    title: 'Luftbild',
-    type: 'base',
-    visible: false,
-    source: new XYZ({
-        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-        attributions: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community | &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' + dataDateStr,
     })
 });
 
@@ -208,7 +179,7 @@ var popup = new Overlay({
 map = new Map({
     target: 'map',
     controls: defaultControls().extend([mousePositionControl, scaleControl]),
-    layers: [basemapGeofabrikBasicColor, basemapCartoDBVoyager, basemapOpenStreetMapMapnik, basemapEsriWorldImagery, dataPlaygrounds, dataIssues, dataFilteredEquipment],
+    layers: [basemapCartoDBVoyager, dataPlaygrounds, dataIssues, dataFilteredEquipment],
     overlays: [popup],
     view: view,
     // keine Kartenrotation erlauben
@@ -345,10 +316,11 @@ map.on('pointermove', function(evt) {
 
         if (hit_playgrounds) {
             map.getTargetElement().style.cursor = 'pointer';
-            // Spielplatz-Popup sofort aus Vector-Feature anzeigen (kein Server-Request nötig)
-            var coord = hoveredPlayground.getGeometry().getCoordinates();
-            var popup_coord = [coord[0], coord[1] + 20]; // etwas oberhalb des Punktes
-            showPopup('playground', popup, popup_coord, { properties: hoveredPlayground.getProperties() });
+            const playgroundProps = {
+                ...hoveredPlayground.getProperties(),
+                area: Math.round(getArea(hoveredPlayground.getGeometry()))
+            };
+            showPopup('playground', popup, coordinate, { properties: playgroundProps });
         }
         if (hit_issues) {
             map.getTargetElement().style.cursor = 'help';
@@ -441,33 +413,6 @@ export function getMapScale() {
 }
 
 // Layerauswahl - Dropdown mit verfügbaren Basemaps füllen
-var selectBasemap = $("#select-basemap")[0];
-var mapLayers = map.getLayers().getArray();
-for (let i = 0; i < mapLayers.length; i++) {
-    if (mapLayers[i].getProperties()["type"] == 'base') {
-        var layerTitle = mapLayers[i].getProperties()["title"];
-        var option = document.createElement("option");
-        option.text = layerTitle;
-        selectBasemap.add(option);
-        if (mapLayers[i].getProperties()["visible"] == true) {
-            selectBasemap.value = layerTitle;
-        };
-    }
-};
-
-// Basemap bei Auswahl im Dropdown ändern
-$('#select-basemap').on('change', function() {
-    var mapLayers = map.getLayers().getArray();
-    for (let i = 0; i < mapLayers.length; i++) {
-        if (mapLayers[i].getProperties()["type"] == 'base') {
-            if (mapLayers[i].getProperties()["title"] == this.value) {
-                mapLayers[i].setProperties({"visible": true});
-            } else {
-                mapLayers[i].setProperties({"visible": false});
-            }
-        }
-    }
-});
 
 // Klick auf Koordinaten dient als Debugging-Testbutton
 $('#mouse-position').on('click', function() {

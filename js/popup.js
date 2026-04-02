@@ -20,7 +20,29 @@ export function showPopup(type, popup, coordinate, feature) {
     if (type == 'playground') {
         var attr = feature.properties;
         title = getPlaygroundTitle(attr);
-        content = `<i>${getPlaygroundLocation(attr)}</i>`;
+
+        const lines = [];
+
+        if (attr.area) {
+            lines.push(`Größe: ca. ${Math.round(attr.area / 10) * 10} m²`);
+        }
+
+        const accessDict = {
+            yes: 'öffentlich', private: 'privat', customers: 'nur für Gäste',
+            no: 'nicht zugänglich', permissive: 'öffentlich geduldet',
+            destination: 'nur für Anlieger', residents: 'nur für Anwohnende',
+        };
+        if (attr.access && attr.access in accessDict) {
+            lines.push(`Zugang: ${accessDict[attr.access]}`);
+        }
+
+        const location = getPlaygroundLocation(attr);
+        if (location) lines.push(`<i>${location}</i>`);
+
+        if (attr.operator) lines.push(`Betreiber: ${attr.operator}`);
+
+        lines.push(`<small class="text-muted">Klicken für Details</small>`);
+        content = lines.join('<br>');
     }
 
     // Popup für Datenprobleme
@@ -286,15 +308,29 @@ function getEquipmentAttributes (feature) {
     // max_age
 
     // Barrierefreiheit
-    // wheelchair
     var wheelchair = feature.get('wheelchair');
-    if (wheelchair == 'yes') {
-        content.push(`Rollstuhlgerecht`);
+    if (wheelchair === 'yes') {
+        content.push('Rollstuhlgerecht');
+    } else if (wheelchair === 'limited') {
+        content.push('Eingeschränkt rollstuhlgerecht');
+    } else if (wheelchair === 'no') {
+        content.push('Nicht rollstuhlgerecht');
     }
 
-    // walking_disability
-    // sitting_disability
-    // blind
+    var blind = feature.get('blind');
+    if (blind === 'yes') {
+        content.push('Für sehbehinderte Personen geeignet');
+    }
+
+    var walking_disability = feature.get('walking_disability');
+    if (walking_disability === 'yes') {
+        content.push('Für Gehbehinderte geeignet');
+    }
+
+    var sitting_disability = feature.get('sitting_disability');
+    if (sitting_disability === 'yes') {
+        content.push('Für Personen mit Sitzbehinderung geeignet');
+    }
 
     // Foto
     // image // TODO noch nicht berücksichtigt
@@ -388,16 +424,39 @@ function getEquipmentAttributes (feature) {
         content.push(`Typ: ${artwork_type}`);
     }
 
+    // Panoramax-Foto des Geräts (aus panoramax / panoramax:0 Tag)
+    var panoramaxUuid = feature.get('panoramax') || feature.get('panoramax:0');
+    for (var pi = 1; pi <= 9 && !panoramaxUuid; pi++) {
+        panoramaxUuid = feature.get(`panoramax:${pi}`);
+    }
+
     // Content als html-Liste erstellen
     var contentHtml = "";
+    if (panoramaxUuid) {
+        const thumbUrl = `https://api.panoramax.xyz/api/pictures/${panoramaxUuid}/thumb.jpg`;
+        const viewerUrl = `https://api.panoramax.xyz/?pic=${panoramaxUuid}&nav=none&focus=pic`;
+        contentHtml += `<a href="${viewerUrl}" target="_blank" rel="noopener">` +
+            `<img src="${thumbUrl}" alt="Straßenfoto" ` +
+            `style="width:240px; height:130px; object-fit:cover; display:block; border-radius:3px; margin-bottom:4px;">` +
+            `</a>`;
+    }
     if (content.length) {
         contentHtml += "<ul>";
-        content.forEach( function(item) {
-            contentHtml += "<li>";
-            contentHtml += item;
-            contentHtml += "</li>";
+        content.forEach(function(item) {
+            contentHtml += `<li>${item}</li>`;
         });
         contentHtml += "</ul>";
+    }
+
+    // Kein Panoramax, kein Inhalt: Vorschaubild des Geräts aus Wikimedia Commons anzeigen
+    if (!contentHtml) {
+        const deviceKey = feature.get('playground');
+        if (deviceKey && deviceKey in objDevices && objDevices[deviceKey].image) {
+            const imgFile = objDevices[deviceKey].image.replace(/^File:/, '').replace(/ /g, '_');
+            const imgUrl = `https://commons.wikimedia.org/wiki/Special:FilePath/${imgFile}?width=320`;
+            contentHtml = `<img src="${imgUrl}" alt="${objDevices[deviceKey].name_de}"
+                style="width:310px; max-height:220px; object-fit:contain; display:block; margin:auto; border-radius:3px;">`;
+        }
     }
 
     return contentHtml;

@@ -3,11 +3,14 @@
 //---------------------------------------------------------------//
 
 import $ from 'jquery';
+import { Modal, Collapse } from 'bootstrap';
+import OpeningHours from 'opening_hours';
 import { getArea } from 'ol/sphere.js';
+import { transform } from 'ol/proj';
 import { Vector as VectorLayer } from 'ol/layer.js';
+import { Style, Stroke, Fill } from 'ol/style';
 import Vector from 'ol/source/Vector.js';
 import GeoJSON from 'ol/format/GeoJSON.js';
-import fetchJsonp from 'fetch-jsonp/build/fetch-jsonp.js';
 
 import Select from 'ol/interaction/Select.js';
 import { pointerMove } from 'ol/events/condition.js';
@@ -22,11 +25,64 @@ import { objDevices } from './objPlaygroundEquipment.js';
 import { objColors } from '../style/VectorStyles.js';
 
 import { geoServer, geoServerWorkspace } from './config.js';
+import { fetchPlaygroundEquipment, fetchNearbyPOIs } from './overpass.js';
+import { panoramaxViewerUrl, panoramaxThumbUrl } from './panoramax.js';
 
 export var sourceSelected; // globale Variable, in der der jeweils ausgewählte Spielplatz enthalten ist
 var lastSelectedFeature = null; // zuletzt angeklicktes OpenLayers-Feature (für Overpass-Nachfrage)
+var currentArea = null; // Fläche des zuletzt ausgewählten Spielplatzes (für Ausstattungsanzeige)
+var equipmentLoadGeneration = 0; // Zähler, um veraltete Overpass-Antworten zu verwerfen
+var nearbyLoadGeneration = 0;    // Zähler für Umfeld-POIs
+var panoramaxUuids = [];         // UUID-Liste für Modal-Navigation
+var panoramaxModalIndex = 0;     // aktuell angezeigtes Foto im Modal
 
 var targetZoom;
+var nearbyListFeatures = []; // für Klick-Handler der Nähe-Liste
+
+export function showNearbyPlaygrounds(lon, lat, label = 'diesem Ort') {
+    const features = dataPlaygrounds.getSource ? dataPlaygrounds.getSource().getFeatures() : [];
+    if (!features.length) return;
+
+    const withDist = features.map(f => {
+        const ext = f.getGeometry().getExtent();
+        const [fLon, fLat] = transform(
+            [(ext[0] + ext[2]) / 2, (ext[1] + ext[3]) / 2],
+            'EPSG:3857', 'EPSG:4326'
+        );
+        return { feature: f, dist: haversineDistance(lat, lon, fLat, fLon) };
+    });
+
+    withDist.sort((a, b) => a.dist - b.dist);
+    const nearest = withDist.slice(0, 5);
+    nearbyListFeatures = nearest.map(x => x.feature);
+
+    let html = `<div class="nearby-panel">
+        <span class="info-label">In der Nähe von ${label}</span>`;
+
+    for (let i = 0; i < nearest.length; i++) {
+        const { feature, dist } = nearest[i];
+        const attr = feature.getProperties();
+        const name = getPlaygroundTitle(attr) || 'Spielplatz';
+        html += `<div class="nearby-item" data-idx="${i}">
+            <span class="nearby-name">${name}</span>
+            <span class="nearby-dist">${formatDistance(dist)}</span>
+        </div>`;
+    }
+
+    html += '</div>';
+    $('#info-more').html(html);
+
+    $('#info-more').off('click.nearby').on('click.nearby', '.nearby-item', function() {
+        const feature = nearbyListFeatures[$(this).data('idx')];
+        const ext = feature.getGeometry().getExtent();
+        const center = [(ext[0] + ext[2]) / 2, (ext[1] + ext[3]) / 2];
+        const mapCenter = map.getView().getCenter();
+        const res = map.getView().getResolution();
+        const distPx = Math.hypot(center[0] - mapCenter[0], center[1] - mapCenter[1]) / res;
+        selectPlayground(center, distPx, false, feature);
+    });
+}
+
 export function selectPlayground(coord, distance, multiSelect, feature = null) {
     // GeoJSON der selektierten Spielplatzgeometrie erzeugen, um zu dessen Extent zu zoomen und dessen Attribute in der Infobox anzuzeigen
     // TODO multiSelect
@@ -98,10 +154,14 @@ function showSelection(coord, backupGeojson) {
         // Spielplatzgeometrie als Selektionsrahmen anzeigen
         showPlaygroundGeometry();
         // Spielgerätelayer anzeigen
-        addEquipmentLayer(expandExtent(sourceSelected.getExtent(), 20), `${geoServerWorkspace}:playground_equipment_polygon,${geoServerWorkspace}:playground_equipment_way`);
-        addEquipmentLayer(expandExtent(sourceSelected.getExtent(), 20), `${geoServerWorkspace}:playground_equipment_node`);
-        // Ausstattungs-Switch anschalten, da nach Selektion sets mindestens die Spielplatzausstattung sichtbar sein soll
-        $('#layer-switch-ausstattung').prop('checked', true);
+        loadEquipmentFromOverpass(expandExtent(sourceSelected.getExtent(), 20));
+        // Umfeld-POIs laden
+        const ext3857 = sourceSelected.getExtent();
+        const [playLon, playLat] = transform(
+            [(ext3857[0] + ext3857[2]) / 2, (ext3857[1] + ext3857[3]) / 2],
+            'EPSG:3857', 'EPSG:4326'
+        );
+        loadNearbyPOIs(playLat, playLon, 1000, geojson.features[0].properties['osm_id']);
         // Schattenlayer anzeigen, falls aktiviert
         if ($('#layer-switch-schattigkeit').prop('checked')) {
             addShadowLayer();
@@ -135,6 +195,7 @@ function getPlaygroundGeom(coord) {
 
     // Fläche aus der Polygongeometrie berechnen (EPSG:3857 → geodätische m²)
     props.area = Math.round(getArea(feature.getGeometry()));
+    currentArea = props.area;
 
     // Polygon-Geometrie aus dem bereits geladenen Feature verwenden (kein zweiter Overpass-Request)
     const olGeom = feature.getGeometry().clone().transform('EPSG:3857', 'EPSG:4326');
@@ -190,6 +251,381 @@ function addEquipmentLayer(extent, typename) {
     map.addInteraction(interaction);
     return layer;
 }
+
+// Spielgerätelayer per Overpass laden und anzeigen
+async function loadEquipmentFromOverpass(extent) {
+    const generation = ++equipmentLoadGeneration;
+    const osmId = lastSelectedFeature ? lastSelectedFeature.get('osm_id') : null;
+    let geojson;
+    try {
+        geojson = await fetchPlaygroundEquipment(extent, osmId);
+    } catch (e) {
+        console.warn('Spielgeräte konnten nicht von Overpass geladen werden:', e);
+        return;
+    }
+
+    // Veraltete Antwort verwerfen, wenn zwischenzeitlich ein neuerer Load gestartet wurde
+    if (generation !== equipmentLoadGeneration) return;
+
+    const format = new GeoJSON();
+    const projOpts = { dataProjection: 'EPSG:4326', featureProjection: 'EPSG:3857' };
+
+    const polyFeatures = geojson.features.filter(f => f.geometry.type !== 'Point');
+    const pointFeatures = geojson.features.filter(f => f.geometry.type === 'Point');
+
+    if (polyFeatures.length) {
+        const polyLayer = new VectorLayer({
+            title: 'Spielplatzausstattung',
+            type: 'equipment',
+            visible: true,
+            source: new Vector({
+                features: format.readFeatures({ type: 'FeatureCollection', features: polyFeatures }, projOpts)
+            }),
+            zIndex: 50,
+            style: styleFunctionWrapper('default', false)
+        });
+        map.addLayer(polyLayer);
+        map.addInteraction(new Select({
+            condition: pointerMove,
+            layers: [polyLayer],
+            style: styleFunctionWrapper('select', false)
+        }));
+    }
+
+    if (pointFeatures.length) {
+        const pointLayer = new VectorLayer({
+            title: 'Spielplatzausstattung',
+            type: 'equipment',
+            visible: true,
+            source: new Vector({
+                features: format.readFeatures({ type: 'FeatureCollection', features: pointFeatures }, projOpts)
+            }),
+            zIndex: 51,
+            style: styleFunctionWrapper('default', true)
+        });
+        map.addLayer(pointLayer);
+        map.addInteraction(new Select({
+            condition: pointerMove,
+            layers: [pointLayer],
+            style: styleFunctionWrapper('select', true)
+        }));
+    }
+
+    const attr = lastSelectedFeature ? lastSelectedFeature.getProperties() : {};
+    updateEquipmentPanel(geojson.features, attr);
+}
+
+// Ausstattungsinfo im Infofenster aus Overpass-Daten befüllen
+function updateEquipmentPanel(features, playgroundAttr = {}) {
+    // playground=yes ist ein generisches Tag ohne konkreten Gerätetyp — ignorieren
+    const deviceFeatures = features.filter(f => f.properties.playground && f.properties.playground !== 'yes');
+    const deviceCount = deviceFeatures.length;
+    const benchCount = features.filter(f => f.properties.amenity === 'bench').length;
+    const shelterCount = features.filter(f => f.properties.amenity === 'shelter').length;
+    const picnicCount = features.filter(f => f.properties.leisure === 'picnic_table').length;
+
+    let equipment_str = '<ul>';
+    equipment_str += deviceCount
+        ? `<li>${deviceCount} Spielgerät${deviceCount !== 1 ? 'e' : ''}</li>`
+        : '<li>noch keine Spielgeräte erfasst</li>';
+    if (benchCount) {
+        equipment_str += benchCount === 1 ? '<li>1 Sitzbank</li>' : `<li>${benchCount} Sitzbänke</li>`;
+    }
+    if (shelterCount) {
+        equipment_str += shelterCount === 1 ? '<li>1 Unterstand</li>' : `<li>${shelterCount} Unterstände</li>`;
+    }
+    if (picnicCount) {
+        equipment_str += picnicCount === 1 ? '<li>1 Picknicktisch</li>' : `<li>${picnicCount} Picknicktische</li>`;
+    }
+    equipment_str += '</ul>';
+    $('#info-equipment').html(equipment_str);
+
+    $('#info-device-note').html('');
+
+    // Einzelne Spielgeräte zählen und mit deutschen Namen auflisten
+    const deviceCounts = {};
+    for (const f of deviceFeatures) {
+        const key = f.properties.playground;
+        deviceCounts[key] = (deviceCounts[key] || 0) + 1;
+    }
+
+    let device_string = '<ul class="mb-0">';
+    for (const [key, count] of Object.entries(deviceCounts)) {
+        const name = objDevices[key]?.name_de ?? key;
+        const category = objDevices[key]?.category ?? 'fallback';
+        const color = objColors[category] ?? objColors['fallback'];
+        const countStr = count > 1 ? `${count}× ` : '';
+        device_string += `<li><span style="color:${color}">●</span> ${countStr}${name}</li>`;
+    }
+    device_string += '</ul>';
+
+    // Fallback: playground:<key>=<count|yes> Tags am Spielplatz-Polygon selbst auswerten,
+    // falls keine einzelnen Objekte per Overpass gefunden wurden
+    if (Object.keys(deviceCounts).length === 0) {
+        const fallbackCounts = {};
+        for (const [tag, val] of Object.entries(playgroundAttr)) {
+            if (!tag.startsWith('playground:')) continue;
+            const key = tag.replace('playground:', '');
+            const count = parseInt(val) || (val === 'yes' ? 1 : 0);
+            if (count > 0) fallbackCounts[key] = count;
+        }
+        if (Object.keys(fallbackCounts).length > 0) {
+            let fallback_string = '<ul class="mb-0">';
+            for (const [key, count] of Object.entries(fallbackCounts)) {
+                const name = objDevices[key]?.name_de ?? key;
+                const category = objDevices[key]?.category ?? 'fallback';
+                const color = objColors[category] ?? objColors['fallback'];
+                const countStr = count > 1 ? `${count}× ` : '';
+                fallback_string += `<li><span style="color:${color}">●</span> ${countStr}${name}</li>`;
+            }
+            fallback_string += '</ul>';
+            $('#info-device-list').html(fallback_string);
+            $('#info-device-note').html('<i>Geräte aus Spielplatz-Tags (keine einzelnen Objekte erfasst)</i>');
+            return;
+        }
+    }
+
+    $('#info-device-list').html(Object.keys(deviceCounts).length ? device_string : '');
+
+    // MapComplete-Link zum Hinzufügen von Spielgeräten
+    const extent = lastSelectedFeature ? lastSelectedFeature.getGeometry().getExtent() : null;
+    if (extent) {
+        const [lon, lat] = transform(
+            [(extent[0] + extent[2]) / 2, (extent[1] + extent[3]) / 2],
+            'EPSG:3857', 'EPSG:4326'
+        );
+        const mapcompleteUrl = `https://mapcomplete.org/playgrounds.html?z=19&lat=${lat.toFixed(7)}&lon=${lon.toFixed(7)}#new_point_dialog_0`;
+        $('#info-device-list').append(
+            `<div class="mt-1"><a href="${mapcompleteUrl}" target="_blank" rel="noopener" class="mc-add-link"><span class="bi bi-plus-circle"></span> Spielgerät hinzufügen</a></div>`
+        );
+    }
+}
+
+// Panoramax-Fotos aus OSM-Tags des Spielplatzes anzeigen
+// Tags: panoramax=<uuid>, panoramax:0=<uuid>, panoramax:1=<uuid>, …
+function showPanoramaxFromTags(attr) {
+    const uuids = [];
+    if (attr['panoramax']) uuids.push(attr['panoramax']);
+    for (let i = 0; i <= 9; i++) {
+        const val = attr[`panoramax:${i}`];
+        if (val) uuids.push(val);
+    }
+
+    const osmTypeMap = { W: 'way', R: 'relation', N: 'node' };
+    const osmType = osmTypeMap[attr['osm_type']] ?? 'way';
+    const osmId = attr['osm_id'];
+    const mapcompletePhotoUrl = `https://mapcomplete.org/playgrounds.html#${osmType}/${osmId}`;
+    const addPhotoLink = `<a href="${mapcompletePhotoUrl}" target="_blank" rel="noopener" class="mc-add-link"><span class="bi bi-camera"></span> Foto hinzufügen</a>`;
+
+    if (!uuids.length) {
+        $('#info-panoramax').html(`<small class="text-muted">Keine Fotos verknüpft.</small> ${addPhotoLink}`);
+        return;
+    }
+
+    // Inline-Viewer mit klickbarem Overlay für Vollbild
+    let html = `<div style="position:relative; cursor:pointer;" id="panoramax-preview" data-uuid="${uuids[0]}" title="Klicken zum Vergrößern">
+        <iframe id="panoramax-iframe"
+            src="${panoramaxViewerUrl(uuids[0])}"
+            style="width:100%; height:260px; border:none; border-radius:4px; pointer-events:none;"
+            allowfullscreen></iframe>
+        <div style="position:absolute; inset:0; z-index:1; border-radius:4px;"></div>
+        <span class="bi bi-fullscreen" style="position:absolute; bottom:8px; right:8px; z-index:2; background:rgba(255,255,255,0.8); border-radius:3px; padding:4px 5px; font-size:13px; pointer-events:none;"></span>
+    </div>`;
+
+    // Thumbnail-Leiste bei mehreren Fotos
+    if (uuids.length > 1) {
+        html += '<div class="d-flex gap-1 mt-1 flex-wrap">';
+        for (let i = 0; i < uuids.length; i++) {
+            const opacity = i === 0 ? '1' : '0.55';
+            html += `<img src="${panoramaxThumbUrl(uuids[i])}"
+                data-uuid="${uuids[i]}"
+                class="panoramax-thumb"
+                alt="Foto ${i + 1}"
+                style="height:52px; width:72px; border-radius:3px; cursor:pointer; object-fit:cover; opacity:${opacity};">`;
+        }
+        html += '</div>';
+    }
+
+    html += `<p class="mt-1 mb-0"><small class="text-muted">Fotos: <a href="https://panoramax.xyz" target="_blank" rel="noopener">Panoramax</a></small> ${addPhotoLink}</p>`;
+    $('#info-panoramax').html(html);
+
+    // Klick auf Vorschau öffnet Modal
+    $('#info-panoramax').off('click.panoramax-enlarge').on('click.panoramax-enlarge', '#panoramax-preview', function() {
+        const uuid = $(this).data('uuid');
+        panoramaxUuids = uuids;
+        panoramaxModalIndex = uuids.indexOf(uuid);
+        openPanoramaxModal(panoramaxModalIndex);
+    });
+
+    // Thumbnail-Klick wechselt Vorschau-UUID und iframe
+    $('#info-panoramax').off('click.panoramax').on('click.panoramax', '.panoramax-thumb', function() {
+        const uuid = $(this).data('uuid');
+        $('#panoramax-iframe').attr('src', panoramaxViewerUrl(uuid));
+        $('#panoramax-preview').data('uuid', uuid);
+        $('.panoramax-thumb').css('opacity', '0.55');
+        $(this).css('opacity', '1');
+    });
+}
+
+// Nahegelegene POIs laden und im Umfeld-Panel anzeigen
+async function loadNearbyPOIs(lat, lon, radiusM, osmId) {
+    const generation = ++nearbyLoadGeneration;
+    let pois;
+    try {
+        pois = await fetchNearbyPOIs(lat, lon, radiusM, osmId);
+    } catch (e) {
+        console.warn('Umfeld-Daten konnten nicht geladen werden:', e);
+        if (generation !== nearbyLoadGeneration) return;
+        $('#info-umfeld').html('<small class="text-muted"><i>Umfeld-Daten konnten nicht geladen werden.</i></small>');
+        return;
+    }
+    if (generation !== nearbyLoadGeneration) return;
+    updateUmfeldPanel(pois, lat, lon);
+}
+
+const POI_CATEGORIES = [
+    {
+        icon: '🚻', label: 'Toiletten',
+        match: t => t.amenity === 'toilets',
+        fallback: 'Öffentliche Toilette'
+    },
+    {
+        icon: '🚌', label: 'Bushaltestellen',
+        match: t => t.highway === 'bus_stop',
+        fallback: 'Bushaltestelle',
+        hint: (poi, playLat, playLon) => poi.tags.towards
+            ? `→ ${poi.tags.towards}`
+            : bearingToDir(bearingDeg(playLat, playLon, poi.lat, poi.lon))
+    },
+    {
+        icon: '🍦', label: 'Eis',
+        match: t => t.amenity === 'ice_cream' || (t.cuisine && t.cuisine.includes('ice_cream')),
+        fallback: 'Eisdiele'
+    },
+    {
+        icon: '🧴', label: 'Drogerie',
+        match: t => t.shop === 'chemist',
+        fallback: 'Drogerie'
+    },
+    {
+        icon: '🏥', label: 'Notaufnahme',
+        match: t => t.amenity === 'hospital' || t.emergency === 'yes' || (t.amenity === 'doctors' && t.emergency === 'yes'),
+        fallback: 'Krankenhaus'
+    }
+];
+
+function formatOpeningHours(ohStr) {
+    const fmt = t => t.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+    const today = d => d.toLocaleDateString('de-DE', { weekday: 'long' });
+
+    try {
+        const oh = new OpeningHours(ohStr, { address: { country_code: 'de' } });
+        const now = new Date();
+        const isOpen = oh.getState(now);
+        const nextChange = oh.getNextChange(now);
+
+        let statusHtml;
+        if (ohStr.trim() === '24/7') {
+            statusHtml = `<span style="color:#16a34a;">● Immer geöffnet</span>`;
+        } else if (isOpen) {
+            const until = nextChange ? ` bis ${fmt(nextChange)}` : '';
+            statusHtml = `<span style="color:#16a34a;">● Geöffnet${until}</span>`;
+        } else {
+            if (nextChange) {
+                const isToday = nextChange.toDateString() === now.toDateString();
+                const dayStr = isToday ? 'Heute' : today(nextChange);
+                statusHtml = `<span style="color:#dc2626;">● Geschlossen</span> · Öffnet ${dayStr} um ${fmt(nextChange)}`;
+            } else {
+                statusHtml = `<span style="color:#dc2626;">● Geschlossen</span>`;
+            }
+        }
+
+        return `<span class="info-label">Öffnungszeiten</span> ${statusHtml}`;
+    } catch {
+        // Fallback für unbekannte Formate
+        return `<span class="info-label">Öffnungszeiten</span> <code style="font-size:smaller;">${ohStr}</code>`;
+    }
+}
+
+function haversineDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371000;
+    const φ1 = lat1 * Math.PI / 180, φ2 = lat2 * Math.PI / 180;
+    const Δφ = (lat2 - lat1) * Math.PI / 180, Δλ = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(Δφ/2) ** 2 + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ/2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function formatDistance(m) {
+    return m < 1000 ? `${Math.round(m / 10) * 10} m` : `${(m / 1000).toFixed(1).replace('.', ',')} km`;
+}
+
+function bearingDeg(lat1, lon1, lat2, lon2) {
+    const φ1 = lat1 * Math.PI / 180, φ2 = lat2 * Math.PI / 180;
+    const Δλ = (lon2 - lon1) * Math.PI / 180;
+    const y = Math.sin(Δλ) * Math.cos(φ2);
+    const x = Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
+    return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+}
+
+function bearingToDir(deg) {
+    return ['N', 'NO', 'O', 'SO', 'S', 'SW', 'W', 'NW'][Math.round(deg / 45) % 8];
+}
+
+function updateUmfeldPanel(pois, playLat, playLon) {
+    const poisWithDist = pois.map(p => ({ ...p, dist: haversineDistance(playLat, playLon, p.lat, p.lon) }));
+
+    let html = '';
+    for (const cat of POI_CATEGORIES) {
+        const seen = new Set();
+        const matches = poisWithDist
+            .filter(p => cat.match(p.tags))
+            .sort((a, b) => a.dist - b.dist)
+            .filter(p => {
+                const key = (p.tags.name || cat.fallback).toLowerCase();
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+            })
+            .slice(0, 2);
+        if (!matches.length) continue;
+
+        html += `<div class="mb-2"><small class="text-muted fw-bold text-uppercase" style="font-size:0.7rem;">${cat.icon} ${cat.label}</small>`;
+        for (const poi of matches) {
+            const name = poi.tags.name || cat.fallback;
+            const hint = cat.hint ? `<span class="text-muted ms-1" style="font-size:0.7rem;">(${cat.hint(poi, playLat, playLon)})</span>` : '';
+            const routeUrl = `https://www.openstreetmap.org/directions?engine=fossgis_osrm_foot&route=${playLat},${playLon};${poi.lat},${poi.lon}`;
+            html += `<div class="d-flex justify-content-between align-items-baseline mt-1">
+                <span style="font-size:smaller;">${name}${hint}</span>
+                <a href="${routeUrl}" target="_blank" rel="noopener" class="text-muted ms-2 text-decoration-none" style="white-space:nowrap;font-size:smaller;">${formatDistance(poi.dist)} ↗</a>
+            </div>`;
+        }
+        html += '</div>';
+    }
+
+    $('#info-umfeld').html(html || '<small class="text-muted"><i>Keine nahegelegenen Einrichtungen gefunden.</i></small>');
+}
+
+// Panoramax-Modal mit einem bestimmten Foto-Index öffnen / aktualisieren
+function openPanoramaxModal(index) {
+    panoramaxModalIndex = ((index % panoramaxUuids.length) + panoramaxUuids.length) % panoramaxUuids.length;
+    const uuid = panoramaxUuids[panoramaxModalIndex];
+    $('#panoramax-modal-iframe').attr('src', panoramaxViewerUrl(uuid));
+    $('#panoramax-modal-counter').text(
+        panoramaxUuids.length > 1 ? `${panoramaxModalIndex + 1} / ${panoramaxUuids.length}` : ''
+    );
+    $('#panoramax-modal-prev').prop('disabled', false);
+    $('#panoramax-modal-next').prop('disabled', false);
+    Modal.getOrCreateInstance('#modalPanoramax').show();
+}
+
+$('#panoramax-modal-prev').on('click', () => openPanoramaxModal(panoramaxModalIndex - 1));
+$('#panoramax-modal-next').on('click', () => openPanoramaxModal(panoramaxModalIndex + 1));
+
+$(document).on('keydown', function(e) {
+    if (!$('#modalPanoramax').hasClass('show')) return;
+    if (e.key === 'ArrowLeft')  openPanoramaxModal(panoramaxModalIndex - 1);
+    if (e.key === 'ArrowRight') openPanoramaxModal(panoramaxModalIndex + 1);
+});
 
 // das bei der Interaktion übergebene Feature mit an die Style-Funktion übergeben
 var styleFunctionWrapper = function(mode, isPoint) {
@@ -266,10 +702,12 @@ export function getSelectionExtent(padding) {
 // angeklickten Spielplatz in der Karte sichtbar machen
 var layerSelectedPlayground = null;
 function showPlaygroundGeometry() {
-    var style = {
-        'stroke-color': '#ff0000',
-        'stroke-width': 6
-    }
+    const style = [
+        new Style({ stroke: new Stroke({ color: 'rgba(237, 112, 20, 0.15)', width: 24 }) }),
+        new Style({ stroke: new Stroke({ color: 'rgba(237, 112, 20, 0.35)', width: 14 }) }),
+        new Style({ stroke: new Stroke({ color: 'rgba(237, 112, 20, 0.85)', width: 3 }) }),
+        new Style({ fill: new Fill({ color: 'rgba(237, 112, 20, 0.1)' }) }),
+    ];
 
     layerSelectedPlayground = new VectorLayer({
         title: 'Ausgewählter Spielplatz',
@@ -277,8 +715,6 @@ function showPlaygroundGeometry() {
         visible: true,
         source: sourceSelected,
         zIndex: 40,
-
-        // Styling der Spielplatzauswahl
         style: style
     });
     map.addLayer(layerSelectedPlayground);
@@ -300,9 +736,8 @@ function showPlaygroundInfo(json) {
 
     // Attribut-Elemente sichtbar machen und zu Beginn immer Ausstattung aufklappen
     showAttributes(true);
-    if ($('.collapse.show').length === 0) {
-        $("#accordion-ausstattung").collapse('show');
-    }
+    Collapse.getOrCreateInstance(document.getElementById('accordion-panoramax')).show();
+    Collapse.getOrCreateInstance(document.getElementById('accordion-ausstattung')).show();
 
     // Spielplatzname (aus verschiedenen Attributen zusammengesetzt)
     var playgroundName = getPlaygroundTitle(attr);
@@ -344,9 +779,9 @@ function showPlaygroundInfo(json) {
     var area = attr["area"];
     var playgroundArea;
     if (area) {
-        playgroundArea = `Größe: ${Math.round(area / 10) * 10}m²`;
+        playgroundArea = `<span class="info-label">Größe</span> ${Math.round(area / 10) * 10}m²`;
     } else {
-        playgroundArea = 'Größe: unbekannt';
+        playgroundArea = '<span class="info-label">Größe</span> unbekannt';
     }
     $("#info-area").html(playgroundArea);
 
@@ -371,212 +806,65 @@ function showPlaygroundInfo(json) {
     if (access in accessDict) {
         playgroundAccess = accessDict[access];
     }
-    playgroundAccess = `Zugänglichkeit: ${playgroundAccess}`;
+    playgroundAccess = `<span class="info-label">Zugänglichkeit</span> ${playgroundAccess}`;
     if (priv in privateDict) {
-        playgroundAccess = `Zugänglichkeit: ${privateDict[priv]}`;
+        playgroundAccess = `<span class="info-label">Zugänglichkeit</span> ${privateDict[priv]}`;
     }
     $("#info-access").html(playgroundAccess);
 
-    // Anzahl Spielgeräte
-    var device_count = attr["device_count"];
-    var equipment_str = "<ul>";
-    if (device_count) {
-        switch (device_count) {
-            case 1:
-                equipment_str += "<li>1 Spielgerät</li>";
-                break;
-            default:
-                equipment_str += `<li>${device_count} Spielgeräte</li>`;
-                break;
-        }
+    // Altersbeschränkung
+    var minAge = attr["min_age"];
+    var maxAge = attr["max_age"];
+    if (minAge || maxAge) {
+        var ageStr = minAge && maxAge ? `${minAge}–${maxAge} Jahre`
+                   : minAge ? `ab ${minAge} Jahren`
+                   : `bis ${maxAge} Jahre`;
+        $("#info-age").html(`<span class="info-label">Alter</span> ${ageStr}`).show();
     } else {
-        equipment_str += "<li>noch keine Spielgeräte erfasst</li>";
+        $("#info-age").hide();
     }
 
-    // Anzahl Sitzbänke
-    var bench_count = attr["bench_count"];
-    if (bench_count) {
-        switch (bench_count) {
-            case 1:
-                equipment_str += "<li>1 Sitzbank</li>";
-                break;
-            default:
-                equipment_str += `<li>${bench_count} Sitzbänke</li>`;
-                break;
-        }
+    // Betreiber
+    var operator = attr["operator"];
+    var operatorWikidata = attr["operator:wikidata"];
+    if (operator) {
+        var operatorHtml = operatorWikidata
+            ? `<span class="info-label">Betreiber</span> <a href="https://www.wikidata.org/wiki/${operatorWikidata}" target="_blank" rel="noopener" class="link-secondary">${operator}</a>`
+            : `<span class="info-label">Betreiber</span> ${operator}`;
+        $("#info-operator").html(operatorHtml).show();
     } else {
-        equipment_str += "<li>keine Sitzbänke <small>(oder noch keine erfasst)</small></li>";
+        $("#info-operator").hide();
     }
 
-    // Anzahl Unterstände
-    var shelter_count = attr["shelter_count"];
-    if (shelter_count) {
-        switch (shelter_count) {
-            case 1:
-                equipment_str += "<li>1 Unterstand</li>";
-                break;
-            default:
-                equipment_str += `<li>${shelter_count} Unterstände</li>`;
-                break;
-        }
-    }
-
-    // Anzahl Picknicktische
-    var picnic_count = attr["picnic_count"];
-    if (picnic_count) {
-        switch (picnic_count) {
-            case 1:
-                equipment_str += "<li>1 Picknicktisch</li>";
-                break;
-            default:
-                equipment_str += `<li>${picnic_count} Picknicktische</li>`;
-                break;
-        }
-    }
-
-    // Anzahl Tischtennisplatten
-    var table_tennis_count = attr["table_tennis_count"];
-    if (table_tennis_count) {
-        switch (table_tennis_count) {
-            case 1:
-                equipment_str += "<li>1 Tischtennisplatte</li>";
-                break;
-            default:
-                equipment_str += `<li>${table_tennis_count} Tischtennisplatten</li>`;
-                break;
-        }
-    }
-    
-    // mit Bolzplatz
-    var has_soccer = attr["has_soccer"];
-    if (has_soccer) {
-        equipment_str += "<li>mit Bolzplatz</li>";
-    }
-
-    // mit Basketballkorb
-    var has_basketball = attr["has_basketball"];
-    if (has_basketball) {
-        equipment_str += "<li>mit Basketballkorb</li>";
-    }
-    
-    // Hinweis bei geringer Spielgerätedichte
-    var device_note_str = "";
-    if (device_count) {
-        if (area / device_count > 500) {
-            device_note_str = "<i>Die Anzahl der Spielgeräte ist recht gering im Vergleich zur Spielplatzgröße. Möglicherweise sind auf diesem Spielplatz noch nicht alle Spielgeräte erfasst.</i>";
-        }     
-    }
-
-    equipment_str += "</ul>";
-    $("#info-equipment").html(equipment_str);
-    $("#info-device-note").html(device_note_str);
-
-    // Bei Spielplätzen mit mindestens 8 Spielgeräten: Erstelle Liste der häufigsten Gerätegruppen
-    if (device_count >= 8) {
-        $("#info-device-list-title").text("Häufigste Spielgerätearten:");
-        var device_list = parseDevices(attr["playground_devices"]);
-        var objDeviceGroups = {
-            stationary: 0,
-            structure_parts: 0,
-            swing: 0,
-            balance: 0,
-            climbing: 0,
-            rotating: 0,
-            sand: 0,
-            water: 0,
-            activity: 0,
-            motion: 0
-        }
-        for (const device of device_list) {
-            if (device in objDevices) {
-                var category = objDevices[device]['category'];
-                if (category in objDeviceGroups) {
-                    objDeviceGroups[category]++;
-                }
-            }
-        }
-        const entries = Object.entries(objDeviceGroups);
-        entries.sort(([, value1], [, value2]) => value2 - value1);
-        const topThree = entries.slice(0, 3);
-
-        var objDeviceGroupsDict = {
-            stationary: "Klassische Spielgeräte",
-            structure_parts: "Spielstruktur-Elemente",
-            swing: "Schaukeln",
-            balance: "Balancier-Elemente",
-            climbing: "Kletter-Elemente",
-            rotating: "Dreh- und Rotationsgeräte",
-            sand: "Sandspiel-Elemente",
-            water: "Wasserspiel-Elemente",
-            activity: "Turn-Elemente",
-            motion: "Bewegungs-Elemente"
-        }
-        var device_string = "";
-        for (const i in topThree) {
-            var category = topThree[i][0];
-            var color = objColors["fallback"];
-            if (category in objColors) {
-                color = objColors[category];
-            }
-            device_string += '<p class="m-0 p-0">';
-            device_string += `<span style="color: ${color}; font-size: 30px; line-height: 15px; vertical-align: sub;">●</span> `
-            device_string += objDeviceGroupsDict[topThree[i][0]];
-            device_string += `  <span class="badge rounded-pill text-bg-primary">${topThree[i][1]}x</span>`
-            device_string += "</p>";
-        }
-        $("#info-device-list").html(device_string);
+    // Öffnungszeiten
+    var openingHours = attr["opening_hours"];
+    if (openingHours) {
+        $("#info-opening-hours").html(formatOpeningHours(openingHours)).show();
     } else {
-        $("#info-device-list-title").text("");
-        $("#info-device-list").html("");
+        $("#info-opening-hours").hide();
     }
 
-    // Spielplatzfoto(s)
-    var wikimedia_commons = attr["wikimedia_commons"];
-    var image = attr["image"];
-    var imageURL = []; // Array, um Foto-URL's zu speichern
-    var apiCall = false;
-
-    for (const link of [wikimedia_commons, image]) {
-        if (link) {
-            if (link.match(/^File:.*/)) {
-                // Link beginnt mit "File:" -> Bild-URL erstellen
-                var url = `https://commons.wikimedia.org/wiki/Special:FilePath/${link.replace(/ /g, "_")}?width=350&height=350`;
-                imageURL.push(url);
-            } else if (link.match(/.*commons\.wikimedia\.org\/wiki\/File:.*/)) {
-                // Link zu einer Wikimedia-File-Ressource -> in Bild-URL umwandeln
-                var file = link.split("commons.wikimedia.org/wiki/")[1];
-                var url = `https://commons.wikimedia.org/wiki/Special:FilePath/${file.replace(/ /g, "_")}?width=350&height=350`;
-                imageURL.push(url);
-            } else if (link.match(/^Category:.*/)) {
-                // Link beginnt mit "Category:" -> Wikimedia-Category-URL erstellen
-                // und einzelne Dateien in dieser Kategorie über Wikimedia-API abfragen
-                // API-Doku: https://www.mediawiki.org/wiki/API:Categorymembers
-                var url = `https://commons.wikimedia.org/w/api.php?action=query&list=categorymembers&cmtitle=${link}&cmprop=title&cmlimit=50&cmtype=file&format=json`;
-                apiCall = true;
-
-                fetchJsonp(url)
-                .then((response) => response.json())
-                .then((json) => {
-                    // Wikimedia-API gibt ein json-Objekt mit den Titeln der enthaltenen Dateien zurück -> Bilder heraussuchen und zum Bilder-Array hinzufügen
-                    for (var i = 0; i < json.query.categorymembers.length; i++) {
-                        var file = json.query.categorymembers[i].title;
-                        var fileUrl = `https://commons.wikimedia.org/wiki/Special:FilePath/${file.replace(/ /g, "_")}?width=350&height=350`;
-                        imageURL.push(fileUrl);
-                    }
-                    return imageURL;
-                })
-                .then(() => {
-                    // Sobald alle Daten angekommen sind, die Bildergalerie erstellen
-                    showGalery(imageURL)
-                });
-            } else {
-                imageURL.push(link);
-            }
-        }
+    // Kontakt (E-Mail und Telefon)
+    var email = attr["contact:email"] || attr["email"];
+    var phone = attr["contact:phone"] || attr["phone"];
+    var contactParts = [];
+    if (phone) contactParts.push(`<a href="tel:${phone}" class="link-secondary">${phone}</a>`);
+    if (email) contactParts.push(`<a href="mailto:${email}" class="link-secondary">${email}</a>`);
+    if (contactParts.length > 0) {
+        $("#info-contact").html(contactParts.join(' · ')).show();
+    } else {
+        $("#info-contact").hide();
     }
-    if (!apiCall) {
-        showGalery(imageURL);
-    }
+
+    // Spielgeräte: werden async per Overpass geladen (updateEquipmentPanel befüllt das nach dem Laden)
+    $("#info-equipment").html('<ul><li><i>Wird geladen …</i></li></ul>');
+    $("#info-device-note").html('');
+    $("#info-device-list").html('');
+    // Umfeld: wird async per Overpass geladen
+    $("#info-umfeld").html('<small class="text-muted"><i>Wird geladen …</i></small>');
+
+    // Straßenfotos aus Panoramax-Tags des OSM-Objekts
+    showPanoramaxFromTags(attr);
 
     // Schattigkeit
     fillShadowMatrix(attr);
@@ -721,11 +1009,17 @@ function showAttributes(visibility) {
         // Attribut-Elemente einblenden
         $("#info-base").show();
         $("#info-accordion").show();
+
+        // Bottom sheet auf mobil hochfahren
+        $("#info").addClass("panel-open");
     } else {
         $("#info-more").show();
 
         $("#info-base").hide();
         $("#info-accordion").hide();
+
+        // Bottom sheet auf mobil wieder einfahren
+        $("#info").removeClass("panel-open");
     
         // Bildergalerie leeren und ausblenden
         $('#info-galery-items').empty();
@@ -736,14 +1030,6 @@ function showAttributes(visibility) {
 }
 
 // Layer über Switch an-/abwählen
-$('#layer-switch-ausstattung').on('change', function() {
-    if ($(this).is(':checked')) {
-        addEquipmentLayer(expandExtent(sourceSelected.getExtent(), 20), `${geoServerWorkspace}:playground_equipment_polygon,${geoServerWorkspace}:playground_equipment_way`);
-        addEquipmentLayer(expandExtent(sourceSelected.getExtent(), 20), `${geoServerWorkspace}:playground_equipment_node`);
-    } else {
-        removeLayer('equipment');
-    }
-});
 
 $('#layer-switch-schattigkeit').on('change', function() {
     if ($(this).is(':checked')) {

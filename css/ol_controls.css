@@ -1,17 +1,54 @@
-/* Position der OpenLayer-Controls der Hauptkarte anpassen, damit sie nicht unter Navbar und Fußleiste liegen */
+/* OpenLayers controls: repositioned for full-screen map layout (no navbar/footer) */
 
+/* Zoom controls — right side, above FABs (2 buttons × 54px + gap + bottom offset) */
 div#map div.ol-zoom {
-    top: 70px;
+    top: auto;
+    bottom: 140px;
+    right: 14px;
+    left: auto;
 }
 
-div#map div.ol-scale-line {
-    bottom: 48px;
+div#map div.ol-zoom .ol-zoom-in,
+div#map div.ol-zoom .ol-zoom-out {
+    width: 34px;
+    height: 34px;
+    font-size: 20px;
+    line-height: 34px;
+    background: white;
+    color: #374151;
+    border-radius: 8px;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.15);
+    border: none;
+    margin-bottom: 4px;
+    display: block;
 }
 
+div#map div.ol-zoom .ol-zoom-in:hover,
+div#map div.ol-zoom .ol-zoom-out:hover {
+    background: #f9fafb;
+}
+
+/* Scale and attribution — bottom left, above mouse position */
+div#map div.ol-scale-line,
 div#map div.ol-scale-bar {
-    bottom: 48px;
+    bottom: 52px;
+    left: 14px;
 }
 
 div#map div.ol-attribution {
-    bottom: 48px;
+    bottom: 14px;
+    right: auto;
+    left: 14px;
+}
+
+@media (max-width: 768px) {
+    div#map div.ol-zoom {
+        display: none; /* use pinch-to-zoom on mobile */
+    }
+
+    div#map div.ol-scale-line,
+    div#map div.ol-scale-bar,
+    div#map div.ol-attribution {
+        bottom: 52px;
+    }
 }

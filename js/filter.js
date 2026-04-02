@@ -4,7 +4,6 @@
 
 import $ from 'jquery';
 import { dataPlaygrounds, dataIssues, dataFilteredEquipment } from './map.js';
-import { objDevices } from './objPlaygroundEquipment.js';
 import { showNotification } from './map.js';
 import { getSliderMonth, getValidMonth, getSliderHour } from './shadow.js';
 
@@ -58,7 +57,10 @@ function updateFilter(layer) {
 
 // Spielplatzfilter
 $('#filterPrivate').on('change', function()     { (!$(this).is(':checked')) ? removeFilter("playgrounds", "access")       : addFilter("playgrounds", "access", "access = 'yes' OR access IS NULL"); });
-$('#filterArea').on('change', function()        { (!$(this).is(':checked')) ? removeFilter("playgrounds", "area")         : addFilter("playgrounds", "area", "area_class > 0"); });
+// TODO (GeoServer): filterArea und area_class-Klassifizierung (Mini/Klein/Groß/Riesen-Spielplatz) benötigen
+// vorberechnete area_class-Attribute aus einem GeoServer sowie das zugehörige SLD-Styling (style/playgrounds.sld).
+// UI-Element (#filterArea) und Legende wurden bereits entfernt. Wieder aktivieren, sobald ein GeoServer angebunden wird.
+// $('#filterArea').on('change', function() { (!$(this).is(':checked')) ? removeFilter("playgrounds", "area") : addFilter("playgrounds", "area", "area_class > 0"); });
 $('#filterWater').on('change', function()       { (!$(this).is(':checked')) ? removeFilter("playgrounds", "water")        : addFilter("playgrounds", "water", "is_water = true"); });
 $('#filterShadow').on('change', function()      { (!$(this).is(':checked')) ? removeFilter("playgrounds", "shadow")       : addFilter("playgrounds", "shadow", `shadow_0${getValidMonth(getSliderMonth())}_${getFixedSliderHour(getSliderHour())} >= 50`); });
 $('#filterBaby').on('change', function()        { (!$(this).is(':checked')) ? removeFilter("playgrounds", "baby")         : addFilter("playgrounds", "baby", "for_baby = true"); });
@@ -75,109 +77,6 @@ function getFixedSliderHour(hour) {
     return (hour < 10) ? `0${hour}` : hour;
 }
 
-// Spielgerätefinder
-// TODO Auswahldialog mit Mehrfachauswahl, Titel und Bildchen für jedes Spielgerät
-
-// Spielgeräteauswahl füllen
-var selectDevices = $("#select-device")[0];
-for (const [entry, attributes] of Object.entries(objDevices)) {
-    if (attributes["filterable"]) {
-        var option = document.createElement("option");
-        option.text = attributes["name_de"];
-        option.value = entry;
-        selectDevices.add(option);
-        if (!selectDevices.value) {
-            selectDevices.value = option.text;
-        }
-    }
-}
-
-// Spielgerätefinder (de)aktivieren (Layer ein- oder ausblenden)
-var cqlFilterPlaygroundDevice = {};
-$('#show-filtered-equipment').on('change', function() {
-    if ($(this).is(':checked')) {
-        updateEquipmentFilterOptions();
-        updateFilter("filteredEquipment");
-        dataFilteredEquipment.setVisible(true);
-    } else {
-        dataFilteredEquipment.setVisible(false);
-    }
-});
-
-// Spielgerätefilter an Auswahl anpassen
-$("#select-device").on("change", function() {
-    $('#show-filtered-equipment').prop('checked', true).trigger('change'); // Wenn ein Spielgerät ausgewählt wird, davon ausgehen, dass man es auch anzeigen möchte (Toggle-Button aktivieren)
-    var device = this.value;
-    if (Object.keys(objDevices).includes(device)) {
-        var filter_attr = [];
-        if (objDevices[device]["filter_attr"]) {
-            filter_attr = objDevices[device]["filter_attr"];
-        }
-        $('#filter-length').hide();
-        $('#filter-height').hide();
-        for (const attr of filter_attr) {
-            var element = `#filter-${attr}`;
-            $(element).show();
-        }
-    } else {
-        $('#filter-length').hide();
-        $('#filter-height').hide();
-    }
-    updateEquipmentFilterOptions();
-});
-
-$("#filter-length-checkbox").on("change", function() {
-    if ($(this).is(':checked')) {
-        $('#filter-length-operator').prop('disabled', false);
-        $('#filter-length-value').prop('disabled', false);
-    } else {
-        $('#filter-length-operator').prop('disabled', true);
-        $('#filter-length-value').prop('disabled', true);
-    }
-    updateEquipmentFilterOptions();
-});
-$("#filter-length-operator").on("change", function() { updateEquipmentFilterOptions(); });
-$("#filter-length-value").on("change", function() { updateEquipmentFilterOptions(); });
-$("#filter-height-checkbox").on("change", function() {
-    if ($(this).is(':checked')) {
-        $('#filter-height-operator').prop('disabled', false);
-        $('#filter-height-value').prop('disabled', false);
-    } else {
-        $('#filter-height-operator').prop('disabled', true);
-        $('#filter-height-value').prop('disabled', true);
-    }
-    updateEquipmentFilterOptions();
-});
-$("#filter-height-operator").on("change", function() { updateEquipmentFilterOptions(); });
-$("#filter-height-value").on("change", function() { updateEquipmentFilterOptions(); });
-
-function updateEquipmentFilterOptions() {
-    var device = $("#select-device").val();
-    var filter_str = `playground = '${device}'`
-    var length_checked = $('#filter-length-checkbox').is(':checked');
-    var length_visible = $('#filter-length-checkbox').is(':visible');
-    var height_checked = $('#filter-height-checkbox').is(':checked');
-    var height_visible = $('#filter-height-checkbox').is(':visible');
-    if (length_checked && length_visible) {
-        var operator = $("#filter-length-operator").val();
-        var value = $("#filter-length-value").val();
-        if (!isNaN(parseFloat(value))) {
-            filter_str += ` AND length ${operator} ${value}`;
-        } else {
-            showNotification("Eingegebene Länge ist ungültig!");
-        }
-    }
-    if (height_checked && height_visible) {
-        var operator = $("#filter-height-operator").val();
-        var value = $("#filter-height-value").val();
-        if (!isNaN(parseFloat(value))) {
-            filter_str += ` AND height ${operator} ${value}`;
-        } else {
-            showNotification("Eingegebene Höhe ist ungültig!");
-        }
-    }
-    setFilter("filteredEquipment", device, filter_str);
-}
 
 // Datenprobleme anzeigen
 $('#show-map-issues').on('change', function() {

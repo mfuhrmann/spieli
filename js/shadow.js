@@ -228,7 +228,10 @@ function getSunParam(day, hour) {
 var shadowSource;
 
 // Schattenlayer anzeigen
-// TODO: Vorbild "Erfrischungskarte": https://erfrischungskarte.odis-berlin.de/ - z.B. hellere Hintergrundfarbe mittags, etwas dunkler Morgens und Abends
+// TODO (GeoServer): addShadowLayer und fillShadowMatrix sind aktuell deaktiviert, da beide Funktionen
+// vorberechnete Schattendaten aus einem GeoServer benötigen (WMS-Raster + shadow_MM_HH-Attribute pro Spielplatz).
+// Sobald ein GeoServer angebunden wird, kann die Schattigkeit-Sektion im Info-Panel wieder aktiviert werden.
+// Vorbild: https://erfrischungskarte.odis-berlin.de/
 export function addShadowLayer() {
     // Layer zur Karte hinzufügen (falls es noch keinen gibt)
     var shadowLayers = map.getLayers().getArray().filter(layer => (layer.getProperties()["type"] == 'shadow'));

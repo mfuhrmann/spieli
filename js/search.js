@@ -8,6 +8,7 @@ import map from './map.js';
 import { mapExtent } from './map.js';
 import { showNotification } from './map.js';
 import { pulse } from './pulse.js';
+import { showNearbyPlaygrounds } from './selectPlayground.js';
 
 // Suchanfragen starten
 $('#inputSearch').on('keypress', (e) => {
@@ -52,6 +53,10 @@ export async function searchLocation(query) {
             }
             notification += ` (${coord_4326}).`;
             showNotification(notification);
+
+            // Spielplätze in der Nähe des Suchergebnisses anzeigen
+            const label = addr_suburb || result.address.city || query;
+            showNearbyPlaygrounds(parseFloat(result.lon), parseFloat(result.lat), `„${label}"`);
         } else {
             showNotification("Kein Suchergebnis gefunden!");
         }

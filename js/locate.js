@@ -12,6 +12,8 @@ import { Vector as VectorSource } from 'ol/source.js';
 import { Vector as VectorLayer } from 'ol/layer.js';
 
 import map from './map.js';
+import { showNearbyPlaygrounds } from './selectPlayground.js';
+import { transform } from 'ol/proj';
 
 const btnLocator = $('#btn-location')[0];
 var btnLocatorActive = false;
@@ -80,6 +82,10 @@ geolocation.on('change:position', function () {
     const coordinates = geolocation.getPosition();
     positionFeature.setGeometry(coordinates ? new Point(coordinates) : null);
     map.getView().animate({ center: coordinates });
+    if (coordinates) {
+        const [lon, lat] = transform(coordinates, 'EPSG:3857', 'EPSG:4326');
+        showNearbyPlaygrounds(lon, lat, 'deinem Standort');
+    }
 });
 
 const locatorLayer = new VectorLayer({
