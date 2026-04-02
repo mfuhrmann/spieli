@@ -14,7 +14,7 @@ import { fetchRegionInfo } from './region.js';
 import { version } from '../package.json';
 
 const projectAuthorOsmUrl = 'https://www.openstreetmap.org/user/Supaplex030/';
-const projectRepoUrl = null; // TODO: set when moved to Codeberg
+const projectRepoUrl = 'https://github.com/mfuhrmann/spielplatzkarte';
 
 const DEFAULT_PLAYGROUND_WIKI_URL = 'https://wiki.openstreetmap.org/wiki/DE:Tag:leisure%3Dplayground';
 
