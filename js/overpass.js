@@ -5,7 +5,11 @@
 import { transformExtent } from 'ol/proj';
 import { osmRelationId } from './config.js';
 
-const OVERPASS_API = 'https://overpass-api.de/api/interpreter';
+const OVERPASS_MIRRORS = [
+    'https://overpass-api.de/api/interpreter',
+    'https://overpass.private.coffee/api/interpreter',
+    'https://overpass.kumi.systems/api/interpreter',
+];
 const PLAYGROUND_CACHE_TTL_MS = 24 * 60 * 60 * 1000;       // 24 Stunden
 const EQUIPMENT_CACHE_TTL_MS  =  7 * 24 * 60 * 60 * 1000;  // 7 Tage
 const NEARBY_CACHE_TTL_MS     = 24 * 60 * 60 * 1000;       // 24 Stunden
@@ -75,6 +79,7 @@ export async function fetchPlaygroundEquipment(extentEPSG3857, osmId = null) {
   node[leisure=picnic_table](${bboxStr});
   node[leisure=pitch](${bboxStr});
   way[leisure=pitch](${bboxStr});
+  node[leisure=fitness_station](${bboxStr});
 );
 out body geom;`;
     let data;
@@ -161,18 +166,22 @@ out body;`;
 }
 
 async function overpassPost(query, retries = 3, delayMs = 5000) {
-    for (let attempt = 1; attempt <= retries; attempt++) {
-        const response = await fetch(OVERPASS_API, {
-            method: 'POST',
-            body: 'data=' + encodeURIComponent(query)
-        });
-        if (response.ok) return response.json();
-        if (response.status === 429 && attempt < retries) {
-            await new Promise(resolve => setTimeout(resolve, delayMs * attempt));
-            continue;
+    for (const api of OVERPASS_MIRRORS) {
+        for (let attempt = 1; attempt <= retries; attempt++) {
+            const response = await fetch(api, {
+                method: 'POST',
+                body: 'data=' + encodeURIComponent(query)
+            });
+            if (response.ok) return response.json();
+            if (response.status === 429 && attempt < retries) {
+                await new Promise(resolve => setTimeout(resolve, delayMs * attempt));
+                continue;
+            }
+            if (response.status === 504) break; // try next mirror
+            throw new Error(`Overpass API error: ${response.status}`);
         }
-        throw new Error(`Overpass API error: ${response.status}`);
     }
+    throw new Error('Overpass API error: 504 on all mirrors');
 }
 
 // Cache-Hilfsfunktionen

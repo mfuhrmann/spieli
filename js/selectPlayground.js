@@ -338,6 +338,7 @@ function updateEquipmentPanel(features, playgroundAttr = {}) {
     const benchCount = features.filter(f => f.properties.amenity === 'bench').length;
     const shelterCount = features.filter(f => f.properties.amenity === 'shelter').length;
     const picnicCount = features.filter(f => f.properties.leisure === 'picnic_table').length;
+    const fitnessCount = features.filter(f => f.properties.leisure === 'fitness_station').length;
     const tableTennisCount = features.filter(f => f.properties.leisure === 'pitch' && f.properties.sport === 'table_tennis').length;
     const soccerCount = features.filter(f => f.properties.leisure === 'pitch' && f.properties.sport === 'soccer').length;
     const basketballCount = features.filter(f => f.properties.leisure === 'pitch' && f.properties.sport === 'basketball').length;
@@ -347,6 +348,9 @@ function updateEquipmentPanel(features, playgroundAttr = {}) {
     equipment_str += deviceCount
         ? `<li>${deviceCount} Spielgerät${deviceCount !== 1 ? 'e' : ''}</li>`
         : '<li>noch keine Spielgeräte erfasst</li>';
+    if (fitnessCount) {
+        equipment_str += fitnessCount === 1 ? '<li>1 Fitnessgerät</li>' : `<li>${fitnessCount} Fitnessgeräte</li>`;
+    }
     if (tableTennisCount) {
         equipment_str += tableTennisCount === 1 ? '<li>1 Tischtennisplatte</li>' : `<li>${tableTennisCount} Tischtennisplatten</li>`;
     }
