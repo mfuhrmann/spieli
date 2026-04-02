@@ -65,6 +65,15 @@ ul {
     opacity: 0.85;
 }
 
+.search-version {
+    font-size: 10px;
+    color: #9ca3af;
+    flex-shrink: 0;
+    margin-left: -4px;
+    align-self: flex-end;
+    margin-bottom: 3px;
+}
+
 .search-icon {
     color: #9ca3af;
     font-size: 15px;

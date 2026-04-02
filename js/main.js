@@ -11,6 +11,7 @@ import { showLocation, hideLocation } from './locate.js';
 import { searchLocation } from './search.js';
 import { osmRelationId, regionPlaygroundWikiUrl, regionChatUrl } from './config.js';
 import { fetchRegionInfo } from './region.js';
+import { version } from '../package.json';
 
 const projectAuthorOsmUrl = 'https://www.openstreetmap.org/user/Supaplex030/';
 const projectRepoUrl = null; // TODO: set when moved to Codeberg
@@ -31,6 +32,7 @@ const DEFAULT_PLAYGROUND_WIKI_URL = 'https://wiki.openstreetmap.org/wiki/DE:Tag:
     const appTitle = `${region.name}er Spielplatzkarte`;
     document.title = appTitle;
     $('.navbar-brand b').text(appTitle);
+    $('#app-version').text(`v${version}`);
 
     buildDatenErgaenzenModal(region.name);
     buildUeberModal();
@@ -89,6 +91,8 @@ function buildUeberModal() {
         ${l('Quellcode')}
         <p>Das Projekt ist OpenSource und <a href="${projectRepoUrl}" class="link-secondary" target="_blank" rel="noopener">öffentlich verfügbar</a>.</p>`;
     }
+
+    html += `<p class="mt-3 mb-0" style="font-size:11px; color:#9ca3af;">Version ${version}</p>`;
 
     $('#modalUeberDasProjekt .modal-body').html(html);
 }
