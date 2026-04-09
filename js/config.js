@@ -1,14 +1,24 @@
+// Configuration is injected at runtime via window.APP_CONFIG (set by public/config.js).
+// In Docker, docker-entrypoint.sh overwrites public/config.js from environment variables.
+// Fallback values are used for local development without a container.
+const c = (typeof window !== 'undefined' && window.APP_CONFIG) || {};
+
 // OSM relation ID of the region to display.
 // Find it at https://www.openstreetmap.org/relation/<id> or by searching on https://nominatim.openstreetmap.org
-export const osmRelationId = 62750;
+// Env var: OSM_RELATION_ID
+export const osmRelationId = c.osmRelationId ?? 62750;
 
 // Optional: shown in the "Daten ergänzen" modal.
 // Defaults to the generic OSM playground wiki page if not set.
-export const regionPlaygroundWikiUrl = 'https://wiki.openstreetmap.org/wiki/Fulda#Spielpl%C3%A4tze';
+// Env var: REGION_PLAYGROUND_WIKI_URL
+export const regionPlaygroundWikiUrl = c.regionPlaygroundWikiUrl ?? '';
 
 // Optional: community chat link shown in the "Daten ergänzen" modal. Set to null to hide.
-export const regionChatUrl = 'TBD';
+// Env var: REGION_CHAT_URL
+export const regionChatUrl = c.regionChatUrl ?? null;
 
 // --- Map display settings (less commonly changed) ---
-export const mapZoom = 12;
-export const mapMinZoom = 10;
+// Env var: MAP_ZOOM
+export const mapZoom = c.mapZoom ?? 12;
+// Env var: MAP_MIN_ZOOM
+export const mapMinZoom = c.mapMinZoom ?? 10;
