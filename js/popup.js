@@ -45,7 +45,7 @@ export function showPopup(type, popup, coordinate, feature) {
         {
             const hasPhoto = Object.keys(attr).some(k => k === 'panoramax' || k.startsWith('panoramax:'));
             const hasName  = !!attr.name;
-            const hasInfo  = !!(attr.operator || attr.opening_hours || attr.surface || attr.access);
+            const hasInfo  = !!(attr.operator || attr.opening_hours || attr.surface || (attr.access && attr.access !== 'yes'));
             let dot, label;
             if (hasPhoto && hasName && hasInfo) {
                 dot = '<span class="dot-complete">●</span>'; label = 'Daten vollständig';

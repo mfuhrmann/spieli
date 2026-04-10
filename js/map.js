@@ -90,7 +90,7 @@ function playgroundStyleFn(feature) {
     const props = feature.getProperties();
     const hasPhoto = Object.keys(props).some(k => k === 'panoramax' || k.startsWith('panoramax:'));
     const hasName  = !!props.name;
-    const hasInfo  = !!(props.operator || props.opening_hours || props.surface || props.access);
+    const hasInfo  = !!(props.operator || props.opening_hours || props.surface || (props.access && props.access !== 'yes'));
 
     if (hasPhoto && hasName && hasInfo) return _styleComplete;
     if (hasPhoto || hasName || hasInfo) return _stylePartial;
