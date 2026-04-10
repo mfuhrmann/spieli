@@ -88,15 +88,12 @@ export function showPopup(type, popup, coordinate, feature) {
     // Popup für Spielplatzausstattung
     if (type == 'equipment') {
         // Titel entspricht einer deutschen Übersetzung des Spielgeräts/Ausstattungsmerkmals
-        if (feature.get('playground')) {
+        if (feature.get('playground') && feature.get('playground') !== 'yes') {
             var name = feature.get('playground');
-            if (!name) {
-                return;
-            }
             title = name;
             if (name in objDevices) {
                 title = objDevices[name]["name_de"];
-            }    
+            }
         } else {
             featLoop: for (var feat in objFeatures) {
                 var objTags = objFeatures[feat]["tags"];
@@ -460,6 +457,11 @@ function getEquipmentAttributes (feature) {
     }
 
     return contentHtml;
+}
+
+// Wrapper für GeoJSON-Feature-Properties (plain object statt OL-Feature)
+export function getEquipmentAttributesFromProps(props) {
+    return getEquipmentAttributes({ get: key => props[key] });
 }
 
 // Value-Übersetzungslisten

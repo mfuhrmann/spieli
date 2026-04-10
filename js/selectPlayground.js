@@ -28,7 +28,9 @@ import { objColors } from '../style/VectorStyles.js';
 const geoServer = 'https://osmbln.uber.space/';
 const geoServerWorkspace = 'spielplatzkarte';
 import { fetchPlaygroundEquipment, fetchNearbyPOIs } from './overpass.js';
+import { poiRadiusM } from './config.js';
 import { panoramaxViewerUrl, panoramaxThumbUrl } from './panoramax.js';
+import { getEquipmentAttributesFromProps } from './popup.js';
 
 export var sourceSelected; // globale Variable, in der der jeweils ausgewählte Spielplatz enthalten ist
 var lastSelectedFeature = null; // zuletzt angeklicktes OpenLayers-Feature (für Overpass-Nachfrage)
@@ -176,7 +178,7 @@ function showSelection(coord, backupGeojson) {
             [(ext3857[0] + ext3857[2]) / 2, (ext3857[1] + ext3857[3]) / 2],
             'EPSG:3857', 'EPSG:4326'
         );
-        loadNearbyPOIs(playLat, playLon, 1000, geojson.features[0].properties['osm_id']);
+        loadNearbyPOIs(playLat, playLon, poiRadiusM, geojson.features[0].properties['osm_id']);
         // Schattenlayer anzeigen, falls aktiviert
         if ($('#layer-switch-schattigkeit').prop('checked')) {
             addShadowLayer();
@@ -339,29 +341,39 @@ function updateEquipmentPanel(features, playgroundAttr = {}) {
     const shelterCount = features.filter(f => f.properties.amenity === 'shelter').length;
     const picnicCount = features.filter(f => f.properties.leisure === 'picnic_table').length;
     const fitnessCount = features.filter(f => f.properties.leisure === 'fitness_station').length;
-    const tableTennisCount = features.filter(f => f.properties.leisure === 'pitch' && f.properties.sport === 'table_tennis').length;
-    const soccerCount = features.filter(f => f.properties.leisure === 'pitch' && f.properties.sport === 'soccer').length;
-    const basketballCount = features.filter(f => f.properties.leisure === 'pitch' && f.properties.sport === 'basketball').length;
-    const pitchCount = features.filter(f => f.properties.leisure === 'pitch' && !['table_tennis', 'soccer', 'basketball'].includes(f.properties.sport)).length;
+
+    // Sportfeldnamen nach sport=* — Singular und Plural
+    const pitchLabels = {
+        soccer:       ['Bolzplatz',          'Bolzplätze'],
+        basketball:   ['Basketballfeld',      'Basketballfelder'],
+        table_tennis: ['Tischtennisplatte',   'Tischtennisplatten'],
+        volleyball:   ['Volleyballfeld',      'Volleyballfelder'],
+        tennis:       ['Tennisfeld',          'Tennisfelder'],
+        handball:     ['Handballfeld',        'Handballfelder'],
+        badminton:    ['Badmintonfeld',       'Badmintonfelder'],
+        hockey:       ['Hockeyfeld',          'Hockeyfelder'],
+        boules:       ['Boulesbahn',          'Boulesanlagen'],
+        petanque:     ['Pétanquebahn',        'Pétanqueanlagen'],
+        bocce:        ['Bocciabahn',          'Bocciabahnen'],
+    };
+
+    // Pitches nach Sportart gruppieren
+    const pitchBySport = {};
+    for (const f of features.filter(f => f.properties.leisure === 'pitch')) {
+        const sport = f.properties.sport ?? '';
+        pitchBySport[sport] = (pitchBySport[sport] || 0) + 1;
+    }
 
     let equipment_str = '<ul>';
     equipment_str += deviceCount
         ? `<li>${deviceCount} Spielgerät${deviceCount !== 1 ? 'e' : ''}</li>`
-        : '<li>noch keine Spielgeräte erfasst</li>';
+        : '<li class="text-muted">noch keine Spielgeräte eingetragen – hilf mit! 👇</li>';
     if (fitnessCount) {
         equipment_str += fitnessCount === 1 ? '<li>1 Fitnessgerät</li>' : `<li>${fitnessCount} Fitnessgeräte</li>`;
     }
-    if (tableTennisCount) {
-        equipment_str += tableTennisCount === 1 ? '<li>1 Tischtennisplatte</li>' : `<li>${tableTennisCount} Tischtennisplatten</li>`;
-    }
-    if (soccerCount) {
-        equipment_str += soccerCount === 1 ? '<li>1 Bolzplatz</li>' : `<li>${soccerCount} Bolzplätze</li>`;
-    }
-    if (basketballCount) {
-        equipment_str += basketballCount === 1 ? '<li>1 Basketballfeld</li>' : `<li>${basketballCount} Basketballfelder</li>`;
-    }
-    if (pitchCount) {
-        equipment_str += pitchCount === 1 ? '<li>1 Sportfeld</li>' : `<li>${pitchCount} Sportfelder</li>`;
+    for (const [sport, count] of Object.entries(pitchBySport)) {
+        const [singular, plural] = pitchLabels[sport] ?? ['Sportfeld', 'Sportfelder'];
+        equipment_str += `<li>${count} ${count === 1 ? singular : plural}</li>`;
     }
     if (benchCount) {
         equipment_str += benchCount === 1 ? '<li>1 Sitzbank</li>' : `<li>${benchCount} Sitzbänke</li>`;
@@ -377,26 +389,30 @@ function updateEquipmentPanel(features, playgroundAttr = {}) {
 
     $('#info-device-note').html('');
 
-    // Einzelne Spielgeräte zählen und mit deutschen Namen auflisten
-    const deviceCounts = {};
+    // Einzelne Spielgeräte auflisten — jedes als aufklappbares Element mit Details
+    let device_string = '<ul class="mb-0 device-list">';
     for (const f of deviceFeatures) {
         const key = f.properties.playground;
-        deviceCounts[key] = (deviceCounts[key] || 0) + 1;
-    }
-
-    let device_string = '<ul class="mb-0">';
-    for (const [key, count] of Object.entries(deviceCounts)) {
         const name = objDevices[key]?.name_de ?? key;
         const category = objDevices[key]?.category ?? 'fallback';
         const color = objColors[category] ?? objColors['fallback'];
-        const countStr = count > 1 ? `${count}× ` : '';
-        device_string += `<li><span style="color:${color}">●</span> ${countStr}${name}</li>`;
+        const detail = getEquipmentAttributesFromProps(f.properties);
+        const uid = `dev-${f.properties.osm_id ?? Math.random().toString(36).slice(2)}`;
+        if (detail) {
+            device_string += `<li>` +
+                `<div class="device-toggle" data-bs-toggle="collapse" data-bs-target="#${uid}" role="button">` +
+                `<span style="color:${color}">●</span> ${name}` +
+                ` <span class="bi bi-chevron-down device-chevron"></span></div>` +
+                `<div id="${uid}" class="collapse device-detail">${detail}</div></li>`;
+        } else {
+            device_string += `<li><span style="color:${color}">●</span> ${name}</li>`;
+        }
     }
     device_string += '</ul>';
 
     // Fallback: playground:<key>=<count|yes> Tags am Spielplatz-Polygon selbst auswerten,
-    // falls keine einzelnen Objekte per Overpass gefunden wurden
-    if (Object.keys(deviceCounts).length === 0) {
+    // falls keine einzelnen Objekte erfasst wurden
+    if (!deviceFeatures.length) {
         const fallbackCounts = {};
         for (const [tag, val] of Object.entries(playgroundAttr)) {
             if (!tag.startsWith('playground:')) continue;
@@ -415,12 +431,12 @@ function updateEquipmentPanel(features, playgroundAttr = {}) {
             }
             fallback_string += '</ul>';
             $('#info-device-list').html(fallback_string);
-            $('#info-device-note').html('<i>Geräte aus Spielplatz-Tags (keine einzelnen Objekte erfasst)</i>');
+            $('#info-device-note').html('<i>Geräte aus Spielplatz-Tags — die Geräte sind noch nicht einzeln eingemessen.</i>');
             return;
         }
     }
 
-    $('#info-device-list').html(Object.keys(deviceCounts).length ? device_string : '');
+    $('#info-device-list').html(deviceFeatures.length ? device_string : '');
 
     // MapComplete-Link zum Hinzufügen von Spielgeräten
     const extent = lastSelectedFeature ? lastSelectedFeature.getGeometry().getExtent() : null;
@@ -453,7 +469,13 @@ function showPanoramaxFromTags(attr) {
     const addPhotoLink = `<a href="${mapcompletePhotoUrl}" target="_blank" rel="noopener" class="mc-add-link"><span class="bi bi-camera"></span> Foto hinzufügen</a>`;
 
     if (!uuids.length) {
-        $('#info-panoramax').html(`<small class="text-muted">Keine Fotos verknüpft.</small> ${addPhotoLink}`);
+        $('#info-panoramax').html(
+            `<div class="text-center py-2">` +
+            `<span class="bi bi-camera" style="font-size:1.8rem; color:#d1d5db;"></span>` +
+            `<p class="text-muted mt-1 mb-2" style="font-size:smaller;">Noch keine Fotos für diesen Spielplatz.<br>Warst du schon dort?</p>` +
+            addPhotoLink +
+            `</div>`
+        );
         return;
     }
 
@@ -556,7 +578,17 @@ const POI_CATEGORIES = [
 
 function formatOpeningHours(ohStr) {
     const fmt = t => t.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
-    const today = d => d.toLocaleDateString('de-DE', { weekday: 'long' });
+
+    // Returns a human-readable day label for a future date.
+    // Within 6 days: weekday name ("Mittwoch"). Further away: full date ("Mi., 15.04.").
+    const dayLabel = (d, now) => {
+        const diffDays = Math.round((d - now) / 86400000);
+        if (d.toDateString() === now.toDateString()) return 'Heute';
+        const tomorrow = new Date(now); tomorrow.setDate(now.getDate() + 1);
+        if (d.toDateString() === tomorrow.toDateString()) return 'Morgen';
+        if (diffDays <= 6) return d.toLocaleDateString('de-DE', { weekday: 'long' });
+        return d.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' });
+    };
 
     try {
         const oh = new OpeningHours(ohStr, { address: { country_code: 'de' } });
@@ -572,9 +604,7 @@ function formatOpeningHours(ohStr) {
             statusHtml = `<span style="color:#16a34a;">● Geöffnet${until}</span>`;
         } else {
             if (nextChange) {
-                const isToday = nextChange.toDateString() === now.toDateString();
-                const dayStr = isToday ? 'Heute' : today(nextChange);
-                statusHtml = `<span style="color:#dc2626;">● Geschlossen</span> · Öffnet ${dayStr} um ${fmt(nextChange)}`;
+                statusHtml = `<span style="color:#dc2626;">● Geschlossen</span> · Öffnet ${dayLabel(nextChange, now)} um ${fmt(nextChange)}`;
             } else {
                 statusHtml = `<span style="color:#dc2626;">● Geschlossen</span>`;
             }
@@ -646,7 +676,8 @@ function updateUmfeldPanel(pois, playLat, playLon) {
         html += '</div>';
     }
 
-    $('#info-umfeld').html(html || '<small class="text-muted"><i>Keine nahegelegenen Einrichtungen gefunden.</i></small>');
+    $('#info-umfeld').html(html ||
+        `<small class="text-muted">Keine nahegelegenen Einrichtungen im Umkreis von ${(poiRadiusM / 1000).toFixed(0)} km gefunden.</small>`);
 }
 
 // Panoramax-Modal mit einem bestimmten Foto-Index öffnen / aktualisieren
@@ -780,6 +811,10 @@ function showPlaygroundInfo(json) {
 
     // Attribut-Elemente sichtbar machen und zu Beginn immer Ausstattung aufklappen
     showAttributes(true);
+
+    // Permalink: URL-Hash auf diesen Spielplatz setzen
+    if (attr.osm_id) history.replaceState(null, '', `#${attr.osm_type ?? 'W'}${attr.osm_id}`);
+
     Collapse.getOrCreateInstance(document.getElementById('accordion-panoramax')).show();
     Collapse.getOrCreateInstance(document.getElementById('accordion-ausstattung')).show();
 
@@ -828,6 +863,22 @@ function showPlaygroundInfo(json) {
         playgroundArea = '<span class="info-label">Größe</span> unbekannt';
     }
     $("#info-area").html(playgroundArea);
+
+    // Bodenbelag
+    const surfaceLabels = {
+        sand: 'Sand', grass: 'Rasen', wood_chips: 'Holzschnitzel',
+        bark_mulch: 'Rindenmulch', rubber: 'Gummigranulat',
+        asphalt: 'Asphalt', concrete: 'Beton', paving_stones: 'Pflastersteine',
+        tartan: 'Tartan', artificial_turf: 'Kunstgras',
+        gravel: 'Kies', fine_gravel: 'Feinkies', dirt: 'Erde', compacted: 'verdichtet',
+    };
+    var surface = attr["surface"];
+    if (surface) {
+        const surfaceLabel = surfaceLabels[surface] ?? surface;
+        $("#info-surface").html(`<span class="info-label">Bodenbelag</span> ${surfaceLabel}`).show();
+    } else {
+        $("#info-surface").hide();
+    }
 
     // Zugänglichkeit
     var access = attr["access"];
@@ -1093,3 +1144,53 @@ $('#accordion-btn-schattigkeit').on('click', function() {
         shadowFirstActivated = true;
     }
 });
+
+// Mobile: nach unten wischen schließt das Bottom Sheet
+let swipeTouchStartY = 0;
+$('#info-drag-handle')
+    .on('touchstart', e => { swipeTouchStartY = e.originalEvent.touches[0].clientY; })
+    .on('touchend', e => {
+        if (e.originalEvent.changedTouches[0].clientY - swipeTouchStartY > 60) {
+            $('#info').removeClass('panel-open');
+        }
+    });
+
+// Spielplatz teilen: Web Share API (mobil) oder URL in Zwischenablage kopieren
+$('#info-share-btn').on('click', () => {
+    const url = window.location.href;
+    if (navigator.share) {
+        navigator.share({ url });
+    } else {
+        navigator.clipboard.writeText(url).then(() => {
+            const btn = document.getElementById('info-share-btn');
+            const icon = btn.querySelector('span');
+            icon.className = 'bi bi-check';
+            setTimeout(() => { icon.className = 'bi bi-share'; }, 1500);
+        });
+    }
+});
+
+// Permalink aus URL-Hash wiederherstellen (z.B. nach Teilen eines Links)
+export function restoreFromHash() {
+    const hash = window.location.hash.slice(1);
+    if (!hash) return;
+    const match = hash.match(/^([WNR])(\d+)$/i);
+    if (!match) return;
+    const osmId = parseInt(match[2], 10);
+
+    const source = dataPlaygrounds.getSource();
+    const doSelect = () => {
+        const feature = source.getFeatures().find(f => parseInt(f.getProperties().osm_id) === osmId);
+        if (!feature) return;
+        const ext = feature.getGeometry().getExtent();
+        const center = [(ext[0] + ext[2]) / 2, (ext[1] + ext[3]) / 2];
+        selectPlayground(center, 0, false, feature);
+    };
+
+    if (source.getFeatures().length) {
+        doSelect();
+    } else {
+        const onReady = () => { source.un('change', onReady); doSelect(); };
+        source.on('change', onReady);
+    }
+}

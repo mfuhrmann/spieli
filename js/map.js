@@ -69,10 +69,33 @@ let basemapCartoDBVoyager = new TileLayer({
 //-------------
 
 // Spielplatzblasen (Overpass API)
-const playgroundStyle = new Style({
-    fill: new Fill({ color: 'rgba(34, 139, 34, 0.25)' }),
+// Three cached styles for data-completeness colouring:
+//   green  = photos + name + detail info
+//   yellow = at least one of the above
+//   red    = bare polygon (nothing tagged)
+const _styleComplete = new Style({
+    fill: new Fill({ color: 'rgba(34, 139, 34, 0.22)' }),
     stroke: new Stroke({ color: '#155215', width: 1.5 })
 });
+const _stylePartial = new Style({
+    fill: new Fill({ color: 'rgba(234, 179, 8, 0.22)' }),
+    stroke: new Stroke({ color: '#92400e', width: 1.5 })
+});
+const _styleMissing = new Style({
+    fill: new Fill({ color: 'rgba(239, 68, 68, 0.18)' }),
+    stroke: new Stroke({ color: '#991b1b', width: 1.5 })
+});
+
+function playgroundStyleFn(feature) {
+    const props = feature.getProperties();
+    const hasPhoto = Object.keys(props).some(k => k === 'panoramax' || k.startsWith('panoramax:'));
+    const hasName  = !!props.name;
+    const hasInfo  = !!(props.operator || props.opening_hours || props.surface || props.access);
+
+    if (hasPhoto && hasName && hasInfo) return _styleComplete;
+    if (hasPhoto || hasName || hasInfo) return _stylePartial;
+    return _styleMissing;
+}
 
 const playgroundSource = new VectorSource();
 export var dataPlaygrounds = new VectorLayer({
@@ -81,7 +104,7 @@ export var dataPlaygrounds = new VectorLayer({
     visible: true,
     source: playgroundSource,
     zIndex: 10,
-    style: playgroundStyle
+    style: playgroundStyleFn
 });
 
 fetchPlaygrounds()

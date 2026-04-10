@@ -1,154 +1,52 @@
 //----------------------------------------------//
-// Overpass API — Spielplatzdaten aus OSM laden //
+// Datenquellen — PostgREST (primär) / Overpass //
 //----------------------------------------------//
 
 import { transformExtent } from 'ol/proj';
-import { osmRelationId } from './config.js';
+import { osmRelationId, apiBaseUrl } from './config.js';
 
 const OVERPASS_MIRRORS = [
     'https://overpass-api.de/api/interpreter',
     'https://overpass.private.coffee/api/interpreter',
     'https://overpass.kumi.systems/api/interpreter',
 ];
-const PLAYGROUND_CACHE_TTL_MS = 24 * 60 * 60 * 1000;       // 24 Stunden
-const EQUIPMENT_CACHE_TTL_MS  =  7 * 24 * 60 * 60 * 1000;  // 7 Tage
-const NEARBY_CACHE_TTL_MS     = 24 * 60 * 60 * 1000;       // 24 Stunden
-const CACHE_KEY = `spielplatzkarte_playgrounds_${osmRelationId}`;
-
-const OSM_TYPE_MAP = { way: 'W', relation: 'R', node: 'N' };
-
-function normalizeStaticFeature(f) {
-    const atId = f.properties['@id'] ?? '';
-    const [type, id] = atId.split('/');
-    return {
-        ...f,
-        properties: {
-            osm_id: parseInt(id) || null,
-            osm_type: OSM_TYPE_MAP[type] ?? 'W',
-            ...f.properties,
-        }
-    };
-}
-
-function featureCenter(f) {
-    const geom = f.geometry;
-    if (geom.type === 'Point') return { lon: geom.coordinates[0], lat: geom.coordinates[1] };
-    if (geom.type === 'Polygon') {
-        const coords = geom.coordinates[0];
-        return {
-            lon: coords.reduce((s, c) => s + c[0], 0) / coords.length,
-            lat: coords.reduce((s, c) => s + c[1], 0) / coords.length,
-        };
-    }
-    return null;
-}
-
-function haversineM(lat1, lon1, lat2, lon2) {
-    const R = 6371000;
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
-    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
-// In-memory cache für statische Dateien (verhindert mehrfaches Laden)
-let staticEquipmentPromise = null;
-let staticPoiPromise = null;
-
-async function loadStaticFile(path) {
-    const res = await fetch(path);
-    if (!res.ok) throw new Error(`Static file not available: ${path}`);
-    return res.json();
-}
 
 // Alle Spielplätze in der konfigurierten Region als Polygone laden (inkl. Geometrie und Tags)
 export async function fetchPlaygrounds() {
-    // Frischen Cache zurückgeben, falls vorhanden
-    const cached = loadCache(CACHE_KEY, PLAYGROUND_CACHE_TTL_MS, false);
-    if (cached) return cached;
-
-    // Statische GeoJSON-Datei bevorzugen (kein Overpass-Timeout möglich)
-    try {
-        const res = await fetch('./data/export.geojson');
-        if (res.ok) {
-            const raw = await res.json();
-            const geojson = {
-                type: 'FeatureCollection',
-                features: raw.features.map(normalizeStaticFeature)
-            };
-            saveCache(CACHE_KEY, geojson);
-            return geojson;
-        }
-    } catch (e) {
-        console.warn('Statische Spielplatzdaten nicht verfügbar – lade von Overpass.');
+    if (apiBaseUrl) {
+        const res = await fetch(`${apiBaseUrl}/rpc/get_playgrounds?relation_id=${osmRelationId}`);
+        if (res.ok) return res.json();
     }
 
+    // Fallback für lokale Entwicklung ohne PostgREST
     const query = `[out:json][timeout:60];
 area(${3600000000 + osmRelationId})->.a;
 way[leisure=playground](area.a);
 out geom tags;`;
-
-    let data;
-    try {
-        data = await overpassPost(query);
-    } catch (e) {
-        // Bei Fehler veralteten Cache als Fallback versuchen
-        const stale = loadCache(CACHE_KEY, PLAYGROUND_CACHE_TTL_MS, true);
-        if (stale) {
-            console.warn('Overpass API nicht erreichbar – nutze zwischengespeicherte Spielplatzdaten.');
-            return stale;
-        }
-        throw e;
-    }
-
-    const geojson = {
+    const data = await overpassPost(query);
+    return {
         type: 'FeatureCollection',
         features: data.elements
             .filter(el => el.geometry && el.geometry.length > 1)
             .map(el => ({
                 type: 'Feature',
-                geometry: {
-                    type: 'Polygon',
-                    coordinates: [el.geometry.map(p => [p.lon, p.lat])]
-                },
-                properties: {
-                    osm_id: el.id,
-                    osm_type: 'W',
-                    ...el.tags
-                }
+                geometry: { type: 'Polygon', coordinates: [el.geometry.map(p => [p.lon, p.lat])] },
+                properties: { osm_id: el.id, osm_type: 'W', ...el.tags }
             }))
     };
-
-    saveCache(CACHE_KEY, geojson);
-    return geojson;
 }
 
 // Spielgeräte und Ausstattung eines Spielplatzes laden (bbox in EPSG:3857)
-export async function fetchPlaygroundEquipment(extentEPSG3857, osmId = null) {
-    const equipCacheKey = osmId ? `spielplatzkarte_equipment_${osmRelationId}_${osmId}` : null;
-    if (equipCacheKey) {
-        const cached = loadCache(equipCacheKey, EQUIPMENT_CACHE_TTL_MS, false);
-        if (cached) return cached;
-    }
+export async function fetchPlaygroundEquipment(extentEPSG3857) {
     const [minLon, minLat, maxLon, maxLat] = transformExtent(extentEPSG3857, 'EPSG:3857', 'EPSG:4326');
 
-    // Statische Datei bevorzugen — nur per bbox filtern, kein Overpass nötig
-    try {
-        if (!staticEquipmentPromise) staticEquipmentPromise = loadStaticFile('./data/playgrounds.geojson');
-        const raw = await staticEquipmentPromise;
-        const features = raw.features
-            .map(normalizeStaticFeature)
-            .filter(f => {
-                const c = featureCenter(f);
-                return c && c.lon >= minLon && c.lon <= maxLon && c.lat >= minLat && c.lat <= maxLat;
-            });
-        const geojson = { type: 'FeatureCollection', features };
-        if (equipCacheKey) saveCache(equipCacheKey, geojson);
-        return geojson;
-    } catch (e) {
-        console.warn('Statische Ausstattungsdaten nicht verfügbar – lade von Overpass.');
+    if (apiBaseUrl) {
+        const params = new URLSearchParams({ min_lon: minLon, min_lat: minLat, max_lon: maxLon, max_lat: maxLat });
+        const res = await fetch(`${apiBaseUrl}/rpc/get_equipment?${params}`);
+        if (res.ok) return res.json();
     }
 
+    // Fallback für lokale Entwicklung ohne PostgREST
     const bboxStr = `${minLat},${minLon},${maxLat},${maxLon}`;
     const query = `[out:json][timeout:30];
 (
@@ -162,21 +60,8 @@ export async function fetchPlaygroundEquipment(extentEPSG3857, osmId = null) {
   node[leisure=fitness_station](${bboxStr});
 );
 out body geom;`;
-    let data;
-    try {
-        data = await overpassPost(query);
-    } catch (e) {
-        if (equipCacheKey) {
-            const stale = loadCache(equipCacheKey, EQUIPMENT_CACHE_TTL_MS, true);
-            if (stale) {
-                console.warn('Overpass API nicht erreichbar – nutze zwischengespeicherte Spielgerätedaten.');
-                return stale;
-            }
-        }
-        throw e;
-    }
-
-    const geojson = {
+    const data = await overpassPost(query);
+    return {
         type: 'FeatureCollection',
         features: data.elements
             .map(el => {
@@ -196,38 +81,17 @@ out body geom;`;
             })
             .filter(Boolean)
     };
-
-    if (equipCacheKey) saveCache(equipCacheKey, geojson);
-    return geojson;
 }
 
 // Nahegelegene POIs (Toiletten, Bushaltestellen, Eis, Notaufnahme) laden
-export async function fetchNearbyPOIs(lat, lon, radiusM = 500, osmId = null) {
-    const cacheKey = osmId ? `spielplatzkarte_nearby_${osmRelationId}_${osmId}_r${radiusM}_v2` : null;
-    if (cacheKey) {
-        const cached = loadCache(cacheKey, NEARBY_CACHE_TTL_MS, false);
-        if (cached) return cached;
+export async function fetchNearbyPOIs(lat, lon, radiusM = 500) {
+    if (apiBaseUrl) {
+        const params = new URLSearchParams({ lat, lon, radius_m: radiusM });
+        const res = await fetch(`${apiBaseUrl}/rpc/get_pois?${params}`);
+        if (res.ok) return res.json();
     }
 
-    // Statische Datei bevorzugen — per Distanz filtern, kein Overpass nötig
-    try {
-        if (!staticPoiPromise) staticPoiPromise = loadStaticFile('./data/poi.geojson');
-        const raw = await staticPoiPromise;
-        const pois = raw.features
-            .filter(f => f.geometry.type === 'Point')
-            .map(f => {
-                const [fLon, fLat] = f.geometry.coordinates;
-                const { '@id': atId, ...tags } = f.properties;
-                const [, id] = (atId ?? '').split('/');
-                return { lat: fLat, lon: fLon, tags, osm_id: parseInt(id) || null };
-            })
-            .filter(poi => haversineM(lat, lon, poi.lat, poi.lon) <= radiusM);
-        if (cacheKey) saveCache(cacheKey, pois);
-        return pois;
-    } catch (e) {
-        console.warn('Statische POI-Daten nicht verfügbar – lade von Overpass.');
-    }
-
+    // Fallback für lokale Entwicklung ohne PostgREST
     const around = `(around:${radiusM},${lat},${lon})`;
     const query = `[out:json][timeout:15];
 (
@@ -243,27 +107,10 @@ export async function fetchNearbyPOIs(lat, lon, radiusM = 500, osmId = null) {
   node["shop"="convenience"]${around};
 );
 out body;`;
-
-    let data;
-    try {
-        data = await overpassPost(query);
-    } catch (e) {
-        if (cacheKey) {
-            const stale = loadCache(cacheKey, NEARBY_CACHE_TTL_MS, true);
-            if (stale) {
-                console.warn('Overpass API nicht erreichbar – nutze zwischengespeicherte Umfeld-Daten.');
-                return stale;
-            }
-        }
-        throw e;
-    }
-
-    const pois = data.elements
+    const data = await overpassPost(query);
+    return data.elements
         .filter(el => el.lat != null && el.lon != null)
         .map(el => ({ lat: el.lat, lon: el.lon, tags: el.tags, osm_id: el.id }));
-
-    if (cacheKey) saveCache(cacheKey, pois);
-    return pois;
 }
 
 async function overpassPost(query, retries = 3, delayMs = 5000) {
@@ -283,25 +130,4 @@ async function overpassPost(query, retries = 3, delayMs = 5000) {
         }
     }
     throw new Error('Overpass API error: 504 on all mirrors');
-}
-
-// Cache-Hilfsfunktionen
-function loadCache(key, ttl, allowStale) {
-    try {
-        const item = localStorage.getItem(key);
-        if (!item) return null;
-        const { timestamp, data } = JSON.parse(item);
-        if (!allowStale && Date.now() - timestamp > ttl) return null;
-        return data;
-    } catch {
-        return null;
-    }
-}
-
-function saveCache(key, data) {
-    try {
-        localStorage.setItem(key, JSON.stringify({ timestamp: Date.now(), data }));
-    } catch {
-        // localStorage voll oder nicht verfügbar – ignorieren
-    }
 }

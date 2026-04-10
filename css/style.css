@@ -98,6 +98,12 @@ ul {
     display: flex;
     gap: 4px;
     flex-shrink: 0;
+    transition: opacity 0.15s;
+}
+
+#search-bar:focus-within .search-nav-links {
+    opacity: 0;
+    pointer-events: none;
 }
 
 .search-nav-link {
@@ -282,6 +288,56 @@ ul {
 
 
 /* ===========================
+   Device List (Ausstattung)
+   =========================== */
+
+.device-list {
+    list-style: none;
+    padding-left: 0;
+    margin-bottom: 0;
+}
+
+.device-list > li {
+    margin-bottom: 2px;
+}
+
+.device-toggle {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 4px;
+    user-select: none;
+    line-height: 1.5;
+}
+
+.device-toggle:hover {
+    background: #f3f4f6;
+}
+
+.device-chevron {
+    margin-left: auto;
+    font-size: 10px;
+    transition: transform 0.2s;
+}
+
+.device-toggle[aria-expanded="true"] .device-chevron {
+    transform: rotate(180deg);
+}
+
+.device-detail {
+    padding: 4px 6px 4px 16px;
+    font-size: 12px;
+}
+
+.device-detail img {
+    max-width: 100%;
+    border-radius: 4px;
+    margin-bottom: 4px;
+}
+
+/* ===========================
    Mouse Position Display
    =========================== */
 
@@ -291,7 +347,7 @@ ul {
     left: 14px;
     font-size: 11px;
     color: #9ca3af;
-    z-index: 100;
+    z-index: 10;
     display: flex;
     flex-direction: column;
     line-height: 1.4;

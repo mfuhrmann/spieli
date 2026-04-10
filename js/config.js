@@ -11,14 +11,23 @@ export const osmRelationId = c.osmRelationId ?? 62700;
 // Optional: shown in the "Daten ergänzen" modal.
 // Defaults to the generic OSM playground wiki page if not set.
 // Env var: REGION_PLAYGROUND_WIKI_URL
-export const regionPlaygroundWikiUrl = c.regionPlaygroundWikiUrl ?? 'https://wiki.openstreetmap.org/wiki/Fulda#Spielpl%C3%A4tze';
+export const regionPlaygroundWikiUrl = c.regionPlaygroundWikiUrl ?? 'https://wiki.openstreetmap.org/wiki/Tag:leisure%3Dplayground';
 
 // Optional: community chat link shown in the "Daten ergänzen" modal. Set to null to hide.
 // Env var: REGION_CHAT_URL
-export const regionChatUrl = c.regionChatUrl ?? 'https://matrix.to/#/#osm-fulda:matrix.org';
+export const regionChatUrl = c.regionChatUrl ?? null;
 
 // --- Map display settings (less commonly changed) ---
 // Env var: MAP_ZOOM
 export const mapZoom = c.mapZoom ?? 12;
 // Env var: MAP_MIN_ZOOM
 export const mapMinZoom = c.mapMinZoom ?? 10;
+
+// Search radius in metres for nearby POIs (toilets, bus stops, ice cream, etc.).
+// Env var: POI_RADIUS_M
+export const poiRadiusM = c.poiRadiusM ?? 5000;
+
+// Base URL for the PostgREST API (e.g. "/api" in Docker, empty string for local dev).
+// When empty, the app falls back to Overpass (local dev only).
+// Env var: API_BASE_URL
+export const apiBaseUrl = c.apiBaseUrl || null;

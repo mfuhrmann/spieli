@@ -59,14 +59,22 @@
                 <p id="info-opening-hours" class="m-0 p-0"></p>
                 <p id="info-age" class="m-0 p-0"></p>
                 <p id="info-area" class="m-0 p-0"></p>
+                <p id="info-surface" class="m-0 p-0"></p>
                 <p id="info-operator" class="m-0 p-0"></p>
                 <p id="info-contact" class="m-0 p-0"></p>
                 <p id="info-description" class="mt-1 mb-1" style="font-size: smaller;"></p>
-                <a id="info-osm-url" href="#" target="_blank" rel="noopener"
-                   class="position-absolute top-0 end-0 m-1 btn btn-sm btn-outline-light py-0 px-1"
-                   title="Bei OpenStreetMap anzeigen">
-                    <span class="bi bi-map"></span> OSM
-                </a>
+                <div class="position-absolute top-0 end-0 m-1 d-flex gap-1">
+                    <button id="info-share-btn" type="button"
+                        class="btn btn-sm btn-outline-light py-0 px-1"
+                        title="Spielplatz teilen">
+                        <span class="bi bi-share"></span>
+                    </button>
+                    <a id="info-osm-url" href="#" target="_blank" rel="noopener"
+                        class="btn btn-sm btn-outline-light py-0 px-1"
+                        title="Bei OpenStreetMap anzeigen">
+                        <span class="bi bi-map"></span> OSM
+                    </a>
+                </div>
             </div>
 
             <div id="info-accordion" class="accordion accordion-flush accordion-orange" style="display: none;">

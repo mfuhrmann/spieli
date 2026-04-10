@@ -11,6 +11,7 @@ import { showLocation, hideLocation } from './locate.js';
 import { searchLocation } from './search.js';
 import { osmRelationId, regionPlaygroundWikiUrl, regionChatUrl } from './config.js';
 import { fetchRegionInfo } from './region.js';
+import { restoreFromHash } from './selectPlayground.js';
 import { version } from '../package.json';
 
 const projectAuthorOsmUrl = 'https://www.openstreetmap.org/user/Supaplex030/';
@@ -99,6 +100,9 @@ function buildUeberModal() {
 
 // Schieberegler der Schattenberechnung auf aktuelles Datum setzen
 setCurrentDate();
+
+// Direktlink zu einem Spielplatz wiederherstellen (URL-Hash wie #W123456)
+restoreFromHash();
 
 // TODO Bekannte Bugs:
 // - Sind nach Selektion eines Spielplatzes Spielplatzausstattungslayer geladen und bewegt man die Karte oder zoomt man heraus (auf einen Wert < Zoomstufe ~20,5), werden die Features mehrfach eingeladen
