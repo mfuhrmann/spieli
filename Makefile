@@ -1,42 +1,53 @@
 .PHONY: install dev build serve \
         up down import db-apply db-shell \
-        docker-build help
+        docker-build check-node check-docker help
+
+# ── Dependency checks ─────────────────────────────────────────────────────────
+
+check-node:
+	@command -v node >/dev/null 2>&1 || { echo "Error: node is not installed (https://nodejs.org/)"; exit 1; }
+	@command -v npm  >/dev/null 2>&1 || { echo "Error: npm is not installed"; exit 1; }
+
+check-docker:
+	@command -v docker >/dev/null 2>&1 || { echo "Error: docker is not installed (https://docs.docker.com/get-docker/)"; exit 1; }
+	@docker compose version >/dev/null 2>&1 || { echo "Error: docker compose plugin is not available"; exit 1; }
+	@docker info >/dev/null 2>&1         || { echo "Error: docker daemon is not running"; exit 1; }
 
 # ── Frontend ──────────────────────────────────────────────────────────────────
 
-install:       ## Install Node dependencies
+install: check-node    ## Install Node dependencies
 	npm ci
 
-dev:           ## Start Vite dev server (hot-reload at http://localhost:5173)
+dev: check-node        ## Start Vite dev server (hot-reload at http://localhost:5173)
 	npm start
 
-build:         ## Production build → dist/
+build: check-node      ## Production build → dist/
 	npm run build
 
-serve:         ## Preview the production build locally
+serve: check-node      ## Preview the production build locally
 	npm run serve
 
 # ── Docker Compose stack ──────────────────────────────────────────────────────
 
-up:            ## Start db + PostgREST + nginx (detached)
+up: check-docker           ## Start db + PostgREST + nginx (detached)
 	docker compose up -d
 
-down:          ## Stop and remove containers
+down: check-docker         ## Stop and remove containers
 	docker compose down
 
-import:        ## Download PBF and import OSM data into PostGIS (run once or to refresh)
+import: check-docker       ## Download PBF and import OSM data into PostGIS (run once or to refresh)
 	docker compose run --rm importer
 
-docker-build:  ## Rebuild and restart the nginx/app container after frontend changes
+docker-build: check-docker ## Rebuild and restart the nginx/app container after frontend changes
 	docker compose up -d --build app
 
 # ── Database ──────────────────────────────────────────────────────────────────
 
-db-apply:      ## Apply importer/api.sql to the running database and reload PostgREST schema
+db-apply: check-docker     ## Apply importer/api.sql to the running database and reload PostgREST schema
 	docker compose exec -T db psql -U osm -d osm < importer/api.sql
 	docker compose exec db psql -U osm -d osm -c "NOTIFY pgrst, 'reload schema';"
 
-db-shell:      ## Open a psql shell in the running database container
+db-shell: check-docker     ## Open a psql shell in the running database container
 	docker compose exec db psql -U osm -d osm
 
 # ── Help ──────────────────────────────────────────────────────────────────────
