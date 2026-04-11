@@ -16,10 +16,13 @@ Spielplatzkarte is an interactive web map for exploring playgrounds based on Ope
 
 ## Development commands
 
+All common operations are available via `make`. Run `make help` to list targets.
+
 ```bash
-npm start        # Vite dev server at http://localhost:5173 (hot-reload)
-npm run build    # Production build → dist/
-npm run serve    # Preview production build locally
+make install      # npm ci
+make dev          # Vite dev server at http://localhost:5173 (hot-reload)
+make build        # Production build → dist/
+make serve        # Preview production build locally
 ```
 
 No test framework is configured.
@@ -27,12 +30,16 @@ No test framework is configured.
 ## Docker Compose stack
 
 ```bash
-cp .env.example .env                   # configure OSM_RELATION_ID and PBF_URL
-docker compose run --rm importer       # one-time OSM data import (downloads PBF, runs osm2pgsql)
-docker compose up -d                   # start db + postgrest + nginx/app
+cp .env.example .env   # configure OSM_RELATION_ID and PBF_URL
+make up                # start db + PostgREST + nginx/app
+make import            # one-time OSM data import (downloads PBF, runs osm2pgsql)
+make docker-build      # rebuild and restart only the nginx/app container
+make db-apply          # apply importer/api.sql to the running DB and reload PostgREST
+make db-shell          # open a psql shell in the running DB container
+make down              # stop all containers
 ```
 
-The importer profile is not started by default with `docker compose up`. It must be run explicitly before the app has any data.
+The importer is not started by `make up`. Run `make import` once before the app has any data.
 
 ## Architecture
 

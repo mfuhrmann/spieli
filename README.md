@@ -180,11 +180,11 @@ See `.env.example` for all available options (UI links, zoom levels, port, DB pa
 
 ```bash
 # Start the database, API, and web server
-docker compose up -d
+make up
 
 # Import OSM data (downloads PBF, runs osm2pgsql, sets up API functions)
 # Takes a few minutes depending on extract size and hardware
-docker compose run --rm importer
+make import
 ```
 
 The app will be available at `http://localhost:8080` (or the port set in `APP_PORT`).
@@ -194,7 +194,7 @@ The app will be available at `http://localhost:8080` (or the port set in `APP_PO
 Re-run the importer at any time to refresh from Geofabrik (extracts are updated daily):
 
 ```bash
-docker compose run --rm importer
+make import
 ```
 
 ---
@@ -220,25 +220,24 @@ All variables can be set in `.env` (copy from `.env.example`).
 
 ## Local development
 
-### npm dev server (recommended for frontend work)
+**Requirements:** [Node.js](https://nodejs.org/) v18 or newer, [Docker](https://www.docker.com/) with Docker Compose
 
-**Requirements:** [Node.js](https://nodejs.org/) v18 or newer
+All common operations are available via `make`. Run `make help` to list all targets.
+
+### Frontend dev server
 
 ```bash
-npm install
-npm start         # dev server with hot-reload at http://localhost:5173
-npm run build     # production build into dist/
-npm run serve     # preview the production build locally
+make install      # install Node dependencies
+make up           # start db + PostgREST + nginx (required backend)
+make dev          # dev server with hot-reload at http://localhost:5173
 ```
 
-A running PostgREST backend is required — the app no longer falls back to Overpass. Start the full stack via `docker compose up -d` before running the dev server, or point `API_BASE_URL` at a remote PostgREST instance.
+A running PostgREST backend is required — the app no longer falls back to Overpass. Start the full stack with `make up` before running the dev server.
 
-### Building the Docker image
-
-If you have the full stack running via `docker compose up -d` and want to rebuild only the frontend container after code changes:
+### Rebuild the app container after code changes
 
 ```bash
-docker compose up -d --build app
+make docker-build
 ```
 
 This runs the Vite build inside the container and replaces the nginx image without touching the database or PostgREST.
@@ -248,8 +247,7 @@ This runs the Vite build inside the container and replaces the nginx image witho
 SQL changes to `importer/api.sql` (PostgREST functions, indexes) can be applied directly to the running database:
 
 ```bash
-docker compose exec -T db psql -U osm -d osm < importer/api.sql
-docker compose exec db psql -U osm -d osm -c "NOTIFY pgrst, 'reload schema';"
+make db-apply
 ```
 
 ---
