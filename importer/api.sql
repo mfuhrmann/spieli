@@ -343,6 +343,45 @@ $$;
 
 GRANT EXECUTE ON FUNCTION api.get_trees(float8, float8, float8, float8) TO web_anon;
 
+-- =========================================================================
+-- 5. get_meta(relation_id)
+--    Returns instance metadata for federation (Hub discovery).
+--    Includes the OSM relation name, playground count, and bounding box.
+-- =========================================================================
+DROP FUNCTION IF EXISTS api.get_meta(bigint);
+
+CREATE OR REPLACE FUNCTION api.get_meta(relation_id bigint DEFAULT 62700)
+RETURNS json
+LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path = public, api
+AS $$
+  WITH region AS (
+    SELECT name, way FROM planet_osm_polygon WHERE osm_id = -relation_id LIMIT 1
+  ),
+  bbox AS (
+    SELECT ST_Transform(way, 4326) AS geom FROM region
+  ),
+  counts AS (
+    SELECT COUNT(*) AS playground_count
+    FROM planet_osm_polygon p
+    JOIN region r ON ST_Within(p.way, r.way)
+    WHERE p.leisure = 'playground'
+  )
+  SELECT json_build_object(
+    'relation_id',       relation_id,
+    'name',              (SELECT name FROM region),
+    'playground_count',  (SELECT playground_count FROM counts),
+    'bbox',              ARRAY[
+                           ST_XMin((SELECT geom FROM bbox)),
+                           ST_YMin((SELECT geom FROM bbox)),
+                           ST_XMax((SELECT geom FROM bbox)),
+                           ST_YMax((SELECT geom FROM bbox))
+                         ]
+  );
+$$;
+
+GRANT EXECUTE ON FUNCTION api.get_meta(bigint) TO web_anon;
+
 CREATE INDEX IF NOT EXISTS idx_osm_point_natural ON planet_osm_point ("natural") WHERE "natural" IS NOT NULL;
 
 -- Spatial indexes to speed up bbox and radius queries (idempotent)
