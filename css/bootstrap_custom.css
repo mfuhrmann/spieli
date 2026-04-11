@@ -121,11 +121,12 @@
 /* Popover — aligned with the info panel card design */
 
 .popover {
-    max-width: 340px;
+    max-width: 420px;
     border: none;
     border-radius: 14px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.16);
     font-family: system-ui, -apple-system, sans-serif;
+    overflow: hidden;
 }
 
 .popover-arrow::before,
@@ -155,11 +156,27 @@
     text-overflow: ellipsis;
 }
 
-/* Device images should not be clipped */
+/* Popovers containing an image get a fixed width */
+.popover:has(img) {
+    width: 420px;
+}
+
+/* When the body contains an image, allow wrapping and don't clip */
+.popover .popover-body:has(img) {
+    white-space: normal;
+    overflow: hidden;
+}
+
+/* Image breaks out of body padding to fill the full popover width */
 .popover .popover-body img {
     display: block;
-    max-width: 100%;
+    width: calc(100% + 24px);
+    margin: -8px -12px 0 -12px;
     height: auto;
-    white-space: normal;
-    overflow: visible;
+}
+
+/* Restore spacing for attribute list that follows an image */
+.popover .popover-body img + ul,
+.popover .popover-body a + ul {
+    margin-top: 8px;
 }

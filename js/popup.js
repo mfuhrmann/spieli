@@ -129,9 +129,9 @@ export function showPopup(type, popup, coordinate, feature) {
         // Fallback-Bild aus objFeatures, falls kein Panoramax und kein anderer Inhalt
         if (!content && matchedFeat && objFeatures[matchedFeat] && objFeatures[matchedFeat].image) {
             const imgFile = objFeatures[matchedFeat].image.replace(/^File:/, '').replace(/ /g, '_');
-            const imgUrl = `https://commons.wikimedia.org/wiki/Special:FilePath/${imgFile}?width=320`;
+            const imgUrl = `https://commons.wikimedia.org/wiki/Special:FilePath/${imgFile}?width=800`;
             content = `<img src="${imgUrl}" alt="${objFeatures[matchedFeat].name_de}"
-                style="width:310px; max-height:220px; object-fit:contain; display:block; margin:auto; border-radius:3px;">`;
+                style="object-fit:contain;">`;
         }
     }
 
@@ -457,8 +457,7 @@ function getEquipmentAttributes (feature) {
         const thumbUrl = `https://api.panoramax.xyz/api/pictures/${panoramaxUuid}/thumb.jpg`;
         const viewerUrl = `https://api.panoramax.xyz/?pic=${panoramaxUuid}&nav=none&focus=pic`;
         contentHtml += `<a href="${viewerUrl}" target="_blank" rel="noopener">` +
-            `<img src="${thumbUrl}" alt="Straßenfoto" ` +
-            `style="width:240px; height:130px; object-fit:cover; display:block; border-radius:3px; margin-bottom:4px;">` +
+            `<img src="${thumbUrl}" alt="Straßenfoto" style="object-fit:cover; aspect-ratio:16/9;">` +
             `</a>`;
     }
     if (content.length) {
@@ -474,9 +473,9 @@ function getEquipmentAttributes (feature) {
         const deviceKey = feature.get('playground');
         if (deviceKey && deviceKey in objDevices && objDevices[deviceKey].image) {
             const imgFile = objDevices[deviceKey].image.replace(/^File:/, '').replace(/ /g, '_');
-            const imgUrl = `https://commons.wikimedia.org/wiki/Special:FilePath/${imgFile}?width=320`;
+            const imgUrl = `https://commons.wikimedia.org/wiki/Special:FilePath/${imgFile}?width=800`;
             contentHtml = `<img src="${imgUrl}" alt="${objDevices[deviceKey].name_de}"
-                style="width:310px; max-height:220px; object-fit:contain; display:block; margin:auto; border-radius:3px;">`;
+                style="object-fit:contain;">`;
         }
     }
 

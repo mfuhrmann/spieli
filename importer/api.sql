@@ -238,10 +238,10 @@ AS $$
     FROM planet_osm_point p, center c
     WHERE ST_DWithin(p.way, c.geom, radius_m)
       AND (
-        p.amenity IN ('toilets', 'hospital', 'ice_cream', 'doctors')
+        p.amenity IN ('toilets', 'ice_cream')
         OR (p.amenity IN ('cafe', 'restaurant') AND p.tags->'cuisine' ~* 'ice_cream')
-        OR (p.amenity = 'doctors'               AND p.tags->'emergency' = 'yes')
         OR (p.tags->'emergency' = 'yes'         AND p.tags->'emergency' != 'fire_hydrant')
+        OR p.tags->'healthcare:speciality' = 'emergency'
         OR p.highway = 'bus_stop'
         OR p.shop IN ('chemist', 'supermarket', 'convenience')
       )
@@ -260,9 +260,10 @@ AS $$
     FROM planet_osm_polygon p, center c
     WHERE ST_DWithin(p.way, c.geom, radius_m)
       AND (
-        p.amenity IN ('toilets', 'hospital', 'ice_cream', 'doctors')
+        p.amenity IN ('toilets', 'ice_cream')
         OR (p.amenity IN ('cafe', 'restaurant') AND p.tags->'cuisine' ~* 'ice_cream')
         OR p.shop IN ('chemist', 'supermarket', 'convenience')
+        OR p.tags->'healthcare:speciality' = 'emergency'
       )
   ),
   pois AS (

@@ -653,7 +653,7 @@ const POI_CATEGORIES = [
     },
     {
         icon: '🏥', label: 'Notaufnahme',
-        match: t => t.amenity === 'hospital' || t.emergency === 'yes' || (t.amenity === 'doctors' && t.emergency === 'yes'),
+        match: t => t.emergency === 'yes' || t['healthcare:speciality'] === 'emergency',
         fallback: 'Krankenhaus'
     }
 ];
@@ -708,7 +708,7 @@ function haversineDistance(lat1, lon1, lat2, lon2) {
 }
 
 function formatDistance(m) {
-    return m < 1000 ? `${Math.round(m / 10) * 10} m` : `${(m / 1000).toFixed(1).replace('.', ',')} km`;
+    return m < 1000 ? `~${Math.round(m / 10) * 10} m` : `~${(m / 1000).toFixed(1).replace('.', ',')} km`;
 }
 
 function bearingDeg(lat1, lon1, lat2, lon2) {

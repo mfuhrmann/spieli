@@ -73,6 +73,29 @@ let basemapCartoDBVoyager = new TileLayer({
 //   green  = photos + name + detail info
 //   yellow = at least one of the above
 //   red    = bare polygon (nothing tagged)
+// Private / customers playgrounds get a diagonal hatch overlay instead of a solid fill.
+
+function makeHatchPattern(color, bgColor) {
+    const size = 10;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(0, 0, size, size);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(0, size);
+    ctx.lineTo(size, 0);
+    ctx.stroke();
+    return ctx.createPattern(canvas, 'repeat');
+}
+
+const _hatchComplete = makeHatchPattern('rgba(34,139,34,0.55)',  'rgba(34,139,34,0.08)');
+const _hatchPartial  = makeHatchPattern('rgba(180,130,0,0.55)',  'rgba(234,179,8,0.08)');
+const _hatchMissing  = makeHatchPattern('rgba(200,50,50,0.55)',  'rgba(239,68,68,0.06)');
+
 const _styleComplete = new Style({
     fill: new Fill({ color: 'rgba(34, 139, 34, 0.22)' }),
     stroke: new Stroke({ color: '#155215', width: 1.5 })
@@ -85,10 +108,31 @@ const _styleMissing = new Style({
     fill: new Fill({ color: 'rgba(239, 68, 68, 0.18)' }),
     stroke: new Stroke({ color: '#991b1b', width: 1.5 })
 });
+const _styleCompleteHatch = new Style({
+    fill: new Fill({ color: _hatchComplete }),
+    stroke: new Stroke({ color: '#155215', width: 1.5, lineDash: [6, 3] })
+});
+const _stylePartialHatch = new Style({
+    fill: new Fill({ color: _hatchPartial }),
+    stroke: new Stroke({ color: '#92400e', width: 1.5, lineDash: [6, 3] })
+});
+const _styleMissingHatch = new Style({
+    fill: new Fill({ color: _hatchMissing }),
+    stroke: new Stroke({ color: '#991b1b', width: 1.5, lineDash: [6, 3] })
+});
+
+function isRestrictedAccess(props) {
+    return props.access === 'private' || props.access === 'customers';
+}
 
 function playgroundStyleFn(feature) {
     const props = feature.getProperties();
     const c = playgroundCompleteness(props);
+    if (isRestrictedAccess(props)) {
+        if (c === 'complete') return _styleCompleteHatch;
+        if (c === 'partial')  return _stylePartialHatch;
+        return _styleMissingHatch;
+    }
     if (c === 'complete') return _styleComplete;
     if (c === 'partial')  return _stylePartial;
     return _styleMissing;
