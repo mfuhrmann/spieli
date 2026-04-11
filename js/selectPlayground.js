@@ -142,12 +142,15 @@ export function selectPlayground(coord, distance, multiSelect, feature = null) {
             duration = Math.min(Math.max(duration, 0), 3000); // sicherheitshalber Extremwerte abfangen
 
             // zum Spielplatz zoomen
-            // Padding left = info panel width so the playground centres in the visible map area
-            const infoPanelWidth = document.getElementById('info')?.offsetWidth ?? 0;
+            // Left padding accounts for the info panel (390px wide, 14px from left) on desktop.
+            // On mobile the panel is a bottom sheet, so we pad the bottom instead.
+            const isMobile = window.innerWidth <= 768;
+            const padding = isMobile
+                ? [20, 20, 300, 20]   // bottom sheet takes lower portion
+                : [40, 40, 40, 424];  // info panel: 390px width + 14px left offset + 20px margin
             map.getView().fit(extent, {
-                size: map.getSize(),
                 duration: duration,
-                padding: [20, 20, 20, infoPanelWidth + 20],
+                padding,
                 callback: function() {
                     // nach Abschluss der Zoom-Animation Spielplatzgeometrie anzeigen
                     showSelection(getSelectionCenter(), geojson);
