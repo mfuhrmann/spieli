@@ -466,6 +466,31 @@ export const objDevices = {
     },
 }
 
+// Deutschen Namen für fitness_station=* Werte (leisure=fitness_station)
+export const objFitnessStation = {
+    horizontal_bar:    'Klimmzugstange',
+    parallel_bars:     'Barren',
+    push_up:           'Liegestützgerät',
+    sit_up:            'Bauchtrainer',
+    balance_beam:      'Balancierbalken',
+    elliptical_trainer:'Crosstrainer',
+    exercise_stairs:   'Treppenstufen',
+    rowing:            'Rudergerät',
+    bicycle:           'Radergometer',
+    sign:              'Informationsschild',
+    stepping_stone:    'Trittsteine',
+    training_wall:     'Trainingswall',
+    wall_bars:         'Sprossenwand',
+    dip:               'Dip-Station',
+    slalom_bars:       'Slalomstangen',
+    stretching:        'Streckgerät',
+    air_walker:        'Luftläufer',
+    chest_press:       'Brustpresse',
+    leg_press:         'Beinpresse',
+    rotary_torso:      'Rumpfrotation',
+    archery:           'Bogenschießen',
+};
+
 // Hinweis: Speziellere Features müssen sich in der Reihenfolge der Einträge immer _vor_ allgemeineren Features befinden, um korrekt differenziert zu werden
 // z.B. amenity=bench + backrest=yes vor amenity=bench, damit letzteres nur für Sitzbänke greift, die nicht mit backrest=yes getaggt sind
 export const objFeatures = {
@@ -534,6 +559,7 @@ export const objFeatures = {
         name_de: "Tischtennisplatte",
         icon: "table_tennis",
         size: 12,
+        image: "File:Table tennis court.jpg",
     },
     soccer: {
         tags: {
@@ -543,6 +569,7 @@ export const objFeatures = {
         name_de: "Bolzplatz",
         icon: "soccer",
         size: 12,
+        image: "File:Erding Bolzplatz Feldkirchener Str.jpg",
     },
     basketball: {
         tags: {
@@ -552,6 +579,7 @@ export const objFeatures = {
         name_de: "Basketballfeld",
         icon: "basketball",
         size: 12,
+        image: "File:Basketball court.jpg",
     },
     pitch: {
         tags: {

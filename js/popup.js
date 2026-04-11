@@ -6,7 +6,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import { Popover } from 'bootstrap';
 
 import { getPlaygroundTitle, getPlaygroundLocation } from '../js/selectPlayground.js';
-import { objDevices, objFeatures } from '../js/objPlaygroundEquipment.js';
+import { objDevices, objFeatures, objFitnessStation } from '../js/objPlaygroundEquipment.js';
 import { playgroundCompleteness } from '../js/completeness.js';
 
 // Popups mit Infos zu Spielgeräten anzeigen
@@ -105,7 +105,11 @@ export function showPopup(type, popup, coordinate, feature) {
             if (name in objDevices) {
                 title = objDevices[name]["name_de"];
             }
+        } else if (feature.get('leisure') === 'fitness_station') {
+            const fsType = feature.get('fitness_station');
+            title = (fsType && fsType in objFitnessStation) ? objFitnessStation[fsType] : 'Fitnessgerät';
         } else {
+            var matchedFeat = null;
             featLoop: for (var feat in objFeatures) {
                 var objTags = objFeatures[feat]["tags"];
                 for (var key in objTags) {
@@ -114,12 +118,21 @@ export function showPopup(type, popup, coordinate, feature) {
                     }
                 }
                 title = objFeatures[feat]["name_de"];
+                matchedFeat = feat;
                 break;
             }
         }
 
         // Weitere Attribute auslesen und im Content des Popups auflisten
         content = getEquipmentAttributes(feature);
+
+        // Fallback-Bild aus objFeatures, falls kein Panoramax und kein anderer Inhalt
+        if (!content && matchedFeat && objFeatures[matchedFeat] && objFeatures[matchedFeat].image) {
+            const imgFile = objFeatures[matchedFeat].image.replace(/^File:/, '').replace(/ /g, '_');
+            const imgUrl = `https://commons.wikimedia.org/wiki/Special:FilePath/${imgFile}?width=320`;
+            content = `<img src="${imgUrl}" alt="${objFeatures[matchedFeat].name_de}"
+                style="width:310px; max-height:220px; object-fit:contain; display:block; margin:auto; border-radius:3px;">`;
+        }
     }
 
     popup.setPosition(coordinate);

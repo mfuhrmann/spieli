@@ -20,7 +20,7 @@ import map from './map.js';
 import { dataPlaygrounds } from './map.js';
 import { addFilter, removeFilter } from './filter.js';
 import { addShadowLayer, fillShadowMatrix } from './shadow.js';
-import { objDevices } from './objPlaygroundEquipment.js';
+import { objDevices, objFitnessStation } from './objPlaygroundEquipment.js';
 import { objColors } from '../style/VectorStyles.js';
 
 // TODO (GeoServer): hardcoded until GeoServer integration is restored
@@ -450,6 +450,23 @@ function updateEquipmentPanel(features, playgroundAttr = {}) {
                 `<div id="${uid}" class="collapse device-detail">${detail}</div></li>`;
         } else {
             device_string += `<li><span style="color:${color}">●</span> ${name}</li>`;
+        }
+    }
+    // Fitnessgeräte (leisure=fitness_station) einzeln auflisten
+    const fitnessColor = objColors['activity'] ?? objColors['fallback'];
+    for (const f of features.filter(f => f.properties.leisure === 'fitness_station')) {
+        const fsType = f.properties.fitness_station;
+        const name = (fsType && fsType in objFitnessStation) ? objFitnessStation[fsType] : 'Fitnessgerät';
+        const detail = getEquipmentAttributesFromProps(f.properties);
+        const uid = `dev-${f.properties.osm_id ?? Math.random().toString(36).slice(2)}`;
+        if (detail) {
+            device_string += `<li>` +
+                `<div class="device-toggle" data-bs-toggle="collapse" data-bs-target="#${uid}" role="button">` +
+                `<span style="color:${fitnessColor}">●</span> ${name}` +
+                ` <span class="bi bi-chevron-down device-chevron"></span></div>` +
+                `<div id="${uid}" class="collapse device-detail">${detail}</div></li>`;
+        } else {
+            device_string += `<li><span style="color:${fitnessColor}">●</span> ${name}</li>`;
         }
     }
     // Sportfelder (pitches) mit farbigem Punkt in die Geräteliste einreihen
