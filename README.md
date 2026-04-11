@@ -16,6 +16,7 @@ A free, interactive web map for exploring playgrounds based on [OpenStreetMap](h
   - 🟢 **Vollständig** — has at least one Panoramax photo (`panoramax` / `panoramax:*` tag) **and** a `name` **and** at least one of `operator`, `opening_hours`, `surface`, or `access` (with a value other than `yes`)
   - 🟡 **Teilweise erfasst** — has at least one of the above criteria but not all three
   - 🔴 **Daten fehlen** — none of the above are present
+- Private and customers-only playgrounds (`access=private` / `access=customers`) shown with a diagonal hatch pattern and dashed border
 - Hover tooltip with playground name, key attributes, and completeness indicator
 
 **Playground detail panel**
@@ -24,7 +25,7 @@ A free, interactive web map for exploring playgrounds based on [OpenStreetMap](h
 - Tree count: number of mapped `natural=tree` nodes in and around the playground, shown as a map layer when a playground is selected
 - Street photos via [Panoramax](https://panoramax.xyz) — inline viewer with fullscreen modal and keyboard navigation
 - Community reviews via [Mangrove.reviews](https://mangrove.reviews) — read ratings and submit your own (pseudonymous, no account required)
-- Nearby POIs within a configurable radius: toilets, bus stops, ice cream, supermarkets, drugstores, emergency rooms — with distance and OSM foot routing
+- Nearby POIs within a configurable radius: toilets, bus stops, ice cream, supermarkets, drugstores, emergency rooms (`emergency=yes` or `healthcare:speciality=emergency`) — with approximate distance (~) and OSM foot routing
 - Permalink: every playground gets a shareable `#W<id>` URL; share button uses the Web Share API (mobile) or copies to clipboard
 - Add photos and equipment directly via [MapComplete](https://mapcomplete.org/playgrounds)
 
@@ -50,7 +51,20 @@ browser → nginx (app) → PostgREST → PostgreSQL/PostGIS
 | **PostgreSQL + PostGIS** | Stores OSM data imported via osm2pgsql |
 | **osm2pgsql importer** | Downloads a Geofabrik PBF extract and imports it into PostGIS |
 | **PostgREST** | Auto-generates a REST API from SQL functions in the `api` schema |
-| **nginx** | Serves the Vite-built frontend; proxies `/api/` to PostgREST |
+| **nginx** | Serves the Vite-built frontend; proxies `/api/` to PostgREST; exposes CORS headers for Hub federation |
+
+---
+
+## Federation
+
+Multiple regional instances can be aggregated into a single global map using the **[Spielplatzkarte Hub](https://github.com/mfuhrmann/spielplatzkarte-hub)**.
+
+Each instance exposes two federation endpoints (available since v0.2.1):
+
+- `GET /api/rpc/get_playgrounds` — full GeoJSON FeatureCollection of all playgrounds in the region
+- `GET /api/rpc/get_meta` — instance metadata: OSM relation name, playground count, bounding box
+
+CORS is enabled on `/api/` so the Hub can query instances cross-origin from the browser.
 
 ---
 
@@ -60,7 +74,6 @@ browser → nginx (app) → PostgREST → PostgreSQL/PostGIS
 |---|---|
 | Map | [OpenLayers](https://openlayers.org/) |
 | UI framework | [Bootstrap 5](https://getbootstrap.com/) + [Bootstrap Icons](https://icons.getbootstrap.com/) |
-| DOM / events | [jQuery](https://jquery.com/) |
 | Opening hours parser | [opening_hours.js](https://github.com/opening-hours/opening_hours.js) |
 | Build tool | [Vite 6](https://vitejs.dev/) |
 | Language | JavaScript (ES Modules) |
