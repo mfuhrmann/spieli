@@ -32,6 +32,7 @@ import { poiRadiusM } from './config.js';
 import { panoramaxViewerUrl, panoramaxThumbUrl } from './panoramax.js';
 import { getEquipmentAttributesFromProps } from './popup.js';
 import { renderReviews } from './reviews.js';
+import { t, language } from './i18n.js';
 
 const el = id => document.getElementById(id);
 const show = id => { el(id).style.display = ''; };
@@ -51,7 +52,7 @@ let nearbyClickController = null; // AbortController for nearby-item click deleg
 let panoramaxEnlargeController = null; // AbortController for panoramax-preview click
 let panoramaxThumbController = null;  // AbortController for panoramax-thumb click
 
-export function showNearbyPlaygrounds(lon, lat, label = 'diesem Ort') {
+export function showNearbyPlaygrounds(lon, lat, label = t('nearby.thisLocation')) {
     const source = dataPlaygrounds.getSource ? dataPlaygrounds.getSource() : null;
     if (!source) return;
     const features = source.getFeatures();
@@ -81,12 +82,12 @@ export function showNearbyPlaygrounds(lon, lat, label = 'diesem Ort') {
     nearbyListFeatures = nearest.map(x => x.feature);
 
     let html = `<div class="nearby-panel">
-        <span class="info-label">In der Nähe von ${label}</span>`;
+        <span class="info-label">${t('nearby.title', { label })}</span>`;
 
     for (let i = 0; i < nearest.length; i++) {
         const { feature, dist } = nearest[i];
         const attr = feature.getProperties();
-        const name = getPlaygroundTitle(attr) || 'Spielplatz';
+        const name = getPlaygroundTitle(attr) || t('nearby.defaultName');
         html += `<div class="nearby-item" data-idx="${i}">
             <span class="nearby-name">${name}</span>
             <span class="nearby-dist">${formatDistance(dist)}</span>
@@ -419,21 +420,11 @@ function updateEquipmentPanel(features, playgroundAttr = {}) {
     }
 
     let equipment_str = '<ul>';
-    if (deviceCount) {
-        equipment_str += `<li>${deviceCount} Spielgerät${deviceCount !== 1 ? 'e' : ''}</li>`;
-    }
-    if (fitnessCount) {
-        equipment_str += fitnessCount === 1 ? '<li>1 Fitnessgerät</li>' : `<li>${fitnessCount} Fitnessgeräte</li>`;
-    }
-    if (benchCount) {
-        equipment_str += benchCount === 1 ? '<li>1 Sitzbank</li>' : `<li>${benchCount} Sitzbänke</li>`;
-    }
-    if (shelterCount) {
-        equipment_str += shelterCount === 1 ? '<li>1 Unterstand</li>' : `<li>${shelterCount} Unterstände</li>`;
-    }
-    if (picnicCount) {
-        equipment_str += picnicCount === 1 ? '<li>1 Picknicktisch</li>' : `<li>${picnicCount} Picknicktische</li>`;
-    }
+    if (deviceCount)  equipment_str += `<li>${t('equipment.devices',  { count: deviceCount  })}</li>`;
+    if (fitnessCount) equipment_str += `<li>${t('equipment.fitness',  { count: fitnessCount })}</li>`;
+    if (benchCount)   equipment_str += `<li>${t('equipment.benches',  { count: benchCount   })}</li>`;
+    if (shelterCount) equipment_str += `<li>${t('equipment.shelters', { count: shelterCount })}</li>`;
+    if (picnicCount)  equipment_str += `<li>${t('equipment.picnic',   { count: picnicCount  })}</li>`;
     equipment_str += '</ul>';
     el('info-equipment').innerHTML = equipment_str;
 
@@ -462,7 +453,7 @@ function updateEquipmentPanel(features, playgroundAttr = {}) {
     const fitnessColor = objColors['activity'] ?? objColors['fallback'];
     for (const f of features.filter(f => f.properties.leisure === 'fitness_station')) {
         const fsType = f.properties.fitness_station;
-        const name = (fsType && fsType in objFitnessStation) ? objFitnessStation[fsType] : 'Fitnessgerät';
+        const name = (fsType && fsType in objFitnessStation) ? objFitnessStation[fsType] : t('equipment.fitnessDefault');
         const detail = getEquipmentAttributesFromProps(f.properties);
         const uid = `dev-${f.properties.osm_id ?? Math.random().toString(36).slice(2)}`;
         if (detail) {
@@ -515,7 +506,7 @@ function updateEquipmentPanel(features, playgroundAttr = {}) {
     // "Hilf mit"-Hinweis — nur wenn keine separat gemappten Geräte vorhanden
     if (!deviceFeatures.length) {
         el('info-device-list').insertAdjacentHTML('beforeend',
-            '<p class="text-muted mt-2 mb-0" style="font-size:smaller">Spielgeräte noch nicht einzeln kartiert – hilf mit! 👇</p>'
+            `<p class="text-muted mt-2 mb-0" style="font-size:smaller">${t('equipment.addHint')}</p>`
         );
     }
 
@@ -528,7 +519,7 @@ function updateEquipmentPanel(features, playgroundAttr = {}) {
         );
         const mapcompleteUrl = `https://mapcomplete.org/playgrounds.html?z=19&lat=${lat.toFixed(7)}&lon=${lon.toFixed(7)}#new_point_dialog_0`;
         el('info-device-list').insertAdjacentHTML('beforeend',
-            `<div class="mt-1"><a href="${mapcompleteUrl}" target="_blank" rel="noopener" class="mc-add-link"><span class="bi bi-plus-circle"></span> Spielgerät hinzufügen</a></div>`
+            `<div class="mt-1"><a href="${mapcompleteUrl}" target="_blank" rel="noopener" class="mc-add-link"><span class="bi bi-plus-circle"></span> ${t('equipment.addLink')}</a></div>`
         );
     }
 }
@@ -547,20 +538,20 @@ function showPanoramaxFromTags(attr) {
     const osmType = osmTypeMap[attr['osm_type']] ?? 'way';
     const osmId = attr['osm_id'];
     const mapcompletePhotoUrl = `https://mapcomplete.org/playgrounds.html#${osmType}/${osmId}`;
-    const addPhotoLink = `<a href="${mapcompletePhotoUrl}" target="_blank" rel="noopener" class="mc-add-link"><span class="bi bi-camera"></span> Foto hinzufügen</a>`;
+    const addPhotoLink = `<a href="${mapcompletePhotoUrl}" target="_blank" rel="noopener" class="mc-add-link"><span class="bi bi-camera"></span> ${t('photos.addLink')}</a>`;
 
     if (!uuids.length) {
         el('info-panoramax').innerHTML =
             `<div class="text-center py-2">` +
             `<span class="bi bi-camera" style="font-size:1.8rem; color:#d1d5db;"></span>` +
-            `<p class="text-muted mt-1 mb-2" style="font-size:smaller;">Noch keine Fotos für diesen Spielplatz.<br>Warst du schon dort?</p>` +
+            `<p class="text-muted mt-1 mb-2" style="font-size:smaller;">${t('photos.none')}</p>` +
             addPhotoLink +
             `</div>`;
         return;
     }
 
     // Inline-Viewer mit klickbarem Overlay für Vollbild
-    let html = `<div style="position:relative; cursor:pointer;" id="panoramax-preview" data-uuid="${uuids[0]}" title="Klicken zum Vergrößern">
+    let html = `<div style="position:relative; cursor:pointer;" id="panoramax-preview" data-uuid="${uuids[0]}" title="${t('photos.enlarge')}">
         <iframe id="panoramax-iframe"
             src="${panoramaxViewerUrl(uuids[0])}"
             style="width:100%; height:260px; border:none; border-radius:4px; pointer-events:none;"
@@ -577,7 +568,7 @@ function showPanoramaxFromTags(attr) {
             html += `<img src="${panoramaxThumbUrl(uuids[i])}"
                 data-uuid="${uuids[i]}"
                 class="panoramax-thumb"
-                alt="Foto ${i + 1}"
+                alt="${t('photos.thumbnail', { n: i + 1 })}"
                 style="height:52px; width:72px; border-radius:3px; cursor:pointer; object-fit:cover; opacity:${opacity};">`;
         }
         html += '</div>';
@@ -607,7 +598,7 @@ function showPanoramaxFromTags(attr) {
         const uuid = thumb.dataset.uuid;
         el('panoramax-iframe').src = panoramaxViewerUrl(uuid);
         el('panoramax-preview').dataset.uuid = uuid;
-        document.querySelectorAll('.panoramax-thumb').forEach(t => { t.style.opacity = '0.55'; });
+        document.querySelectorAll('.panoramax-thumb').forEach(thumb => { thumb.style.opacity = '0.55'; });
         thumb.style.opacity = '1';
     }, { signal: panoramaxThumbController.signal });
 }
@@ -621,7 +612,7 @@ async function loadNearbyPOIs(lat, lon, radiusM, osmId) {
     } catch (e) {
         console.warn('Umfeld-Daten konnten nicht geladen werden:', e);
         if (generation !== nearbyLoadGeneration) return;
-        el('info-umfeld').innerHTML = '<small class="text-muted"><i>Umfeld-Daten konnten nicht geladen werden.</i></small>';
+        el('info-umfeld').innerHTML = `<small class="text-muted"><i>${t('poi.errorLoad')}</i></small>`;
         return;
     }
     if (generation !== nearbyLoadGeneration) return;
@@ -630,52 +621,51 @@ async function loadNearbyPOIs(lat, lon, radiusM, osmId) {
 
 const POI_CATEGORIES = [
     {
-        icon: '🚻', label: 'Toiletten',
-        match: t => t.amenity === 'toilets',
-        fallback: 'Öffentliche Toilette'
+        icon: '🚻', get label() { return t('poi.categories.toilets'); },
+        match: f => f.amenity === 'toilets',
+        get fallback() { return t('poi.fallbacks.toilets'); }
     },
     {
-        icon: '🚌', label: 'Bushaltestellen',
-        match: t => t.highway === 'bus_stop',
-        fallback: 'Bushaltestelle',
+        icon: '🚌', get label() { return t('poi.categories.busStops'); },
+        match: f => f.highway === 'bus_stop',
+        get fallback() { return t('poi.fallbacks.busStops'); },
         hint: (poi, playLat, playLon) => poi.tags.towards
             ? `→ ${poi.tags.towards}`
             : bearingToDir(bearingDeg(playLat, playLon, poi.lat, poi.lon))
     },
     {
-        icon: '🍦', label: 'Eis',
-        match: t => t.amenity === 'ice_cream' || (t.cuisine && t.cuisine.includes('ice_cream')),
-        fallback: 'Eisdiele'
+        icon: '🍦', get label() { return t('poi.categories.iceCream'); },
+        match: f => f.amenity === 'ice_cream' || (f.cuisine && f.cuisine.includes('ice_cream')),
+        get fallback() { return t('poi.fallbacks.iceCream'); }
     },
     {
-        icon: '🛒', label: 'Einkaufen',
-        match: t => t.shop === 'supermarket' || t.shop === 'convenience',
-        fallback: 'Einkaufsmöglichkeit'
+        icon: '🛒', get label() { return t('poi.categories.shopping'); },
+        match: f => f.shop === 'supermarket' || f.shop === 'convenience',
+        get fallback() { return t('poi.fallbacks.shopping'); }
     },
     {
-        icon: '🧴', label: 'Drogerie',
-        match: t => t.shop === 'chemist',
-        fallback: 'Drogerie'
+        icon: '🧴', get label() { return t('poi.categories.drugstore'); },
+        match: f => f.shop === 'chemist',
+        get fallback() { return t('poi.fallbacks.drugstore'); }
     },
     {
-        icon: '🏥', label: 'Notaufnahme',
-        match: t => t.emergency === 'yes' || t['healthcare:speciality'] === 'emergency',
-        fallback: 'Krankenhaus'
+        icon: '🏥', get label() { return t('poi.categories.emergency'); },
+        match: f => f.emergency === 'yes' || f['healthcare:speciality'] === 'emergency',
+        get fallback() { return t('poi.fallbacks.emergency'); }
     }
 ];
 
 function formatOpeningHours(ohStr) {
-    const fmt = t => t.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+    const fmt = date => date.toLocaleTimeString(language, { hour: '2-digit', minute: '2-digit' });
 
     // Returns a human-readable day label for a future date.
-    // Within 6 days: weekday name ("Mittwoch"). Further away: full date ("Mi., 15.04.").
     const dayLabel = (d, now) => {
         const diffDays = Math.round((d - now) / 86400000);
-        if (d.toDateString() === now.toDateString()) return 'Heute';
+        if (d.toDateString() === now.toDateString()) return t('poi.today');
         const tomorrow = new Date(now); tomorrow.setDate(now.getDate() + 1);
-        if (d.toDateString() === tomorrow.toDateString()) return 'Morgen';
-        if (diffDays <= 6) return d.toLocaleDateString('de-DE', { weekday: 'long' });
-        return d.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' });
+        if (d.toDateString() === tomorrow.toDateString()) return t('poi.tomorrow');
+        if (diffDays <= 6) return d.toLocaleDateString(language, { weekday: 'long' });
+        return d.toLocaleDateString(language, { weekday: 'short', day: '2-digit', month: '2-digit' });
     };
 
     try {
@@ -686,22 +676,24 @@ function formatOpeningHours(ohStr) {
 
         let statusHtml;
         if (ohStr.trim() === '24/7') {
-            statusHtml = `<span style="color:#16a34a;">● Immer geöffnet</span>`;
+            statusHtml = `<span style="color:#16a34a;">● ${t('poi.alwaysOpen')}</span>`;
         } else if (isOpen) {
-            const until = nextChange ? ` bis ${fmt(nextChange)}` : '';
-            statusHtml = `<span style="color:#16a34a;">● Geöffnet${until}</span>`;
+            const label = nextChange
+                ? t('poi.openUntil', { time: fmt(nextChange) })
+                : t('poi.open');
+            statusHtml = `<span style="color:#16a34a;">● ${label}</span>`;
         } else {
             if (nextChange) {
-                statusHtml = `<span style="color:#dc2626;">● Geschlossen</span> · Öffnet ${dayLabel(nextChange, now)} um\u00A0${fmt(nextChange)}`;
+                statusHtml = `<span style="color:#dc2626;">● ${t('poi.closed')}</span> · ${t('poi.opensAt', { day: dayLabel(nextChange, now), time: fmt(nextChange) })}`;
             } else {
-                statusHtml = `<span style="color:#dc2626;">● Geschlossen</span>`;
+                statusHtml = `<span style="color:#dc2626;">● ${t('poi.closed')}</span>`;
             }
         }
 
-        return `<span class="info-label">Öffnungszeiten</span> ${statusHtml}`;
+        return `<span class="info-label">${t('poi.openingHours')}</span> ${statusHtml}`;
     } catch {
         // Fallback für unbekannte Formate
-        return `<span class="info-label">Öffnungszeiten</span> <code style="font-size:smaller;">${ohStr}</code>`;
+        return `<span class="info-label">${t('poi.openingHours')}</span> <code style="font-size:smaller;">${ohStr}</code>`;
     }
 }
 
@@ -714,7 +706,9 @@ function haversineDistance(lat1, lon1, lat2, lon2) {
 }
 
 function formatDistance(m) {
-    return m < 1000 ? `~${Math.round(m / 10) * 10} m` : `~${(m / 1000).toFixed(1).replace('.', ',')} km`;
+    if (m < 1000) return `~${Math.round(m / 10) * 10} m`;
+    const km = (m / 1000).toLocaleString(language, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+    return `~${km} km`;
 }
 
 function bearingDeg(lat1, lon1, lat2, lon2) {

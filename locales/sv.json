@@ -1,0 +1,137 @@
+{
+  "appTitle": "Lekplatskarta \u2013 {{regionName}}",
+  "search": {
+    "placeholder": "Dubbel-Shift för att söka",
+    "found": "\"{{query}}\" i {{location}}",
+    "foundGeneric": "\"{{query}}\" hittades",
+    "notFound": "Inga resultat hittades!"
+  },
+  "nav": {
+    "addData": "Lägg till data",
+    "about": "Om projektet",
+    "menu": "Meny"
+  },
+  "info": {
+    "hint": "Tryck på en lekplats för detaljer",
+    "shareBtn": "Dela lekplats",
+    "osmBtn": "Visa på OpenStreetMap"
+  },
+  "completeness": {
+    "complete": "Foton, namn och detaljer tillgängliga",
+    "partial": "Delvis kartlagd",
+    "missing": "Ingen data"
+  },
+  "accordion": {
+    "photos": "Foton",
+    "equipment": "Utrustning",
+    "shadow": "Skugga",
+    "surroundings": "Omgivning",
+    "reviews": "Recensioner",
+    "completeness": "Datakomplettering"
+  },
+  "location": {
+    "btn": "Min plats",
+    "yourLocation": "din plats"
+  },
+  "nearby": {
+    "title": "Nära {{label}}",
+    "defaultName": "Lekplats",
+    "thisLocation": "denna plats"
+  },
+  "equipment": {
+    "devices_one": "{{count}} lekredskap",
+    "devices_other": "{{count}} lekredskap",
+    "fitness_one": "{{count}} fitnessredskap",
+    "fitness_other": "{{count}} fitnessredskap",
+    "benches_one": "{{count}} bänk",
+    "benches_other": "{{count}} bänkar",
+    "shelters_one": "{{count}} skydd",
+    "shelters_other": "{{count}} skydd",
+    "picnic_one": "{{count}} picknicbord",
+    "picnic_other": "{{count}} picknicbord",
+    "fitnessDefault": "Fitnessredskap",
+    "addHint": "Utrustning inte kartlagd individuellt ännu \u2013 hjälp till! 👇",
+    "addLink": "Lägg till utrustning"
+  },
+  "photos": {
+    "none": "Inga foton för den här lekplatsen ännu.<br>Har du besökt den?",
+    "addLink": "Lägg till foto",
+    "enlarge": "Klicka för att förstora",
+    "thumbnail": "Foto {{n}}"
+  },
+  "poi": {
+    "errorLoad": "Kunde inte ladda omgivningsdata.",
+    "alwaysOpen": "Alltid öppet",
+    "open": "Öppet",
+    "openUntil": "Öppet till {{time}}",
+    "closed": "Stängt",
+    "opensAt": "Öppnar {{day}} kl. {{time}}",
+    "openingHours": "Öppettider",
+    "today": "Idag",
+    "tomorrow": "Imorgon",
+    "categories": {
+      "toilets": "Toaletter",
+      "busStops": "Busshållplatser",
+      "iceCream": "Glass",
+      "shopping": "Shopping",
+      "drugstore": "Apotek",
+      "emergency": "Akutmottagning"
+    },
+    "fallbacks": {
+      "toilets": "Offentlig toalett",
+      "busStops": "Busshållplats",
+      "iceCream": "Glasskiosk",
+      "shopping": "Butik",
+      "drugstore": "Apotek",
+      "emergency": "Sjukhus"
+    }
+  },
+  "modal": {
+    "closeBtn": "Stäng",
+    "backToMap": "Tillbaka till kartan",
+    "streetPhoto": "Gatufoto",
+    "prevPhoto": "Föregående foto",
+    "nextPhoto": "Nästa foto",
+    "addData": {
+      "osm": {
+        "label": "OpenStreetMap",
+        "text": "Data kommer från {{osmLink}} \u2014 en fri, samarbetande världskarta skapad av miljontals volontärer. Endast det som har kartlagts visas här.",
+        "wikiUrl": "https://sv.wikipedia.org/wiki/OpenStreetMap"
+      },
+      "contribute": {
+        "label": "Bidra till lekplatser",
+        "text": "Vem som helst kan bidra. En bra startpunkt är {{learnOsmLink}}. Relevanta taggar finns dokumenterade i {{wikiLink}} och på sidan om {{equipmentLink}}.",
+        "learnOsmUrl": "https://learnosm.org/en/beginner/",
+        "wikiLabel": "OSM-wikin",
+        "equipmentLabel": "kartläggning av enskild utrustning"
+      },
+      "photos": {
+        "label": "Lägg till foton",
+        "text": "Foton kan laddas upp direkt via {{mapcompleteLink}} \u2014 öppna en lekplats och klicka på \"Lägg till foto\". Foton tillhandahålls av {{panoramaxLink}}."
+      },
+      "community": {
+        "label": "Gemenskap",
+        "text": "Frågor eller vill du engagera dig? Det lokala OSM-gemenskapen nås via {{chatLink}}.",
+        "chatLabel": "lokal OSM-gemenskapschatt"
+      }
+    },
+    "about": {
+      "history": {
+        "label": "Historia",
+        "text": "Lekplatskartan skapades av {{authorLink}} som avslutningsprojekt för en {{courseLink}} \u2014 ursprungligen inriktad på Berlin. Med tiden utvecklades den till en generisk karta som kan användas för vilket OSM-område som helst.",
+        "courseUrl": "https://gis-trainer.com/de/gis_webmapping.php",
+        "courseLabel": "GIS och webbkartläggningskurs"
+      },
+      "project": {
+        "label": "Projektet",
+        "text": "Lekplatskartan är en fri, interaktiv webbkarta baserad på {{osmLink}}-data. Den innehåller inga proprietära data, kräver ingen inloggning och spårar inga användare. Den som förbättrar lekplatsdata i OSM förbättrar automatiskt även denna karta.",
+        "osmWikiUrl": "https://sv.wikipedia.org/wiki/OpenStreetMap"
+      },
+      "source": {
+        "label": "Källkod",
+        "text": "Projektet är öppen källkod och {{repoLink}}.",
+        "repoLabel": "offentligt tillgängligt"
+      }
+    }
+  }
+}

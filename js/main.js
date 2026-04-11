@@ -1,6 +1,7 @@
 import 'bootstrap/dist/css/bootstrap.min.css';
 import '../css/bootstrap_custom.css';
 import { Modal } from 'bootstrap';
+import { t, applyTranslations } from './i18n.js';
 
 // Bootstrap's data-api may be tree-shaken away — wire up modal triggers explicitly
 document.querySelectorAll('[data-bs-toggle="modal"]').forEach(trigger => {
@@ -38,40 +39,46 @@ const DEFAULT_PLAYGROUND_WIKI_URL = 'https://wiki.openstreetmap.org/wiki/DE:Tag:
         console.warn('Region info could not be fetched from Nominatim:', e);
     }
 
+    applyTranslations();
+
     // Seitenname aus Konfiguration setzen
-    const appTitle = `${region.name}er Spielplatzkarte`;
+    const appTitle = t('appTitle', { regionName: region.name });
     document.title = appTitle;
     document.getElementById('app-version').textContent = `v${version}`;
 
-    buildDatenErgaenzenModal(region.name);
+    buildDatenErgaenzenModal();
     buildUeberModal();
 }());
 
 // "Daten ergänzen"-Modal dynamisch befüllen
-function buildDatenErgaenzenModal(regionName) {
-    const l = (text) => `<span class="info-label">${text}</span>`;
+function buildDatenErgaenzenModal() {
+    const l = text => `<span class="info-label">${text}</span>`;
+    const p = text => `<p>${text}</p>`;
+    const a = (href, text, extra = '') => `<a href="${href}" class="link-secondary" ${extra}>${text}</a>`;
     const wikiUrl = regionPlaygroundWikiUrl || DEFAULT_PLAYGROUND_WIKI_URL;
 
+    const osmWikiLink   = a(t('modal.addData.osm.wikiUrl'), 'OpenStreetMap');
+    const learnOsmLink  = a(t('modal.addData.contribute.learnOsmUrl'), 'LearnOSM.org');
+    const wikiLink      = a(wikiUrl, t('modal.addData.contribute.wikiLabel'), 'target="_blank" rel="noopener"');
+    const equipmentLink = a('https://wiki.openstreetmap.org/wiki/Key:playground', t('modal.addData.contribute.equipmentLabel'));
+    const mapcompleteLink = a('https://mapcomplete.org/playgrounds', 'MapComplete', 'target="_blank" rel="noopener"');
+    const panoramaxLink = a('https://panoramax.xyz', 'Panoramax', 'target="_blank" rel="noopener"');
+
     let html = `
-        ${l('OpenStreetMap')}
-        <p>Die Daten stammen aus <a href="https://de.wikipedia.org/wiki/OpenStreetMap" class="link-secondary">OpenStreetMap</a> —
-        einer freien, kollaborativen Weltkarte von Millionen Freiwilligen. Nur was eingetragen wurde, erscheint auch hier.</p>
+        ${l(t('modal.addData.osm.label'))}
+        ${p(t('modal.addData.osm.text', { osmLink: osmWikiLink }))}
 
-        ${l('Spielplätze beitragen')}
-        <p>Jede und jeder kann mitmachen. Einen Einstieg bietet <a href="https://learnosm.org/de/beginner/" class="link-secondary">LearnOSM.org</a>.
-        Die relevanten Tags sind im <a href="${wikiUrl}" class="link-secondary" target="_blank" rel="noopener">OSM-Wiki</a>
-        und auf der Seite zur <a href="https://wiki.openstreetmap.org/wiki/Key:playground" class="link-secondary">Erfassung einzelner Spielgeräte</a> dokumentiert.</p>
+        ${l(t('modal.addData.contribute.label'))}
+        ${p(t('modal.addData.contribute.text', { learnOsmLink, wikiLink, equipmentLink }))}
 
-        ${l('Fotos hinzufügen')}
-        <p>Fotos lassen sich direkt über <a href="https://mapcomplete.org/playgrounds" class="link-secondary" target="_blank" rel="noopener">MapComplete</a>
-        hochladen — einfach einen Spielplatz öffnen und „Foto hinzufügen" klicken.
-        Die Fotos werden über <a href="https://panoramax.xyz" class="link-secondary" target="_blank" rel="noopener">Panoramax</a> bereitgestellt.</p>`;
+        ${l(t('modal.addData.photos.label'))}
+        ${p(t('modal.addData.photos.text', { mapcompleteLink, panoramaxLink }))}`;
 
     if (regionChatUrl) {
+        const chatLink = a(regionChatUrl, t('modal.addData.community.chatLabel'), 'target="_blank" rel="noopener"');
         html += `
-        ${l('Community')}
-        <p>Fragen oder mitmachen? Die lokale OSM-Community ist erreichbar über den
-        <a href="${regionChatUrl}" class="link-secondary" target="_blank" rel="noopener">lokalen OSM-Community-Chat</a>.</p>`;
+        ${l(t('modal.addData.community.label'))}
+        ${p(t('modal.addData.community.text', { chatLink }))}`;
     }
 
     document.querySelector('#modalDatenErgaenzen .modal-body').innerHTML = html;
@@ -79,26 +86,26 @@ function buildDatenErgaenzenModal(regionName) {
 
 // "Über das Projekt"-Modal dynamisch befüllen
 function buildUeberModal() {
-    const l = (text) => `<span class="info-label">${text}</span>`;
-    const authorLink = `<a href="${projectAuthorOsmUrl}" class="link-secondary" target="_blank" rel="noopener">Alex Seidel (Supaplex030)</a>`;
+    const l = text => `<span class="info-label">${text}</span>`;
+    const p = text => `<p>${text}</p>`;
+    const a = (href, text, extra = '') => `<a href="${href}" class="link-secondary" ${extra}>${text}</a>`;
+
+    const authorLink = a(projectAuthorOsmUrl, 'Alex Seidel (Supaplex030)', 'target="_blank" rel="noopener"');
+    const courseLink = a(t('modal.about.history.courseUrl'), t('modal.about.history.courseLabel'));
+    const osmLink    = a(t('modal.about.project.osmWikiUrl'), 'OpenStreetMap');
 
     let html = `
-        ${l('Geschichte')}
-        <p>Die Spielplatzkarte wurde von ${authorLink} als Abschlussprojekt einer
-        <a href="https://gis-trainer.com/de/gis_webmapping.php" class="link-secondary">GIS- und Webmapping-Weiterbildung</a>
-        ins Leben gerufen — ursprünglich mit Fokus auf Berlin. Im Laufe der Zeit wurde sie zu einer
-        generischen Spielplatzkarte weiterentwickelt, die für jede beliebige OSM-Region eingesetzt werden kann.</p>
+        ${l(t('modal.about.history.label'))}
+        ${p(t('modal.about.history.text', { authorLink, courseLink }))}
 
-        ${l('Das Projekt')}
-        <p>Die Spielplatzkarte ist eine freie, interaktive Webkarte auf Basis von
-        <a href="https://de.wikipedia.org/wiki/OpenStreetMap" class="link-secondary">OpenStreetMap</a>-Daten.
-        Sie enthält keine proprietären Daten, erfordert keine Anmeldung und verfolgt keine Nutzer.
-        Wer Spielplatzdaten in OSM verbessert, verbessert damit automatisch auch diese Karte.</p>`;
+        ${l(t('modal.about.project.label'))}
+        ${p(t('modal.about.project.text', { osmLink }))}`;
 
     if (projectRepoUrl) {
+        const repoLink = a(projectRepoUrl, t('modal.about.source.repoLabel'), 'target="_blank" rel="noopener"');
         html += `
-        ${l('Quellcode')}
-        <p>Das Projekt ist OpenSource und <a href="${projectRepoUrl}" class="link-secondary" target="_blank" rel="noopener">öffentlich verfügbar</a>.</p>`;
+        ${l(t('modal.about.source.label'))}
+        ${p(t('modal.about.source.text', { repoLink }))}`;
     }
 
     html += `<p class="mt-3 mb-0" style="font-size:11px; color:#9ca3af;">Version ${version}</p>`;

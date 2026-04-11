@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html class="h-100">
+<html class="h-100" lang="de">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
@@ -26,17 +26,17 @@
             <img src="./img/swing.png" alt="Logo" height="20" class="search-logo">
             <span id="app-version" class="search-version"></span>
             <span id="inputSearchIcon" class="bi bi-search search-icon"></span>
-            <input id="inputSearch" type="text" class="search-input" placeholder="Doppel-Shift für Suche">
+            <input id="inputSearch" type="text" class="search-input" placeholder="Doppel-Shift für Suche" data-i18n-placeholder="search.placeholder">
             <div class="search-nav-links">
-                <a class="search-nav-link" href="#" data-bs-toggle="modal" data-bs-target="#modalDatenErgaenzen">Daten ergänzen</a>
-                <a class="search-nav-link" href="#" data-bs-toggle="modal" data-bs-target="#modalUeberDasProjekt">Über das Projekt</a>
+                <a class="search-nav-link" href="#" data-bs-toggle="modal" data-bs-target="#modalDatenErgaenzen" data-i18n="nav.addData">Daten ergänzen</a>
+                <a class="search-nav-link" href="#" data-bs-toggle="modal" data-bs-target="#modalUeberDasProjekt" data-i18n="nav.about">Über das Projekt</a>
             </div>
-            <button class="search-menu-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Menü">
+            <button class="search-menu-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Menü" data-i18n-title="nav.menu">
                 <span class="bi bi-three-dots-vertical"></span>
             </button>
             <ul class="dropdown-menu dropdown-menu-end">
-                <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#modalDatenErgaenzen">Daten ergänzen</a></li>
-                <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#modalUeberDasProjekt">Über das Projekt</a></li>
+                <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#modalDatenErgaenzen" data-i18n="nav.addData">Daten ergänzen</a></li>
+                <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#modalUeberDasProjekt" data-i18n="nav.about">Über das Projekt</a></li>
             </ul>
         </div>
 
@@ -49,19 +49,19 @@
 
             <div id="info-more" class="info-more-hint">
                 <span class="bi bi-hand-index"></span>
-                <p>Spielplatz antippen für Details</p>
+                <p data-i18n="info.hint">Spielplatz antippen für Details</p>
                 <div class="completeness-legend">
                     <div class="completeness-legend-item">
                         <span class="completeness-swatch completeness-swatch--complete"></span>
-                        Fotos, Name &amp; Details vorhanden
+                        <span data-i18n="completeness.complete">Fotos, Name &amp; Details vorhanden</span>
                     </div>
                     <div class="completeness-legend-item">
                         <span class="completeness-swatch completeness-swatch--partial"></span>
-                        Teilweise erfasst
+                        <span data-i18n="completeness.partial">Teilweise erfasst</span>
                     </div>
                     <div class="completeness-legend-item">
                         <span class="completeness-swatch completeness-swatch--missing"></span>
-                        Noch keine Daten
+                        <span data-i18n="completeness.missing">Noch keine Daten</span>
                     </div>
                 </div>
             </div>
@@ -82,12 +82,12 @@
                 <div class="position-absolute top-0 end-0 m-1 d-flex gap-1">
                     <button id="info-share-btn" type="button"
                         class="btn btn-sm btn-outline-light py-0 px-1"
-                        title="Spielplatz teilen">
+                        title="Spielplatz teilen" data-i18n-title="info.shareBtn">
                         <span class="bi bi-share"></span>
                     </button>
                     <a id="info-osm-url" href="#" target="_blank" rel="noopener"
                         class="btn btn-sm btn-outline-light py-0 px-1"
-                        title="Bei OpenStreetMap anzeigen">
+                        title="Bei OpenStreetMap anzeigen" data-i18n-title="info.osmBtn">
                         <span class="bi bi-map"></span> OSM
                     </a>
                 </div>
@@ -100,7 +100,7 @@
                 <!-------------------------->
                 <div class="accordion-item">
                     <h2 class="accordion-header">
-                        <button id="accordion-btn-panoramax" class="accordion-button p-2" type="button" data-bs-toggle="collapse" data-bs-target="#accordion-panoramax" aria-expanded="true" aria-controls="accordion-panoramax">
+                        <button id="accordion-btn-panoramax" class="accordion-button p-2" type="button" data-bs-toggle="collapse" data-bs-target="#accordion-panoramax" aria-expanded="true" aria-controls="accordion-panoramax" data-i18n="accordion.photos">
                             Bilder
                         </button>
                     </h2>
@@ -116,7 +116,7 @@
                 <!------------------------------->
                 <div class="accordion-item">
                     <h2 class="accordion-header">
-                        <button id="accordion-btn-ausstattung" class="accordion-button p-2" type="button" data-bs-toggle="collapse" data-bs-target="#accordion-ausstattung" aria-expanded="true" aria-controls="accordion-ausstattung">
+                        <button id="accordion-btn-ausstattung" class="accordion-button p-2" type="button" data-bs-toggle="collapse" data-bs-target="#accordion-ausstattung" aria-expanded="true" aria-controls="accordion-ausstattung" data-i18n="accordion.equipment">
                             Ausstattung
                         </button>
                     </h2>
@@ -312,7 +312,7 @@
                 <!-------------------------->
                 <div class="accordion-item">
                     <h2 class="accordion-header">
-                        <button id="accordion-btn-umfeld" class="accordion-button p-2" type="button" data-bs-toggle="collapse" data-bs-target="#accordion-umfeld" aria-expanded="true" aria-controls="accordion-umfeld">
+                        <button id="accordion-btn-umfeld" class="accordion-button p-2" type="button" data-bs-toggle="collapse" data-bs-target="#accordion-umfeld" aria-expanded="true" aria-controls="accordion-umfeld" data-i18n="accordion.surroundings">
                             Umfeld
                         </button>
                     </h2>
@@ -328,7 +328,7 @@
                 <!------------------------------>
                 <div class="accordion-item">
                     <h2 class="accordion-header">
-                        <button id="accordion-btn-reviews" class="accordion-button p-2" type="button" data-bs-toggle="collapse" data-bs-target="#accordion-reviews" aria-expanded="true" aria-controls="accordion-reviews">
+                        <button id="accordion-btn-reviews" class="accordion-button p-2" type="button" data-bs-toggle="collapse" data-bs-target="#accordion-reviews" aria-expanded="true" aria-controls="accordion-reviews" data-i18n="accordion.reviews">
                             Bewertungen
                         </button>
                     </h2>
@@ -345,7 +345,7 @@
                 <div class="accordion-item" style="display: none;">
                     <h2 class="accordion-header">
                         <button id="accordion-btn-datenvollstaendigkeit" class="accordion-button collapsed p-2" type="button" data-bs-toggle="collapse" data-bs-target="#accordion-datenvollstaendigkeit" aria-expanded="false" aria-controls="accordion-datenvollstaendigkeit">
-                            Datenvollständigkeit&nbsp;&nbsp;<span class="badge text-bg-danger" style="font-size: xx-small;">TODO</span>
+                            <span data-i18n="accordion.completeness">Datenvollständigkeit</span>&nbsp;&nbsp;<span class="badge text-bg-danger" style="font-size: xx-small;">TODO</span>
                         </button>
                     </h2>
                     <div id="accordion-datenvollstaendigkeit" class="accordion-collapse collapse" data-bs-parent="#info-accordion">
@@ -362,7 +362,7 @@
         <!-- Floating Action Buttons  -->
         <!------------------------------>
         <div id="map-fabs">
-            <button id="btn-location" type="button" class="map-fab" title="Standort verfolgen">
+            <button id="btn-location" type="button" class="map-fab" title="Standort verfolgen" data-i18n-title="location.btn">
                 <span class="bi bi-crosshair"></span>
             </button>
             <!-- TODO (GeoServer): Datenprobleme-Button — requires GeoServer backend -->
@@ -441,15 +441,15 @@
             <div class="modal-dialog modal-xl modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header p-2 d-flex align-items-center gap-2">
-                        <button id="panoramax-modal-prev" type="button" class="btn btn-sm btn-outline-secondary py-0" title="Vorheriges Foto">
+                        <button id="panoramax-modal-prev" type="button" class="btn btn-sm btn-outline-secondary py-0" title="Vorheriges Foto" data-i18n-title="modal.prevPhoto">
                             <span class="bi bi-chevron-left"></span>
                         </button>
-                        <button id="panoramax-modal-next" type="button" class="btn btn-sm btn-outline-secondary py-0" title="Nächstes Foto">
+                        <button id="panoramax-modal-next" type="button" class="btn btn-sm btn-outline-secondary py-0" title="Nächstes Foto" data-i18n-title="modal.nextPhoto">
                             <span class="bi bi-chevron-right"></span>
                         </button>
                         <span id="panoramax-modal-counter" class="text-muted" style="font-size:smaller;"></span>
-                        <h5 class="modal-title ms-1 mb-0">Straßenfoto</h5>
-                        <button type="button" class="btn-close ms-auto" data-bs-dismiss="modal" aria-label="Schließen"></button>
+                        <h5 class="modal-title ms-1 mb-0" data-i18n="modal.streetPhoto">Straßenfoto</h5>
+                        <button type="button" class="btn-close ms-auto" data-bs-dismiss="modal" aria-label="Schließen" data-i18n-aria-label="modal.closeBtn"></button>
                     </div>
                     <div class="modal-body p-0">
                         <iframe id="panoramax-modal-iframe" style="width:100%; height:82vh; border:none;" allowfullscreen></iframe>
@@ -463,14 +463,14 @@
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h1 class="modal-title fs-5">Daten ergänzen</h1>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen"></button>
+                        <h1 class="modal-title fs-5" data-i18n="nav.addData">Daten ergänzen</h1>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen" data-i18n-aria-label="modal.closeBtn"></button>
                     </div>
                     <div class="modal-body">
                         <!-- wird dynamisch aus config.js befüllt (siehe main.js) -->
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Zurück zur Karte</button>
+                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal" data-i18n="modal.backToMap">Zurück zur Karte</button>
                     </div>
                 </div>
             </div>
@@ -481,14 +481,14 @@
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h1 class="modal-title fs-5">Über das Projekt</h1>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen"></button>
+                        <h1 class="modal-title fs-5" data-i18n="nav.about">Über das Projekt</h1>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen" data-i18n-aria-label="modal.closeBtn"></button>
                     </div>
                     <div class="modal-body">
                         <!-- wird dynamisch aus config.js befüllt (siehe main.js) -->
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Zurück zur Karte</button>
+                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal" data-i18n="modal.backToMap">Zurück zur Karte</button>
                     </div>
                 </div>
             </div>

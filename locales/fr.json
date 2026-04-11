@@ -1,0 +1,137 @@
+{
+  "appTitle": "Aires de jeux \u2013 {{regionName}}",
+  "search": {
+    "placeholder": "Double-Shift pour rechercher",
+    "found": "\u00ab\u00a0{{query}}\u00a0\u00bb \u00e0 {{location}}",
+    "foundGeneric": "\u00ab\u00a0{{query}}\u00a0\u00bb trouv\u00e9",
+    "notFound": "Aucun r\u00e9sultat trouv\u00e9\u00a0!"
+  },
+  "nav": {
+    "addData": "Contribuer",
+    "about": "\u00c0 propos",
+    "menu": "Menu"
+  },
+  "info": {
+    "hint": "Appuyer sur une aire de jeux pour les d\u00e9tails",
+    "shareBtn": "Partager",
+    "osmBtn": "Voir sur OpenStreetMap"
+  },
+  "completeness": {
+    "complete": "Photos, nom & d\u00e9tails disponibles",
+    "partial": "Partiellement renseign\u00e9",
+    "missing": "Aucune donn\u00e9e"
+  },
+  "accordion": {
+    "photos": "Photos",
+    "equipment": "\u00c9quipements",
+    "shadow": "Ombrage",
+    "surroundings": "Environnement",
+    "reviews": "Avis",
+    "completeness": "Compl\u00e9tude des donn\u00e9es"
+  },
+  "location": {
+    "btn": "Ma position",
+    "yourLocation": "votre position"
+  },
+  "nearby": {
+    "title": "\u00c0 proximit\u00e9 de {{label}}",
+    "defaultName": "Aire de jeux",
+    "thisLocation": "cet endroit"
+  },
+  "equipment": {
+    "devices_one": "{{count}} \u00e9quipement",
+    "devices_other": "{{count}} \u00e9quipements",
+    "fitness_one": "{{count}} appareil de fitness",
+    "fitness_other": "{{count}} appareils de fitness",
+    "benches_one": "{{count}} banc",
+    "benches_other": "{{count}} bancs",
+    "shelters_one": "{{count}} abri",
+    "shelters_other": "{{count}} abris",
+    "picnic_one": "{{count}} table de pique-nique",
+    "picnic_other": "{{count}} tables de pique-nique",
+    "fitnessDefault": "Appareil de fitness",
+    "addHint": "\u00c9quipements pas encore cartographi\u00e9s individuellement \u2013 aidez-nous\u00a0! \ud83d\udc47",
+    "addLink": "Ajouter un \u00e9quipement"
+  },
+  "photos": {
+    "none": "Pas encore de photos pour cette aire de jeux.<br>Vous y \u00eates all\u00e9\u00a0?",
+    "addLink": "Ajouter une photo",
+    "enlarge": "Cliquer pour agrandir",
+    "thumbnail": "Photo {{n}}"
+  },
+  "poi": {
+    "errorLoad": "Impossible de charger les donn\u00e9es environnantes.",
+    "alwaysOpen": "Toujours ouvert",
+    "open": "Ouvert",
+    "openUntil": "Ouvert jusqu'\u00e0 {{time}}",
+    "closed": "Ferm\u00e9",
+    "opensAt": "Ouvre {{day}} \u00e0 {{time}}",
+    "openingHours": "Horaires",
+    "today": "Aujourd'hui",
+    "tomorrow": "Demain",
+    "categories": {
+      "toilets": "Toilettes",
+      "busStops": "Arr\u00eats de bus",
+      "iceCream": "Glaces",
+      "shopping": "Courses",
+      "drugstore": "Droguerie",
+      "emergency": "Urgences"
+    },
+    "fallbacks": {
+      "toilets": "Toilettes publiques",
+      "busStops": "Arr\u00eat de bus",
+      "iceCream": "Glacier",
+      "shopping": "Magasin",
+      "drugstore": "Droguerie",
+      "emergency": "H\u00f4pital"
+    }
+  },
+  "modal": {
+    "closeBtn": "Fermer",
+    "backToMap": "Retour \u00e0 la carte",
+    "streetPhoto": "Photo de rue",
+    "prevPhoto": "Photo pr\u00e9c\u00e9dente",
+    "nextPhoto": "Photo suivante",
+    "addData": {
+      "osm": {
+        "label": "OpenStreetMap",
+        "text": "Les donn\u00e9es proviennent d'{{osmLink}} \u2014 une carte mondiale libre et collaborative cr\u00e9\u00e9e par des millions de b\u00e9n\u00e9voles. Seul ce qui a \u00e9t\u00e9 cartographi\u00e9 appara\u00eet ici.",
+        "wikiUrl": "https://fr.wikipedia.org/wiki/OpenStreetMap"
+      },
+      "contribute": {
+        "label": "Contribuer aux aires de jeux",
+        "text": "Tout le monde peut contribuer. Un bon point de d\u00e9part est {{learnOsmLink}}. Les tags pertinents sont document\u00e9s dans le {{wikiLink}} et sur la page concernant {{equipmentLink}}.",
+        "learnOsmUrl": "https://learnosm.org/fr/beginner/",
+        "wikiLabel": "wiki OSM",
+        "equipmentLabel": "la cartographie des \u00e9quipements individuels"
+      },
+      "photos": {
+        "label": "Ajouter des photos",
+        "text": "Les photos peuvent \u00eatre t\u00e9l\u00e9vers\u00e9es directement via {{mapcompleteLink}} \u2014 ouvrez simplement une aire de jeux et cliquez sur \"Ajouter une photo\". Les photos sont fournies par {{panoramaxLink}}."
+      },
+      "community": {
+        "label": "Communaut\u00e9",
+        "text": "Des questions ou envie de participer\u00a0? La communaut\u00e9 OSM locale est accessible via {{chatLink}}.",
+        "chatLabel": "chat de la communaut\u00e9 OSM locale"
+      }
+    },
+    "about": {
+      "history": {
+        "label": "Histoire",
+        "text": "La carte des aires de jeux a \u00e9t\u00e9 cr\u00e9\u00e9e par {{authorLink}} dans le cadre d'un {{courseLink}} \u2014 \u00e0 l'origine centr\u00e9e sur Berlin. Au fil du temps, elle a \u00e9volu\u00e9 en une carte g\u00e9n\u00e9rique utilisable pour n'importe quelle r\u00e9gion OSM.",
+        "courseUrl": "https://gis-trainer.com/de/gis_webmapping.php",
+        "courseLabel": "cours de SIG et cartographie web"
+      },
+      "project": {
+        "label": "Le projet",
+        "text": "La carte des aires de jeux est une carte web libre et interactive bas\u00e9e sur les donn\u00e9es d'{{osmLink}}. Elle ne contient aucune donn\u00e9e propri\u00e9taire, ne n\u00e9cessite pas de connexion et ne suit pas les utilisateurs. Quiconque am\u00e9liore les donn\u00e9es dans OSM am\u00e9liore automatiquement cette carte.",
+        "osmWikiUrl": "https://fr.wikipedia.org/wiki/OpenStreetMap"
+      },
+      "source": {
+        "label": "Code source",
+        "text": "Le projet est open source et {{repoLink}}.",
+        "repoLabel": "disponible publiquement"
+      }
+    }
+  }
+}

@@ -1,0 +1,147 @@
+{
+  "appTitle": "Mapa placów zabaw \u2013 {{regionName}}",
+  "search": {
+    "placeholder": "Podwójny Shift, aby wyszukać",
+    "found": "\"{{query}}\" w {{location}}",
+    "foundGeneric": "\"{{query}}\" znaleziono",
+    "notFound": "Nie znaleziono wyników!"
+  },
+  "nav": {
+    "addData": "Dodaj dane",
+    "about": "O projekcie",
+    "menu": "Menu"
+  },
+  "info": {
+    "hint": "Dotknij plac zabaw, aby zobaczyć szczegóły",
+    "shareBtn": "Udostępnij plac zabaw",
+    "osmBtn": "Zobacz na OpenStreetMap"
+  },
+  "completeness": {
+    "complete": "Zdjęcia, nazwa i szczegóły dostępne",
+    "partial": "Częściowo zmapowane",
+    "missing": "Brak danych"
+  },
+  "accordion": {
+    "photos": "Zdjęcia",
+    "equipment": "Wyposażenie",
+    "shadow": "Cień",
+    "surroundings": "Okolica",
+    "reviews": "Recenzje",
+    "completeness": "Kompletność danych"
+  },
+  "location": {
+    "btn": "Moja lokalizacja",
+    "yourLocation": "twojej lokalizacji"
+  },
+  "nearby": {
+    "title": "W pobliżu {{label}}",
+    "defaultName": "Plac zabaw",
+    "thisLocation": "tej lokalizacji"
+  },
+  "equipment": {
+    "devices_one": "{{count}} urządzenie",
+    "devices_few": "{{count}} urządzenia",
+    "devices_many": "{{count}} urządzeń",
+    "devices_other": "{{count}} urządzeń",
+    "fitness_one": "{{count}} urządzenie fitness",
+    "fitness_few": "{{count}} urządzenia fitness",
+    "fitness_many": "{{count}} urządzeń fitness",
+    "fitness_other": "{{count}} urządzeń fitness",
+    "benches_one": "{{count}} ławka",
+    "benches_few": "{{count}} ławki",
+    "benches_many": "{{count}} ławek",
+    "benches_other": "{{count}} ławek",
+    "shelters_one": "{{count}} wiata",
+    "shelters_few": "{{count}} wiaty",
+    "shelters_many": "{{count}} wiat",
+    "shelters_other": "{{count}} wiat",
+    "picnic_one": "{{count}} stół piknikowy",
+    "picnic_few": "{{count}} stoły piknikowe",
+    "picnic_many": "{{count}} stołów piknikowych",
+    "picnic_other": "{{count}} stołów piknikowych",
+    "fitnessDefault": "Urządzenie fitness",
+    "addHint": "Wyposażenie jeszcze nie zmapowane indywidualnie \u2013 pomóż! 👇",
+    "addLink": "Dodaj wyposażenie"
+  },
+  "photos": {
+    "none": "Brak zdjęć dla tego placu zabaw.<br>Byłeś tam?",
+    "addLink": "Dodaj zdjęcie",
+    "enlarge": "Kliknij, aby powiększyć",
+    "thumbnail": "Zdjęcie {{n}}"
+  },
+  "poi": {
+    "errorLoad": "Nie udało się załadować danych otoczenia.",
+    "alwaysOpen": "Zawsze otwarte",
+    "open": "Otwarte",
+    "openUntil": "Otwarte do {{time}}",
+    "closed": "Zamknięte",
+    "opensAt": "Otwiera {{day}} o {{time}}",
+    "openingHours": "Godziny otwarcia",
+    "today": "Dzisiaj",
+    "tomorrow": "Jutro",
+    "categories": {
+      "toilets": "Toalety",
+      "busStops": "Przystanki autobusowe",
+      "iceCream": "Lody",
+      "shopping": "Zakupy",
+      "drugstore": "Drogeria",
+      "emergency": "Pogotowie"
+    },
+    "fallbacks": {
+      "toilets": "Toaleta publiczna",
+      "busStops": "Przystanek autobusowy",
+      "iceCream": "Lodziarnia",
+      "shopping": "Sklep",
+      "drugstore": "Drogeria",
+      "emergency": "Szpital"
+    }
+  },
+  "modal": {
+    "closeBtn": "Zamknij",
+    "backToMap": "Wróć do mapy",
+    "streetPhoto": "Zdjęcie uliczne",
+    "prevPhoto": "Poprzednie zdjęcie",
+    "nextPhoto": "Następne zdjęcie",
+    "addData": {
+      "osm": {
+        "label": "OpenStreetMap",
+        "text": "Dane pochodzą z {{osmLink}} \u2014 wolnej, współpracy mapy świata tworzonej przez miliony wolontariuszy. Wyświetlane jest tylko to, co zostało zmapowane.",
+        "wikiUrl": "https://pl.wikipedia.org/wiki/OpenStreetMap"
+      },
+      "contribute": {
+        "label": "Dodawaj place zabaw",
+        "text": "Każdy może wnosić wkład. Dobrym punktem startowym jest {{learnOsmLink}}. Odpowiednie tagi są udokumentowane w {{wikiLink}} i na stronie dotyczącej {{equipmentLink}}.",
+        "learnOsmUrl": "https://learnosm.org/pl/beginner/",
+        "wikiLabel": "wiki OSM",
+        "equipmentLabel": "mapowania indywidualnych urządzeń"
+      },
+      "photos": {
+        "label": "Dodawaj zdjęcia",
+        "text": "Zdjęcia można przesyłać bezpośrednio przez {{mapcompleteLink}} \u2014 otwórz plac zabaw i kliknij \"Dodaj zdjęcie\". Zdjęcia są dostarczane przez {{panoramaxLink}}."
+      },
+      "community": {
+        "label": "Społeczność",
+        "text": "Pytania lub chcesz dołączyć? Lokalna społeczność OSM jest dostępna przez {{chatLink}}.",
+        "chatLabel": "czat lokalnej społeczności OSM"
+      }
+    },
+    "about": {
+      "history": {
+        "label": "Historia",
+        "text": "Mapa placów zabaw została stworzona przez {{authorLink}} jako projekt końcowy {{courseLink}} \u2014 pierwotnie skupiony na Berlinie. Z czasem rozwinęła się w ogólną mapę, którą można wykorzystać dla dowolnego regionu OSM.",
+        "courseUrl": "https://gis-trainer.com/de/gis_webmapping.php",
+        "courseLabel": "kursu GIS i webmappingu"
+      },
+      "project": {
+        "label": "Projekt",
+        "text": "Mapa placów zabaw to wolna, interaktywna mapa internetowa oparta na danych {{osmLink}}. Nie zawiera danych własnościowych, nie wymaga logowania i nie śledzi użytkowników. Kto ulepsza dane w OSM, automatycznie ulepsza tę mapę.",
+        "osmWikiUrl": "https://pl.wikipedia.org/wiki/OpenStreetMap"
+      },
+      "source": {
+        "label": "Kod źródłowy",
+        "text": "Projekt jest open source i {{repoLink}}.",
+        "repoLabel": "publicznie dostępny"
+      }
+    }
+  }
+}

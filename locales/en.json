@@ -1,0 +1,137 @@
+{
+  "appTitle": "{{regionName}} Playground Map",
+  "search": {
+    "placeholder": "Double-Shift to search",
+    "found": "\"{{query}}\" in {{location}}",
+    "foundGeneric": "\"{{query}}\" found",
+    "notFound": "No results found!"
+  },
+  "nav": {
+    "addData": "Add data",
+    "about": "About",
+    "menu": "Menu"
+  },
+  "info": {
+    "hint": "Tap a playground for details",
+    "shareBtn": "Share playground",
+    "osmBtn": "View on OpenStreetMap"
+  },
+  "completeness": {
+    "complete": "Photos, name & details available",
+    "partial": "Partially mapped",
+    "missing": "No data yet"
+  },
+  "accordion": {
+    "photos": "Photos",
+    "equipment": "Equipment",
+    "shadow": "Shade",
+    "surroundings": "Surroundings",
+    "reviews": "Reviews",
+    "completeness": "Data completeness"
+  },
+  "location": {
+    "btn": "My location",
+    "yourLocation": "your location"
+  },
+  "nearby": {
+    "title": "Near {{label}}",
+    "defaultName": "Playground",
+    "thisLocation": "this location"
+  },
+  "equipment": {
+    "devices_one": "{{count}} piece of equipment",
+    "devices_other": "{{count}} pieces of equipment",
+    "fitness_one": "{{count}} fitness station",
+    "fitness_other": "{{count}} fitness stations",
+    "benches_one": "{{count}} bench",
+    "benches_other": "{{count}} benches",
+    "shelters_one": "{{count}} shelter",
+    "shelters_other": "{{count}} shelters",
+    "picnic_one": "{{count}} picnic table",
+    "picnic_other": "{{count}} picnic tables",
+    "fitnessDefault": "Fitness station",
+    "addHint": "Equipment not yet mapped individually – help out! 👇",
+    "addLink": "Add equipment"
+  },
+  "photos": {
+    "none": "No photos for this playground yet.<br>Have you been there?",
+    "addLink": "Add photo",
+    "enlarge": "Click to enlarge",
+    "thumbnail": "Photo {{n}}"
+  },
+  "poi": {
+    "errorLoad": "Could not load surroundings data.",
+    "alwaysOpen": "Always open",
+    "open": "Open",
+    "openUntil": "Open until {{time}}",
+    "closed": "Closed",
+    "opensAt": "Opens {{day}} at {{time}}",
+    "openingHours": "Opening hours",
+    "today": "Today",
+    "tomorrow": "Tomorrow",
+    "categories": {
+      "toilets": "Toilets",
+      "busStops": "Bus stops",
+      "iceCream": "Ice cream",
+      "shopping": "Shopping",
+      "drugstore": "Drugstore",
+      "emergency": "Emergency"
+    },
+    "fallbacks": {
+      "toilets": "Public toilet",
+      "busStops": "Bus stop",
+      "iceCream": "Ice cream shop",
+      "shopping": "Shop",
+      "drugstore": "Drugstore",
+      "emergency": "Hospital"
+    }
+  },
+  "modal": {
+    "closeBtn": "Close",
+    "backToMap": "Back to map",
+    "streetPhoto": "Street photo",
+    "prevPhoto": "Previous photo",
+    "nextPhoto": "Next photo",
+    "addData": {
+      "osm": {
+        "label": "OpenStreetMap",
+        "text": "The data comes from {{osmLink}} — a free, collaborative world map built by millions of volunteers. Only what has been mapped will appear here.",
+        "wikiUrl": "https://en.wikipedia.org/wiki/OpenStreetMap"
+      },
+      "contribute": {
+        "label": "Contribute playgrounds",
+        "text": "Anyone can contribute. A good starting point is {{learnOsmLink}}. The relevant tags are documented in the {{wikiLink}} and on the page about {{equipmentLink}}.",
+        "learnOsmUrl": "https://learnosm.org/en/beginner/",
+        "wikiLabel": "OSM wiki",
+        "equipmentLabel": "mapping individual playground equipment"
+      },
+      "photos": {
+        "label": "Add photos",
+        "text": "Photos can be uploaded directly via {{mapcompleteLink}} — just open a playground and click \"Add photo\". Photos are provided via {{panoramaxLink}}."
+      },
+      "community": {
+        "label": "Community",
+        "text": "Questions or want to get involved? The local OSM community can be reached via {{chatLink}}.",
+        "chatLabel": "local OSM community chat"
+      }
+    },
+    "about": {
+      "history": {
+        "label": "History",
+        "text": "The playground map was created by {{authorLink}} as a final project of a {{courseLink}} — originally focused on Berlin. Over time it was developed into a generic playground map that can be used for any OSM region.",
+        "courseUrl": "https://gis-trainer.com/de/gis_webmapping.php",
+        "courseLabel": "GIS and web mapping course"
+      },
+      "project": {
+        "label": "The project",
+        "text": "The playground map is a free, interactive web map based on {{osmLink}} data. It contains no proprietary data, requires no login and does not track users. Anyone who improves playground data in OSM automatically improves this map.",
+        "osmWikiUrl": "https://en.wikipedia.org/wiki/OpenStreetMap"
+      },
+      "source": {
+        "label": "Source code",
+        "text": "The project is open source and {{repoLink}}.",
+        "repoLabel": "publicly available"
+      }
+    }
+  }
+}

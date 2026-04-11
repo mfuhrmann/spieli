@@ -13,6 +13,7 @@ import { unByKey } from 'ol/Observable.js';
 import map from './map.js';
 import { showNearbyPlaygrounds } from './selectPlayground.js';
 import { transform } from 'ol/proj';
+import { t } from './i18n.js';
 
 // Einmalige Standortbestimmung: Karte zentrieren, Spielplätze in der Nähe anzeigen
 let locationListenerKey = null;
@@ -37,7 +38,7 @@ document.getElementById('btn-location').addEventListener('click', function() {
         geolocation.setTracking(false);
 
         const [lon, lat] = transform(coordinates, 'EPSG:3857', 'EPSG:4326');
-        showNearbyPlaygrounds(lon, lat, 'deinem Standort');
+        showNearbyPlaygrounds(lon, lat, t('location.yourLocation'));
     });
 });
 

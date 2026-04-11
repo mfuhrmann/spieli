@@ -4,8 +4,6 @@ A free, interactive web map for exploring playgrounds based on [OpenStreetMap](h
 
 > **Origin:** This project is a further development of the original [Berliner Spielplatzkarte](https://github.com/SupaplexOSM/spielplatzkarte) by Alex Seidel.
 
-> **Language:** The UI is currently in German only. Internationalisation (i18n) is a known limitation — all user-facing strings are hardcoded in German, equipment names are German, and the opening hours parser is configured for Germany (`country_code: de`). Contributions to add i18n support are welcome.
-
 ---
 
 ## Features
@@ -77,12 +75,63 @@ CORS is enabled on `/api/` so the Hub can query instances cross-origin from the 
 | UI framework | [Bootstrap 5](https://getbootstrap.com/) + [Bootstrap Icons](https://icons.getbootstrap.com/) |
 | Opening hours parser | [opening_hours.js](https://github.com/opening-hours/opening_hours.js) |
 | Build tool | [Vite 6](https://vitejs.dev/) |
+| Internationalisation | [i18next](https://www.i18next.com/) |
 | Language | JavaScript (ES Modules) |
 | Database | [PostgreSQL 16](https://www.postgresql.org/) + [PostGIS 3.4](https://postgis.net/) |
 | OSM import | [osm2pgsql](https://osm2pgsql.org/) (classic schema, `--hstore`) |
 | API layer | [PostgREST v12](https://postgrest.org/) |
 | Web server | [nginx](https://nginx.org/) |
 | Container runtime | [Docker](https://www.docker.com/) / Docker Compose |
+
+---
+
+## Internationalisation
+
+The UI is fully translated using [i18next](https://www.i18next.com/). The language is detected automatically from the visitor's browser settings, with English as the fallback.
+
+### Supported languages
+
+| Code | Language |
+|---|---|
+| `de` | German |
+| `en` | English |
+| `fr` | French |
+| `es` | Spanish |
+| `it` | Italian |
+| `pl` | Polish |
+| `nl` | Dutch |
+| `cs` | Czech |
+| `pt` | Portuguese |
+| `sv` | Swedish |
+| `uk` | Ukrainian |
+| `ja` | Japanese |
+
+> **Note:** Translations were not done by native speakers and may contain errors. Corrections and improvements are very welcome — see below for how to contribute.
+
+### Testing a specific language
+
+Add `?lang=xx` to the URL to force a language regardless of browser settings:
+
+```
+http://localhost:5173/?lang=fr
+http://localhost:8080/?lang=ja
+```
+
+### Adding a new language
+
+1. Copy `locales/en.json` to `locales/xx.json` (replace `xx` with the [BCP 47 language code](https://en.wikipedia.org/wiki/IETF_language_tag), e.g. `ro` for Romanian).
+2. Translate all the string values in the new file. Do not change the keys.
+3. For languages with complex plural forms (e.g. Polish, Ukrainian), add the appropriate plural suffixes (`_one`, `_few`, `_many`, `_other`) to the equipment count strings. See [i18next pluralisation docs](https://www.i18next.com/translation-function/plurals) and the existing `locales/pl.json` for reference.
+4. In `js/i18n.js`, add an import and register the new locale:
+   ```js
+   import ro from '../locales/ro.json';
+   // …
+   resources: {
+       // …existing entries…
+       ro: { translation: ro },
+   }
+   ```
+5. Run `npm run build` to verify there are no errors.
 
 ---
 

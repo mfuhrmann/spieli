@@ -1,0 +1,137 @@
+{
+  "appTitle": "{{regionName}}er Spielplatzkarte",
+  "search": {
+    "placeholder": "Doppel-Shift für Suche",
+    "found": "\u201e{{query}}\u201c in {{location}}",
+    "foundGeneric": "\u201e{{query}}\u201c gefunden",
+    "notFound": "Kein Suchergebnis gefunden!"
+  },
+  "nav": {
+    "addData": "Daten ergänzen",
+    "about": "Über das Projekt",
+    "menu": "Menü"
+  },
+  "info": {
+    "hint": "Spielplatz antippen für Details",
+    "shareBtn": "Spielplatz teilen",
+    "osmBtn": "Bei OpenStreetMap anzeigen"
+  },
+  "completeness": {
+    "complete": "Fotos, Name & Details vorhanden",
+    "partial": "Teilweise erfasst",
+    "missing": "Noch keine Daten"
+  },
+  "accordion": {
+    "photos": "Bilder",
+    "equipment": "Ausstattung",
+    "shadow": "Schattigkeit",
+    "surroundings": "Umfeld",
+    "reviews": "Bewertungen",
+    "completeness": "Datenvollständigkeit"
+  },
+  "location": {
+    "btn": "Standort verfolgen",
+    "yourLocation": "deinem Standort"
+  },
+  "nearby": {
+    "title": "In der Nähe von {{label}}",
+    "defaultName": "Spielplatz",
+    "thisLocation": "diesem Ort"
+  },
+  "equipment": {
+    "devices_one": "{{count}} Spielgerät",
+    "devices_other": "{{count}} Spielgeräte",
+    "fitness_one": "{{count}} Fitnessgerät",
+    "fitness_other": "{{count}} Fitnessgeräte",
+    "benches_one": "{{count}} Sitzbank",
+    "benches_other": "{{count}} Sitzbänke",
+    "shelters_one": "{{count}} Unterstand",
+    "shelters_other": "{{count}} Unterstände",
+    "picnic_one": "{{count}} Picknicktisch",
+    "picnic_other": "{{count}} Picknicktische",
+    "fitnessDefault": "Fitnessgerät",
+    "addHint": "Spielgeräte noch nicht einzeln kartiert – hilf mit! 👇",
+    "addLink": "Spielgerät hinzufügen"
+  },
+  "photos": {
+    "none": "Noch keine Fotos für diesen Spielplatz.<br>Warst du schon dort?",
+    "addLink": "Foto hinzufügen",
+    "enlarge": "Klicken zum Vergrößern",
+    "thumbnail": "Foto {{n}}"
+  },
+  "poi": {
+    "errorLoad": "Umfeld-Daten konnten nicht geladen werden.",
+    "alwaysOpen": "Immer geöffnet",
+    "open": "Geöffnet",
+    "openUntil": "Geöffnet bis {{time}}",
+    "closed": "Geschlossen",
+    "opensAt": "Öffnet {{day}} um\u00a0{{time}}",
+    "openingHours": "Öffnungszeiten",
+    "today": "Heute",
+    "tomorrow": "Morgen",
+    "categories": {
+      "toilets": "Toiletten",
+      "busStops": "Bushaltestellen",
+      "iceCream": "Eis",
+      "shopping": "Einkaufen",
+      "drugstore": "Drogerie",
+      "emergency": "Notaufnahme"
+    },
+    "fallbacks": {
+      "toilets": "Öffentliche Toilette",
+      "busStops": "Bushaltestelle",
+      "iceCream": "Eisdiele",
+      "shopping": "Einkaufsmöglichkeit",
+      "drugstore": "Drogerie",
+      "emergency": "Krankenhaus"
+    }
+  },
+  "modal": {
+    "closeBtn": "Schlie\u00dfen",
+    "backToMap": "Zur\u00fcck zur Karte",
+    "streetPhoto": "Stra\u00dfenfoto",
+    "prevPhoto": "Vorheriges Foto",
+    "nextPhoto": "N\u00e4chstes Foto",
+    "addData": {
+      "osm": {
+        "label": "OpenStreetMap",
+        "text": "Die Daten stammen aus {{osmLink}} — einer freien, kollaborativen Weltkarte von Millionen Freiwilligen. Nur was eingetragen wurde, erscheint auch hier.",
+        "wikiUrl": "https://de.wikipedia.org/wiki/OpenStreetMap"
+      },
+      "contribute": {
+        "label": "Spielplätze beitragen",
+        "text": "Jede und jeder kann mitmachen. Einen Einstieg bietet {{learnOsmLink}}. Die relevanten Tags sind im {{wikiLink}} und auf der Seite zur {{equipmentLink}} dokumentiert.",
+        "learnOsmUrl": "https://learnosm.org/de/beginner/",
+        "wikiLabel": "OSM-Wiki",
+        "equipmentLabel": "Erfassung einzelner Spielgeräte"
+      },
+      "photos": {
+        "label": "Fotos hinzufügen",
+        "text": "Fotos lassen sich direkt über {{mapcompleteLink}} hochladen — einfach einen Spielplatz öffnen und „Foto hinzufügen“ klicken. Die Fotos werden über {{panoramaxLink}} bereitgestellt."
+      },
+      "community": {
+        "label": "Community",
+        "text": "Fragen oder mitmachen? Die lokale OSM-Community ist erreichbar über den {{chatLink}}.",
+        "chatLabel": "lokalen OSM-Community-Chat"
+      }
+    },
+    "about": {
+      "history": {
+        "label": "Geschichte",
+        "text": "Die Spielplatzkarte wurde von {{authorLink}} als Abschlussprojekt einer {{courseLink}} ins Leben gerufen — ursprünglich mit Fokus auf Berlin. Im Laufe der Zeit wurde sie zu einer generischen Spielplatzkarte weiterentwickelt, die für jede beliebige OSM-Region eingesetzt werden kann.",
+        "courseUrl": "https://gis-trainer.com/de/gis_webmapping.php",
+        "courseLabel": "GIS- und Webmapping-Weiterbildung"
+      },
+      "project": {
+        "label": "Das Projekt",
+        "text": "Die Spielplatzkarte ist eine freie, interaktive Webkarte auf Basis von {{osmLink}}-Daten. Sie enthält keine proprietären Daten, erfordert keine Anmeldung und verfolgt keine Nutzer. Wer Spielplatzdaten in OSM verbessert, verbessert damit automatisch auch diese Karte.",
+        "osmWikiUrl": "https://de.wikipedia.org/wiki/OpenStreetMap"
+      },
+      "source": {
+        "label": "Quellcode",
+        "text": "Das Projekt ist OpenSource und {{repoLink}}.",
+        "repoLabel": "öffentlich verfügbar"
+      }
+    }
+  }
+}

@@ -13,6 +13,7 @@
     "bootstrap": "^5.3.3",
     "bootstrap-icons": "^1.13.1",
     "fetch-jsonp": "1.3.0",
+    "i18next": "^25.0.0",
     "ol": "latest",
     "opening_hours": "^3.12.0"
   }

@@ -7,6 +7,7 @@ import map from './map.js';
 import { getRegionExtent, showNotification } from './map.js';
 import { pulse } from './pulse.js';
 import { showNearbyPlaygrounds } from './selectPlayground.js';
+import { t } from './i18n.js';
 
 // Suchanfragen starten
 document.getElementById('inputSearch').addEventListener('keypress', (e) => {
@@ -46,14 +47,16 @@ export async function searchLocation(query) {
             var addr_suburb = result.address.suburb;
             var addr_city = result.address.city || result.address.town || result.address.village;
             var locationHint = addr_suburb ? `${addr_suburb}, ${addr_city || ''}` : addr_city;
-            var notification = locationHint ? `„${query}" in ${locationHint}` : `„${query}" gefunden`;
+            var notification = locationHint
+                ? t('search.found', { query, location: locationHint })
+                : t('search.foundGeneric', { query });
             showNotification(notification);
 
             // Spielplätze in der Nähe des Suchergebnisses anzeigen
             const label = addr_suburb || result.address.city || query;
             showNearbyPlaygrounds(parseFloat(result.lon), parseFloat(result.lat), `„${label}"`);
         } else {
-            showNotification("Kein Suchergebnis gefunden!");
+            showNotification(t('search.notFound'));
         }
     } catch (error) {
         console.error('Fehler bei der Suchanfrage:', error);
