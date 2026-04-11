@@ -110,7 +110,9 @@ function buildUeberModal() {
 setCurrentDate();
 
 // Direktlink zu einem Spielplatz wiederherstellen (URL-Hash wie #W123456)
+// Also handles hash changes when embedded as iframe in Spielplatzkarte Hub.
 restoreFromHash();
+window.addEventListener('hashchange', restoreFromHash);
 
 // TODO Bekannte Bugs:
 // - Sind nach Selektion eines Spielplatzes Spielplatzausstattungslayer geladen und bewegt man die Karte oder zoomt man heraus (auf einen Wert < Zoomstufe ~20,5), werden die Features mehrfach eingeladen

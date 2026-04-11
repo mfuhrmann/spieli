@@ -1313,6 +1313,11 @@ export function restoreFromHash() {
 
     const source = dataPlaygrounds.getSource();
     const doSelect = () => {
+        if (!source.getFeatures().length) {
+            // Features not loaded yet — wait for the first feature to arrive
+            source.once('addfeature', doSelect);
+            return;
+        }
         const feature = source.getFeatures().find(f => parseInt(f.getProperties().osm_id) === osmId);
         if (!feature) return;
         const ext = feature.getGeometry().getExtent();
@@ -1320,10 +1325,5 @@ export function restoreFromHash() {
         selectPlayground(center, 0, false, feature);
     };
 
-    if (source.getFeatures().length) {
-        doSelect();
-    } else {
-        const onReady = () => { source.un('change', onReady); doSelect(); };
-        source.on('change', onReady);
-    }
+    doSelect();
 }
