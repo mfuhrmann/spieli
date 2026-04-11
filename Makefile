@@ -1,6 +1,6 @@
 .PHONY: install dev build serve \
         up down import docker-build db-apply db-shell \
-        require-npm require-docker help
+        require-npm require-docker installer help
 
 # Bail with a clear message when a required tool is missing.
 define require
@@ -55,6 +55,11 @@ db-apply: require-docker  ## Apply importer/api.sql to the running database and 
 
 db-shell: require-docker  ## Open a psql shell in the running database container
 	docker compose exec db psql -U osm -d osm
+
+## ── Production install ────────────────────────────────────────────────────────
+
+installer: require-docker ## Run the interactive production installer (no git clone required)
+	bash install.sh
 
 ## ── Help ──────────────────────────────────────────────────────────────────────
 
