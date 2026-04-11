@@ -46,6 +46,7 @@ export function applyRegionInfo({ center, extent }) {
 }
 
 import { fetchPlaygrounds } from './api.js';
+import { playgroundCompleteness } from './completeness.js';
 
 // Basemaps
 //----------
@@ -88,12 +89,9 @@ const _styleMissing = new Style({
 
 function playgroundStyleFn(feature) {
     const props = feature.getProperties();
-    const hasPhoto = Object.keys(props).some(k => k === 'panoramax' || k.startsWith('panoramax:'));
-    const hasName  = !!props.name;
-    const hasInfo  = !!(props.operator || props.opening_hours || props.surface || (props.access && props.access !== 'yes'));
-
-    if (hasPhoto && hasName && hasInfo) return _styleComplete;
-    if (hasPhoto || hasName || hasInfo) return _stylePartial;
+    const c = playgroundCompleteness(props);
+    if (c === 'complete') return _styleComplete;
+    if (c === 'partial')  return _stylePartial;
     return _styleMissing;
 }
 

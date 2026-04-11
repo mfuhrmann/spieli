@@ -28,6 +28,7 @@ import { objColors } from '../style/VectorStyles.js';
 const geoServer = 'https://osmbln.uber.space/';
 const geoServerWorkspace = 'spielplatzkarte';
 import { fetchPlaygroundEquipment, fetchNearbyPOIs, fetchTrees } from './api.js';
+import { playgroundCompleteness } from './completeness.js';
 import { poiRadiusM } from './config.js';
 import { panoramaxViewerUrl, panoramaxThumbUrl } from './panoramax.js';
 import { getEquipmentAttributesFromProps } from './popup.js';
@@ -870,13 +871,11 @@ function showPlaygroundInfo(json) {
 
     // Datenvollständigkeit — Badge
     {
-        const hasPhoto = Object.keys(attr).some(k => k === 'panoramax' || k.startsWith('panoramax:'));
-        const hasName  = !!attr.name;
-        const hasInfo  = !!(attr.operator || attr.opening_hours || attr.surface || (attr.access && attr.access !== 'yes'));
+        const c = playgroundCompleteness(attr);
         let cls, label;
-        if (hasPhoto && hasName && hasInfo) {
+        if (c === 'complete') {
             cls = 'completeness-badge--complete'; label = 'Daten vollständig';
-        } else if (hasPhoto || hasName || hasInfo) {
+        } else if (c === 'partial') {
             cls = 'completeness-badge--partial';  label = 'Daten teilweise erfasst';
         } else {
             cls = 'completeness-badge--missing';  label = 'Daten fehlen';

@@ -7,6 +7,7 @@ import { Popover } from 'bootstrap';
 
 import { getPlaygroundTitle, getPlaygroundLocation } from '../js/selectPlayground.js';
 import { objDevices, objFeatures } from '../js/objPlaygroundEquipment.js';
+import { playgroundCompleteness } from '../js/completeness.js';
 
 // Popups mit Infos zu Spielgeräten anzeigen
 export function showPopup(type, popup, coordinate, feature) {
@@ -43,17 +44,11 @@ export function showPopup(type, popup, coordinate, feature) {
 
         // Datenvollständigkeit
         {
-            const hasPhoto = Object.keys(attr).some(k => k === 'panoramax' || k.startsWith('panoramax:'));
-            const hasName  = !!attr.name;
-            const hasInfo  = !!(attr.operator || attr.opening_hours || attr.surface || (attr.access && attr.access !== 'yes'));
+            const c = playgroundCompleteness(attr);
             let dot, label;
-            if (hasPhoto && hasName && hasInfo) {
-                dot = '<span class="dot-complete">●</span>'; label = 'Daten vollständig';
-            } else if (hasPhoto || hasName || hasInfo) {
-                dot = '<span class="dot-partial">●</span>'; label = 'Teilweise erfasst';
-            } else {
-                dot = '<span class="dot-missing">●</span>'; label = 'Daten fehlen';
-            }
+            if (c === 'complete') { dot = '<span class="dot-complete">●</span>'; label = 'Daten vollständig'; }
+            else if (c === 'partial') { dot = '<span class="dot-partial">●</span>'; label = 'Teilweise erfasst'; }
+            else                  { dot = '<span class="dot-missing">●</span>';  label = 'Daten fehlen'; }
             lines.push(`<small>${dot} ${label}</small>`);
         }
 
