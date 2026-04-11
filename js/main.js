@@ -116,6 +116,11 @@ function buildUeberModal() {
 // Schieberegler der Schattenberechnung auf aktuelles Datum setzen
 setCurrentDate();
 
+// Embed mode: hide map and nav when ?embed=1 is set (used by Spielplatzkarte Hub)
+if (new URLSearchParams(window.location.search).get('embed') === '1') {
+    document.body.classList.add('embed-mode');
+}
+
 // Direktlink zu einem Spielplatz wiederherstellen (URL-Hash wie #W123456)
 // Also handles hash changes when embedded as iframe in Spielplatzkarte Hub.
 restoreFromHash();

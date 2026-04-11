@@ -180,3 +180,27 @@
 .popover .popover-body a + ul {
     margin-top: 8px;
 }
+
+/* ── Embed mode (?embed=1) — used when loaded as iframe in Spielplatzkarte Hub ── */
+
+body.embed-mode #map,
+body.embed-mode #popup,
+body.embed-mode #mini-popup,
+body.embed-mode #search-bar,
+body.embed-mode #location-fab,
+body.embed-mode .info-more-hint {
+    display: none !important;
+}
+
+body.embed-mode #info {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    max-width: 100%;
+    height: 100%;
+    max-height: 100%;
+    border-radius: 0;
+    box-shadow: none;
+    overflow-y: auto;
+    transform: none !important;
+}
