@@ -9,6 +9,7 @@ Spielplatzkarte is an interactive web map for exploring playgrounds based on Ope
 ## Git workflow
 
 - **Never push directly to `main`.** All changes go through a feature branch and a pull request.
+- **Never create branches or push to `upstream`** (`SupaplexOSM/spielplatzkarte`). Always work on `origin` (the fork: `mfuhrmann/spielplatzkarte`).
 - Branch naming: `<type>/<short-description>` (e.g. `feat/add-filter-panel`, `fix/popup-scroll`).
 - Use **Conventional Commits** for all commit messages: `<type>[optional scope]: <description>`. Types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `chore`, `ci`, `build`, `revert`. Breaking changes: append `!` after type/scope or add a `BREAKING CHANGE:` footer.
 - Releases are cut from version tags (e.g. `v0.2.3`). The tag drives both the app version (read from `package.json` at build time) and the container image tag — keep all three in sync when releasing.
