@@ -1323,9 +1323,14 @@ el('accordion-btn-schattigkeit').addEventListener('click', function() {
 
 // Mobile: Panel-Zustand wechseln (Peek ↔ Vollbild ↔ Geschlossen)
 function setPanelOpen() {
-    el('info').classList.remove('panel-peek');
-    el('info').classList.add('panel-open');
+    const info = el('info');
+    info.classList.remove('panel-peek');
+    info.classList.add('panel-open');
     document.body.classList.add('sheet-expanded');
+    // Reset scroll so the first accordion section (Bilder) is always visible.
+    // Without this, a non-zero scroll offset from a previous interaction causes
+    // the sticky #info-base header to cover the accordion's first button.
+    info.scrollTop = 0;
 }
 
 function setPanelPeek() {
