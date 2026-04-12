@@ -14,7 +14,7 @@ window.APP_CONFIG = {
   mapZoom: ${MAP_ZOOM:-12},
   mapMinZoom: ${MAP_MIN_ZOOM:-10},
   poiRadiusM: ${POI_RADIUS_M:-5000},
-  apiBaseUrl: '${API_BASE_URL:-}',
+  apiBaseUrl: '${API_BASE_URL:-}', // TODO: API_BASE_URL is interpolated raw — same injection risk as PARENT_ORIGIN was; sanitize in a follow-up
   parentOrigin: '${SAFE_PARENT_ORIGIN}'
 };
 JSEOF
