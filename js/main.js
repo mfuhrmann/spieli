@@ -1,9 +1,40 @@
+// =============================================================================
+// main.js — application entry point
+// =============================================================================
+//
+// This is the first JS file Vite loads. Everything the app needs on startup
+// is either imported here or triggered from here.
+//
+// Module wiring (what lives where):
+//
+//   map.js             — OpenLayers map setup, layer management, region fit
+//   selectPlayground.js — playground selection state, info panel, URL hash
+//   search.js          — Nominatim location search
+//   locate.js          — geolocation (location button)
+//   shadow.js          — sun/shadow simulation
+//   config.js          — runtime config values from window.APP_CONFIG
+//   region.js          — fetch region name/extent from Nominatim
+//   i18n.js            — i18next setup, t() helper, applyTranslations()
+//
+// Initialisation order:
+//   1. Bootstrap modal triggers wired (must happen before any modal is opened)
+//   2. fetchRegionInfo() — async, fetches the region name from Nominatim
+//   3. applyTranslations() — fills data-i18n attributes in the HTML
+//   4. buildDatenErgaenzenModal() / buildUeberModal() — fills modal content
+//   5. setCurrentDate() — sets the shadow slider to today
+//   6. restoreFromHash() — selects a playground if the URL has a #W<id> hash
+//   7. Event listeners registered (keydown, hashchange, search icon click)
+//
+// =============================================================================
+
 import 'bootstrap/dist/css/bootstrap.min.css';
 import '../css/bootstrap_custom.css';
 import { Modal } from 'bootstrap';
 import { t, applyTranslations } from './i18n.js';
 
-// Bootstrap's data-api may be tree-shaken away — wire up modal triggers explicitly
+// Bootstrap's data-api (automatic modal wiring via HTML attributes) is
+// tree-shaken away when using ES module imports — wire up modal triggers
+// manually so clicking [data-bs-toggle="modal"] buttons still works.
 document.querySelectorAll('[data-bs-toggle="modal"]').forEach(trigger => {
     trigger.addEventListener('click', e => {
         e.preventDefault();
@@ -13,6 +44,8 @@ document.querySelectorAll('[data-bs-toggle="modal"]').forEach(trigger => {
 });
 
 
+// Side-effect imports: these modules register their own event listeners and
+// layer setup on import. They don't export anything used directly here.
 import map from './map.js';
 import { applyRegionInfo } from './map.js';
 
@@ -29,7 +62,9 @@ const projectRepoUrl = 'https://github.com/mfuhrmann/spielplatzkarte';
 
 const DEFAULT_PLAYGROUND_WIKI_URL = 'https://wiki.openstreetmap.org/wiki/DE:Tag:leisure%3Dplayground';
 
-// Async init — fetch region info from Nominatim, then set up the app
+// Async IIFE so we can await the Nominatim request before applying translations.
+// Everything that depends on the region name (page title, modal content) runs
+// inside this function.
 (async function init() {
     let region = { name: 'Spielplatzkarte', extent: null, center: null };
     try {
@@ -50,7 +85,9 @@ const DEFAULT_PLAYGROUND_WIKI_URL = 'https://wiki.openstreetmap.org/wiki/DE:Tag:
     buildUeberModal();
 }());
 
-// "Daten ergänzen"-Modal dynamisch befüllen
+// Builds the "Daten ergänzen" (contribute data) modal content from config
+// values and i18n strings. Done in JS rather than static HTML so the links
+// (wiki URL, chat URL) can be injected from the runtime config.
 function buildDatenErgaenzenModal() {
     const l = text => `<span class="info-label">${text}</span>`;
     const p = text => `<p>${text}</p>`;
@@ -84,7 +121,8 @@ function buildDatenErgaenzenModal() {
     document.querySelector('#modalDatenErgaenzen .modal-body').innerHTML = html;
 }
 
-// "Über das Projekt"-Modal dynamisch befüllen
+// Builds the "Über das Projekt" (about) modal content. Same pattern as above —
+// links and the app version are injected at runtime.
 function buildUeberModal() {
     const l = text => `<span class="info-label">${text}</span>`;
     const p = text => `<p>${text}</p>`;
@@ -113,11 +151,13 @@ function buildUeberModal() {
     document.querySelector('#modalUeberDasProjekt .modal-body').innerHTML = html;
 }
 
-// Schieberegler der Schattenberechnung auf aktuelles Datum setzen
+// Initialise the shadow/sun simulation slider to today's date so it shows
+// realistic shadows when the user first opens the shadow layer.
 setCurrentDate();
 
-// Direktlink zu einem Spielplatz wiederherstellen (URL-Hash wie #W123456)
-// Also handles hash changes when embedded as iframe in Spielplatzkarte Hub.
+// Restore a direct link to a playground from the URL hash (e.g. #W123456).
+// Also re-runs on hashchange so the Hub iframe can navigate between playgrounds
+// by changing the parent URL without a full page reload.
 restoreFromHash();
 window.addEventListener('hashchange', restoreFromHash);
 
@@ -131,12 +171,14 @@ document.addEventListener('keydown', e => {
     }
 });
 
-// Search icon tap/click → focus search box (mobile-friendly)
+// On mobile the search input placeholder is hidden to save space, so tapping
+// the magnifier icon is the primary way to open the search box.
 document.getElementById('inputSearchIcon').addEventListener('click', () => {
     document.getElementById('inputSearch').focus();
 });
 
-// Double-Shift → focus search box (desktop shortcut)
+// Double-Shift is a discoverable keyboard shortcut for power users on desktop —
+// pressing Shift twice quickly focuses and selects the search input.
 let lastShift = 0;
 document.addEventListener('keydown', e => {
     if (e.key !== 'Shift') { lastShift = 0; return; }

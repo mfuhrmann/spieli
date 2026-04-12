@@ -1,23 +1,69 @@
-//------------------------------------------
-// objDevices:
-// Objekt zur Beschreibung von Spielgeräten
-//------------------------------------------
-// - OSM-Wert für "playground" (key),
-// - deutsche Übersetzung ("name_de"),
-// - Foto der Gerätekategorie ("image"),
-// - Übergeordnete Geräteklasse ("category")
-//------------------------------------------
-
-//------------------------------------------
-// objFeatures:
-// Objekt zur Beschreibung von anderen
-// Ausstattungsmerkmalen von Spielplätzen
-//------------------------------------------
-// - Bezeichner (key),
-// - OSM-Tagging ("tags"),
-// - deutsche Übersetzung ("name_de"),
-// - Icon für Kartendarstellung ("icon")
-//------------------------------------------
+// =============================================================================
+// objPlaygroundEquipment.js
+// =============================================================================
+//
+// This file is the single source of truth for all playground device types and
+// playground features that the app knows about. If a device or feature isn't
+// listed here, the app won't know how to display or label it.
+//
+// It exports two objects:
+//
+//   objDevices   — individual playground devices (swings, slides, climbing
+//                  frames, …). Each key is an OSM `playground=*` tag value.
+//
+//   objFeatures  — other characteristics of a playground (benches, fences,
+//                  toilets, …) that are not individual devices but are tagged
+//                  differently in OSM. Each key is an arbitrary identifier.
+//
+// -----------------------------------------------------------------------------
+// HOW TO ADD A NEW DEVICE — quick reference
+// -----------------------------------------------------------------------------
+//
+// 1. Find the correct OSM tag at:
+//    https://wiki.openstreetmap.org/wiki/Key:playground
+//
+// 2. Add a new key to objDevices using the OSM tag value as the key name:
+//
+//    mydevice: {
+//        name_de:     "German name",        // REQUIRED — shown in the detail panel
+//        image:       "File:Example.jpg",   // OPTIONAL — Wikimedia Commons filename
+//        category:    "stationary",         // OPTIONAL — groups the device in filters
+//        filterable:  true,                 // OPTIONAL — show in sidebar filter?
+//        filter_attr: ["length", "height"], // OPTIONAL — OSM sub-attributes to filter by
+//    },
+//
+// Field details:
+//
+//   name_de      (string, required)
+//                German display name shown in the collapsible device row.
+//                There is currently no i18n for device names — German is the
+//                primary language of the project.
+//
+//   image        (string, optional)
+//                A Wikimedia Commons filename in the format "File:Example.jpg".
+//                The app tries Commons first; if the image is not found there,
+//                it falls back to the OSM wiki. If the field is omitted entirely,
+//                no example image is shown — no broken icon appears.
+//                To find a good filename: search commons.wikimedia.org, open the
+//                image page, and copy the "File:" name from the page title.
+//
+//   category     (string, optional)
+//                Groups the device under a heading in the filter panel.
+//                Known values: "stationary", "structure_parts", "active".
+//                Omit if the device doesn't belong to a filter group.
+//
+//   filterable   (boolean, optional)
+//                When true, this device type appears as a checkbox in the
+//                sidebar filter so users can show/hide playgrounds that have it.
+//                Defaults to false when omitted.
+//
+//   filter_attr  (array of strings, optional)
+//                OSM sub-attributes of this device to expose as filter controls
+//                (e.g. ["length", "height"] for a slide). Only meaningful when
+//                filterable is true. Omit for devices with no useful numeric
+//                attributes.
+//
+// -----------------------------------------------------------------------------
 
 export const objDevices = {
     slide: {
