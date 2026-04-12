@@ -1033,10 +1033,26 @@ function showPlaygroundInfo(json) {
     var operator = attr["operator"];
     var operatorWikidata = attr["operator:wikidata"];
     if (operatorWikidata) {
-        const label = operator || operatorWikidata;
-        el('info-operator').innerHTML =
-            `<span class="info-label">Betreiber</span> <a href="https://www.wikidata.org/wiki/${operatorWikidata}" target="_blank" rel="noopener" class="link-secondary">${label}</a>`;
-        show('info-operator');
+        const wikidataUrl = `https://www.wikidata.org/wiki/${operatorWikidata}`;
+        if (operator) {
+            el('info-operator').innerHTML =
+                `<span class="info-label">Betreiber</span> <a href="${wikidataUrl}" target="_blank" rel="noopener" class="link-secondary">${operator}</a>`;
+            show('info-operator');
+        } else {
+            // Zeige Q-Nummer als Platzhalter, bis der Name von Wikidata geladen ist
+            el('info-operator').innerHTML =
+                `<span class="info-label">Betreiber</span> <a href="${wikidataUrl}" target="_blank" rel="noopener" class="link-secondary" id="operator-wikidata-label">${operatorWikidata}</a>`;
+            show('info-operator');
+            fetch(`https://www.wikidata.org/w/api.php?action=wbgetentities&ids=${encodeURIComponent(operatorWikidata)}&props=labels&languages=de%7Cen&format=json&origin=*`)
+                .then(r => r.json())
+                .then(data => {
+                    const entity = data.entities?.[operatorWikidata];
+                    const label = entity?.labels?.de?.value ?? entity?.labels?.en?.value;
+                    const labelEl = document.getElementById('operator-wikidata-label');
+                    if (label && labelEl) labelEl.textContent = label;
+                })
+                .catch(() => { /* Platzhalter (Q-Nummer) bleibt stehen */ });
+        }
     } else if (operator) {
         el('info-operator').innerHTML = `<span class="info-label">Betreiber</span> ${operator}`;
         show('info-operator');
