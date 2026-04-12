@@ -147,7 +147,7 @@ export function selectPlayground(coord, distance, multiSelect, feature = null) {
             // On mobile the panel is a bottom sheet, so we pad the bottom instead.
             const isMobile = window.innerWidth <= 768;
             const padding = isMobile
-                ? [20, 20, 300, 20]   // bottom sheet takes lower portion
+                ? [20, 20, 118, 20]   // peek bar height at bottom
                 : [40, 40, 40, 424];  // info panel: 390px width + 14px left offset + 20px margin
             map.getView().fit(extent, {
                 duration: duration,
@@ -1269,16 +1269,23 @@ function showAttributes(visibility) {
         show('info-base');
         show('info-accordion');
 
-        // Bottom sheet auf mobil hochfahren
-        el('info').classList.add('panel-open');
+        // Bottom sheet auf mobil als Peek öffnen, auf Desktop vollständig
+        if (window.innerWidth <= 768) {
+            setPanelPeek();
+        } else {
+            el('info').classList.add('panel-open');
+        }
     } else {
         show('info-more');
 
         hide('info-base');
         hide('info-accordion');
 
-        // Bottom sheet auf mobil wieder einfahren — aber offen lassen wenn die Nähe-Liste noch Inhalt hat
-        if (!el('info-more').firstChild) {
+        // Bottom sheet auf mobil einfahren; offen lassen nur wenn die Nähe-Liste aktiv ist
+        if (window.innerWidth <= 768) {
+            const hasNearbyList = el('info-more').querySelector('.nearby-panel');
+            if (!hasNearbyList) setPanelClosed();
+        } else {
             el('info').classList.remove('panel-open');
         }
 
@@ -1313,14 +1320,131 @@ el('accordion-btn-schattigkeit').addEventListener('click', function() {
     }
 });
 
-// Mobile: nach unten wischen schließt das Bottom Sheet
-let swipeTouchStartY = 0;
-el('info-drag-handle').addEventListener('touchstart', e => { swipeTouchStartY = e.touches[0].clientY; });
-el('info-drag-handle').addEventListener('touchend', e => {
-    if (e.changedTouches[0].clientY - swipeTouchStartY > 60) {
-        el('info').classList.remove('panel-open');
+// Mobile: Panel-Zustand wechseln (Peek ↔ Vollbild ↔ Geschlossen)
+function setPanelOpen() {
+    el('info').classList.remove('panel-peek');
+    el('info').classList.add('panel-open');
+    document.body.classList.add('sheet-expanded');
+}
+
+function setPanelPeek() {
+    el('info').classList.remove('panel-open');
+    el('info').classList.add('panel-peek');
+    document.body.classList.remove('sheet-expanded');
+}
+
+function setPanelClosed() {
+    el('info').classList.remove('panel-open', 'panel-peek');
+    document.body.classList.remove('sheet-expanded');
+}
+
+// ── Live-Drag mit Finger-Tracking ────────────────────────────────────────────
+const PEEK_HEIGHT = 108; // px — muss mit CSS übereinstimmen
+const PANEL_TRANSITION = 'transform 0.35s cubic-bezier(0.32, 0.72, 0, 1)';
+
+let dragActive = false;
+let dragStartY = 0;
+let dragMode = null; // 'peek' | 'open'
+const VH = () => window.innerHeight; // always full viewport height
+
+function startPanelDrag(touchY, mode) {
+    const info = el('info');
+    dragStartY = touchY;
+    dragMode = mode;
+    dragActive = true;
+    info.style.transition = 'none';
+
+    if (mode === 'peek') {
+        // Expand to full height so the panel can reach the top during drag
+        info.style.height = '100dvh';
+        info.style.maxHeight = '100dvh';
+        info.style.overflow = 'hidden';
+        // Lock the starting transform to the correct pixel position
+        info.style.transform = `translateY(${VH() - PEEK_HEIGHT}px)`;
+    } else {
+        info.style.transform = 'translateY(0)';
     }
+}
+
+function movePanelDrag(touchY) {
+    if (!dragActive) return;
+    const dy = touchY - dragStartY;
+    const startT = dragMode === 'peek' ? VH() - PEEK_HEIGHT : 0;
+    const T = Math.max(0, Math.min(VH(), startT + dy));
+    el('info').style.transform = `translateY(${T}px)`;
+}
+
+function endPanelDrag(touchY) {
+    if (!dragActive) return;
+    dragActive = false;
+    const info = el('info');
+    const dy = touchY - dragStartY;
+
+    let finalT, action;
+    if (dragMode === 'peek') {
+        if (dy < -40)     { finalT = 0;               action = 'open';  }
+        else if (dy > 40) { finalT = VH();             action = 'close'; }
+        else              { finalT = VH() - PEEK_HEIGHT; action = 'peek'; }
+    } else {
+        if (dy > 40)  { finalT = VH() - PEEK_HEIGHT; action = 'peek'; }
+        else          { finalT = 0;                   action = 'open'; }
+    }
+
+    info.style.transition = PANEL_TRANSITION;
+    info.style.transform = `translateY(${finalT}px)`;
+
+    info.addEventListener('transitionend', function onEnd() {
+        info.removeEventListener('transitionend', onEnd);
+        info.style.transition = '';
+        info.style.transform = '';
+        info.style.height = '';
+        info.style.maxHeight = '';
+        info.style.overflow = '';
+        if (action === 'open')      setPanelOpen();
+        else if (action === 'peek') setPanelPeek();
+        else                        clearSelection();
+    }, { once: true });
+}
+
+function onDragMove(e) { movePanelDrag(e.touches[0].clientY); }
+function onDragEnd(e)  {
+    document.removeEventListener('touchmove', onDragMove);
+    document.removeEventListener('touchend',  onDragEnd);
+    endPanelDrag(e.changedTouches[0].clientY);
+}
+
+function attachDragListeners() {
+    document.addEventListener('touchmove', onDragMove, { passive: true });
+    document.addEventListener('touchend',  onDragEnd);
+}
+
+// Peek: ganzes Panel als Drag-Fläche
+el('info').addEventListener('touchstart', e => {
+    if (!el('info').classList.contains('panel-peek')) return;
+    startPanelDrag(e.touches[0].clientY, 'peek');
+    attachDragListeners();
+}, { passive: true });
+
+// Vollbild: Drag Handle und blauer Header als Drag-Fläche
+[el('info-drag-handle'), el('info-base')].forEach(target => {
+    target.addEventListener('touchstart', e => {
+        if (!el('info').classList.contains('panel-open')) return;
+        e.preventDefault();
+        startPanelDrag(e.touches[0].clientY, 'open');
+        attachDragListeners();
+    }, { passive: false });
 });
+
+// Tap auf Drag Handle: Peek → Vollbild; Vollbild → Peek
+el('info-drag-handle').addEventListener('click', () => {
+    const info = el('info');
+    if (info.classList.contains('panel-peek')) setPanelOpen();
+    else if (info.classList.contains('panel-open')) setPanelPeek();
+});
+
+
+// Schließen-Button: Spielplatzauswahl aufheben
+el('info-close-btn').addEventListener('click', clearSelection);
 
 // Spielplatz teilen: Web Share API (mobil) oder URL in Zwischenablage kopieren
 el('info-share-btn').addEventListener('click', () => {

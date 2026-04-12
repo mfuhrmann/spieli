@@ -14,7 +14,8 @@
   "info": {
     "hint": "Tap a playground for details",
     "shareBtn": "Share playground",
-    "osmBtn": "View on OpenStreetMap"
+    "osmBtn": "View on OpenStreetMap",
+    "closeBtn": "Close"
   },
   "completeness": {
     "complete": "Photos, name & details available",

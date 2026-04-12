@@ -168,8 +168,9 @@ ul {
     border-radius: 2px;
 }
 
-/* Drag handle — only shown on mobile */
-#info-drag-handle {
+/* Drag handle and close button — only shown on mobile */
+#info-drag-handle,
+#info-close-btn {
     display: none;
 }
 
@@ -555,21 +556,79 @@ ul {
         border-radius: 20px 20px 0 0;
         transform: translateY(100%);
         transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
-        /* always show empty state slightly peeking in */
     }
 
+    /* Peek state: only drag handle + name + badge visible */
+    #info.panel-peek {
+        transform: translateY(calc(100% - 108px));
+        overflow: hidden;
+    }
+
+    /* Full-screen state: covers the entire viewport */
     #info.panel-open {
+        top: 0;
+        height: 100dvh;
+        max-height: 100dvh;
         transform: translateY(0);
+        border-radius: 0;
+        overflow-y: auto;
     }
 
-    /* Drag handle visible on mobile */
+    /* Drag handle in full-screen: sticky, no color, minimal height */
+    #info.panel-open #info-drag-handle {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        padding: 6px 0 4px;
+        background: #fff;
+    }
+
+    #info.panel-open #info-drag-handle .bi-chevron-compact-up {
+        transform: rotate(180deg);
+    }
+
+    /* Header sticks just below the drag handle */
+    #info.panel-open #info-base {
+        position: sticky;
+        top: 34px;
+        z-index: 1;
+    }
+
+    /* Hide search bar and FABs when panel is full-screen */
+    body.sheet-expanded #search-bar,
+    body.sheet-expanded #map-fabs {
+        display: none !important;
+    }
+
+    /* Drag handle visible on mobile (peek state only) */
     #info-drag-handle {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        padding: 10px 0 6px;
+        cursor: pointer;
+    }
+
+    #info-drag-handle::before {
+        content: '';
         display: block;
-        width: 36px;
+        width: 40px;
         height: 4px;
-        background: #d1d5db;
+        background: #9ca3af;
         border-radius: 2px;
-        margin: 10px auto 6px;
+    }
+
+    #info-drag-handle .bi-chevron-compact-up {
+        font-size: 1.1rem;
+        color: #6b7280;
+        line-height: 1;
+    }
+
+    /* Close button visible on mobile */
+    #info-close-btn {
+        display: inline-flex;
     }
 
     .info-more-hint {

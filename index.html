@@ -45,7 +45,9 @@
         <!--------------------------------------->
         <div id="info">
             <!-- Drag handle (mobile only) -->
-            <div id="info-drag-handle"></div>
+            <div id="info-drag-handle">
+                <span class="bi bi-chevron-compact-up"></span>
+            </div>
 
             <div id="info-more" class="info-more-hint">
                 <span class="bi bi-hand-index"></span>
@@ -68,7 +70,8 @@
 
             <div id="info-base" class="bg-primary text-light p-2 m-0" style="display: none; position: relative;">
                 <h2 id="info-name" class="fs-5 fw-bold pb-1 mb-0 pe-5"></h2>
-                <p id="info-location" class="border-bottom border-light border-2 pb-2 mb-2"></p>
+                <span id="info-completeness-badge" class="completeness-badge"></span>
+                <p id="info-location" class="border-bottom border-light border-2 pb-2 mb-2 mt-1"></p>
                 <p id="info-access" class="my-0 mt-2"></p>
                 <p id="info-opening-hours" class="m-0 p-0"></p>
                 <p id="info-age" class="m-0 p-0"></p>
@@ -78,7 +81,6 @@
                 <p id="info-operator" class="m-0 p-0"></p>
                 <p id="info-contact" class="m-0 p-0"></p>
                 <p id="info-description" class="mt-1 mb-1" style="font-size: smaller;"></p>
-                <span id="info-completeness-badge" class="completeness-badge"></span>
                 <div class="position-absolute top-0 end-0 m-1 d-flex gap-1">
                     <button id="info-share-btn" type="button"
                         class="btn btn-sm btn-outline-light py-0 px-1"
@@ -90,6 +92,11 @@
                         title="Bei OpenStreetMap anzeigen" data-i18n-title="info.osmBtn">
                         <span class="bi bi-map"></span> OSM
                     </a>
+                    <button id="info-close-btn" type="button"
+                        class="btn btn-sm btn-outline-light py-0 px-1"
+                        title="Schließen" data-i18n-title="info.closeBtn">
+                        <span class="bi bi-x-lg"></span>
+                    </button>
                 </div>
             </div>
 
