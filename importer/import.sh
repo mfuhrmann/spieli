@@ -62,7 +62,8 @@ echo "[importer] osm2pgsql finished."
 # Create PostgREST API schema (views / functions)
 # --------------------------------------------------------------------------- #
 echo "[importer] Applying API schema..."
-psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f /api.sql
+envsubst '$OSM_RELATION_ID' < /api.sql \
+    | psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB"
 
 # --------------------------------------------------------------------------- #
 # Notify PostgREST to reload its schema cache

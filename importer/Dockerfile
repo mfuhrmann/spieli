@@ -5,6 +5,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     wget \
     postgresql-client \
     ca-certificates \
+    gettext-base \
     && rm -rf /var/lib/apt/lists/*
 
 COPY import.sh /import.sh

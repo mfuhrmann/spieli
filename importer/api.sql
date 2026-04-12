@@ -18,7 +18,7 @@ GRANT USAGE ON SCHEMA api TO web_anon;
 -- =========================================================================
 DROP FUNCTION IF EXISTS api.get_playgrounds(bigint);
 
-CREATE OR REPLACE FUNCTION api.get_playgrounds(relation_id bigint DEFAULT 62700)
+CREATE OR REPLACE FUNCTION api.get_playgrounds(relation_id bigint DEFAULT ${OSM_RELATION_ID})
 RETURNS json
 LANGUAGE sql STABLE SECURITY DEFINER
 SET search_path = public, api
@@ -350,7 +350,7 @@ GRANT EXECUTE ON FUNCTION api.get_trees(float8, float8, float8, float8) TO web_a
 -- =========================================================================
 DROP FUNCTION IF EXISTS api.get_meta(bigint);
 
-CREATE OR REPLACE FUNCTION api.get_meta(relation_id bigint DEFAULT 62700)
+CREATE OR REPLACE FUNCTION api.get_meta(relation_id bigint DEFAULT ${OSM_RELATION_ID})
 RETURNS json
 LANGUAGE sql STABLE SECURITY DEFINER
 SET search_path = public, api
