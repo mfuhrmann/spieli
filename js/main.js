@@ -52,7 +52,7 @@ import { applyRegionInfo } from './map.js';
 import { setCurrentDate } from './shadow.js';
 import { showLocation, hideLocation } from './locate.js';
 import { searchLocation } from './search.js';
-import { osmRelationId, regionPlaygroundWikiUrl, regionChatUrl } from './config.js';
+import { osmRelationId, regionPlaygroundWikiUrl, regionChatUrl, parentOrigin } from './config.js';
 import { fetchRegionInfo } from './region.js';
 import { restoreFromHash, clearSelection } from './selectPlayground.js';
 import { version } from '../package.json';
@@ -166,7 +166,7 @@ document.addEventListener('keydown', e => {
         clearSelection();
         // Forward ESC to parent frame (e.g. Spielplatzkarte Hub) so it can close the modal.
         if (window.parent !== window) {
-            window.parent.postMessage({ type: 'spielplatzkarte:escape' }, '*');
+            window.parent.postMessage({ type: 'spielplatzkarte:escape' }, parentOrigin);
         }
     }
 });

@@ -31,3 +31,8 @@ export const poiRadiusM = c.poiRadiusM ?? 5000;
 // When empty, the app falls back to Overpass (local dev only).
 // Env var: API_BASE_URL
 export const apiBaseUrl = c.apiBaseUrl || null;
+
+// Target origin for postMessage calls to a parent iframe (e.g. Spielplatzkarte Hub).
+// Leave empty to use '*' (permissive, suitable for standalone deployments).
+// Env var: PARENT_ORIGIN
+export const parentOrigin = c.parentOrigin || '*';

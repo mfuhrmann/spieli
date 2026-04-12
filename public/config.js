@@ -6,5 +6,6 @@ window.APP_CONFIG = {
   mapZoom: 12,
   mapMinZoom: 10,
   poiRadiusM: 5000,
-  apiBaseUrl: ''
+  apiBaseUrl: '',
+  parentOrigin: ''
 };

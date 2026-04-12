@@ -76,6 +76,7 @@ const el = id => document.getElementById(id);
 const show = id => { el(id).style.display = ''; };
 const hide = id => { el(id).style.display = 'none'; };
 
+
 export var sourceSelected; // globale Variable, in der der jeweils ausgewählte Spielplatz enthalten ist
 var lastSelectedFeature = null; // zuletzt angeklicktes OpenLayers-Feature (für Overpass-Nachfrage)
 var currentArea = null; // Fläche des zuletzt ausgewählten Spielplatzes (für Ausstattungsanzeige)
@@ -125,7 +126,7 @@ export function showNearbyPlaygrounds(lon, lat, label = t('nearby.thisLocation')
     for (let i = 0; i < nearest.length; i++) {
         const { feature, dist } = nearest[i];
         const attr = feature.getProperties();
-        const name = getPlaygroundTitle(attr) || t('nearby.defaultName');
+        const name = escapeHtml(getPlaygroundTitle(attr) || t('nearby.defaultName'));
         html += `<div class="nearby-item" data-idx="${i}">
             <span class="nearby-name">${name}</span>
             <span class="nearby-dist">${formatDistance(dist)}</span>
@@ -482,7 +483,7 @@ function updateEquipmentPanel(features, playgroundAttr = {}) {
     let device_string = '<ul class="mb-0 device-list">';
     for (const f of deviceFeatures) {
         const key = f.properties.playground;
-        const name = objDevices[key]?.name_de ?? key;
+        const name = objDevices[key]?.name_de ?? escapeHtml(key);
         const category = objDevices[key]?.category ?? 'fallback';
         const color = objColors[category] ?? objColors['fallback'];
         const detail = getEquipmentAttributesFromProps(f.properties);
@@ -519,7 +520,7 @@ function updateEquipmentPanel(features, playgroundAttr = {}) {
     for (const f of pitchFeatures) {
         const sport = f.properties.sport ?? '';
         const [singular] = pitchLabels[sport]
-            ?? (sport ? [`Sportfeld (${sport})`, `Sportfelder (${sport})`] : ['Sportfeld', 'Sportfelder']);
+            ?? (sport ? [`Sportfeld (${escapeHtml(sport)})`, `Sportfelder (${escapeHtml(sport)})`] : ['Sportfeld', 'Sportfelder']);
         const detail = getEquipmentAttributesFromProps(f.properties);
         const uid = `dev-${f.properties.osm_id ?? Math.random().toString(36).slice(2)}`;
         if (detail) {
@@ -547,7 +548,7 @@ function updateEquipmentPanel(features, playgroundAttr = {}) {
         if (Object.keys(fallbackCounts).length > 0) {
             let fallback_string = '<ul class="mb-0">';
             for (const [key, count] of Object.entries(fallbackCounts)) {
-                const name = objDevices[key]?.name_de ?? key;
+                const name = objDevices[key]?.name_de ?? escapeHtml(key);
                 const category = objDevices[key]?.category ?? 'fallback';
                 const color = objColors[category] ?? objColors['fallback'];
                 const countStr = count > 1 ? `${count}× ` : '';
@@ -982,7 +983,7 @@ function showPlaygroundInfo(json) {
 
     // Lagebeschreibung
     var location_str = getPlaygroundLocation(attr);
-    el('info-location').innerHTML = `<i>${location_str}</i>`;
+    el('info-location').innerHTML = `<i>${escapeHtml(location_str)}</i>`;
 
     // Beschreibung / Bemerkungen
     var description = attr["description"];
@@ -1032,7 +1033,7 @@ function showPlaygroundInfo(json) {
     };
     var surface = attr["surface"];
     if (surface) {
-        const surfaceLabel = surfaceLabels[surface] ?? surface;
+        const surfaceLabel = surfaceLabels[surface] ?? escapeHtml(surface);
         el('info-surface').innerHTML = `<span class="info-label">Bodenbelag</span> ${surfaceLabel}`;
         show('info-surface');
     } else {
@@ -1079,9 +1080,9 @@ function showPlaygroundInfo(json) {
     var minAge = attr["min_age"];
     var maxAge = attr["max_age"];
     if (minAge || maxAge) {
-        var ageStr = minAge && maxAge ? `${minAge}–${maxAge} Jahre`
-                   : minAge ? `ab ${minAge} Jahren`
-                   : `bis ${maxAge} Jahre`;
+        var ageStr = minAge && maxAge ? `${escapeHtml(minAge)}–${escapeHtml(maxAge)} Jahre`
+                   : minAge ? `ab ${escapeHtml(minAge)} Jahren`
+                   : `bis ${escapeHtml(maxAge)} Jahre`;
         el('info-age').innerHTML = `<span class="info-label">Alter</span> ${ageStr}`;
         show('info-age');
     } else {
@@ -1092,15 +1093,15 @@ function showPlaygroundInfo(json) {
     var operator = attr["operator"];
     var operatorWikidata = attr["operator:wikidata"];
     if (operatorWikidata) {
-        const wikidataUrl = `https://www.wikidata.org/wiki/${operatorWikidata}`;
+        const wikidataUrl = `https://www.wikidata.org/wiki/${encodeURIComponent(operatorWikidata)}`;
         if (operator) {
             el('info-operator').innerHTML =
-                `<span class="info-label">Betreiber</span> <a href="${wikidataUrl}" target="_blank" rel="noopener" class="link-secondary">${operator}</a>`;
+                `<span class="info-label">Betreiber</span> <a href="${wikidataUrl}" target="_blank" rel="noopener" class="link-secondary">${escapeHtml(operator)}</a>`;
             show('info-operator');
         } else {
             // Zeige Q-Nummer als Platzhalter, bis der Name von Wikidata geladen ist
             el('info-operator').innerHTML =
-                `<span class="info-label">Betreiber</span> <a href="${wikidataUrl}" target="_blank" rel="noopener" class="link-secondary" id="operator-wikidata-label">${operatorWikidata}</a>`;
+                `<span class="info-label">Betreiber</span> <a href="${wikidataUrl}" target="_blank" rel="noopener" class="link-secondary" id="operator-wikidata-label">${escapeHtml(operatorWikidata)}</a>`;
             show('info-operator');
             fetch(`https://www.wikidata.org/w/api.php?action=wbgetentities&ids=${encodeURIComponent(operatorWikidata)}&props=labels&languages=de%7Cen&format=json&origin=*`)
                 .then(r => r.json())
@@ -1113,7 +1114,7 @@ function showPlaygroundInfo(json) {
                 .catch(() => { /* Platzhalter (Q-Nummer) bleibt stehen */ });
         }
     } else if (operator) {
-        el('info-operator').innerHTML = `<span class="info-label">Betreiber</span> ${operator}`;
+        el('info-operator').innerHTML = `<span class="info-label">Betreiber</span> ${escapeHtml(operator)}`;
         show('info-operator');
     } else {
         hide('info-operator');
@@ -1135,8 +1136,22 @@ function showPlaygroundInfo(json) {
     const mcOsmId = attr['osm_id'];
     const mcUrl = `https://mapcomplete.org/playgrounds.html#${mcOsmType}/${mcOsmId}`;
     var contactParts = [];
-    if (phone) contactParts.push(`<a href="tel:${phone}" class="link-secondary">${phone}</a>`);
-    if (email) contactParts.push(`<a href="mailto:${email}" class="link-secondary">${email}</a>`);
+    // Validate phone: must start with + or digit to prevent javascript: URI injection
+    if (phone) {
+        if (/^\+?\d/.test(phone.trim())) {
+            contactParts.push(`<a href="tel:${escapeHtml(phone)}" class="link-secondary">${escapeHtml(phone)}</a>`);
+        } else {
+            contactParts.push(escapeHtml(phone));
+        }
+    }
+    // Validate email: must contain @ to prevent javascript: URI injection
+    if (email) {
+        if (email.includes('@')) {
+            contactParts.push(`<a href="mailto:${escapeHtml(email)}" class="link-secondary">${escapeHtml(email)}</a>`);
+        } else {
+            contactParts.push(escapeHtml(email));
+        }
+    }
     const mcLink = `<div class="mt-1"><a href="${mcUrl}" target="_blank" rel="noopener" class="mc-add-link"><span class="bi bi-pencil"></span> Bei MapComplete bearbeiten</a></div>`;
     el('info-contact').innerHTML = (contactParts.length ? contactParts.join(' · ') : '') + mcLink;
     show('info-contact');

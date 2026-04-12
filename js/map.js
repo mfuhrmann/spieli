@@ -260,7 +260,7 @@ const toast = document.getElementById('toast');
 const toastBootstrap = Toast.getOrCreateInstance(toast);
 
 export function showNotification(message) {
-    document.getElementById('toast-text').innerHTML = message;
+    document.getElementById('toast-text').textContent = message;
     toastBootstrap.show();
 }
 

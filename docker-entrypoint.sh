@@ -9,7 +9,8 @@ window.APP_CONFIG = {
   mapZoom: ${MAP_ZOOM:-12},
   mapMinZoom: ${MAP_MIN_ZOOM:-10},
   poiRadiusM: ${POI_RADIUS_M:-5000},
-  apiBaseUrl: '${API_BASE_URL:-}'
+  apiBaseUrl: '${API_BASE_URL:-}',
+  parentOrigin: '${PARENT_ORIGIN:-}'
 };
 JSEOF
 
