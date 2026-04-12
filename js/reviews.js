@@ -5,6 +5,8 @@
 // Subject URI format: geo:{lat},{lon}?u=50  (50 m uncertainty for a polygon)
 // Rating scale:       0–100  (we show/accept 1–5 stars = 20/40/60/80/100)
 
+import { escapeHtml } from './utils.js';
+
 const MANGROVE_API = 'https://api.mangrove.reviews';
 const LS_KEY = 'spielplatzkarte-mangrove-keypair';
 
@@ -136,7 +138,7 @@ export async function renderReviews(lat, lon) {
             html += `<div class="mb-2 pb-2" style="border-bottom:1px solid #f3f4f6">
                 <span style="font-size:13px">${starsHtml(p.rating)}</span>
                 <span class="text-muted" style="font-size:11px; margin-left:4px">${relativeDate(p.iat)}</span>
-                ${p.opinion ? `<p class="mb-0 mt-1" style="font-size:13px">${p.opinion}</p>` : ''}
+                ${p.opinion ? `<p class="mb-0 mt-1" style="font-size:13px">${escapeHtml(p.opinion)}</p>` : ''}
             </div>`;
         }
     } else {
