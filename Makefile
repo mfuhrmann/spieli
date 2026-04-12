@@ -64,7 +64,8 @@ installer: require-docker ## Run the interactive production installer (no git cl
 ## ── Local / mobile testing ────────────────────────────────────────────────────
 
 lan-url:                  ## Print the LAN URLs to open the app on a phone (same WiFi)
-	@LAN_IP=$$(hostname -I 2>/dev/null | awk '{print $$1}') && \
+	@LAN_IP=$$(hostname -I 2>/dev/null | awk '{print $$1}'); \
+	  [ -z "$$LAN_IP" ] && LAN_IP=$$(ip route get 1 2>/dev/null | awk '{print $$7; exit}'); \
 	  APP_PORT=$${APP_PORT:-8080} && \
 	  if [ -z "$$LAN_IP" ]; then \
 	    printf '\n  \033[33mCould not detect LAN IP.\033[0m Run: ip route get 1 | awk '"'"'{print $$7; exit}'"'"'\n\n'; \
