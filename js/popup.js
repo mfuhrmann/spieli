@@ -458,7 +458,8 @@ function getEquipmentAttributes (feature) {
         const viewerUrl = `https://api.panoramax.xyz/?pic=${panoramaxUuid}&nav=none&focus=pic`;
         contentHtml += `<a href="${viewerUrl}" target="_blank" rel="noopener">` +
             `<img src="${thumbUrl}" alt="Straßenfoto" style="object-fit:cover; aspect-ratio:16/9;">` +
-            `</a>`;
+            `</a>` +
+            `<p class="mb-0 text-muted" style="font-size:0.75rem;"><span class="bi bi-camera"></span> Foto dieses Geräts</p>`;
     }
     if (content.length) {
         contentHtml += "<ul>";
@@ -475,7 +476,8 @@ function getEquipmentAttributes (feature) {
             const imgFile = objDevices[deviceKey].image.replace(/^File:/, '').replace(/ /g, '_');
             const imgUrl = `https://commons.wikimedia.org/wiki/Special:FilePath/${imgFile}?width=800`;
             contentHtml = `<img src="${imgUrl}" alt="${objDevices[deviceKey].name_de}"
-                style="object-fit:contain;">`;
+                style="object-fit:contain;">` +
+                `<p class="mb-0 text-muted" style="font-size:0.75rem;"><span class="bi bi-image"></span> Symbolbild</p>`;
         }
     }
 
