@@ -153,6 +153,11 @@ MAP_ZOOM=${MAP_ZOOM}
 MAP_MIN_ZOOM=${MAP_MIN_ZOOM}
 POI_RADIUS_M=${POI_RADIUS_M}
 
+# ── Optional: Hub integration ─────────────────────────────────────────────────
+# Set to the Hub's full origin (e.g. https://hub.example.com) when embedding
+# this instance in a Spielplatzkarte Hub. Leave empty for standalone deployments.
+# PARENT_ORIGIN=
+
 # ── Optional: infrastructure ──────────────────────────────────────────────────
 APP_PORT=${APP_PORT}
 OSM2PGSQL_THREADS=${OSM2PGSQL_THREADS}

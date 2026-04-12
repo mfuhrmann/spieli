@@ -211,6 +211,7 @@ All variables can be set in `.env` (copy from `.env.example`).
 | `REGION_CHAT_URL` | *(hidden)* | Community chat link; leave empty to hide the button |
 | `MAP_ZOOM` | `12` | Initial map zoom level |
 | `MAP_MIN_ZOOM` | `10` | Minimum zoom level |
+| `PARENT_ORIGIN` | *(own origin)* | Allowed origin for `postMessage` events — set to the Hub's full origin (e.g. `https://hub.example.com`) when embedding in a Hub; leave empty for standalone deployments |
 | `APP_PORT` | `8080` | Host port the app is exposed on |
 | `POSTGRES_PASSWORD` | `change-me` | Database password — **change in production** |
 | `POI_RADIUS_M` | `5000` | Radius in metres for nearby POI search |
