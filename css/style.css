@@ -581,9 +581,16 @@ ul {
         z-index: 1;
     }
 
-    /* Hide drag handle in full-screen — X button is the close action */
+    /* Drag handle in full-screen: sticky at top, chevron flipped downward */
     #info.panel-open #info-drag-handle {
-        display: none;
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        background: #fff;
+    }
+
+    #info.panel-open #info-drag-handle .bi-chevron-compact-up {
+        transform: rotate(180deg);
     }
 
     /* Hide search bar and FABs when panel is full-screen */

@@ -1338,7 +1338,31 @@ function setPanelClosed() {
     document.body.classList.remove('sheet-expanded');
 }
 
-// Wischen auf dem gesamten Panel (Peek-Modus: hoch = Vollbild, runter = schließen)
+// Drag Handle: Peek → runter schließen / hoch = Vollbild; Vollbild → runter = Peek
+let dragSwipeStartY = 0;
+el('info-drag-handle').addEventListener('touchstart', e => {
+    dragSwipeStartY = e.touches[0].clientY;
+    e.preventDefault(); // prevent pull-to-refresh and scroll interference
+}, { passive: false });
+el('info-drag-handle').addEventListener('touchend', e => {
+    const deltaY = e.changedTouches[0].clientY - dragSwipeStartY;
+    const info = el('info');
+    if (info.classList.contains('panel-peek')) {
+        if (deltaY > 40) clearSelection();
+        else if (deltaY < -40) setPanelOpen();
+    } else if (info.classList.contains('panel-open')) {
+        if (deltaY > 40) setPanelPeek();
+    }
+});
+
+// Tap auf Drag Handle: Peek → Vollbild; Vollbild → Peek
+el('info-drag-handle').addEventListener('click', () => {
+    const info = el('info');
+    if (info.classList.contains('panel-peek')) setPanelOpen();
+    else if (info.classList.contains('panel-open')) setPanelPeek();
+});
+
+// Wischen auf dem gesamten Panel im Peek-Modus (größere Zielfläche)
 let peekSwipeStartY = 0;
 el('info').addEventListener('touchstart', e => {
     if (el('info').classList.contains('panel-peek')) {
@@ -1350,23 +1374,6 @@ el('info').addEventListener('touchend', e => {
     const deltaY = e.changedTouches[0].clientY - peekSwipeStartY;
     if (deltaY > 40) clearSelection();
     else if (deltaY < -40) setPanelOpen();
-});
-
-// Wischen auf dem sticky Header (Vollbild-Modus: runter = zurück zu Peek)
-let headerSwipeStartY = 0;
-el('info-base').addEventListener('touchstart', e => {
-    headerSwipeStartY = e.touches[0].clientY;
-}, { passive: true });
-el('info-base').addEventListener('touchend', e => {
-    const deltaY = e.changedTouches[0].clientY - headerSwipeStartY;
-    if (el('info').classList.contains('panel-open') && deltaY > 40) {
-        setPanelPeek();
-    }
-});
-
-// Tap auf Drag Handle öffnet Vollbild
-el('info-drag-handle').addEventListener('click', () => {
-    if (el('info').classList.contains('panel-peek')) setPanelOpen();
 });
 
 
