@@ -1327,9 +1327,7 @@ function setPanelOpen() {
     info.classList.remove('panel-peek');
     info.classList.add('panel-open');
     document.body.classList.add('sheet-expanded');
-    // Reset scroll so the first accordion section (Bilder) is always visible.
-    // Without this, a non-zero scroll offset from a previous interaction causes
-    // the sticky #info-base header to cover the accordion's first button.
+    // Reset scroll so the first accordion section (Bilder) is always at the top.
     info.scrollTop = 0;
 }
 
