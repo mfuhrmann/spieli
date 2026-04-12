@@ -153,6 +153,39 @@ All data comes from OpenStreetMap or the free services listed above. No propriet
 
 ## Deploy for your region
 
+### Quick install (no git clone required)
+
+The easiest way to deploy is with the interactive installer. It downloads everything it needs, walks you through configuration, and optionally runs the first import.
+
+**Requirements:** Docker with the Compose plugin, `bash`, `openssl`
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/mfuhrmann/spielplatzkarte/main/install.sh -o install.sh
+bash install.sh
+```
+
+The installer will:
+
+1. Ask for a deployment directory (default: `./spielplatzkarte`)
+2. Ask for your OSM relation ID and Geofabrik PBF URL
+3. Prompt for optional settings (port, UI links, zoom levels)
+4. Generate a secure database password automatically
+5. Download `compose.yml` and `db/init.sql` into the deployment directory
+6. Offer to pull images, start the stack, and run the first import
+
+After setup, manage the stack from the deployment directory:
+
+```bash
+cd spielplatzkarte
+docker compose up -d                 # start
+docker compose run --rm importer     # re-import OSM data
+docker compose down                  # stop
+```
+
+---
+
+### Manual deploy (from source)
+
 ### 1. Find your region's OSM relation ID
 
 Search for your city, Kreis, or district on [Nominatim](https://nominatim.openstreetmap.org) or [openstreetmap.org](https://openstreetmap.org). The relation ID appears in the URL, e.g. `openstreetmap.org/relation/62700` → ID is `62700`.
