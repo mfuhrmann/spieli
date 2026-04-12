@@ -1376,6 +1376,20 @@ el('info').addEventListener('touchend', e => {
     else if (deltaY < -40) setPanelOpen();
 });
 
+// Wischen auf dem blauen Header im Vollbild-Modus (große Zielfläche, runter = Peek)
+let headerSwipeStartY = 0;
+el('info-base').addEventListener('touchstart', e => {
+    if (el('info').classList.contains('panel-open')) {
+        headerSwipeStartY = e.touches[0].clientY;
+        e.preventDefault();
+    }
+}, { passive: false });
+el('info-base').addEventListener('touchend', e => {
+    if (!el('info').classList.contains('panel-open')) return;
+    const deltaY = e.changedTouches[0].clientY - headerSwipeStartY;
+    if (deltaY > 40) setPanelPeek();
+});
+
 
 // Schließen-Button: Spielplatzauswahl aufheben
 el('info-close-btn').addEventListener('click', clearSelection);
