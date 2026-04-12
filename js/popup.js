@@ -482,8 +482,10 @@ function getEquipmentAttributes (feature) {
         const addPhotoLink = `<p class="mb-0 mt-1"><a href="${mapCompleteUrl}" target="_blank" rel="noopener" style="font-size:0.75rem;"><span class="bi bi-camera-fill"></span> Foto hinzufügen</a></p>`;
 
         if (deviceKey && deviceKey in objDevices && objDevices[deviceKey].image) {
-            const imgFile = objDevices[deviceKey].image.replace(/^File:/, '').replace(/ /g, '_');
-            const imgUrl = `https://commons.wikimedia.org/wiki/Special:FilePath/${imgFile}?width=800`;
+            const raw = objDevices[deviceKey].image;
+            const imgUrl = raw.startsWith('http')
+                ? raw
+                : `https://commons.wikimedia.org/wiki/Special:FilePath/${raw.replace(/^File:/, '').replace(/ /g, '_')}?width=800`;
             contentHtml = `<div class="device-img-wrap">` +
                 `<img src="${imgUrl}" alt="${objDevices[deviceKey].name_de}" style="object-fit:contain;" onerror="this.parentElement.style.display='none'">` +
                 `<p class="mb-0 text-muted" style="font-size:0.75rem;"><span class="bi bi-image"></span> Symbolbild</p>` +

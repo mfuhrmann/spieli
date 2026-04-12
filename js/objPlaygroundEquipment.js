@@ -22,7 +22,7 @@
 export const objDevices = {
     slide: {
         name_de: "Rutsche",
-        image: "File:Slide_in_Bhutan.jpg",
+        image: "https://wiki.openstreetmap.org/wiki/Special:FilePath/Accessibleplay-Slide.jpg",
         category: "stationary",
         filterable: true,
         filter_attr: ["length", "height"],
@@ -217,7 +217,7 @@ export const objDevices = {
     },
     excavator: {
         name_de: "Spielbagger",
-        image: "File:Playground_digger_2,_Darland_Banks_-_geograph.org.uk_-_1588398.jpg",
+        image: "https://wiki.openstreetmap.org/wiki/Special:FilePath/Playground_excavator,_unpowered.jpg",
         category: "sand",
         filterable: true,
     },
