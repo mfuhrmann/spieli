@@ -1,6 +1,43 @@
-//---------------------------------------------------------------//
-// Spielplatzinformationen für ein ausgewähltes Feature anzeigen //
-//---------------------------------------------------------------//
+// =============================================================================
+// selectPlayground.js — playground selection, info panel, and URL hash
+// =============================================================================
+//
+// This is the largest module in the app. It owns three concerns:
+//
+//   1. SELECTION STATE
+//      When a user clicks a playground polygon on the map, selectPlayground()
+//      is called. It highlights the polygon, fetches equipment and POI data,
+//      and updates the URL hash to #W<osmId> so the view can be bookmarked.
+//      Clicking elsewhere calls clearSelection().
+//
+//   2. INFO PANEL DISPLAY
+//      showAttributes(true)  — fills and shows the detail panel with all
+//                              information about the selected playground.
+//      showAttributes(false) — clears the detail content and either closes
+//                              the panel (mobile) or shows the nearby list.
+//      showNearbyPlaygrounds() — fills the panel with a list of the 5 nearest
+//                                playgrounds to a given lat/lon.
+//
+//   3. MOBILE BOTTOM SHEET PANEL STATES
+//      On mobile the info panel is a bottom sheet with three states:
+//
+//        hidden  — panel is off-screen (translateY(100%)), no class
+//        peek    — panel peeks 108 px from the bottom (.panel-peek)
+//                  triggered when a playground is selected
+//        open    — panel covers the full screen (.panel-open)
+//                  triggered by swiping up or tapping the drag handle
+//
+//      State transitions are animated via CSS transition on `transform`.
+//      During a live drag, inline styles override the CSS classes; once the
+//      finger lifts, transitionend cleans up the inline styles and applies
+//      the correct class (setPanelOpen / setPanelPeek / clearSelection).
+//
+//   showAttributes contract:
+//      Callers must pass true when showing a specific playground's details,
+//      and false when returning to the empty/nearby state. Do not toggle the
+//      panel classes directly from outside this module.
+//
+// =============================================================================
 
 import { Modal, Collapse } from 'bootstrap';
 import OpeningHours from 'opening_hours';
@@ -1340,27 +1377,53 @@ function setPanelClosed() {
 }
 
 // ── Live-Drag mit Finger-Tracking ────────────────────────────────────────────
-const PEEK_HEIGHT = 108; // px — muss mit CSS übereinstimmen
+//
+// The drag system works entirely with inline `transform: translateY(Npx)` during
+// the gesture, and replaces those inline styles with CSS classes once the finger
+// lifts. This lets us animate freely without fighting CSS specificity.
+//
+// Why window.innerHeight instead of info.offsetHeight?
+//   In peek mode the panel's CSS height is capped at 75vh. If we used
+//   offsetHeight as the "full travel" distance, the drag could only move the
+//   panel 75vh upward — it would stop half-way. Using window.innerHeight gives
+//   us the real screen height so the panel can reach the very top.
+//
+// Why expand to 100dvh on drag start (peek mode)?
+//   The panel's CSS constrains its height to 75vh while in .panel-peek. If we
+//   started dragging without overriding that, the panel element would be shorter
+//   than the screen, and translateY(0) would leave a gap at the top. Setting
+//   height/maxHeight to 100dvh before the first touchmove ensures the panel
+//   fills the screen correctly at the end of an upward drag.
+//
+// Why document-level touchmove/touchend listeners?
+//   If the finger moves outside the panel element during a fast swipe, a
+//   listener attached to the panel element would miss those events and the drag
+//   would "stick". Attaching to document captures all touches regardless of
+//   where the finger ends up, and we remove the listeners as soon as the finger
+//   lifts (see onDragEnd).
+
+const PEEK_HEIGHT = 108; // px — must match CSS translateY(calc(100% - 108px))
 const PANEL_TRANSITION = 'transform 0.35s cubic-bezier(0.32, 0.72, 0, 1)';
 
 let dragActive = false;
 let dragStartY = 0;
 let dragMode = null; // 'peek' | 'open'
-const VH = () => window.innerHeight; // always full viewport height
+const VH = () => window.innerHeight; // always full viewport height, not element height
 
 function startPanelDrag(touchY, mode) {
     const info = el('info');
     dragStartY = touchY;
     dragMode = mode;
     dragActive = true;
-    info.style.transition = 'none';
+    info.style.transition = 'none'; // disable CSS transition during live drag
 
     if (mode === 'peek') {
         // Expand to full height so the panel can reach the top during drag
         info.style.height = '100dvh';
         info.style.maxHeight = '100dvh';
         info.style.overflow = 'hidden';
-        // Lock the starting transform to the correct pixel position
+        // Lock the starting transform to the correct pixel position so the
+        // panel doesn't jump when we switch from CSS class to inline style.
         info.style.transform = `translateY(${VH() - PEEK_HEIGHT}px)`;
     } else {
         info.style.transform = 'translateY(0)';
@@ -1394,8 +1457,12 @@ function endPanelDrag(touchY) {
     info.style.transition = PANEL_TRANSITION;
     info.style.transform = `translateY(${finalT}px)`;
 
+    // Wait for the CSS transition to finish before switching back to CSS
+    // classes. If we applied the class immediately, the class rules would
+    // conflict with the inline transform and the animation would jump.
     info.addEventListener('transitionend', function onEnd() {
         info.removeEventListener('transitionend', onEnd);
+        // Remove all inline styles — let the CSS class take over completely.
         info.style.transition = '';
         info.style.transform = '';
         info.style.height = '';

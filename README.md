@@ -6,6 +6,25 @@ A free, interactive web map for exploring playgrounds based on [OpenStreetMap](h
 
 ---
 
+## Table of contents
+
+- [Features](#features)
+- [How the data flows](#how-the-data-flows)
+- [Tech stack](#tech-stack)
+- [Glossary](#glossary)
+- [Deploy for your region](#deploy-for-your-region)
+- [Configuration reference](#configuration-reference)
+- [Local development](#local-development)
+- [How-to: Add a playground device](#how-to-add-a-playground-device)
+- [How-to: Edit UI strings / add a language](#how-to-edit-ui-strings--add-a-language)
+- [Troubleshooting](#troubleshooting)
+- [Contributing](#contributing)
+- [Federation](#federation)
+- [External services](#external-services)
+- [License](#license)
+
+---
+
 ## Features
 
 **Map**
@@ -36,39 +55,35 @@ A free, interactive web map for exploring playgrounds based on [OpenStreetMap](h
 
 ---
 
-## Architecture
-
-The app consists of four containers managed by Docker Compose:
+## How the data flows
 
 ```
-browser → nginx (app) → PostgREST → PostgreSQL/PostGIS
-                                   ↑
-                              osm2pgsql importer (run once)
+                  ┌─────────────────────────────────────────────────────┐
+                  │                   Production                        │
+                  │                                                     │
+  Browser ──────► nginx ──────► PostgREST ──────► PostgreSQL/PostGIS   │
+  (your phone      (serves        (turns SQL          (holds all the    │
+   or laptop)      the app,       functions into      OSM playground    │
+                   proxies API    HTTP endpoints)     data)             │
+                   requests)                                            │
+                  └─────────────────────────────────────────────────────┘
+
+                  ┌─────────────────────────────────────────────────────┐
+                  │              Local dev (no database needed)         │
+                  │                                                     │
+  Browser ──────► Vite dev server ──────► Overpass API (internet)      │
+                  (serves JS with          (live OSM query,            │
+                   hot-reload)             slower but zero setup)      │
+                  └─────────────────────────────────────────────────────┘
 ```
 
-| Component | Role |
-|---|---|
-| **PostgreSQL + PostGIS** | Stores OSM data imported via osm2pgsql |
-| **osm2pgsql importer** | Downloads a Geofabrik PBF extract and imports it into PostGIS |
-| **PostgREST** | Auto-generates a REST API from SQL functions in the `api` schema |
-| **nginx** | Serves the Vite-built frontend; proxies `/api/` to PostgREST; exposes CORS headers for Hub federation |
+**In production**, your browser loads the app from nginx. When it needs playground data, it calls `/api/`, which nginx forwards to PostgREST. PostgREST runs a SQL function in PostgreSQL and returns the results as JSON — no custom server code needed. The database was pre-loaded with OpenStreetMap data by the osm2pgsql importer (a one-time step that you re-run whenever you want fresh data).
+
+**During local development**, you skip the database entirely. The Vite dev server serves the JavaScript with hot-reload, and the app falls back to the Overpass API — a live query service for OpenStreetMap data. This is slower than the database but means you can start hacking on the frontend without setting up PostgreSQL.
 
 ---
 
-## Federation
-
-Multiple regional instances can be aggregated into a single global map using the **[Spielplatzkarte Hub](https://github.com/mfuhrmann/spielplatzkarte-hub)**.
-
-Each instance exposes two federation endpoints (available since v0.2.1):
-
-- `GET /api/rpc/get_playgrounds` — full GeoJSON FeatureCollection of all playgrounds in the region
-- `GET /api/rpc/get_meta` — instance metadata: OSM relation name, playground count, bounding box
-
-CORS is enabled on `/api/` so the Hub can query instances cross-origin from the browser.
-
----
-
-## Tech Stack
+## Tech stack
 
 | Component | Technology |
 |---|---|
@@ -86,69 +101,27 @@ CORS is enabled on `/api/` so the Hub can query instances cross-origin from the 
 
 ---
 
-## Internationalisation
+## Glossary
 
-The UI is fully translated using [i18next](https://www.i18next.com/). The language is detected automatically from the visitor's browser settings, with English as the fallback.
+These are the tools and concepts you'll encounter when working on this project. You don't need to be an expert in all of them — but knowing what they are makes the rest of this README much easier to follow.
 
-### Supported languages
-
-| Code | Language |
+| Term | What it is |
 |---|---|
-| `de` | German |
-| `en` | English |
-| `fr` | French |
-| `es` | Spanish |
-| `it` | Italian |
-| `pl` | Polish |
-| `nl` | Dutch |
-| `cs` | Czech |
-| `pt` | Portuguese |
-| `sv` | Swedish |
-| `uk` | Ukrainian |
-| `ja` | Japanese |
-
-> **Note:** Translations were not done by native speakers and may contain errors. Corrections and improvements are very welcome — see below for how to contribute.
-
-### Testing a specific language
-
-Add `?lang=xx` to the URL to force a language regardless of browser settings:
-
-```
-http://localhost:5173/?lang=fr
-http://localhost:8080/?lang=ja
-```
-
-### Adding a new language
-
-1. Copy `locales/en.json` to `locales/xx.json` (replace `xx` with the [BCP 47 language code](https://en.wikipedia.org/wiki/IETF_language_tag), e.g. `ro` for Romanian).
-2. Translate all the string values in the new file. Do not change the keys.
-3. For languages with complex plural forms (e.g. Polish, Ukrainian), add the appropriate plural suffixes (`_one`, `_few`, `_many`, `_other`) to the equipment count strings. See [i18next pluralisation docs](https://www.i18next.com/translation-function/plurals) and the existing `locales/pl.json` for reference.
-4. In `js/i18n.js`, add an import and register the new locale:
-   ```js
-   import ro from '../locales/ro.json';
-   // …
-   resources: {
-       // …existing entries…
-       ro: { translation: ro },
-   }
-   ```
-5. Run `npm run build` to verify there are no errors.
-
----
-
-## External Services
-
-| Service | Purpose |
-|---|---|
-| [Geofabrik](https://download.geofabrik.de) | Source of OSM PBF extracts for import |
-| [Nominatim](https://nominatim.openstreetmap.org) | Location search and region bounding box |
-| [CartoDB Voyager](https://carto.com/basemaps) | Background map tiles |
-| [Panoramax](https://panoramax.xyz) | Street-level photos |
-| [Mangrove.reviews](https://mangrove.reviews) | Pseudonymous community reviews |
-| [MapComplete](https://mapcomplete.org) | Contribute photos and equipment |
-| [Wikidata](https://wikidata.org) | Operator entity linking |
-
-All data comes from OpenStreetMap or the free services listed above. No proprietary data, no user accounts, no tracking.
+| **OpenStreetMap (OSM)** | A free, editable world map built by volunteers — the source of all the playground data in this app. |
+| **OSM relation ID** | Every city, district, or region in OSM has a numeric ID. We use it to tell the app which area to show. Example: `62700` is Landkreis Fulda. |
+| **PBF file** | A compressed snapshot of OSM map data for a region, available for download from Geofabrik. The importer reads this file to populate the database. |
+| **Docker** | A tool that packages software and all its dependencies into isolated "containers" so it runs the same way on any machine. You don't need to install PostgreSQL, nginx, or PostgREST manually — Docker handles all of that. |
+| **Docker Compose** | A companion to Docker that lets you define and start multiple containers together with one command (`docker compose up`). Our stack has four: the database, the importer, the API layer, and the web server. |
+| **nginx** | A web server. In this project it serves the built frontend files (HTML/CSS/JS) and forwards API requests to PostgREST. Think of it as the front door of the app. |
+| **Vite** | A build tool for JavaScript. During development it serves your JS files with instant hot-reload. For production, it bundles and optimises everything into a single small file. You run it with `make dev`. |
+| **Node.js** | A JavaScript runtime that runs on your computer (not in the browser). Vite needs it. You install it once and then mostly forget about it. |
+| **PostgreSQL** | A relational database — where all the playground data lives once it's been imported. |
+| **PostGIS** | An extension to PostgreSQL that adds support for geographic data (points, polygons, distances). It's what lets us query "find all playgrounds within 500 m of this location". |
+| **osm2pgsql** | A tool that reads a PBF file and imports the OSM data into PostgreSQL. You run it once (via `make import`) to load the data, and again whenever you want to refresh it. |
+| **PostgREST** | A server that automatically turns your PostgreSQL database into a REST API. Instead of writing server-side code, you write SQL functions and PostgREST exposes them as HTTP endpoints. |
+| **OpenLayers** | A JavaScript library for interactive maps. It handles rendering the map tiles, drawing the playground polygons, and responding to clicks. |
+| **i18next** | A JavaScript library for internationalisation (i18n). It loads the translation files from `locales/*.json` and swaps in the right string for the user's language. |
+| **Overpass API** | A read-only query service for OpenStreetMap data, available on the internet. The app uses it as a fallback during local development so you don't need a database running. |
 
 ---
 
@@ -261,12 +234,12 @@ All common operations are available via `make`. Run `make help` to list all targ
 ### Frontend dev server
 
 ```bash
-make install      # install Node dependencies
+make install      # install Node dependencies (only needed once)
 make up           # start db + PostgREST + nginx (required backend)
 make dev          # dev server with hot-reload at http://localhost:5173
 ```
 
-A running PostgREST backend is required — the app no longer falls back to Overpass. Start the full stack with `make up` before running the dev server.
+> **Note:** `make dev` starts the Vite dev server, which serves the JS with instant hot-reload. It still needs the Docker stack running for the API. If you don't want to run Docker at all, the app will fall back to Overpass for playground data — but this is slower and has rate limits.
 
 ### Rebuild the app container after code changes
 
@@ -302,6 +275,327 @@ This prints your machine's LAN IP and the ready-to-use URLs, for example:
 
 - **Vite dev server** (`make dev`): already binds to all interfaces — open the printed URL on the phone. If it doesn't load, check that port 5173 is not blocked by a firewall on the host.
 - **Docker stack** (`make up`): binds to `0.0.0.0` by default, so `http://<LAN-IP>:8080` works immediately without any extra configuration.
+
+> **Geolocation on mobile:** Browsers block the location API on plain HTTP (non-HTTPS) connections — including local IP addresses. If you need to test the location button on a phone, use Chrome and enable the "Insecure origins treated as secure" flag at `chrome://flags`, or test against the production HTTPS URL.
+
+---
+
+## How-to: Add a playground device
+
+Every playground device that OSM can record — slides, swings, climbing frames, balance beams — is defined in one place: `js/objPlaygroundEquipment.js`. Adding support for a new device type is a small, self-contained change.
+
+### Step 1 — Find the OSM tag
+
+OSM uses the tag `playground=<value>` to describe individual devices. The full list of documented values is at [wiki.openstreetmap.org/wiki/Key:playground](https://wiki.openstreetmap.org/wiki/Key:playground).
+
+For example, a balance beam is `playground=balance_beam`.
+
+### Step 2 — Add an entry to `objDevices`
+
+Open `js/objPlaygroundEquipment.js` and add a new key to the `objDevices` object. Copy an existing entry as a template:
+
+```js
+balance_beam: {
+    name_de: "Balancierbalken",
+    image: "File:Playground balance beam.jpg",
+    category: "stationary",
+    filterable: false,
+},
+```
+
+**Field reference:**
+
+| Field | Required | What it does |
+|---|---|---|
+| `name_de` | Yes | German display name shown in the detail panel |
+| `image` | No | Wikimedia Commons filename for an example photo (see Step 3). Omit if no good image exists. |
+| `category` | No | Groups the device in the filter panel. Values: `stationary`, `structure_parts`, `active`. Omit to leave ungrouped. |
+| `filterable` | No | Set to `true` to make this device type appear as a filter option in the sidebar. |
+| `filter_attr` | No | Array of OSM sub-attributes to show as filter controls, e.g. `["length", "height"]`. Only meaningful when `filterable: true`. |
+
+### Step 3 — Find a Wikimedia Commons image
+
+1. Go to [commons.wikimedia.org](https://commons.wikimedia.org) and search for the device name in English.
+2. Find a clear, representative photo of the device.
+3. On the image page, copy the filename — it starts with `File:` (e.g. `File:Playground balance beam.jpg`).
+4. Paste that filename as the `image` value in your entry. The app first tries Wikimedia Commons, then falls back to the OSM wiki if the Commons image isn't found.
+
+If you can't find a suitable image, simply omit the `image` field. No broken icon will appear.
+
+### Step 4 — Verify locally
+
+```bash
+make dev
+```
+
+Open the app at `http://localhost:5173`, navigate to a playground that has the device you added (search for a street near such a playground, then click it), and expand the device's entry in the equipment list. You should see the German name, the example image, and any attributes.
+
+If you don't know a playground with that device, you can check [openstreetmap.org](https://openstreetmap.org) by searching `playground=balance_beam` in Overpass Turbo: [overpass-turbo.eu](https://overpass-turbo.eu).
+
+### Step 5 — Commit and open a PR
+
+```bash
+git checkout -b feat/add-balance-beam-device
+git add js/objPlaygroundEquipment.js
+git commit -m "feat: add balance_beam playground device"
+git push -u origin feat/add-balance-beam-device
+```
+
+Then open a pull request on GitHub. See the [Contributing](#contributing) section for the full PR walkthrough.
+
+---
+
+## How-to: Edit UI strings / add a language
+
+All user-visible text in the app lives in `locales/*.json` — one file per language. The app detects the user's browser language automatically and loads the matching file.
+
+### Edit an existing string
+
+**Step 1 — Find the key you want to change**
+
+Open `locales/de.json` (German, the primary language) in any text editor. The file is structured as nested JSON. For example, the text on the location button is under `"location"`:
+
+```json
+"location": {
+    "yourLocation": "Dein Standort"
+}
+```
+
+You can also open the app in your browser and use the browser's "Inspect" tool (right-click → Inspect) to find the element, then search for its text in the `locales/` files.
+
+**Step 2 — Edit the value**
+
+Change the string value (the part after the `:`), keeping the key (the part before the `:`) unchanged. Make sure the JSON stays valid — every value must be in double quotes, and every line except the last in an object must end with a comma.
+
+**Step 3 — Test your change**
+
+```bash
+make dev
+```
+
+Open `http://localhost:5173/?lang=de` to force German regardless of your browser settings. Replace `de` with any other language code to test that language.
+
+**Step 4 — Apply the change to all languages**
+
+If you changed a string, update the same key in the other language files (`locales/en.json`, `locales/fr.json`, etc.) too. You can use the English value as a placeholder if you don't speak the language — native speakers can improve it later.
+
+---
+
+### Add a completely new language
+
+1. **Copy the English file** as a starting point:
+   ```bash
+   cp locales/en.json locales/ro.json   # replace 'ro' with your language code
+   ```
+   Use the [BCP 47 language code](https://en.wikipedia.org/wiki/IETF_language_tag) (e.g. `ro` for Romanian, `hr` for Croatian).
+
+2. **Translate all the string values.** Do not change the keys — only the values (the text in quotes after the `:`). Leave any value you're unsure about in English for now.
+
+3. **Handle plural forms** (only needed for some languages). Languages like Polish and Ukrainian have multiple plural forms. If your language has this, add the appropriate plural suffixes (`_one`, `_few`, `_many`, `_other`) to equipment count strings. See [i18next pluralisation docs](https://www.i18next.com/translation-function/plurals) and the existing `locales/pl.json` for an example.
+
+4. **Register the language** in `js/i18n.js`:
+   ```js
+   import ro from '../locales/ro.json';   // add this import near the top
+   // …
+   resources: {
+       // …existing entries…
+       ro: { translation: ro },           // add this line
+   }
+   ```
+
+5. **Test it:**
+   ```bash
+   make dev
+   # Open http://localhost:5173/?lang=ro
+   ```
+
+6. Commit and open a PR — see [Contributing](#contributing).
+
+---
+
+## Troubleshooting
+
+### Port 8080 is already in use
+
+**Symptom:** `make up` fails with an error like `address already in use` or `port is already allocated`.
+
+**Fix:** Either stop whatever is using port 8080, or change the port in your `.env`:
+```env
+APP_PORT=8081
+```
+Then run `make up` again.
+
+---
+
+### `make import` exits immediately or fails with a database error
+
+**Symptom:** The import finishes in seconds (normally takes minutes), or you see a `connection refused` or `role does not exist` error.
+
+**Fix:** The database container must be running before you import. Make sure you ran `make up` first and that all containers are healthy:
+```bash
+docker compose ps   # all containers should show "running" or "healthy"
+make import
+```
+If the database shows as unhealthy, try `make down && make up` to restart it cleanly.
+
+---
+
+### Map loads but shows no playgrounds
+
+**Symptom:** The map tiles appear (you can see streets and buildings) but no playground polygons are drawn, or the detail panel is empty.
+
+**Possible causes and fixes:**
+
+1. **Import not run:** Did you run `make import` after starting the stack? Playground data is not loaded automatically.
+2. **Wrong relation ID:** Check `OSM_RELATION_ID` in your `.env`. An incorrect ID means the app filters out all playgrounds. Verify your ID at [nominatim.openstreetmap.org](https://nominatim.openstreetmap.org).
+3. **Overpass timeout (dev mode only):** If you're running `make dev` without the Docker stack, the app queries Overpass, which can be slow or temporarily unavailable. Wait a moment and reload.
+4. **Browser cache:** Try a hard reload: `Ctrl+Shift+R` (Windows/Linux) or `Cmd+Shift+R` (Mac).
+
+---
+
+### Geolocation button does nothing on mobile
+
+**Symptom:** Tapping the location button on a phone browser has no effect — no movement, no error.
+
+**Cause:** Browsers block the geolocation API on plain HTTP connections (non-HTTPS). This includes local IP addresses like `http://192.168.1.42:8080`. This is a browser security policy and cannot be overridden in the app.
+
+**Fix options:**
+- Test geolocation on the **production HTTPS URL** (where it works normally in all browsers).
+- On Android with **Chrome**: go to `chrome://flags`, search for "Insecure origins treated as secure", add your local URL, and relaunch Chrome.
+- **DuckDuckGo** and **Brave** do not offer this workaround — use Chrome for local geolocation testing.
+
+---
+
+### Dev server starts but changes don't appear
+
+**Symptom:** You edited a JS or CSS file, saved it, but the browser still shows the old version.
+
+**Fix:** Vite hot-reload should pick up changes automatically. If it doesn't:
+1. Check the terminal running `make dev` — if there's a build error, the browser won't update until it's fixed.
+2. Try a hard reload in the browser: `Ctrl+Shift+R` / `Cmd+Shift+R`.
+3. If you changed `index.html` or a file in `public/`, you may need to stop and restart `make dev`.
+
+Note: if you're testing via `make docker-build` (the Docker stack), you need to run `make docker-build` again after every change — there is no hot-reload in that mode.
+
+---
+
+### `make lan-url` prints "Could not detect LAN IP"
+
+**Symptom:** Running `make lan-url` outputs a warning instead of your IP address.
+
+**Fix:** Run this command directly and use the output as your LAN IP:
+```bash
+ip route get 1 | awk '{print $7; exit}'
+```
+Then open `http://<that-ip>:8080` on your phone.
+
+---
+
+## Contributing
+
+All contributions are welcome — code, translations, bug reports, or documentation improvements. Here's how to get a change into the project:
+
+### Step 1 — Create a GitHub issue
+
+Before writing code, open an issue on GitHub describing what you want to fix or add. This lets maintainers give early feedback and avoids duplicated effort. You can skip this for tiny fixes like typos.
+
+### Step 2 — Create a branch
+
+```bash
+git checkout main
+git pull                          # make sure you're up to date
+git checkout -b fix/my-fix-name   # create a new branch
+```
+
+**Branch naming convention:**
+- `feat/<description>` — new feature (e.g. `feat/add-balance-beam-device`)
+- `fix/<description>` — bug fix (e.g. `fix/popup-scroll`)
+- `docs/<description>` — documentation only (e.g. `docs/add-glossary`)
+- `chore/<description>` — maintenance, dependency updates
+
+### Step 3 — Make your change and test it
+
+Edit the files you need to change. For frontend changes, run `make dev` and check the feature in your browser. For Docker stack changes, run `make docker-build` and test at `http://localhost:8080`.
+
+### Step 4 — Commit with a conventional commit message
+
+```bash
+git add js/objPlaygroundEquipment.js   # add only the files you changed
+git commit -m "feat: add balance_beam playground device"
+```
+
+**Commit message format:** `<type>: <short description>`
+
+Types: `feat` (new feature), `fix` (bug fix), `docs` (documentation), `style` (formatting), `refactor` (code restructure, no behaviour change), `chore` (maintenance), `ci` (CI/CD changes).
+
+Examples:
+- `feat: add filtering by device height`
+- `fix: location button not showing nearby playgrounds on mobile`
+- `docs: add balance_beam to device how-to guide`
+
+### Step 5 — Push and open a pull request
+
+```bash
+git push -u origin fix/my-fix-name
+```
+
+GitHub will print a link to open a pull request. Click it, write a short description of what you changed and why, and submit. A maintainer will review it.
+
+> **Never push directly to `main`.** All changes go through a branch and a pull request.
+
+---
+
+## Federation
+
+Multiple regional instances can be aggregated into a single global map using the **[Spielplatzkarte Hub](https://github.com/mfuhrmann/spielplatzkarte-hub)**.
+
+Each instance exposes two federation endpoints (available since v0.2.1):
+
+- `GET /api/rpc/get_playgrounds` — full GeoJSON FeatureCollection of all playgrounds in the region
+- `GET /api/rpc/get_meta` — instance metadata: OSM relation name, playground count, bounding box
+
+CORS is enabled on `/api/` so the Hub can query instances cross-origin from the browser.
+
+---
+
+## External services
+
+| Service | Purpose |
+|---|---|
+| [Geofabrik](https://download.geofabrik.de) | Source of OSM PBF extracts for import |
+| [Nominatim](https://nominatim.openstreetmap.org) | Location search and region bounding box |
+| [CartoDB Voyager](https://carto.com/basemaps) | Background map tiles |
+| [Panoramax](https://panoramax.xyz) | Street-level photos |
+| [Mangrove.reviews](https://mangrove.reviews) | Pseudonymous community reviews |
+| [MapComplete](https://mapcomplete.org) | Contribute photos and equipment |
+| [Wikidata](https://wikidata.org) | Operator entity linking |
+
+All data comes from OpenStreetMap or the free services listed above. No proprietary data, no user accounts, no tracking.
+
+---
+
+## Internationalisation
+
+The UI is fully translated using [i18next](https://www.i18next.com/). The language is detected automatically from the visitor's browser settings, with English as the fallback.
+
+### Supported languages
+
+| Code | Language |
+|---|---|
+| `de` | German |
+| `en` | English |
+| `fr` | French |
+| `es` | Spanish |
+| `it` | Italian |
+| `pl` | Polish |
+| `nl` | Dutch |
+| `cs` | Czech |
+| `pt` | Portuguese |
+| `sv` | Swedish |
+| `uk` | Ukrainian |
+| `ja` | Japanese |
+
+> **Note:** Translations were not done by native speakers and may contain errors. Corrections and improvements are very welcome — see the [how-to guide](#how-to-edit-ui-strings--add-a-language) above.
 
 ---
 
