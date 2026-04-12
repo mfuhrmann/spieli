@@ -1338,18 +1338,18 @@ function setPanelClosed() {
     document.body.classList.remove('sheet-expanded');
 }
 
-// Wischen auf dem Drag Handle (Peek-Modus: runter = schließen, hoch = Vollbild)
-let swipeTouchStartY = 0;
-el('info-drag-handle').addEventListener('touchstart', e => {
-    swipeTouchStartY = e.touches[0].clientY;
-    e.preventDefault(); // prevent pull-to-refresh
-}, { passive: false });
-el('info-drag-handle').addEventListener('touchend', e => {
-    const deltaY = e.changedTouches[0].clientY - swipeTouchStartY;
+// Wischen auf dem gesamten Panel (Peek-Modus: hoch = Vollbild, runter = schließen)
+let peekSwipeStartY = 0;
+el('info').addEventListener('touchstart', e => {
     if (el('info').classList.contains('panel-peek')) {
-        if (deltaY > 40) clearSelection();
-        else if (deltaY < -40) setPanelOpen();
+        peekSwipeStartY = e.touches[0].clientY;
     }
+}, { passive: true });
+el('info').addEventListener('touchend', e => {
+    if (!el('info').classList.contains('panel-peek')) return;
+    const deltaY = e.changedTouches[0].clientY - peekSwipeStartY;
+    if (deltaY > 40) clearSelection();
+    else if (deltaY < -40) setPanelOpen();
 });
 
 // Wischen auf dem sticky Header (Vollbild-Modus: runter = zurück zu Peek)
@@ -1364,12 +1364,11 @@ el('info-base').addEventListener('touchend', e => {
     }
 });
 
-// Tap auf Drag Handle im Peek-Modus → Vollbild
+// Tap auf Drag Handle öffnet Vollbild
 el('info-drag-handle').addEventListener('click', () => {
-    if (el('info').classList.contains('panel-peek')) {
-        setPanelOpen();
-    }
+    if (el('info').classList.contains('panel-peek')) setPanelOpen();
 });
+
 
 // Schließen-Button: Spielplatzauswahl aufheben
 el('info-close-btn').addEventListener('click', clearSelection);

@@ -594,12 +594,28 @@ ul {
 
     /* Drag handle visible on mobile (peek state only) */
     #info-drag-handle {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        padding: 10px 0 6px;
+        cursor: pointer;
+    }
+
+    #info-drag-handle::before {
+        content: '';
         display: block;
-        width: 36px;
+        width: 40px;
         height: 4px;
-        background: #d1d5db;
+        background: #9ca3af;
         border-radius: 2px;
-        margin: 10px auto 6px;
+    }
+
+    #info-drag-handle .bi-chevron-compact-up {
+        font-size: 1.1rem;
+        color: #6b7280;
+        line-height: 1;
     }
 
     /* Close button visible on mobile */
