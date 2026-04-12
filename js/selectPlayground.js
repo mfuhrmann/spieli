@@ -96,6 +96,7 @@ export function showNearbyPlaygrounds(lon, lat, label = t('nearby.thisLocation')
 
     html += '</div>';
     el('info-more').innerHTML = html;
+    el('info-more').style.display = 'block'; // override .info-more-hint { display:none } on mobile
     el('info').classList.add('panel-open');
 
     if (nearbyClickController) nearbyClickController.abort();
