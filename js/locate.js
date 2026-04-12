@@ -62,7 +62,15 @@ const geolocation = new Geolocation({
 });
 
 geolocation.on('error', function (error) {
-    console.log("Standortverfolgung nicht möglich.");
+    console.warn('Geolocation error:', error.message);
+    // Show a brief visible alert — most likely cause on mobile is non-HTTPS context
+    const btn = document.getElementById('btn-location');
+    if (btn) {
+        const original = btn.title;
+        btn.title = error.message || 'Standortzugriff nicht möglich';
+        btn.style.outline = '2px solid red';
+        setTimeout(() => { btn.style.outline = ''; btn.title = original; }, 4000);
+    }
 });
 
 const accuracyFeature = new Feature();
