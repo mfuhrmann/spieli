@@ -70,6 +70,7 @@ import { panoramaxViewerUrl, panoramaxThumbUrl } from './panoramax.js';
 import { getEquipmentAttributesFromProps } from './popup.js';
 import { renderReviews } from './reviews.js';
 import { t, language } from './i18n.js';
+import { escapeHtml } from './utils.js';
 
 const el = id => document.getElementById(id);
 const show = id => { el(id).style.display = ''; };
@@ -991,20 +992,20 @@ function showPlaygroundInfo(json) {
     var playgroundDescription = "";
     if (description_de) {
         if (!description) {
-            playgroundDescription = description_de;
+            playgroundDescription = escapeHtml(description_de);
         } else if (description != description_de) {
-            playgroundDescription = description + ' | ' + description_de;
+            playgroundDescription = escapeHtml(description) + ' | ' + escapeHtml(description_de);
         }
     } else if (description) {
-        playgroundDescription = description;
+        playgroundDescription = escapeHtml(description);
     }
     if (note) {
         if (playgroundDescription) { playgroundDescription += "<br>"; }
-        playgroundDescription += `<span class="bi bi-pencil-square"> ${note}`
+        playgroundDescription += `<span class="bi bi-pencil-square"> ${escapeHtml(note)}</span>`;
     }
     if (fixme) {
         if (playgroundDescription) { playgroundDescription += "<br>"; }
-        playgroundDescription += `<span class="bi bi-tools"> ${fixme}`
+        playgroundDescription += `<span class="bi bi-tools"> ${escapeHtml(fixme)}</span>`;
     }
     if (playgroundDescription) {
         playgroundDescription = `<i>${playgroundDescription}</i>`
