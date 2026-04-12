@@ -1,5 +1,5 @@
 {
-  "appTitle": "Lekplatskarta \u2013 {{regionName}}",
+  "appTitle": "Lekplatskarta – {{regionName}}",
   "search": {
     "placeholder": "Sök …",
     "found": "\"{{query}}\" i {{location}}",
@@ -14,7 +14,8 @@
   "info": {
     "hint": "Tryck på en lekplats för detaljer",
     "shareBtn": "Dela lekplats",
-    "osmBtn": "Visa på OpenStreetMap"
+    "osmBtn": "Visa på OpenStreetMap",
+    "closeBtn": "Stäng"
   },
   "completeness": {
     "complete": "Foton, namn och detaljer tillgängliga",
@@ -50,7 +51,7 @@
     "picnic_one": "{{count}} picknicbord",
     "picnic_other": "{{count}} picknicbord",
     "fitnessDefault": "Fitnessredskap",
-    "addHint": "Utrustning inte kartlagd individuellt ännu \u2013 hjälp till! 👇",
+    "addHint": "Utrustning inte kartlagd individuellt ännu – hjälp till! 👇",
     "addLink": "Lägg till utrustning"
   },
   "photos": {
@@ -95,7 +96,7 @@
     "addData": {
       "osm": {
         "label": "OpenStreetMap",
-        "text": "Data kommer från {{osmLink}} \u2014 en fri, samarbetande världskarta skapad av miljontals volontärer. Endast det som har kartlagts visas här.",
+        "text": "Data kommer från {{osmLink}} — en fri, samarbetande världskarta skapad av miljontals volontärer. Endast det som har kartlagts visas här.",
         "wikiUrl": "https://sv.wikipedia.org/wiki/OpenStreetMap"
       },
       "contribute": {
@@ -107,7 +108,7 @@
       },
       "photos": {
         "label": "Lägg till foton",
-        "text": "Foton kan laddas upp direkt via {{mapcompleteLink}} \u2014 öppna en lekplats och klicka på \"Lägg till foto\". Foton tillhandahålls av {{panoramaxLink}}."
+        "text": "Foton kan laddas upp direkt via {{mapcompleteLink}} — öppna en lekplats och klicka på \"Lägg till foto\". Foton tillhandahålls av {{panoramaxLink}}."
       },
       "community": {
         "label": "Gemenskap",
@@ -118,7 +119,7 @@
     "about": {
       "history": {
         "label": "Historia",
-        "text": "Lekplatskartan skapades av {{authorLink}} som avslutningsprojekt för en {{courseLink}} \u2014 ursprungligen inriktad på Berlin. Med tiden utvecklades den till en generisk karta som kan användas för vilket OSM-område som helst.",
+        "text": "Lekplatskartan skapades av {{authorLink}} som avslutningsprojekt för en {{courseLink}} — ursprungligen inriktad på Berlin. Med tiden utvecklades den till en generisk karta som kan användas för vilket OSM-område som helst.",
         "courseUrl": "https://gis-trainer.com/de/gis_webmapping.php",
         "courseLabel": "GIS och webbkartläggningskurs"
       },

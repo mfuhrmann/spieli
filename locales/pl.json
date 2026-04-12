@@ -1,5 +1,5 @@
 {
-  "appTitle": "Mapa placów zabaw \u2013 {{regionName}}",
+  "appTitle": "Mapa placów zabaw – {{regionName}}",
   "search": {
     "placeholder": "Szukaj …",
     "found": "\"{{query}}\" w {{location}}",
@@ -14,7 +14,8 @@
   "info": {
     "hint": "Dotknij plac zabaw, aby zobaczyć szczegóły",
     "shareBtn": "Udostępnij plac zabaw",
-    "osmBtn": "Zobacz na OpenStreetMap"
+    "osmBtn": "Zobacz na OpenStreetMap",
+    "closeBtn": "Zamknij"
   },
   "completeness": {
     "complete": "Zdjęcia, nazwa i szczegóły dostępne",
@@ -60,7 +61,7 @@
     "picnic_many": "{{count}} stołów piknikowych",
     "picnic_other": "{{count}} stołów piknikowych",
     "fitnessDefault": "Urządzenie fitness",
-    "addHint": "Wyposażenie jeszcze nie zmapowane indywidualnie \u2013 pomóż! 👇",
+    "addHint": "Wyposażenie jeszcze nie zmapowane indywidualnie – pomóż! 👇",
     "addLink": "Dodaj wyposażenie"
   },
   "photos": {
@@ -105,7 +106,7 @@
     "addData": {
       "osm": {
         "label": "OpenStreetMap",
-        "text": "Dane pochodzą z {{osmLink}} \u2014 wolnej, współpracy mapy świata tworzonej przez miliony wolontariuszy. Wyświetlane jest tylko to, co zostało zmapowane.",
+        "text": "Dane pochodzą z {{osmLink}} — wolnej, współpracy mapy świata tworzonej przez miliony wolontariuszy. Wyświetlane jest tylko to, co zostało zmapowane.",
         "wikiUrl": "https://pl.wikipedia.org/wiki/OpenStreetMap"
       },
       "contribute": {
@@ -117,7 +118,7 @@
       },
       "photos": {
         "label": "Dodawaj zdjęcia",
-        "text": "Zdjęcia można przesyłać bezpośrednio przez {{mapcompleteLink}} \u2014 otwórz plac zabaw i kliknij \"Dodaj zdjęcie\". Zdjęcia są dostarczane przez {{panoramaxLink}}."
+        "text": "Zdjęcia można przesyłać bezpośrednio przez {{mapcompleteLink}} — otwórz plac zabaw i kliknij \"Dodaj zdjęcie\". Zdjęcia są dostarczane przez {{panoramaxLink}}."
       },
       "community": {
         "label": "Społeczność",
@@ -128,7 +129,7 @@
     "about": {
       "history": {
         "label": "Historia",
-        "text": "Mapa placów zabaw została stworzona przez {{authorLink}} jako projekt końcowy {{courseLink}} \u2014 pierwotnie skupiony na Berlinie. Z czasem rozwinęła się w ogólną mapę, którą można wykorzystać dla dowolnego regionu OSM.",
+        "text": "Mapa placów zabaw została stworzona przez {{authorLink}} jako projekt końcowy {{courseLink}} — pierwotnie skupiony na Berlinie. Z czasem rozwinęła się w ogólną mapę, którą można wykorzystać dla dowolnego regionu OSM.",
         "courseUrl": "https://gis-trainer.com/de/gis_webmapping.php",
         "courseLabel": "kursu GIS i webmappingu"
       },

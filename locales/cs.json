@@ -1,5 +1,5 @@
 {
-  "appTitle": "Mapa hřišť \u2013 {{regionName}}",
+  "appTitle": "Mapa hřišť – {{regionName}}",
   "search": {
     "placeholder": "Hledat …",
     "found": "\"{{query}}\" v {{location}}",
@@ -14,7 +14,8 @@
   "info": {
     "hint": "Klepněte na hřiště pro zobrazení podrobností",
     "shareBtn": "Sdílet hřiště",
-    "osmBtn": "Zobrazit na OpenStreetMap"
+    "osmBtn": "Zobrazit na OpenStreetMap",
+    "closeBtn": "Zavřít"
   },
   "completeness": {
     "complete": "Fotografie, název a podrobnosti k dispozici",
@@ -55,7 +56,7 @@
     "picnic_few": "{{count}} piknikové stoly",
     "picnic_other": "{{count}} piknikových stolů",
     "fitnessDefault": "Fitness zařízení",
-    "addHint": "Vybavení zatím není individuálně zmapováno \u2013 pomozte! 👇",
+    "addHint": "Vybavení zatím není individuálně zmapováno – pomozte! 👇",
     "addLink": "Přidat vybavení"
   },
   "photos": {
@@ -100,7 +101,7 @@
     "addData": {
       "osm": {
         "label": "OpenStreetMap",
-        "text": "Data pocházejí z {{osmLink}} \u2014 volné, kolaborativní mapy světa vytvořené miliony dobrovolníků. Zobrazuje se pouze to, co bylo zmapováno.",
+        "text": "Data pocházejí z {{osmLink}} — volné, kolaborativní mapy světa vytvořené miliony dobrovolníků. Zobrazuje se pouze to, co bylo zmapováno.",
         "wikiUrl": "https://cs.wikipedia.org/wiki/OpenStreetMap"
       },
       "contribute": {
@@ -112,7 +113,7 @@
       },
       "photos": {
         "label": "Přidávejte fotografie",
-        "text": "Fotografie lze nahrát přímo přes {{mapcompleteLink}} \u2014 otevřete hřiště a klikněte na \"Přidat fotografii\". Fotografie jsou poskytovány prostřednictvím {{panoramaxLink}}."
+        "text": "Fotografie lze nahrát přímo přes {{mapcompleteLink}} — otevřete hřiště a klikněte na \"Přidat fotografii\". Fotografie jsou poskytovány prostřednictvím {{panoramaxLink}}."
       },
       "community": {
         "label": "Komunita",
@@ -123,7 +124,7 @@
     "about": {
       "history": {
         "label": "Historie",
-        "text": "Mapa hřišť byla vytvořena {{authorLink}} jako závěrečný projekt {{courseLink}} \u2014 původně zaměřený na Berlín. Postupem času se rozvinula v obecnou mapu použitelnou pro jakoukoli oblast OSM.",
+        "text": "Mapa hřišť byla vytvořena {{authorLink}} jako závěrečný projekt {{courseLink}} — původně zaměřený na Berlín. Postupem času se rozvinula v obecnou mapu použitelnou pro jakoukoli oblast OSM.",
         "courseUrl": "https://gis-trainer.com/de/gis_webmapping.php",
         "courseLabel": "kurzu GIS a webového mapování"
       },

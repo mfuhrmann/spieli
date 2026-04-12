@@ -1,5 +1,5 @@
 {
-  "appTitle": "Speeltuinenkaart \u2013 {{regionName}}",
+  "appTitle": "Speeltuinenkaart – {{regionName}}",
   "search": {
     "placeholder": "Zoeken …",
     "found": "\"{{query}}\" in {{location}}",
@@ -14,7 +14,8 @@
   "info": {
     "hint": "Tik op een speeltuin voor details",
     "shareBtn": "Speeltuin delen",
-    "osmBtn": "Bekijk op OpenStreetMap"
+    "osmBtn": "Bekijk op OpenStreetMap",
+    "closeBtn": "Sluiten"
   },
   "completeness": {
     "complete": "Foto's, naam & details beschikbaar",
@@ -50,7 +51,7 @@
     "picnic_one": "{{count}} picknicktafel",
     "picnic_other": "{{count}} picknicktafels",
     "fitnessDefault": "Fitnesstoestel",
-    "addHint": "Toestellen nog niet individueel in kaart gebracht \u2013 help mee! 👇",
+    "addHint": "Toestellen nog niet individueel in kaart gebracht – help mee! 👇",
     "addLink": "Toestel toevoegen"
   },
   "photos": {
@@ -95,7 +96,7 @@
     "addData": {
       "osm": {
         "label": "OpenStreetMap",
-        "text": "De gegevens komen van {{osmLink}} \u2014 een vrije, collaboratieve wereldkaart gemaakt door miljoenen vrijwilligers. Alleen wat in kaart is gebracht verschijnt hier.",
+        "text": "De gegevens komen van {{osmLink}} — een vrije, collaboratieve wereldkaart gemaakt door miljoenen vrijwilligers. Alleen wat in kaart is gebracht verschijnt hier.",
         "wikiUrl": "https://nl.wikipedia.org/wiki/OpenStreetMap"
       },
       "contribute": {
@@ -107,7 +108,7 @@
       },
       "photos": {
         "label": "Foto's toevoegen",
-        "text": "Foto's kunnen direct worden geüpload via {{mapcompleteLink}} \u2014 open een speeltuin en klik op \"Foto toevoegen\". Foto's worden aangeleverd door {{panoramaxLink}}."
+        "text": "Foto's kunnen direct worden geüpload via {{mapcompleteLink}} — open een speeltuin en klik op \"Foto toevoegen\". Foto's worden aangeleverd door {{panoramaxLink}}."
       },
       "community": {
         "label": "Gemeenschap",
@@ -118,7 +119,7 @@
     "about": {
       "history": {
         "label": "Geschiedenis",
-        "text": "De speeltuinenkaart is gemaakt door {{authorLink}} als eindproject van een {{courseLink}} \u2014 oorspronkelijk gericht op Berlijn. In de loop van de tijd is het uitgegroeid tot een generieke kaart die voor elke OSM-regio kan worden gebruikt.",
+        "text": "De speeltuinenkaart is gemaakt door {{authorLink}} als eindproject van een {{courseLink}} — oorspronkelijk gericht op Berlijn. In de loop van de tijd is het uitgegroeid tot een generieke kaart die voor elke OSM-regio kan worden gebruikt.",
         "courseUrl": "https://gis-trainer.com/de/gis_webmapping.php",
         "courseLabel": "GIS en webmapping cursus"
       },

@@ -1,5 +1,5 @@
 {
-  "appTitle": "Mapa de parques infantis \u2013 {{regionName}}",
+  "appTitle": "Mapa de parques infantis – {{regionName}}",
   "search": {
     "placeholder": "Pesquisar …",
     "found": "\"{{query}}\" em {{location}}",
@@ -14,7 +14,8 @@
   "info": {
     "hint": "Toque num parque para ver detalhes",
     "shareBtn": "Partilhar parque",
-    "osmBtn": "Ver no OpenStreetMap"
+    "osmBtn": "Ver no OpenStreetMap",
+    "closeBtn": "Fechar"
   },
   "completeness": {
     "complete": "Fotos, nome e detalhes disponíveis",
@@ -50,7 +51,7 @@
     "picnic_one": "{{count}} mesa de piquenique",
     "picnic_other": "{{count}} mesas de piquenique",
     "fitnessDefault": "Equipamento de fitness",
-    "addHint": "Equipamentos ainda não mapeados individualmente \u2013 ajude! 👇",
+    "addHint": "Equipamentos ainda não mapeados individualmente – ajude! 👇",
     "addLink": "Adicionar equipamento"
   },
   "photos": {
@@ -95,7 +96,7 @@
     "addData": {
       "osm": {
         "label": "OpenStreetMap",
-        "text": "Os dados provêm do {{osmLink}} \u2014 um mapa mundial livre e colaborativo criado por milhões de voluntários. Apenas o que foi mapeado aparece aqui.",
+        "text": "Os dados provêm do {{osmLink}} — um mapa mundial livre e colaborativo criado por milhões de voluntários. Apenas o que foi mapeado aparece aqui.",
         "wikiUrl": "https://pt.wikipedia.org/wiki/OpenStreetMap"
       },
       "contribute": {
@@ -107,7 +108,7 @@
       },
       "photos": {
         "label": "Adicionar fotos",
-        "text": "As fotos podem ser carregadas diretamente através do {{mapcompleteLink}} \u2014 abra um parque e clique em \"Adicionar foto\". As fotos são fornecidas pelo {{panoramaxLink}}."
+        "text": "As fotos podem ser carregadas diretamente através do {{mapcompleteLink}} — abra um parque e clique em \"Adicionar foto\". As fotos são fornecidas pelo {{panoramaxLink}}."
       },
       "community": {
         "label": "Comunidade",
@@ -118,7 +119,7 @@
     "about": {
       "history": {
         "label": "História",
-        "text": "O mapa de parques infantis foi criado por {{authorLink}} como projeto final de um {{courseLink}} \u2014 originalmente focado em Berlim. Com o tempo, tornou-se um mapa genérico utilizável para qualquer região do OSM.",
+        "text": "O mapa de parques infantis foi criado por {{authorLink}} como projeto final de um {{courseLink}} — originalmente focado em Berlim. Com o tempo, tornou-se um mapa genérico utilizável para qualquer região do OSM.",
         "courseUrl": "https://gis-trainer.com/de/gis_webmapping.php",
         "courseLabel": "curso de GIS e webmapping"
       },

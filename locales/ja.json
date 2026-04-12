@@ -1,5 +1,5 @@
 {
-  "appTitle": "遊び場マップ \u2013 {{regionName}}",
+  "appTitle": "遊び場マップ – {{regionName}}",
   "search": {
     "placeholder": "検索 …",
     "found": "{{location}}で「{{query}}」",
@@ -14,7 +14,8 @@
   "info": {
     "hint": "遊び場をタップして詳細を表示",
     "shareBtn": "遊び場を共有",
-    "osmBtn": "OpenStreetMapで表示"
+    "osmBtn": "OpenStreetMapで表示",
+    "closeBtn": "閉じる"
   },
   "completeness": {
     "complete": "写真・名称・詳細あり",
@@ -45,7 +46,7 @@
     "shelters_other": "シェルター {{count}} 基",
     "picnic_other": "ピクニックテーブル {{count}} 台",
     "fitnessDefault": "フィットネス器具",
-    "addHint": "遊具はまだ個別にマッピングされていません \u2013 ご協力ください！ 👇",
+    "addHint": "遊具はまだ個別にマッピングされていません – ご協力ください！ 👇",
     "addLink": "遊具を追加"
   },
   "photos": {
@@ -90,7 +91,7 @@
     "addData": {
       "osm": {
         "label": "OpenStreetMap",
-        "text": "データは{{osmLink}}から提供されています \u2014 数百万人のボランティアによって作られた無料の共同世界地図です。マッピングされたものだけが表示されます。",
+        "text": "データは{{osmLink}}から提供されています — 数百万人のボランティアによって作られた無料の共同世界地図です。マッピングされたものだけが表示されます。",
         "wikiUrl": "https://ja.wikipedia.org/wiki/OpenStreetMap"
       },
       "contribute": {
@@ -102,7 +103,7 @@
       },
       "photos": {
         "label": "写真を追加する",
-        "text": "写真は{{mapcompleteLink}}から直接アップロードできます \u2014 遊び場を開いて「写真を追加」をクリックしてください。写真は{{panoramaxLink}}によって提供されます。"
+        "text": "写真は{{mapcompleteLink}}から直接アップロードできます — 遊び場を開いて「写真を追加」をクリックしてください。写真は{{panoramaxLink}}によって提供されます。"
       },
       "community": {
         "label": "コミュニティ",
@@ -113,7 +114,7 @@
     "about": {
       "history": {
         "label": "歴史",
-        "text": "遊び場マップは{{authorLink}}によって{{courseLink}}の最終プロジェクトとして作成されました \u2014 当初はベルリンを対象としていました。その後、任意のOSM地域で使用できる汎用マップへと発展しました。",
+        "text": "遊び場マップは{{authorLink}}によって{{courseLink}}の最終プロジェクトとして作成されました — 当初はベルリンを対象としていました。その後、任意のOSM地域で使用できる汎用マップへと発展しました。",
         "courseUrl": "https://gis-trainer.com/de/gis_webmapping.php",
         "courseLabel": "GISおよびウェブマッピングコース"
       },

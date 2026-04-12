@@ -2,8 +2,8 @@
   "appTitle": "{{regionName}}er Spielplatzkarte",
   "search": {
     "placeholder": "Suchen …",
-    "found": "\u201e{{query}}\u201c in {{location}}",
-    "foundGeneric": "\u201e{{query}}\u201c gefunden",
+    "found": "„{{query}}“ in {{location}}",
+    "foundGeneric": "„{{query}}“ gefunden",
     "notFound": "Kein Suchergebnis gefunden!"
   },
   "nav": {
@@ -14,7 +14,8 @@
   "info": {
     "hint": "Spielplatz antippen für Details",
     "shareBtn": "Spielplatz teilen",
-    "osmBtn": "Bei OpenStreetMap anzeigen"
+    "osmBtn": "Bei OpenStreetMap anzeigen",
+    "closeBtn": "Schließen"
   },
   "completeness": {
     "complete": "Fotos, Name & Details vorhanden",
@@ -65,7 +66,7 @@
     "open": "Geöffnet",
     "openUntil": "Geöffnet bis {{time}}",
     "closed": "Geschlossen",
-    "opensAt": "Öffnet {{day}} um\u00a0{{time}}",
+    "opensAt": "Öffnet {{day}} um {{time}}",
     "openingHours": "Öffnungszeiten",
     "today": "Heute",
     "tomorrow": "Morgen",
@@ -87,11 +88,11 @@
     }
   },
   "modal": {
-    "closeBtn": "Schlie\u00dfen",
-    "backToMap": "Zur\u00fcck zur Karte",
-    "streetPhoto": "Stra\u00dfenfoto",
+    "closeBtn": "Schließen",
+    "backToMap": "Zurück zur Karte",
+    "streetPhoto": "Straßenfoto",
     "prevPhoto": "Vorheriges Foto",
-    "nextPhoto": "N\u00e4chstes Foto",
+    "nextPhoto": "Nächstes Foto",
     "addData": {
       "osm": {
         "label": "OpenStreetMap",

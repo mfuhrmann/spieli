@@ -147,7 +147,7 @@ export function selectPlayground(coord, distance, multiSelect, feature = null) {
             // On mobile the panel is a bottom sheet, so we pad the bottom instead.
             const isMobile = window.innerWidth <= 768;
             const padding = isMobile
-                ? [20, 20, 300, 20]   // bottom sheet takes lower portion
+                ? [20, 20, 118, 20]   // peek bar height at bottom
                 : [40, 40, 40, 424];  // info panel: 390px width + 14px left offset + 20px margin
             map.getView().fit(extent, {
                 duration: duration,
@@ -1269,8 +1269,13 @@ function showAttributes(visibility) {
         show('info-base');
         show('info-accordion');
 
-        // Bottom sheet auf mobil hochfahren
-        el('info').classList.add('panel-open');
+        // Bottom sheet auf mobil als Peek öffnen, auf Desktop vollständig
+        if (window.innerWidth <= 768) {
+            el('info').classList.remove('panel-open');
+            el('info').classList.add('panel-peek');
+        } else {
+            el('info').classList.add('panel-open');
+        }
     } else {
         show('info-more');
 
@@ -1279,7 +1284,7 @@ function showAttributes(visibility) {
 
         // Bottom sheet auf mobil wieder einfahren — aber offen lassen wenn die Nähe-Liste noch Inhalt hat
         if (!el('info-more').firstChild) {
-            el('info').classList.remove('panel-open');
+            el('info').classList.remove('panel-open', 'panel-peek');
         }
 
         // Bildergalerie leeren und ausblenden (falls vorhanden)
@@ -1313,14 +1318,40 @@ el('accordion-btn-schattigkeit').addEventListener('click', function() {
     }
 });
 
-// Mobile: nach unten wischen schließt das Bottom Sheet
+// Mobile: wischen auf dem Drag Handle wechselt zwischen Peek / Vollbild / Geschlossen
 let swipeTouchStartY = 0;
 el('info-drag-handle').addEventListener('touchstart', e => { swipeTouchStartY = e.touches[0].clientY; });
 el('info-drag-handle').addEventListener('touchend', e => {
-    if (e.changedTouches[0].clientY - swipeTouchStartY > 60) {
-        el('info').classList.remove('panel-open');
+    const deltaY = e.changedTouches[0].clientY - swipeTouchStartY;
+    const info = el('info');
+    if (deltaY > 60) {
+        // nach unten wischen
+        if (info.classList.contains('panel-open')) {
+            info.classList.remove('panel-open');
+            info.classList.add('panel-peek');
+        } else if (info.classList.contains('panel-peek')) {
+            clearSelection();
+        }
+    } else if (deltaY < -60) {
+        // nach oben wischen
+        if (info.classList.contains('panel-peek')) {
+            info.classList.remove('panel-peek');
+            info.classList.add('panel-open');
+        }
     }
 });
+
+// Tap auf Drag Handle im Peek-Modus → auf Vollbild erweitern
+el('info-drag-handle').addEventListener('click', () => {
+    const info = el('info');
+    if (info.classList.contains('panel-peek')) {
+        info.classList.remove('panel-peek');
+        info.classList.add('panel-open');
+    }
+});
+
+// Schließen-Button: Spielplatzauswahl aufheben
+el('info-close-btn').addEventListener('click', clearSelection);
 
 // Spielplatz teilen: Web Share API (mobil) oder URL in Zwischenablage kopieren
 el('info-share-btn').addEventListener('click', () => {
