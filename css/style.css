@@ -587,12 +587,7 @@ ul {
         transform: rotate(180deg);
     }
 
-    /* Header sticks just below the drag handle */
-    #info.panel-open #info-base {
-        position: sticky;
-        top: 34px;
-        z-index: 1;
-    }
+    /* Header scrolls normally — no sticky, so it never overlaps accordion items */
 
     /* Hide search bar and FABs when panel is full-screen */
     body.sheet-expanded #search-bar,
