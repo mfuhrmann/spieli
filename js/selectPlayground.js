@@ -399,17 +399,31 @@ function updateEquipmentPanel(features, playgroundAttr = {}) {
 
     // Sportfeldnamen nach sport=* — Singular und Plural
     const pitchLabels = {
-        soccer:       ['Bolzplatz',          'Bolzplätze'],
-        basketball:   ['Basketballfeld',      'Basketballfelder'],
-        table_tennis: ['Tischtennisplatte',   'Tischtennisplatten'],
-        volleyball:   ['Volleyballfeld',      'Volleyballfelder'],
-        tennis:       ['Tennisfeld',          'Tennisfelder'],
-        handball:     ['Handballfeld',        'Handballfelder'],
-        badminton:    ['Badmintonfeld',       'Badmintonfelder'],
-        hockey:       ['Hockeyfeld',          'Hockeyfelder'],
-        boules:       ['Boulesbahn',          'Boulesanlagen'],
-        petanque:     ['Pétanquebahn',        'Pétanqueanlagen'],
-        bocce:        ['Bocciabahn',          'Bocciabahnen'],
+        soccer:          ['Bolzplatz',               'Bolzplätze'],
+        basketball:      ['Basketballfeld',           'Basketballfelder'],
+        table_tennis:    ['Tischtennisplatte',        'Tischtennisplatten'],
+        volleyball:      ['Volleyballfeld',           'Volleyballfelder'],
+        tennis:          ['Tennisfeld',               'Tennisfelder'],
+        handball:        ['Handballfeld',             'Handballfelder'],
+        badminton:       ['Badmintonfeld',            'Badmintonfelder'],
+        hockey:          ['Hockeyfeld',               'Hockeyfelder'],
+        field_hockey:    ['Hockeyfeld',               'Hockeyfelder'],
+        boules:          ['Boulesbahn',               'Boulesanlagen'],
+        petanque:        ['Pétanquebahn',             'Pétanqueanlagen'],
+        bocce:           ['Bocciabahn',               'Bocciabahnen'],
+        multi:           ['Mehrzweckspielfeld',       'Mehrzweckspielfelder'],
+        athletics:       ['Leichtathletikanlage',     'Leichtathletikanlagen'],
+        skateboard:      ['Skatepark',                'Skateparks'],
+        bmx:             ['BMX-Bahn',                 'BMX-Bahnen'],
+        climbing:        ['Kletteranlage',            'Kletteranlagen'],
+        beachvolleyball: ['Beachvolleyballfeld',      'Beachvolleyballfelder'],
+        fitness:         ['Fitnessbereich',           'Fitnessbereiche'],
+        archery:         ['Bogenschießanlage',        'Bogenschießanlagen'],
+        cycling:         ['Radsportanlage',           'Radsportanlagen'],
+        running:         ['Laufbahn',                 'Laufbahnen'],
+        gymnastics:      ['Turnanlage',               'Turnanlagen'],
+        chess:           ['Schachfeld',               'Schachfelder'],
+        nine_mens_morris:['Mühlespielfeld',           'Mühlespielfelder'],
     };
 
     // Pitches nach Sportart gruppieren
@@ -469,7 +483,8 @@ function updateEquipmentPanel(features, playgroundAttr = {}) {
     // Sportfelder (pitches) mit farbigem Punkt in die Geräteliste einreihen
     const pitchColor = objColors['fallback'];
     for (const [sport, count] of Object.entries(pitchBySport)) {
-        const [singular, plural] = pitchLabels[sport] ?? ['Sportfeld', 'Sportfelder'];
+        const [singular, plural] = pitchLabels[sport]
+            ?? (sport ? [`Sportfeld (${sport})`, `Sportfelder (${sport})`] : ['Sportfeld', 'Sportfelder']);
         const label = count === 1 ? singular : `${count}× ${plural}`;
         device_string += `<li><span style="color:${pitchColor}">●</span> ${label}</li>`;
     }
