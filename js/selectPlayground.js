@@ -767,10 +767,11 @@ function openPanoramaxModal(index) {
     panoramaxModalIndex = ((index % panoramaxUuids.length) + panoramaxUuids.length) % panoramaxUuids.length;
     const uuid = panoramaxUuids[panoramaxModalIndex];
     el('panoramax-modal-iframe').src = panoramaxViewerUrl(uuid);
+    const multiPhoto = panoramaxUuids.length > 1;
     el('panoramax-modal-counter').textContent =
-        panoramaxUuids.length > 1 ? `${panoramaxModalIndex + 1} / ${panoramaxUuids.length}` : '';
-    el('panoramax-modal-prev').disabled = false;
-    el('panoramax-modal-next').disabled = false;
+        multiPhoto ? `${panoramaxModalIndex + 1} / ${panoramaxUuids.length}` : '';
+    el('panoramax-modal-prev').style.display = multiPhoto ? '' : 'none';
+    el('panoramax-modal-next').style.display = multiPhoto ? '' : 'none';
     Modal.getOrCreateInstance('#modalPanoramax').show();
 }
 
