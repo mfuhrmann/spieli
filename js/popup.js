@@ -469,41 +469,44 @@ function getEquipmentAttributes (feature) {
         contentHtml += "</ul>";
     }
 
+    const leisure = feature.get('leisure');
+    const osmTypeMap = { N: 'node', W: 'way', R: 'relation' };
+    const osmType = osmTypeMap[feature.get('osm_type')] || 'node';
+    const osmId = feature.get('osm_id');
+    const mapCompleteTheme = (leisure === 'fitness_station' || leisure === 'pitch') ? 'sports' : 'playgrounds';
+    const mapCompleteUrl = `https://mapcomplete.org/${mapCompleteTheme}.html` + (osmId ? `#${osmType}/${osmId}` : '');
+    const addPhotoLink = `<p class="mb-0 mt-1"><a href="${mapCompleteUrl}" target="_blank" rel="noopener" style="font-size:0.75rem;"><span class="bi bi-camera-fill"></span> Foto hinzufügen</a></p>`;
+
     // Kein Panoramax, kein Inhalt: Vorschaubild des Geräts aus Wikimedia Commons anzeigen
     if (!contentHtml) {
         const deviceKey = feature.get('playground');
-        const leisure = feature.get('leisure');
-        const sport = feature.get('sport');
-        const osmTypeMap = { N: 'node', W: 'way', R: 'relation' };
-        const osmType = osmTypeMap[feature.get('osm_type')] || 'node';
-        const osmId = feature.get('osm_id');
-        const mapCompleteTheme = (leisure === 'fitness_station' || leisure === 'pitch') ? 'sports' : 'playgrounds';
-        const mapCompleteUrl = `https://mapcomplete.org/${mapCompleteTheme}.html` + (osmId ? `#${osmType}/${osmId}` : '');
-        const addPhotoLink = `<p class="mb-0 mt-1"><a href="${mapCompleteUrl}" target="_blank" rel="noopener" style="font-size:0.75rem;"><span class="bi bi-camera-fill"></span> Foto hinzufügen</a></p>`;
+        const sportRaw = feature.get('sport');
+        const onerror = `if(this.dataset.fallback){this.src=this.dataset.fallback;delete this.dataset.fallback}else{this.parentElement.style.display='none'}`;
 
         if (deviceKey && deviceKey in objDevices && objDevices[deviceKey].image) {
             const imgFile = objDevices[deviceKey].image.replace(/^File:/, '').replace(/ /g, '_');
             const commonsUrl = `https://commons.wikimedia.org/wiki/Special:FilePath/${imgFile}?width=800`;
             const osmWikiUrl = `https://wiki.openstreetmap.org/wiki/Special:FilePath/${imgFile}`;
-            const onerror = `if(this.dataset.fallback){this.src=this.dataset.fallback;delete this.dataset.fallback}else{this.parentElement.style.display='none'}`;
             contentHtml = `<div class="device-img-wrap">` +
                 `<img src="${commonsUrl}" data-fallback="${osmWikiUrl}" alt="${objDevices[deviceKey].name_de}" style="object-fit:contain;" onerror="${onerror}">` +
                 `<p class="mb-0 text-muted" style="font-size:0.75rem;"><span class="bi bi-image"></span> Symbolbild</p>` +
-                `</div>` +
-                addPhotoLink;
+                `</div>`;
         }
 
         // Sportfelder (leisure=pitch): sportartspezifisches Symbolbild anzeigen
-        if (leisure === 'pitch' && sport && sport in pitchImages) {
-            const imgFile = pitchImages[sport].replace(/^File:/, '').replace(/ /g, '_');
+        if (leisure === 'pitch' && sportRaw && sportRaw in pitchImages) {
+            const imgFile = pitchImages[sportRaw].replace(/^File:/, '').replace(/ /g, '_');
             const commonsUrl = `https://commons.wikimedia.org/wiki/Special:FilePath/${imgFile}?width=800`;
             const osmWikiUrl = `https://wiki.openstreetmap.org/wiki/Special:FilePath/${imgFile}`;
-            const onerror = `if(this.dataset.fallback){this.src=this.dataset.fallback;delete this.dataset.fallback}else{this.parentElement.style.display='none'}`;
             contentHtml = `<div class="device-img-wrap">` +
-                `<img src="${commonsUrl}" data-fallback="${osmWikiUrl}" alt="${sport}" style="object-fit:contain;" onerror="${onerror}">` +
-                `</div>` +
-                addPhotoLink;
+                `<img src="${commonsUrl}" data-fallback="${osmWikiUrl}" alt="${sportRaw}" style="object-fit:contain;" onerror="${onerror}">` +
+                `</div>`;
         }
+    }
+
+    // Foto-hinzufügen-Link anzeigen wenn kein eigenes Panoramax-Foto vorhanden
+    if (!panoramaxUuid) {
+        contentHtml += addPhotoLink;
     }
 
     return contentHtml;
