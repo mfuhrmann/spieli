@@ -33,6 +33,7 @@ export const poiRadiusM = c.poiRadiusM ?? 5000;
 export const apiBaseUrl = c.apiBaseUrl || null;
 
 // Target origin for postMessage calls to a parent iframe (e.g. Spielplatzkarte Hub).
-// Leave empty to use '*' (permissive, suitable for standalone deployments).
+// Defaults to window.location.origin (same-origin only) when PARENT_ORIGIN is not set.
+// Set PARENT_ORIGIN to the Hub's full origin (e.g. https://hub.example.com) in production.
 // Env var: PARENT_ORIGIN
-export const parentOrigin = c.parentOrigin || '*';
+export const parentOrigin = c.parentOrigin || window.location.origin;

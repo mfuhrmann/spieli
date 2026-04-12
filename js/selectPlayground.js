@@ -483,7 +483,7 @@ function updateEquipmentPanel(features, playgroundAttr = {}) {
     let device_string = '<ul class="mb-0 device-list">';
     for (const f of deviceFeatures) {
         const key = f.properties.playground;
-        const name = objDevices[key]?.name_de ?? escapeHtml(key);
+        const name = escapeHtml(objDevices[key]?.name_de ?? key);
         const category = objDevices[key]?.category ?? 'fallback';
         const color = objColors[category] ?? objColors['fallback'];
         const detail = getEquipmentAttributesFromProps(f.properties);
@@ -548,7 +548,7 @@ function updateEquipmentPanel(features, playgroundAttr = {}) {
         if (Object.keys(fallbackCounts).length > 0) {
             let fallback_string = '<ul class="mb-0">';
             for (const [key, count] of Object.entries(fallbackCounts)) {
-                const name = objDevices[key]?.name_de ?? escapeHtml(key);
+                const name = escapeHtml(objDevices[key]?.name_de ?? key);
                 const category = objDevices[key]?.category ?? 'fallback';
                 const color = objColors[category] ?? objColors['fallback'];
                 const countStr = count > 1 ? `${count}× ` : '';
@@ -1144,9 +1144,9 @@ function showPlaygroundInfo(json) {
             contactParts.push(escapeHtml(phone));
         }
     }
-    // Validate email: must contain @ to prevent javascript: URI injection
+    // Validate email: must contain @ and must not be a javascript: URI
     if (email) {
-        if (email.includes('@')) {
+        if (email.includes('@') && !/^javascript:/i.test(email.trim())) {
             contactParts.push(`<a href="mailto:${escapeHtml(email)}" class="link-secondary">${escapeHtml(email)}</a>`);
         } else {
             contactParts.push(escapeHtml(email));
