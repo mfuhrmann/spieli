@@ -78,6 +78,7 @@ ul {
     color: #9ca3af;
     font-size: 15px;
     flex-shrink: 0;
+    cursor: pointer;
 }
 
 .search-input {

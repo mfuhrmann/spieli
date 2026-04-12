@@ -1,7 +1,7 @@
 {
   "appTitle": "Aree gioco \u2013 {{regionName}}",
   "search": {
-    "placeholder": "Doppio-Shift per cercare",
+    "placeholder": "Cerca …",
     "found": "\"{{query}}\" a {{location}}",
     "foundGeneric": "\"{{query}}\" trovato",
     "notFound": "Nessun risultato trovato!"

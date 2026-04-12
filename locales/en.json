@@ -1,7 +1,7 @@
 {
   "appTitle": "{{regionName}} Playground Map",
   "search": {
-    "placeholder": "Double-Shift to search",
+    "placeholder": "Search …",
     "found": "\"{{query}}\" in {{location}}",
     "foundGeneric": "\"{{query}}\" found",
     "notFound": "No results found!"

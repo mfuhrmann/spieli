@@ -1,7 +1,7 @@
 {
   "appTitle": "Mapa de parques infantis \u2013 {{regionName}}",
   "search": {
-    "placeholder": "Duplo Shift para pesquisar",
+    "placeholder": "Pesquisar …",
     "found": "\"{{query}}\" em {{location}}",
     "foundGeneric": "\"{{query}}\" encontrado",
     "notFound": "Nenhum resultado encontrado!"

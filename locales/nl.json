@@ -1,7 +1,7 @@
 {
   "appTitle": "Speeltuinenkaart \u2013 {{regionName}}",
   "search": {
-    "placeholder": "Dubbel-Shift om te zoeken",
+    "placeholder": "Zoeken …",
     "found": "\"{{query}}\" in {{location}}",
     "foundGeneric": "\"{{query}}\" gevonden",
     "notFound": "Geen resultaten gevonden!"

@@ -1,7 +1,7 @@
 {
   "appTitle": "Parques infantiles \u2013 {{regionName}}",
   "search": {
-    "placeholder": "Doble-Shift para buscar",
+    "placeholder": "Buscar …",
     "found": "\"{{query}}\" en {{location}}",
     "foundGeneric": "\"{{query}}\" encontrado",
     "notFound": "\u00a1No se encontraron resultados!"

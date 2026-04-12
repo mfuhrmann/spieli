@@ -1,7 +1,7 @@
 {
   "appTitle": "Aires de jeux \u2013 {{regionName}}",
   "search": {
-    "placeholder": "Double-Shift pour rechercher",
+    "placeholder": "Rechercher …",
     "found": "\u00ab\u00a0{{query}}\u00a0\u00bb \u00e0 {{location}}",
     "foundGeneric": "\u00ab\u00a0{{query}}\u00a0\u00bb trouv\u00e9",
     "notFound": "Aucun r\u00e9sultat trouv\u00e9\u00a0!"

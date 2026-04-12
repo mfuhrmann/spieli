@@ -1,7 +1,7 @@
 {
   "appTitle": "Mapa hřišť \u2013 {{regionName}}",
   "search": {
-    "placeholder": "Dvojitý Shift pro vyhledávání",
+    "placeholder": "Hledat …",
     "found": "\"{{query}}\" v {{location}}",
     "foundGeneric": "\"{{query}}\" nalezeno",
     "notFound": "Žádné výsledky nenalezeny!"

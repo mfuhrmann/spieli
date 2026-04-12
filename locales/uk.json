@@ -1,7 +1,7 @@
 {
   "appTitle": "Карта майданчиків \u2013 {{regionName}}",
   "search": {
-    "placeholder": "Подвійний Shift для пошуку",
+    "placeholder": "Пошук …",
     "found": "\"{{query}}\" у {{location}}",
     "foundGeneric": "\"{{query}}\" знайдено",
     "notFound": "Результатів не знайдено!"

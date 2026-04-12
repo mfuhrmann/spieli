@@ -1,7 +1,7 @@
 {
   "appTitle": "Lekplatskarta \u2013 {{regionName}}",
   "search": {
-    "placeholder": "Dubbel-Shift för att söka",
+    "placeholder": "Sök …",
     "found": "\"{{query}}\" i {{location}}",
     "foundGeneric": "\"{{query}}\" hittades",
     "notFound": "Inga resultat hittades!"

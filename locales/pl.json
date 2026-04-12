@@ -1,7 +1,7 @@
 {
   "appTitle": "Mapa placów zabaw \u2013 {{regionName}}",
   "search": {
-    "placeholder": "Podwójny Shift, aby wyszukać",
+    "placeholder": "Szukaj …",
     "found": "\"{{query}}\" w {{location}}",
     "foundGeneric": "\"{{query}}\" znaleziono",
     "notFound": "Nie znaleziono wyników!"

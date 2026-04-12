@@ -131,7 +131,12 @@ document.addEventListener('keydown', e => {
     }
 });
 
-// Double-Shift → focus search box
+// Search icon tap/click → focus search box (mobile-friendly)
+document.getElementById('inputSearchIcon').addEventListener('click', () => {
+    document.getElementById('inputSearch').focus();
+});
+
+// Double-Shift → focus search box (desktop shortcut)
 let lastShift = 0;
 document.addEventListener('keydown', e => {
     if (e.key !== 'Shift') { lastShift = 0; return; }

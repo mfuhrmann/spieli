@@ -1,7 +1,7 @@
 {
   "appTitle": "遊び場マップ \u2013 {{regionName}}",
   "search": {
-    "placeholder": "Shiftキーを2回押して検索",
+    "placeholder": "検索 …",
     "found": "{{location}}で「{{query}}」",
     "foundGeneric": "「{{query}}」が見つかりました",
     "notFound": "結果が見つかりませんでした！"

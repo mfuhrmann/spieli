@@ -1,7 +1,7 @@
 {
   "appTitle": "{{regionName}}er Spielplatzkarte",
   "search": {
-    "placeholder": "Doppel-Shift für Suche",
+    "placeholder": "Suchen …",
     "found": "\u201e{{query}}\u201c in {{location}}",
     "foundGeneric": "\u201e{{query}}\u201c gefunden",
     "notFound": "Kein Suchergebnis gefunden!"
