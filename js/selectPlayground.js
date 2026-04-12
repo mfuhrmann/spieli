@@ -1271,8 +1271,7 @@ function showAttributes(visibility) {
 
         // Bottom sheet auf mobil als Peek öffnen, auf Desktop vollständig
         if (window.innerWidth <= 768) {
-            el('info').classList.remove('panel-open');
-            el('info').classList.add('panel-peek');
+            setPanelPeek();
         } else {
             el('info').classList.add('panel-open');
         }
@@ -1284,7 +1283,7 @@ function showAttributes(visibility) {
 
         // Bottom sheet auf mobil wieder einfahren — aber offen lassen wenn die Nähe-Liste noch Inhalt hat
         if (!el('info-more').firstChild) {
-            el('info').classList.remove('panel-open', 'panel-peek');
+            setPanelClosed();
         }
 
         // Bildergalerie leeren und ausblenden (falls vorhanden)
@@ -1318,35 +1317,47 @@ el('accordion-btn-schattigkeit').addEventListener('click', function() {
     }
 });
 
-// Mobile: wischen auf dem Drag Handle wechselt zwischen Peek / Vollbild / Geschlossen
+// Mobile: Panel-Zustand wechseln (Peek ↔ Vollbild ↔ Geschlossen)
+function setPanelOpen() {
+    el('info').classList.remove('panel-peek');
+    el('info').classList.add('panel-open');
+    document.body.classList.add('sheet-expanded');
+}
+
+function setPanelPeek() {
+    el('info').classList.remove('panel-open');
+    el('info').classList.add('panel-peek');
+    document.body.classList.remove('sheet-expanded');
+}
+
+function setPanelClosed() {
+    el('info').classList.remove('panel-open', 'panel-peek');
+    document.body.classList.remove('sheet-expanded');
+}
+
+// Wischen auf dem Drag Handle
 let swipeTouchStartY = 0;
 el('info-drag-handle').addEventListener('touchstart', e => { swipeTouchStartY = e.touches[0].clientY; });
 el('info-drag-handle').addEventListener('touchend', e => {
     const deltaY = e.changedTouches[0].clientY - swipeTouchStartY;
     const info = el('info');
     if (deltaY > 60) {
-        // nach unten wischen
         if (info.classList.contains('panel-open')) {
-            info.classList.remove('panel-open');
-            info.classList.add('panel-peek');
+            setPanelPeek();
         } else if (info.classList.contains('panel-peek')) {
             clearSelection();
         }
     } else if (deltaY < -60) {
-        // nach oben wischen
         if (info.classList.contains('panel-peek')) {
-            info.classList.remove('panel-peek');
-            info.classList.add('panel-open');
+            setPanelOpen();
         }
     }
 });
 
-// Tap auf Drag Handle im Peek-Modus → auf Vollbild erweitern
+// Tap auf Drag Handle im Peek-Modus → Vollbild
 el('info-drag-handle').addEventListener('click', () => {
-    const info = el('info');
-    if (info.classList.contains('panel-peek')) {
-        info.classList.remove('panel-peek');
-        info.classList.add('panel-open');
+    if (el('info').classList.contains('panel-peek')) {
+        setPanelOpen();
     }
 });
 
