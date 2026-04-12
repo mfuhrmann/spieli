@@ -19,7 +19,8 @@ A free, interactive web map for exploring playgrounds based on [OpenStreetMap](h
 
 **Playground detail panel**
 - Name, size (m²), surface (Bodenbelag), access restrictions, opening hours (parsed live), age restrictions, operator, contact info
-- Equipment list (Ausstattung): individual collapsible items with attributes; sport-specific labels for pitches (Fußball, Basketball, Volleyball, …)
+- Equipment list (Ausstattung): individual collapsible items with attributes; sport-specific labels for pitches (Fußball, Basketball, Volleyball, …); example images loaded from [Wikimedia Commons](https://commons.wikimedia.org) (OSM wiki as fallback); broken images are hidden automatically
+- Per-device **"Add photo"** link to [MapComplete](https://mapcomplete.org) when no real Panoramax photo exists (playground devices → `playgrounds` theme, fitness stations and sport pitches → `sports` theme)
 - Tree count: number of mapped `natural=tree` nodes in and around the playground, shown as a map layer when a playground is selected
 - Street photos via [Panoramax](https://panoramax.xyz) — inline viewer with fullscreen modal and keyboard navigation
 - Community reviews via [Mangrove.reviews](https://mangrove.reviews) — read ratings and submit your own (pseudonymous, no account required)
