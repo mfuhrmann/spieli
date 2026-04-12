@@ -821,10 +821,9 @@ export function checkZoomDeselection() {
     }
 }
 
-// Spielplatz abwählen (z. B. per ESC) und URL-Hash leeren
+// Spielplatz abwählen (z. B. per ESC)
 export function clearSelection() {
     removeSelection(true);
-    history.replaceState(null, '', window.location.pathname + window.location.search);
 }
 
 // Spielplatzauswahl aufheben und seine Attribute im Infofenster ausblenden
@@ -837,6 +836,7 @@ function removeSelection(clearSource) {
     if (clearSource) {
         showAttributes(false);
         sourceSelected = null;
+        history.replaceState(null, '', window.location.pathname + window.location.search);
     }
 }
 
