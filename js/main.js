@@ -165,7 +165,9 @@ document.addEventListener('keydown', e => {
     if (e.key === 'Escape') {
         clearSelection();
         // Forward ESC to parent frame (e.g. Spielplatzkarte Hub) so it can close the modal.
-        if (window.parent !== window) {
+        // Only forward when no Bootstrap modal is open — if one is, ESC is consumed by Bootstrap
+        // and should not propagate to the hub (e.g. closing the Panoramax photo enlargement).
+        if (window.parent !== window && !document.querySelector('.modal.show')) {
             window.parent.postMessage({ type: 'spielplatzkarte:escape' }, parentOrigin);
         }
     }
