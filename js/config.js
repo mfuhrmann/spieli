@@ -28,9 +28,9 @@ export const mapMinZoom = c.mapMinZoom ?? 10;
 export const poiRadiusM = c.poiRadiusM ?? 5000;
 
 // Base URL for the PostgREST API (e.g. "/api" in Docker, empty string for local dev).
-// When empty, the app falls back to Overpass (local dev only).
+// When empty, API calls use relative URLs (e.g. /rpc/get_playgrounds) against the same origin.
 // Env var: API_BASE_URL
-export const apiBaseUrl = c.apiBaseUrl || null;
+export const apiBaseUrl = c.apiBaseUrl || '';
 
 // Target origin for postMessage calls to a parent iframe (e.g. Spielplatzkarte Hub).
 // Defaults to window.location.origin (same-origin only) when PARENT_ORIGIN is not set.
