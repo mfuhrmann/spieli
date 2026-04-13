@@ -1,6 +1,6 @@
 {
   "name": "spielplatzkarte",
-  "version": "0.1.5",
+  "version": "0.1.6-rc",
   "scripts": {
     "start": "vite",
     "build": "vite build",
