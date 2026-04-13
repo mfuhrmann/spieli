@@ -3,3 +3,7 @@ dist
 lib
 .vite
 data/berlin-latest.osm.pbf
+
+# Playwright
+test-results/
+playwright-report/

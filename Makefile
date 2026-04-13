@@ -1,4 +1,4 @@
-.PHONY: install dev build serve \
+.PHONY: install dev build serve test \
         up down import docker-build db-apply db-shell \
         require-npm require-docker installer lan-url help
 
@@ -32,6 +32,9 @@ build: require-npm        ## Production build → dist/
 
 serve: require-npm        ## Preview production build locally
 	npm run serve
+
+test: require-npm         ## Run Playwright end-to-end tests against the production build
+	npm test
 
 ## ── Docker Compose stack ──────────────────────────────────────────────────────
 
