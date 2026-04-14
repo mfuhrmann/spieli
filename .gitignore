@@ -1,8 +1,12 @@
 node_modules
 dist
-lib
+/lib
 .vite
 data/berlin-latest.osm.pbf
+
+# New Svelte app
+app/node_modules/
+app/dist/
 
 # Playwright
 test-results/

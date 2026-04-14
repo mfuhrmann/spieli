@@ -1,4 +1,5 @@
 .PHONY: install dev build serve test \
+        app-install app-dev app-build app-serve app-test \
         up down import docker-build db-apply db-shell \
         require-npm require-docker installer lan-url help
 
@@ -19,22 +20,39 @@ require-docker:
 	@docker info >/dev/null 2>&1 || \
 	  { printf '\033[31merror:\033[0m docker daemon is not running\n' >&2; exit 1; }
 
-## ── Frontend ──────────────────────────────────────────────────────────────────
+## ── Frontend (legacy — root-level Vite app) ───────────────────────────────────
 
-install: require-npm      ## Install Node dependencies
+install: require-npm      ## Install Node dependencies (legacy app)
 	npm ci
 
-dev: require-npm          ## Start Vite dev server (localhost:5173 + LAN, see make lan-url)
+dev: require-npm          ## Start Vite dev server for legacy app (localhost:5173)
 	npm start
 
-build: require-npm        ## Production build → dist/
+build: require-npm        ## Production build for legacy app → dist/
 	npm run build
 
-serve: require-npm        ## Preview production build locally
+serve: require-npm        ## Preview legacy production build locally
 	npm run serve
 
-test: require-npm         ## Run Playwright end-to-end tests against the production build
+test: require-npm         ## Run Playwright tests against legacy production build
 	npm test
+
+## ── Frontend (new Svelte app in app/) ─────────────────────────────────────────
+
+app-install: require-npm  ## Install Node dependencies for the new Svelte app
+	npm ci --prefix app
+
+app-dev: require-npm      ## Start Vite dev server for new Svelte app (localhost:5173)
+	npm run dev --prefix app
+
+app-build: require-npm    ## Production build for new Svelte app → app/dist/
+	npm run build --prefix app
+
+app-serve: require-npm    ## Preview new Svelte production build locally
+	npm run serve --prefix app
+
+app-test: require-npm     ## Run Playwright tests for new Svelte app
+	npm test --prefix app
 
 ## ── Docker Compose stack ──────────────────────────────────────────────────────
 
