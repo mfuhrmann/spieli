@@ -15,6 +15,7 @@
   import { playgroundStyleFn, selectionStyle } from '../lib/vectorStyles.js';
   import { selection } from '../stores/selection.js';
   import { mapStore } from '../stores/map.js';
+  import { filterStore, matchesFilters } from '../stores/filters.js';
 
   // Props: optional overrides for hub mode (multiple backends feed into one shared source)
   /** @type {VectorSource | null} - when provided, the map uses this source instead of creating one */
@@ -24,13 +25,14 @@
 
   let mapContainer;
   let olMap = null;
-  let ownSource = null; // only set when we own the source (standalone mode)
+  let ownSource = null;       // only set when we own the source (standalone mode)
+  let playgroundLayer = null; // exposed for filter reactivity
 
   onMount(async () => {
     // Use provided source (hub) or create our own (standalone)
     const source = playgroundSource ?? (ownSource = new VectorSource());
 
-    const playgroundLayer = new VectorLayer({
+    playgroundLayer = new VectorLayer({
       source,
       zIndex: 10,
       style: playgroundStyleFn,
@@ -107,6 +109,15 @@
       mapStore.set(null);
     }
   });
+
+  // Re-style the playground layer whenever filters change.
+  $: if (playgroundLayer) {
+    const filters = $filterStore;
+    playgroundLayer.setStyle(feature => {
+      if (!matchesFilters(feature.getProperties(), filters)) return null;
+      return playgroundStyleFn(feature);
+    });
+  }
 
   async function loadStandaloneData(source, view) {
     // Fetch region info for map extent fitting

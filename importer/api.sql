@@ -55,6 +55,49 @@ AS $$
       ON ST_DWithin(t.way, pl.way, 15)
       AND t.natural = 'tree'
     GROUP BY pl.osm_id
+  ),
+  -- Aggregate equipment statistics for filter support.
+  -- Unions point and polygon equipment so that pitches mapped as areas are included.
+  all_equip AS (
+    SELECT osm_id, amenity, leisure, sport, tags, way
+    FROM planet_osm_point
+    WHERE amenity IN ('bench', 'shelter')
+       OR leisure IN ('picnic_table', 'pitch', 'fitness_station')
+       OR tags ? 'playground'
+    UNION ALL
+    SELECT osm_id, amenity, leisure, sport, tags, way
+    FROM planet_osm_polygon
+    WHERE amenity IN ('bench', 'shelter')
+       OR leisure IN ('picnic_table', 'pitch', 'fitness_station')
+       OR tags ? 'playground'
+  ),
+  equip_stats AS (
+    SELECT
+      pl.osm_id,
+      COUNT(CASE WHEN e.amenity = 'bench'       THEN 1 END)::int AS bench_count,
+      COUNT(CASE WHEN e.amenity = 'shelter'     THEN 1 END)::int AS shelter_count,
+      COUNT(CASE WHEN e.leisure = 'picnic_table' THEN 1 END)::int AS picnic_count,
+      COUNT(CASE WHEN e.leisure = 'pitch'
+                  AND e.tags->'sport' = 'table_tennis' THEN 1 END)::int AS table_tennis_count,
+      BOOL_OR(e.leisure = 'pitch'
+              AND (e.sport = 'soccer' OR e.tags->'sport' = 'soccer'))          AS has_soccer,
+      BOOL_OR(e.leisure = 'pitch'
+              AND (e.sport IN ('basketball','streetball')
+                   OR e.tags->'sport' IN ('basketball','streetball')))          AS has_basketball,
+      BOOL_OR(e.tags ? 'playground'
+              AND (e.tags->'playground' ~* 'water'
+                   OR e.tags->'playground' IN ('splash_pad','pump')))           AS is_water,
+      BOOL_OR((e.tags->'baby' = 'yes')
+              OR (e.tags->'playground' IN ('baby_swing','basketswing'))
+              OR (e.tags ? 'playground' AND e.tags->'capacity:baby' IS NOT NULL)) AS for_baby,
+      BOOL_OR((e.tags->'provided_for:toddler' = 'yes')
+              OR (e.tags->'playground' = 'basketswing'))                        AS for_toddler,
+      BOOL_OR(e.tags->'wheelchair' = 'yes'
+              AND (NOT (e.tags ? 'playground')
+                   OR e.tags->'playground' != 'sandpit'))                       AS for_wheelchair
+    FROM playgrounds pl
+    LEFT JOIN all_equip e ON ST_Intersects(pl.way, e.way)
+    GROUP BY pl.osm_id
   )
   SELECT json_build_object(
     'type', 'FeatureCollection',
@@ -65,15 +108,25 @@ AS $$
           'geometry', ST_AsGeoJSON(pl.geom)::json,
           'properties', (
             jsonb_build_object(
-              'osm_id',     abs(pl.osm_id),
-              'osm_type',   CASE WHEN pl.osm_id < 0 THEN 'R' ELSE 'W' END,
-              'name',       pl.name,
-              'leisure',    pl.leisure,
-              'operator',   pl.operator,
-              'access',     pl.access,
-              'surface',    pl.surface,
-              'area',       pl.area,
-              'tree_count', tc.tree_count
+              'osm_id',             abs(pl.osm_id),
+              'osm_type',           CASE WHEN pl.osm_id < 0 THEN 'R' ELSE 'W' END,
+              'name',               pl.name,
+              'leisure',            pl.leisure,
+              'operator',           pl.operator,
+              'access',             pl.access,
+              'surface',            pl.surface,
+              'area',               pl.area,
+              'tree_count',         tc.tree_count,
+              'bench_count',        COALESCE(es.bench_count, 0),
+              'shelter_count',      COALESCE(es.shelter_count, 0),
+              'picnic_count',       COALESCE(es.picnic_count, 0),
+              'table_tennis_count', COALESCE(es.table_tennis_count, 0),
+              'has_soccer',         COALESCE(es.has_soccer, false),
+              'has_basketball',     COALESCE(es.has_basketball, false),
+              'is_water',           COALESCE(es.is_water, false),
+              'for_baby',           COALESCE(es.for_baby, false),
+              'for_toddler',        COALESCE(es.for_toddler, false),
+              'for_wheelchair',     COALESCE(es.for_wheelchair, false)
             ) || COALESCE(hstore_to_jsonb(pl.tags), '{}'::jsonb)
           )
         )
@@ -82,7 +135,8 @@ AS $$
     )
   )
   FROM playgrounds pl
-  JOIN tree_counts tc ON tc.osm_id = pl.osm_id;
+  JOIN tree_counts  tc ON tc.osm_id = pl.osm_id
+  LEFT JOIN equip_stats es ON es.osm_id = pl.osm_id;
 $$;
 
 GRANT EXECUTE ON FUNCTION api.get_playgrounds(bigint) TO web_anon;

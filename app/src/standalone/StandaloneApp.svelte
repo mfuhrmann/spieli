@@ -6,6 +6,8 @@
   import PlaygroundPanel from '../components/PlaygroundPanel.svelte';
   import SearchBar from '../components/SearchBar.svelte';
   import LocateButton from '../components/LocateButton.svelte';
+  import FilterPanel from '../components/FilterPanel.svelte';
+  import DataContributionModal from '../components/DataContributionModal.svelte';
   import { apiBaseUrl } from '../lib/config.js';
   import { mapStore } from '../stores/map.js';
   import { transformExtent } from 'ol/proj';
@@ -22,19 +24,33 @@
     $mapStore.on('moveend', updateExtent);
     updateExtent();
   }
+
+  let dataModalOpen = false;
 </script>
 
 <div class="app-root">
   <Map defaultBackendUrl={apiBaseUrl} />
 
-  <!-- Toolbar: search + locate -->
+  <!-- Toolbar: search + locate + filter + data contribution -->
   <div class="map-toolbar">
     <SearchBar {regionExtent} />
     <LocateButton />
+    <FilterPanel />
+    <button
+      class="btn btn-sm btn-outline-secondary toolbar-icon-btn"
+      onclick={() => dataModalOpen = true}
+      title="Daten ergänzen"
+      aria-label="Daten ergänzen"
+    >
+      <span class="bi bi-pencil-square"></span>
+    </button>
   </div>
 
   <!-- Full detail panel (manages its own visibility via selection store) -->
   <PlaygroundPanel />
+
+  <!-- Data contribution modal -->
+  <DataContributionModal bind:open={dataModalOpen} />
 </div>
 
 <style>
@@ -60,4 +76,6 @@
     border-radius: 0.4rem;
     box-shadow: 0 1px 4px rgba(0,0,0,0.18);
   }
+
+  .toolbar-icon-btn { padding: 0.25rem 0.5rem; line-height: 1; }
 </style>

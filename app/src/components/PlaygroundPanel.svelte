@@ -11,6 +11,9 @@
   import { escapeHtml } from '../lib/utils.js';
   import EquipmentList from './EquipmentList.svelte';
   import POIPanel from './POIPanel.svelte';
+  import PanoramaxViewer from './PanoramaxViewer.svelte';
+  import ReviewsPanel from './ReviewsPanel.svelte';
+  import ShadowSlider from './ShadowSlider.svelte';
 
   // ── Derived state from selection store ────────────────────────────────────
   $: feature    = $selection.feature;
@@ -156,12 +159,24 @@
   $: mcUrl = attr ? `https://mapcomplete.org/playgrounds.html#${mcOsmType}/${attr.osm_id}` : '';
 
   // ── Accordion state ───────────────────────────────────────────────────────
-  let openSections = new Set(['equipment', 'pois']);
+  let openSections = new Set(['photos', 'equipment', 'pois']);
   function toggleSection(id) {
     const next = new Set(openSections);
     next.has(id) ? next.delete(id) : next.add(id);
     openSections = next;
   }
+
+  // ── Panoramax UUIDs from OSM tags ─────────────────────────────────────────
+  $: panoramaxUuids = (() => {
+    if (!attr) return [];
+    const uuids = [];
+    if (attr['panoramax']) uuids.push(attr['panoramax']);
+    for (let i = 1; i <= 9; i++) {
+      const v = attr[`panoramax:${i}`];
+      if (v) uuids.push(v);
+    }
+    return uuids;
+  })();
 </script>
 
 {#if feature && attr}
@@ -262,6 +277,19 @@
         </a>
       </div>
 
+      <!-- Photos accordion -->
+      <div class="accordion-section">
+        <button class="accordion-toggle" onclick={() => toggleSection('photos')}>
+          <span class="bi {openSections.has('photos') ? 'bi-chevron-down' : 'bi-chevron-right'}"></span>
+          Bilder
+        </button>
+        {#if openSections.has('photos')}
+          <div class="accordion-body">
+            <PanoramaxViewer uuids={panoramaxUuids} {mcUrl} />
+          </div>
+        {/if}
+      </div>
+
       <!-- Equipment accordion -->
       <div class="accordion-section">
         <button class="accordion-toggle" onclick={() => toggleSection('equipment')}>
@@ -292,6 +320,32 @@
             {:else}
               <POIPanel {pois} {centerLat} {centerLon} />
             {/if}
+          </div>
+        {/if}
+      </div>
+
+      <!-- Shadow accordion -->
+      <div class="accordion-section">
+        <button class="accordion-toggle" onclick={() => toggleSection('shadow')}>
+          <span class="bi {openSections.has('shadow') ? 'bi-chevron-down' : 'bi-chevron-right'}"></span>
+          Schattigkeit
+        </button>
+        {#if openSections.has('shadow')}
+          <div class="accordion-body">
+            <ShadowSlider {attr} />
+          </div>
+        {/if}
+      </div>
+
+      <!-- Reviews accordion -->
+      <div class="accordion-section">
+        <button class="accordion-toggle" onclick={() => toggleSection('reviews')}>
+          <span class="bi {openSections.has('reviews') ? 'bi-chevron-down' : 'bi-chevron-right'}"></span>
+          Bewertungen
+        </button>
+        {#if openSections.has('reviews')}
+          <div class="accordion-body">
+            <ReviewsPanel lat={centerLat} lon={centerLon} />
           </div>
         {/if}
       </div>

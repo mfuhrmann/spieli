@@ -29,6 +29,11 @@ export const apiBaseUrl = c.apiBaseUrl || '';
 // Target origin for postMessage to a parent frame (hub embedding standalone via iframe — legacy).
 export const parentOrigin = c.parentOrigin || '*';
 
+// Optional GeoServer base URL for the shadow WMS layer (null disables the layer).
+// Example: 'https://example.com'  → layer served at /geoserver/wms
+export const geoServerUrl       = c.geoServerUrl       || null;
+export const geoServerWorkspace = c.geoServerWorkspace || 'spielplatzkarte';
+
 // --- Hub ---
 
 // URL of the registry JSON file listing backends.
