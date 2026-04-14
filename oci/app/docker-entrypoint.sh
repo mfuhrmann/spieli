@@ -20,7 +20,7 @@ if [ "$APP_MODE" = "hub" ]; then
 window.APP_CONFIG = {
   appMode:           'hub',
   registryUrl:       '${SAFE_REGISTRY_URL}',
-  hubPollInterval:   ${HUB_POLL_INTERVAL:-300000},
+  hubPollInterval:   ${HUB_POLL_INTERVAL:-300},
   mapZoom:           ${MAP_ZOOM:-6},
   mapMinZoom:        ${MAP_MIN_ZOOM:-4},
   parentOrigin:      '${SAFE_PARENT_ORIGIN}'

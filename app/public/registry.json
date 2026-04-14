@@ -1,0 +1,8 @@
+{
+  "instances": [
+    {
+      "url": "https://spielplatzkarte.example.com/api",
+      "name": "Beispiel-Region"
+    }
+  ]
+}
