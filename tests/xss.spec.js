@@ -6,8 +6,6 @@ const OSM_ID = fixture.features[0].properties.osm_id;
 
 test.describe('XSS escaping', () => {
   test.beforeEach(async ({ page }) => {
-    // Expose probe before navigation so any injected script execution is caught.
-    await page.exposeFunction('__xssProbe', () => {});
     await injectApiConfig(page);
     await stubApiRoutes(page);
     await page.goto(`/#W${OSM_ID}`);
@@ -27,17 +25,12 @@ test.describe('XSS escaping', () => {
   });
 
   test('description with <script> tag does not execute and is shown as text', async ({ page }) => {
-    const probeCallCount = await page.evaluate(() =>
-      typeof window.__xssProbe === 'function' ? window.__xssProbe.__callCount ?? 0 : 0
-    );
-
     // Description paragraphs use p.small without the text-muted class (which
     // is reserved for the location line above them).
     const descEl = page.locator('.info-panel__body p.small:not(.text-muted)').first();
     await expect(descEl).toBeVisible();
     const text = await descEl.textContent();
     expect(text).toContain("<script>alert('xss')</script>");
-    expect(probeCallCount).toBe(0);
   });
 
   test('operator with & is displayed as plain text', async ({ page }) => {
