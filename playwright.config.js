@@ -20,7 +20,9 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: 'npm run build && npm run serve',
+    // Build and serve the Svelte app in app/. Requires app/ deps to be installed
+    // (npm --prefix app ci). CI handles this via a dedicated step in e2e.yml.
+    command: 'npm --prefix app run build && npm --prefix app run serve',
     url: 'http://localhost:4173',
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
