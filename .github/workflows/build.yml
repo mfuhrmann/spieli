@@ -33,10 +33,10 @@ jobs:
           cache-dependency-path: app/package-lock.json
 
       - name: Install dependencies
-        run: make app-install
+        run: make install
 
       - name: Build
-        run: make app-build
+        run: make build
 
   # ── Docker images (matrix: app + data-node) ──────────────────────────────────
   docker:
