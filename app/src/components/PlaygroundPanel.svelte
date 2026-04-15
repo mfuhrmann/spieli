@@ -8,7 +8,6 @@
   import { playgroundCompleteness } from '../lib/completeness.js';
   import { poiRadiusM } from '../lib/config.js';
   import { getPlaygroundTitle, getPlaygroundLocation } from '../lib/playgroundHelpers.js';
-  import { escapeHtml } from '../lib/utils.js';
   import EquipmentList from './EquipmentList.svelte';
   import POIPanel from './POIPanel.svelte';
   import PanoramaxViewer from './PanoramaxViewer.svelte';
@@ -95,7 +94,10 @@
   $: completeness = attr ? COMPLETENESS[playgroundCompleteness(attr)] : null;
 
   // ── Opening hours ─────────────────────────────────────────────────────────
-  function formatOpeningHours(ohStr) {
+  // Returns { color, label, suffix, error } so the template can render without
+  // {@html}. label includes the ● bullet; suffix is trailing plain text (e.g.
+  // "· Öffnet morgen um 09:00") rendered outside the coloured span.
+  function openingHoursState(ohStr) {
     const fmt = d => d.toLocaleTimeString('de', { hour: '2-digit', minute: '2-digit' });
     const dayLabel = (d, now) => {
       if (d.toDateString() === now.toDateString()) return 'heute';
@@ -110,15 +112,15 @@
       const now = new Date();
       const isOpen = oh.getState(now);
       const next = oh.getNextChange(now);
-      if (ohStr.trim() === '24/7') return `<span style="color:#16a34a">● Immer geöffnet</span>`;
+      if (ohStr.trim() === '24/7') return { color: '#16a34a', label: '● Immer geöffnet', suffix: null, error: false };
       if (isOpen) {
-        const label = next ? `Geöffnet bis ${fmt(next)}` : 'Geöffnet';
-        return `<span style="color:#16a34a">● ${label}</span>`;
+        const label = next ? `● Geöffnet bis ${fmt(next)}` : '● Geöffnet';
+        return { color: '#16a34a', label, suffix: null, error: false };
       }
-      if (next) return `<span style="color:#dc2626">● Geschlossen</span> · Öffnet ${dayLabel(next, now)} um ${fmt(next)}`;
-      return `<span style="color:#dc2626">● Geschlossen</span>`;
+      const suffix = next ? ` · Öffnet ${dayLabel(next, now)} um ${fmt(next)}` : null;
+      return { color: '#dc2626', label: '● Geschlossen', suffix, error: false };
     } catch {
-      return `<code style="font-size:smaller">${escapeHtml(ohStr)}</code>`;
+      return { color: null, label: ohStr, suffix: null, error: true };
     }
   }
 
@@ -229,13 +231,20 @@
         {/if}
 
         {#if attr.opening_hours}
+          {@const oh = openingHoursState(attr.opening_hours)}
           <dt class="col-5">Öffnungszeiten</dt>
-          <dd class="col-7">{@html formatOpeningHours(attr.opening_hours)}</dd>
+          <dd class="col-7">
+            {#if oh.error}
+              <code style="font-size:smaller">{oh.label}</code>
+            {:else}
+              <span style:color={oh.color}>{oh.label}</span>{oh.suffix ?? ''}
+            {/if}
+          </dd>
         {/if}
 
         {#if attr.operator}
           <dt class="col-5">Betreiber</dt>
-          <dd class="col-7">
+          <dd class="col-7" data-testid="operator-value">
             {#if attr['operator:wikidata']}
               <a href="https://www.wikidata.org/wiki/{attr['operator:wikidata']}"
                  target="_blank" rel="noopener" class="link-secondary">{attr.operator}</a>

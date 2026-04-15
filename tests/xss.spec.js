@@ -34,8 +34,7 @@ test.describe('XSS escaping', () => {
   });
 
   test('operator with & is displayed as plain text', async ({ page }) => {
-    // Operator is rendered in a <dd> adjacent to <dt>Betreiber</dt>.
-    const operatorEl = page.locator('dt.col-5:has-text("Betreiber") + dd.col-7');
+    const operatorEl = page.locator('[data-testid="operator-value"]');
     await expect(operatorEl).toBeVisible();
     const text = await operatorEl.textContent();
     expect(text).toContain('Bezirksamt Mitte & Co.');
