@@ -27,13 +27,12 @@ Spielplatzkarte is an interactive web map for exploring playgrounds based on Ope
 All common operations are available via `make`. Run `make help` to list targets.
 
 ```bash
-make install      # npm ci
+make install      # npm ci (root) + npm --prefix app ci — installs all deps
 make dev          # Vite dev server at http://localhost:5173 (hot-reload)
-make build        # Production build → dist/
+make build        # Production build → app/dist/
 make serve        # Preview production build locally
+make test         # Run Playwright E2E tests
 ```
-
-No test framework is configured.
 
 ## Docker Compose stack
 
