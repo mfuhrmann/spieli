@@ -21,39 +21,39 @@
   <div class="modal-backdrop" onclick={onBackdropClick}>
     <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="dc-title">
       <div class="modal-header">
-        <h5 class="modal-title mb-0" id="dc-title">Daten ergänzen</h5>
-        <button type="button" class="btn-close" onclick={close} aria-label="Schließen"></button>
+        <h5 class="modal-title" id="dc-title">Daten ergänzen</h5>
+        <button type="button" class="close-btn" onclick={close} aria-label="Schließen">✕</button>
       </div>
       <div class="modal-body">
         <p class="small">
           Die Daten dieser Karte stammen aus
-          <a href="https://www.openstreetmap.org/" target="_blank" rel="noopener" class="link-secondary">OpenStreetMap</a>.
+          <a href="https://www.openstreetmap.org/" target="_blank" rel="noopener">OpenStreetMap</a>.
           Du kannst sie direkt bearbeiten – kein Account nötig bei MapComplete.
         </p>
 
-        <h6 class="mt-3">Spielgeräte &amp; Details ergänzen</h6>
-        <p class="small mb-2">
-          Mit <a href="https://mapcomplete.org/playgrounds.html" target="_blank" rel="noopener" class="link-secondary">MapComplete</a>
+        <h6 class="section-heading">Spielgeräte &amp; Details ergänzen</h6>
+        <p class="small">
+          Mit <a href="https://mapcomplete.org/playgrounds.html" target="_blank" rel="noopener">MapComplete</a>
           kannst du Spielgeräte, Fotos und weitere Details einfach per Klick eintragen.
         </p>
 
-        <h6 class="mt-3">OSM-Wiki</h6>
-        <p class="small mb-2">
-          <a href={regionPlaygroundWikiUrl} target="_blank" rel="noopener" class="link-secondary">
+        <h6 class="section-heading">OSM-Wiki</h6>
+        <p class="small">
+          <a href={regionPlaygroundWikiUrl} target="_blank" rel="noopener">
             Erfassungsregeln für Spielplätze in dieser Region
           </a>
         </p>
 
         {#if regionChatUrl}
-          <h6 class="mt-3">Community</h6>
-          <p class="small mb-0">
+          <h6 class="section-heading">Community</h6>
+          <p class="small">
             Fragen und Austausch im
-            <a href={regionChatUrl} target="_blank" rel="noopener" class="link-secondary">regionalen Chat</a>.
+            <a href={regionChatUrl} target="_blank" rel="noopener">regionalen Chat</a>.
           </p>
         {/if}
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-primary btn-sm" onclick={close}>OK</button>
+        <button type="button" class="ok-btn" onclick={close}>OK</button>
       </div>
     </div>
   </div>
@@ -87,11 +87,44 @@
     border-bottom: 1px solid #dee2e6;
   }
 
-  .modal-body  { padding: 1rem; }
+  .modal-title { margin: 0; font-size: 1rem; font-weight: 600; }
+
+  .close-btn {
+    background: none;
+    border: none;
+    font-size: 1rem;
+    line-height: 1;
+    color: #6c757d;
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 4px;
+  }
+  .close-btn:hover { color: #000; background: #f0f0f0; }
+
+  .modal-body { padding: 1rem; }
+
+  .small { font-size: 0.875rem; color: #495057; margin: 0 0 0.5rem; }
+
+  .section-heading { font-size: 0.875rem; font-weight: 600; margin: 0.75rem 0 0.25rem; }
+
+  a { color: #6c757d; }
+  a:hover { color: #343a40; }
+
   .modal-footer {
     padding: 0.5rem 1rem;
     border-top: 1px solid #dee2e6;
     display: flex;
     justify-content: flex-end;
   }
+
+  .ok-btn {
+    background: #ed7014;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.875rem;
+    cursor: pointer;
+  }
+  .ok-btn:hover { background: #d16212; }
 </style>
