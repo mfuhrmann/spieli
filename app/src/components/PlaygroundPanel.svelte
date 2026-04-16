@@ -2,17 +2,24 @@
   import { onMount } from 'svelte';
   import OpeningHours from 'opening_hours';
   import { transform } from 'ol/proj';
+  import { X, ChevronDown, ChevronRight, Pencil, MapPin, Clock, Trees, Ruler, Users, Phone, Mail, ExternalLink, Image, Package, Navigation, Sun, Star } from 'lucide-svelte';
 
   import { selection } from '../stores/selection.js';
   import { fetchPlaygroundEquipment, fetchNearbyPOIs } from '../lib/api.js';
   import { playgroundCompleteness } from '../lib/completeness.js';
   import { poiRadiusM } from '../lib/config.js';
   import { getPlaygroundTitle, getPlaygroundLocation } from '../lib/playgroundHelpers.js';
+  import { cn } from '../lib/utils.js';
   import EquipmentList from './EquipmentList.svelte';
   import POIPanel from './POIPanel.svelte';
   import PanoramaxViewer from './PanoramaxViewer.svelte';
   import ReviewsPanel from './ReviewsPanel.svelte';
   import ShadowSlider from './ShadowSlider.svelte';
+  import Badge from './ui/Badge.svelte';
+  import Button from './ui/Button.svelte';
+
+  /** When true, renders without the fixed sidebar wrapper (for bottom sheet embedding) */
+  export let embedded = false;
 
   // ── Derived state from selection store ────────────────────────────────────
   $: feature    = $selection.feature;
@@ -77,7 +84,7 @@
 
   // ── ESC to close ──────────────────────────────────────────────────────────
   function handleKeydown(e) {
-    if (e.key === 'Escape' && feature) selection.clear();
+    if (e.key === 'Escape' && feature && !embedded) selection.clear();
   }
 
   onMount(() => {
@@ -87,9 +94,9 @@
 
   // ── Completeness badge ────────────────────────────────────────────────────
   const COMPLETENESS = {
-    complete: { cls: 'completeness-badge--complete', label: 'Daten vollständig' },
-    partial:  { cls: 'completeness-badge--partial',  label: 'Daten teilweise erfasst' },
-    missing:  { cls: 'completeness-badge--missing',  label: 'Daten fehlen' },
+    complete: { variant: 'success', label: 'Vollständig' },
+    partial:  { variant: 'warning', label: 'Teilweise erfasst' },
+    missing:  { variant: 'destructive', label: 'Daten fehlen' },
   };
   $: completeness = attr ? COMPLETENESS[playgroundCompleteness(attr)] : null;
 
@@ -112,15 +119,15 @@
       const now = new Date();
       const isOpen = oh.getState(now);
       const next = oh.getNextChange(now);
-      if (ohStr.trim() === '24/7') return { color: '#16a34a', label: '● Immer geöffnet', suffix: null, error: false };
+      if (ohStr.trim() === '24/7') return { open: true, text: 'Immer geöffnet' };
       if (isOpen) {
-        const label = next ? `● Geöffnet bis ${fmt(next)}` : '● Geöffnet';
-        return { color: '#16a34a', label, suffix: null, error: false };
+        const label = next ? `Geöffnet bis ${fmt(next)}` : 'Geöffnet';
+        return { open: true, text: label };
       }
-      const suffix = next ? ` · Öffnet ${dayLabel(next, now)} um ${fmt(next)}` : null;
-      return { color: '#dc2626', label: '● Geschlossen', suffix, error: false };
+      if (next) return { open: false, text: `Geschlossen · Öffnet ${dayLabel(next, now)} um ${fmt(next)}` };
+      return { open: false, text: 'Geschlossen' };
     } catch {
-      return { color: null, label: ohStr, suffix: null, error: true };
+      return { open: null, text: ohStr };
     }
   }
 
@@ -152,8 +159,8 @@
       ? (attr.description ? `${attr.description} | ${attr['description:de']}` : attr['description:de'])
       : attr.description;
     if (desc) parts.push(desc);
-    if (attr.note) parts.push(`✏ ${attr.note}`);
-    if (attr.fixme) parts.push(`🔧 ${attr.fixme}`);
+    if (attr.note) parts.push(`${attr.note}`);
+    if (attr.fixme) parts.push(`${attr.fixme}`);
     return parts;
   })();
 
@@ -179,186 +186,267 @@
     }
     return uuids;
   })();
+
+  $: openingHoursInfo = attr?.opening_hours ? openingHoursState(attr.opening_hours) : null;
 </script>
 
 {#if feature && attr}
-  <aside class="info-panel">
-    <div class="info-panel__header">
-      <div>
-        <div class="fw-semibold">{getPlaygroundTitle(attr)}</div>
+  <aside class={cn(
+    embedded ? '' : 'info-panel',
+    embedded ? '' : 'lg:flex'
+  )}>
+    <!-- Header -->
+    {#if !embedded}
+      <div class="info-panel__header">
+        <div class="flex-1 min-w-0">
+          <h2 class="text-lg font-semibold text-foreground leading-tight">{getPlaygroundTitle(attr)}</h2>
+          {#if getPlaygroundLocation(attr)}
+            <p class="text-sm text-muted-foreground mt-0.5">{getPlaygroundLocation(attr)}</p>
+          {/if}
+          {#if completeness}
+            <Badge variant={completeness.variant} class="mt-2">{completeness.label}</Badge>
+          {/if}
+        </div>
+        <Button variant="ghost" size="icon" class="shrink-0" onclick={() => selection.clear()} aria-label="Schließen">
+          <X class="h-5 w-5" />
+        </Button>
+      </div>
+    {:else}
+      <!-- Embedded header (simpler, for bottom sheet) -->
+      <div class="mb-4">
+        <h2 class="text-lg font-semibold text-foreground leading-tight">{getPlaygroundTitle(attr)}</h2>
+        {#if getPlaygroundLocation(attr)}
+          <p class="text-sm text-muted-foreground mt-0.5">{getPlaygroundLocation(attr)}</p>
+        {/if}
         {#if completeness}
-          <span class="completeness-badge {completeness.cls}">{completeness.label}</span>
+          <Badge variant={completeness.variant} class="mt-2">{completeness.label}</Badge>
         {/if}
       </div>
-      <button class="btn-close" aria-label="Schließen" onclick={() => selection.clear()}></button>
-    </div>
+    {/if}
 
-    <div class="info-panel__body">
-
-      <!-- Location / description -->
-      {#if getPlaygroundLocation(attr)}
-        <p class="text-muted small mb-1"><i>{getPlaygroundLocation(attr)}</i></p>
-      {/if}
+    <div class={cn(embedded ? '' : 'info-panel__body')}>
+      <!-- Description -->
       {#each descriptionParts as part}
-        <p class="small mb-1"><i>{part}</i></p>
+        <p class="text-sm text-muted-foreground italic mb-3">{part}</p>
       {/each}
 
-      <!-- Key facts -->
-      <dl class="row small mb-2">
-        <dt class="col-5">Größe</dt>
-        <dd class="col-7">{attr.area > 0 ? `${Math.round(attr.area / 10) * 10 || attr.area} m²` : 'unbekannt'}</dd>
-
-        <dt class="col-5">Zugänglichkeit</dt>
-        <dd class="col-7">{accessLabel}</dd>
+      <!-- Quick Facts Grid -->
+      <div class="grid grid-cols-2 gap-3 mb-4">
+        {#if attr.area > 0}
+          <div class="flex items-center gap-2 text-sm">
+            <Ruler class="h-4 w-4 text-muted-foreground shrink-0" />
+            <span>{Math.round(attr.area / 10) * 10 || attr.area} m²</span>
+          </div>
+        {/if}
+        
+        <div class="flex items-center gap-2 text-sm">
+          <Users class="h-4 w-4 text-muted-foreground shrink-0" />
+          <span>{accessLabel}</span>
+        </div>
 
         {#if attr.surface}
-          <dt class="col-5">Bodenbelag</dt>
-          <dd class="col-7">{surfaceLabels[attr.surface] ?? attr.surface}</dd>
+          <div class="flex items-center gap-2 text-sm">
+            <MapPin class="h-4 w-4 text-muted-foreground shrink-0" />
+            <span>{surfaceLabels[attr.surface] ?? attr.surface}</span>
+          </div>
         {/if}
 
         {#if attr.tree_count > 0}
-          <dt class="col-5">Bäume mind.</dt>
-          <dd class="col-7">{attr.tree_count}</dd>
+          <div class="flex items-center gap-2 text-sm">
+            <Trees class="h-4 w-4 text-muted-foreground shrink-0" />
+            <span>{attr.tree_count} Bäume</span>
+          </div>
         {/if}
 
         {#if attr.min_age || attr.max_age}
-          <dt class="col-5">Alter</dt>
-          <dd class="col-7">
-            {#if attr.min_age && attr.max_age}{attr.min_age}–{attr.max_age} Jahre
-            {:else if attr.min_age}ab {attr.min_age} Jahren
-            {:else}bis {attr.max_age} Jahre{/if}
-          </dd>
+          <div class="flex items-center gap-2 text-sm col-span-2">
+            <Users class="h-4 w-4 text-muted-foreground shrink-0" />
+            <span>
+              {#if attr.min_age && attr.max_age}{attr.min_age}–{attr.max_age} Jahre
+              {:else if attr.min_age}ab {attr.min_age} Jahren
+              {:else}bis {attr.max_age} Jahre{/if}
+            </span>
+          </div>
         {/if}
+      </div>
 
-        {#if attr.opening_hours}
-          {@const oh = openingHoursState(attr.opening_hours)}
-          <dt class="col-5">Öffnungszeiten</dt>
-          <dd class="col-7">
-            {#if oh.error}
-              <code style="font-size:smaller">{oh.label}</code>
-            {:else}
-              <span style:color={oh.color}>{oh.label}</span>{oh.suffix ?? ''}
-            {/if}
-          </dd>
-        {/if}
+      <!-- Opening Hours -->
+      {#if openingHoursInfo}
+        <div class="flex items-center gap-2 text-sm mb-4 p-2 rounded-lg bg-muted/50">
+          <Clock class="h-4 w-4 shrink-0 {openingHoursInfo.open ? 'text-success' : 'text-destructive'}" />
+          <span class={openingHoursInfo.open ? 'text-success' : 'text-destructive'}>{openingHoursInfo.text}</span>
+        </div>
+      {/if}
 
-        {#if attr.operator}
-          <dt class="col-5">Betreiber</dt>
-          <dd class="col-7" data-testid="operator-value">
-            {#if attr['operator:wikidata']}
-              <a href="https://www.wikidata.org/wiki/{attr['operator:wikidata']}"
-                 target="_blank" rel="noopener" class="link-secondary">{attr.operator}</a>
-            {:else}
-              {attr.operator}
-            {/if}
-          </dd>
-        {/if}
-
-        {#if attr['contact:email'] || attr.email || attr['contact:phone'] || attr.phone}
-          <dt class="col-5">Kontakt</dt>
-          <dd class="col-7">
-            {#if attr['contact:phone'] || attr.phone}
-              {@const phone = attr['contact:phone'] || attr.phone}
+      <!-- Contact Info -->
+      {#if attr['contact:email'] || attr.email || attr['contact:phone'] || attr.phone || attr.operator}
+        <div class="space-y-2 mb-4 p-3 rounded-lg border border-border">
+          {#if attr.operator}
+            <div class="flex items-center gap-2 text-sm" data-testid="operator-value">
+              <span class="text-muted-foreground">Betreiber:</span>
+              {#if attr['operator:wikidata']}
+                <a href="https://www.wikidata.org/wiki/{attr['operator:wikidata']}"
+                   target="_blank" rel="noopener" class="text-primary hover:underline">{attr.operator}</a>
+              {:else}
+                <span>{attr.operator}</span>
+              {/if}
+            </div>
+          {/if}
+          {#if attr['contact:phone'] || attr.phone}
+            {@const phone = attr['contact:phone'] || attr.phone}
+            <div class="flex items-center gap-2 text-sm">
+              <Phone class="h-4 w-4 text-muted-foreground" />
               {#if /^\+?\d/.test(phone.trim())}
-                <a href="tel:{phone}" class="link-secondary">{phone}</a>
+                <a href="tel:{phone}" class="text-primary hover:underline">{phone}</a>
               {:else}{phone}{/if}
-            {/if}
-            {#if (attr['contact:email'] || attr.email) && (attr['contact:phone'] || attr.phone)} · {/if}
-            {#if attr['contact:email'] || attr.email}
-              {@const email = attr['contact:email'] || attr.email}
+            </div>
+          {/if}
+          {#if attr['contact:email'] || attr.email}
+            {@const email = attr['contact:email'] || attr.email}
+            <div class="flex items-center gap-2 text-sm">
+              <Mail class="h-4 w-4 text-muted-foreground" />
               {#if email.includes('@') && !/^javascript:/i.test(email.trim())}
-                <a href="mailto:{email}" class="link-secondary">{email}</a>
+                <a href="mailto:{email}" class="text-primary hover:underline">{email}</a>
               {:else}{email}{/if}
+            </div>
+          {/if}
+        </div>
+      {/if}
+
+      <!-- Edit Link -->
+      <a href={mcUrl} target="_blank" rel="noopener" class="inline-flex items-center gap-2 text-sm text-primary hover:underline mb-4">
+        <Pencil class="h-4 w-4" />
+        Bei MapComplete bearbeiten
+        <ExternalLink class="h-3 w-3" />
+      </a>
+
+      <!-- Accordion Sections -->
+      <div class="space-y-2">
+        <!-- Photos -->
+        <div class="border border-border rounded-lg overflow-hidden">
+          <button 
+            class="w-full flex items-center gap-2 px-3 py-2.5 text-sm font-medium hover:bg-muted/50 transition-colors"
+            onclick={() => toggleSection('photos')}
+          >
+            {#if openSections.has('photos')}
+              <ChevronDown class="h-4 w-4 text-muted-foreground" />
+            {:else}
+              <ChevronRight class="h-4 w-4 text-muted-foreground" />
             {/if}
-          </dd>
-        {/if}
+            <Image class="h-4 w-4 text-muted-foreground" />
+            Bilder
+          </button>
+          {#if openSections.has('photos')}
+            <div class="px-3 pb-3 border-t border-border">
+              <PanoramaxViewer uuids={panoramaxUuids} {mcUrl} />
+            </div>
+          {/if}
+        </div>
 
-        <dt class="col-5">OSM ID</dt>
-        <dd class="col-7">
-          <a href="https://www.openstreetmap.org/{mcOsmType}/{attr.osm_id}"
-             target="_blank" rel="noopener" class="link-secondary">{attr.osm_id}</a>
-        </dd>
-      </dl>
+        <!-- Equipment -->
+        <div class="border border-border rounded-lg overflow-hidden">
+          <button 
+            class="w-full flex items-center gap-2 px-3 py-2.5 text-sm font-medium hover:bg-muted/50 transition-colors"
+            onclick={() => toggleSection('equipment')}
+          >
+            {#if openSections.has('equipment')}
+              <ChevronDown class="h-4 w-4 text-muted-foreground" />
+            {:else}
+              <ChevronRight class="h-4 w-4 text-muted-foreground" />
+            {/if}
+            <Package class="h-4 w-4 text-muted-foreground" />
+            Ausstattung
+          </button>
+          {#if openSections.has('equipment')}
+            <div class="px-3 pb-3 border-t border-border">
+              {#if equipmentLoading}
+                <p class="text-sm text-muted-foreground italic py-2">Wird geladen...</p>
+              {:else}
+                <EquipmentList features={equipmentFeatures} playgroundAttr={attr} />
+              {/if}
+            </div>
+          {/if}
+        </div>
 
-      <div class="mb-2">
-        <a href={mcUrl} target="_blank" rel="noopener" class="mc-add-link small">
-          <span class="bi bi-pencil"></span> Bei MapComplete bearbeiten
+        <!-- POIs -->
+        <div class="border border-border rounded-lg overflow-hidden">
+          <button 
+            class="w-full flex items-center gap-2 px-3 py-2.5 text-sm font-medium hover:bg-muted/50 transition-colors"
+            onclick={() => toggleSection('pois')}
+          >
+            {#if openSections.has('pois')}
+              <ChevronDown class="h-4 w-4 text-muted-foreground" />
+            {:else}
+              <ChevronRight class="h-4 w-4 text-muted-foreground" />
+            {/if}
+            <Navigation class="h-4 w-4 text-muted-foreground" />
+            Umfeld
+          </button>
+          {#if openSections.has('pois')}
+            <div class="px-3 pb-3 border-t border-border">
+              {#if poisLoading}
+                <p class="text-sm text-muted-foreground italic py-2">Wird geladen...</p>
+              {:else}
+                <POIPanel {pois} {centerLat} {centerLon} />
+              {/if}
+            </div>
+          {/if}
+        </div>
+
+        <!-- Shadow -->
+        <div class="border border-border rounded-lg overflow-hidden">
+          <button 
+            class="w-full flex items-center gap-2 px-3 py-2.5 text-sm font-medium hover:bg-muted/50 transition-colors"
+            onclick={() => toggleSection('shadow')}
+          >
+            {#if openSections.has('shadow')}
+              <ChevronDown class="h-4 w-4 text-muted-foreground" />
+            {:else}
+              <ChevronRight class="h-4 w-4 text-muted-foreground" />
+            {/if}
+            <Sun class="h-4 w-4 text-muted-foreground" />
+            Schattigkeit
+          </button>
+          {#if openSections.has('shadow')}
+            <div class="px-3 pb-3 border-t border-border">
+              <ShadowSlider {attr} />
+            </div>
+          {/if}
+        </div>
+
+        <!-- Reviews -->
+        <div class="border border-border rounded-lg overflow-hidden">
+          <button 
+            class="w-full flex items-center gap-2 px-3 py-2.5 text-sm font-medium hover:bg-muted/50 transition-colors"
+            onclick={() => toggleSection('reviews')}
+          >
+            {#if openSections.has('reviews')}
+              <ChevronDown class="h-4 w-4 text-muted-foreground" />
+            {:else}
+              <ChevronRight class="h-4 w-4 text-muted-foreground" />
+            {/if}
+            <Star class="h-4 w-4 text-muted-foreground" />
+            Bewertungen
+          </button>
+          {#if openSections.has('reviews')}
+            <div class="px-3 pb-3 border-t border-border">
+              <ReviewsPanel lat={centerLat} lon={centerLon} />
+            </div>
+          {/if}
+        </div>
+      </div>
+
+      <!-- OSM Link -->
+      <div class="mt-4 pt-4 border-t border-border">
+        <a 
+          href="https://www.openstreetmap.org/{mcOsmType}/{attr.osm_id}"
+          target="_blank" 
+          rel="noopener" 
+          class="text-xs text-muted-foreground hover:text-foreground transition-colors"
+        >
+          OSM ID: {attr.osm_id}
         </a>
       </div>
-
-      <!-- Photos accordion -->
-      <div class="accordion-section">
-        <button class="accordion-toggle" onclick={() => toggleSection('photos')}>
-          <span class="bi {openSections.has('photos') ? 'bi-chevron-down' : 'bi-chevron-right'}"></span>
-          Bilder
-        </button>
-        {#if openSections.has('photos')}
-          <div class="accordion-body">
-            <PanoramaxViewer uuids={panoramaxUuids} {mcUrl} />
-          </div>
-        {/if}
-      </div>
-
-      <!-- Equipment accordion -->
-      <div class="accordion-section">
-        <button class="accordion-toggle" onclick={() => toggleSection('equipment')}>
-          <span class="bi {openSections.has('equipment') ? 'bi-chevron-down' : 'bi-chevron-right'}"></span>
-          Ausstattung
-        </button>
-        {#if openSections.has('equipment')}
-          <div class="accordion-body">
-            {#if equipmentLoading}
-              <small class="text-muted"><i>Wird geladen …</i></small>
-            {:else}
-              <EquipmentList features={equipmentFeatures} playgroundAttr={attr} />
-            {/if}
-          </div>
-        {/if}
-      </div>
-
-      <!-- POI accordion -->
-      <div class="accordion-section">
-        <button class="accordion-toggle" onclick={() => toggleSection('pois')}>
-          <span class="bi {openSections.has('pois') ? 'bi-chevron-down' : 'bi-chevron-right'}"></span>
-          Umfeld
-        </button>
-        {#if openSections.has('pois')}
-          <div class="accordion-body">
-            {#if poisLoading}
-              <small class="text-muted"><i>Wird geladen …</i></small>
-            {:else}
-              <POIPanel {pois} {centerLat} {centerLon} />
-            {/if}
-          </div>
-        {/if}
-      </div>
-
-      <!-- Shadow accordion -->
-      <div class="accordion-section">
-        <button class="accordion-toggle" onclick={() => toggleSection('shadow')}>
-          <span class="bi {openSections.has('shadow') ? 'bi-chevron-down' : 'bi-chevron-right'}"></span>
-          Schattigkeit
-        </button>
-        {#if openSections.has('shadow')}
-          <div class="accordion-body">
-            <ShadowSlider {attr} />
-          </div>
-        {/if}
-      </div>
-
-      <!-- Reviews accordion -->
-      <div class="accordion-section">
-        <button class="accordion-toggle" onclick={() => toggleSection('reviews')}>
-          <span class="bi {openSections.has('reviews') ? 'bi-chevron-down' : 'bi-chevron-right'}"></span>
-          Bewertungen
-        </button>
-        {#if openSections.has('reviews')}
-          <div class="accordion-body">
-            <ReviewsPanel lat={centerLat} lon={centerLon} />
-          </div>
-        {/if}
-      </div>
-
     </div>
   </aside>
 {/if}
@@ -366,27 +454,33 @@
 <style>
   .info-panel {
     position: absolute;
-    top: 0; left: 0;
-    width: 360px;
+    top: 0;
+    left: 0;
+    width: 380px;
     height: 100%;
-    background: #fff;
-    box-shadow: 2px 0 8px rgba(0,0,0,0.15);
+    background: var(--color-card);
+    box-shadow: 4px 0 15px -3px rgb(0 0 0 / 0.1);
     z-index: 100;
     overflow-y: auto;
-    display: flex;
+    display: none;
     flex-direction: column;
+    border-right: 1px solid var(--color-border);
+  }
+
+  .info-panel.lg\:flex {
+    display: flex;
   }
 
   .info-panel__header {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    gap: 0.5rem;
+    gap: 0.75rem;
     padding: 1rem;
-    border-bottom: 1px solid #dee2e6;
+    border-bottom: 1px solid var(--color-border);
     position: sticky;
     top: 0;
-    background: #fff;
+    background: var(--color-card);
     z-index: 1;
   }
 
@@ -395,27 +489,9 @@
     flex: 1;
   }
 
-  .completeness-badge {
-    display: inline-block;
-    font-size: 0.7rem;
-    padding: 1px 6px;
-    border-radius: 999px;
-    margin-top: 2px;
+  @media (max-width: 1023px) {
+    .info-panel {
+      display: none !important;
+    }
   }
-  .completeness-badge--complete { background: #dcfce7; color: #166534; }
-  .completeness-badge--partial  { background: #fef9c3; color: #854d0e; }
-  .completeness-badge--missing  { background: #fee2e2; color: #991b1b; }
-
-  .accordion-section { margin-bottom: 0.5rem; }
-  .accordion-toggle {
-    background: none; border: none; padding: 0.25rem 0;
-    font-weight: 600; font-size: 0.85rem; color: #495057;
-    cursor: pointer; display: flex; align-items: center; gap: 0.35rem;
-    width: 100%;
-  }
-  .accordion-toggle:hover { color: #212529; }
-  .accordion-body { padding: 0.5rem 0 0.25rem 0.75rem; }
-
-  .mc-add-link { color: #6c757d; text-decoration: none; }
-  .mc-add-link:hover { color: #343a40; text-decoration: underline; }
 </style>

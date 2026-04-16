@@ -1,6 +1,7 @@
 <script>
   import { fromLonLat } from 'ol/proj';
   import { mapStore } from '../stores/map.js';
+  import { Navigation2, Loader2 } from 'lucide-svelte';
 
   let locating = false;
   let error = '';
@@ -28,19 +29,47 @@
 </script>
 
 <button
-  class="btn btn-sm btn-outline-secondary locate-btn"
+  class="control-btn"
+  class:error={!!error}
   onclick={locate}
   disabled={locating}
   title={error || 'Meinen Standort anzeigen'}
   aria-label="Meinen Standort anzeigen"
 >
   {#if locating}
-    <span class="spinner-border spinner-border-sm" role="status"></span>
+    <Loader2 class="h-5 w-5 animate-spin" />
   {:else}
-    <span class="bi bi-geo-alt{error ? '-fill text-danger' : ''}"></span>
+    <Navigation2 class="h-5 w-5" />
   {/if}
 </button>
 
 <style>
-  .locate-btn { padding: 0.25rem 0.5rem; line-height: 1; }
+  .control-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: white;
+    border: none;
+    border-radius: 50%;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    cursor: pointer;
+    color: #666;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .control-btn:hover {
+    background: #f5f5f5;
+    color: #333;
+  }
+
+  .control-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .control-btn.error {
+    color: #d93025;
+  }
 </style>

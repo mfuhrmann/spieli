@@ -1,4 +1,5 @@
 import { mount } from 'svelte';
+import './styles/app.css';
 import { appMode } from './lib/config.js';
 import StandaloneApp from './standalone/StandaloneApp.svelte';
 import HubApp from './hub/HubApp.svelte';

@@ -13,7 +13,7 @@ test.describe('XSS escaping', () => {
   });
 
   test('playground name with HTML characters is displayed as plain text', async ({ page }) => {
-    const nameEl = page.locator('.info-panel__header .fw-semibold');
+    const nameEl = page.locator('.info-panel__header h2');
     await expect(nameEl).toBeVisible();
     const text = await nameEl.textContent();
     // Raw name contains <script>, < > & — must appear as literal characters, not tags.
@@ -25,9 +25,8 @@ test.describe('XSS escaping', () => {
   });
 
   test('description with <script> tag does not execute and is shown as text', async ({ page }) => {
-    // Description paragraphs use p.small without the text-muted class (which
-    // is reserved for the location line above them).
-    const descEl = page.locator('.info-panel__body p.small:not(.text-muted)').first();
+    // Description paragraphs are rendered as italic text-sm paragraphs inside the body.
+    const descEl = page.locator('.info-panel__body p').first();
     await expect(descEl).toBeVisible();
     const text = await descEl.textContent();
     expect(text).toContain("<script>alert('xss')</script>");

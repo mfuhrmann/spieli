@@ -16,12 +16,18 @@
   import { selection } from '../stores/selection.js';
   import { mapStore } from '../stores/map.js';
   import { filterStore, matchesFilters } from '../stores/filters.js';
+  import { debounce } from '../lib/utils.js';
 
   // Props: optional overrides for hub mode (multiple backends feed into one shared source)
   /** @type {VectorSource | null} - when provided, the map uses this source instead of creating one */
   export let playgroundSource = null;
   /** Backend URL used for selection — standalone passes apiBaseUrl, hub passes per-feature URL */
   export let defaultBackendUrl = apiBaseUrl;
+  
+  /** Hover callback: (feature, pixel) => void */
+  export let onhover = null;
+  /** Clear hover callback: () => void */
+  export let onclearhover = null;
 
   let mapContainer;
   let olMap = null;
@@ -57,7 +63,14 @@
       target: mapContainer,
       layers: [basemap, playgroundLayer],
       view,
-      controls: defaultControls().extend([new ScaleLine({ units: 'metric' })]),
+      // Disable default zoom/rotate controls for cleaner UI like Google Maps
+      controls: defaultControls({ 
+        zoom: false, 
+        rotate: false,
+        attribution: true 
+      }).extend([
+        new ScaleLine({ units: 'metric', className: 'custom-scale-line' })
+      ]),
       interactions: defaultInteractions({ altShiftDragRotate: false, pinchRotate: false }),
     });
 
@@ -77,12 +90,26 @@
       }
     });
 
-    // Pointer cursor on hover
+    // Pointer cursor on hover + hover preview callback
+    let lastHoverFeature = null;
+    const debouncedHover = debounce((feature, pixel) => {
+      if (onhover) onhover(feature, pixel);
+    }, 100);
+
     olMap.on('pointermove', (evt) => {
-      const hit = olMap.hasFeatureAtPixel(evt.pixel, {
+      const hit = olMap.forEachFeatureAtPixel(evt.pixel, (feature) => feature, {
         layerFilter: (l) => l === playgroundLayer,
       });
+      
       mapContainer.style.cursor = hit ? 'pointer' : '';
+      
+      if (hit && hit !== lastHoverFeature) {
+        lastHoverFeature = hit;
+        debouncedHover(hit, evt.pixel);
+      } else if (!hit && lastHoverFeature) {
+        lastHoverFeature = null;
+        if (onclearhover) onclearhover();
+      }
     });
 
     // Standalone: fetch playgrounds and fit to region
@@ -154,5 +181,51 @@
     height: 100%;
     position: absolute;
     inset: 0;
+  }
+
+  /* Custom scale line styling - bottom left, minimal */
+  :global(.custom-scale-line) {
+    position: absolute;
+    bottom: 24px;
+    left: 10px;
+    background: rgba(255, 255, 255, 0.85);
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 11px;
+    color: #333;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  }
+
+  :global(.custom-scale-line .ol-scale-line-inner) {
+    border: 1px solid #333;
+    border-top: none;
+    color: #333;
+    font-size: 11px;
+    text-align: center;
+  }
+
+  /* Attribution styling - bottom right, minimal */
+  :global(.ol-attribution) {
+    position: absolute;
+    bottom: 4px;
+    right: 4px;
+    background: rgba(255, 255, 255, 0.7);
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 10px;
+  }
+
+  :global(.ol-attribution ul) {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  :global(.ol-attribution li) {
+    display: inline;
+  }
+
+  :global(.ol-attribution button) {
+    display: none;
   }
 </style>

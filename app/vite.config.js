@@ -3,6 +3,9 @@ import { svelte } from '@sveltejs/vite-plugin-svelte';
 
 export default defineConfig({
   plugins: [svelte()],
+  css: {
+    postcss: './postcss.config.js',
+  },
   build: {
     sourcemap: true,
   },

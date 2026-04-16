@@ -1,5 +1,6 @@
 <script>
   import { filterStore, hasActiveFilters } from '../stores/filters.js';
+  import { Filter, Droplets, Baby, Accessibility, Armchair, UtensilsCrossed, Home, RectangleHorizontal, Goal, CircleDot, Lock } from 'lucide-svelte';
 
   let open = false;
   let wrap;
@@ -9,20 +10,21 @@
   }
 
   const FILTERS = [
-    { key: 'private',     label: 'Nur öffentlich zugängliche' },
-    { key: 'water',       label: 'Wasserspielplatz' },
-    { key: 'baby',        label: 'Baby-geeignet' },
-    { key: 'toddler',     label: 'Kleinkind-geeignet' },
-    { key: 'wheelchair',  label: 'Rollstuhlgerecht' },
-    { key: 'bench',       label: 'Mit Sitzbank' },
-    { key: 'picnic',      label: 'Mit Picknicktisch' },
-    { key: 'shelter',     label: 'Mit Unterstand' },
-    { key: 'tableTennis', label: 'Mit Tischtennisplatte' },
-    { key: 'soccer',      label: 'Mit Bolzplatz' },
-    { key: 'basketball',  label: 'Mit Basketballfeld' },
+    { key: 'private',     label: 'Nur öffentlich',       icon: Lock },
+    { key: 'water',       label: 'Wasserspielplatz',     icon: Droplets },
+    { key: 'baby',        label: 'Baby-geeignet',        icon: Baby },
+    { key: 'toddler',     label: 'Kleinkind-geeignet',   icon: Baby },
+    { key: 'wheelchair',  label: 'Rollstuhlgerecht',     icon: Accessibility },
+    { key: 'bench',       label: 'Mit Sitzbank',         icon: Armchair },
+    { key: 'picnic',      label: 'Mit Picknicktisch',    icon: UtensilsCrossed },
+    { key: 'shelter',     label: 'Mit Unterstand',       icon: Home },
+    { key: 'tableTennis', label: 'Tischtennisplatte',    icon: RectangleHorizontal },
+    { key: 'soccer',      label: 'Mit Bolzplatz',        icon: Goal },
+    { key: 'basketball',  label: 'Basketballfeld',       icon: CircleDot },
   ];
 
   $: active = hasActiveFilters($filterStore);
+  $: activeCount = Object.values($filterStore).filter(Boolean).length;
 
   function toggle(key) {
     filterStore.update(f => ({ ...f, [key]: !f[key] }));
@@ -35,89 +37,178 @@
 
 <svelte:window onclick={onWindowClick} />
 
-<div class="filter-wrap" bind:this={wrap}>
+<div class="filter-container" bind:this={wrap}>
   <button
-    class="filter-btn btn btn-sm {active ? 'btn-primary' : 'btn-outline-secondary'}"
+    class="control-btn"
+    class:active
     onclick={() => open = !open}
     title="Filter"
     aria-label="Filter"
+    aria-expanded={open}
   >
-    <span class="bi bi-funnel{active ? '-fill' : ''}"></span>
+    <Filter class="h-5 w-5" />
     {#if active}
-      <span class="filter-badge">{Object.values($filterStore).filter(Boolean).length}</span>
+      <span class="badge">{activeCount}</span>
     {/if}
   </button>
 
   {#if open}
     <div class="filter-dropdown">
-      <div class="filter-header">
-        <span class="fw-semibold" style="font-size:0.85rem;">Filter</span>
+      <div class="dropdown-header">
+        <span class="dropdown-title">Filter</span>
         {#if active}
-          <button class="btn btn-link btn-sm p-0 text-muted" onclick={clearAll} style="font-size:0.75rem;">
+          <button class="clear-btn" onclick={clearAll}>
             Alle zurücksetzen
           </button>
         {/if}
       </div>
-      {#each FILTERS as f}
-        <label class="filter-item">
-          <input
-            type="checkbox"
-            class="form-check-input me-2"
-            checked={$filterStore[f.key]}
-            onchange={() => toggle(f.key)}
-          />
-          {f.label}
-        </label>
-      {/each}
+
+      <div class="filter-list">
+        {#each FILTERS as f}
+          <label class="filter-item" class:checked={$filterStore[f.key]}>
+            <input
+              type="checkbox"
+              checked={$filterStore[f.key]}
+              onchange={() => toggle(f.key)}
+            />
+            <svelte:component this={f.icon} class="h-4 w-4" />
+            <span>{f.label}</span>
+          </label>
+        {/each}
+      </div>
     </div>
   {/if}
 </div>
 
 <style>
-  .filter-wrap { position: relative; }
+  .filter-container {
+    position: relative;
+  }
 
-  .filter-btn { padding: 0.25rem 0.5rem; line-height: 1; position: relative; }
+  .control-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: white;
+    border: none;
+    border-radius: 50%;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    cursor: pointer;
+    color: #666;
+    transition: background 0.15s, color 0.15s;
+    position: relative;
+  }
 
-  .filter-badge {
+  .control-btn:hover {
+    background: #f5f5f5;
+    color: #333;
+  }
+
+  .control-btn.active {
+    background: #e8f5e9;
+    color: #1b5e20;
+  }
+
+  .badge {
     position: absolute;
-    top: -4px; right: -4px;
-    background: #dc3545;
-    color: #fff;
-    font-size: 0.6rem;
-    border-radius: 999px;
-    width: 14px; height: 14px;
-    display: flex; align-items: center; justify-content: center;
-    line-height: 1;
+    top: -4px;
+    right: -4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    font-size: 11px;
+    font-weight: 600;
+    background: #1b5e20;
+    color: white;
+    border-radius: 9px;
   }
 
   .filter-dropdown {
     position: absolute;
-    top: calc(100% + 6px);
+    top: calc(100% + 8px);
     right: 0;
-    background: #fff;
-    border: 1px solid #dee2e6;
-    border-radius: 0.4rem;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-    padding: 0.5rem 0.75rem;
-    min-width: 210px;
-    z-index: 200;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    min-width: 260px;
+    z-index: 300;
+    animation: fadeIn 0.15s ease-out;
+    overflow: hidden;
   }
 
-  .filter-header {
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .dropdown-header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    margin-bottom: 0.4rem;
-    padding-bottom: 0.3rem;
-    border-bottom: 1px solid #dee2e6;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid #e8eaed;
+  }
+
+  .dropdown-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #202124;
+  }
+
+  .clear-btn {
+    font-size: 12px;
+    color: #1a73e8;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+  }
+
+  .clear-btn:hover {
+    text-decoration: underline;
+  }
+
+  .filter-list {
+    padding: 8px 0;
+    max-height: 320px;
+    overflow-y: auto;
   }
 
   .filter-item {
     display: flex;
     align-items: center;
-    font-size: 0.82rem;
-    padding: 0.2rem 0;
+    gap: 12px;
+    padding: 10px 16px;
     cursor: pointer;
-    white-space: nowrap;
+    font-size: 14px;
+    color: #5f6368;
+    transition: background 0.15s;
+  }
+
+  .filter-item:hover {
+    background: #f1f3f4;
+  }
+
+  .filter-item.checked {
+    background: #e8f5e9;
+    color: #1b5e20;
+  }
+
+  .filter-item input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: #1b5e20;
+    cursor: pointer;
   }
 </style>
