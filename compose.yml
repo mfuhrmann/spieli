@@ -43,6 +43,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
       PBF_URL:           ${PBF_URL:-https://download.geofabrik.de/europe/germany/hessen-latest.osm.pbf}
       OSM2PGSQL_THREADS: ${OSM2PGSQL_THREADS:-4}
+      OSM_RELATION_ID:   ${OSM_RELATION_ID:-62700}
     volumes:
       - pbf_cache:/data   # PBF is re-downloaded on each run; this just avoids /tmp clutter
     profiles: [import]    # not started by "docker compose up"
