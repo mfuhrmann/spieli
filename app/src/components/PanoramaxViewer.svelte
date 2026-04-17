@@ -1,5 +1,5 @@
 <script>
-  import { onMount } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
 
   /** @type {string[]} List of Panoramax UUIDs for this playground. */
   export let uuids = [];
@@ -11,6 +11,9 @@
 
   let fullscreen = false;
   let modalIndex = 0;
+
+  // Portal element — mounted directly on document.body to escape sidebar stacking context.
+  let portalEl;
 
   function openModal(i) {
     modalIndex = i;
@@ -31,7 +34,18 @@
 
   onMount(() => {
     window.addEventListener('keydown', onKeydown, { capture: true });
+    // Create a portal host element appended to body so the modal
+    // renders outside the sidebar's stacking context.
+    portalEl = document.createElement('div');
+    portalEl.id = 'panoramax-portal';
+    document.body.appendChild(portalEl);
     return () => window.removeEventListener('keydown', onKeydown, { capture: true });
+  });
+
+  onDestroy(() => {
+    if (portalEl && portalEl.parentNode) {
+      portalEl.parentNode.removeChild(portalEl);
+    }
   });
 </script>
 
@@ -81,28 +95,32 @@
     </a>
   </p>
 
-  <!-- Fullscreen modal -->
-  {#if fullscreen}
-    <!-- svelte-ignore a11y-click-events-have-key-events -->
-    <!-- svelte-ignore a11y-no-static-element-interactions -->
+{/if}
+
+<!-- Portal: rendered via <svelte:element> on document.body to escape sidebar stacking context -->
+<!-- svelte-ignore a11y-click-events-have-key-events -->
+<!-- svelte-ignore a11y-no-static-element-interactions -->
+{#if fullscreen}
+  <svelte:body>
     <div class="panoramax-modal-backdrop" onclick={closeModal}>
       <div class="panoramax-modal" onclick={e => e.stopPropagation()}
            role="dialog" aria-modal="true" aria-label="Straßenfoto" tabindex="-1">
-        <div class="d-flex align-items-center gap-2 p-2 border-bottom">
-          <button type="button" class="btn btn-sm btn-outline-secondary py-0"
-                  onclick={prev} disabled={uuids.length < 2} title="Vorheriges Foto">
-            <span class="bi bi-chevron-left"></span>
+        <div class="panoramax-modal-header">
+          <div class="panoramax-nav">
+            <button type="button" class="nav-btn"
+                    onclick={prev} disabled={uuids.length < 2} title="Vorheriges Foto">
+              &#8249;
+            </button>
+            <button type="button" class="nav-btn"
+                    onclick={next} disabled={uuids.length < 2} title="Nächstes Foto">
+              &#8250;
+            </button>
+            <span class="photo-counter">{modalIndex + 1} / {uuids.length}</span>
+            <span class="photo-title">Straßenfoto</span>
+          </div>
+          <button type="button" class="close-btn" onclick={closeModal} aria-label="Schließen">
+            &#10005;
           </button>
-          <button type="button" class="btn btn-sm btn-outline-secondary py-0"
-                  onclick={next} disabled={uuids.length < 2} title="Nächstes Foto">
-            <span class="bi bi-chevron-right"></span>
-          </button>
-          <span class="text-muted" style="font-size:smaller;">
-            {modalIndex + 1} / {uuids.length}
-          </span>
-          <span class="fw-semibold ms-1" style="font-size:0.9rem;">Straßenfoto</span>
-          <button type="button" class="btn-close ms-auto" onclick={closeModal}
-                  aria-label="Schließen"></button>
         </div>
         <iframe
           src={viewerUrl(uuids[modalIndex])}
@@ -112,7 +130,7 @@
         ></iframe>
       </div>
     </div>
-  {/if}
+  </svelte:body>
 {/if}
 
 <style>
@@ -147,21 +165,81 @@
   .panoramax-modal-backdrop {
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.7);
-    z-index: 1050;
+    background: rgba(0, 0, 0, 0.75);
+    z-index: 9999;
     display: flex;
     align-items: center;
     justify-content: center;
   }
+
   .panoramax-modal {
     background: #fff;
-    border-radius: 6px;
-    width: min(90vw, 1100px);
-    height: min(80vh, 700px);
+    border-radius: 8px;
+    width: min(92vw, 1100px);
+    height: min(85vh, 750px);
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
   }
+
+  .panoramax-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid #e5e7eb;
+    background: #f9fafb;
+    flex-shrink: 0;
+  }
+
+  .panoramax-nav {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .nav-btn {
+    background: #ffffff;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    line-height: 1;
+    cursor: pointer;
+    color: #374151;
+    padding: 0;
+  }
+  .nav-btn:hover:not(:disabled) { background: #f3f4f6; }
+  .nav-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .photo-counter {
+    font-size: 0.8rem;
+    color: #6b7280;
+  }
+
+  .photo-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #111827;
+    margin-left: 0.25rem;
+  }
+
+  .close-btn {
+    background: none;
+    border: none;
+    font-size: 1rem;
+    color: #6b7280;
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    line-height: 1;
+  }
+  .close-btn:hover { background: #f3f4f6; color: #111827; }
 
   .mc-add-link { color: #6c757d; text-decoration: none; }
   .mc-add-link:hover { color: #343a40; text-decoration: underline; }
