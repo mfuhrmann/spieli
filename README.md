@@ -276,7 +276,7 @@ This prints your machine's LAN IP and the ready-to-use URLs, for example:
 
 ## How-to: Add a playground device
 
-Every playground device that OSM can record — slides, swings, climbing frames, balance beams — is defined in one place: `js/objPlaygroundEquipment.js`. Adding support for a new device type is a small, self-contained change.
+Every playground device that OSM can record — slides, swings, climbing frames, balance beams — is defined in one place: `app/src/lib/objPlaygroundEquipment.js`. Adding support for a new device type is a small, self-contained change.
 
 ### Step 1 — Find the OSM tag
 
@@ -286,7 +286,7 @@ For example, a balance beam is `playground=balance_beam`.
 
 ### Step 2 — Add an entry to `objDevices`
 
-Open `js/objPlaygroundEquipment.js` and add a new key to the `objDevices` object. Copy an existing entry as a template:
+Open `app/src/lib/objPlaygroundEquipment.js` and add a new key to the `objDevices` object. Copy an existing entry as a template:
 
 ```js
 balance_beam: {
@@ -330,7 +330,7 @@ If you don't know a playground with that device, you can find one using [Overpas
 
 ```bash
 git checkout -b feat/add-balance-beam-device
-git add js/objPlaygroundEquipment.js
+git add app/src/lib/objPlaygroundEquipment.js
 git commit -m "feat: add balance_beam playground device"
 git push -u origin feat/add-balance-beam-device
 ```
@@ -514,7 +514,7 @@ Edit the files you need to change. For frontend changes, run `make dev` and chec
 ### Step 4 — Commit with a conventional commit message
 
 ```bash
-git add js/objPlaygroundEquipment.js   # add only the files you changed
+git add app/src/lib/objPlaygroundEquipment.js   # add only the files you changed
 git commit -m "feat: add balance_beam playground device"
 ```
 
