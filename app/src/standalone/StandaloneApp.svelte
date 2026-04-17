@@ -266,7 +266,7 @@
     bottom: 0;
     width: 380px;
     z-index: 200;
-    background: #ffffff;
+    background: var(--color-card);
     box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
     overflow-y: auto;
     animation: slideInLeft 0.3s ease-out;

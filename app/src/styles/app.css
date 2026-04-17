@@ -102,25 +102,7 @@
   to { transform: scale(1); opacity: 1; }
 }
 
-/* ─── Dark Mode (optional, for future) ─────────────────────────────────────── */
-@media (prefers-color-scheme: dark) {
-  @theme {
-    --color-background: #1f2937;
-    --color-foreground: #f3f4f6;
-    --color-card: #111827;
-    --color-card-foreground: #f3f4f6;
-    --color-popover: #111827;
-    --color-popover-foreground: #f3f4f6;
-    --color-muted: #374151;
-    --color-muted-foreground: #9ca3af;
-    --color-border: #374151;
-    --color-input: #374151;
-    --color-secondary: #1e40af;
-    --color-secondary-foreground: #f3f4f6;
-    --color-accent: #92400e;
-    --color-accent-foreground: #f3f4f6;
-  }
-}
+/* Dark mode intentionally disabled — the app uses a light theme only. */
 
 /* ─── Base Styles ──────────────────────────────────────────────────────────── */
 * {
