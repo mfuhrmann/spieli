@@ -9,6 +9,7 @@
 
   let fullscreen = $state(false);
   let modalIndex = $state(0);
+  let selectedIndex = $state(0);
 
   function openModal(i) {
     modalIndex = i;
@@ -58,14 +59,14 @@
     </a>
   </div>
 {:else}
-  <!-- Inline viewer: first photo as clickable iframe -->
+  <!-- Inline viewer: selected photo as clickable iframe -->
   <div class="panoramax-preview" role="button" tabindex="0"
-       onclick={() => openModal(0)}
-       onkeydown={e => e.key === 'Enter' && openModal(0)}
+       onclick={() => openModal(selectedIndex)}
+       onkeydown={e => e.key === 'Enter' && openModal(selectedIndex)}
        title="Vollbild anzeigen"
   >
     <iframe
-      src={viewerUrl(uuids[0])}
+      src={viewerUrl(uuids[selectedIndex])}
       style="width:100%; height:240px; border:none; border-radius:4px; pointer-events:none;"
       title="Straßenfoto"
       allowfullscreen
@@ -79,8 +80,8 @@
   {#if uuids.length > 1}
     <div class="d-flex gap-1 mt-1 flex-wrap">
       {#each uuids as uuid, i}
-        <button type="button" class="thumb-btn {i === 0 ? 'thumb-active' : ''}"
-                onclick={() => openModal(i)}
+        <button type="button" class="thumb-btn {i === selectedIndex ? 'thumb-active' : ''}"
+                onclick={() => selectedIndex = i}
                 title="Foto {i + 1} von {uuids.length}">
           <img src={thumbUrl(uuid)} alt="Foto {i + 1}"
                style="width:52px; height:36px; object-fit:cover; border-radius:3px;" />
