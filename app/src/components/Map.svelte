@@ -113,6 +113,14 @@
       }
     });
 
+    mapContainer.addEventListener('pointerleave', () => {
+      if (lastHoverFeature) {
+        lastHoverFeature = null;
+        mapContainer.style.cursor = '';
+        if (onclearhover) onclearhover();
+      }
+    });
+
     // Standalone: fetch playgrounds and fit to region
     if (ownSource) {
       playgroundSourceStore.set(ownSource);
