@@ -61,11 +61,10 @@
   }
 
   function onInput() {
-    // Debounced search as user types
     clearTimeout(searchTimeout);
     searchTimeout = setTimeout(() => {
       if (query.length >= 2) search();
-    }, 300);
+    }, 450);
   }
 
   let searchTimeout;
@@ -109,7 +108,6 @@
       oninput={onInput}
       onfocus={onFocus}
       onblur={onBlur}
-      disabled={searching}
       aria-label="Ortssuche"
     />
     {#if query}
