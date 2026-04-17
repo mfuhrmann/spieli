@@ -81,11 +81,12 @@ A free, interactive web map for exploring playgrounds based on [OpenStreetMap](h
 | Component | Technology |
 |---|---|
 | Map | [OpenLayers](https://openlayers.org/) |
-| UI framework | [Bootstrap 5](https://getbootstrap.com/) + [Bootstrap Icons](https://icons.getbootstrap.com/) |
+| UI framework | [Bootstrap 5](https://getbootstrap.com/) + [Bootstrap Icons](https://icons.getbootstrap.com/) + [Tailwind CSS 4](https://tailwindcss.com/) |
+| Icons | [lucide-svelte](https://lucide.dev/) |
 | Opening hours parser | [opening_hours.js](https://github.com/opening-hours/opening_hours.js) |
 | Build tool | [Vite 6](https://vitejs.dev/) |
-| Internationalisation | [i18next](https://www.i18next.com/) |
-| Language | JavaScript (ES Modules) |
+| Internationalisation | [i18next](https://www.i18next.com/) (planned; not yet active in Svelte rewrite) |
+| Language | [Svelte 5](https://svelte.dev/) (ES Modules) |
 | Database | [PostgreSQL 16](https://www.postgresql.org/) + [PostGIS 3.4](https://postgis.net/) |
 | OSM import | [osm2pgsql](https://osm2pgsql.org/) (classic schema, `--hstore`) |
 | API layer | [PostgREST v12](https://postgrest.org/) |
@@ -112,8 +113,10 @@ These are the tools and concepts you'll encounter when working on this project. 
 | **PostGIS** | An extension to PostgreSQL that adds support for geographic data (points, polygons, distances). It's what lets us query "find all playgrounds within 500 m of this location". |
 | **osm2pgsql** | A tool that reads a PBF file and imports the OSM data into PostgreSQL. You run it once (via `make import`) to load the data, and again whenever you want to refresh it. |
 | **PostgREST** | A server that automatically turns your PostgreSQL database into a REST API. Instead of writing server-side code, you write SQL functions and PostgREST exposes them as HTTP endpoints. |
+| **Svelte** | A JavaScript UI framework that compiles components to efficient vanilla JS at build time — no virtual DOM. The entire frontend (`app/src/`) is written in Svelte 5. |
+| **Tailwind CSS** | A utility-first CSS framework. Instead of writing custom CSS classes, you compose styles inline using small utility classes like `p-4` or `flex`. Used alongside Bootstrap 5 in this project. |
 | **OpenLayers** | A JavaScript library for interactive maps. It handles rendering the map tiles, drawing the playground polygons, and responding to clicks. |
-| **i18next** | A JavaScript library for internationalisation (i18n). It loads the translation files from `locales/*.json` and swaps in the right string for the user's language. |
+| **i18next** | A JavaScript library for internationalisation (i18n). Listed as a dependency but not yet integrated in the Svelte rewrite — strings are currently hardcoded in German. |
 | **Overpass Turbo** | A web tool ([overpass-turbo.eu](https://overpass-turbo.eu)) for running ad-hoc queries against OpenStreetMap data. Useful for finding playgrounds with a specific device when testing your changes. |
 
 ---
