@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import OpeningHours from 'opening_hours';
   import { transform } from 'ol/proj';
-  import { X, ChevronDown, ChevronRight, Pencil, MapPin, Clock, Trees, Ruler, Users, Phone, Mail, ExternalLink, Image, Package, Navigation, Sun, Star } from 'lucide-svelte';
+  import { X, ChevronDown, ChevronRight, Pencil, MapPin, Clock, Trees, Ruler, Users, Phone, Mail, ExternalLink, Image, Package, Navigation, Star } from 'lucide-svelte';
 
   import { selection } from '../stores/selection.js';
   import { fetchPlaygroundEquipment, fetchNearbyPOIs } from '../lib/api.js';
@@ -14,7 +14,6 @@
   import POIPanel from './POIPanel.svelte';
   import PanoramaxViewer from './PanoramaxViewer.svelte';
   import ReviewsPanel from './ReviewsPanel.svelte';
-  import ShadowSlider from './ShadowSlider.svelte';
   import Badge from './ui/Badge.svelte';
   import Button from './ui/Button.svelte';
 
@@ -389,27 +388,6 @@
               {:else}
                 <POIPanel {pois} {centerLat} {centerLon} />
               {/if}
-            </div>
-          {/if}
-        </div>
-
-        <!-- Shadow -->
-        <div class="border border-border rounded-lg overflow-hidden">
-          <button 
-            class="w-full flex items-center gap-2 px-3 py-2.5 text-sm font-medium hover:bg-muted/50 transition-colors"
-            onclick={() => toggleSection('shadow')}
-          >
-            {#if openSections.has('shadow')}
-              <ChevronDown class="h-4 w-4 text-muted-foreground" />
-            {:else}
-              <ChevronRight class="h-4 w-4 text-muted-foreground" />
-            {/if}
-            <Sun class="h-4 w-4 text-muted-foreground" />
-            Schattigkeit
-          </button>
-          {#if openSections.has('shadow')}
-            <div class="px-3 pb-3 border-t border-border">
-              <ShadowSlider {attr} />
             </div>
           {/if}
         </div>
