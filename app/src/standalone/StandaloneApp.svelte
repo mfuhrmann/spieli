@@ -73,7 +73,16 @@
   // Sync bottom sheet with selection on mobile
   $: if (isMobile && $hasSelection) {
     bottomSheetOpen = true;
-    bottomSheetSnap = 'half';
+    bottomSheetSnap = 'peek';
+    // Fit map with bottom padding for the peek sheet (140 px) + a little breathing room
+    const feat = $selection.feature;
+    if (feat && $mapStore) {
+      $mapStore.getView().fit(feat.getGeometry().getExtent(), {
+        padding: [40, 40, 180, 40],
+        maxZoom: 19,
+        duration: 400,
+      });
+    }
   }
   $: if (isMobile && !$hasSelection) {
     bottomSheetOpen = false;

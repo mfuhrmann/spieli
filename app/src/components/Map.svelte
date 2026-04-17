@@ -83,9 +83,13 @@
         layerFilter: (l) => l === playgroundLayer,
       });
       if (hit) {
-        // In hub mode the feature carries its own backend URL; fall back to prop
         const backendUrl = hit.get('_backendUrl') ?? defaultBackendUrl;
         selection.select(hit, backendUrl);
+        view.fit(hit.getGeometry().getExtent(), {
+          padding: [40, 40, 40, 420], // right/top/bottom clear; 420 = sidebar width + margin
+          maxZoom: 19,
+          duration: 400,
+        });
       } else {
         selection.clear();
       }
