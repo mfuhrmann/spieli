@@ -1,5 +1,6 @@
 .PHONY: install dev build serve test \
         up down import docker-build db-apply db-shell \
+        seed-load seed-extract \
         require-npm require-docker installer lan-url help
 
 # Bail with a clear message when a required tool is missing.
@@ -65,6 +66,14 @@ db-apply: require-docker  ## Apply importer/api.sql to the running database and 
 
 db-shell: require-docker  ## Open a psql shell in the running database container
 	docker compose exec db psql -U osm -d osm
+
+seed-load: require-docker ## Load dev fixture DB (4 sample Fulda playgrounds) — skips full OSM import
+	docker compose up -d --wait db
+	docker compose exec -T db psql -U osm -d osm < dev/seed/seed.sql
+	docker compose exec db psql -U osm -d osm -c "NOTIFY pgrst, 'reload schema';" 2>/dev/null || true
+
+seed-extract: require-docker ## Regenerate dev/seed/seed.sql from the running DB (maintainers only)
+	bash dev/seed/extract.sh
 
 ## ── Production install ────────────────────────────────────────────────────────
 
