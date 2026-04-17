@@ -4,8 +4,8 @@
 #   bash install.sh          # interactive first-time setup (recommended)
 #
 # Manual usage after install.sh has created your .env:
-#   docker compose -f compose.prod.yml up -d
-#   docker compose -f compose.prod.yml run --rm importer
+#   docker compose -f compose.prod.yml --profile data-node-ui up -d
+#   docker compose -f compose.prod.yml --profile data-node run --rm importer
 #
 # Images are published to ghcr.io on every tagged release and on every push
 # to main (tagged :latest). Pin to a specific version for reproducible deploys.
@@ -31,7 +31,7 @@ services:
     restart: unless-stopped
 
   # ── OSM importer (run manually; not started by default) ─────────────────────
-  # docker compose -f compose.prod.yml run --rm importer
+  # docker compose -f compose.prod.yml --profile data-node run --rm importer
   importer:
     image: ghcr.io/mfuhrmann/spielplatzkarte-importer:latest
     profiles: [data-node, data-node-ui]
@@ -80,8 +80,8 @@ services:
       MAP_ZOOM:                   ${MAP_ZOOM:-12}
       MAP_MIN_ZOOM:               ${MAP_MIN_ZOOM:-10}
       POI_RADIUS_M:               ${POI_RADIUS_M:-5000}
-      API_BASE_URL:               /api
-    restart: unless-stopped
+      API_BASE_URL:               ${API_BASE_URL:-/api}
+    restart: on-failure
 
 volumes:
   pgdata:

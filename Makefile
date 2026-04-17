@@ -52,7 +52,7 @@ down: require-docker      ## Stop and remove containers
 	docker compose down
 
 import: require-docker    ## Download PBF and import OSM data into PostGIS (run once or to refresh)
-	docker compose run --rm importer
+	docker compose --profile data-node run --rm importer
 
 docker-build: require-docker  ## Rebuild and restart the Svelte app container (Dockerfile.app)
 	docker compose up -d --build app

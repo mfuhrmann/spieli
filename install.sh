@@ -115,6 +115,10 @@ fi
 # ── Deployment mode selection ──────────────────────────────────────────────────
 
 if [[ -n "$DEPLOY_MODE" ]]; then
+    case "$DEPLOY_MODE" in
+        data-node|ui|data-node-ui) ;;
+        *) die "DEPLOY_MODE='$DEPLOY_MODE' in existing .env is not valid. Edit it to one of: data-node, ui, data-node-ui." ;;
+    esac
     warn "Existing DEPLOY_MODE=${DEPLOY_MODE} detected — keeping it. (Re-run to change.)"
 elif [[ "$EXISTING_ENV" == "true" ]]; then
     # Old .env without DEPLOY_MODE — assume full stack for backward compatibility
@@ -181,18 +185,17 @@ fi
 
 # ── Optional: infrastructure ──────────────────────────────────────────────────
 
+APP_PORT=""
+OSM2PGSQL_THREADS=""
+
 printf "\n${BOLD}── Optional: infrastructure ────────────────────────────────────${RESET}\n"
 
 if [[ "$DEPLOY_MODE" != "data-node" ]]; then
     ask APP_PORT "Host port to expose the app on" "8080"
-else
-    APP_PORT=""
 fi
 
 if [[ "$DEPLOY_MODE" != "ui" ]]; then
     ask OSM2PGSQL_THREADS "CPU threads for the OSM import" "4"
-else
-    OSM2PGSQL_THREADS=""
 fi
 
 # ── Generate password (data-node and data-node-ui only) ───────────────────────
@@ -237,8 +240,8 @@ success "Files downloaded."
         printf "PBF_URL=%s\n\n" "$PBF_URL"
     fi
 
-    if [[ "$DEPLOY_MODE" == "ui" ]]; then
-        printf "# ── Remote data node ────────────────────────────────────────────\n"
+    if [[ "$DEPLOY_MODE" != "data-node" ]]; then
+        printf "# ── API base URL ─────────────────────────────────────────────────\n"
         printf "API_BASE_URL=%s\n\n" "$API_BASE_URL"
     fi
 
