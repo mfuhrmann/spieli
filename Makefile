@@ -39,8 +39,14 @@ test: require-npm         ## Run Playwright E2E tests
 
 ## ── Docker Compose stack ──────────────────────────────────────────────────────
 
-up: require-docker        ## Start db + PostgREST + nginx (detached)
-	docker compose up -d
+up: require-docker        ## Start stack; run import automatically on first launch
+	docker compose up -d --wait --timeout 300
+	@if ! docker compose exec -T db psql -U osm -d osm -tc \
+	    "SELECT 1 FROM information_schema.tables WHERE table_schema='api' LIMIT 1" \
+	    2>/dev/null | grep -q 1; then \
+	  printf '\033[36minfo:\033[0m first launch detected — importing OSM data…\n'; \
+	  $(MAKE) import; \
+	fi
 
 down: require-docker      ## Stop and remove containers
 	docker compose down

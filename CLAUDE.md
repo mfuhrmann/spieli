@@ -38,8 +38,8 @@ make test         # Run Playwright E2E tests
 
 ```bash
 cp .env.example .env   # configure OSM_RELATION_ID and PBF_URL
-make up                # start db + PostgREST + nginx/app
-make import            # one-time OSM data import (downloads PBF, runs osm2pgsql)
+make up                # start db + PostgREST + nginx/app; runs import + db-apply automatically on first launch
+make import            # download PBF and import OSM data (manual refresh only — first-time import runs via make up)
 make docker-build      # rebuild and restart only the nginx/app container
 make db-apply          # apply importer/api.sql to the running DB and reload PostgREST
 make db-shell          # open a psql shell in the running DB container
