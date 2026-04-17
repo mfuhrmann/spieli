@@ -83,8 +83,10 @@ printf "https://github.com/mfuhrmann/spielplatzkarte\n\n"
 ask DEPLOY_DIR "Deployment directory" "./spielplatzkarte"
 mkdir -p "$DEPLOY_DIR/db"
 
+EXISTING_PASSWORD=""
 if [[ -f "$DEPLOY_DIR/.env" ]]; then
     warn ".env already exists in $DEPLOY_DIR"
+    EXISTING_PASSWORD="$(grep '^POSTGRES_PASSWORD=' "$DEPLOY_DIR/.env" 2>/dev/null | cut -d= -f2 || true)"
     confirm "Overwrite it?" || die "Aborted."
 fi
 
@@ -119,8 +121,13 @@ ask OSM2PGSQL_THREADS "CPU threads for the OSM import"          "4"
 
 # ── Generate password ──────────────────────────────────────────────────────────
 
-POSTGRES_PASSWORD="$(openssl rand -hex 32)"
-success "Generated secure database password."
+if [[ -n "$EXISTING_PASSWORD" ]]; then
+    POSTGRES_PASSWORD="$EXISTING_PASSWORD"
+    success "Reusing existing database password (database volume already initialised)."
+else
+    POSTGRES_PASSWORD="$(openssl rand -hex 32)"
+    success "Generated secure database password."
+fi
 
 # ── Download files ─────────────────────────────────────────────────────────────
 
