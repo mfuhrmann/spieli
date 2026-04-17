@@ -203,19 +203,23 @@ make import
 
 All variables can be set in `.env` (copy from `.env.example`).
 
-| Variable | Default | Description |
-|---|---|---|
-| `OSM_RELATION_ID` | `62700` | OSM relation ID of the region to display |
-| `PBF_URL` | Hessen extract | Geofabrik `.osm.pbf` download URL |
-| `REGION_PLAYGROUND_WIKI_URL` | Generic OSM wiki | Wiki page linked in the "Contribute" modal |
-| `REGION_CHAT_URL` | *(hidden)* | Community chat link; leave empty to hide the button |
-| `MAP_ZOOM` | `12` | Initial map zoom level |
-| `MAP_MIN_ZOOM` | `10` | Minimum zoom level |
-| `PARENT_ORIGIN` | *(own origin)* | Allowed origin for `postMessage` events — set to the Hub's full origin (e.g. `https://hub.example.com`) when embedding in a Hub; leave empty for standalone deployments |
-| `APP_PORT` | `8080` | Host port the app is exposed on |
-| `POSTGRES_PASSWORD` | `change-me` | Database password — **change in production** |
-| `POI_RADIUS_M` | `5000` | Radius in metres for nearby POI search |
-| `OSM2PGSQL_THREADS` | `4` | CPU threads for the import |
+| Variable | Default | Mode | Description |
+|---|---|---|---|
+| `APP_MODE` | `standalone` | both | App mode: `standalone` (regional map) or `hub` (aggregation map) |
+| `OSM_RELATION_ID` | `62700` | standalone | OSM relation ID of the region to display |
+| `PBF_URL` | Hessen extract | standalone | Geofabrik `.osm.pbf` download URL |
+| `REGION_PLAYGROUND_WIKI_URL` | Generic OSM wiki | standalone | Wiki page linked in the "Contribute" modal |
+| `REGION_CHAT_URL` | *(hidden)* | standalone | Community chat link; leave empty to hide the button |
+| `MAP_ZOOM` | `12` | both | Initial map zoom level |
+| `MAP_MIN_ZOOM` | `10` | both | Minimum zoom level |
+| `PARENT_ORIGIN` | *(own origin)* | standalone | Allowed origin for `postMessage` events — set to the Hub's full origin (e.g. `https://hub.example.com`) when embedding in a Hub; leave empty for standalone deployments |
+| `APP_PORT` | `8080` | both | Host port the app is exposed on |
+| `POSTGRES_PASSWORD` | `change-me` | standalone | Database password — **change in production** |
+| `POI_RADIUS_M` | `5000` | standalone | Radius in metres for nearby POI search |
+| `OSM2PGSQL_THREADS` | `4` | standalone | CPU threads for the import |
+| `GEOSERVER_URL` | *(disabled)* | standalone | Base URL of a GeoServer instance for the shadow WMS layer (e.g. `https://example.com`); leave empty to disable |
+| `GEOSERVER_WORKSPACE` | `spielplatzkarte` | standalone | GeoServer workspace name — only used when `GEOSERVER_URL` is set |
+| `HUB_POLL_INTERVAL` | `300` | hub | Seconds between Hub re-fetches of playground data from all registered instances |
 
 ---
 
