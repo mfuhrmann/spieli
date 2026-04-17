@@ -341,9 +341,11 @@ Then open a pull request on GitHub. See the [Contributing](#contributing) sectio
 
 ## How-to: Edit UI strings / add a language
 
-All user-visible text in the app lives in `locales/*.json` — one file per language. The app detects the user's browser language automatically and loads the matching file.
+> **Note:** Multi-language support has not yet been re-integrated in the Svelte rewrite. UI strings are currently hardcoded in German in the Svelte components. The `locales/*.json` files are preserved for when i18n is re-implemented — contributions to those files are welcome and will be useful once the integration is complete.
 
-### Edit an existing string
+The translation files live in `locales/*.json` — one file per language, structured as nested JSON.
+
+### Edit an existing translation string
 
 **Step 1 — Find the key you want to change**
 
@@ -355,23 +357,13 @@ Open `locales/de.json` (German, the primary language) in any text editor. The fi
 }
 ```
 
-You can also open the app in your browser and use the browser's "Inspect" tool (right-click → Inspect) to find the element, then search for its text in the `locales/` files.
-
 **Step 2 — Edit the value**
 
 Change the string value (the part after the `:`), keeping the key (the part before the `:`) unchanged. Make sure the JSON stays valid — every value must be in double quotes, and every line except the last in an object must end with a comma.
 
-**Step 3 — Test your change**
+**Step 3 — Apply the change to all languages**
 
-```bash
-make dev
-```
-
-Open `http://localhost:5173/?lang=de` to force German regardless of your browser settings. Replace `de` with any other language code to test that language.
-
-**Step 4 — Apply the change to all languages**
-
-If you changed a string, update the same key in the other language files (`locales/en.json`, `locales/fr.json`, etc.) too. You can use the English value as a placeholder if you don't speak the language — native speakers can improve it later.
+Update the same key in the other language files (`locales/en.json`, `locales/fr.json`, etc.) too. You can use the English value as a placeholder if you don't speak the language — native speakers can improve it later.
 
 ---
 
@@ -385,25 +377,9 @@ If you changed a string, update the same key in the other language files (`local
 
 2. **Translate all the string values.** Do not change the keys — only the values (the text in quotes after the `:`). Leave any value you're unsure about in English for now.
 
-3. **Handle plural forms** (only needed for some languages). Languages like Polish and Ukrainian have multiple plural forms. If your language has this, add the appropriate plural suffixes (`_one`, `_few`, `_many`, `_other`) to equipment count strings. See [i18next pluralisation docs](https://www.i18next.com/translation-function/plurals) and the existing `locales/pl.json` for an example.
+3. **Handle plural forms** (only needed for some languages). Languages like Polish and Ukrainian have multiple plural forms. Add the appropriate plural suffixes (`_one`, `_few`, `_many`, `_other`) to equipment count strings — see `locales/pl.json` for an example.
 
-4. **Register the language** in `js/i18n.js`:
-   ```js
-   import ro from '../locales/ro.json';   // add this import near the top
-   // …
-   resources: {
-       // …existing entries…
-       ro: { translation: ro },           // add this line
-   }
-   ```
-
-5. **Test it:**
-   ```bash
-   make dev
-   # Open http://localhost:5173/?lang=ro
-   ```
-
-6. Commit and open a PR — see [Contributing](#contributing).
+4. Commit and open a PR — see [Contributing](#contributing).
 
 ---
 
@@ -570,7 +546,9 @@ All data comes from OpenStreetMap or the free services listed above. No propriet
 
 ## Internationalisation
 
-The UI is fully translated using [i18next](https://www.i18next.com/). The language is detected automatically from the visitor's browser settings, with English as the fallback.
+> **Note:** i18next has not yet been re-integrated in the Svelte rewrite. The UI is currently German-only. The translation files below are preserved for when multi-language support is re-implemented.
+
+Translation files live in `locales/*.json` — one file per language. The intended behaviour (once re-integrated) is automatic language detection from the visitor's browser settings, with English as the fallback.
 
 ### Supported languages
 
