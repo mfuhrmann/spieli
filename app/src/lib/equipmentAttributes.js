@@ -81,9 +81,9 @@ const pitchImages = {
 };
 
 /**
- * Returns an HTML string with detail attributes for a single equipment item.
+ * Returns detail attributes for a single equipment item.
  * @param {Object} props - plain GeoJSON feature properties object
- * @returns {string} HTML (may be empty string)
+ * @returns {{ html: string, panoramaxUuid: string|null }}
  */
 export function getEquipmentAttributesFromProps(props) {
     const g = key => props[key];
@@ -158,19 +158,12 @@ export function getEquipmentAttributesFromProps(props) {
     const addPhotoLink = `<p class="mb-0 mt-1"><a href="${mcUrl}" target="_blank" rel="noopener" style="font-size:0.75rem;"><span class="bi bi-camera-fill"></span> Foto hinzufügen</a></p>`;
 
     let html = '';
-    if (panoramaxUuid) {
-        const thumbUrl  = `https://api.panoramax.xyz/api/pictures/${panoramaxUuid}/thumb.jpg`;
-        const viewUrl   = `https://api.panoramax.xyz/?pic=${panoramaxUuid}&nav=none&focus=pic`;
-        html += `<a href="${viewUrl}" target="_blank" rel="noopener">` +
-            `<img src="${thumbUrl}" alt="Straßenfoto" style="object-fit:cover;aspect-ratio:16/9;width:100%"></a>` +
-            `<p class="mb-0 text-muted" style="font-size:0.75rem;"><span class="bi bi-camera"></span> Foto dieses Geräts</p>`;
-    }
     if (content.length) {
         html += '<ul>' + content.map(c => `<li>${c}</li>`).join('') + '</ul>';
     }
 
-    // Fallback image when no photo and no attributes
-    if (!html) {
+    // Fallback image when no panoramax photo and no attributes
+    if (!html && !panoramaxUuid) {
         const onerror = `if(this.dataset.fallback){this.src=this.dataset.fallback;delete this.dataset.fallback}else{this.parentElement.style.display='none'}`;
         const deviceKey = g('playground');
         const sportRaw  = g('sport');
@@ -191,5 +184,5 @@ export function getEquipmentAttributesFromProps(props) {
     }
 
     if (!panoramaxUuid) html += addPhotoLink;
-    return html;
+    return { html, panoramaxUuid: panoramaxUuid || null };
 }
