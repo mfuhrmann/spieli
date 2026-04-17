@@ -458,13 +458,26 @@
     left: 0;
     width: 380px;
     height: 100%;
-    background: var(--color-card);
+    background: #ffffff;
     box-shadow: 4px 0 15px -3px rgb(0 0 0 / 0.1);
     z-index: 100;
     overflow-y: auto;
     display: none;
     flex-direction: column;
-    border-right: 1px solid var(--color-border);
+    border-right: 1px solid #e5e7eb;
+    color-scheme: light;
+    
+    /* Force light theme variables */
+    --color-background: #ffffff;
+    --color-foreground: #1f2937;
+    --color-card: #ffffff;
+    --color-card-foreground: #1f2937;
+    --color-popover: #ffffff;
+    --color-popover-foreground: #1f2937;
+    --color-muted: #f3f4f6;
+    --color-muted-foreground: #6b7280;
+    --color-border: #e5e7eb;
+    --color-input: #e5e7eb;
   }
 
   .info-panel.lg\:flex {
@@ -477,10 +490,10 @@
     justify-content: space-between;
     gap: 0.75rem;
     padding: 1rem;
-    border-bottom: 1px solid var(--color-border);
+    border-bottom: 1px solid #e5e7eb;
     position: sticky;
     top: 0;
-    background: var(--color-card);
+    background: #ffffff;
     z-index: 1;
   }
 

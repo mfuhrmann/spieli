@@ -258,7 +258,7 @@
     border-bottom: 1px solid #e0e0e0;
   }
 
-  /* Side panel: slides in from left on desktop */
+  /* Side panel: slides in from left on desktop - always uses light theme */
   .side-panel {
     position: absolute;
     top: 0;
@@ -266,10 +266,23 @@
     bottom: 0;
     width: 380px;
     z-index: 200;
-    background: white;
+    background: #ffffff;
     box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
     overflow-y: auto;
     animation: slideInLeft 0.3s ease-out;
+    color-scheme: light;
+    
+    /* Force light theme variables for the sidebar */
+    --color-background: #ffffff;
+    --color-foreground: #1f2937;
+    --color-card: #ffffff;
+    --color-card-foreground: #1f2937;
+    --color-popover: #ffffff;
+    --color-popover-foreground: #1f2937;
+    --color-muted: #f3f4f6;
+    --color-muted-foreground: #6b7280;
+    --color-border: #e5e7eb;
+    --color-input: #e5e7eb;
   }
 
   @keyframes slideInLeft {

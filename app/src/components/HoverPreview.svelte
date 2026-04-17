@@ -28,10 +28,10 @@
     style={style}
   >
     <div class="relative -translate-x-1/2 -translate-y-full -mt-3">
-      <!-- Card -->
-      <div class="bg-card rounded-lg shadow-lg border border-border p-3 min-w-[180px] max-w-[240px]">
+      <!-- Card - always light theme -->
+      <div class="hover-card rounded-lg shadow-lg border p-3 min-w-[180px] max-w-[240px]">
         <!-- Title -->
-        <h4 class="font-semibold text-sm text-foreground leading-tight mb-1.5 line-clamp-2">
+        <h4 class="font-semibold text-sm leading-tight mb-1.5 line-clamp-2" style="color: #1f2937;">
           {title}
         </h4>
 
@@ -58,7 +58,7 @@
         </div>
 
         <!-- Meta row -->
-        <div class="flex items-center gap-2 text-xs text-muted-foreground">
+        <div class="flex items-center gap-2 text-xs" style="color: #6b7280;">
           <MapPin class="h-3 w-3 shrink-0" />
           {#if area}
             <span>{area}</span>
@@ -70,7 +70,7 @@
 
       <!-- Arrow pointing down -->
       <div class="absolute left-1/2 -translate-x-1/2 -bottom-2">
-        <div class="w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-t-[8px] border-t-card drop-shadow-sm"></div>
+        <div class="w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-t-[8px] drop-shadow-sm" style="border-top-color: #ffffff;"></div>
       </div>
     </div>
   </div>
@@ -82,5 +82,24 @@
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
+  }
+  
+  /* Force light theme for hover preview card */
+  .hover-card {
+    background: #ffffff;
+    border-color: #e5e7eb;
+    color-scheme: light;
+    
+    /* Override CSS variables for light theme */
+    --color-background: #ffffff;
+    --color-foreground: #1f2937;
+    --color-card: #ffffff;
+    --color-card-foreground: #1f2937;
+    --color-muted: #f3f4f6;
+    --color-muted-foreground: #6b7280;
+    --color-border: #e5e7eb;
+    --color-primary: #10b981;
+    --color-water: #3b82f6;
+    --color-nature: #22c55e;
   }
 </style>

@@ -127,14 +127,14 @@
     ></div>
   {/if}
 
-  <!-- Bottom Sheet -->
+  <!-- Bottom Sheet - always light theme -->
   <div
     bind:this={sheetEl}
     class={cn(
-      'fixed inset-x-0 bottom-0 z-50 bg-card rounded-t-2xl shadow-xl lg:hidden',
+      'fixed inset-x-0 bottom-0 z-50 rounded-t-2xl shadow-xl lg:hidden bottom-sheet',
       isDragging ? '' : 'transition-[height] duration-300 ease-out'
     )}
-    style="height: {currentHeight}px"
+    style="height: {currentHeight}px; background: #ffffff; color-scheme: light; --color-background: #ffffff; --color-foreground: #1f2937; --color-card: #ffffff; --color-card-foreground: #1f2937; --color-muted: #f3f4f6; --color-muted-foreground: #6b7280; --color-border: #e5e7eb;"
     ontouchstart={handleTouchStart}
     ontouchmove={handleTouchMove}
     ontouchend={handleTouchEnd}
@@ -145,19 +145,20 @@
   >
     <!-- Drag Handle -->
     <div class="bottom-sheet__handle flex flex-col items-center pt-3 pb-2 cursor-grab active:cursor-grabbing">
-      <div class="w-12 h-1.5 rounded-full bg-muted-foreground/30"></div>
+      <div class="w-12 h-1.5 rounded-full" style="background: rgba(107, 114, 128, 0.3);"></div>
     </div>
 
     <!-- Header -->
     {#if title}
-      <div class="flex items-center justify-between px-4 pb-2 border-b border-border">
-        <h2 id="bottom-sheet-title" class="text-base font-semibold text-foreground">{title}</h2>
+      <div class="flex items-center justify-between px-4 pb-2" style="border-bottom: 1px solid #e5e7eb;">
+        <h2 id="bottom-sheet-title" class="text-base font-semibold" style="color: #1f2937;">{title}</h2>
         <button
-          class="p-1 rounded-md hover:bg-muted transition-colors"
+          class="p-1 rounded-md transition-colors"
+          style="color: #6b7280;"
           onclick={close}
           aria-label="Schließen"
         >
-          <X class="h-5 w-5 text-muted-foreground" />
+          <X class="h-5 w-5" />
         </button>
       </div>
     {/if}
