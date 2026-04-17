@@ -54,7 +54,7 @@ docker-build: require-docker  ## Rebuild and restart the Svelte app container (D
 ## ── Database ──────────────────────────────────────────────────────────────────
 
 db-apply: require-docker  ## Apply importer/api.sql to the running database and reload PostgREST schema
-	set -a && . ./.env && set +a && envsubst '$$OSM_RELATION_ID' < importer/api.sql | docker compose exec -T db psql -U osm -d osm
+	set -a && . ./.env && set +a && envsubst '$$OSM_RELATION_ID' < importer/api.sql | docker compose exec -T db psql -U osm -d osm --single-transaction
 	docker compose exec db psql -U osm -d osm -c "NOTIFY pgrst, 'reload schema';"
 
 db-shell: require-docker  ## Open a psql shell in the running database container
