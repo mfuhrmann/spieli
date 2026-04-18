@@ -16,6 +16,9 @@ window.APP_CONFIG = {
   apiBaseUrl: '',
   parentOrigin: '',
 
+  // UI language. Empty = auto-detect from browser. Supported: 'de', 'en'.
+  defaultLocale: '',
+
   // --- Hub mode ---
   registryUrl: './registry.json',
   hubPollInterval: 300,

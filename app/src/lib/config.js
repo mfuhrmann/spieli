@@ -29,6 +29,9 @@ export const apiBaseUrl = c.apiBaseUrl || '';
 // Target origin for postMessage to a parent frame (hub embedding standalone via iframe — legacy).
 export const parentOrigin = c.parentOrigin || '*';
 
+// Default locale for the UI. When empty, falls back to navigator.language → 'en'.
+export const defaultLocale = c.defaultLocale || '';
+
 // --- Hub ---
 
 // URL of the registry JSON file listing backends.
