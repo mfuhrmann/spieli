@@ -142,7 +142,7 @@
 
     olMap.on('pointermove', (evt) => {
       // Overlay hit-test: any layer tagged with `kind: 'overlay'` participates
-      // (equipment points, trees, standalone pitches contributed by the shell).
+      // (equipment points, standalone pitches contributed by the shell).
       const overlayHit = olMap.forEachFeatureAtPixel(evt.pixel, f => f, {
         layerFilter: l => l.get('kind') === 'overlay',
       });

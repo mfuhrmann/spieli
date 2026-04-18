@@ -32,6 +32,7 @@
   const PITCH_MIN_ZOOM = 12;
   let pitchLayer = null;
   let detachPitchLayer = null;
+  let detachMapSub = null;
 
   // Readable store of the current map view in WGS84 for Nominatim `viewbox`.
   // Subscribes to the map's `moveend` when the map becomes available and
@@ -56,8 +57,11 @@
     };
   });
 
-  // Single-backend PostgREST call; unchanged behaviour.
-  const nearestFetcher = (lat, lon) => fetchNearestPlaygrounds(lat, lon, apiBaseUrl);
+  // Single-backend PostgREST call. Null in local-dev (no API) so
+  // NearbyPlaygrounds falls back to a distance scan of the loaded source.
+  const nearestFetcher = apiBaseUrl
+    ? (lat, lon) => fetchNearestPlaygrounds(lat, lon, apiBaseUrl)
+    : null;
 
   const dataContribLinks = {
     wikiUrl: regionPlaygroundWikiUrl,
@@ -67,9 +71,10 @@
   onMount(async () => {
     // Fit to the configured region and attach the pitch layer once the map
     // becomes available (Map.svelte publishes itself via mapStore on mount).
-    const unsub = mapStore.subscribe(async (map) => {
+    detachMapSub = mapStore.subscribe(async (map) => {
       if (!map) return;
-      unsub();
+      detachMapSub?.();
+      detachMapSub = null;
 
       // Region fit via Nominatim bbox.
       try {
@@ -134,6 +139,7 @@
   $: if (pitchLayer) pitchLayer.setVisible($filterStore.standalonePitches);
 
   onDestroy(() => {
+    if (detachMapSub) detachMapSub();
     if (detachPitchLayer) detachPitchLayer();
   });
 </script>
