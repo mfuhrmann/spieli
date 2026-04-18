@@ -1,5 +1,6 @@
 <script>
   import { regionPlaygroundWikiUrl, regionChatUrl } from '../lib/config.js';
+  import { _ } from 'svelte-i18n';
 
   export let open = false;
   function close() { open = false; }
@@ -21,39 +22,37 @@
   <div class="modal-backdrop" onclick={onBackdropClick}>
     <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="dc-title">
       <div class="modal-header">
-        <h5 class="modal-title" id="dc-title">Daten ergänzen</h5>
-        <button type="button" class="close-btn" onclick={close} aria-label="Schließen">✕</button>
+        <h5 class="modal-title" id="dc-title">{$_('nav.addData')}</h5>
+        <button type="button" class="close-btn" onclick={close} aria-label={$_('modal.closeBtn')}>✕</button>
       </div>
       <div class="modal-body">
         <p class="small">
-          Die Daten dieser Karte stammen aus
-          <a href="https://www.openstreetmap.org/" target="_blank" rel="noopener">OpenStreetMap</a>.
-          Du kannst sie direkt bearbeiten – kein Account nötig bei MapComplete.
+          {@html $_('modal.addData.introText', { values: { name: '<a href="https://www.openstreetmap.org/" target="_blank" rel="noopener">OpenStreetMap</a>' } })}
         </p>
 
-        <h6 class="section-heading">Spielgeräte &amp; Details ergänzen</h6>
+        <h6 class="section-heading">{$_('modal.addData.equipTitle')}</h6>
         <p class="small">
-          Mit <a href="https://mapcomplete.org/playgrounds.html" target="_blank" rel="noopener">MapComplete</a>
-          kannst du Spielgeräte, Fotos und weitere Details einfach per Klick eintragen.
+          <a href="https://mapcomplete.org/playgrounds.html" target="_blank" rel="noopener">MapComplete</a>
+          — {$_('modal.addData.mapcompleteText')}
         </p>
 
-        <h6 class="section-heading">OSM-Wiki</h6>
+        <h6 class="section-heading">{$_('modal.addData.wikiTitle')}</h6>
         <p class="small">
           <a href={regionPlaygroundWikiUrl} target="_blank" rel="noopener">
-            Erfassungsregeln für Spielplätze in dieser Region
+            {$_('modal.addData.wikiLinkText')}
           </a>
         </p>
 
         {#if regionChatUrl}
-          <h6 class="section-heading">Community</h6>
+          <h6 class="section-heading">{$_('modal.addData.community.label')}</h6>
           <p class="small">
-            Fragen und Austausch im
-            <a href={regionChatUrl} target="_blank" rel="noopener">regionalen Chat</a>.
+            {$_('modal.addData.community.simpleText')}
+            <a href={regionChatUrl} target="_blank" rel="noopener">{$_('modal.addData.community.simpleChatLabel')}</a>.
           </p>
         {/if}
       </div>
       <div class="modal-footer">
-        <button type="button" class="ok-btn" onclick={close}>OK</button>
+        <button type="button" class="ok-btn" onclick={close}>{$_('modal.ok')}</button>
       </div>
     </div>
   </div>

@@ -285,7 +285,13 @@
     "streetPhoto": "Street photo",
     "prevPhoto": "Previous photo",
     "nextPhoto": "Next photo",
+    "ok": "OK",
     "addData": {
+      "introText": "The data on this map comes from {name}. You can edit it directly – no account needed for MapComplete.",
+      "equipTitle": "Equipment & details",
+      "mapcompleteText": "Add equipment, photos and further details with a click.",
+      "wikiTitle": "OSM wiki",
+      "wikiLinkText": "Mapping rules for playgrounds in this region",
       "osm": {
         "label": "OpenStreetMap",
         "text": "The data comes from {osmLink} — a free, collaborative world map built by millions of volunteers. Only what has been mapped will appear here.",
@@ -305,7 +311,9 @@
       "community": {
         "label": "Community",
         "text": "Questions or want to get involved? The local OSM community can be reached via {chatLink}.",
-        "chatLabel": "local OSM community chat"
+        "chatLabel": "local OSM community chat",
+        "simpleText": "Questions and discussion in the",
+        "simpleChatLabel": "local chat"
       }
     },
     "about": {
@@ -326,6 +334,13 @@
         "repoLabel": "publicly available"
       }
     }
+  },
+  "hub": {
+    "title": "Spielplatzkarte Hub",
+    "registryError": "Registry unreachable",
+    "loading": "Loading instances …",
+    "instanceError": "Unreachable",
+    "playgroundCount": "{count, plural, one {# playground}, other {# playgrounds}}"
   },
   "details": {
     "sizeLabel": "Size",

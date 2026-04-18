@@ -2,6 +2,7 @@
   import VectorSource from 'ol/source/Vector.js';
   import { onDestroy } from 'svelte';
   import { Pencil, Plus, Minus } from 'lucide-svelte';
+  import { _ } from 'svelte-i18n';
   import { transformExtent } from 'ol/proj';
 
   import Map from '../components/Map.svelte';
@@ -173,8 +174,8 @@
       <button
         class="control-btn"
         onclick={() => dataModalOpen = true}
-        title="Daten ergänzen"
-        aria-label="Daten ergänzen"
+        title={$_('nav.addData')}
+        aria-label={$_('nav.addData')}
       >
         <Pencil class="h-5 w-5" />
       </button>
@@ -187,16 +188,16 @@
         <button
           class="zoom-btn zoom-in"
           onclick={zoomIn}
-          title="Vergrößern"
-          aria-label="Vergrößern"
+          title={$_('zoom.in')}
+          aria-label={$_('zoom.in')}
         >
           <Plus class="h-4 w-4" />
         </button>
         <button
           class="zoom-btn zoom-out"
           onclick={zoomOut}
-          title="Verkleinern"
-          aria-label="Verkleinern"
+          title={$_('zoom.out')}
+          aria-label={$_('zoom.out')}
         >
           <Minus class="h-4 w-4" />
         </button>

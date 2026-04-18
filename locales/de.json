@@ -285,7 +285,13 @@
     "streetPhoto": "Straßenfoto",
     "prevPhoto": "Vorheriges Foto",
     "nextPhoto": "Nächstes Foto",
+    "ok": "OK",
     "addData": {
+      "introText": "Die Daten dieser Karte stammen aus {name}. Du kannst sie direkt bearbeiten – kein Account nötig bei MapComplete.",
+      "equipTitle": "Spielgeräte & Details ergänzen",
+      "mapcompleteText": "Spielgeräte, Fotos und weitere Details einfach per Klick eintragen.",
+      "wikiTitle": "OSM-Wiki",
+      "wikiLinkText": "Erfassungsregeln für Spielplätze in dieser Region",
       "osm": {
         "label": "OpenStreetMap",
         "text": "Die Daten stammen aus {osmLink} — einer freien, kollaborativen Weltkarte von Millionen Freiwilligen. Nur was eingetragen wurde, erscheint auch hier.",
@@ -305,7 +311,9 @@
       "community": {
         "label": "Community",
         "text": "Fragen oder mitmachen? Die lokale OSM-Community ist erreichbar über den {chatLink}.",
-        "chatLabel": "lokalen OSM-Community-Chat"
+        "chatLabel": "lokalen OSM-Community-Chat",
+        "simpleText": "Fragen und Austausch im",
+        "simpleChatLabel": "regionalen Chat"
       }
     },
     "about": {
@@ -326,6 +334,13 @@
         "repoLabel": "öffentlich verfügbar"
       }
     }
+  },
+  "hub": {
+    "title": "Spielplatzkarte Hub",
+    "registryError": "Registry nicht erreichbar",
+    "loading": "Instanzen werden geladen …",
+    "instanceError": "Nicht erreichbar",
+    "playgroundCount": "{count, plural, one {# Spielplatz}, other {# Spielplätze}}"
   },
   "details": {
     "sizeLabel": "Größe",

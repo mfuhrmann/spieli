@@ -1,4 +1,6 @@
 <script>
+  import { _ } from 'svelte-i18n';
+
   /** @type {import('svelte/store').Readable<Array>} */
   export let backends;
   /** @type {import('svelte/store').Readable<string|null>} */
@@ -7,18 +9,18 @@
 
 <aside class="instance-panel">
   <h6 class="instance-panel__title">
-    <i class="bi bi-map me-1"></i> Spielplatzkarte Hub
+    <i class="bi bi-map me-1"></i> {$_('hub.title')}
   </h6>
 
   {#if $registryError}
     <p class="text-danger small px-2 mb-0">
       <i class="bi bi-exclamation-triangle-fill me-1"></i>
-      Registry nicht erreichbar
+      {$_('hub.registryError')}
     </p>
   {:else if $backends.length === 0}
     <p class="text-muted small px-2 mb-0">
       <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-      Instanzen werden geladen …
+      {$_('hub.loading')}
     </p>
   {:else}
     <ul class="instance-list">
@@ -34,17 +36,17 @@
           {#if b.loading}
             <div class="instance-status text-muted">
               <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-              Wird geladen …
+              {$_('details.loading')}
             </div>
           {:else if b.error}
             <div class="instance-status text-danger">
               <i class="bi bi-exclamation-triangle-fill me-1"></i>
-              Nicht erreichbar
+              {$_('hub.instanceError')}
             </div>
           {:else}
             <div class="instance-status text-muted">
               <i class="bi bi-geo-alt-fill me-1"></i>
-              {b.featureCount} Spielplätze
+              {$_('hub.playgroundCount', { values: { count: b.featureCount } })}
             </div>
           {/if}
         </li>
