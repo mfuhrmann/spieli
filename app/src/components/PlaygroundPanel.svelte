@@ -1,5 +1,5 @@
 <script>
-  import { onMount } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
   import OpeningHours from 'opening_hours';
   import { transform } from 'ol/proj';
   import { X, Share2, Check, ChevronDown, ChevronRight, Pencil, Clock, ExternalLink, Image, Package, Navigation, Star } from 'lucide-svelte';
@@ -108,6 +108,10 @@
   onMount(() => {
     window.addEventListener('keydown', handleKeydown);
     return () => window.removeEventListener('keydown', handleKeydown);
+  });
+
+  onDestroy(() => {
+    overlayFeaturesStore.set({ equipment: [], trees: [] });
   });
 
   // ── Completeness badge ────────────────────────────────────────────────────
