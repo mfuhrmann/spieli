@@ -235,6 +235,11 @@
     playgroundSourceStore.set(null);
   });
 
+  // Toggle standalone pitch layer visibility from filter store.
+  $: if (pitchLayer) {
+    pitchLayer.setVisible($filterStore.standalonePitches);
+  }
+
   // Re-style the playground layer whenever filters change.
   $: if (playgroundLayer) {
     const filters = $filterStore;

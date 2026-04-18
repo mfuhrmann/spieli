@@ -2,17 +2,18 @@ import { writable } from 'svelte/store';
 
 // Each key maps to a boolean — true means the filter is active.
 export const filterStore = writable({
-    private:     false,
-    water:       false,
-    baby:        false,
-    toddler:     false,
-    wheelchair:  false,
-    bench:       false,
-    picnic:      false,
-    shelter:     false,
-    tableTennis: false,
-    soccer:      false,
-    basketball:  false,
+    private:          false,
+    water:            false,
+    baby:             false,
+    toddler:          false,
+    wheelchair:       false,
+    bench:            false,
+    picnic:           false,
+    shelter:          false,
+    tableTennis:      false,
+    soccer:           false,
+    basketball:       false,
+    standalonePitches: false,  // layer toggle — show pitches outside playground areas
 });
 
 /**
