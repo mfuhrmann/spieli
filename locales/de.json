@@ -1,9 +1,9 @@
 {
-  "appTitle": "{{regionName}}er Spielplatzkarte",
+  "appTitle": "{regionName}er Spielplatzkarte",
   "search": {
     "placeholder": "Suchen …",
-    "found": "\"{{query}}\" in {{location}}",
-    "foundGeneric": "\"{{query}}\" gefunden",
+    "found": "\"{query}\" in {location}",
+    "foundGeneric": "\"{query}\" gefunden",
     "notFound": "Kein Suchergebnis gefunden!"
   },
   "nav": {
@@ -38,21 +38,16 @@
     "yourLocation": "deinem Standort"
   },
   "nearby": {
-    "title": "In der Nähe von {{label}}",
+    "title": "In der Nähe von {label}",
     "defaultName": "Spielplatz",
     "thisLocation": "diesem Ort"
   },
   "equipment": {
-    "devices_one": "{{count}} Spielgerät",
-    "devices_other": "{{count}} Spielgeräte",
-    "fitness_one": "{{count}} Fitnessgerät",
-    "fitness_other": "{{count}} Fitnessgeräte",
-    "benches_one": "{{count}} Sitzbank",
-    "benches_other": "{{count}} Sitzbänke",
-    "shelters_one": "{{count}} Unterstand",
-    "shelters_other": "{{count}} Unterstände",
-    "picnic_one": "{{count}} Picknicktisch",
-    "picnic_other": "{{count}} Picknicktische",
+    "deviceCount": "{count, plural, one {# Spielgerät}, other {# Spielgeräte}}",
+    "fitnessCount": "{count, plural, one {# Fitnessgerät}, other {# Fitnessgeräte}}",
+    "benches": "{count, plural, one {# Sitzbank}, other {# Sitzbänke}}",
+    "shelters": "{count, plural, one {# Unterstand}, other {# Unterstände}}",
+    "picnic": "{count, plural, one {# Picknicktisch}, other {# Picknicktische}}",
     "fitnessDefault": "Fitnessgerät",
     "addHint": "Spielgeräte noch nicht einzeln kartiert – hilf mit! 👇",
     "addLink": "Spielgerät hinzufügen",
@@ -188,15 +183,15 @@
     "none": "Noch keine Fotos für diesen Spielplatz.<br>Warst du schon dort?",
     "addLink": "Foto hinzufügen",
     "enlarge": "Klicken zum Vergrößern",
-    "thumbnail": "Foto {{n}}"
+    "thumbnail": "Foto {n}"
   },
   "poi": {
     "errorLoad": "Umfeld-Daten konnten nicht geladen werden.",
     "alwaysOpen": "Immer geöffnet",
     "open": "Geöffnet",
-    "openUntil": "Geöffnet bis {{time}}",
+    "openUntil": "Geöffnet bis {time}",
     "closed": "Geschlossen",
-    "opensAt": "Öffnet {{day}} um {{time}}",
+    "opensAt": "Öffnet {day} um {time}",
     "openingHours": "Öffnungszeiten",
     "today": "Heute",
     "tomorrow": "Morgen",
@@ -226,41 +221,41 @@
     "addData": {
       "osm": {
         "label": "OpenStreetMap",
-        "text": "Die Daten stammen aus {{osmLink}} — einer freien, kollaborativen Weltkarte von Millionen Freiwilligen. Nur was eingetragen wurde, erscheint auch hier.",
+        "text": "Die Daten stammen aus {osmLink} — einer freien, kollaborativen Weltkarte von Millionen Freiwilligen. Nur was eingetragen wurde, erscheint auch hier.",
         "wikiUrl": "https://de.wikipedia.org/wiki/OpenStreetMap"
       },
       "contribute": {
         "label": "Spielplätze beitragen",
-        "text": "Jede und jeder kann mitmachen. Einen Einstieg bietet {{learnOsmLink}}. Die relevanten Tags sind im {{wikiLink}} und auf der Seite zur {{equipmentLink}} dokumentiert.",
+        "text": "Jede und jeder kann mitmachen. Einen Einstieg bietet {learnOsmLink}. Die relevanten Tags sind im {wikiLink} und auf der Seite zur {equipmentLink} dokumentiert.",
         "learnOsmUrl": "https://learnosm.org/de/beginner/",
         "wikiLabel": "OSM-Wiki",
         "equipmentLabel": "Erfassung einzelner Spielgeräte"
       },
       "photos": {
         "label": "Fotos hinzufügen",
-        "text": "Fotos lassen sich direkt über {{mapcompleteLink}} hochladen — einfach einen Spielplatz öffnen und \"Foto hinzufügen\" klicken. Die Fotos werden über {{panoramaxLink}} bereitgestellt."
+        "text": "Fotos lassen sich direkt über {mapcompleteLink} hochladen — einfach einen Spielplatz öffnen und \"Foto hinzufügen\" klicken. Die Fotos werden über {panoramaxLink} bereitgestellt."
       },
       "community": {
         "label": "Community",
-        "text": "Fragen oder mitmachen? Die lokale OSM-Community ist erreichbar über den {{chatLink}}.",
+        "text": "Fragen oder mitmachen? Die lokale OSM-Community ist erreichbar über den {chatLink}.",
         "chatLabel": "lokalen OSM-Community-Chat"
       }
     },
     "about": {
       "history": {
         "label": "Geschichte",
-        "text": "Die Spielplatzkarte wurde von {{authorLink}} als Abschlussprojekt einer {{courseLink}} ins Leben gerufen — ursprünglich mit Fokus auf Berlin. Im Laufe der Zeit wurde sie zu einer generischen Spielplatzkarte weiterentwickelt, die für jede beliebige OSM-Region eingesetzt werden kann.",
+        "text": "Die Spielplatzkarte wurde von {authorLink} als Abschlussprojekt einer {courseLink} ins Leben gerufen — ursprünglich mit Fokus auf Berlin. Im Laufe der Zeit wurde sie zu einer generischen Spielplatzkarte weiterentwickelt, die für jede beliebige OSM-Region eingesetzt werden kann.",
         "courseUrl": "https://gis-trainer.com/de/gis_webmapping.php",
         "courseLabel": "GIS- und Webmapping-Weiterbildung"
       },
       "project": {
         "label": "Das Projekt",
-        "text": "Die Spielplatzkarte ist eine freie, interaktive Webkarte auf Basis von {{osmLink}}-Daten. Sie enthält keine proprietären Daten, erfordert keine Anmeldung und verfolgt keine Nutzer. Wer Spielplatzdaten in OSM verbessert, verbessert damit automatisch auch diese Karte.",
+        "text": "Die Spielplatzkarte ist eine freie, interaktive Webkarte auf Basis von {osmLink}-Daten. Sie enthält keine proprietären Daten, erfordert keine Anmeldung und verfolgt keine Nutzer. Wer Spielplatzdaten in OSM verbessert, verbessert damit automatisch auch diese Karte.",
         "osmWikiUrl": "https://de.wikipedia.org/wiki/OpenStreetMap"
       },
       "source": {
         "label": "Quellcode",
-        "text": "Das Projekt ist OpenSource und {{repoLink}}.",
+        "text": "Das Projekt ist OpenSource und {repoLink}.",
         "repoLabel": "öffentlich verfügbar"
       }
     }
@@ -272,9 +267,9 @@
     "treesLabel": "Bäume mind.",
     "accessLabel": "Zugänglichkeit",
     "ageLabel": "Alter",
-    "ageRange": "{{min}}–{{max}} Jahre",
-    "ageMin": "ab {{age}} Jahren",
-    "ageMax": "bis {{age}} Jahre",
+    "ageRange": "{min}–{max} Jahre",
+    "ageMin": "ab {age} Jahren",
+    "ageMax": "bis {age} Jahre",
     "operatorLabel": "Betreiber",
     "editMapComplete": "Bei MapComplete bearbeiten",
     "loading": "Wird geladen …",
@@ -339,8 +334,7 @@
   },
   "reviews": {
     "loading": "Wird geladen …",
-    "count_one": "{{count}} Bewertung",
-    "count_other": "{{count}} Bewertungen",
+    "count": "{count, plural, one {# Bewertung}, other {# Bewertungen}}",
     "empty": "Noch keine Bewertungen – sei die Erste!",
     "opinionPlaceholder": "Deine Meinung (optional)",
     "submit": "Bewertung abgeben",
@@ -348,7 +342,7 @@
     "submitted": "Danke für deine Bewertung!",
     "errorRetry": "Fehler beim Übermitteln – bitte versuche es erneut.",
     "error": "Fehler beim Übermitteln.",
-    "privacyNote": "Bewertungen sind anonym und werden über {{mangroveLink}} gespeichert."
+    "privacyNote": "Bewertungen sind anonym und werden über {mangroveLink} gespeichert."
   },
   "equipAttr": {
     "theme": "Motiv",

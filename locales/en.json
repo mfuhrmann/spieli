@@ -1,9 +1,9 @@
 {
-  "appTitle": "{{regionName}} Playground Map",
+  "appTitle": "{regionName} Playground Map",
   "search": {
     "placeholder": "Search …",
-    "found": "\"{{query}}\" in {{location}}",
-    "foundGeneric": "\"{{query}}\" found",
+    "found": "\"{query}\" in {location}",
+    "foundGeneric": "\"{query}\" found",
     "notFound": "No results found!"
   },
   "nav": {
@@ -38,21 +38,16 @@
     "yourLocation": "your location"
   },
   "nearby": {
-    "title": "Near {{label}}",
+    "title": "Near {label}",
     "defaultName": "Playground",
     "thisLocation": "this location"
   },
   "equipment": {
-    "devices_one": "{{count}} piece of equipment",
-    "devices_other": "{{count}} pieces of equipment",
-    "fitness_one": "{{count}} fitness station",
-    "fitness_other": "{{count}} fitness stations",
-    "benches_one": "{{count}} bench",
-    "benches_other": "{{count}} benches",
-    "shelters_one": "{{count}} shelter",
-    "shelters_other": "{{count}} shelters",
-    "picnic_one": "{{count}} picnic table",
-    "picnic_other": "{{count}} picnic tables",
+    "deviceCount": "{count, plural, one {# piece of equipment}, other {# pieces of equipment}}",
+    "fitnessCount": "{count, plural, one {# fitness station}, other {# fitness stations}}",
+    "benches": "{count, plural, one {# bench}, other {# benches}}",
+    "shelters": "{count, plural, one {# shelter}, other {# shelters}}",
+    "picnic": "{count, plural, one {# picnic table}, other {# picnic tables}}",
     "fitnessDefault": "Fitness station",
     "addHint": "Equipment not yet mapped individually – help out! 👇",
     "addLink": "Add equipment",
@@ -188,15 +183,15 @@
     "none": "No photos for this playground yet.<br>Have you been there?",
     "addLink": "Add photo",
     "enlarge": "Click to enlarge",
-    "thumbnail": "Photo {{n}}"
+    "thumbnail": "Photo {n}"
   },
   "poi": {
     "errorLoad": "Could not load surroundings data.",
     "alwaysOpen": "Always open",
     "open": "Open",
-    "openUntil": "Open until {{time}}",
+    "openUntil": "Open until {time}",
     "closed": "Closed",
-    "opensAt": "Opens {{day}} at {{time}}",
+    "opensAt": "Opens {day} at {time}",
     "openingHours": "Opening hours",
     "today": "Today",
     "tomorrow": "Tomorrow",
@@ -226,41 +221,41 @@
     "addData": {
       "osm": {
         "label": "OpenStreetMap",
-        "text": "The data comes from {{osmLink}} — a free, collaborative world map built by millions of volunteers. Only what has been mapped will appear here.",
+        "text": "The data comes from {osmLink} — a free, collaborative world map built by millions of volunteers. Only what has been mapped will appear here.",
         "wikiUrl": "https://en.wikipedia.org/wiki/OpenStreetMap"
       },
       "contribute": {
         "label": "Contribute playgrounds",
-        "text": "Anyone can contribute. A good starting point is {{learnOsmLink}}. The relevant tags are documented in the {{wikiLink}} and on the page about {{equipmentLink}}.",
+        "text": "Anyone can contribute. A good starting point is {learnOsmLink}. The relevant tags are documented in the {wikiLink} and on the page about {equipmentLink}.",
         "learnOsmUrl": "https://learnosm.org/en/beginner/",
         "wikiLabel": "OSM wiki",
         "equipmentLabel": "mapping individual playground equipment"
       },
       "photos": {
         "label": "Add photos",
-        "text": "Photos can be uploaded directly via {{mapcompleteLink}} — just open a playground and click \"Add photo\". Photos are provided via {{panoramaxLink}}."
+        "text": "Photos can be uploaded directly via {mapcompleteLink} — just open a playground and click \"Add photo\". Photos are provided via {panoramaxLink}."
       },
       "community": {
         "label": "Community",
-        "text": "Questions or want to get involved? The local OSM community can be reached via {{chatLink}}.",
+        "text": "Questions or want to get involved? The local OSM community can be reached via {chatLink}.",
         "chatLabel": "local OSM community chat"
       }
     },
     "about": {
       "history": {
         "label": "History",
-        "text": "The playground map was created by {{authorLink}} as a final project of a {{courseLink}} — originally focused on Berlin. Over time it was developed into a generic playground map that can be used for any OSM region.",
+        "text": "The playground map was created by {authorLink} as a final project of a {courseLink} — originally focused on Berlin. Over time it was developed into a generic playground map that can be used for any OSM region.",
         "courseUrl": "https://gis-trainer.com/de/gis_webmapping.php",
         "courseLabel": "GIS and web mapping course"
       },
       "project": {
         "label": "The project",
-        "text": "The playground map is a free, interactive web map based on {{osmLink}} data. It contains no proprietary data, requires no login and does not track users. Anyone who improves playground data in OSM automatically improves this map.",
+        "text": "The playground map is a free, interactive web map based on {osmLink} data. It contains no proprietary data, requires no login and does not track users. Anyone who improves playground data in OSM automatically improves this map.",
         "osmWikiUrl": "https://en.wikipedia.org/wiki/OpenStreetMap"
       },
       "source": {
         "label": "Source code",
-        "text": "The project is open source and {{repoLink}}.",
+        "text": "The project is open source and {repoLink}.",
         "repoLabel": "publicly available"
       }
     }
@@ -272,9 +267,9 @@
     "treesLabel": "Trees (min.)",
     "accessLabel": "Accessibility",
     "ageLabel": "Age",
-    "ageRange": "{{min}}–{{max}} years",
-    "ageMin": "from {{age}} years",
-    "ageMax": "up to {{age}} years",
+    "ageRange": "{min}–{max} years",
+    "ageMin": "from {age} years",
+    "ageMax": "up to {age} years",
     "operatorLabel": "Operator",
     "editMapComplete": "Edit on MapComplete",
     "loading": "Loading …",
@@ -339,8 +334,7 @@
   },
   "reviews": {
     "loading": "Loading …",
-    "count_one": "{{count}} review",
-    "count_other": "{{count}} reviews",
+    "count": "{count, plural, one {# review}, other {# reviews}}",
     "empty": "No reviews yet – be the first!",
     "opinionPlaceholder": "Your opinion (optional)",
     "submit": "Submit review",
@@ -348,7 +342,7 @@
     "submitted": "Thank you for your review!",
     "errorRetry": "Error submitting – please try again.",
     "error": "Error submitting.",
-    "privacyNote": "Reviews are anonymous and stored via {{mangroveLink}}."
+    "privacyNote": "Reviews are anonymous and stored via {mangroveLink}."
   },
   "equipAttr": {
     "theme": "Theme",
