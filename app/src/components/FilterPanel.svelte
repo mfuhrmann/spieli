@@ -1,6 +1,6 @@
 <script>
   import { filterStore, hasActiveFilters } from '../stores/filters.js';
-  import { Filter, Droplets, Baby, Accessibility, Armchair, UtensilsCrossed, Home, RectangleHorizontal, Goal, CircleDot, Lock } from 'lucide-svelte';
+  import { Filter, Droplets, Baby, Accessibility, Armchair, UtensilsCrossed, Home, RectangleHorizontal, Goal, CircleDot, Lock, Layers } from 'lucide-svelte';
 
   let open = false;
   let wrap;
@@ -75,6 +75,19 @@
             <span>{f.label}</span>
           </label>
         {/each}
+      </div>
+
+      <div class="layer-section">
+        <span class="layer-title"><Layers class="h-3 w-3" /> Ebenen</span>
+        <label class="filter-item" class:checked={$filterStore.standalonePitches}>
+          <input
+            type="checkbox"
+            checked={$filterStore.standalonePitches}
+            onchange={() => toggle('standalonePitches')}
+          />
+          <Goal class="h-4 w-4" />
+          <span>Sportflächen (außerhalb Spielplätze)</span>
+        </label>
       </div>
     </div>
   {/if}
@@ -210,5 +223,22 @@
     height: 18px;
     accent-color: #1b5e20;
     cursor: pointer;
+  }
+
+  .layer-section {
+    border-top: 1px solid #e8eaed;
+    padding-top: 4px;
+  }
+
+  .layer-title {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #80868b;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 6px 16px 2px;
   }
 </style>

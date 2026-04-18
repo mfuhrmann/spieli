@@ -10,7 +10,7 @@
   import { defaults as defaultInteractions } from 'ol/interaction/defaults';
 
   import { mapZoom, mapMinZoom, osmRelationId, apiBaseUrl } from '../lib/config.js';
-  import { fetchPlaygrounds } from '../lib/api.js';
+  import { fetchPlaygrounds, fetchStandaloneEquipment } from '../lib/api.js';
   import { fetchRegionInfo } from '../lib/region.js';
   import { playgroundStyleFn, selectionStyle, equipmentLayerStyleFn, treeStyle } from '../lib/vectorStyles.js';
   import { selection } from '../stores/selection.js';
@@ -41,7 +41,9 @@
   let playgroundLayer = null; // exposed for filter reactivity
   let equipmentLayer = null;  // overlay: equipment points/polygons
   let treeLayer = null;       // overlay: tree dots
+  let pitchLayer = null;      // standalone pitches not within any playground
   let overlayUnsubscribe = null;
+  const PITCH_MIN_ZOOM = 12;  // only fetch standalone pitches at this zoom or above
 
   onMount(async () => {
     // Use provided source (hub) or create our own (standalone)
@@ -141,25 +143,29 @@
       const equipHit = equipmentLayer
         ? olMap.forEachFeatureAtPixel(evt.pixel, f => f, { layerFilter: l => l === equipmentLayer })
         : null;
+      const pitchHit = pitchLayer
+        ? olMap.forEachFeatureAtPixel(evt.pixel, f => f, { layerFilter: l => l === pitchLayer })
+        : null;
       const playHit = olMap.forEachFeatureAtPixel(evt.pixel, f => f, {
         layerFilter: l => l === playgroundLayer,
       });
 
-      mapContainer.style.cursor = (equipHit || playHit) ? 'pointer' : '';
+      mapContainer.style.cursor = (equipHit || pitchHit || playHit) ? 'pointer' : '';
 
-      // Equipment hover takes priority
-      if (equipHit !== lastEquipHoverFeature) {
-        lastEquipHoverFeature = equipHit;
-        if (equipHit) {
-          if (onequipmenthover) onequipmenthover(equipHit, evt.pixel);
+      // Equipment / standalone-pitch hover takes priority
+      const equipOrPitchHit = equipHit ?? pitchHit ?? null;
+      if (equipOrPitchHit !== lastEquipHoverFeature) {
+        lastEquipHoverFeature = equipOrPitchHit;
+        if (equipOrPitchHit) {
+          if (onequipmenthover) onequipmenthover(equipOrPitchHit, evt.pixel);
           if (lastHoverFeature) { lastHoverFeature = null; if (onclearhover) onclearhover(); }
         } else {
           if (onclearequipmenthover) onclearequipmenthover();
         }
       }
 
-      // Playground hover (only when not hovering equipment)
-      if (!equipHit) {
+      // Playground hover (only when not hovering equipment or pitch)
+      if (!equipOrPitchHit) {
         if (playHit && playHit !== lastHoverFeature) {
           lastHoverFeature = playHit;
           debouncedHover(playHit, evt.pixel);
@@ -182,10 +188,29 @@
       }
     });
 
-    // Standalone: fetch playgrounds and fit to region
+    // Standalone: fetch playgrounds, fit to region, and set up pitch layer
     if (ownSource) {
       playgroundSourceStore.set(ownSource);
       loadStandaloneData(ownSource, view);
+
+      // Standalone pitch layer — refreshed on moveend
+      const pitchSource = new VectorSource();
+      pitchLayer = new VectorLayer({ source: pitchSource, zIndex: 9, style: equipmentLayerStyleFn });
+      olMap.addLayer(pitchLayer);
+
+      const reloadPitches = debounce(async () => {
+        const zoom = olMap.getView().getZoom();
+        if (zoom < PITCH_MIN_ZOOM) { pitchSource.clear(); return; }
+        const extent = olMap.getView().calculateExtent(olMap.getSize());
+        const geojson = await fetchStandaloneEquipment(extent);
+        const features = new GeoJSON().readFeatures(geojson, {
+          dataProjection: 'EPSG:4326', featureProjection: 'EPSG:3857',
+        });
+        pitchSource.clear();
+        pitchSource.addFeatures(features);
+      }, 300);
+
+      olMap.on('moveend', reloadPitches);
     }
 
     // Restore selection from URL hash on load
@@ -209,6 +234,11 @@
     }
     playgroundSourceStore.set(null);
   });
+
+  // Toggle standalone pitch layer visibility from filter store.
+  $: if (pitchLayer) {
+    pitchLayer.setVisible($filterStore.standalonePitches);
+  }
 
   // Re-style the playground layer whenever filters change.
   $: if (playgroundLayer) {
