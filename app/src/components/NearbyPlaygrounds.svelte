@@ -3,14 +3,25 @@
   import { transform } from 'ol/proj';
   import { playgroundSourceStore } from '../stores/playgroundSource.js';
   import { selection } from '../stores/selection.js';
-  import { fetchNearestPlaygrounds } from '../lib/api.js';
   import { playgroundCompleteness } from '../lib/completeness.js';
-  import { apiBaseUrl } from '../lib/config.js';
 
   export let lat;
   export let lon;
   /** Called when the panel should close (suggestion selected). */
   export let ondismiss = null;
+  /**
+   * Fetcher returning `{ osm_id, name, distance_m, ... }` items sorted by
+   * distance ascending. Standalone injects a single-backend PostgREST call;
+   * hub injects a merge across all registered backends. When null (e.g.
+   * local-dev mode with no API), the component falls back to a distance
+   * scan of the loaded vector source.
+   */
+  export let fetcher = null;
+  /**
+   * Backend URL to attach to the selection when the user picks a suggestion.
+   * Hub overrides this per-feature via the feature's `_backendUrl`.
+   */
+  export let defaultBackendUrl = '';
 
   let items = [];
   let loading = true;
@@ -53,8 +64,8 @@
     loading = true;
     items = [];
     try {
-      items = apiBaseUrl
-        ? await fetchNearestPlaygrounds(lt, lg)
+      items = fetcher
+        ? await fetcher(lt, lg)
         : nearestFromSource(lt, lg);
     } catch (err) {
       console.error('Nearest playgrounds fetch failed:', err);
@@ -80,7 +91,8 @@
     const source = $playgroundSourceStore;
     const feature = source?.getFeatures().find(f => f.get('osm_id') === item.osm_id);
     if (feature) {
-      selection.select(feature, apiBaseUrl);
+      const backendUrl = feature.get('_backendUrl') ?? defaultBackendUrl;
+      selection.select(feature, backendUrl);
     }
     if (ondismiss) ondismiss();
   }

@@ -2,6 +2,10 @@
   import { regionPlaygroundWikiUrl, regionChatUrl } from '../lib/config.js';
 
   export let open = false;
+  /** OSM wiki page shown as "Erfassungsregeln für Spielplätze in dieser Region". */
+  export let wikiUrl = regionPlaygroundWikiUrl;
+  /** Community chat URL; hidden when null/falsy. */
+  export let chatUrl = regionChatUrl;
   function close() { open = false; }
 
   function onBackdropClick(e) {
@@ -39,16 +43,16 @@
 
         <h6 class="section-heading">OSM-Wiki</h6>
         <p class="small">
-          <a href={regionPlaygroundWikiUrl} target="_blank" rel="noopener">
+          <a href={wikiUrl} target="_blank" rel="noopener">
             Erfassungsregeln für Spielplätze in dieser Region
           </a>
         </p>
 
-        {#if regionChatUrl}
+        {#if chatUrl}
           <h6 class="section-heading">Community</h6>
           <p class="small">
             Fragen und Austausch im
-            <a href={regionChatUrl} target="_blank" rel="noopener">regionalen Chat</a>.
+            <a href={chatUrl} target="_blank" rel="noopener">regionalen Chat</a>.
           </p>
         {/if}
       </div>

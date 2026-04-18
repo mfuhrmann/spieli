@@ -5,13 +5,11 @@
   import VectorSource from 'ol/source/Vector.js';
   import XYZ from 'ol/source/XYZ.js';
   import GeoJSON from 'ol/format/GeoJSON.js';
-  import { transform, transformExtent } from 'ol/proj';
+  import { transform } from 'ol/proj';
   import { ScaleLine, defaults as defaultControls } from 'ol/control.js';
   import { defaults as defaultInteractions } from 'ol/interaction/defaults';
 
-  import { mapZoom, mapMinZoom, osmRelationId, apiBaseUrl } from '../lib/config.js';
-  import { fetchPlaygrounds, fetchStandaloneEquipment } from '../lib/api.js';
-  import { fetchRegionInfo } from '../lib/region.js';
+  import { mapZoom, mapMinZoom, apiBaseUrl } from '../lib/config.js';
   import { playgroundStyleFn, selectionStyle, equipmentLayerStyleFn, treeStyle } from '../lib/vectorStyles.js';
   import { selection } from '../stores/selection.js';
   import { mapStore } from '../stores/map.js';
@@ -20,7 +18,7 @@
   import { overlayFeaturesStore } from '../stores/overlayLayer.js';
   import { debounce } from '../lib/utils.js';
 
-  // Props: optional overrides for hub mode (multiple backends feed into one shared source)
+  // Props: the source is injected; Map itself never loads data.
   /** @type {VectorSource | null} - when provided, the map uses this source instead of creating one */
   export let playgroundSource = null;
   /** Backend URL used for selection — standalone passes apiBaseUrl, hub passes per-feature URL */
@@ -37,17 +35,15 @@
 
   let mapContainer;
   let olMap = null;
-  let ownSource = null;       // only set when we own the source (standalone mode)
   let playgroundLayer = null; // exposed for filter reactivity
   let equipmentLayer = null;  // overlay: equipment points/polygons
   let treeLayer = null;       // overlay: tree dots
-  let pitchLayer = null;      // standalone pitches not within any playground
   let overlayUnsubscribe = null;
-  const PITCH_MIN_ZOOM = 12;  // only fetch standalone pitches at this zoom or above
 
   onMount(async () => {
-    // Use provided source (hub) or create our own (standalone)
-    const source = playgroundSource ?? (ownSource = new VectorSource());
+    // The shell owns the source; fall back to an empty one so the map still
+    // renders in degraded paths (e.g. tests that mount Map without a parent).
+    const source = playgroundSource ?? new VectorSource();
 
     playgroundLayer = new VectorLayer({
       source,
@@ -99,7 +95,12 @@
           { dataProjection: 'EPSG:4326', featureProjection: 'EPSG:3857' }
         );
         src.addFeatures(olFeatures);
-        equipmentLayer = new VectorLayer({ source: src, zIndex: 20, style: equipmentLayerStyleFn });
+        equipmentLayer = new VectorLayer({
+          source: src,
+          zIndex: 20,
+          style: equipmentLayerStyleFn,
+          properties: { kind: 'overlay' },
+        });
         olMap.addLayer(equipmentLayer);
       }
 
@@ -140,32 +141,30 @@
     }, 100);
 
     olMap.on('pointermove', (evt) => {
-      const equipHit = equipmentLayer
-        ? olMap.forEachFeatureAtPixel(evt.pixel, f => f, { layerFilter: l => l === equipmentLayer })
-        : null;
-      const pitchHit = pitchLayer
-        ? olMap.forEachFeatureAtPixel(evt.pixel, f => f, { layerFilter: l => l === pitchLayer })
-        : null;
+      // Overlay hit-test: any layer tagged with `kind: 'overlay'` participates
+      // (equipment points, standalone pitches contributed by the shell).
+      const overlayHit = olMap.forEachFeatureAtPixel(evt.pixel, f => f, {
+        layerFilter: l => l.get('kind') === 'overlay',
+      });
       const playHit = olMap.forEachFeatureAtPixel(evt.pixel, f => f, {
         layerFilter: l => l === playgroundLayer,
       });
 
-      mapContainer.style.cursor = (equipHit || pitchHit || playHit) ? 'pointer' : '';
+      mapContainer.style.cursor = (overlayHit || playHit) ? 'pointer' : '';
 
-      // Equipment / standalone-pitch hover takes priority
-      const equipOrPitchHit = equipHit ?? pitchHit ?? null;
-      if (equipOrPitchHit !== lastEquipHoverFeature) {
-        lastEquipHoverFeature = equipOrPitchHit;
-        if (equipOrPitchHit) {
-          if (onequipmenthover) onequipmenthover(equipOrPitchHit, evt.pixel);
+      // Overlay hover takes priority
+      if (overlayHit !== lastEquipHoverFeature) {
+        lastEquipHoverFeature = overlayHit;
+        if (overlayHit) {
+          if (onequipmenthover) onequipmenthover(overlayHit, evt.pixel);
           if (lastHoverFeature) { lastHoverFeature = null; if (onclearhover) onclearhover(); }
         } else {
           if (onclearequipmenthover) onclearequipmenthover();
         }
       }
 
-      // Playground hover (only when not hovering equipment or pitch)
-      if (!equipOrPitchHit) {
+      // Playground hover (only when not hovering an overlay feature)
+      if (!overlayHit) {
         if (playHit && playHit !== lastHoverFeature) {
           lastHoverFeature = playHit;
           debouncedHover(playHit, evt.pixel);
@@ -189,42 +188,9 @@
       }
     });
 
-    // Standalone: fetch playgrounds, fit to region, and set up pitch layer
-    if (ownSource) {
-      playgroundSourceStore.set(ownSource);
-      loadStandaloneData(ownSource, view);
-
-      // Standalone pitch layer — refreshed on moveend
-      const pitchSource = new VectorSource();
-      pitchLayer = new VectorLayer({ source: pitchSource, zIndex: 9, style: equipmentLayerStyleFn });
-      olMap.addLayer(pitchLayer);
-
-      const reloadPitches = debounce(async () => {
-        const zoom = olMap.getView().getZoom();
-        if (zoom < PITCH_MIN_ZOOM) { pitchSource.clear(); return; }
-        const extent = olMap.getView().calculateExtent(olMap.getSize());
-        const geojson = await fetchStandaloneEquipment(extent);
-        const features = new GeoJSON().readFeatures(geojson, {
-          dataProjection: 'EPSG:4326', featureProjection: 'EPSG:3857',
-        });
-        pitchSource.clear();
-        pitchSource.addFeatures(features);
-      }, 300);
-
-      olMap.on('moveend', reloadPitches);
-    }
-
-    // Restore selection from URL hash on load
-    const hash = window.location.hash;
-    const match = hash.match(/^#W(\d+)$/);
-    if (match) {
-      const osmId = parseInt(match[1], 10);
-      // Wait for features to load, then find and select
-      source.once('change', () => {
-        const feat = source.getFeatures().find(f => f.get('osm_id') === osmId);
-        if (feat) selection.select(feat, defaultBackendUrl);
-      });
-    }
+    // Publish the source so dependent components (filter reactivity,
+    // NearbyPlaygrounds fallback, URL-hash restore in AppShell) can react.
+    playgroundSourceStore.set(source);
   });
 
   onDestroy(() => {
@@ -236,11 +202,6 @@
     playgroundSourceStore.set(null);
   });
 
-  // Toggle standalone pitch layer visibility from filter store.
-  $: if (pitchLayer) {
-    pitchLayer.setVisible($filterStore.standalonePitches);
-  }
-
   // Re-style the playground layer whenever filters change.
   $: if (playgroundLayer) {
     const filters = $filterStore;
@@ -248,32 +209,6 @@
       if (!matchesFilters(feature.getProperties(), filters)) return null;
       return playgroundStyleFn(feature);
     });
-  }
-
-  async function loadStandaloneData(source, view) {
-    // Fetch region info for map extent fitting
-    try {
-      const region = await fetchRegionInfo(osmRelationId);
-      view.fit(transformExtent(region.extent, 'EPSG:4326', 'EPSG:3857'), {
-        padding: [20, 20, 20, 380], // leave room for the side panel on desktop
-        duration: 0,
-      });
-      document.title = `Spielplatzkarte ${region.name}`;
-    } catch (err) {
-      console.warn('Nominatim region fetch failed, using default extent:', err);
-    }
-
-    // Load playground polygons
-    try {
-      const geojson = await fetchPlaygrounds();
-      const features = new GeoJSON().readFeatures(geojson, {
-        dataProjection: 'EPSG:4326',
-        featureProjection: 'EPSG:3857',
-      });
-      source.addFeatures(features);
-    } catch (err) {
-      console.error('Playground data could not be loaded:', err);
-    }
   }
 </script>
 

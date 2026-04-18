@@ -9,6 +9,7 @@
 //                In hub mode this is the per-backend URL from the registry.
 
 import { writable, derived } from 'svelte/store';
+import { writeHash } from '../lib/deeplink.js';
 
 function createSelectionStore() {
     const { subscribe, set, update } = writable({ feature: null, backendUrl: '' });
@@ -19,7 +20,13 @@ function createSelectionStore() {
             set({ feature, backendUrl });
             if (feature) {
                 const osmId = feature.get('osm_id');
-                if (osmId) history.replaceState(null, '', `#W${osmId}`);
+                if (osmId) {
+                    // `_backendSlug` is set by the hub registry when it knows the
+                    // owning backend's slug; standalone never sets it, so this
+                    // falls back to the legacy `#W<osm_id>` form.
+                    const slug = feature.get('_backendSlug') ?? null;
+                    history.replaceState(null, '', writeHash({ slug, osmId }));
+                }
             }
         },
         clear() {
