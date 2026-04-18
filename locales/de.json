@@ -2,8 +2,8 @@
   "appTitle": "{{regionName}}er Spielplatzkarte",
   "search": {
     "placeholder": "Suchen …",
-    "found": "„{{query}}" in {{location}}",
-    "foundGeneric": "„{{query}}" gefunden",
+    "found": "\"{{query}}\" in {{location}}",
+    "foundGeneric": "\"{{query}}\" gefunden",
     "notFound": "Kein Suchergebnis gefunden!"
   },
   "nav": {
@@ -238,7 +238,7 @@
       },
       "photos": {
         "label": "Fotos hinzufügen",
-        "text": "Fotos lassen sich direkt über {{mapcompleteLink}} hochladen — einfach einen Spielplatz öffnen und „Foto hinzufügen" klicken. Die Fotos werden über {{panoramaxLink}} bereitgestellt."
+        "text": "Fotos lassen sich direkt über {{mapcompleteLink}} hochladen — einfach einen Spielplatz öffnen und \"Foto hinzufügen\" klicken. Die Fotos werden über {{panoramaxLink}} bereitgestellt."
       },
       "community": {
         "label": "Community",
