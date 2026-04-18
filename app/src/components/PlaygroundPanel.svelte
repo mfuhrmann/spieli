@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import OpeningHours from 'opening_hours';
   import { transform } from 'ol/proj';
-  import { X, Share2, Check, ChevronDown, ChevronRight, Pencil, MapPin, Clock, Trees, Ruler, Users, Phone, Mail, ExternalLink, Image, Package, Navigation, Star } from 'lucide-svelte';
+  import { X, Share2, Check, ChevronDown, ChevronRight, Pencil, Clock, ExternalLink, Image, Package, Navigation, Star } from 'lucide-svelte';
 
   import { selection } from '../stores/selection.js';
   import { fetchPlaygroundEquipment, fetchNearbyPOIs } from '../lib/api.js';
@@ -230,7 +230,7 @@
     {#if !embedded}
       <div class="info-panel__header">
         <div class="flex-1 min-w-0">
-          <h2 class="text-lg font-semibold text-foreground leading-tight">{getPlaygroundTitle(attr)}</h2>
+          <h2 class="panel-title">{getPlaygroundTitle(attr)}</h2>
           {#if getPlaygroundLocation(attr)}
             <p class="text-sm text-muted-foreground mt-0.5">{getPlaygroundLocation(attr)}</p>
           {/if}
@@ -255,7 +255,7 @@
       <!-- Embedded header (bottom sheet) -->
       <div class="flex items-start justify-between gap-2 mb-4">
         <div class="flex-1 min-w-0">
-          <h2 class="text-lg font-semibold text-foreground leading-tight">{getPlaygroundTitle(attr)}</h2>
+          <h2 class="panel-title">{getPlaygroundTitle(attr)}</h2>
           {#if getPlaygroundLocation(attr)}
             <p class="text-sm text-muted-foreground mt-0.5">{getPlaygroundLocation(attr)}</p>
           {/if}
@@ -280,37 +280,37 @@
       {/each}
 
       <!-- Quick Facts Grid -->
-      <div class="grid grid-cols-2 gap-3 mb-4">
+      <div class="grid grid-cols-2 gap-x-4 gap-y-2 mb-4">
         {#if attr.area > 0}
-          <div class="flex items-center gap-2 text-sm">
-            <Ruler class="h-4 w-4 text-muted-foreground shrink-0" />
-            <span>{Math.round(attr.area / 10) * 10 || attr.area} m²</span>
+          <div class="fact-item">
+            <span class="info-label">Größe</span>
+            <span class="fact-value">{Math.round(attr.area / 10) * 10 || attr.area} m²</span>
           </div>
         {/if}
-        
-        <div class="flex items-center gap-2 text-sm">
-          <Users class="h-4 w-4 text-muted-foreground shrink-0" />
-          <span>{accessLabel}</span>
+
+        <div class="fact-item">
+          <span class="info-label">Zugänglichkeit</span>
+          <span class="fact-value">{accessLabel}</span>
         </div>
 
         {#if attr.surface}
-          <div class="flex items-center gap-2 text-sm">
-            <MapPin class="h-4 w-4 text-muted-foreground shrink-0" />
-            <span>{surfaceLabels[attr.surface] ?? attr.surface}</span>
+          <div class="fact-item">
+            <span class="info-label">Oberfläche</span>
+            <span class="fact-value">{surfaceLabels[attr.surface] ?? attr.surface}</span>
           </div>
         {/if}
 
         {#if attr.tree_count > 0}
-          <div class="flex items-center gap-2 text-sm">
-            <Trees class="h-4 w-4 text-muted-foreground shrink-0" />
-            <span>{attr.tree_count} Bäume</span>
+          <div class="fact-item">
+            <span class="info-label">Bäume</span>
+            <span class="fact-value">{attr.tree_count}</span>
           </div>
         {/if}
 
         {#if attr.min_age || attr.max_age}
-          <div class="flex items-center gap-2 text-sm col-span-2">
-            <Users class="h-4 w-4 text-muted-foreground shrink-0" />
-            <span>
+          <div class="fact-item col-span-2">
+            <span class="info-label">Alter</span>
+            <span class="fact-value">
               {#if attr.min_age && attr.max_age}{attr.min_age}–{attr.max_age} Jahre
               {:else if attr.min_age}ab {attr.min_age} Jahren
               {:else}bis {attr.max_age} Jahre{/if}
@@ -331,40 +331,40 @@
       {#if attr['contact:email'] || attr.email || attr['contact:phone'] || attr.phone || attr.operator}
         <div class="space-y-2 mb-4">
           {#if attr.operator}
-            <div class="flex items-center gap-2 text-sm" data-testid="operator-value">
-              <span class="text-muted-foreground">Betreiber:</span>
+            <div class="fact-item" data-testid="operator-value">
+              <span class="info-label">Betreiber</span>
               {#if attr['operator:wikidata']}
                 <a href="https://www.wikidata.org/wiki/{attr['operator:wikidata']}"
-                   target="_blank" rel="noopener" class="text-primary hover:underline">{attr.operator}</a>
+                   target="_blank" rel="noopener" class="fact-value text-primary hover:underline">{attr.operator}</a>
               {:else}
-                <span>{attr.operator}</span>
+                <span class="fact-value">{attr.operator}</span>
               {/if}
             </div>
           {/if}
           {#if attr['contact:phone'] || attr.phone}
             {@const phone = attr['contact:phone'] || attr.phone}
-            <div class="flex items-center gap-2 text-sm">
-              <Phone class="h-4 w-4 text-muted-foreground" />
+            <div class="fact-item">
+              <span class="info-label">Telefon</span>
               {#if /^\+?\d/.test(phone.trim())}
-                <a href="tel:{phone}" class="text-primary hover:underline">{phone}</a>
-              {:else}{phone}{/if}
+                <a href="tel:{phone}" class="fact-value text-primary hover:underline">{phone}</a>
+              {:else}<span class="fact-value">{phone}</span>{/if}
             </div>
           {/if}
           {#if attr['contact:email'] || attr.email}
             {@const email = attr['contact:email'] || attr.email}
-            <div class="flex items-center gap-2 text-sm">
-              <Mail class="h-4 w-4 text-muted-foreground" />
+            <div class="fact-item">
+              <span class="info-label">E-Mail</span>
               {#if email.includes('@') && !/^javascript:/i.test(email.trim())}
-                <a href="mailto:{email}" class="text-primary hover:underline">{email}</a>
-              {:else}{email}{/if}
+                <a href="mailto:{email}" class="fact-value text-primary hover:underline">{email}</a>
+              {:else}<span class="fact-value">{email}</span>{/if}
             </div>
           {/if}
         </div>
       {/if}
 
       <!-- Edit Link -->
-      <a href={mcUrl} target="_blank" rel="noopener" class="inline-flex items-center gap-2 text-sm text-primary hover:underline mb-4">
-        <Pencil class="h-4 w-4" />
+      <a href={mcUrl} target="_blank" rel="noopener" class="panel-edit-link">
+        <Pencil class="h-3 w-3" />
         Bei MapComplete bearbeiten
         <ExternalLink class="h-3 w-3" />
       </a>
@@ -374,7 +374,7 @@
         <!-- Photos -->
         <div class="border-b border-border">
           <button
-            class="w-full flex items-center gap-2 py-2.5 text-sm font-medium hover:bg-muted/50 transition-colors"
+            class="section-btn"
             onclick={() => toggleSection('photos')}
           >
             {#if openSections.has('photos')}
@@ -395,7 +395,7 @@
         <!-- Equipment -->
         <div class="border-b border-border">
           <button
-            class="w-full flex items-center gap-2 py-2.5 text-sm font-medium hover:bg-muted/50 transition-colors"
+            class="section-btn"
             onclick={() => toggleSection('equipment')}
           >
             {#if openSections.has('equipment')}
@@ -420,7 +420,7 @@
         <!-- POIs -->
         <div class="border-b border-border">
           <button
-            class="w-full flex items-center gap-2 py-2.5 text-sm font-medium hover:bg-muted/50 transition-colors"
+            class="section-btn"
             onclick={() => toggleSection('pois')}
           >
             {#if openSections.has('pois')}
@@ -445,7 +445,7 @@
         <!-- Reviews -->
         <div class="border-b border-border">
           <button
-            class="w-full flex items-center gap-2 py-2.5 text-sm font-medium hover:bg-muted/50 transition-colors"
+            class="section-btn"
             onclick={() => toggleSection('reviews')}
           >
             {#if openSections.has('reviews')}
@@ -522,6 +522,78 @@
     .info-panel {
       display: none !important;
     }
+  }
+
+  /* ── Typography ───────────────────────────────────────────────────────── */
+
+  .panel-title {
+    font-size: 17px;
+    font-weight: 600;
+    color: #1f2937;
+    line-height: 1.3;
+    margin: 0;
+  }
+
+
+  .info-label {
+    display: block;
+    color: #9ca3af;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .fact-item {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  .fact-value {
+    font-size: 13px;
+    color: #1f2937;
+  }
+
+  .section-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 0;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: #9ca3af;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    transition: color 0.15s, background 0.15s;
+    text-align: left;
+  }
+
+  .section-btn:hover {
+    color: #374151;
+    background: #fafafa;
+  }
+
+  .panel-edit-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #9ca3af;
+    text-decoration: none;
+    margin-bottom: 1rem;
+    transition: color 0.15s;
+  }
+
+  .panel-edit-link:hover {
+    color: #374151;
   }
 
   .panel-icon-btn {

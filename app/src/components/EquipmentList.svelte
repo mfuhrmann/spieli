@@ -70,7 +70,7 @@
   </p>
 {:else}
   <!-- Summary counts -->
-  <ul>
+  <ul class="summary-list">
     {#if deviceFeatures.length}
       <li>{deviceFeatures.length} Spielgerät{deviceFeatures.length !== 1 ? 'e' : ''}</li>
     {/if}
@@ -221,7 +221,8 @@
 {/if}
 
 <style>
-  .device-list { padding-left: 0; list-style: none; }
+  .summary-list { font-size: 13px; color: #1f2937; }
+  .device-list { padding-left: 0; list-style: none; font-size: 13px; color: #1f2937; }
   .device-list li { margin-bottom: 0.25rem; }
   .device-toggle { cursor: pointer; user-select: none; }
   .device-toggle:hover { text-decoration: underline; }
