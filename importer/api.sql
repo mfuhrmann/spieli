@@ -316,32 +316,20 @@ AS $$
       3857
     ) AS geom
   ),
-  -- Nodes (pitches, benches, shelters, picnic tables, fitness stations)
-  -- not contained within any playground polygon
-  standalone_nodes AS (
-    SELECT
-      p.osm_id,
-      'N'::text AS osm_type,
-      p.name,
-      p.amenity,
-      p.leisure,
-      p.sport,
-      p.tags,
-      ST_Transform(p.way, 4326) AS geom
-    FROM planet_osm_point p, bbox b
+  -- Standalone pitch polygons in the bbox (not intersecting any playground)
+  pitch_areas AS (
+    SELECT p.way
+    FROM planet_osm_polygon p, bbox b
     WHERE p.way && b.geom
-      AND (
-        p.amenity IN ('bench', 'shelter')
-        OR p.leisure IN ('picnic_table', 'pitch', 'fitness_station')
-      )
+      AND p.leisure = 'pitch'
       AND NOT EXISTS (
         SELECT 1 FROM planet_osm_polygon pg
         WHERE pg.leisure = 'playground'
-          AND ST_Within(p.way, pg.way)
+          AND ST_Intersects(p.way, pg.way)
       )
   ),
-  -- Polygon ways not intersecting any playground polygon
-  standalone_ways AS (
+  -- The pitch polygons themselves
+  pitch_ways AS (
     SELECT
       p.osm_id,
       'W'::text AS osm_type,
@@ -353,20 +341,56 @@ AS $$
       ST_Transform(p.way, 4326) AS geom
     FROM planet_osm_polygon p, bbox b
     WHERE p.way && b.geom
-      AND (
-        p.amenity IN ('bench', 'shelter')
-        OR p.leisure IN ('picnic_table', 'pitch', 'fitness_station')
-      )
+      AND p.leisure = 'pitch'
       AND NOT EXISTS (
         SELECT 1 FROM planet_osm_polygon pg
         WHERE pg.leisure = 'playground'
           AND ST_Intersects(p.way, pg.way)
       )
   ),
+  -- Standalone pitch nodes (not within any playground)
+  pitch_nodes AS (
+    SELECT
+      p.osm_id,
+      'N'::text AS osm_type,
+      p.name,
+      p.amenity,
+      p.leisure,
+      p.sport,
+      p.tags,
+      ST_Transform(p.way, 4326) AS geom
+    FROM planet_osm_point p, bbox b
+    WHERE p.way && b.geom
+      AND p.leisure = 'pitch'
+      AND NOT EXISTS (
+        SELECT 1 FROM planet_osm_polygon pg
+        WHERE pg.leisure = 'playground'
+          AND ST_Within(p.way, pg.way)
+      )
+  ),
+  -- Equipment nodes (benches, shelters, etc.) within a standalone pitch polygon
+  equip_nodes AS (
+    SELECT
+      p.osm_id,
+      'N'::text AS osm_type,
+      p.name,
+      p.amenity,
+      p.leisure,
+      p.sport,
+      p.tags,
+      ST_Transform(p.way, 4326) AS geom
+    FROM planet_osm_point p
+    JOIN pitch_areas pa ON ST_Within(p.way, pa.way)
+    WHERE
+      p.amenity IN ('bench', 'shelter')
+      OR p.leisure IN ('picnic_table', 'fitness_station')
+  ),
   all_features AS (
-    SELECT * FROM standalone_nodes
+    SELECT * FROM pitch_ways
     UNION ALL
-    SELECT * FROM standalone_ways
+    SELECT * FROM pitch_nodes
+    UNION ALL
+    SELECT * FROM equip_nodes
   )
   SELECT json_build_object(
     'type', 'FeatureCollection',
