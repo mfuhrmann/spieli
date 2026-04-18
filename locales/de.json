@@ -96,11 +96,11 @@
     "thisLocation": "diesem Ort"
   },
   "equipment": {
-    "deviceCount": "{count, plural, one {# Spielgerät}, other {# Spielgeräte}}",
-    "fitnessCount": "{count, plural, one {# Fitnessgerät}, other {# Fitnessgeräte}}",
-    "benches": "{count, plural, one {# Sitzbank}, other {# Sitzbänke}}",
-    "shelters": "{count, plural, one {# Unterstand}, other {# Unterstände}}",
-    "picnic": "{count, plural, one {# Picknicktisch}, other {# Picknicktische}}",
+    "deviceCount": "{count, plural, one {# Spielgerät} other {# Spielgeräte}}",
+    "fitnessCount": "{count, plural, one {# Fitnessgerät} other {# Fitnessgeräte}}",
+    "benches": "{count, plural, one {# Sitzbank} other {# Sitzbänke}}",
+    "shelters": "{count, plural, one {# Unterstand} other {# Unterstände}}",
+    "picnic": "{count, plural, one {# Picknicktisch} other {# Picknicktische}}",
     "noDevices": "Keine Spielgeräte erfasst.",
     "fitnessDefault": "Fitnessgerät",
     "pitchDefault": "Sportfeld",
@@ -353,7 +353,7 @@
     "registryError": "Registry nicht erreichbar",
     "loading": "Instanzen werden geladen …",
     "instanceError": "Nicht erreichbar",
-    "playgroundCount": "{count, plural, one {# Spielplatz}, other {# Spielplätze}}"
+    "playgroundCount": "{count, plural, one {# Spielplatz} other {# Spielplätze}}"
   },
   "details": {
     "sizeLabel": "Größe",
@@ -432,10 +432,10 @@
   "reviews": {
     "loading": "Wird geladen …",
     "loadError": "Bewertungen konnten nicht geladen werden.",
-    "count": "{count, plural, one {# Bewertung}, other {# Bewertungen}}",
+    "count": "{count, plural, one {# Bewertung} other {# Bewertungen}}",
     "empty": "Noch keine Bewertungen – sei die Erste!",
     "selectRating": "Bewertung auswählen",
-    "starLabel": "{n, plural, one {# Stern}, other {# Sterne}}",
+    "starLabel": "{n, plural, one {# Stern} other {# Sterne}}",
     "opinionPlaceholder": "Deine Meinung (optional)",
     "submit": "Bewertung abgeben",
     "submitting": "Wird übermittelt …",
@@ -444,10 +444,10 @@
     "error": "Fehler beim Übermitteln.",
     "privacyNote": "Bewertungen sind anonym und werden über {mangroveLink} gespeichert.",
     "today": "heute",
-    "daysAgo": "vor {count, plural, one {# Tag}, other {# Tagen}}",
-    "weeksAgo": "vor {count, plural, one {# Woche}, other {# Wochen}}",
-    "monthsAgo": "vor {count, plural, one {# Monat}, other {# Monaten}}",
-    "yearsAgo": "vor {count, plural, one {# Jahr}, other {# Jahren}}"
+    "daysAgo": "vor {count, plural, one {# Tag} other {# Tagen}}",
+    "weeksAgo": "vor {count, plural, one {# Woche} other {# Wochen}}",
+    "monthsAgo": "vor {count, plural, one {# Monat} other {# Monaten}}",
+    "yearsAgo": "vor {count, plural, one {# Jahr} other {# Jahren}}"
   },
   "equipAttr": {
     "theme": "Motiv",

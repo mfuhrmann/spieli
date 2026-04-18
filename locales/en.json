@@ -96,11 +96,11 @@
     "thisLocation": "this location"
   },
   "equipment": {
-    "deviceCount": "{count, plural, one {# piece of equipment}, other {# pieces of equipment}}",
-    "fitnessCount": "{count, plural, one {# fitness station}, other {# fitness stations}}",
-    "benches": "{count, plural, one {# bench}, other {# benches}}",
-    "shelters": "{count, plural, one {# shelter}, other {# shelters}}",
-    "picnic": "{count, plural, one {# picnic table}, other {# picnic tables}}",
+    "deviceCount": "{count, plural, one {# piece of equipment} other {# pieces of equipment}}",
+    "fitnessCount": "{count, plural, one {# fitness station} other {# fitness stations}}",
+    "benches": "{count, plural, one {# bench} other {# benches}}",
+    "shelters": "{count, plural, one {# shelter} other {# shelters}}",
+    "picnic": "{count, plural, one {# picnic table} other {# picnic tables}}",
     "noDevices": "No equipment mapped.",
     "fitnessDefault": "Fitness station",
     "pitchDefault": "Sports pitch",
@@ -353,7 +353,7 @@
     "registryError": "Registry unreachable",
     "loading": "Loading instances …",
     "instanceError": "Unreachable",
-    "playgroundCount": "{count, plural, one {# playground}, other {# playgrounds}}"
+    "playgroundCount": "{count, plural, one {# playground} other {# playgrounds}}"
   },
   "details": {
     "sizeLabel": "Size",
@@ -432,10 +432,10 @@
   "reviews": {
     "loading": "Loading …",
     "loadError": "Reviews could not be loaded.",
-    "count": "{count, plural, one {# review}, other {# reviews}}",
+    "count": "{count, plural, one {# review} other {# reviews}}",
     "empty": "No reviews yet – be the first!",
     "selectRating": "Select rating",
-    "starLabel": "{n, plural, one {# star}, other {# stars}}",
+    "starLabel": "{n, plural, one {# star} other {# stars}}",
     "opinionPlaceholder": "Your opinion (optional)",
     "submit": "Submit review",
     "submitting": "Submitting …",
@@ -444,10 +444,10 @@
     "error": "Error submitting.",
     "privacyNote": "Reviews are anonymous and stored via {mangroveLink}.",
     "today": "today",
-    "daysAgo": "{count, plural, one {# day ago}, other {# days ago}}",
-    "weeksAgo": "{count, plural, one {# week ago}, other {# weeks ago}}",
-    "monthsAgo": "{count, plural, one {# month ago}, other {# months ago}}",
-    "yearsAgo": "{count, plural, one {# year ago}, other {# years ago}}"
+    "daysAgo": "{count, plural, one {# day ago} other {# days ago}}",
+    "weeksAgo": "{count, plural, one {# week ago} other {# weeks ago}}",
+    "monthsAgo": "{count, plural, one {# month ago} other {# months ago}}",
+    "yearsAgo": "{count, plural, one {# year ago} other {# years ago}}"
   },
   "equipAttr": {
     "theme": "Theme",

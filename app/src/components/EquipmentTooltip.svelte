@@ -1,5 +1,6 @@
 <script>
   import { objDevices, objFitnessStation } from '../lib/objPlaygroundEquipment.js';
+  import { _ } from 'svelte-i18n';
 
   /** @type {{ x: number, y: number } | null} */
   export let position = null;
@@ -10,19 +11,21 @@
   $: label = (() => {
     if (!props) return '';
     if (props.name) return props.name;
-    if (props.playground && objDevices[props.playground]) return objDevices[props.playground].name_de;
+    if (props.playground && props.playground !== 'yes') {
+      return $_('equipment.devices.' + props.playground, { default: objDevices[props.playground]?.name_de ?? props.playground });
+    }
     if (props.leisure === 'fitness_station') {
-      return objFitnessStation[props.fitness_station] ?? 'Fitnessgerät';
+      const ft = props.fitness_station;
+      return ft ? $_('equipment.fitness.' + ft, { default: objFitnessStation[ft] ?? $_('equipment.fitnessDefault') }) : $_('equipment.fitnessDefault');
     }
     if (props.leisure === 'pitch') {
-      const sports = { soccer: 'Bolzplatz', basketball: 'Basketballfeld', table_tennis: 'Tischtennisplatte',
-        volleyball: 'Volleyballfeld', tennis: 'Tennisfeld', multi: 'Mehrzweckspielfeld' };
-      return sports[props.sport] ?? (props.sport ? `Sportfeld (${props.sport})` : 'Sportfeld');
+      const sport = props.sport;
+      return sport ? $_('equipment.pitches.' + sport, { default: `${$_('equipment.pitchDefault')} (${sport})` }) : $_('equipment.pitchDefault');
     }
-    if (props.amenity === 'bench') return 'Sitzbank';
-    if (props.amenity === 'shelter') return 'Unterstand';
-    if (props.leisure === 'picnic_table') return 'Picknicktisch';
-    return props.playground || 'Gerät';
+    if (props.amenity === 'bench') return $_('equipment.devices.bench', { default: 'Bench' });
+    if (props.amenity === 'shelter') return $_('equipment.devices.shelter', { default: 'Shelter' });
+    if (props.leisure === 'picnic_table') return $_('equipment.devices.picnic_table', { default: 'Picnic table' });
+    return props.playground || $_('equipment.fitnessDefault');
   })();
 
   $: panoramaxUuid = (() => {
