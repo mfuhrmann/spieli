@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import OpeningHours from 'opening_hours';
   import { transform } from 'ol/proj';
-  import { X, ChevronDown, ChevronRight, Pencil, MapPin, Clock, Trees, Ruler, Users, Phone, Mail, ExternalLink, Image, Package, Navigation, Star } from 'lucide-svelte';
+  import { X, Share2, Check, ChevronDown, ChevronRight, Pencil, MapPin, Clock, Trees, Ruler, Users, Phone, Mail, ExternalLink, Image, Package, Navigation, Star } from 'lucide-svelte';
 
   import { selection } from '../stores/selection.js';
   import { fetchPlaygroundEquipment, fetchNearbyPOIs } from '../lib/api.js';
@@ -187,6 +187,38 @@
   })();
 
   $: openingHoursInfo = attr?.opening_hours ? openingHoursState(attr.opening_hours) : null;
+
+  // ── Share button ──────────────────────────────────────────────────────────
+  let shareConfirmed = false;
+  let shareTimeout;
+
+  async function sharePlayground() {
+    if (!attr) return;
+    const url = `${window.location.origin}${window.location.pathname}#${attr.osm_type}${attr.osm_id}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: getPlaygroundTitle(attr), url });
+      } else if (navigator.clipboard) {
+        await navigator.clipboard.writeText(url);
+      } else {
+        // fallback for non-secure contexts
+        const ta = document.createElement('textarea');
+        ta.value = url;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
+      shareConfirmed = true;
+      clearTimeout(shareTimeout);
+      shareTimeout = setTimeout(() => { shareConfirmed = false; }, 2000);
+    } catch (err) {
+      if (err.name !== 'AbortError') console.warn('Share failed:', err);
+    }
+  }
 </script>
 
 {#if feature && attr}
@@ -206,20 +238,38 @@
             <Badge variant={completeness.variant} class="mt-2">{completeness.label}</Badge>
           {/if}
         </div>
-        <Button variant="ghost" size="icon" class="shrink-0" onclick={() => selection.clear()} aria-label="Schließen">
-          <X class="h-5 w-5" />
-        </Button>
+        <div class="flex items-center gap-1 shrink-0">
+          <button class="panel-icon-btn" onclick={sharePlayground} aria-label="Link kopieren">
+            {#if shareConfirmed}
+              <Check class="h-5 w-5 text-green-600" />
+            {:else}
+              <Share2 class="h-5 w-5" />
+            {/if}
+          </button>
+          <button class="panel-icon-btn" onclick={() => selection.clear()} aria-label="Schließen">
+            <X class="h-5 w-5" />
+          </button>
+        </div>
       </div>
     {:else}
-      <!-- Embedded header (simpler, for bottom sheet) -->
-      <div class="mb-4">
-        <h2 class="text-lg font-semibold text-foreground leading-tight">{getPlaygroundTitle(attr)}</h2>
-        {#if getPlaygroundLocation(attr)}
-          <p class="text-sm text-muted-foreground mt-0.5">{getPlaygroundLocation(attr)}</p>
-        {/if}
-        {#if completeness}
-          <Badge variant={completeness.variant} class="mt-2">{completeness.label}</Badge>
-        {/if}
+      <!-- Embedded header (bottom sheet) -->
+      <div class="flex items-start justify-between gap-2 mb-4">
+        <div class="flex-1 min-w-0">
+          <h2 class="text-lg font-semibold text-foreground leading-tight">{getPlaygroundTitle(attr)}</h2>
+          {#if getPlaygroundLocation(attr)}
+            <p class="text-sm text-muted-foreground mt-0.5">{getPlaygroundLocation(attr)}</p>
+          {/if}
+          {#if completeness}
+            <Badge variant={completeness.variant} class="mt-2">{completeness.label}</Badge>
+          {/if}
+        </div>
+        <button class="panel-icon-btn shrink-0" onclick={sharePlayground} aria-label="Link kopieren">
+          {#if shareConfirmed}
+            <Check class="h-5 w-5 text-green-600" />
+          {:else}
+            <Share2 class="h-5 w-5" />
+          {/if}
+        </button>
       </div>
     {/if}
 
@@ -279,7 +329,7 @@
 
       <!-- Contact Info -->
       {#if attr['contact:email'] || attr.email || attr['contact:phone'] || attr.phone || attr.operator}
-        <div class="space-y-2 mb-4 p-3 rounded-lg border border-border">
+        <div class="space-y-2 mb-4">
           {#if attr.operator}
             <div class="flex items-center gap-2 text-sm" data-testid="operator-value">
               <span class="text-muted-foreground">Betreiber:</span>
@@ -320,11 +370,11 @@
       </a>
 
       <!-- Accordion Sections -->
-      <div class="space-y-2">
+      <div class="border-t border-border">
         <!-- Photos -->
-        <div class="border border-border rounded-lg overflow-hidden">
-          <button 
-            class="w-full flex items-center gap-2 px-3 py-2.5 text-sm font-medium hover:bg-muted/50 transition-colors"
+        <div class="border-b border-border">
+          <button
+            class="w-full flex items-center gap-2 py-2.5 text-sm font-medium hover:bg-muted/50 transition-colors"
             onclick={() => toggleSection('photos')}
           >
             {#if openSections.has('photos')}
@@ -336,16 +386,16 @@
             Bilder
           </button>
           {#if openSections.has('photos')}
-            <div class="px-3 pb-3 border-t border-border">
+            <div class="pb-3">
               <PanoramaxViewer uuids={panoramaxUuids} {mcUrl} />
             </div>
           {/if}
         </div>
 
         <!-- Equipment -->
-        <div class="border border-border rounded-lg overflow-hidden">
-          <button 
-            class="w-full flex items-center gap-2 px-3 py-2.5 text-sm font-medium hover:bg-muted/50 transition-colors"
+        <div class="border-b border-border">
+          <button
+            class="w-full flex items-center gap-2 py-2.5 text-sm font-medium hover:bg-muted/50 transition-colors"
             onclick={() => toggleSection('equipment')}
           >
             {#if openSections.has('equipment')}
@@ -357,7 +407,7 @@
             Ausstattung
           </button>
           {#if openSections.has('equipment')}
-            <div class="px-3 pb-3 border-t border-border">
+            <div class="pb-3">
               {#if equipmentLoading}
                 <p class="text-sm text-muted-foreground italic py-2">Wird geladen...</p>
               {:else}
@@ -368,9 +418,9 @@
         </div>
 
         <!-- POIs -->
-        <div class="border border-border rounded-lg overflow-hidden">
-          <button 
-            class="w-full flex items-center gap-2 px-3 py-2.5 text-sm font-medium hover:bg-muted/50 transition-colors"
+        <div class="border-b border-border">
+          <button
+            class="w-full flex items-center gap-2 py-2.5 text-sm font-medium hover:bg-muted/50 transition-colors"
             onclick={() => toggleSection('pois')}
           >
             {#if openSections.has('pois')}
@@ -382,7 +432,7 @@
             Umfeld
           </button>
           {#if openSections.has('pois')}
-            <div class="px-3 pb-3 border-t border-border">
+            <div class="pb-3">
               {#if poisLoading}
                 <p class="text-sm text-muted-foreground italic py-2">Wird geladen...</p>
               {:else}
@@ -393,9 +443,9 @@
         </div>
 
         <!-- Reviews -->
-        <div class="border border-border rounded-lg overflow-hidden">
-          <button 
-            class="w-full flex items-center gap-2 px-3 py-2.5 text-sm font-medium hover:bg-muted/50 transition-colors"
+        <div class="border-b border-border">
+          <button
+            class="w-full flex items-center gap-2 py-2.5 text-sm font-medium hover:bg-muted/50 transition-colors"
             onclick={() => toggleSection('reviews')}
           >
             {#if openSections.has('reviews')}
@@ -407,23 +457,11 @@
             Bewertungen
           </button>
           {#if openSections.has('reviews')}
-            <div class="px-3 pb-3 border-t border-border">
+            <div class="pb-3">
               <ReviewsPanel lat={centerLat} lon={centerLon} />
             </div>
           {/if}
         </div>
-      </div>
-
-      <!-- OSM Link -->
-      <div class="mt-4 pt-4 border-t border-border">
-        <a 
-          href="https://www.openstreetmap.org/{mcOsmType}/{attr.osm_id}"
-          target="_blank" 
-          rel="noopener" 
-          class="text-xs text-muted-foreground hover:text-foreground transition-colors"
-        >
-          OSM ID: {attr.osm_id}
-        </a>
       </div>
     </div>
   </aside>
@@ -484,5 +522,24 @@
     .info-panel {
       display: none !important;
     }
+  }
+
+  .panel-icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border: none;
+    background: transparent;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    color: #6b7280;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .panel-icon-btn:hover {
+    background: #f3f4f6;
+    color: #1f2937;
   }
 </style>

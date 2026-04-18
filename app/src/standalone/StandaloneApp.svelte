@@ -129,50 +129,52 @@
     onclearhover={clearHover}
   />
 
-  <!-- Search bar: top-left, Google Maps style -->
-  <div class="search-area">
-    <SearchBar {regionExtent} onlocation={handleLocation} />
-    <FilterChips />
-    {#if nearbyLocation}
-      <NearbyPlaygrounds lat={nearbyLocation.lat} lon={nearbyLocation.lon} ondismiss={dismissNearby} />
-    {/if}
-  </div>
+  {#if !(isMobile && bottomSheetSnap === 'full')}
+    <!-- Search bar: top-left, Google Maps style -->
+    <div class="search-area">
+      <SearchBar {regionExtent} onlocation={handleLocation} />
+      <FilterChips />
+      {#if nearbyLocation}
+        <NearbyPlaygrounds lat={nearbyLocation.lat} lon={nearbyLocation.lon} ondismiss={dismissNearby} />
+      {/if}
+    </div>
 
-  <!-- Top-right controls: filter, edit -->
-  <div class="controls-top-right">
-    <FilterPanel />
-    <button
-      class="control-btn"
-      onclick={() => dataModalOpen = true}
-      title="Daten ergänzen"
-      aria-label="Daten ergänzen"
-    >
-      <Pencil class="h-5 w-5" />
-    </button>
-  </div>
-
-  <!-- Bottom-right controls: locate, zoom (Google Maps style) -->
-  <div class="controls-bottom-right">
-    <LocateButton onlocation={handleLocation} />
-    <div class="zoom-controls">
+    <!-- Top-right controls: filter, edit -->
+    <div class="controls-top-right">
+      <FilterPanel />
       <button
-        class="zoom-btn zoom-in"
-        onclick={zoomIn}
-        title="Vergrößern"
-        aria-label="Vergrößern"
+        class="control-btn"
+        onclick={() => dataModalOpen = true}
+        title="Daten ergänzen"
+        aria-label="Daten ergänzen"
       >
-        <Plus class="h-4 w-4" />
-      </button>
-      <button
-        class="zoom-btn zoom-out"
-        onclick={zoomOut}
-        title="Verkleinern"
-        aria-label="Verkleinern"
-      >
-        <Minus class="h-4 w-4" />
+        <Pencil class="h-5 w-5" />
       </button>
     </div>
-  </div>
+
+    <!-- Bottom-right controls: locate, zoom (Google Maps style) -->
+    <div class="controls-bottom-right">
+      <LocateButton onlocation={handleLocation} />
+      <div class="zoom-controls">
+        <button
+          class="zoom-btn zoom-in"
+          onclick={zoomIn}
+          title="Vergrößern"
+          aria-label="Vergrößern"
+        >
+          <Plus class="h-4 w-4" />
+        </button>
+        <button
+          class="zoom-btn zoom-out"
+          onclick={zoomOut}
+          title="Verkleinern"
+          aria-label="Verkleinern"
+        >
+          <Minus class="h-4 w-4" />
+        </button>
+      </div>
+    </div>
+  {/if}
 
   <!-- Desktop: Side panel slides in from left -->
   {#if !isMobile && $hasSelection}
