@@ -1,8 +1,12 @@
 {
   "instances": [
     {
-      "url": "https://spielplatzkarte.example.com/api",
-      "name": "Beispiel-Region"
+      "url": "/api",
+      "name": "Lokal A (Fulda)"
+    },
+    {
+      "url": "/api",
+      "name": "Lokal B (Fulda)"
     }
   ]
 }
