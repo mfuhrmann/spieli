@@ -70,6 +70,14 @@
   let bottomSheetOpen = false;
   let bottomSheetSnap = 'half';
 
+  // Keep bottom-right controls above the sheet at each snap height
+  $: controlsBottomStyle = (() => {
+    if (!isMobile || !bottomSheetOpen) return '';
+    if (bottomSheetSnap === 'peek') return 'bottom: calc(140px + 1rem)';
+    if (bottomSheetSnap === 'half') return 'bottom: calc(50vh + 1rem)';
+    return '';
+  })();
+
   // Sync bottom sheet with selection on mobile
   $: if (isMobile && $hasSelection) {
     bottomSheetOpen = true;
@@ -153,7 +161,7 @@
     </div>
 
     <!-- Bottom-right controls: locate, zoom (Google Maps style) -->
-    <div class="controls-bottom-right">
+    <div class="controls-bottom-right" style={controlsBottomStyle}>
       <LocateButton onlocation={handleLocation} />
       <div class="zoom-controls">
         <button
@@ -243,6 +251,7 @@
     flex-direction: column;
     gap: 0.75rem;
     align-items: center;
+    transition: bottom 0.3s ease-out;
   }
 
   /* Control button (for edit button, locate button) */

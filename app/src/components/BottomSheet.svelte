@@ -16,7 +16,7 @@
   const snapHeights = {
     peek: 140,
     half: typeof window !== 'undefined' ? window.innerHeight * 0.5 : 400,
-    full: typeof window !== 'undefined' ? window.innerHeight - 60 : 700,
+    full: typeof window !== 'undefined' ? window.innerHeight : 700,
   };
 
   $: if (open && !isDragging) {
@@ -132,7 +132,8 @@
   <div
     bind:this={sheetEl}
     class={cn(
-      'fixed inset-x-0 bottom-0 z-50 rounded-t-2xl shadow-xl lg:hidden bottom-sheet',
+      'fixed inset-x-0 bottom-0 z-50 shadow-xl lg:hidden bottom-sheet flex flex-col',
+      snapPoint !== 'full' ? 'rounded-t-2xl' : '',
       isDragging ? '' : 'transition-[height] duration-300 ease-out'
     )}
     style="height: {currentHeight}px; background: #ffffff; color-scheme: light; --color-background: #ffffff; --color-foreground: #1f2937; --color-card: #ffffff; --color-card-foreground: #1f2937; --color-muted: #f3f4f6; --color-muted-foreground: #6b7280; --color-border: #e5e7eb;"
@@ -166,7 +167,7 @@
     {/if}
 
     <!-- Content -->
-    <div class="flex-1 overflow-y-auto overscroll-contain px-4 py-3" style="height: calc(100% - {title ? '80px' : '40px'})">
+    <div class="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 py-3">
       <slot />
     </div>
   </div>
