@@ -2,6 +2,7 @@
 // In Docker, docker-entrypoint.app.sh overwrites this file at container startup.
 window.APP_CONFIG = {
   // 'standalone' renders the full regional app; 'hub' renders the federation map.
+  // Switch to 'hub' to test Hub mode locally (requires Docker stack on port 8080).
   appMode: 'standalone',
 
   // --- Standalone mode ---
