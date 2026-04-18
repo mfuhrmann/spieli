@@ -32,7 +32,10 @@
   },
   "location": {
     "btn": "Mijn locatie",
-    "yourLocation": "jouw locatie"
+    "yourLocation": "jouw locatie",
+    "am": "near {name}",
+    "anDer": "near {name}",
+    "near": "near {name}"
   },
   "nearby": {
     "title": "In de buurt van {{label}}",

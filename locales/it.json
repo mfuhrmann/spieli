@@ -32,7 +32,10 @@
   },
   "location": {
     "btn": "La mia posizione",
-    "yourLocation": "la tua posizione"
+    "yourLocation": "la tua posizione",
+    "am": "near {name}",
+    "anDer": "near {name}",
+    "near": "near {name}"
   },
   "nearby": {
     "title": "Vicino a {{label}}",

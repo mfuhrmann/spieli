@@ -32,7 +32,10 @@
   },
   "location": {
     "btn": "Моє місцезнаходження",
-    "yourLocation": "вашого місцезнаходження"
+    "yourLocation": "вашого місцезнаходження",
+    "am": "near {name}",
+    "anDer": "near {name}",
+    "near": "near {name}"
   },
   "nearby": {
     "title": "Поблизу {{label}}",

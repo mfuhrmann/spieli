@@ -259,8 +259,8 @@
       <div class="info-panel__header">
         <div class="flex-1 min-w-0">
           <h2 class="panel-title">{getPlaygroundTitle(attr, $_)}</h2>
-          {#if getPlaygroundLocation(attr)}
-            <p class="text-sm text-muted-foreground mt-0.5">{getPlaygroundLocation(attr)}</p>
+          {#if getPlaygroundLocation(attr, $_)}
+            <p class="text-sm text-muted-foreground mt-0.5">{getPlaygroundLocation(attr, $_)}</p>
           {/if}
           {#if completeness}
             <Badge variant={completeness.variant} class="mt-2">{$_(completeness.key)}</Badge>
@@ -284,8 +284,8 @@
       <div class="flex items-start justify-between gap-2 mb-4">
         <div class="flex-1 min-w-0">
           <h2 class="panel-title">{getPlaygroundTitle(attr, $_)}</h2>
-          {#if getPlaygroundLocation(attr)}
-            <p class="text-sm text-muted-foreground mt-0.5">{getPlaygroundLocation(attr)}</p>
+          {#if getPlaygroundLocation(attr, $_)}
+            <p class="text-sm text-muted-foreground mt-0.5">{getPlaygroundLocation(attr, $_)}</p>
           {/if}
           {#if completeness}
             <Badge variant={completeness.variant} class="mt-2">{$_(completeness.key)}</Badge>

@@ -32,7 +32,10 @@
   },
   "location": {
     "btn": "現在地",
-    "yourLocation": "現在地"
+    "yourLocation": "現在地",
+    "am": "near {name}",
+    "anDer": "near {name}",
+    "near": "near {name}"
   },
   "nearby": {
     "title": "{{label}}の近く",

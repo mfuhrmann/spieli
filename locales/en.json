@@ -79,7 +79,10 @@
   },
   "location": {
     "btn": "My location",
-    "yourLocation": "your location"
+    "yourLocation": "your location",
+    "am": "near {name}",
+    "anDer": "near {name}",
+    "near": "near {name}"
   },
   "nearby": {
     "title": "Near {label}",

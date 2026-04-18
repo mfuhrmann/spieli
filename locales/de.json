@@ -79,7 +79,10 @@
   },
   "location": {
     "btn": "Standort verfolgen",
-    "yourLocation": "deinem Standort"
+    "yourLocation": "deinem Standort",
+    "am": "am {name}",
+    "anDer": "an der {name}",
+    "near": "in der Nähe von {name}"
   },
   "nearby": {
     "title": "In der Nähe von {label}",

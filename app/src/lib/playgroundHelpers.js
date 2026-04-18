@@ -15,10 +15,13 @@ export function getPlaygroundTitle(attr, t) {
 }
 
 /** Build a human-readable location hint from nearest_highway or in_site tags. */
-export function getPlaygroundLocation(attr) {
+export function getPlaygroundLocation(attr, t) {
     if (attr.in_site) return attr.in_site;
     const highway = attr.nearest_highway;
     if (!highway) return '';
+
+    const values = { values: { name: highway } };
+    if (!t) return `in der Nähe von ${highway}`;
 
     const am = ['weg', 'platz', 'damm', 'ring', 'ufer', 'steg', 'steig', 'pfad',
                  'gestell', 'park', 'garten', 'bogen'];
@@ -27,10 +30,10 @@ export function getPlaygroundLocation(attr) {
     const h = highway.toLowerCase();
 
     if (am.some(s => h.endsWith(s) || h.startsWith(s)) && !highway.startsWith('Am '))
-        return `am ${highway}`;
+        return t('location.am', values);
     if (an_der.some(s => h.endsWith(s) || h.startsWith(s)) && !highway.startsWith('An der '))
-        return `an der ${highway}`;
-    return `in der Nähe von ${highway}`;
+        return t('location.anDer', values);
+    return t('location.near', values);
 }
 
 /** Haversine distance in metres between two WGS84 points. */

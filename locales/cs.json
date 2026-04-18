@@ -32,7 +32,10 @@
   },
   "location": {
     "btn": "Moje poloha",
-    "yourLocation": "vaší polohy"
+    "yourLocation": "vaší polohy",
+    "am": "near {name}",
+    "anDer": "near {name}",
+    "near": "near {name}"
   },
   "nearby": {
     "title": "V blízkosti {{label}}",
