@@ -225,7 +225,7 @@
     const url = `${window.location.origin}${window.location.pathname}#${attr.osm_type}${attr.osm_id}`;
     try {
       if (navigator.share) {
-        await navigator.share({ title: getPlaygroundTitle(attr), url });
+        await navigator.share({ title: getPlaygroundTitle(attr, $_), url });
       } else if (navigator.clipboard) {
         await navigator.clipboard.writeText(url);
       } else {
@@ -258,7 +258,7 @@
     {#if !embedded}
       <div class="info-panel__header">
         <div class="flex-1 min-w-0">
-          <h2 class="panel-title">{getPlaygroundTitle(attr)}</h2>
+          <h2 class="panel-title">{getPlaygroundTitle(attr, $_)}</h2>
           {#if getPlaygroundLocation(attr)}
             <p class="text-sm text-muted-foreground mt-0.5">{getPlaygroundLocation(attr)}</p>
           {/if}
@@ -283,7 +283,7 @@
       <!-- Embedded header (bottom sheet) -->
       <div class="flex items-start justify-between gap-2 mb-4">
         <div class="flex-1 min-w-0">
-          <h2 class="panel-title">{getPlaygroundTitle(attr)}</h2>
+          <h2 class="panel-title">{getPlaygroundTitle(attr, $_)}</h2>
           {#if getPlaygroundLocation(attr)}
             <p class="text-sm text-muted-foreground mt-0.5">{getPlaygroundLocation(attr)}</p>
           {/if}

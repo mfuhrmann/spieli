@@ -1,6 +1,7 @@
 <script>
   import { haversineDistance, formatDistance, bearingDeg, bearingToDir } from '../lib/playgroundHelpers.js';
   import { poiRadiusM } from '../lib/config.js';
+  import { _ } from 'svelte-i18n';
 
   /** @type {Array} POI objects from fetchNearbyPOIs */
   export let pois = [];
@@ -9,39 +10,39 @@
   /** @type {number} Playground centre longitude (WGS84) */
   export let centerLon = 0;
 
-  const CATEGORIES = [
+  $: CATEGORIES = [
     {
-      icon: '🚻', label: 'Toiletten',
+      icon: '🚻', label: $_('poi.categories.toilets'),
       match: f => f.amenity === 'toilets',
-      fallback: 'Toiletten',
+      fallback: $_('poi.fallbacks.toilets'),
     },
     {
-      icon: '🚌', label: 'Bushaltestellen',
+      icon: '🚌', label: $_('poi.categories.busStops'),
       match: f => f.highway === 'bus_stop',
-      fallback: 'Bushaltestelle',
+      fallback: $_('poi.fallbacks.busStops'),
       hint: (poi) => poi.tags.towards
         ? `→ ${poi.tags.towards}`
-        : bearingToDir(bearingDeg(centerLat, centerLon, poi.lat, poi.lon)),
+        : $_('compass.' + bearingToDir(bearingDeg(centerLat, centerLon, poi.lat, poi.lon))),
     },
     {
-      icon: '🍦', label: 'Eis',
+      icon: '🍦', label: $_('poi.categories.iceCream'),
       match: f => f.amenity === 'ice_cream' || (f.cuisine && f.cuisine.includes('ice_cream')),
-      fallback: 'Eisdiele',
+      fallback: $_('poi.fallbacks.iceCream'),
     },
     {
-      icon: '🛒', label: 'Einkaufen',
+      icon: '🛒', label: $_('poi.categories.shopping'),
       match: f => f.shop === 'supermarket' || f.shop === 'convenience',
-      fallback: 'Supermarkt',
+      fallback: $_('poi.fallbacks.shopping'),
     },
     {
-      icon: '🧴', label: 'Drogerie',
+      icon: '🧴', label: $_('poi.categories.drugstore'),
       match: f => f.shop === 'chemist',
-      fallback: 'Drogerie',
+      fallback: $_('poi.fallbacks.drugstore'),
     },
     {
-      icon: '🏥', label: 'Notaufnahme',
+      icon: '🏥', label: $_('poi.categories.emergency'),
       match: f => f.emergency === 'yes' || f['healthcare:speciality'] === 'emergency',
-      fallback: 'Notaufnahme',
+      fallback: $_('poi.fallbacks.emergency'),
     },
   ];
 
@@ -68,7 +69,7 @@
 
 {#if sections.length === 0}
   <small class="text-muted">
-    Keine nahegelegenen Einrichtungen im Umkreis von {(poiRadiusM / 1000).toFixed(0)} km gefunden.
+    {$_('poi.noNearby', { values: { radius: (poiRadiusM / 1000).toFixed(0) } })}
   </small>
 {:else}
   {#each sections as cat}
@@ -87,10 +88,10 @@
           </span>
           <span class="ms-2 text-nowrap">
             <a href={geoUrl} class="text-muted text-decoration-none" style="font-size:smaller;"
-               title="In Navigations-App öffnen">{formatDistance(poi.dist)} ↗</a>
+               title={$_('poi.openNavApp')}>{formatDistance(poi.dist)} ↗</a>
             <a href={osmUrl} target="_blank" rel="noopener"
                class="text-muted text-decoration-none ms-1" style="font-size:smaller;"
-               title="Im Browser navigieren">🗺</a>
+               title={$_('poi.openInBrowser')}>🗺</a>
           </span>
         </div>
       {/each}

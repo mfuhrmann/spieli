@@ -1,64 +1,8 @@
 // Generates an HTML detail string for a single equipment feature.
 // Ported from js/popup.js → getEquipmentAttributes / getEquipmentAttributesFromProps.
 
-import { objDevices, objFitnessStation } from './objPlaygroundEquipment.js';
+import { objDevices } from './objPlaygroundEquipment.js';
 import { escapeHtml } from './utils.js';
-
-const objMaterial = {
-    wood:'Holz', metal:'Metall', steel:'Stahl', aluminium:'Aluminium',
-    plastic:'Kunststoff', stone:'Stein', sandstone:'Sandstein', concrete:'Beton',
-    brick:'Ziegelstein', granite:'Granit', rope:'Seil', rubber:'Gummi',
-    chain:'Kette', sand:'Sand',
-};
-
-const objPlaygroundTheme = {
-    animal:'Tier', bicycle:'Fahrrad', boat:'Boot', camel:'Kamel', car:'Auto',
-    carrot:'Karotte', castle:'Burg', construction:'Baustelle', dragon:'Drache',
-    duck:'Ente', dungeon:'Burgverlies', elephant:'Elefant', farm:'Farm',
-    fish:'Fisch', flower:'Blume', helicopter:'Hubschrauber', horse:'Pferd',
-    house:'Haus', ice_cream:'Eis', jungle:'Jungle', lama:'Lama',
-    lighthouse:'Leuchtturm', locomotive:'Lokomotive', mammoth:'Mammut',
-    mushroom:'Pilz', ocean:'Ozean', plane:'Flugzeug', rainbow:'Regenbogen',
-    rock:'Felsen', seal:'Robbe', sheep:'Schaf', ship:'Schiff', snake:'Schlange',
-    sport:'Sport', tent:'Zelt', tower:'Turm', train:'Eisenbahn', water:'Wasser',
-    whale:'Wal', windmill:'Windmühle',
-};
-
-const objStatus = {
-    ok:'OK', broken:'kaputt', missing_beam:'kaputt',
-    out_of_order:'außer Betrieb', locked:'verschlossen', blocked:'blockiert',
-};
-
-const objSport = {
-    'soccer;basketball':'Fußball, Basketball', 'basketball;soccer':'Fußball, Basketball',
-    athletics:'Leichtathletik', beachvolleyball:'Beachvolleyball', bmx:'BMX',
-    boules:'Boule', chess:'Schach', climbing:'Klettern', field_hockey:'Hockey',
-    fitness:'Fitness', gymnastics:'Gymnastik', multi:'verschiedene',
-    nine_mens_morris:'Mühle', running:'Laufsport', skateboard:'Skateboarding',
-    table_soccer:'Tischfußball', tennis:'Tennis', toboggan:'Rodeln',
-    volleyball:'Volleyball',
-};
-
-const objSurface = {
-    acrylic:'Acrylharz', artificial_turf:'Kunstrasen', asphalt:'Asphalt',
-    clay:'Asche', cobblestone:'Kopfsteinpflaster', compacted:'verdichtet',
-    concrete:'Beton', dirt:'Erde', earth:'Erde', fine_gravel:'Splitt',
-    grass:'Gras', gravel:'Schotter', ground:'Erde', metal:'Metall',
-    mud:'Schlamm', paved:'versiegelt', paving_stones:'Pflastersteine',
-    pebblestone:'Kies', plastic:'Kunststoff', rock:'Stein', rubber:'Gummi',
-    sand:'Sand', tartan:'Tartan', unpaved:'unversiegelt', wood:'Holz',
-    woodchips:'Holzhackschnitzel',
-};
-
-const objGenus = {
-    Abies:'Tanne', Acer:'Ahorn', Aesculus:'Rosskastanie', Betula:'Birke',
-    Carpinus:'Hainbuche', Castanea:'Kastanie', Catalpa:'Trompetenbaum',
-    Fagus:'Buche', Fraxinus:'Esche', Ginkgo:'Ginkgo', Juglans:'Walnuss',
-    Larix:'Lärche', Malus:'Apfel', Picea:'Fichte', Pinus:'Kiefer',
-    Platanus:'Platane', Populus:'Pappel', Prunus:'Kirsche', Quercus:'Eiche',
-    Robinia:'Robinie', Salix:'Weide', Sorbus:'Mehlbeere', Taxus:'Eibe',
-    Tilia:'Linde',
-};
 
 const pitchImages = {
     soccer:'File:Association football pitch imperial.svg',
@@ -80,71 +24,98 @@ const pitchImages = {
     climbing:'File:Outdoor bouldering wall.jpg',
 };
 
+function tl(t, key, fallback) {
+    const v = t(key, { default: fallback ?? key });
+    return v ?? fallback ?? key;
+}
+
 /**
  * Returns detail attributes for a single equipment item.
  * @param {Object} props - plain GeoJSON feature properties object
+ * @param {Function} t - svelte-i18n translate function
  * @returns {{ html: string, panoramaxUuid: string|null }}
  */
-export function getEquipmentAttributesFromProps(props) {
+export function getEquipmentAttributesFromProps(props, t) {
     const g = key => props[key];
     const content = [];
 
     const theme = g('playground:theme');
-    if (theme && theme !== 'playground')
-        content.push(`Motiv: ${objPlaygroundTheme[theme] ?? escapeHtml(theme)}`);
+    if (theme && theme !== 'playground') {
+        const label = tl(t, `equipAttr.themes.${theme}`, escapeHtml(theme));
+        content.push(`${t('equipAttr.theme')}: ${label}`);
+    }
 
-    if (g('capacity'))       content.push(`Plätze: ${escapeHtml(String(g('capacity')))}`);
-    if (g('capacity:baby'))  content.push(`Babyplätze: ${escapeHtml(String(g('capacity:baby')))}`);
+    if (g('capacity'))      content.push(`${t('equipAttr.capacity')}: ${escapeHtml(String(g('capacity')))}`);
+    if (g('capacity:baby')) content.push(`${t('equipAttr.babyCapacity')}: ${escapeHtml(String(g('capacity:baby')))}`);
 
-    for (const [tag, label] of [['height','Höhe'],['width','Breite']]) {
+    for (const [tag, labelKey] of [['height','equipAttr.height'],['width','equipAttr.width']]) {
         let v = g(tag);
         if (v) {
             v = v.replace(' ', '').toLowerCase();
             if (v.includes('cm')) { v = v.replace('cm',''); if (!isNaN(v)) v = v / 100; }
-            content.push((`${label}: ${escapeHtml(String(v))}` + (!isNaN(v) ? ' Meter' : '')).replace('.', ','));
+            const num = !isNaN(v);
+            content.push((`${t(labelKey)}: ${escapeHtml(String(v))}` + (num ? ` ${t('equipAttr.meters')}` : '')).replace('.', ','));
         }
     }
     const len = g('length');
-    if (len) content.push(`Länge: ${escapeHtml(String(len).replace('.', ','))} Meter`);
+    if (len) content.push(`${t('equipAttr.length')}: ${escapeHtml(String(len).replace('.', ','))} ${t('equipAttr.meters')}`);
 
     const pump_status = g('pump:status');
-    if (pump_status) content.push(`Status: ${objStatus[pump_status] ?? escapeHtml(pump_status)}`);
+    if (pump_status) {
+        const label = tl(t, `equipAttr.statuses.${pump_status}`, escapeHtml(pump_status));
+        content.push(`${t('equipAttr.status')}: ${label}`);
+    }
 
     const covered = g('covered');
-    if (covered === 'yes') content.push('überdacht');
-    else if (covered === 'no') content.push('nicht überdacht');
+    if (covered === 'yes') content.push(t('equipAttr.covered'));
+    else if (covered === 'no') content.push(t('equipAttr.notCovered'));
 
     const material = g('material');
-    if (material) content.push(`Material: ${objMaterial[material] ?? escapeHtml(material)}`);
+    if (material) {
+        const label = tl(t, `equipAttr.materials.${material}`, escapeHtml(material));
+        content.push(`${t('equipAttr.material')}: ${label}`);
+    }
 
-    if (g('baby') === 'yes') content.push('für Babys geeignet');
-    if (g('provided_for:toddler') === 'yes') content.push('für Kleinkinder geeignet');
+    if (g('baby') === 'yes') content.push(t('equipAttr.suitableBaby'));
+    if (g('provided_for:toddler') === 'yes') content.push(t('equipAttr.suitableToddler'));
 
     const wc = g('wheelchair');
-    if (wc === 'yes') content.push('Rollstuhlgerecht');
-    else if (wc === 'limited') content.push('Eingeschränkt rollstuhlgerecht');
-    else if (wc === 'no') content.push('Nicht rollstuhlgerecht');
+    if (wc === 'yes') content.push(t('equipAttr.wheelchairYes'));
+    else if (wc === 'limited') content.push(t('equipAttr.wheelchairLimited'));
+    else if (wc === 'no') content.push(t('equipAttr.wheelchairNo'));
 
-    if (g('blind') === 'yes') content.push('Für sehbehinderte Personen geeignet');
+    if (g('blind') === 'yes') content.push(t('equipAttr.blind'));
 
-    if (pump_status && g('check_date')) content.push(`Zuletzt überprüft: ${escapeHtml(g('check_date'))}`);
+    if (pump_status && g('check_date'))
+        content.push(`${t('equipAttr.lastChecked')}: ${escapeHtml(g('check_date'))}`);
 
     const backrest = g('backrest');
-    if (backrest === 'yes') content.push('mit Rückenlehne');
-    else if (backrest === 'no') content.push('ohne Rückenlehne');
+    if (backrest === 'yes') content.push(t('equipAttr.withBackrest'));
+    else if (backrest === 'no') content.push(t('equipAttr.noBackrest'));
 
     const sport = g('sport');
-    if (sport && !['table_tennis','soccer','basketball'].includes(sport))
-        content.push(`Sportart: ${objSport[sport] ?? escapeHtml(sport)}`);
+    if (sport && !['table_tennis','soccer','basketball'].includes(sport)) {
+        // Normalize semicolon-separated combos (e.g. "soccer;basketball" → "soccer_basketball")
+        const sportKey = sport.split(';').sort().join('_');
+        const label = tl(t, `equipAttr.sports.${sportKey}`, escapeHtml(sport));
+        content.push(`${t('equipAttr.sport')}: ${label}`);
+    }
 
     const surface = g('surface');
-    if (surface) content.push(`Oberflächenbelag: ${objSurface[surface] ?? escapeHtml(surface)}`);
+    if (surface) {
+        const label = tl(t, `details.surfaceValues.${surface}`, escapeHtml(surface));
+        content.push(`${t('equipAttr.surface')}: ${label}`);
+    }
 
     const genus = g('genus');
-    if (genus) content.push(`Baumart: ${objGenus[genus] ?? escapeHtml(genus)}`);
+    if (genus) {
+        const label = tl(t, `equipAttr.genera.${genus}`, escapeHtml(genus));
+        content.push(`${t('equipAttr.genus')}: ${label}`);
+    }
 
     const diameter_crown = g('diameter_crown');
-    if (diameter_crown) content.push(`Kronendurchmesser: ${escapeHtml(String(diameter_crown))} Meter`);
+    if (diameter_crown)
+        content.push(`${t('equipAttr.crownDiameter')}: ${escapeHtml(String(diameter_crown))} ${t('equipAttr.meters')}`);
 
     // Find Panoramax UUID on the device
     let panoramaxUuid = g('panoramax') || g('panoramax:0');
@@ -155,7 +126,7 @@ export function getEquipmentAttributesFromProps(props) {
     const osmId    = g('osm_id');
     const mcTheme  = (leisure === 'fitness_station' || leisure === 'pitch') ? 'sports' : 'playgrounds';
     const mcUrl    = `https://mapcomplete.org/${mcTheme}.html` + (osmId ? `#${osmType}/${osmId}` : '');
-    const addPhotoLink = `<p class="mb-0 mt-1"><a href="${mcUrl}" target="_blank" rel="noopener" style="font-size:0.75rem;"><span class="bi bi-camera-fill"></span> Foto hinzufügen</a></p>`;
+    const addPhotoLink = `<p class="mb-0 mt-1"><a href="${mcUrl}" target="_blank" rel="noopener" style="font-size:0.75rem;"><span class="bi bi-camera-fill"></span> ${escapeHtml(t('popup.addPhoto'))}</a></p>`;
 
     let html = '';
     if (content.length) {
@@ -169,11 +140,12 @@ export function getEquipmentAttributesFromProps(props) {
         const sportRaw  = g('sport');
         if (deviceKey && objDevices[deviceKey]?.image) {
             const imgFile = objDevices[deviceKey].image.replace(/^File:/, '').replace(/ /g, '_');
+            const altText = tl(t, `equipment.devices.${deviceKey}`, objDevices[deviceKey].name_de ?? deviceKey);
             html = `<div class="device-img-wrap">` +
                 `<img src="https://commons.wikimedia.org/wiki/Special:FilePath/${imgFile}?width=800"` +
                 ` data-fallback="https://wiki.openstreetmap.org/wiki/Special:FilePath/${imgFile}"` +
-                ` alt="${escapeHtml(objDevices[deviceKey].name_de)}" style="object-fit:contain;width:100%" onerror="${onerror}">` +
-                `<p class="mb-0 text-muted" style="font-size:0.75rem;"><span class="bi bi-image"></span> Symbolbild</p></div>`;
+                ` alt="${escapeHtml(altText)}" style="object-fit:contain;width:100%" onerror="${onerror}">` +
+                `<p class="mb-0 text-muted" style="font-size:0.75rem;"><span class="bi bi-image"></span> ${escapeHtml(t('popup.deviceSymbol'))}</p></div>`;
         } else if (leisure === 'pitch' && sportRaw && pitchImages[sportRaw]) {
             const imgFile = pitchImages[sportRaw].replace(/^File:/, '').replace(/ /g, '_');
             html = `<div class="device-img-wrap">` +

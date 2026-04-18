@@ -262,6 +262,9 @@
     "openingHours": "Opening hours",
     "today": "Today",
     "tomorrow": "Tomorrow",
+    "noNearby": "No nearby facilities found within {radius} km.",
+    "openNavApp": "Open in navigation app",
+    "openInBrowser": "Navigate in browser",
     "categories": {
       "toilets": "Toilets",
       "busStops": "Bus stops",
@@ -334,6 +337,10 @@
         "repoLabel": "publicly available"
       }
     }
+  },
+  "compass": {
+    "N": "N", "NE": "NE", "E": "E", "SE": "SE",
+    "S": "S", "SW": "SW", "W": "W", "NW": "NW"
   },
   "hub": {
     "title": "Spielplatzkarte Hub",

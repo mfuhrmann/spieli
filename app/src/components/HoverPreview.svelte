@@ -11,7 +11,7 @@
   export let feature = null;
 
   $: attr = feature?.getProperties() ?? null;
-  $: title = attr ? getPlaygroundTitle(attr) : '';
+  $: title = attr ? getPlaygroundTitle(attr, $_) : '';
   $: isWater = attr?.is_water;
   $: hasTrees = attr?.tree_count > 0;
   $: forBaby = attr?.for_baby;

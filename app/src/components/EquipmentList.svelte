@@ -80,7 +80,7 @@
         {@const name = $_('equipment.devices.' + key, { default: objDevices[key]?.name_de ?? key })}
         {@const cat = objDevices[key]?.category ?? 'fallback'}
         {@const color = objColors[cat] ?? objColors['fallback']}
-        {@const detail = getEquipmentAttributesFromProps(f.properties)}
+        {@const detail = getEquipmentAttributesFromProps(f.properties, $_)}
         {@const id = uid(f)}
         <li>
           {#if detail.html || detail.panoramaxUuid}
@@ -111,7 +111,7 @@
           ? $_('equipment.fitness.' + fsType, { default: objFitnessStation[fsType] ?? $_('equipment.fitnessDefault') })
           : $_('equipment.fitnessDefault')}
         {@const color = objColors['activity'] ?? objColors['fallback']}
-        {@const detail = getEquipmentAttributesFromProps(f.properties)}
+        {@const detail = getEquipmentAttributesFromProps(f.properties, $_)}
         {@const id = uid(f)}
         <li>
           {#if detail.html || detail.panoramaxUuid}
@@ -142,7 +142,7 @@
           ? $_('equipment.pitches.' + sport, { default: `${$_('equipment.pitchDefault')} (${sport})` })
           : $_('equipment.pitchDefault')}
         {@const color = objColors['fallback']}
-        {@const detail = getEquipmentAttributesFromProps(f.properties)}
+        {@const detail = getEquipmentAttributesFromProps(f.properties, $_)}
         {@const id = uid(f)}
         <li>
           {#if detail.html || detail.panoramaxUuid}
