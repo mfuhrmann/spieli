@@ -59,23 +59,56 @@
    */
   export let instancePanel = null;
 
+  /**
+   * Hub-only slug → backend URL resolver. When a deep-link carries a slug,
+   * the shell uses this to narrow the feature search to that backend. Returns
+   * the URL, or `null` if the slug is unknown (in which case we wait for more
+   * backends to populate). Standalone passes `null` — any slug in the hash is
+   * silently ignored.
+   * @type {((slug: string) => string | null) | null}
+   */
+  export let resolveSlugToBackendUrl = null;
+
   // ── URL hash restore ──────────────────────────────────────────────────────
   //
-  // On first load the shell inspects `location.hash` and — once the injected
-  // source has features — selects the matching osm_id. The slug is accepted
-  // but not enforced here; hub mode layers its own slug→backend resolution on
-  // top (see #148).
+  // Runs once on first load and again on every `change` event from the
+  // injected source until a match is found. Supports both `#W<osm_id>` and
+  // `#<slug>/W<osm_id>`: with a slug, selection is scoped to the matching
+  // backend; without a slug, we broadcast-search across all loaded features
+  // and warn on duplicate osm_ids (rare — same OSM entity present in two
+  // overlapping regional databases).
   let hashRestored = false;
+  let warnedUnknownSlug = false;
   function tryRestoreFromHash() {
     if (hashRestored) return;
     const parsed = parseHash(window.location.hash);
     if (!parsed) { hashRestored = true; return; }
-    const feat = playgroundSource.getFeatures().find(f => f.get('osm_id') === parsed.osmId);
-    if (feat) {
-      const backendUrl = feat.get('_backendUrl') ?? defaultBackendUrl;
-      selection.select(feat, backendUrl);
-      hashRestored = true;
+
+    let candidates = playgroundSource.getFeatures();
+
+    if (parsed.slug && resolveSlugToBackendUrl) {
+      const targetUrl = resolveSlugToBackendUrl(parsed.slug);
+      if (!targetUrl) {
+        if (!warnedUnknownSlug) {
+          console.warn(`[deeplink] unknown registry slug "${parsed.slug}" — will retry as backends load`);
+          warnedUnknownSlug = true;
+        }
+        return;
+      }
+      candidates = candidates.filter(f => f.get('_backendUrl') === targetUrl);
     }
+
+    const matches = candidates.filter(f => f.get('osm_id') === parsed.osmId);
+    if (matches.length === 0) return;
+
+    if (matches.length > 1 && !parsed.slug) {
+      console.warn(`[deeplink] osm_id ${parsed.osmId} matched ${matches.length} backends — selecting the first`);
+    }
+
+    const feat = matches[0];
+    const backendUrl = feat.get('_backendUrl') ?? defaultBackendUrl;
+    selection.select(feat, backendUrl);
+    hashRestored = true;
   }
 
   onMount(() => {

@@ -1,6 +1,7 @@
 <script>
   import VectorSource from 'ol/source/Vector.js';
   import { onDestroy, onMount } from 'svelte';
+  import { get } from 'svelte/store';
   import { transformExtent } from 'ol/proj';
 
   import AppShell from '../components/AppShell.svelte';
@@ -21,6 +22,13 @@
   } = createRegistry(sharedSource);
 
   const dataContribLinks = { wikiUrl: HUB_WIKI_URL, chatUrl: null };
+
+  // Sync resolver for deep-link slug → backend URL. Reads the current backends
+  // list via `get()` so AppShell can call it from its restore loop without
+  // taking a store subscription of its own.
+  function resolveSlugToBackendUrl(slug) {
+    return get(backends).find(b => b.slug === slug)?.url ?? null;
+  }
 
   // Initial region fit: once both the map and the first aggregated bbox are
   // available, fit the view and then stop listening. Until that point the map
@@ -59,6 +67,7 @@
   playgroundSource={sharedSource}
   searchExtent={aggregatedBbox}
   nearestFetcher={fetchNearestAcrossBackends}
+  {resolveSlugToBackendUrl}
   {dataContribLinks}
 >
   {#snippet instancePanel()}
