@@ -36,4 +36,11 @@ test.describe('Playground selection', () => {
     const url = new URL(page.url());
     expect(url.hash).toBe('');
   });
+
+  test('slug-prefixed hash still selects in standalone mode', async ({ page }) => {
+    await injectApiConfig(page);
+    await stubApiRoutes(page);
+    await page.goto(`/#irrelevant-slug/W${OSM_ID}`);
+    await expect(page.locator('aside.info-panel')).toBeVisible({ timeout: 8000 });
+  });
 });
