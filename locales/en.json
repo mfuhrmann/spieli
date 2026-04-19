@@ -355,6 +355,7 @@
     "instanceError": "Unreachable",
     "playgroundCount": "{count, plural, one {# playground} other {# playgrounds}}",
     "regionCount": "{count, plural, one {# region} other {# regions}}",
+    "regionProgress": "{completed}/{total, plural, one {# region} other {# regions}}",
     "pillExpand": "Show instance list",
     "pillCollapse": "Hide instance list",
     "drawerTitle": "Available instances",

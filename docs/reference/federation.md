@@ -43,7 +43,7 @@ The Hub renders the same layout as a standalone regional map, with two additions
 └────────────────────────────────────────────────────────────┘
 ```
 
-- **Instance pill** (bottom-left): collapsed view shows a globe icon plus aggregated `<N> Regionen · <M> Spielplätze`. While the registry is loading the pill shows a spinner; if the registry can't be fetched the pill turns red and reads "Registry nicht erreichbar".
+- **Instance pill** (bottom-left): collapsed view shows a globe icon plus aggregated `<N> Regionen · <M> Spielplätze`. While the registry is loading the pill shows a spinner; once the registry is known but backends are still fetching their data, the pill shows `<completed>/<total> Regionen` with a spinner until every backend has settled (success or error) — the fraction only appears on the first load, not on subsequent 5-min refresh polls. If the registry can't be fetched the pill turns red and reads "Registry nicht erreichbar".
 - **Instance drawer**: clicking the pill slides up a drawer listing each backend with its name, version badge (from `get_meta`), and individual playground count. ESC, outside-click, or re-clicking the pill collapses it.
 - **Deep-link scheme**: see the [deep-link behaviour table](registry-json.md#deep-link-behaviour) in the registry reference.
 

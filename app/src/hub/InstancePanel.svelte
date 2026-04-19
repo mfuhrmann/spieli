@@ -21,6 +21,24 @@
   $: isLoading = !$registryError && $backends.length === 0;
   $: hasRegistryError = !!$registryError;
 
+  // Fractional progress while the first load is still in flight. `completed`
+  // counts every backend that has settled (success or error) so the fraction
+  // grows monotonically; errors still surface per-row in the drawer.
+  //
+  // `firstLoadSettled` is a one-way latch: once every backend has settled once,
+  // we never re-enter the progress state. Without it the 5-min refresh poll
+  // (which re-sets `loading: true`) would briefly flash the fraction every
+  // tick, which looks broken.
+  let firstLoadSettled = false;
+  $: completedCount = $backends.filter(b => !b.loading).length;
+  $: totalCount = $backends.length;
+  $: if (totalCount > 0 && completedCount === totalCount) firstLoadSettled = true;
+  $: showProgress = !firstLoadSettled
+                 && !hasRegistryError
+                 && !isLoading
+                 && totalCount > 0
+                 && completedCount < totalCount;
+
   function toggle() {
     open = !open;
   }
@@ -73,10 +91,11 @@
   <button
     class="pill"
     class:pill--error={hasRegistryError}
-    class:pill--loading={isLoading}
+    class:pill--loading={isLoading || showProgress}
     type="button"
     onclick={toggle}
     aria-expanded={open}
+    aria-busy={isLoading || showProgress}
     aria-label={open ? $_('hub.pillCollapse') : $_('hub.pillExpand')}
     bind:this={pillEl}
   >
@@ -86,6 +105,11 @@
     {:else if isLoading}
       <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
       <span class="pill__text">{$_('hub.loading')}</span>
+    {:else if showProgress}
+      <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+      <span class="pill__text">
+        {$_('hub.regionProgress', { values: { completed: completedCount, total: totalCount } })}
+      </span>
     {:else}
       <Globe class="pill__icon" aria-hidden="true" />
       <span class="pill__text">
