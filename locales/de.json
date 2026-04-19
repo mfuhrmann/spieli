@@ -353,7 +353,12 @@
     "registryError": "Registry nicht erreichbar",
     "loading": "Instanzen werden geladen …",
     "instanceError": "Nicht erreichbar",
-    "playgroundCount": "{count, plural, one {# Spielplatz} other {# Spielplätze}}"
+    "playgroundCount": "{count, plural, one {# Spielplatz} other {# Spielplätze}}",
+    "regionCount": "{count, plural, one {# Region} other {# Regionen}}",
+    "pillExpand": "Instanz-Liste öffnen",
+    "pillCollapse": "Instanz-Liste schließen",
+    "drawerTitle": "Verfügbare Instanzen",
+    "closeBtn": "Schließen"
   },
   "details": {
     "sizeLabel": "Größe",

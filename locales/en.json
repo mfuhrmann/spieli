@@ -353,7 +353,12 @@
     "registryError": "Registry unreachable",
     "loading": "Loading instances …",
     "instanceError": "Unreachable",
-    "playgroundCount": "{count, plural, one {# playground} other {# playgrounds}}"
+    "playgroundCount": "{count, plural, one {# playground} other {# playgrounds}}",
+    "regionCount": "{count, plural, one {# region} other {# regions}}",
+    "pillExpand": "Show instance list",
+    "pillCollapse": "Hide instance list",
+    "drawerTitle": "Available instances",
+    "closeBtn": "Close"
   },
   "details": {
     "sizeLabel": "Size",

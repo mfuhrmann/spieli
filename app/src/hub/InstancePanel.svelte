@@ -1,122 +1,167 @@
 <script>
   import { _ } from 'svelte-i18n';
+  import { onDestroy } from 'svelte';
+  import { Globe, AlertTriangle } from 'lucide-svelte';
+  import InstancePanelDrawer from './InstancePanelDrawer.svelte';
 
   /** @type {import('svelte/store').Readable<Array>} */
   export let backends;
   /** @type {import('svelte/store').Readable<string|null>} */
   export let registryError;
+
+  let open = false;
+  let pillEl;
+  let wrapperEl;
+
+  // Reachable = backend responded without error and isn't still loading. Drives
+  // both the region count in the pill and the zero-reachable messaging.
+  $: reachable = $backends.filter(b => !b.error && !b.loading);
+  $: regionCount = reachable.length;
+  $: playgroundCount = reachable.reduce((acc, b) => acc + (b.featureCount || 0), 0);
+  $: isLoading = !$registryError && $backends.length === 0;
+  $: hasRegistryError = !!$registryError;
+
+  function toggle() {
+    open = !open;
+  }
+
+  function close() {
+    if (!open) return;
+    open = false;
+    // Return focus to the pill so keyboard users aren't stranded.
+    pillEl?.focus();
+  }
+
+  function handleDocKey(e) {
+    if (e.key === 'Escape') close();
+  }
+
+  function handleDocClick(e) {
+    if (!open) return;
+    if (wrapperEl && !wrapperEl.contains(e.target)) close();
+  }
+
+  $: if (typeof document !== 'undefined') {
+    if (open) {
+      document.addEventListener('keydown', handleDocKey);
+      document.addEventListener('mousedown', handleDocClick);
+    } else {
+      document.removeEventListener('keydown', handleDocKey);
+      document.removeEventListener('mousedown', handleDocClick);
+    }
+  }
+
+  onDestroy(() => {
+    if (typeof document !== 'undefined') {
+      document.removeEventListener('keydown', handleDocKey);
+      document.removeEventListener('mousedown', handleDocClick);
+    }
+  });
 </script>
 
-<aside class="instance-panel">
-  <h6 class="instance-panel__title">
-    <i class="bi bi-map me-1"></i> {$_('hub.title')}
-  </h6>
-
-  {#if $registryError}
-    <p class="text-danger small px-2 mb-0">
-      <i class="bi bi-exclamation-triangle-fill me-1"></i>
-      {$_('hub.registryError')}
-    </p>
-  {:else if $backends.length === 0}
-    <p class="text-muted small px-2 mb-0">
-      <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-      {$_('hub.loading')}
-    </p>
-  {:else}
-    <ul class="instance-list">
-      {#each $backends as b (b.url)}
-        <li class="instance-item">
-          <div class="instance-row">
-            <span class="instance-name">{b.name}</span>
-            {#if b.version}
-              <span class="badge instance-badge text-bg-secondary">{b.version}</span>
-            {/if}
-          </div>
-
-          {#if b.loading}
-            <div class="instance-status text-muted">
-              <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-              {$_('details.loading')}
-            </div>
-          {:else if b.error}
-            <div class="instance-status text-danger">
-              <i class="bi bi-exclamation-triangle-fill me-1"></i>
-              {$_('hub.instanceError')}
-            </div>
-          {:else}
-            <div class="instance-status text-muted">
-              <i class="bi bi-geo-alt-fill me-1"></i>
-              {$_('hub.playgroundCount', { values: { count: b.featureCount } })}
-            </div>
-          {/if}
-        </li>
-      {/each}
-    </ul>
+<div class="panel" bind:this={wrapperEl}>
+  {#if open}
+    <div class="panel__drawer">
+      <InstancePanelDrawer
+        backends={$backends}
+        registryError={$registryError}
+        onclose={close}
+      />
+    </div>
   {/if}
-</aside>
+
+  <button
+    class="pill"
+    class:pill--error={hasRegistryError}
+    class:pill--loading={isLoading}
+    type="button"
+    onclick={toggle}
+    aria-expanded={open}
+    aria-label={open ? $_('hub.pillCollapse') : $_('hub.pillExpand')}
+    bind:this={pillEl}
+  >
+    {#if hasRegistryError}
+      <AlertTriangle class="pill__icon" aria-hidden="true" />
+      <span class="pill__text">{$_('hub.registryError')}</span>
+    {:else if isLoading}
+      <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+      <span class="pill__text">{$_('hub.loading')}</span>
+    {:else}
+      <Globe class="pill__icon" aria-hidden="true" />
+      <span class="pill__text">
+        {$_('hub.regionCount', { values: { count: regionCount } })}
+        <span class="pill__sep">·</span>
+        {$_('hub.playgroundCount', { values: { count: playgroundCount } })}
+      </span>
+    {/if}
+  </button>
+</div>
 
 <style>
-  .instance-panel {
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
-    width: 240px;
-    max-height: calc(100vh - 2rem);
-    background: #fff;
-    border-radius: 0.5rem;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-    z-index: 100;
-    overflow-y: auto;
-    padding: 0.75rem 0;
-  }
-
-  .instance-panel__title {
-    padding: 0 0.75rem 0.5rem;
-    border-bottom: 1px solid #dee2e6;
-    margin-bottom: 0.4rem;
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: #495057;
-  }
-
-  .instance-list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-  }
-
-  .instance-item {
-    padding: 0.35rem 0.75rem;
-    border-bottom: 1px solid #f1f3f5;
-    font-size: 0.8rem;
-  }
-
-  .instance-item:last-child {
-    border-bottom: none;
-  }
-
-  .instance-row {
+  .panel {
+    position: relative;
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.4rem;
-    margin-bottom: 0.1rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
   }
 
-  .instance-name {
-    font-weight: 500;
+  .panel__drawer {
+    /* The drawer lives above the pill in document order so it appears to slide
+       up from the pill when toggled. */
+  }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    height: 36px;
+    padding: 0 0.85rem;
+    background: #fff;
+    border: none;
+    border-radius: 999px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+    cursor: pointer;
     color: #212529;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    font-size: 0.8rem;
+    font-weight: 500;
+    line-height: 1;
+    transition: background 0.15s, box-shadow 0.15s;
     white-space: nowrap;
   }
 
-  .instance-badge {
-    font-size: 0.65rem;
+  .pill:hover,
+  .pill:focus-visible {
+    background: #f8f9fa;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.22);
+  }
+
+  .pill:focus-visible {
+    outline: 2px solid #4c9aff;
+    outline-offset: 2px;
+  }
+
+  .pill--error {
+    color: #b91c1c;
+  }
+
+  .pill--loading {
+    color: #6b7280;
+  }
+
+  :global(.pill__icon) {
+    width: 16px;
+    height: 16px;
     flex-shrink: 0;
   }
 
-  .instance-status {
-    font-size: 0.75rem;
+  .pill__text {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .pill__sep {
+    color: #adb5bd;
   }
 </style>

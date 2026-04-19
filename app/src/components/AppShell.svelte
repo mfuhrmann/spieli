@@ -380,12 +380,20 @@
     border-bottom: 1px solid #e0e0e0;
   }
 
-  /* Bottom-left slot for the hub instance-pill (and any future bottom-left widget). */
+  /* Bottom-left slot for the hub instance-pill (and any future bottom-left
+     widget). Raised above the scale-line (bottom:24px + ~14px tall) with a
+     small gap so the two don't collide. */
   .instance-slot {
     position: absolute;
-    bottom: 1rem;
+    bottom: 3rem;
     left: 1rem;
     z-index: 100;
+  }
+
+  @media (max-width: 1023px) {
+    .instance-slot {
+      left: 0.75rem;
+    }
   }
 
   .side-panel {
