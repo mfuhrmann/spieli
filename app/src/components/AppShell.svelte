@@ -62,9 +62,10 @@
   /**
    * Hub-only slug → backend URL resolver. When a deep-link carries a slug,
    * the shell uses this to narrow the feature search to that backend. Returns
-   * the URL, or `null` if the slug is unknown (in which case we wait for more
-   * backends to populate). Standalone passes `null` — any slug in the hash is
-   * silently ignored.
+   * the URL, or `null` if the slug is unknown — in which case we keep retrying
+   * on every source `change` event as more backends populate, but only log the
+   * "unknown slug" warning once. Standalone passes `null`, so any slug in the
+   * hash is silently ignored.
    * @type {((slug: string) => string | null) | null}
    */
   export let resolveSlugToBackendUrl = null;
@@ -115,7 +116,7 @@
     // If features are already loaded (sync fetch or test fixture), try now.
     tryRestoreFromHash();
     // Otherwise wait for the source to populate.
-    const key = playgroundSource.on('change', tryRestoreFromHash);
+    playgroundSource.on('change', tryRestoreFromHash);
     return () => playgroundSource.un('change', tryRestoreFromHash);
   });
 
@@ -471,10 +472,8 @@
     }
 
     .controls-top-right {
-      top: auto;
-      bottom: auto;
-      right: 0.75rem;
       top: 0.75rem;
+      right: 0.75rem;
     }
 
     .controls-bottom-right {

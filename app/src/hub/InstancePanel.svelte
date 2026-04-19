@@ -98,17 +98,14 @@
 </div>
 
 <style>
+  /* The drawer lives above the pill in document order (and so above in the
+     flex column), so it appears to slide up from the pill when toggled. */
   .panel {
     position: relative;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
     gap: 0.5rem;
-  }
-
-  .panel__drawer {
-    /* The drawer lives above the pill in document order so it appears to slide
-       up from the pill when toggled. */
   }
 
   .pill {
