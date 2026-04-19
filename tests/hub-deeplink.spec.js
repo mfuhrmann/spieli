@@ -62,6 +62,12 @@ test.describe('Hub deep-link', () => {
     await expect(panel).toBeVisible({ timeout: 8000 });
     // Which backend wins depends on which registry fetch resolves first — the
     // guarantee from the spec is just that *some* valid match is selected.
+    //
+    // We deliberately do NOT assert the "duplicate osm_id" console.warn here:
+    // it only fires when both backends' features land before hashRestored
+    // latches. In practice Playwright's route-fulfilled responses resolve
+    // one-at-a-time, so Backend A typically wins with matches.length === 1 and
+    // the warning never triggers. Pinning this would make the test flaky.
     await expect(panel).toContainText(/Shared [AB] copy/);
   });
 });

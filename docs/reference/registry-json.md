@@ -6,7 +6,7 @@ The Hub reads a `registry.json` file at startup and on a short poll interval (`H
 
 - **Served from**: the nginx container under `/registry.json` (path configurable via `HUB_REGISTRY_URL`).
 - **Source file**: `app/public/registry.json` in the repo. In production, replace or bind-mount with your own registry.
-- **Served as**: `application/json`. CORS is not needed — the Hub fetches from its own origin.
+- **Served as**: `application/json`. CORS is not needed for the registry file itself — the Hub fetches it from its own origin. The *backends* the registry points at are typically cross-origin and must enable CORS on `/api/` (covered in [Federation endpoints](federation.md#federation-endpoints)).
 
 ## Schema
 
