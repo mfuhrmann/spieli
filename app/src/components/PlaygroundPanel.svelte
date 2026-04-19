@@ -16,6 +16,7 @@
   import POIPanel from './POIPanel.svelte';
   import PanoramaxViewer from './PanoramaxViewer.svelte';
   import ReviewsPanel from './ReviewsPanel.svelte';
+  import AgeChip from './AgeChip.svelte';
   import Badge from './ui/Badge.svelte';
   import Button from './ui/Button.svelte';
 
@@ -267,13 +268,6 @@
           {/if}
         </div>
         <div class="flex items-center gap-1 shrink-0">
-          <button class="panel-icon-btn" onclick={sharePlayground} aria-label={$_('info.copyLink')}>
-            {#if shareConfirmed}
-              <Check class="h-5 w-5 text-green-600" />
-            {:else}
-              <Share2 class="h-5 w-5" />
-            {/if}
-          </button>
           <button class="panel-icon-btn" onclick={() => selection.clear()} aria-label={$_('info.closeBtn')}>
             <X class="h-5 w-5" />
           </button>
@@ -335,23 +329,22 @@
           </div>
         {/if}
 
-        {#if attr.min_age || attr.max_age}
-          <div class="fact-item col-span-2">
-            <span class="info-label">{$_('details.ageLabel')}</span>
-            <span class="fact-value">
-              {#if attr.min_age && attr.max_age}{$_('details.ageRange', { values: { min: attr.min_age, max: attr.max_age } })}
-              {:else if attr.min_age}{$_('details.ageMin', { values: { age: attr.min_age } })}
-              {:else}{$_('details.ageMax', { values: { age: attr.max_age } })}{/if}
-            </span>
-          </div>
-        {/if}
+
       </div>
 
-      <!-- Opening Hours -->
-      {#if openingHoursInfo}
-        <div class="flex items-center gap-2 text-sm mb-4 p-2 rounded-lg bg-muted/50">
-          <Clock class="h-4 w-4 shrink-0 {openingHoursInfo.open ? 'text-success' : 'text-destructive'}" />
-          <span class={openingHoursInfo.open ? 'text-success' : 'text-destructive'}>{openingHoursInfo.text}</span>
+      <!-- Opening Hours + Age inline -->
+      {#if openingHoursInfo || attr.min_age || attr.max_age}
+        <div class="status-row mb-4">
+          {#if openingHoursInfo}
+            <div class="status-pill" class:status-pill--open={openingHoursInfo.open} class:status-pill--closed={!openingHoursInfo.open}>
+              <span class="status-dot" class:status-dot--open={openingHoursInfo.open} class:status-dot--closed={!openingHoursInfo.open}></span>
+              <Clock class="h-3.5 w-3.5 shrink-0" />
+              <span>{openingHoursInfo.text}</span>
+            </div>
+          {/if}
+          {#if attr.min_age || attr.max_age}
+            <AgeChip minAge={attr.min_age ? Number(attr.min_age) : null} maxAge={attr.max_age ? Number(attr.max_age) : null} />
+          {/if}
         </div>
       {/if}
 
@@ -389,13 +382,6 @@
           {/if}
         </div>
       {/if}
-
-      <!-- Edit Link -->
-      <a href={mcUrl} target="_blank" rel="noopener" class="panel-edit-link">
-        <Pencil class="h-3 w-3" />
-        {$_('details.editMapComplete')}
-        <ExternalLink class="h-3 w-3" />
-      </a>
 
       <!-- Accordion Sections -->
       <div class="border-t border-border">
@@ -641,5 +627,105 @@
   .panel-icon-btn:hover {
     background: #f3f4f6;
     color: #1f2937;
+  }
+
+  /* ── Action row ─────────────────────────────────────── */
+  .action-row {
+    display: flex;
+    gap: 8px;
+    padding: 10px 1rem;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border: none;
+    border-radius: 9px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.15s, opacity 0.15s;
+  }
+
+  .action-btn--primary {
+    flex: 1;
+    padding: 10px 0;
+    background: #10b981;
+    color: #fff;
+  }
+  .action-btn--primary:hover { background: #059669; }
+
+  .action-btn--icon {
+    width: 44px;
+    height: 44px;
+    background: #f3f4f6;
+    color: #6b7280;
+    border: 1px solid #e5e7eb;
+  }
+  .action-btn--icon:hover { background: #e5e7eb; color: #1f2937; }
+
+  /* ── Status row (opening hours + age chip) ──────────── */
+  .status-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .status-pill {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 500;
+    flex: 1;
+  }
+  .status-pill--open   { background: #ecfdf5; color: #065f46; }
+  .status-pill--closed { background: #fef2f2; color: #b91c1c; }
+
+  .status-dot {
+    width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+  }
+  .status-dot--open   { background: #10b981; }
+  .status-dot--closed { background: #ef4444; }
+
+
+  /* ── Stat cards grid ─────────────────────────────── */
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .stat-card {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    background: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 10px 12px;
+  }
+
+  .stat-value {
+    font-size: 15px;
+    font-weight: 700;
+    color: #1f2937;
+    line-height: 1.2;
+  }
+
+  .stat-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: #9ca3af;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
   }
 </style>

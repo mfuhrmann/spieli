@@ -66,23 +66,27 @@
   <small class="text-muted">{$_('reviews.loadError')}</small>
 
 {:else}
-  <!-- Average + review list -->
+  <!-- Aggregate score card -->
   {#if reviews.length > 0}
-    <p class="mb-2">
-      {@html starsHtml(avgRating)}
-      <strong style="font-size:14px">{(avgRating / 20).toFixed(1)}</strong>
-      <span class="text-muted" style="font-size:12px">
-        ({$_('reviews.count', { values: { count: reviews.length } })})
-      </span>
-    </p>
+    <div class="review-aggregate">
+      <span class="review-score">{(avgRating / 20).toFixed(1)}</span>
+      <div>
+        {@html starsHtml(avgRating)}
+        <span class="text-muted" style="font-size:11px">
+          ({$_('reviews.count', { values: { count: reviews.length } })})
+        </span>
+      </div>
+    </div>
 
     {#each reviews as r}
       {@const p = r.payload}
-      <div class="review-item">
-        {@html starsHtml(p.rating, '#f59e0b')}
-        <span class="text-muted ms-1" style="font-size:11px">{relativeDate(p.iat, $_)}</span>
+      <div class="review-card">
+        <div class="review-card__header">
+          {@html starsHtml(p.rating, '#f59e0b')}
+          <span class="review-date">{relativeDate(p.iat, $_)}</span>
+        </div>
         {#if p.opinion}
-          <p class="mb-0 mt-1" style="font-size:13px">{p.opinion}</p>
+          <p class="review-card__body">"{p.opinion}"</p>
         {/if}
       </div>
     {/each}
@@ -91,8 +95,8 @@
   {/if}
 
   <!-- Submission form -->
-  <div class="mt-2 pt-2 border-top">
-    <!-- Star picker -->
+  <div class="review-form">
+    <p class="review-form__label">{$_('reviews.yourOpinion') ?? 'Your opinion'}</p>
     <div class="d-flex gap-1 mb-2" role="group" aria-label={$_('reviews.selectRating')}>
       {#each [20, 40, 60, 80, 100] as v, i}
         <button
@@ -117,10 +121,10 @@
     ></textarea>
 
     <button
-      class="btn btn-sm btn-outline-secondary"
+      class="btn btn-sm btn-primary w-100"
       onclick={submit}
       disabled={!selectedRating || submitting}
-      style="font-size:12px"
+      style="font-size:12px; background:#10b981; border-color:#10b981;"
     >
       {#if submitting}
         <span class="spinner-border spinner-border-sm me-1" role="status"></span>
@@ -141,6 +145,51 @@
 {/if}
 
 <style>
+  .review-aggregate {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 12px;
+  }
+  .review-score {
+    font-size: 30px;
+    font-weight: 700;
+    color: #1f2937;
+    line-height: 1;
+  }
+  .review-card {
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    font-size: 13px;
+  }
+  .review-card__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 5px;
+  }
+  .review-date { font-size: 11px; color: #9ca3af; }
+  .review-card__body { font-size: 13px; color: #1f2937; line-height: 1.55; margin: 0; }
+
+  .review-form {
+    border: 1px dashed #e5e7eb;
+    border-radius: 10px;
+    padding: 12px 14px;
+    background: #f9fafb;
+    margin-top: 4px;
+  }
+  .review-form__label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #6b7280;
+    margin-bottom: 8px;
+  }
   .review-item {
     margin-bottom: 0.5rem;
     padding-bottom: 0.5rem;
