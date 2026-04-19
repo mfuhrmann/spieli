@@ -40,6 +40,7 @@ nav:
       - Architecture: reference/architecture.md
       - Tech Stack: reference/tech-stack.md
       - Federation: reference/federation.md
+      - registry.json: reference/registry-json.md
       - Glossary: reference/glossary.md
 
 markdown_extensions:
