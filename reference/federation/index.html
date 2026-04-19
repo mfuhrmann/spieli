@@ -957,7 +957,7 @@
 <a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>└────────────────────────────────────────────────────────────┘
 </code></pre></div>
 <ul>
-<li><strong>Instance pill</strong> (bottom-left): collapsed view shows a globe icon plus aggregated <code>&lt;N&gt; Regionen · &lt;M&gt; Spielplätze</code>. While the registry is loading the pill shows a spinner; if the registry can't be fetched the pill turns red and reads "Registry nicht erreichbar".</li>
+<li><strong>Instance pill</strong> (bottom-left): collapsed view shows a globe icon plus aggregated <code>&lt;N&gt; Regionen · &lt;M&gt; Spielplätze</code>. While the registry is loading the pill shows a spinner; once the registry is known but backends are still fetching their data, the pill shows <code>&lt;completed&gt;/&lt;total&gt; Regionen</code> with a spinner until every backend has settled (success or error) — the fraction only appears on the first load, not on subsequent 5-min refresh polls. If the registry can't be fetched the pill turns red and reads "Registry nicht erreichbar".</li>
 <li><strong>Instance drawer</strong>: clicking the pill slides up a drawer listing each backend with its name, version badge (from <code>get_meta</code>), and individual playground count. ESC, outside-click, or re-clicking the pill collapses it.</li>
 <li><strong>Deep-link scheme</strong>: see the <a href="../registry-json/#deep-link-behaviour">deep-link behaviour table</a> in the registry reference.</li>
 </ul>
