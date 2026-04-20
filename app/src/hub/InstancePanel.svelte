@@ -70,6 +70,12 @@
     padding: 0.75rem 0;
   }
 
+  @media (max-width: 1023px) {
+    .instance-panel {
+      z-index: 40;
+    }
+  }
+
   .instance-panel__title {
     padding: 0 0.75rem 0.5rem;
     border-bottom: 1px solid #dee2e6;
