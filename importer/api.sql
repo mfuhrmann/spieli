@@ -629,7 +629,7 @@ AS $$
       ST_SetSRID(ST_MakePoint(lon, lat), 4326)::geography            AS geog_4326
   ),
   region AS (
-    SELECT way FROM planet_osm_polygon WHERE osm_id = -relation_id LIMIT 1
+    SELECT ST_Union(way) AS way FROM planet_osm_polygon WHERE osm_id = -relation_id
   ),
   nearest AS (
     SELECT
