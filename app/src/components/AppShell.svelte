@@ -253,6 +253,9 @@
           ondismiss={dismissNearby}
         />
       {/if}
+      {#if !$hasSelection}
+        <CompletenessLegend />
+      {/if}
     </div>
 
     <div class="controls-top-right">
@@ -295,11 +298,6 @@
       </div>
     {/if}
 
-    {#if !$hasSelection}
-      <div class="legend-slot">
-        <CompletenessLegend />
-      </div>
-    {/if}
   {/if}
 
   {#if !isMobile && $hasSelection}
@@ -434,21 +432,6 @@
   @media (max-width: 1023px) {
     .instance-slot {
       left: 0.75rem;
-    }
-  }
-
-  /* Completeness legend — bottom-left, above scale line, behind bottom sheet on mobile */
-  .legend-slot {
-    position: absolute;
-    bottom: 4rem;
-    left: 1rem;
-    z-index: 100;
-    pointer-events: none;
-  }
-
-  @media (max-width: 1023px) {
-    .legend-slot {
-      z-index: 30;
     }
   }
 
