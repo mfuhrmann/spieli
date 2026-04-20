@@ -138,7 +138,10 @@
       {#each pitchFeatures as f (f.properties.osm_id)}
         {@const sport = f.properties.sport ?? ''}
         {@const label = sport
-          ? $_('equipment.pitches.' + sport, { default: `${$_('equipment.pitchDefault')} (${sport})` })
+          ? sport.split(';').map(s => $_(
+              'equipment.pitches.' + s.trim(),
+              { default: s.trim() }
+            )).join(' / ')
           : $_('equipment.pitchDefault')}
         {@const color = objColors['fallback']}
         {@const detail = getEquipmentAttributesFromProps(f.properties, $_)}
