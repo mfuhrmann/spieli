@@ -36,6 +36,7 @@ nav:
       - Troubleshooting: ops/troubleshooting.md
   - Contributing:
       - Add a Playground Device: contributing/add-device.md
+      - Add a Sport Pitch Type: contributing/add-sport-type.md
   - Reference:
       - Architecture: reference/architecture.md
       - Tech Stack: reference/tech-stack.md
