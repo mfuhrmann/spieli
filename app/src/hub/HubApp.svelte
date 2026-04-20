@@ -77,12 +77,6 @@
   let bottomSheetOpen = false;
   let bottomSheetSnap = 'half';
 
-  $: controlsBottomStyle = (() => {
-    if (!isMobile || !bottomSheetOpen) return '';
-    if (bottomSheetSnap === 'peek') return 'bottom: calc(140px + 1rem)';
-    if (bottomSheetSnap === 'half') return 'bottom: calc(50vh + 1rem)';
-    return '';
-  })();
 
   $: if (isMobile && $hasSelection) {
     bottomSheetOpen = true;
@@ -182,7 +176,7 @@
     </div>
 
     <!-- Bottom-right controls: locate, zoom (Google Maps style) -->
-    <div class="controls-bottom-right" style={controlsBottomStyle}>
+    <div class="controls-bottom-right">
       <LocateButton onlocation={handleLocation} />
       <div class="zoom-controls">
         <button
@@ -257,11 +251,11 @@
     gap: 0.5rem;
   }
 
-  /* Top-right controls: filter, edit — offset to the left of the InstancePanel (240px wide) */
+  /* Top-right controls: filter, edit */
   .controls-top-right {
     position: absolute;
     top: 1rem;
-    right: calc(240px + 1.5rem);
+    right: 1rem;
     z-index: 100;
     display: flex;
     flex-direction: row;
@@ -278,7 +272,12 @@
     flex-direction: column;
     gap: 0.75rem;
     align-items: center;
-    transition: bottom 0.3s ease-out;
+  }
+
+  @media (max-width: 1023px) {
+    .controls-bottom-right {
+      z-index: 30;
+    }
   }
 
   /* Control button (for edit button, locate button) */
@@ -379,7 +378,6 @@
     }
 
     .controls-bottom-right {
-      bottom: 10rem;
       right: 0.75rem;
     }
   }
