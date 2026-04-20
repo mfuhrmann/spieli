@@ -1,4 +1,10 @@
-## ADDED Requirements
+# playwright-ci Specification
+
+## Purpose
+
+Provide an automated browser-test safety net so regressions in the playground detail panel, map interactions, and security fixes (XSS escaping, contact links) cannot silently ship. Runs on every pull request and every push to `main`, with an HTML report uploaded on failure.
+
+## Requirements
 
 ### Requirement: CI workflow runs Playwright tests on every PR and push to main
 The system SHALL provide a GitHub Actions workflow (`playwright.yml`) that builds the app, starts a preview server, and runs the Playwright test suite on every pull request targeting `main` and every push to `main`.

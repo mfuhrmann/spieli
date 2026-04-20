@@ -1,3 +1,11 @@
+# scheduled-importer Specification
+
+## Purpose
+
+Give operators a drop-in systemd service + timer pair so OSM data refreshes weekly without custom cron jobs or manual intervention. The service runs `docker compose run --rm importer` against the project's existing `.env`; the timer fires weekly with `Persistent=true` to catch missed runs on next boot.
+
+## Requirements
+
 ### Requirement: Service unit runs the importer via Docker Compose
 The system SHALL provide a `deploy/spielplatzkarte-import.service` systemd service unit that executes `docker compose run --rm importer` in the project directory, loading credentials from the `.env` file via `EnvironmentFile=`.
 

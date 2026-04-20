@@ -1,4 +1,10 @@
-## ADDED Requirements
+# rc-container-tag Specification
+
+## Purpose
+
+Separate pre-release container images from stable releases: every merge to `main` publishes an `:rc`-tagged image for testers, while `:latest` remains exclusively tied to version tags so operators pulling `:latest` always get a tested release.
+
+## Requirements
 
 ### Requirement: RC image published on main push
 The CI pipeline SHALL publish container images tagged `:rc` for both the app image and the importer image on every push to the `main` branch (i.e. every merged PR).
