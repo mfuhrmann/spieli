@@ -69,7 +69,8 @@
     "dotComplete": "Daten vollständig",
     "dotPartial": "Teilweise erfasst",
     "dotMissing": "Daten fehlen",
-    "badgeComplete": "Vollständig"
+    "badgeComplete": "Vollständig",
+    "restrictedHint": "schraffiert = nicht öffentlich"
   },
   "accordion": {
     "photos": "Bilder",

@@ -10,6 +10,7 @@
   import EquipmentTooltip from './EquipmentTooltip.svelte';
   import NearbyPlaygrounds from './NearbyPlaygrounds.svelte';
   import DataContributionModal from './DataContributionModal.svelte';
+  import CompletenessLegend from './CompletenessLegend.svelte';
   import { onDestroy, onMount } from 'svelte';
   import { Pencil, Plus, Minus } from 'lucide-svelte';
   import { _ } from 'svelte-i18n';
@@ -293,6 +294,12 @@
         {@render instancePanel()}
       </div>
     {/if}
+
+    {#if !$hasSelection}
+      <div class="legend-slot">
+        <CompletenessLegend />
+      </div>
+    {/if}
   {/if}
 
   {#if !isMobile && $hasSelection}
@@ -427,6 +434,21 @@
   @media (max-width: 1023px) {
     .instance-slot {
       left: 0.75rem;
+    }
+  }
+
+  /* Completeness legend — bottom-left, above scale line, behind bottom sheet on mobile */
+  .legend-slot {
+    position: absolute;
+    bottom: 4rem;
+    left: 1rem;
+    z-index: 100;
+    pointer-events: none;
+  }
+
+  @media (max-width: 1023px) {
+    .legend-slot {
+      z-index: 30;
     }
   }
 
