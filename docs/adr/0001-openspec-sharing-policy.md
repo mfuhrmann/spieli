@@ -1,6 +1,6 @@
 # ADR-0001: Share OpenSpec specs and archive in git
 
-- **Status:** Accepted
+- **Status:** Revised (see ## Revision 2026-04-20 below)
 - **Date:** 2026-04-19
 - **Deciders:** @mfuhrmann
 
@@ -138,3 +138,91 @@ Tracked in issue [#193]. Summary:
 - [OpenSpec](https://github.com/tbwiss/openspec)
 - Issue [#190] — handoff workaround that motivated this ADR
 - Issue [#193] — implementation
+
+## Revision 2026-04-20
+
+- **Status:** Accepted (supersedes the original Decision above)
+- **Deciders:** @mfuhrmann, @ronnytrommer
+
+### Trigger
+
+The "real friction" scenario anticipated in **Negative / to manage**
+above has fired sooner than expected. During a collaborative `/opsx:explore`
+session, @ronnytrommer drafted two multi-file change proposals
+(`add-tiered-playground-delivery`, `add-federated-playground-clustering`)
+that each span four files: `proposal.md`, `design.md`, `tasks.md`, and a
+nested `specs/<capability>/spec.md`. The original ADR's prescribed
+handoff — paste the proposal inline into a GitHub issue (pattern from
+#190) — does not scale to multi-file proposals: eight files pasted into
+one issue body is unreadable, and round-tripping edits between issue
+comments and local `openspec/changes/` diverges almost immediately.
+
+Waiting to see whether this pattern recurs before revisiting would
+create the same single-laptop-knowledge problem the original ADR was
+written to fix, just one level down.
+
+### Revised decision
+
+Track the whole `openspec/` tree in git, including active
+`openspec/changes/<name>/` directories. Replace the selective pattern
+with a simple removal of the `openspec/` line from `.gitignore`.
+
+| Path | Tracked? | Change from original |
+|---|---|---|
+| `openspec/specs/**` | yes | unchanged |
+| `openspec/changes/archive/**` | yes | unchanged |
+| `openspec/changes/<active>/**` | **yes** | **new** — was excluded |
+| `openspec/config.yaml`, `openspec/AGENTS.md`, top-level | yes | unchanged |
+
+### Consequences of the revision
+
+**Positive (additive to the original Consequences):**
+
+- Multi-file proposals can be handed off via ordinary branch + PR
+  workflow, not issue-paste.
+- Every commit that touches a proposal surfaces in normal code-review
+  tooling.
+- Claude Code agents on any account read the same active-proposal set
+  on a fresh clone.
+
+**Accepted costs:**
+
+- *Noisy diffs on every exploration session.* Mitigated by branch
+  discipline: exploratory thinking stays on an unpushed local branch
+  until it is "worth showing." Only merge to `main` when a proposal is
+  ready for collaboration or ready to implement.
+- *"Is my WIP ready for a teammate?" as a constant judgment call.*
+  Resolved by the same branch discipline. Local branch = private
+  thinking; pushed branch / draft PR = ready for collaboration;
+  `main` = shared baseline.
+- *Active-change churn in `main` history.* Accepted. Use draft PRs for
+  in-progress proposals so the history of the proposal is legible
+  (one PR per proposal is the default; multiple commits within the PR
+  are fine).
+
+### Coordination for the baseline commit
+
+Both contributors already have local `openspec/` directories that
+diverge (see original **Negative / to manage**). The original ADR
+proposed Option A (one contributor lands the baseline, the other
+rebases) with @mfuhrmann as the default baseliner.
+
+Under this revision the baseline includes active proposals too, which
+amplifies the divergence risk. We switch to a coordinated baseline:
+
+1. @ronnytrommer opens a PR containing: (a) this ADR revision,
+   (b) the `.gitignore` change, (c) his local `openspec/` tree.
+2. @mfuhrmann reviews the PR, resolves any conflict with his own local
+   tree in review (if his active proposals differ from what @ronnytrommer
+   has captured, he commits the authoritative versions onto the PR
+   branch before merge).
+3. On merge, both contributors hard-reset their local `openspec/` to
+   the committed tree, then cherry-pick any diverged local commits back
+   on top.
+
+### When to revert
+
+If the branch-discipline cost outlives the collaboration benefit,
+revert by restoring the `.gitignore` pattern from the original Decision
+and going back to issue-paste handoff. The original Decision remains
+available verbatim above this revision block.
