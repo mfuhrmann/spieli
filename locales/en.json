@@ -69,7 +69,8 @@
     "dotComplete": "Data complete",
     "dotPartial": "Partially mapped",
     "dotMissing": "No data",
-    "badgeComplete": "Complete"
+    "badgeComplete": "Complete",
+    "restrictedHint": "hatched = not public"
   },
   "accordion": {
     "photos": "Photos",
