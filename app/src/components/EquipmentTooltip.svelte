@@ -40,6 +40,9 @@
   $: thumbUrl = panoramaxUuid ? `https://api.panoramax.xyz/api/pictures/${panoramaxUuid}/thumb.jpg` : null;
 
   $: style = position ? `left: ${position.x}px; top: ${position.y}px;` : '';
+  // Flip tooltip below the cursor when near the top of the viewport.
+  // 420px covers the image (640×360 at 16/9) plus label and caret.
+  $: showBelow = position ? position.y < 420 : false;
 </script>
 
 {#if position && props}
@@ -47,20 +50,37 @@
     class="fixed z-[60] pointer-events-none animate-in fade-in-0 zoom-in-95 duration-150"
     {style}
   >
-    <div class="relative -translate-x-1/2 -translate-y-full -mt-3">
-      <div class="equip-tooltip rounded-lg shadow-lg border">
-        {#if thumbUrl}
-          <img src={thumbUrl} alt={label} class="thumb" />
-        {/if}
-        <div class="px-2.5 py-1.5 text-sm font-medium">{label}</div>
+    {#if showBelow}
+      <div class="relative -translate-x-1/2 mt-3">
+        <div class="absolute left-1/2 -translate-x-1/2 -top-2">
+          <div
+            class="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[6px]"
+            style="border-bottom-color: #ffffff;"
+          ></div>
+        </div>
+        <div class="equip-tooltip rounded-lg shadow-lg border">
+          {#if thumbUrl}
+            <img src={thumbUrl} alt={label} class="thumb" />
+          {/if}
+          <div class="px-2.5 py-1.5 text-sm font-medium">{label}</div>
+        </div>
       </div>
-      <div class="absolute left-1/2 -translate-x-1/2 -bottom-2">
-        <div
-          class="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px]"
-          style="border-top-color: #ffffff;"
-        ></div>
+    {:else}
+      <div class="relative -translate-x-1/2 -translate-y-full -mt-3">
+        <div class="equip-tooltip rounded-lg shadow-lg border">
+          {#if thumbUrl}
+            <img src={thumbUrl} alt={label} class="thumb" />
+          {/if}
+          <div class="px-2.5 py-1.5 text-sm font-medium">{label}</div>
+        </div>
+        <div class="absolute left-1/2 -translate-x-1/2 -bottom-2">
+          <div
+            class="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px]"
+            style="border-top-color: #ffffff;"
+          ></div>
+        </div>
       </div>
-    </div>
+    {/if}
   </div>
 {/if}
 
@@ -69,7 +89,7 @@
     background: #ffffff;
     border-color: #e5e7eb;
     color: #1f2937;
-    max-width: 220px;
+    max-width: 640px;
     overflow: hidden;
   }
   .thumb {
