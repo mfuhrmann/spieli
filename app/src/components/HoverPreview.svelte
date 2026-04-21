@@ -38,10 +38,10 @@
     style={style}
   >
     <div class="relative -translate-x-1/2 -translate-y-full -mt-3">
-      <div class="hover-card rounded-lg shadow-lg border p-3 min-w-[180px] max-w-[240px]">
+      <div class="hover-card rounded-lg shadow-lg border p-3 min-w-[180px] max-w-[280px]">
 
         <!-- Title -->
-        <h4 class="font-semibold text-sm leading-tight mb-1.5 line-clamp-2" style="color: #1f2937;">
+        <h4 class="font-semibold text-sm leading-tight mb-1.5 line-clamp-2" style="color: #1f2937; hyphens: auto;" lang="de">
           {title}
         </h4>
 
