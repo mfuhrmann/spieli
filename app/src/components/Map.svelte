@@ -170,6 +170,7 @@
           debouncedHover(playHit, evt.pixel);
         } else if (!playHit && lastHoverFeature) {
           lastHoverFeature = null;
+          debouncedHover.cancel();
           if (onclearhover) onclearhover();
         }
       }
