@@ -24,8 +24,6 @@
    */
   export let defaultBackendUrl = '';
 
-  const MAX_DISTANCE_M = 25_000;
-
   let items = [];
   let loading = true;
 
@@ -70,10 +68,10 @@
       const results = fetcher
         ? await fetcher(lt, lg)
         : nearestFromSource(lt, lg);
-      items = results.filter(item => item.distance_m <= MAX_DISTANCE_M);
+      items = results.length > 0 ? results : nearestFromSource(lt, lg);
     } catch (err) {
       console.error('Nearest playgrounds fetch failed:', err);
-      items = nearestFromSource(lt, lg).filter(item => item.distance_m <= MAX_DISTANCE_M);
+      items = nearestFromSource(lt, lg);
     } finally {
       loading = false;
     }
