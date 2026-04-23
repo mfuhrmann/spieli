@@ -14,6 +14,9 @@ const geojsonFormat = new GeoJSON();
 // backend contributes zero results but never stalls the user interaction.
 const NEAREST_TIMEOUT_MS = 3000;
 const NEAREST_DEFAULT_LIMIT = 10;
+// Discard results from backends that are farther away than this — prevents
+// a distant backend from polluting the list with its own "nearby" playgrounds.
+const NEAREST_MAX_DISTANCE_M = 25_000;
 
 /**
  * Backend status shape:
@@ -183,6 +186,7 @@ export function createRegistry(vectorSource) {
     }
     return [...byOsmId.values()]
       .sort((a, b) => a.distance_m - b.distance_m)
+      .filter(item => item.distance_m <= NEAREST_MAX_DISTANCE_M)
       .slice(0, limit);
   }
 
