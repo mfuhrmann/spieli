@@ -1,55 +1,55 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
-         <loc>https://mfuhrmann.github.io/spielplatzkarte/</loc>
-         <lastmod>2026-04-21</lastmod>
+         <loc>https://mfuhrmann.github.io/spieli/</loc>
+         <lastmod>2026-04-24</lastmod>
     </url>
     <url>
-         <loc>https://mfuhrmann.github.io/spielplatzkarte/adr/0001-openspec-sharing-policy/</loc>
-         <lastmod>2026-04-21</lastmod>
+         <loc>https://mfuhrmann.github.io/spieli/adr/0001-openspec-sharing-policy/</loc>
+         <lastmod>2026-04-24</lastmod>
     </url>
     <url>
-         <loc>https://mfuhrmann.github.io/spielplatzkarte/contributing/add-device/</loc>
-         <lastmod>2026-04-21</lastmod>
+         <loc>https://mfuhrmann.github.io/spieli/contributing/add-device/</loc>
+         <lastmod>2026-04-24</lastmod>
     </url>
     <url>
-         <loc>https://mfuhrmann.github.io/spielplatzkarte/contributing/add-sport-type/</loc>
-         <lastmod>2026-04-21</lastmod>
+         <loc>https://mfuhrmann.github.io/spieli/contributing/add-sport-type/</loc>
+         <lastmod>2026-04-24</lastmod>
     </url>
     <url>
-         <loc>https://mfuhrmann.github.io/spielplatzkarte/getting-started/quick-start/</loc>
-         <lastmod>2026-04-21</lastmod>
+         <loc>https://mfuhrmann.github.io/spieli/getting-started/quick-start/</loc>
+         <lastmod>2026-04-24</lastmod>
     </url>
     <url>
-         <loc>https://mfuhrmann.github.io/spielplatzkarte/ops/configuration/</loc>
-         <lastmod>2026-04-21</lastmod>
+         <loc>https://mfuhrmann.github.io/spieli/ops/configuration/</loc>
+         <lastmod>2026-04-24</lastmod>
     </url>
     <url>
-         <loc>https://mfuhrmann.github.io/spielplatzkarte/ops/manual-deploy/</loc>
-         <lastmod>2026-04-21</lastmod>
+         <loc>https://mfuhrmann.github.io/spieli/ops/manual-deploy/</loc>
+         <lastmod>2026-04-24</lastmod>
     </url>
     <url>
-         <loc>https://mfuhrmann.github.io/spielplatzkarte/ops/troubleshooting/</loc>
-         <lastmod>2026-04-21</lastmod>
+         <loc>https://mfuhrmann.github.io/spieli/ops/troubleshooting/</loc>
+         <lastmod>2026-04-24</lastmod>
     </url>
     <url>
-         <loc>https://mfuhrmann.github.io/spielplatzkarte/reference/architecture/</loc>
-         <lastmod>2026-04-21</lastmod>
+         <loc>https://mfuhrmann.github.io/spieli/reference/architecture/</loc>
+         <lastmod>2026-04-24</lastmod>
     </url>
     <url>
-         <loc>https://mfuhrmann.github.io/spielplatzkarte/reference/federation/</loc>
-         <lastmod>2026-04-21</lastmod>
+         <loc>https://mfuhrmann.github.io/spieli/reference/federation/</loc>
+         <lastmod>2026-04-24</lastmod>
     </url>
     <url>
-         <loc>https://mfuhrmann.github.io/spielplatzkarte/reference/glossary/</loc>
-         <lastmod>2026-04-21</lastmod>
+         <loc>https://mfuhrmann.github.io/spieli/reference/glossary/</loc>
+         <lastmod>2026-04-24</lastmod>
     </url>
     <url>
-         <loc>https://mfuhrmann.github.io/spielplatzkarte/reference/registry-json/</loc>
-         <lastmod>2026-04-21</lastmod>
+         <loc>https://mfuhrmann.github.io/spieli/reference/registry-json/</loc>
+         <lastmod>2026-04-24</lastmod>
     </url>
     <url>
-         <loc>https://mfuhrmann.github.io/spielplatzkarte/reference/tech-stack/</loc>
-         <lastmod>2026-04-21</lastmod>
+         <loc>https://mfuhrmann.github.io/spieli/reference/tech-stack/</loc>
+         <lastmod>2026-04-24</lastmod>
     </url>
 </urlset>
