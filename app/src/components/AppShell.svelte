@@ -20,12 +20,26 @@
   import { parseHash } from '../lib/deeplink.js';
 
   /**
-   * The OL VectorSource that renders the playground layer. The shell passes it
-   * to the Map and to widgets that need to scan features (NearbyPlaygrounds
-   * fallback, URL-hash restore).
+   * The OL VectorSource that renders the polygon tier (zoom ≥ 14). The shell
+   * passes it to the Map and to widgets that need to scan features
+   * (NearbyPlaygrounds fallback, URL-hash restore).
    * @type {import('ol/source/Vector.js').default}
    */
   export let playgroundSource;
+
+  /**
+   * Cluster-tier source (zoom ≤ clusterMaxZoom). Fed by the orchestrator from
+   * `get_playground_clusters`.
+   * @type {import('ol/source/Vector.js').default | null}
+   */
+  export let clusterSource = null;
+
+  /**
+   * Centroid-tier source (zoom 11–centroidMaxZoom). Fed by the orchestrator
+   * from `get_playground_centroids` via Supercluster.
+   * @type {import('ol/source/Vector.js').default | null}
+   */
+  export let centroidSource = null;
 
   /**
    * Readable store emitting the current map view in WGS84 as
@@ -234,6 +248,8 @@
 <div class="app-root">
   <Map
     {playgroundSource}
+    {clusterSource}
+    {centroidSource}
     {defaultBackendUrl}
     onhover={handleHover}
     onclearhover={clearHover}

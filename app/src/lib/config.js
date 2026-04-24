@@ -39,3 +39,12 @@ export const registryUrl = c.registryUrl ?? './registry.json';
 
 // How often (seconds) to re-fetch playground data from all backends.
 export const hubPollInterval = c.hubPollInterval ?? 300;
+
+// --- Tiered playground delivery (P1) ---
+
+// Zoom thresholds for the three-tier client orchestrator:
+//   zoom ≤ clusterMaxZoom  → cluster layer (get_playground_clusters)
+//   clusterMaxZoom+1 … centroidMaxZoom → centroid layer (get_playground_centroids)
+//   zoom > centroidMaxZoom → polygon layer (get_playgrounds_bbox)
+export const clusterMaxZoom  = c.clusterMaxZoom  ?? 10;
+export const centroidMaxZoom = c.centroidMaxZoom ?? 13;

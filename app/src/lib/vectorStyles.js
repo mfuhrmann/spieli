@@ -5,9 +5,18 @@ import { Icon, Style } from 'ol/style.js';
 import Fill from 'ol/style/Fill.js';
 import Stroke from 'ol/style/Stroke.js';
 import Circle from 'ol/style/Circle.js';
+import Text from 'ol/style/Text.js';
 
 import { objDevices, objFeatures } from './objPlaygroundEquipment.js';
 import { playgroundCompleteness } from './completeness.js';
+
+// ── Completeness colours shared by all tiers ──────────────────────────────────
+// Values match the polygon-tier fills so a zoom transition doesn't swap palettes.
+const COMPLETENESS_COLOR = {
+  complete: '#155215',
+  partial:  '#92400e',
+  missing:  '#991b1b',
+};
 
 // ── Playground completeness colours ──────────────────────────────────────────
 
@@ -127,6 +136,58 @@ export const treeStyle = new Style({
         stroke: new Stroke({ color: '#155215', width: 1.5 })
     })
 });
+
+// ── Tiered-delivery placeholder styles (P1 §3) ────────────────────────────────
+// Simple OL primitives so the three layers render something visible during §3.
+// Section 4 replaces clusterTierStyleFn with a canvas-based stacked-ring
+// renderer via Supercluster; centroidTierStyleFn may also gain its own badge.
+
+/** Cluster tier (zoom ≤ clusterMaxZoom) — one circle per server-bucketed cell. */
+export function clusterTierStyleFn(feature) {
+  const count = feature.get('count') ?? 0;
+  const radius = count < 10 ? 12 : count < 100 ? 16 : count < 1000 ? 20 : 24;
+  return new Style({
+    image: new Circle({
+      radius,
+      fill:   new Fill({ color: 'rgba(55, 65, 81, 0.75)' }),
+      stroke: new Stroke({ color: '#1f2937', width: 1.5 }),
+    }),
+    text: new Text({
+      text: String(count),
+      font: 'bold 12px system-ui, sans-serif',
+      fill: new Fill({ color: '#fff' }),
+    }),
+  });
+}
+
+/** Centroid tier (zoom 11–13) — Supercluster may merge points; solo points
+ *  render as a completeness-coloured dot. */
+export function centroidTierStyleFn(feature) {
+  if (feature.get('_tier') === 'centroid-cluster') {
+    const count = feature.get('count') ?? 0;
+    const radius = Math.min(20, 8 + Math.log2(Math.max(2, count)) * 2);
+    return new Style({
+      image: new Circle({
+        radius,
+        fill:   new Fill({ color: 'rgba(71, 85, 105, 0.75)' }),
+        stroke: new Stroke({ color: '#1f2937', width: 1.5 }),
+      }),
+      text: new Text({
+        text: String(count),
+        font: 'bold 11px system-ui, sans-serif',
+        fill: new Fill({ color: '#fff' }),
+      }),
+    });
+  }
+  const color = COMPLETENESS_COLOR[feature.get('completeness')] ?? COMPLETENESS_COLOR.missing;
+  return new Style({
+    image: new Circle({
+      radius: 5,
+      fill:   new Fill({ color }),
+      stroke: new Stroke({ color: '#fff', width: 1 }),
+    }),
+  });
+}
 
 /** Style function for the equipment overlay layer. Never uses icon image files. */
 export function equipmentLayerStyleFn(feature) {

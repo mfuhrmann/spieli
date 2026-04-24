@@ -10,17 +10,29 @@
   import { defaults as defaultInteractions } from 'ol/interaction/defaults';
 
   import { mapZoom, mapMinZoom, apiBaseUrl } from '../lib/config.js';
-  import { playgroundStyleFn, selectionStyle, equipmentLayerStyleFn, treeStyle } from '../lib/vectorStyles.js';
+  import {
+    playgroundStyleFn,
+    selectionStyle,
+    equipmentLayerStyleFn,
+    treeStyle,
+    clusterTierStyleFn,
+    centroidTierStyleFn,
+  } from '../lib/vectorStyles.js';
   import { selection } from '../stores/selection.js';
   import { mapStore } from '../stores/map.js';
   import { playgroundSourceStore } from '../stores/playgroundSource.js';
+  import { activeTierStore } from '../stores/tier.js';
   import { filterStore, matchesFilters } from '../stores/filters.js';
   import { overlayFeaturesStore } from '../stores/overlayLayer.js';
   import { debounce } from '../lib/utils.js';
 
-  // Props: the source is injected; Map itself never loads data.
-  /** @type {VectorSource | null} - when provided, the map uses this source instead of creating one */
+  // Props: the sources are injected by the shell; Map itself never loads data.
+  /** @type {VectorSource | null} - polygon-tier source (zoom ≥ 14) */
   export let playgroundSource = null;
+  /** @type {VectorSource | null} - cluster-tier source (zoom ≤ 10) */
+  export let clusterSource = null;
+  /** @type {VectorSource | null} - centroid-tier source (zoom 11–13) */
+  export let centroidSource = null;
   /** Backend URL used for selection — standalone passes apiBaseUrl, hub passes per-feature URL */
   export let defaultBackendUrl = apiBaseUrl;
   
@@ -35,20 +47,40 @@
 
   let mapContainer;
   let olMap = null;
-  let playgroundLayer = null; // exposed for filter reactivity
+  let playgroundLayer = null; // polygon tier (zoom ≥ 14) — exposed for filter reactivity
+  let clusterLayer = null;    // cluster tier (zoom ≤ 10) — §3
+  let centroidLayer = null;   // centroid tier (zoom 11–13) — §3
   let equipmentLayer = null;  // overlay: equipment points/polygons
   let treeLayer = null;       // overlay: tree dots
   let overlayUnsubscribe = null;
+  let tierUnsubscribe = null;
 
   onMount(async () => {
-    // The shell owns the source; fall back to an empty one so the map still
+    // The shell owns the sources; fall back to empty ones so the map still
     // renders in degraded paths (e.g. tests that mount Map without a parent).
-    const source = playgroundSource ?? new VectorSource();
+    const polygonSrc  = playgroundSource ?? new VectorSource();
+    const clusterSrc  = clusterSource    ?? new VectorSource();
+    const centroidSrc = centroidSource   ?? new VectorSource();
 
+    // All three tier layers start hidden; the activeTierStore subscription
+    // below reveals the right one once the orchestrator has chosen a tier.
     playgroundLayer = new VectorLayer({
-      source,
+      source: polygonSrc,
       zIndex: 10,
       style: playgroundStyleFn,
+      visible: false,
+    });
+    centroidLayer = new VectorLayer({
+      source: centroidSrc,
+      zIndex: 11,
+      style: centroidTierStyleFn,
+      visible: false,
+    });
+    clusterLayer = new VectorLayer({
+      source: clusterSrc,
+      zIndex: 12,
+      style: clusterTierStyleFn,
+      visible: false,
     });
 
     const basemap = new TileLayer({
@@ -68,7 +100,7 @@
 
     olMap = new Map({
       target: mapContainer,
-      layers: [basemap, playgroundLayer],
+      layers: [basemap, playgroundLayer, centroidLayer, clusterLayer],
       view,
       // Disable default zoom/rotate controls for cleaner UI like Google Maps
       controls: defaultControls({ 
@@ -115,22 +147,28 @@
       }
     });
 
-    // Click handler: select playground on click
+    // Click handler: select playground on click. Cluster/centroid tier clicks
+    // are inert for now — §4.5 wires cluster zoom-to-extent and §5 wires
+    // centroid select — but they must NOT fall through to `selection.clear()`.
     olMap.on('click', (evt) => {
-      const hit = olMap.forEachFeatureAtPixel(evt.pixel, (feature) => feature, {
+      const polygonHit = olMap.forEachFeatureAtPixel(evt.pixel, (f) => f, {
         layerFilter: (l) => l === playgroundLayer,
       });
-      if (hit) {
-        const backendUrl = hit.get('_backendUrl') ?? defaultBackendUrl;
-        selection.select(hit, backendUrl);
-        view.fit(hit.getGeometry().getExtent(), {
+      if (polygonHit) {
+        const backendUrl = polygonHit.get('_backendUrl') ?? defaultBackendUrl;
+        selection.select(polygonHit, backendUrl);
+        view.fit(polygonHit.getGeometry().getExtent(), {
           padding: [40, 40, 40, 420], // right/top/bottom clear; 420 = sidebar width + margin
           maxZoom: 19,
           duration: 400,
         });
-      } else {
-        selection.clear();
+        return;
       }
+      const tierHit = olMap.forEachFeatureAtPixel(evt.pixel, (f) => f, {
+        layerFilter: (l) => l === clusterLayer || l === centroidLayer,
+      });
+      if (tierHit) return; // deferred to §4.5 / §5
+      selection.clear();
     });
 
     // Pointer cursor on hover + hover preview callback
@@ -189,13 +227,29 @@
       }
     });
 
-    // Publish the source so dependent components (filter reactivity,
-    // NearbyPlaygrounds fallback, URL-hash restore in AppShell) can react.
-    playgroundSourceStore.set(source);
+    // Tier-driven layer visibility. playgroundSourceStore is published only
+    // while the polygon tier is active (§3.6) so dependent widgets don't
+    // see an empty source at cluster/centroid zooms. `tier === null` means
+    // the orchestrator hasn't run yet — keep all layers hidden.
+    tierUnsubscribe = activeTierStore.subscribe(tier => {
+      if (!playgroundLayer) return;
+      if (tier === null) {
+        playgroundLayer.setVisible(false);
+        centroidLayer.setVisible(false);
+        clusterLayer.setVisible(false);
+        playgroundSourceStore.set(null);
+        return;
+      }
+      playgroundLayer.setVisible(tier === 'polygon');
+      centroidLayer.setVisible(tier === 'centroid');
+      clusterLayer.setVisible(tier === 'cluster');
+      playgroundSourceStore.set(tier === 'polygon' ? polygonSrc : null);
+    });
   });
 
   onDestroy(() => {
     if (overlayUnsubscribe) overlayUnsubscribe();
+    if (tierUnsubscribe) tierUnsubscribe();
     if (olMap) {
       olMap.setTarget(undefined);
       mapStore.set(null);

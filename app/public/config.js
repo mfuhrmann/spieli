@@ -24,4 +24,9 @@ window.APP_CONFIG = {
   hubPollInterval: 300,
   // Hub uses a wider default zoom to show all registered regions
   // mapZoom and mapMinZoom above are reused; override here if needed
+
+  // --- Tiered playground delivery (standalone mode in P1) ---
+  // Hub-side fan-out over these tiers lands in add-federated-playground-clustering (P2).
+  clusterMaxZoom: 10,
+  centroidMaxZoom: 13,
 };

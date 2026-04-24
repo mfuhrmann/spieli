@@ -14,18 +14,23 @@
     regionChatUrl,
   } from '../lib/config.js';
   import {
-    fetchPlaygrounds,
     fetchNearestPlaygrounds,
     fetchStandaloneEquipment,
   } from '../lib/api.js';
   import { fetchRegionInfo } from '../lib/region.js';
+  import { attachTieredOrchestrator } from '../lib/tieredOrchestrator.js';
   import { equipmentLayerStyleFn } from '../lib/vectorStyles.js';
   import { debounce } from '../lib/utils.js';
   import { mapStore } from '../stores/map.js';
   import { filterStore } from '../stores/filters.js';
 
-  // Standalone owns its VectorSource — one per page, fed by a single backend.
-  const playgroundSource = new VectorSource();
+  // Standalone owns three VectorSources — one per tier. The orchestrator
+  // populates the active one on every debounced moveend; Map.svelte toggles
+  // layer visibility from activeTierStore.
+  const playgroundSource = new VectorSource(); // polygon tier (zoom ≥ 14)
+  const clusterSource    = new VectorSource(); // cluster tier (zoom ≤ 10)
+  const centroidSource   = new VectorSource(); // centroid tier (zoom 11–13)
+  let detachOrchestrator = null;
 
   // Standalone pitches (leisure=pitch outside any playground) — own layer,
   // attached to the map when it becomes available and refreshed on moveend.
@@ -120,32 +125,42 @@
         map.removeLayer(pitchLayer);
         pitchLayer = null;
       };
-    });
 
-    // Load the playground polygons for this region.
-    try {
-      const geojson = await fetchPlaygrounds();
-      const features = new GeoJSON().readFeatures(geojson, {
-        dataProjection: 'EPSG:4326',
-        featureProjection: 'EPSG:3857',
-      });
-      playgroundSource.addFeatures(features);
-    } catch (err) {
-      console.error('Playground data could not be loaded:', err);
-    }
+      // Tiered orchestrator: replaces the one-shot region fetch. Picks a
+      // tier from the view's zoom on every moveend, fetches the matching
+      // RPC, and populates the relevant source. Cancels superseded requests.
+      //
+      // When apiBaseUrl is empty (local-dev without Docker, see CLAUDE.md
+      // "Local dev note") there is no data path — skip the orchestrator so
+      // the console isn't spammed with 404s against the Vite dev server.
+      if (apiBaseUrl) {
+        detachOrchestrator = attachTieredOrchestrator({
+          map,
+          baseUrl: apiBaseUrl,
+          clusterSource,
+          centroidSource,
+          polygonSource: playgroundSource,
+        });
+      } else {
+        console.info('[standalone] apiBaseUrl empty — tiered orchestrator not attached (local dev without Docker)');
+      }
+    });
   });
 
   // Toggle pitch-layer visibility from the filter store.
   $: if (pitchLayer) pitchLayer.setVisible($filterStore.standalonePitches);
 
   onDestroy(() => {
-    if (detachMapSub) detachMapSub();
-    if (detachPitchLayer) detachPitchLayer();
+    if (detachMapSub)      detachMapSub();
+    if (detachPitchLayer)  detachPitchLayer();
+    if (detachOrchestrator) detachOrchestrator();
   });
 </script>
 
 <AppShell
   {playgroundSource}
+  {clusterSource}
+  {centroidSource}
   {searchExtent}
   {nearestFetcher}
   {dataContribLinks}
