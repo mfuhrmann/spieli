@@ -49,7 +49,7 @@ cd spieli
 # Start the stack
 docker compose --profile data-node-ui up -d
 
-# Re-import OSM data (run to refresh from Geofabrik)
+# Re-import OSM data (clips to your region with osmium, then runs osm2pgsql)
 docker compose --profile data-node run --rm importer
 
 # Stop the stack

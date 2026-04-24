@@ -38,12 +38,27 @@ See [Configuration](configuration.md) for all available variables, including `DE
 # Start the database, API, and web server
 docker compose --profile data-node-ui up -d
 
-# Import OSM data (downloads PBF, runs osm2pgsql, sets up API functions)
-# Takes a few minutes depending on extract size and hardware
+# Import OSM data (downloads PBF, filters to region with osmium, runs osm2pgsql)
 docker compose --profile data-node run --rm importer
 ```
 
 Replace `data-node-ui` with your chosen `DEPLOY_MODE`. The app will be available at `http://localhost:8080` (or the port set in `APP_PORT`).
+
+!!! info "How the import works"
+    The importer runs a two-step osmium pipeline before osm2pgsql:
+
+    1. **Bbox extract** — clips the source PBF to your region's bounding box (~322 MB Bundesland → ~50 MB)
+    2. **Tag filter** — keeps only objects the app queries (playgrounds, trees, pitches, POIs, …), reducing the file to ~4–8 MB
+
+    osm2pgsql then runs on that small file in a few seconds, regardless of how large the source PBF was.
+
+    | Run | What happens | Typical time |
+    |---|---|---|
+    | First (no PBF cached) | Downloads source PBF, bbox clip, tag filter, import | ~2–5 min (mostly download) |
+    | First (PBF already cached) | Bbox clip, tag filter, import | ~30–60 s |
+    | Any subsequent run | Reuses both cached filtered PBFs, import | ~20–30 s |
+
+    All three files (source, bbox-clipped, tag-filtered) are stored in the `pbf_cache` Docker volume and reused automatically.
 
 ## Step 5 — Updating data
 

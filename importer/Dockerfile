@@ -2,6 +2,9 @@ FROM debian:bookworm-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     osm2pgsql \
+    osmium-tool \
+    jq \
+    curl \
     wget \
     postgresql-client \
     ca-certificates \

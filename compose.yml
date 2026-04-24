@@ -41,11 +41,14 @@ services:
       POSTGRES_DB:       osm
       POSTGRES_USER:     osm
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
-      PBF_URL:           ${PBF_URL:-https://download.geofabrik.de/europe/germany/hessen-latest.osm.pbf}
-      OSM2PGSQL_THREADS: ${OSM2PGSQL_THREADS:-4}
-      OSM_RELATION_ID:   ${OSM_RELATION_ID:-454863}
+      PBF_URL:                ${PBF_URL:-https://download.geofabrik.de/europe/germany/hessen-latest.osm.pbf}
+      OSM2PGSQL_THREADS:      ${OSM2PGSQL_THREADS:-4}
+      OSM_RELATION_ID:        ${OSM_RELATION_ID:-454863}
+      OSM_BBOX:               ${OSM_BBOX:-}
+      OSM_BBOX_PADDING:       ${OSM_BBOX_PADDING:-0.15}
+      OSM_PREFILTER_MIN_MB:   ${OSM_PREFILTER_MIN_MB:-20}
     volumes:
-      - pbf_cache:/data   # PBF is re-downloaded on each run; this just avoids /tmp clutter
+      - pbf_cache:/data
     profiles: [import]    # not started by "docker compose up"
     restart: "no"
 
@@ -94,9 +97,12 @@ services:
       POSTGRES_DB:       osm
       POSTGRES_USER:     osm
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
-      PBF_URL:           ${PBF_URL:-https://download.geofabrik.de/europe/germany/hessen-latest.osm.pbf}
-      OSM2PGSQL_THREADS: ${OSM2PGSQL_THREADS:-4}
-      OSM_RELATION_ID:   ${OSM_RELATION_ID2:-454881}
+      PBF_URL:                ${PBF_URL:-https://download.geofabrik.de/europe/germany/hessen-latest.osm.pbf}
+      OSM2PGSQL_THREADS:      ${OSM2PGSQL_THREADS:-4}
+      OSM_RELATION_ID:        ${OSM_RELATION_ID2:-454881}
+      OSM_BBOX:               ${OSM_BBOX:-}
+      OSM_BBOX_PADDING:       ${OSM_BBOX_PADDING:-0.15}
+      OSM_PREFILTER_MIN_MB:   ${OSM_PREFILTER_MIN_MB:-20}
     volumes:
       - pbf_cache:/data
     profiles: [import2]

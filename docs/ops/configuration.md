@@ -22,6 +22,9 @@ All variables are set in `.env` (copy from `.env.example`). The installer genera
 | `POSTGRES_PASSWORD` | `change-me` | data-node, data-node-ui | Database password — **change in production** |
 | `POI_RADIUS_M` | `5000` | ui, data-node-ui | Radius in metres for nearby POI search |
 | `OSM2PGSQL_THREADS` | `4` | data-node, data-node-ui | CPU threads for the import |
+| `OSM_BBOX` | *(auto)* | data-node, data-node-ui | Manual bounding box for the osmium pre-filter (`west,south,east,north`). Skips Nominatim lookup when set. |
+| `OSM_BBOX_PADDING` | `0.15` | data-node, data-node-ui | Degrees of padding added to each side of the Nominatim bbox (≈ 15 km). |
+| `OSM_PREFILTER_MIN_MB` | `20` | data-node, data-node-ui | Source PBF files smaller than this many MB skip the osmium pre-filter step. |
 | `GEOSERVER_URL` | *(disabled)* | data-node, data-node-ui | Base URL of a GeoServer instance for the shadow WMS layer; leave empty to disable |
 | `GEOSERVER_WORKSPACE` | `spieli` | data-node, data-node-ui | GeoServer workspace name — only used when `GEOSERVER_URL` is set |
 | `HUB_POLL_INTERVAL` | `300` | hub | Seconds between Hub re-fetches of playground data from all registered instances |
