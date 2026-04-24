@@ -178,10 +178,16 @@ Three layers over the canvas stacked-ring + cluster click. Build clean; no runti
 
 ## 7. Verification
 
-- [ ] 7.1 Unit: `stackedRingRenderer` bitmap cache keys round-trip for a sample of count/ratio tuples
-- [ ] 7.2 Playwright: zoom-in from 6 to 18, assert cluster → centroid → polygon transitions happen at the configured thresholds and no visible gap in count
-- [ ] 7.3 Playwright: pan at zoom 12 across the Fulda seed region, assert centroid layer refetches and count matches expected
-- [ ] 7.4 Manual: `make docker-build && make up` on the 4-playground seed; click a cluster at zoom 10, verify fit-to-extent works
-- [ ] 7.5 Manual: performance sanity on a Berlin-sized extract — `npm run build` + serve, confirm first-paint map is interactive in under 2 seconds
-- [ ] 7.6 Legacy: `fetchPlaygrounds` calls log the deprecation warning exactly once per session
-- [ ] 7.7 `openspec validate add-tiered-playground-delivery` passes before archive
+- [-] 7.1 ~~Unit: `stackedRingRenderer` bitmap cache keys round-trip for a sample of count/ratio tuples~~ **Deferred** — the project doesn't ship a unit-test runner (Vitest/Jest) and adding one purely for this is out of scope for §7. The cache-key consistency was hardened during §4 review (quantise→draw uses the same tenths) and is exercised end-to-end by Playwright. Track as a follow-up if a unit-test runner lands later.
+- [x] 7.2 Playwright: zoom transitions covered in `tests/tiered.spec.js` — `cluster tier RPC fires when zoom ≤ clusterMaxZoom` and `polygon tier RPC fires when zoom > clusterMaxZoom`. Two-tier semantics, post-pivot.
+- [-] 7.3 ~~Playwright: pan at zoom 12 across the Fulda seed region, assert centroid layer refetches~~ **Centroid tier removed in pivot.** The cluster-tier moveend refetch is exercised end-to-end; a dedicated pan-refetch Playwright assertion is reasonable follow-up but not §7 scope after the pivot.
+- [x] 7.4 Manual: live-tested via `make docker-build && make up` on the 4-playground seed during §4 / pivot iteration. Cluster ring rendering, click-to-zoom, and tier transition between zoom 13 and 14 verified in the browser.
+- [-] 7.5 ~~Manual: Berlin perf~~ **Deferred** — would need a Berlin import (`make import` against a Berlin PBF) which the dev workflow doesn't ship. Worth running on a Berlin-sized backend before the change archives. Track as a follow-up.
+- [x] 7.6 Legacy `fetchPlaygrounds` deprecation warning fires once per session — covered by Playwright in `tests/tiered.spec.js` (`legacy fetchPlaygrounds emits a one-time deprecation warning`).
+- [x] 7.7 `openspec validate add-tiered-playground-delivery --strict` passes (verified after every section's review pass; stays clean).
+
+### Test infrastructure updates
+
+`tests/helpers.js` was extended in §7 to keep the existing test suites (smoke, hash-restore, selection, hub-*) working post-pivot:
+- `injectApiConfig` defaults to `clusterMaxZoom: 0` so polygon tier is always active in tests, isolating non-tier tests from orchestrator behaviour. Tests exercising cluster behaviour pass an override.
+- `stubApiRoutes` now also stubs `/rpc/get_playgrounds_bbox`, `/rpc/get_playground_clusters`, `/rpc/get_playground_centroids`, and `/rpc/get_playground?osm_id=…` so any orchestrator path resolves to the fixture.
