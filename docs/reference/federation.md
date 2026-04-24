@@ -91,3 +91,8 @@ The Hub renders the same layout as a standalone regional map, with two additions
 - **Deep-link scheme**: see the [deep-link behaviour table](registry-json.md#deep-link-behaviour) in the registry reference.
 
 The scale-line sits just below the pill in the same bottom-left corner. All other controls (search, filters, locate, zoom, contribute) are shared with standalone mode and behave identically.
+
+## See also
+
+- [Federated Deployment](../ops/federated-deployment.md) — step-by-step walkthrough for standing up one Hub + N data-nodes.
+- [`registry.json` reference](registry-json.md) — registry schema, slug rules, derived aggregate behaviours.

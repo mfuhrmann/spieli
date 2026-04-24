@@ -82,6 +82,8 @@ services:
       MAP_MIN_ZOOM:               ${MAP_MIN_ZOOM:-10}
       POI_RADIUS_M:               ${POI_RADIUS_M:-5000}
       API_BASE_URL:               ${API_BASE_URL:-/api}
+      REGISTRY_URL:               ${REGISTRY_URL:-/registry.json}
+      HUB_POLL_INTERVAL:          ${HUB_POLL_INTERVAL:-300}
     restart: on-failure
 
 volumes:

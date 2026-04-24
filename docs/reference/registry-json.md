@@ -4,7 +4,7 @@ The Hub reads a `registry.json` file at startup and on a short poll interval (`H
 
 ## Location
 
-- **Served from**: the nginx container under `/registry.json` (path configurable via `HUB_REGISTRY_URL`).
+- **Served from**: the nginx container under `/registry.json` (path configurable via `REGISTRY_URL`).
 - **Source file**: `app/public/registry.json` in the repo. In production, replace or bind-mount with your own registry.
 - **Served as**: `application/json`. CORS is not needed for the registry file itself — the Hub fetches it from its own origin. The *backends* the registry points at are typically cross-origin and must enable CORS on `/api/` (covered in [Federation endpoints](federation.md#federation-endpoints)).
 
@@ -47,8 +47,11 @@ Both forms are supported indefinitely. New registries should prefer the object f
 | Field | Required | Description |
 |---|---|---|
 | `url`  | yes | Base URL of the backend's PostgREST `/api` (no trailing slash). The Hub appends `/rpc/get_playgrounds`, `/rpc/get_meta`, and `/rpc/get_nearest_playgrounds`. |
-| `name` | yes | Human-readable label. Shown in the instance drawer and — until `get_meta` returns — used as the backend's displayed region name. Falls back to `url` if omitted. |
+| `name` | recommended | Human-readable label. Shown in the instance drawer and — until `get_meta` returns — used as the backend's displayed region name. Technically falls back to `url` if omitted, which gives ugly labels — always set it. |
 | `slug` | no  | Short stable identifier used in deep-links (`#<slug>/W<osm_id>`). If present, features from this backend round-trip their slug back into the URL hash on selection. See [validation rules](#slug-validation) below. |
+
+!!! note "Runtime-populated fields"
+    The Hub does **not** read `version` or `region` from `registry.json` entries — adding those keys to the file has no effect. Both are derived at runtime from each backend's `/api/rpc/get_meta` response: `region` from the OSM relation name, `version` from a `version` key the response *would* carry. The current `get_meta` SQL function (`importer/api.sql`) does not return `version`, so `version` stays `null` and the instance drawer's version badge remains empty until a future release wires one through.
 
 ### Slug validation
 

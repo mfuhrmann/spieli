@@ -32,6 +32,7 @@ nav:
       - Quick Start: getting-started/quick-start.md
   - Operations:
       - Manual Deploy: ops/manual-deploy.md
+      - Federated Deployment: ops/federated-deployment.md
       - Configuration: ops/configuration.md
       - Troubleshooting: ops/troubleshooting.md
   - Contributing:
