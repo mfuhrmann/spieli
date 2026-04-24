@@ -38,8 +38,9 @@ See [Configuration](configuration.md) for all available variables, including `DE
 # Start the database, API, and web server
 docker compose --profile data-node-ui up -d
 
-# Import OSM data (downloads PBF, runs osm2pgsql, sets up API functions)
-# Takes a few minutes depending on extract size and hardware
+# Import OSM data (downloads PBF, clips to region with osmium, runs osm2pgsql)
+# First run: ~2–5 min (downloads Bundesland PBF, clips to your region).
+# Subsequent runs: much faster — the clipped PBF is cached and reused.
 docker compose --profile data-node run --rm importer
 ```
 

@@ -58,7 +58,7 @@ Set `APP_MODE=standalone` (default) or `APP_MODE=hub` in `.env`.
 | Language | [Svelte 5](https://svelte.dev/) |
 | Build tool | [Vite 6](https://vitejs.dev/) |
 | Database | [PostgreSQL 16](https://www.postgresql.org/) + [PostGIS 3.4](https://postgis.net/) |
-| OSM import | [osm2pgsql](https://osm2pgsql.org/) |
+| OSM import | [osm2pgsql](https://osm2pgsql.org/) + [osmium-tool](https://osmcode.org/osmium-tool/) |
 | API layer | [PostgREST v12](https://postgrest.org/) |
 | Web server | [nginx](https://nginx.org/) |
 | Container runtime | Docker / Docker Compose |
