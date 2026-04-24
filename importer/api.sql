@@ -429,6 +429,71 @@ $$;
 GRANT EXECUTE ON FUNCTION api.get_playgrounds_bbox(float8, float8, float8, float8) TO web_anon;
 
 -- =========================================================================
+-- 1d. get_playground(osm_id)
+--     Single-feature lookup used by deeplink hydration and the nearby-list
+--     "select" handler when the polygon source isn't populated for the
+--     current viewport (zoom ≤ clusterMaxZoom). Same per-feature shape as
+--     a single feature inside get_playgrounds_bbox.features. Prefers a
+--     relation row (osm_id < 0) over a way row of the same magnitude.
+-- =========================================================================
+DROP FUNCTION IF EXISTS api.get_playground(bigint);
+
+CREATE OR REPLACE FUNCTION api.get_playground(osm_id bigint)
+RETURNS json
+LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path = public, api
+AS $$
+  WITH p AS (
+    SELECT
+      x.osm_id,
+      x.name,
+      x.leisure,
+      x.operator,
+      x.access,
+      x.surface,
+      x.way_area::int AS area,
+      x.tags,
+      ST_Transform(x.way, 4326) AS geom
+    FROM planet_osm_polygon x
+    WHERE x.leisure = 'playground'
+      AND abs(x.osm_id) = abs($1)
+    ORDER BY (x.osm_id < 0) DESC
+    LIMIT 1
+  )
+  SELECT json_build_object(
+    'type', 'Feature',
+    'geometry', ST_AsGeoJSON(p.geom)::json,
+    'properties', (
+      jsonb_build_object(
+        'osm_id',             abs(p.osm_id),
+        'osm_type',           CASE WHEN p.osm_id < 0 THEN 'R' ELSE 'W' END,
+        'name',               p.name,
+        'leisure',            p.leisure,
+        'operator',           p.operator,
+        'access',             p.access,
+        'surface',            p.surface,
+        'area',               p.area,
+        'tree_count',         COALESCE(s.tree_count, 0),
+        'bench_count',        COALESCE(s.bench_count, 0),
+        'shelter_count',      COALESCE(s.shelter_count, 0),
+        'picnic_count',       COALESCE(s.picnic_count, 0),
+        'table_tennis_count', COALESCE(s.table_tennis_count, 0),
+        'has_soccer',         COALESCE(s.has_soccer, false),
+        'has_basketball',     COALESCE(s.has_basketball, false),
+        'is_water',           COALESCE(s.is_water, false),
+        'for_baby',           COALESCE(s.for_baby, false),
+        'for_toddler',        COALESCE(s.for_toddler, false),
+        'for_wheelchair',     COALESCE(s.for_wheelchair, false)
+      ) || COALESCE(hstore_to_jsonb(p.tags), '{}'::jsonb)
+    )
+  )
+  FROM p
+  LEFT JOIN public.playground_stats s ON abs(s.osm_id) = abs(p.osm_id);
+$$;
+
+GRANT EXECUTE ON FUNCTION api.get_playground(bigint) TO web_anon;
+
+-- =========================================================================
 -- 2. get_equipment(min_lon, min_lat, max_lon, max_lat)
 --    Returns playground equipment and amenities within a WGS84 bounding box
 --    as a GeoJSON FeatureCollection.

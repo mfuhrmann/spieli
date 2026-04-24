@@ -55,6 +55,22 @@ Each data-node SHALL expose a function returning full playground polygons scoped
 - **THEN** only playgrounds whose geometry intersects the bbox are returned
 - **AND** a playground whose polygon partially overlaps the bbox edge is still returned in full (not clipped)
 
+### Requirement: Backend exposes single-feature playground lookup
+
+Each data-node SHALL expose a function returning a single playground feature by `osm_id`, so the client can hydrate a polygon on demand for deeplinks and nearby-list selections when the polygon source isn't populated for the current viewport.
+
+#### Scenario: Single-feature RPC returns one feature
+
+- **WHEN** a client calls `api.get_playground(osm_id)` for a known osm_id
+- **THEN** the response is a single GeoJSON `Feature` with the same per-feature property shape as one element of `get_playgrounds_bbox.features[*]` (`osm_id`, `osm_type`, `name`, `leisure`, `operator`, `access`, `surface`, `area`, plus the `playground_stats` counts)
+- **AND** when both a relation row (`osm_id < 0`) and a way row (`osm_id > 0`) exist with the same magnitude, the relation is returned (round-trip fidelity for `R`/`W` differentiation requires a follow-up to extend the deeplink format)
+
+#### Scenario: Single-feature RPC returns null body on miss
+
+- **WHEN** a client calls `api.get_playground(osm_id)` with an unknown osm_id
+- **THEN** the response is JSON `null` (PostgREST scalar-return on zero rows), HTTP 200
+- **AND** the frontend fetcher distinguishes this from server errors by throwing only on non-2xx responses
+
 ### Requirement: get_meta includes completeness counts
 
 The `api.get_meta` response SHALL include per-backend aggregate completeness counts, so clients can render a macro view (proposal P2).
@@ -109,7 +125,7 @@ The standalone client SHALL render playground data through exactly two zoom-scop
 - **WHEN** the map zoom is greater than `clusterMaxZoom`
 - **THEN** the polygon layer is visible, rendered with `playgroundStyleFn`
 - **AND** the cluster layer is hidden
-- **AND** `playgroundSourceStore` is set to the polygon layer's source
+- **AND** `playgroundSourceStore` exposes the polygon layer's source (the store is also non-null at cluster tier so widgets can hydrate single playgrounds on demand — see §"Deeplink restore hydrates the polygon tier on demand")
 
 #### Scenario: Moveend refetches the active layer
 

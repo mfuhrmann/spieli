@@ -14,10 +14,12 @@
   import { onDestroy, onMount } from 'svelte';
   import { Pencil, Plus, Minus } from 'lucide-svelte';
   import { _ } from 'svelte-i18n';
+  import GeoJSON from 'ol/format/GeoJSON.js';
   import { mapStore } from '../stores/map.js';
   import { selection, hasSelection } from '../stores/selection.js';
   import { playgroundSourceStore } from '../stores/playgroundSource.js';
   import { parseHash } from '../lib/deeplink.js';
+  import { fetchPlaygroundByOsmId } from '../lib/api.js';
 
   /**
    * The OL VectorSource that renders the polygon tier (zoom ≥ 14). The shell
@@ -88,7 +90,11 @@
   // overlapping regional databases).
   let hashRestored = false;
   let warnedUnknownSlug = false;
-  function tryRestoreFromHash() {
+  let hydrating = false;
+  let warnedHydrationFailed = false;
+  const geojsonFormat = new GeoJSON();
+
+  async function tryRestoreFromHash() {
     if (hashRestored) return;
     const parsed = parseHash(window.location.hash);
     if (!parsed) { hashRestored = true; return; }
@@ -108,16 +114,73 @@
     }
 
     const matches = candidates.filter(f => f.get('osm_id') === parsed.osmId);
-    if (matches.length === 0) return;
-
-    if (matches.length > 1 && !parsed.slug) {
-      console.warn(`[deeplink] osm_id ${parsed.osmId} matched ${matches.length} backends — selecting the first`);
+    if (matches.length > 0) {
+      if (matches.length > 1 && !parsed.slug) {
+        console.warn(`[deeplink] osm_id ${parsed.osmId} matched ${matches.length} backends — selecting the first`);
+      }
+      const feat = matches[0];
+      const backendUrl = feat.get('_backendUrl') ?? defaultBackendUrl;
+      selection.select(feat, backendUrl);
+      // Fit to the playground so the user sees what they linked to even if
+      // they landed at a low zoom that doesn't render polygons.
+      const map = $mapStore;
+      if (map) {
+        map.getView().fit(feat.getGeometry().getExtent(), {
+          padding: [40, 40, 40, 420],
+          maxZoom: 19,
+          duration: 400,
+        });
+      }
+      hashRestored = true;
+      return;
     }
 
-    const feat = matches[0];
-    const backendUrl = feat.get('_backendUrl') ?? defaultBackendUrl;
-    selection.select(feat, backendUrl);
-    hashRestored = true;
+    // §5.1 — when the polygon source is empty (cluster tier on first load),
+    // hydrate the single feature on demand from get_playground(osm_id).
+    // The source's 'change' event re-runs this handler and the standard
+    // match path then selects + fits.
+    if (hydrating) return;
+    if (parsed.slug) {
+      // Hub-mode hydration via slug → backend URL is P2 scope. In a
+      // standalone build any slug-prefixed deeplink reads as "selector for
+      // a backend we don't have" — don't keep retrying.
+      if (!warnedUnknownSlug) {
+        console.warn(`[deeplink] slug-prefixed hash "${parsed.slug}" is hub-mode only — ignoring`);
+        warnedUnknownSlug = true;
+      }
+      hashRestored = true;
+      return;
+    }
+    hydrating = true;
+    try {
+      const feature = await fetchPlaygroundByOsmId(parsed.osmId, defaultBackendUrl);
+      if (feature) {
+        const olFeatures = geojsonFormat.readFeatures(
+          { type: 'FeatureCollection', features: [feature] },
+          { dataProjection: 'EPSG:4326', featureProjection: 'EPSG:3857' },
+        );
+        playgroundSource.addFeatures(olFeatures);
+      } else {
+        // 200 OK with no body — the backend confirms no playground exists
+        // with this osm_id. Give up rather than retry on every change.
+        if (!warnedHydrationFailed) {
+          warnedHydrationFailed = true;
+          console.warn(`[deeplink] no playground found for osm_id ${parsed.osmId}`);
+        }
+        hashRestored = true;
+      }
+    } catch (err) {
+      // Server error / network / timeout. Logging once and giving up
+      // beats fetching on every subsequent moveend's source change. User
+      // can reload to retry.
+      if (!warnedHydrationFailed) {
+        warnedHydrationFailed = true;
+        console.warn('[deeplink] hydration failed (give up; reload to retry):', err);
+      }
+      hashRestored = true;
+    } finally {
+      hydrating = false;
+    }
   }
 
   onMount(() => {

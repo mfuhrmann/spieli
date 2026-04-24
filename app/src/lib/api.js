@@ -67,6 +67,21 @@ export async function fetchPlaygroundsBbox(extentEPSG3857, baseUrl = defaultApiB
     throw new Error(`get_playgrounds_bbox failed: ${res.status}`);
 }
 
+/**
+ * Single-playground lookup for deeplink and nearby-list hydration when the
+ * polygon source isn't populated (zoom ≤ clusterMaxZoom). Returns a single
+ * GeoJSON Feature, or `null` if the backend reports no match. Throws on
+ * non-OK responses so the caller can distinguish "not found" (null) from
+ * "server error" (throw) and decide how to fail / retry.
+ */
+export async function fetchPlaygroundByOsmId(osmId, baseUrl = defaultApiBaseUrl, signal) {
+    const params = new URLSearchParams({ osm_id: String(osmId) });
+    const res = await fetch(`${baseUrl}/rpc/get_playground?${params}`, { signal });
+    if (!res.ok) throw new Error(`get_playground failed: ${res.status}`);
+    const json = await res.json();
+    return json && json.geometry ? json : null;
+}
+
 // Equipment and fixtures for a playground (bbox in EPSG:3857).
 // osmId is carried through for future query optimisation but currently unused server-side.
 export async function fetchPlaygroundEquipment(extentEPSG3857, osmId = null, baseUrl = defaultApiBaseUrl) {

@@ -122,9 +122,31 @@ Three layers over the canvas stacked-ring + cluster click. Build clean; no runti
 
 ## 5. Client — selection + deeplink adaptation
 
-- [ ] 5.1 `AppShell.svelte::tryRestoreFromHash` falls back to a hydration fetch (`get_playgrounds_bbox` centred on the osm_id's last-known position from `get_nearest_playgrounds`) when the polygon layer is empty
-- [ ] 5.2 `NearbyPlaygrounds` fallback (distance scan of `playgroundSource.getFeatures()`) is removed — it's been a soft fallback since Overpass mode; the PostgREST `get_nearest_playgrounds` path is always available now
-- [ ] 5.3 Cluster-click does not set a hash (it's a navigation gesture, not a selection)
+- [x] 5.1 `AppShell.svelte::tryRestoreFromHash` hydrates the polygon source on demand when empty. Implementation deviates from the spec wording (which proposed `get_nearest_playgrounds` + `get_playgrounds_bbox`) in favour of a simpler one-shot `api.get_playground(osm_id)` lookup — single round-trip, no bbox math. The new RPC is added in `importer/api.sql` + `dev/seed/seed.sql`.
+- [x] 5.2 `NearbyPlaygrounds` distance-scan fallback removed. `nearestFromSource` and the `||`/`catch` fallbacks all gone. `selectSuggestion` now hydrates the polygon source via the new `fetchPlaygroundByOsmId` when the feature isn't yet loaded (cluster tier).
+- [x] 5.3 Cluster-click does not set a hash — handled in `Map.svelte` click handler (it animates the view and returns before selection is touched).
+
+### Review Findings — §5, Pass 1 (bmad-code-review, 2026-04-25)
+
+#### Medium
+- [x] [Review][Patch] **Hydration error path leaves `hashRestored=false` → fetch storm**. If `fetchPlaygroundByOsmId` throws (network outage, 500), the catch logs and `finally` resets `hydrating=false` but `hashRestored` is never set. Every subsequent `playgroundSource` 'change' event re-fires the fetch. Set `hashRestored=true` (or implement a small retry budget) in the catch branch. [app/src/components/AppShell.svelte tryRestoreFromHash catch] (Medium)
+- [x] [Review][Patch] **`fetchPlaygroundByOsmId` swallows non-200 as null** — collapses 500/503/CORS into the same outcome as a legitimate empty result. Throw on `!res.ok` so the caller can distinguish "not found" (returns null body) from "server error" (throws), and the caller's retry/fail logic can act accordingly. [app/src/lib/api.js fetchPlaygroundByOsmId] (Medium)
+- [x] [Review][Patch] **NearbyPlaygrounds hydrated feature lacks `_backendUrl`**. Standalone-fine (defaultBackendUrl falls through), hub-broken (the next selection of the same feature reads `_backendUrl` as undefined and uses the wrong backend). Stamp `feature.set('_backendUrl', backendUrl)` immediately after `readFeatures`. [app/src/components/NearbyPlaygrounds.svelte selectSuggestion hydration] (Medium)
+- [x] [Review][Patch] **Spec missing a "single-feature lookup" backend requirement**. The new `api.get_playground(osm_id)` RPC is not described anywhere in `spec.md`. Add a Requirement covering the osm_id input, the GeoJSON Feature output shape, the relation-over-way preference, and the standalone region-scoping caveat. [openspec/.../spec.md] (Medium)
+
+#### Low
+- [x] [Review][Patch] **Hub-slug deeplink in standalone spins forever**. `if (parsed.slug) return;` silently bails without setting `hashRestored=true`. Every source change re-fires. Set `hashRestored=true` after a one-time warn. [app/src/components/AppShell.svelte tryRestoreFromHash] (Low)
+
+#### Deferred (scope / pre-existing)
+- **Hydration → orchestrator wipe race**: When view.fit zooms past `clusterMaxZoom`, the orchestrator's next moveend calls `polygonSource.clear()` on the polygon-tier fetch — the hydrated feature is replaced by a fresh one with the same osm_id. The selection store still references the orphan; `PlaygroundPanel` works (reads frozen properties) but any feature-instance-comparison style would miss. Pre-existing pattern (any post-pan moveend on the polygon tier has the same orphan issue). Real concern but out of §5 scope; would need a "selection re-attach on source change" hook. Defer to a follow-up.
+- **`R`/`W` precedence in `get_playground`**: SQL `ORDER BY (osm_id < 0) DESC` always prefers a relation over a way of the same magnitude. URL hash parser currently strips the `R`/`W` letter (`parseHash` returns only `{slug, osmId}`). Fixing requires both deeplink format change (`#W123` vs `#R123` round-trip) and a 2nd RPC parameter. Real but rare in OSM. Defer.
+- **`hashchange` event not wired**: Pasting `#W123` into the URL bar post-mount does not trigger restore. Out of §5 scope; small follow-up.
+
+### Dismissed (pass 1, §5)
+- Blind: async tryRestoreFromHash re-entrancy swallows the `change` event. **False positive** — the re-entrant call's synchronous prefix runs through the match path BEFORE reaching `if (hydrating) return`. Hydration → addFeatures → sync 'change' → sync match → select → hashRestored=true, all before the awaiting outer call resumes. Verified via dataflow trace. Edge Hunter caught this correctly.
+- Blind: `selectSuggestion` not awaited on rapid double-click. Real but very low impact (each click hydrates+selects, last one wins; the panel dismisses); acceptable.
+- Edge: `playgroundSourceStore` non-null contract change side effects. Spec amended in same diff with rationale; no other consumers gate on `null`.
+- Edge: stale hydrated features sit in invisible polygon source between zoom transitions. Cleared on the next polygon-tier `source.clear()`; harmless lifecycle.
 
 ## 6. Docs
 

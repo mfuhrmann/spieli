@@ -232,21 +232,23 @@
       }
     });
 
-    // Tier-driven layer visibility. playgroundSourceStore is published only
-    // while the polygon tier is active (§3.6) so dependent widgets don't
-    // see an empty source at cluster zoom. `tier === null` means the
-    // orchestrator hasn't run yet — keep both layers hidden.
+    // Publish the polygon source once. Consumers that need to know whether
+    // the polygon tier is *visible* read activeTierStore; consumers that
+    // only need to read or hydrate features (NearbyPlaygrounds, AppShell
+    // hash restore) get a stable reference at any tier.
+    playgroundSourceStore.set(polygonSrc);
+
+    // Tier-driven layer visibility. `tier === null` means the orchestrator
+    // hasn't run yet — keep both layers hidden.
     tierUnsubscribe = activeTierStore.subscribe(tier => {
       if (!playgroundLayer) return;
       if (tier === null) {
         playgroundLayer.setVisible(false);
         clusterLayer.setVisible(false);
-        playgroundSourceStore.set(null);
         return;
       }
       playgroundLayer.setVisible(tier === 'polygon');
       clusterLayer.setVisible(tier === 'cluster');
-      playgroundSourceStore.set(tier === 'polygon' ? polygonSrc : null);
     });
   });
 
