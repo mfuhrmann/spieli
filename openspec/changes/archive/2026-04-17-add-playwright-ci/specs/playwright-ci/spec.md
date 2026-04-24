@@ -30,7 +30,7 @@ The app SHALL load and display a map when the page is opened.
 
 #### Scenario: Page title is set
 - **WHEN** the page is loaded
-- **THEN** the document title contains "Spielplatzkarte"
+- **THEN** the document title contains "spieli"
 
 ---
 

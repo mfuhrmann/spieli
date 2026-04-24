@@ -1,4 +1,4 @@
--- Dev fixture database seed for spielplatzkarte — Neuhof (second backend)
+-- Dev fixture database seed for spieli — Neuhof (second backend)
 -- Contains 5 sample playgrounds from Neuhof + the Neuhof region polygon.
 -- Regenerate with: bash dev/seed/extract2.sh
 -- Load with: make seed-load2

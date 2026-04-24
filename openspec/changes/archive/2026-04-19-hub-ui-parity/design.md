@@ -1,6 +1,6 @@
 ## Context
 
-Spielplatzkarte ships a single Svelte app that renders one of two entry points based on `APP_MODE`:
+spieli ships a single Svelte app that renders one of two entry points based on `APP_MODE`:
 
 - `APP_MODE=standalone` → `StandaloneApp.svelte` — full UI for a single regional backend.
 - `APP_MODE=hub` → `HubApp.svelte` — a thin wrapper that mounts the map, the playground detail panel, and an `InstancePanel` listing registered backends.

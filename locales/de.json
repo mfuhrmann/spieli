@@ -1,5 +1,5 @@
 {
-  "appTitle": "{regionName}er Spielplatzkarte",
+  "appTitle": "{regionName}er spieli",
   "locate": {
     "title": "Meinen Standort anzeigen",
     "denied": "Standortzugriff verweigert.",
@@ -340,13 +340,13 @@
     "about": {
       "history": {
         "label": "Geschichte",
-        "text": "Die Spielplatzkarte wurde von {authorLink} als Abschlussprojekt einer {courseLink} ins Leben gerufen — ursprünglich mit Fokus auf Berlin. Im Laufe der Zeit wurde sie zu einer generischen Spielplatzkarte weiterentwickelt, die für jede beliebige OSM-Region eingesetzt werden kann.",
+        "text": "Die spieli wurde von {authorLink} als Abschlussprojekt einer {courseLink} ins Leben gerufen — ursprünglich mit Fokus auf Berlin. Im Laufe der Zeit wurde sie zu einer generischen spieli weiterentwickelt, die für jede beliebige OSM-Region eingesetzt werden kann.",
         "courseUrl": "https://gis-trainer.com/de/gis_webmapping.php",
         "courseLabel": "GIS- und Webmapping-Weiterbildung"
       },
       "project": {
         "label": "Das Projekt",
-        "text": "Die Spielplatzkarte ist eine freie, interaktive Webkarte auf Basis von {osmLink}-Daten. Sie enthält keine proprietären Daten, erfordert keine Anmeldung und verfolgt keine Nutzer. Wer Spielplatzdaten in OSM verbessert, verbessert damit automatisch auch diese Karte.",
+        "text": "Die spieli ist eine freie, interaktive Webkarte auf Basis von {osmLink}-Daten. Sie enthält keine proprietären Daten, erfordert keine Anmeldung und verfolgt keine Nutzer. Wer Spielplatzdaten in OSM verbessert, verbessert damit automatisch auch diese Karte.",
         "osmWikiUrl": "https://de.wikipedia.org/wiki/OpenStreetMap"
       },
       "source": {
@@ -361,7 +361,7 @@
     "S": "S", "SW": "SW", "W": "W", "NW": "NW"
   },
   "hub": {
-    "title": "Spielplatzkarte Hub",
+    "title": "spieli Hub",
     "registryError": "Registry nicht erreichbar",
     "loading": "Instanzen werden geladen …",
     "instanceError": "Nicht erreichbar",

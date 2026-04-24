@@ -1,4 +1,4 @@
--- Dev fixture database seed for spielplatzkarte
+-- Dev fixture database seed for spieli
 -- Contains 4 sample playgrounds from Fulda/Hessen + the Hessen region polygon.
 -- Regenerate with: dev/seed/extract.sh
 -- Load with: make seed-load

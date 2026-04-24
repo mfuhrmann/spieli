@@ -83,7 +83,7 @@
           padding: [20, 20, 20, 380], // leave room for the side panel on desktop
           duration: 0,
         });
-        document.title = `Spielplatzkarte ${region.name}`;
+        document.title = `spieli ${region.name}`;
       } catch (err) {
         console.warn('Nominatim region fetch failed, using default extent:', err);
       }

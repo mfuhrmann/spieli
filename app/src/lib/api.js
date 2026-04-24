@@ -62,7 +62,7 @@ export async function fetchNearestPlaygrounds(lat, lon, baseUrl = defaultApiBase
     return [];
 }
 
-// Instance metadata (requires spielplatzkarte v0.2.1+).
+// Instance metadata (requires spieli v0.2.1+).
 export async function fetchMeta(baseUrl = defaultApiBaseUrl) {
     const res = await fetch(`${baseUrl}/rpc/get_meta`);
     if (res.ok) return res.json();

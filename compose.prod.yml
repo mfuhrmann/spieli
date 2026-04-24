@@ -1,4 +1,4 @@
-# Spielplatzkarte — production stack (pre-built images, no local source required)
+# spieli — production stack (pre-built images, no local source required)
 #
 # Usage:
 #   bash install.sh          # interactive first-time setup (recommended)
@@ -33,7 +33,7 @@ services:
   # ── OSM importer (run manually; not started by default) ─────────────────────
   # docker compose -f compose.prod.yml --profile data-node run --rm importer
   importer:
-    image: ghcr.io/mfuhrmann/spielplatzkarte-importer:latest
+    image: ghcr.io/mfuhrmann/spieli-importer:latest
     profiles: [data-node, data-node-ui]
     depends_on:
       db:
@@ -68,7 +68,7 @@ services:
 
   # ── Svelte app — serves the frontend and proxies /api/ to PostgREST ─────────
   app:
-    image: ghcr.io/mfuhrmann/spielplatzkarte:rc
+    image: ghcr.io/mfuhrmann/spieli:rc
     profiles: [ui, data-node-ui]
     ports:
       - "${APP_PORT:-8080}:80"

@@ -12,7 +12,7 @@
 
 ## 3. Test Suite
 
-- [x] 3.1 Create `tests/smoke.spec.js` — map canvas visible, page title contains "Spielplatzkarte"
+- [x] 3.1 Create `tests/smoke.spec.js` — map canvas visible, page title contains "spieli"
 - [x] 3.2 Create `tests/selection.spec.js` — click playground → panel visible, URL hash set; ESC → panel hidden, hash cleared
 - [x] 3.3 Create `tests/hash-restore.spec.js` — load page with hash → panel opens for that playground (uses route mock to control data)
 - [x] 3.4 Create `tests/xss.spec.js` — intercept Overpass/PostgREST response with crafted field values, assert characters rendered as text not HTML

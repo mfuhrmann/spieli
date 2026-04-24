@@ -1,6 +1,6 @@
 [Unit]
-Description=Weekly Spielplatzkarte OSM data import
-Documentation=https://github.com/mfuhrmann/spielplatzkarte
+Description=Weekly spieli OSM data import
+Documentation=https://github.com/mfuhrmann/spieli
 
 [Timer]
 # Fire once a week (Sunday 00:00 local time).
@@ -11,7 +11,7 @@ OnCalendar=weekly
 # If a run was missed (e.g. server was off), run it on the next boot.
 Persistent=true
 
-Unit=spielplatzkarte-import.service
+Unit=spieli-import.service
 
 [Install]
 WantedBy=timers.target

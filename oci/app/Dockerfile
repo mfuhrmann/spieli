@@ -1,4 +1,4 @@
-# spielplatzkarte — Svelte frontend + nginx.
+# spieli — Svelte frontend + nginx.
 # Supports APP_MODE=standalone (default) and APP_MODE=hub via docker-entrypoint.sh.
 # Build context must be the repo root (needs app/ source files).
 

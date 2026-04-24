@@ -1,4 +1,4 @@
-// Shared test utilities for the Spielplatzkarte Svelte app.
+// Shared test utilities for the spieli Svelte app.
 
 import fixture from './fixtures/playground.json' assert { type: 'json' };
 

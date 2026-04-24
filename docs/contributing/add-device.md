@@ -60,4 +60,4 @@ git commit -m "feat: add balance_beam playground device"
 git push -u origin feat/add-balance-beam-device
 ```
 
-Then open a pull request on GitHub. See [CONTRIBUTING.md](https://github.com/mfuhrmann/spielplatzkarte/blob/main/CONTRIBUTING.md) for the full PR walkthrough.
+Then open a pull request on GitHub. See [CONTRIBUTING.md](https://github.com/mfuhrmann/spieli/blob/main/CONTRIBUTING.md) for the full PR walkthrough.

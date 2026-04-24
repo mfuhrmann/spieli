@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Variablen
-DB_NAME="spielplatzkarte"
+DB_NAME="spieli"
 DB_USER="postgres"
 DB_HOST="localhost"
 

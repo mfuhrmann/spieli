@@ -12,8 +12,8 @@ test.describe('Smoke', () => {
     await expect(page.locator('canvas')).toBeVisible();
   });
 
-  test('page title contains Spielplatzkarte', async ({ page }) => {
+  test('page title contains spieli', async ({ page }) => {
     await page.goto('/');
-    await expect(page).toHaveTitle(/Spielplatzkarte/);
+    await expect(page).toHaveTitle(/spieli/);
   });
 });

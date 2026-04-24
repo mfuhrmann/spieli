@@ -1,5 +1,5 @@
 {
-  "name": "spielplatzkarte",
+  "name": "spieli",
   "private": true,
   "scripts": {
     "test": "playwright test"

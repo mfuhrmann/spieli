@@ -58,6 +58,6 @@
 
 - [ ] 9.1 Push branch, confirm workflow runs and `gh-pages` branch is created
 - [ ] 9.2 Enable GitHub Pages in repository settings (source: `gh-pages` branch, root `/`)
-- [ ] 9.3 Confirm docs site is accessible at `https://mfuhrmann.github.io/spielplatzkarte/`
+- [ ] 9.3 Confirm docs site is accessible at `https://mfuhrmann.github.io/spieli/`
 - [ ] 9.4 Add docs URL to `mkdocs.yml` `site_url` field
 - [ ] 9.5 Add docs URL link to README (e.g. in the header or Contributing section)

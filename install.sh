@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Spielplatzkarte installer
+# spieli installer
 # Downloads the production compose file and db schema, then walks through
 # configuration interactively.
 #
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/mfuhrmann/spielplatzkarte/main/install.sh -o install.sh
+#   curl -fsSL https://raw.githubusercontent.com/mfuhrmann/spieli/main/install.sh -o install.sh
 #   bash install.sh
 
 set -euo pipefail
@@ -92,13 +92,13 @@ docker info >/dev/null 2>&1           || die "Docker daemon is not running."
 # ── Header ─────────────────────────────────────────────────────────────────────
 
 printf "\n"
-printf "${BOLD}Spielplatzkarte — Production Installer${RESET}\n"
+printf "${BOLD}spieli — Production Installer${RESET}\n"
 printf "Playground map powered by OpenStreetMap\n"
-printf "https://github.com/mfuhrmann/spielplatzkarte\n\n"
+printf "https://github.com/mfuhrmann/spieli\n\n"
 
 # ── Deployment directory ───────────────────────────────────────────────────────
 
-ask DEPLOY_DIR "Deployment directory" "./spielplatzkarte"
+ask DEPLOY_DIR "Deployment directory" "./spieli"
 mkdir -p "$DEPLOY_DIR/db"
 
 EXISTING_PASSWORD=""
@@ -214,7 +214,7 @@ fi
 
 # ── Download files ─────────────────────────────────────────────────────────────
 
-BASE_URL="https://raw.githubusercontent.com/mfuhrmann/spielplatzkarte/main"
+BASE_URL="https://raw.githubusercontent.com/mfuhrmann/spieli/main"
 
 printf "\n"
 info "Downloading compose.prod.yml..."
@@ -258,7 +258,7 @@ success "Files downloaded."
 
     printf "# ── Optional: Hub integration ───────────────────────────────────\n"
     printf "# Set to the Hub's full origin (e.g. https://hub.example.com) when embedding\n"
-    printf "# this instance in a Spielplatzkarte Hub. Leave empty for standalone deployments.\n"
+    printf "# this instance in a spieli Hub. Leave empty for standalone deployments.\n"
     printf "# PARENT_ORIGIN=\n\n"
 
     if [[ "$DEPLOY_MODE" != "data-node" ]]; then

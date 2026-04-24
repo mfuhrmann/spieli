@@ -4,7 +4,7 @@ OSM-specific terms you'll encounter when working with this project.
 
 ## OSM relation ID
 
-Every city, district, or region in OpenStreetMap has a numeric ID called a **relation ID**. Spielplatzkarte uses this ID to know which geographic area to show on the map.
+Every city, district, or region in OpenStreetMap has a numeric ID called a **relation ID**. spieli uses this ID to know which geographic area to show on the map.
 
 To find the relation ID for your region: search on [Nominatim](https://nominatim.openstreetmap.org) or [openstreetmap.org](https://openstreetmap.org) — it appears in the URL, e.g. `openstreetmap.org/relation/62700` → ID is `62700`.
 
@@ -22,7 +22,7 @@ More: [osm2pgsql.org](https://osm2pgsql.org)
 
 ## PostgREST
 
-**PostgREST** is a server that automatically turns a PostgreSQL database into a REST API. Instead of writing server-side code, you write SQL functions and PostgREST exposes them as HTTP endpoints. Spielplatzkarte's entire API layer is PostgREST — there is no custom backend application server.
+**PostgREST** is a server that automatically turns a PostgreSQL database into a REST API. Instead of writing server-side code, you write SQL functions and PostgREST exposes them as HTTP endpoints. spieli's entire API layer is PostgREST — there is no custom backend application server.
 
 More: [postgrest.org](https://postgrest.org)
 

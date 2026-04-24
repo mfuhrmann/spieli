@@ -1,4 +1,4 @@
-# spielplatzkarte-data — nginx CORS proxy only, no frontend.
+# spieli-data — nginx CORS proxy only, no frontend.
 # Exposes the PostgREST API at /api/ and serves /version.json and /healthz.
 # The Svelte frontend is built and served by app/Dockerfile instead.
 

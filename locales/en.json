@@ -361,7 +361,7 @@
     "S": "S", "SW": "SW", "W": "W", "NW": "NW"
   },
   "hub": {
-    "title": "Spielplatzkarte Hub",
+    "title": "spieli Hub",
     "registryError": "Registry unreachable",
     "loading": "Loading instances …",
     "instanceError": "Unreachable",

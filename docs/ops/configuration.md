@@ -23,7 +23,7 @@ All variables are set in `.env` (copy from `.env.example`). The installer genera
 | `POI_RADIUS_M` | `5000` | ui, data-node-ui | Radius in metres for nearby POI search |
 | `OSM2PGSQL_THREADS` | `4` | data-node, data-node-ui | CPU threads for the import |
 | `GEOSERVER_URL` | *(disabled)* | data-node, data-node-ui | Base URL of a GeoServer instance for the shadow WMS layer; leave empty to disable |
-| `GEOSERVER_WORKSPACE` | `spielplatzkarte` | data-node, data-node-ui | GeoServer workspace name — only used when `GEOSERVER_URL` is set |
+| `GEOSERVER_WORKSPACE` | `spieli` | data-node, data-node-ui | GeoServer workspace name — only used when `GEOSERVER_URL` is set |
 | `HUB_POLL_INTERVAL` | `300` | hub | Seconds between Hub re-fetches of playground data from all registered instances |
 
 ## Applying changes

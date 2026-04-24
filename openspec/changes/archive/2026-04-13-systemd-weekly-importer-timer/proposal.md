@@ -1,11 +1,11 @@
 ## Why
 
-Spielplatzkarte deployments require OSM data to be kept fresh, but the importer must currently be triggered manually. Operators need a drop-in scheduling solution so data is updated automatically without custom cron jobs or manual intervention.
+spieli deployments require OSM data to be kept fresh, but the importer must currently be triggered manually. Operators need a drop-in scheduling solution so data is updated automatically without custom cron jobs or manual intervention.
 
 ## What Changes
 
-- Add `deploy/spielplatzkarte-import.service` — a systemd service unit that runs `docker compose run --rm importer` in the project directory, picking up credentials from `.env`
-- Add `deploy/spielplatzkarte-import.timer` — a systemd timer unit that fires the service weekly (`OnCalendar=weekly`) and is `Persistent=true` so missed runs are caught on next boot
+- Add `deploy/spieli-import.service` — a systemd service unit that runs `docker compose run --rm importer` in the project directory, picking up credentials from `.env`
+- Add `deploy/spieli-import.timer` — a systemd timer unit that fires the service weekly (`OnCalendar=weekly`) and is `Persistent=true` so missed runs are caught on next boot
 - Document the install/enable procedure in `CLAUDE.md`
 
 ## Capabilities

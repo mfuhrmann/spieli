@@ -1,7 +1,7 @@
-site_name: Spielplatzkarte
-site_url: https://mfuhrmann.github.io/spielplatzkarte/
-repo_url: https://github.com/mfuhrmann/spielplatzkarte
-repo_name: mfuhrmann/spielplatzkarte
+site_name: spieli
+site_url: https://mfuhrmann.github.io/spieli/
+repo_url: https://github.com/mfuhrmann/spieli
+repo_name: mfuhrmann/spieli
 edit_uri: edit/main/docs/
 
 docs_dir: docs

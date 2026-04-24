@@ -66,4 +66,4 @@ git commit -m "feat(i18n): add roller_hockey sport pitch translation"
 git push -u origin feat/add-roller-hockey-sport
 ```
 
-Then open a pull request on GitHub. See [CONTRIBUTING.md](https://github.com/mfuhrmann/spielplatzkarte/blob/main/CONTRIBUTING.md) for the full PR walkthrough.
+Then open a pull request on GitHub. See [CONTRIBUTING.md](https://github.com/mfuhrmann/spieli/blob/main/CONTRIBUTING.md) for the full PR walkthrough.

@@ -1,6 +1,6 @@
 ## Context
 
-README.md is 607 lines mixing audience-specific content: a project pitch for evaluators, deploy instructions for operators, a git tutorial for contributors, and how-to guides for content editors. The packyard project in the same GitHub org already demonstrates the exact pattern to follow: MkDocs + Material theme, deployed to GitHub Pages via GitHub Actions. The goal is to replicate that setup here with content appropriate for Spielplatzkarte.
+README.md is 607 lines mixing audience-specific content: a project pitch for evaluators, deploy instructions for operators, a git tutorial for contributors, and how-to guides for content editors. The packyard project in the same GitHub org already demonstrates the exact pattern to follow: MkDocs + Material theme, deployed to GitHub Pages via GitHub Actions. The goal is to replicate that setup here with content appropriate for spieli.
 
 ## Goals / Non-Goals
 
@@ -59,7 +59,7 @@ Only OSM/domain-specific terms are kept: OSM relation ID, PBF file, osm2pgsql, P
 ### D6 — README target structure
 
 ```
-# Spielplatzkarte
+# spieli
   1-liner + origin
 
 ## Architecture         (diagram — keep)

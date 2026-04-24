@@ -1,4 +1,4 @@
--- lua-Konfigurationsscript zum Import der Daten für die Spielplatzkarte mit osm2pgsql
+-- lua-Konfigurationsscript zum Import der Daten für die spieli mit osm2pgsql
 --------------------------------------------------------------------------------------
 -- Importierte Daten und Tabellen:
 -- > Spielplätze (Flächen- oder Punktgeometrien)

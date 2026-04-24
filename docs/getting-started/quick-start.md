@@ -1,6 +1,6 @@
 # Quick Start
 
-The easiest way to deploy Spielplatzkarte is with the interactive installer. It downloads everything it needs, walks you through configuration, and optionally runs the first import.
+The easiest way to deploy spieli is with the interactive installer. It downloads everything it needs, walks you through configuration, and optionally runs the first import.
 
 ## Requirements
 
@@ -11,13 +11,13 @@ The easiest way to deploy Spielplatzkarte is with the interactive installer. It 
 ## Install
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/mfuhrmann/spielplatzkarte/main/install.sh -o install.sh
+curl -fsSL https://raw.githubusercontent.com/mfuhrmann/spieli/main/install.sh -o install.sh
 bash install.sh
 ```
 
 ## What the installer does
 
-1. Asks for a deployment directory (default: `./spielplatzkarte`)
+1. Asks for a deployment directory (default: `./spieli`)
 2. Asks for your deployment mode (`data-node`, `ui`, or `data-node-ui`)
 3. Asks for your OSM relation ID and Geofabrik PBF URL (for data-node and data-node-ui modes)
 4. Prompts for optional settings (port, UI links, zoom levels)
@@ -44,7 +44,7 @@ bash install.sh
 After setup, manage the stack from your deployment directory:
 
 ```bash
-cd spielplatzkarte
+cd spieli
 
 # Start the stack
 docker compose --profile data-node-ui up -d
