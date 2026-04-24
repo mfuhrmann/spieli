@@ -39,12 +39,21 @@ See [Configuration](configuration.md) for all available variables, including `DE
 docker compose --profile data-node-ui up -d
 
 # Import OSM data (downloads PBF, clips to region with osmium, runs osm2pgsql)
-# First run: ~2–5 min (downloads Bundesland PBF, clips to your region).
-# Subsequent runs: much faster — the clipped PBF is cached and reused.
 docker compose --profile data-node run --rm importer
 ```
 
 Replace `data-node-ui` with your chosen `DEPLOY_MODE`. The app will be available at `http://localhost:8080` (or the port set in `APP_PORT`).
+
+!!! info "How the import works"
+    The importer clips the source PBF to your region's bounding box using `osmium` before running `osm2pgsql`. This means osm2pgsql always processes a small regional file (~5–15 MB) rather than the full Bundesland extract (~100–400 MB), keeping every import fast.
+
+    | Run | What happens | Typical time |
+    |---|---|---|
+    | First (no PBF cached) | Downloads source PBF, clips to region, imports | ~2–5 min (mostly download) |
+    | First (PBF already cached) | Clips source PBF to region, imports | ~1–2 min |
+    | Any subsequent run | Reuses cached clipped PBF, imports | ~1–2 min |
+
+    The source PBF and the clipped regional PBF are both stored in the `pbf_cache` Docker volume and reused on the next run.
 
 ## Step 5 — Updating data
 
