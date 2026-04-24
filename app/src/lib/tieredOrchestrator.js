@@ -4,9 +4,8 @@
 // from the view's zoom, publishes it to activeTierStore, and fetches the
 // matching RPC:
 //
-//   zoom ≤ clusterMaxZoom    → get_playground_clusters  (server-bucketed)
-//   ≤ centroidMaxZoom        → get_playground_centroids (Supercluster on client)
-//   > centroidMaxZoom        → get_playgrounds_bbox     (existing polygon style)
+//   zoom ≤ clusterMaxZoom → get_playground_clusters (server-bucketed)
+//   zoom >  clusterMaxZoom → get_playgrounds_bbox   (existing polygon style)
 //
 // Cancels any in-flight request from a superseded moveend via AbortController.
 // On tier-RPC 404 (backend older than this change) logs a one-time warning
@@ -15,26 +14,21 @@
 import Feature from 'ol/Feature.js';
 import Point from 'ol/geom/Point.js';
 import GeoJSON from 'ol/format/GeoJSON.js';
-import { transform, transformExtent } from 'ol/proj.js';
-import Supercluster from 'supercluster';
+import { transform } from 'ol/proj.js';
 
 import {
   fetchPlaygroundClusters,
-  fetchPlaygroundCentroids,
   fetchPlaygroundsBbox,
   fetchPlaygrounds,
 } from './api.js';
-import { clusterMaxZoom, centroidMaxZoom } from './config.js';
+import { clusterMaxZoom } from './config.js';
 import { activeTierStore } from '../stores/tier.js';
 import { debounce } from './utils.js';
 
 const geojsonFormat = new GeoJSON();
-const SUPERCLUSTER_OPTS = { radius: 60, maxZoom: 15 };
 
 export function tierForZoom(zoom) {
-  if (zoom <= clusterMaxZoom)  return 'cluster';
-  if (zoom <= centroidMaxZoom) return 'centroid';
-  return 'polygon';
+  return zoom <= clusterMaxZoom ? 'cluster' : 'polygon';
 }
 
 /**
@@ -42,9 +36,8 @@ export function tierForZoom(zoom) {
  *
  * @param {Object} opts
  * @param {import('ol/Map.js').default} opts.map
- * @param {string} opts.baseUrl      PostgREST base URL (may be '' for Overpass dev mode)
+ * @param {string} opts.baseUrl  PostgREST base URL (may be '' for dev without backend)
  * @param {import('ol/source/Vector.js').default} opts.clusterSource
- * @param {import('ol/source/Vector.js').default} opts.centroidSource
  * @param {import('ol/source/Vector.js').default} opts.polygonSource
  * @returns {() => void} detach function
  */
@@ -52,12 +45,10 @@ export function attachTieredOrchestrator({
   map,
   baseUrl,
   clusterSource,
-  centroidSource,
   polygonSource,
 }) {
   let abort = null;
   let useLegacy = false; // sticky: once a tier RPC 404s, route to legacy for the rest of the session
-  let centroidIndex = null;
 
   async function orchestrate() {
     const view = map.getView();
@@ -80,11 +71,6 @@ export function attachTieredOrchestrator({
         const buckets = await fetchPlaygroundClusters(Math.floor(zoom), extent3857, baseUrl, signal);
         if (signal.aborted) return;
         fillClusterSource(clusterSource, buckets);
-      } else if (tier === 'centroid') {
-        const rows = await fetchPlaygroundCentroids(extent3857, baseUrl, signal);
-        if (signal.aborted) return;
-        centroidIndex = buildSupercluster(rows);
-        fillCentroidSource(centroidSource, centroidIndex, extent3857, zoom);
       } else {
         const geojson = await fetchPlaygroundsBbox(extent3857, baseUrl, signal);
         if (signal.aborted) return;
@@ -132,54 +118,13 @@ function fillClusterSource(source, buckets) {
       geometry: new Point(transform([b.lon, b.lat], 'EPSG:4326', 'EPSG:3857')),
     });
     f.setProperties({
-      _tier:    'cluster',
-      count:    b.count,
-      complete: b.complete,
-      partial:  b.partial,
-      missing:  b.missing,
+      _tier:      'cluster',
+      count:      b.count,
+      complete:   b.complete,
+      partial:    b.partial,
+      missing:    b.missing,
+      restricted: b.restricted ?? 0,
     });
-    return f;
-  });
-  source.addFeatures(features);
-}
-
-function buildSupercluster(rows) {
-  const index = new Supercluster(SUPERCLUSTER_OPTS);
-  index.load(rows.map(r => ({
-    type: 'Feature',
-    geometry: { type: 'Point', coordinates: [r.lon, r.lat] },
-    properties: {
-      osm_id:       r.osm_id,
-      completeness: r.completeness,
-      filter_attrs: r.filter_attrs,
-    },
-  })));
-  return index;
-}
-
-function fillCentroidSource(source, index, extent3857, zoom) {
-  const [minLon, minLat, maxLon, maxLat] = transformExtent(extent3857, 'EPSG:3857', 'EPSG:4326');
-  const clusters = index.getClusters([minLon, minLat, maxLon, maxLat], Math.floor(zoom));
-  source.clear();
-  const features = clusters.map(c => {
-    const [lon, lat] = c.geometry.coordinates;
-    const f = new Feature({
-      geometry: new Point(transform([lon, lat], 'EPSG:4326', 'EPSG:3857')),
-    });
-    if (c.properties.cluster) {
-      f.setProperties({
-        _tier:      'centroid-cluster',
-        count:      c.properties.point_count,
-        cluster_id: c.properties.cluster_id,
-      });
-    } else {
-      f.setProperties({
-        _tier:        'centroid',
-        osm_id:       c.properties.osm_id,
-        completeness: c.properties.completeness,
-        filter_attrs: c.properties.filter_attrs,
-      });
-    }
     return f;
   });
   source.addFeatures(features);

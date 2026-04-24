@@ -24,12 +24,11 @@
   import { mapStore } from '../stores/map.js';
   import { filterStore } from '../stores/filters.js';
 
-  // Standalone owns three VectorSources — one per tier. The orchestrator
+  // Standalone owns two VectorSources — one per tier. The orchestrator
   // populates the active one on every debounced moveend; Map.svelte toggles
   // layer visibility from activeTierStore.
-  const playgroundSource = new VectorSource(); // polygon tier (zoom ≥ 14)
-  const clusterSource    = new VectorSource(); // cluster tier (zoom ≤ 10)
-  const centroidSource   = new VectorSource(); // centroid tier (zoom 11–13)
+  const playgroundSource = new VectorSource(); // polygon tier (zoom > clusterMaxZoom)
+  const clusterSource    = new VectorSource(); // cluster tier (zoom ≤ clusterMaxZoom)
   let detachOrchestrator = null;
 
   // Standalone pitches (leisure=pitch outside any playground) — own layer,
@@ -138,7 +137,6 @@
           map,
           baseUrl: apiBaseUrl,
           clusterSource,
-          centroidSource,
           polygonSource: playgroundSource,
         });
       } else {
@@ -160,7 +158,6 @@
 <AppShell
   {playgroundSource}
   {clusterSource}
-  {centroidSource}
   {searchExtent}
   {nearestFetcher}
   {dataContribLinks}

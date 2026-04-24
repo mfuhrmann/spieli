@@ -42,9 +42,7 @@ export const hubPollInterval = c.hubPollInterval ?? 300;
 
 // --- Tiered playground delivery (P1) ---
 
-// Zoom thresholds for the three-tier client orchestrator:
-//   zoom ≤ clusterMaxZoom  → cluster layer (get_playground_clusters)
-//   clusterMaxZoom+1 … centroidMaxZoom → centroid layer (get_playground_centroids)
-//   zoom > centroidMaxZoom → polygon layer (get_playgrounds_bbox)
-export const clusterMaxZoom  = c.clusterMaxZoom  ?? 10;
-export const centroidMaxZoom = c.centroidMaxZoom ?? 13;
+// Zoom threshold for the two-tier client orchestrator:
+//   zoom ≤ clusterMaxZoom → cluster layer (get_playground_clusters)
+//   zoom >  clusterMaxZoom → polygon layer (get_playgrounds_bbox)
+export const clusterMaxZoom = c.clusterMaxZoom ?? 13;

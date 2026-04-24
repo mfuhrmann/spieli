@@ -234,7 +234,8 @@ AS $$
     ) AS geom
   ),
   cell_size AS (
-    -- Monotonic halving from 10 000 000 m at z=0; tune with real data later.
+    -- Monotonic halving from 10 000 000 m at z=0. Extends through z=13 so
+    -- the cluster tier can cover zoom ≤ 13 (two-tier client design).
     SELECT (CASE z
       WHEN 0  THEN 10000000
       WHEN 1  THEN  5000000
@@ -247,35 +248,45 @@ AS $$
       WHEN 8  THEN    39062
       WHEN 9  THEN    19531
       WHEN 10 THEN     9766
-      ELSE             5000
+      WHEN 11 THEN     4883
+      WHEN 12 THEN     2441
+      WHEN 13 THEN     1221
+      ELSE              610
     END)::float8 AS m
   ),
   buckets AS (
     SELECT
       ST_SnapToGrid(ps.centroid_3857, cs.m) AS cell,
-      ps.completeness
+      ps.completeness,
+      ps.access_restricted
     FROM public.playground_stats ps, bbox b, cell_size cs
     WHERE ST_Intersects(ps.centroid_3857, b.geom)
   ),
   aggregated AS (
+    -- Restricted playgrounds are counted separately from the three
+    -- completeness buckets so the ring renderer can paint them as a
+    -- hatched "not public" segment. Invariant:
+    --   count = complete + partial + missing + restricted
     SELECT
       cell,
-      COUNT(*)::int                                                   AS count,
-      SUM(CASE WHEN completeness = 'complete' THEN 1 ELSE 0 END)::int AS complete,
-      SUM(CASE WHEN completeness = 'partial'  THEN 1 ELSE 0 END)::int AS partial,
-      SUM(CASE WHEN completeness = 'missing'  THEN 1 ELSE 0 END)::int AS missing
+      COUNT(*)::int                                                                                 AS count,
+      SUM(CASE WHEN NOT access_restricted AND completeness = 'complete' THEN 1 ELSE 0 END)::int     AS complete,
+      SUM(CASE WHEN NOT access_restricted AND completeness = 'partial'  THEN 1 ELSE 0 END)::int     AS partial,
+      SUM(CASE WHEN NOT access_restricted AND completeness = 'missing'  THEN 1 ELSE 0 END)::int     AS missing,
+      SUM(CASE WHEN access_restricted                                   THEN 1 ELSE 0 END)::int     AS restricted
     FROM buckets
     GROUP BY cell
   )
   SELECT COALESCE(
     json_agg(
       json_build_object(
-        'lon',      ST_X(ST_Transform(cell, 4326)),
-        'lat',      ST_Y(ST_Transform(cell, 4326)),
-        'count',    count,
-        'complete', complete,
-        'partial',  partial,
-        'missing',  missing
+        'lon',        ST_X(ST_Transform(cell, 4326)),
+        'lat',        ST_Y(ST_Transform(cell, 4326)),
+        'count',      count,
+        'complete',   complete,
+        'partial',    partial,
+        'missing',    missing,
+        'restricted', restricted
       )
     ),
     '[]'::json

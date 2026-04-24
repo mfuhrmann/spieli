@@ -35,13 +35,6 @@
   export let clusterSource = null;
 
   /**
-   * Centroid-tier source (zoom 11–centroidMaxZoom). Fed by the orchestrator
-   * from `get_playground_centroids` via Supercluster.
-   * @type {import('ol/source/Vector.js').default | null}
-   */
-  export let centroidSource = null;
-
-  /**
    * Readable store emitting the current map view in WGS84 as
    * `[minLon, minLat, maxLon, maxLat]` (or null). Consumed by SearchBar as
    * Nominatim `viewbox`.
@@ -249,7 +242,6 @@
   <Map
     {playgroundSource}
     {clusterSource}
-    {centroidSource}
     {defaultBackendUrl}
     onhover={handleHover}
     onclearhover={clearHover}

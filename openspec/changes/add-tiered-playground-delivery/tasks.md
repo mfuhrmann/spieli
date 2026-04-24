@@ -41,7 +41,7 @@ Three review layers ran over §1 SQL. Smoke test (`make seed-load` + curl) passe
 - [x] 2.2 All three fetchers accept an `AbortSignal` so moveend handlers can cancel in-flight requests
 - [x] 2.3 Mark `fetchPlaygrounds` deprecated with a JSDoc `@deprecated` tag and a one-time console warning on first call
 - [x] 2.4 Extend `fetchMeta` typing to surface the new `{complete, partial, missing}` ~~and `data_version`~~ fields (data_version moved to `add-federation-health-exposition` alongside task 1.7)
-- [x] 2.5 Add `clusterMaxZoom` and `centroidMaxZoom` to `app/src/lib/config.js` (defaults 10 and 13); surface via `window.APP_CONFIG` and the nginx entrypoint
+- [x] 2.5 ~~Add `clusterMaxZoom` **and `centroidMaxZoom`**~~ Add `clusterMaxZoom` (default now 13; `centroidMaxZoom` removed in the two-tier pivot) to `app/src/lib/config.js`; surface via `window.APP_CONFIG` and the nginx entrypoint
 
 ## 3. Client — zoom-tier orchestrator
 
@@ -49,7 +49,7 @@ Three review layers ran over §1 SQL. Smoke test (`make seed-load` + curl) passe
 - [x] 3.2 Orchestrator debounces by 300 ms and uses `AbortController` to cancel any request superseded by a later moveend
 - [x] 3.3 Three layers are created up front: `clusterLayer`, `centroidLayer`, `polygonLayer`; visibility is toggled on zoom transition, not recreated. Driven by `activeTierStore` (new `app/src/stores/tier.js`)
 - [x] 3.4 `clusterLayer` source is populated from `get_playground_clusters` with no client-side clustering (server buckets are authoritative at that zoom)
-- [x] 3.5 `centroidLayer` wraps a Supercluster instance fed from `get_playground_centroids`; Supercluster re-clusters on zoom changes within the centroid tier; pan triggers a new bbox fetch + reindex
+- [-] 3.5 ~~`centroidLayer` wraps a Supercluster instance fed from `get_playground_centroids`~~ **Reverted in two-tier pivot.** Cluster tier now covers zoom ≤ 13 via the same server-bucketed `get_playground_clusters` RPC; fine SQL grid cells (≥ z=11) surface sparse regions as single-child dots. `supercluster` dependency removed. The `get_playground_centroids` RPC ships server-side as unused-but-available for future reuse.
 - [x] 3.6 `polygonLayer` continues to use the existing `playgroundStyleFn`; `playgroundSourceStore` is published only when this layer is active (Map.svelte subscribes to `activeTierStore`)
 - [x] 3.7 Gracefully fall back: if a tier's RPC 404s (backend upgrade in progress), the orchestrator falls back to the legacy `fetchPlaygrounds` once (one-time warning logged) — note: the spec envisions "next tier up" but since all three new RPCs land together in one deploy, legacy fallback covers the realistic upgrade-skew case
 
@@ -91,7 +91,7 @@ Three review layers over §2/§3 client work. Build clean; not yet runtime-valid
 - [x] 4.3 Implement `stackedRingRenderer` in `app/src/lib/clusterStyle.js` — canvas 2D draw of the ring with complete/partial/missing segments + count; cached by `(count_bucket, c_frac, p_frac, m_frac)` with a bitmap pool keyed on that tuple + pixelRatio
 - [x] 4.4 Single-child clusters render as a single completeness-colour dot (no ring, matches polygon colour at higher zoom)
 - [x] 4.5 Cluster click zooms toward the cluster centre (`view.animate` + 2 zoom levels, capped at view maxZoom). Note: the spec said "fit to bounding extent" — extent isn't knowable from a server-bucketed cluster without an extra round-trip, so we zoom in by 2 which naturally transitions to the centroid tier. Refine if UX testing shows drift.
-- [ ] 4.6 Filter badge: below the count, a small pill "N match" rendered in the same canvas when `$filterStore` has any active filter; only on the centroid tier and above (not at zoom ≤ 10)
+- [ ] 4.6 Filter badge: below the count, a small pill "N match" rendered in the same canvas when `$filterStore` has any active filter (two-tier pivot: now applies to the cluster tier generally, not "centroid tier and above")
 - [ ] 4.7 Hover on a cluster shows a small tooltip (reuse `HoverPreview`) listing aggregate counts
 
 ### Review Findings — §4 renderer, Pass 1 (bmad-code-review, 2026-04-25)

@@ -5,18 +5,9 @@ import { Icon, Style } from 'ol/style.js';
 import Fill from 'ol/style/Fill.js';
 import Stroke from 'ol/style/Stroke.js';
 import Circle from 'ol/style/Circle.js';
-import Text from 'ol/style/Text.js';
 
 import { objDevices, objFeatures } from './objPlaygroundEquipment.js';
 import { playgroundCompleteness } from './completeness.js';
-
-// ── Completeness colours shared by all tiers ──────────────────────────────────
-// Values match the polygon-tier fills so a zoom transition doesn't swap palettes.
-const COMPLETENESS_COLOR = {
-  complete: '#155215',
-  partial:  '#92400e',
-  missing:  '#991b1b',
-};
 
 // ── Playground completeness colours ──────────────────────────────────────────
 
@@ -144,35 +135,6 @@ export const treeStyle = new Style({
 // Single-child clusters (count === 1) render as a solid completeness dot.
 // See app/src/lib/clusterStyle.js for the renderer + bitmap cache.
 export { clusterRingStyleFn as clusterTierStyleFn } from './clusterStyle.js';
-
-/** Centroid tier (zoom 11–13) — Supercluster may merge points; solo points
- *  render as a completeness-coloured dot. */
-export function centroidTierStyleFn(feature) {
-  if (feature.get('_tier') === 'centroid-cluster') {
-    const count = feature.get('count') ?? 0;
-    const radius = Math.min(20, 8 + Math.log2(Math.max(2, count)) * 2);
-    return new Style({
-      image: new Circle({
-        radius,
-        fill:   new Fill({ color: 'rgba(71, 85, 105, 0.75)' }),
-        stroke: new Stroke({ color: '#1f2937', width: 1.5 }),
-      }),
-      text: new Text({
-        text: String(count),
-        font: 'bold 11px system-ui, sans-serif',
-        fill: new Fill({ color: '#fff' }),
-      }),
-    });
-  }
-  const color = COMPLETENESS_COLOR[feature.get('completeness')] ?? COMPLETENESS_COLOR.missing;
-  return new Style({
-    image: new Circle({
-      radius: 5,
-      fill:   new Fill({ color }),
-      stroke: new Stroke({ color: '#fff', width: 1 }),
-    }),
-  });
-}
 
 /** Style function for the equipment overlay layer. Never uses icon image files. */
 export function equipmentLayerStyleFn(feature) {

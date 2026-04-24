@@ -84,27 +84,31 @@ The existing `api.get_playgrounds(relation_id)` function SHALL remain callable a
 - **THEN** the response is unchanged from before this change
 - **AND** a SQL `COMMENT` on the function names the intended replacement (`get_playgrounds_bbox`) and signals deprecation
 
-### Requirement: Client orchestrates three layers by zoom
+### Requirement: Client orchestrates two layers by zoom
 
-The standalone client SHALL render playground data through exactly three zoom-scoped layers (cluster, centroid, polygon) whose visibility is determined by the current map zoom, and SHALL refetch the relevant layer's source on each debounced `moveend`.
+The standalone client SHALL render playground data through exactly two zoom-scoped layers (cluster, polygon) whose visibility is determined by the current map zoom, and SHALL refetch the relevant layer's source on each debounced `moveend`.
 
-#### Scenario: Zoom ≤ 10 shows the cluster layer only
+<!--
+  Original design was three tiers (cluster ≤10, centroid 11-13, polygon ≥14).
+  Pivoted to two tiers during implementation: the cluster tier now covers zoom
+  ≤ clusterMaxZoom (default 13) and renders as either the stacked ring
+  (multi-child bucket) or a single completeness dot (count === 1). The
+  server-side get_playground_centroids RPC still ships (Requirement above)
+  but is not consumed by the client in P1. Hub-side Supercluster re-clustering
+  across backends lands in add-federated-playground-clustering (P2).
+-->
 
-- **WHEN** the map zoom is less than or equal to `clusterMaxZoom` (default 10)
+#### Scenario: Zoom ≤ clusterMaxZoom shows the cluster layer only
+
+- **WHEN** the map zoom is less than or equal to `clusterMaxZoom` (default 13)
 - **THEN** the cluster layer is visible
-- **AND** the centroid layer and polygon layer are hidden (but not destroyed)
+- **AND** the polygon layer is hidden (but not destroyed)
 
-#### Scenario: Zoom 11–13 shows the centroid layer only
+#### Scenario: Zoom > clusterMaxZoom shows the polygon layer only
 
-- **WHEN** the map zoom is between `clusterMaxZoom + 1` and `centroidMaxZoom` (default 11 to 13)
-- **THEN** the centroid layer is visible
-- **AND** the cluster layer and polygon layer are hidden
-
-#### Scenario: Zoom ≥ 14 shows the polygon layer only
-
-- **WHEN** the map zoom is greater than `centroidMaxZoom`
+- **WHEN** the map zoom is greater than `clusterMaxZoom`
 - **THEN** the polygon layer is visible, rendered with `playgroundStyleFn`
-- **AND** the cluster layer and centroid layer are hidden
+- **AND** the cluster layer is hidden
 - **AND** `playgroundSourceStore` is set to the polygon layer's source
 
 #### Scenario: Moveend refetches the active layer
@@ -117,37 +121,39 @@ The standalone client SHALL render playground data through exactly three zoom-sc
 
 - **WHEN** the active tier's RPC returns HTTP 404 (backend older than this change)
 - **THEN** the client logs a one-time warning and falls back to `api.get_playgrounds(relation_id)` for that backend
-- **AND** the cluster / centroid layers remain empty for the affected backend
+- **AND** the cluster layer remains empty for the affected backend
 
 ### Requirement: Clusters are rendered as completeness-segmented stacked rings
 
-Cluster features SHALL be rendered on the map as a ring divided into three segments proportional to the complete / partial / missing counts, with the total count as a number at the centre.
+Cluster features SHALL be rendered on the map as a ring divided into up to four segments proportional to the complete / partial / missing / restricted counts, with the total count as a number at the centre. The restricted segment (access-restricted playgrounds) renders with a hatched light-gray pattern mirroring the CompletenessLegend's "not public" swatch. Segment colours match the legend fill palette (not the darker polygon strokes).
 
 #### Scenario: Ring segments are proportional
 
-- **WHEN** a cluster has `complete = 6`, `partial = 19`, `missing = 22` (count = 47)
-- **THEN** the rendered ring has three segments whose arc lengths are proportional to 6 : 19 : 22
-- **AND** segment colours match the polygon completeness colours (`#155215`, `#92400e`, `#991b1b`)
-- **AND** the centre displays `47` in bold tabular numerals
+- **WHEN** a cluster has `complete = 6`, `partial = 19`, `missing = 22`, `restricted = 3` (count = 50)
+- **THEN** the rendered ring has four segments whose arc lengths are proportional to 6 : 19 : 22 : 3
+- **AND** the complete / partial / missing segments use the legend fill-base palette (`#228b22`, `#eab308`, `#ef4444`)
+- **AND** the restricted segment uses a hatched light-gray pattern
+- **AND** the centre displays `50` in bold tabular numerals
+- **AND** the invariant `count = complete + partial + missing + restricted` holds by construction (enforced in the `get_playground_clusters` RPC)
 
 #### Scenario: Single-feature cluster collapses to a dot
 
 - **WHEN** a cluster has `count = 1`
 - **THEN** no ring is drawn
 - **AND** a solid dot is rendered in the single feature's completeness colour
-- **AND** the dot size matches the centroid tier's default point size
+- **AND** the dot size is 5 CSS px (matches the polygon-tier selection dot)
 
 #### Scenario: Ring renders scale with count
 
 - **WHEN** cluster counts are 5, 25, 100, and 500 respectively
-- **THEN** the outer ring radius is 12, 14, 18, and 22 CSS pixels respectively
+- **THEN** the outer ring radius is 18, 22, 28, and 34 CSS pixels respectively
 - **AND** the number remains readable at every size
 
-#### Scenario: Filter-badge appears only when filters are active and zoom is centroid or above
+#### Scenario: Filter-badge appears only when filters are active
 
-- **WHEN** the filter store has any active filter and the zoom is in the centroid tier (11–13)
+- **WHEN** the filter store has any active filter
 - **THEN** each rendered cluster shows a small "N match" pill below the count, where N is the filter-matching child count
-- **WHEN** the zoom is in the cluster tier (≤ 10) or no filter is active
+- **WHEN** no filter is active
 - **THEN** no filter badge is rendered
 
 #### Scenario: Cluster click zooms to extent

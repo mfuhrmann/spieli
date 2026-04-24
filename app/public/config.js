@@ -26,7 +26,7 @@ window.APP_CONFIG = {
   // mapZoom and mapMinZoom above are reused; override here if needed
 
   // --- Tiered playground delivery (standalone mode in P1) ---
-  // Hub-side fan-out over these tiers lands in add-federated-playground-clustering (P2).
-  clusterMaxZoom: 10,
-  centroidMaxZoom: 13,
+  // Two tiers: cluster (zoom ≤ 13) and polygon (zoom > 13).
+  // Hub-side fan-out lands in add-federated-playground-clustering (P2).
+  clusterMaxZoom: 13,
 };
