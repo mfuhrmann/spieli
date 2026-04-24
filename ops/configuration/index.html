@@ -11,7 +11,7 @@
         <link rel="canonical" href="https://mfuhrmann.github.io/spieli/ops/configuration/">
       
       
-        <link rel="prev" href="../manual-deploy/">
+        <link rel="prev" href="../federated-deployment/">
       
       
         <link rel="next" href="../troubleshooting/">
@@ -509,6 +509,27 @@
   
   <span class="md-ellipsis">
     Manual Deploy
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../federated-deployment/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Federated Deployment
   </span>
   
 
@@ -1024,7 +1045,7 @@
 <td><code>APP_MODE</code></td>
 <td><code>standalone</code></td>
 <td>both</td>
-<td>App mode: <code>standalone</code> (regional map) or <code>hub</code> (aggregation map)</td>
+<td>App mode: <code>standalone</code> (regional map) or <code>hub</code> (aggregation map). <code>hub</code> requires <code>REGISTRY_URL</code> and must be paired with <code>DEPLOY_MODE=ui</code>. See <a href="../federated-deployment/">Federated Deployment</a>.</td>
 </tr>
 <tr>
 <td><code>OSM_RELATION_ID</code></td>
@@ -1048,7 +1069,7 @@
 <td><code>REGISTRY_URL</code></td>
 <td><code>/registry.json</code></td>
 <td>hub</td>
-<td>URL of the registry JSON listing backends (hub mode only)</td>
+<td>URL of the registry JSON listing backends. Default is same-origin; bind-mount or bake in a custom file. See <a href="../federated-deployment/">Federated Deployment</a> and <a href="../../reference/registry-json/"><code>registry.json</code> reference</a>.</td>
 </tr>
 <tr>
 <td><code>API_BASE_URL</code></td>
@@ -1144,7 +1165,7 @@
 <td><code>HUB_POLL_INTERVAL</code></td>
 <td><code>300</code></td>
 <td>hub</td>
-<td>Seconds between Hub re-fetches of playground data from all registered instances</td>
+<td>Seconds between Hub re-fetches of playground data from all registered instances. Bare integer, no unit suffix. See <a href="../federated-deployment/">Federated Deployment</a>.</td>
 </tr>
 </tbody>
 </table>

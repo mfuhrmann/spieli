@@ -520,6 +520,27 @@
   
   
     <li class="md-nav__item">
+      <a href="../../ops/federated-deployment/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Federated Deployment
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../ops/configuration/" class="md-nav__link">
         
   
@@ -1155,7 +1176,7 @@
 <p>The Hub reads a <code>registry.json</code> file at startup and on a short poll interval (<code>HUB_POLL_INTERVAL</code>, default 5 min). Each entry points to one regional PostgREST backend. The Hub fetches <code>get_playgrounds</code> and <code>get_meta</code> from each backend, merges them onto a shared map, and tags every feature with its source backend so deep-links round-trip.</p>
 <h2 id="location">Location<a class="headerlink" href="#location" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>Served from</strong>: the nginx container under <code>/registry.json</code> (path configurable via <code>HUB_REGISTRY_URL</code>).</li>
+<li><strong>Served from</strong>: the nginx container under <code>/registry.json</code> (path configurable via <code>REGISTRY_URL</code>).</li>
 <li><strong>Source file</strong>: <code>app/public/registry.json</code> in the repo. In production, replace or bind-mount with your own registry.</li>
 <li><strong>Served as</strong>: <code>application/json</code>. CORS is not needed for the registry file itself — the Hub fetches it from its own origin. The <em>backends</em> the registry points at are typically cross-origin and must enable CORS on <code>/api/</code> (covered in <a href="../federation/#federation-endpoints">Federation endpoints</a>).</li>
 </ul>
@@ -1207,8 +1228,8 @@
 </tr>
 <tr>
 <td><code>name</code></td>
-<td>yes</td>
-<td>Human-readable label. Shown in the instance drawer and — until <code>get_meta</code> returns — used as the backend's displayed region name. Falls back to <code>url</code> if omitted.</td>
+<td>recommended</td>
+<td>Human-readable label. Shown in the instance drawer and — until <code>get_meta</code> returns — used as the backend's displayed region name. Technically falls back to <code>url</code> if omitted, which gives ugly labels — always set it.</td>
 </tr>
 <tr>
 <td><code>slug</code></td>
@@ -1217,6 +1238,10 @@
 </tr>
 </tbody>
 </table>
+<div class="admonition note">
+<p class="admonition-title">Runtime-populated fields</p>
+<p>The Hub does <strong>not</strong> read <code>version</code> or <code>region</code> from <code>registry.json</code> entries — adding those keys to the file has no effect. Both are derived at runtime from each backend's <code>/api/rpc/get_meta</code> response: <code>region</code> from the OSM relation name, <code>version</code> from a <code>version</code> key the response <em>would</em> carry. The current <code>get_meta</code> SQL function (<code>importer/api.sql</code>) does not return <code>version</code>, so <code>version</code> stays <code>null</code> and the instance drawer's version badge remains empty until a future release wires one through.</p>
+</div>
 <h3 id="slug-validation">Slug validation<a class="headerlink" href="#slug-validation" title="Permanent link">&para;</a></h3>
 <p>Slugs must match <code>^[a-z0-9-]+$</code> — lowercase ASCII letters, digits, and hyphens only. Invalid slugs are logged as a console warning and treated as <em>absent</em> — the entry still works (playgrounds still load from that backend), but deep-links won't be slug-scoped and selections on features from that backend will fall back to the bare <code>#W&lt;osm_id&gt;</code> form.</p>
 <p>Slugs should be <strong>stable</strong> — they are persisted in URLs shared by users. Rename with care; there's no redirect mechanism.</p>

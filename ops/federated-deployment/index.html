@@ -8,13 +8,13 @@
       
       
       
-        <link rel="canonical" href="https://mfuhrmann.github.io/spieli/ops/manual-deploy/">
+        <link rel="canonical" href="https://mfuhrmann.github.io/spieli/ops/federated-deployment/">
       
       
-        <link rel="prev" href="../../getting-started/quick-start/">
+        <link rel="prev" href="../manual-deploy/">
       
       
-        <link rel="next" href="../federated-deployment/">
+        <link rel="next" href="../configuration/">
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
@@ -22,7 +22,7 @@
     
     
       
-        <title>Manual Deploy - spieli</title>
+        <title>Federated Deployment - spieli</title>
       
     
     
@@ -74,7 +74,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#manual-deploy-from-source" class="md-skip">
+        <a href="#federated-deployment-hub-data-nodes" class="md-skip">
           Skip to content
         </a>
       
@@ -108,7 +108,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Manual Deploy
+              Federated Deployment
             
           </span>
         </div>
@@ -254,7 +254,7 @@
     
     
       <li class="md-tabs__item md-tabs__item--active">
-        <a href="./" class="md-tabs__link">
+        <a href="../manual-deploy/" class="md-tabs__link">
           
   
   Operations
@@ -501,6 +501,27 @@
                 
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../manual-deploy/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Manual Deploy
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
     
   
   
@@ -517,7 +538,7 @@
           
   
   <span class="md-ellipsis">
-    Manual Deploy
+    Federated Deployment
   </span>
   
 
@@ -528,7 +549,7 @@
         
   
   <span class="md-ellipsis">
-    Manual Deploy
+    Federated Deployment
   </span>
   
 
@@ -550,72 +571,129 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#requirements" class="md-nav__link">
+  <a href="#topology" class="md-nav__link">
     <span class="md-ellipsis">
-      Requirements
+      Topology
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#step-1-find-your-regions-osm-relation-id" class="md-nav__link">
+  <a href="#prerequisites" class="md-nav__link">
     <span class="md-ellipsis">
-      Step 1 — Find your region's OSM relation ID
+      Prerequisites
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#step-2-find-a-geofabrik-pbf-extract" class="md-nav__link">
+  <a href="#step-1-stand-up-each-data-node" class="md-nav__link">
     <span class="md-ellipsis">
-      Step 2 — Find a Geofabrik PBF extract
+      Step 1 — Stand up each data-node
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Step 1 — Stand up each data-node">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#data-node-env" class="md-nav__link">
+    <span class="md-ellipsis">
+      Data-node .env
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#start-the-backend-and-import" class="md-nav__link">
+    <span class="md-ellipsis">
+      Start the backend and import
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#expose-api-to-the-hub" class="md-nav__link">
+    <span class="md-ellipsis">
+      Expose /api/ to the Hub
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-2-prepare-registryjson" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step 2 — Prepare registry.json
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#step-3-configure" class="md-nav__link">
+  <a href="#step-3-stand-up-the-hub" class="md-nav__link">
     <span class="md-ellipsis">
-      Step 3 — Configure
+      Step 3 — Stand up the Hub
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Step 3 — Stand up the Hub">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#hub-env" class="md-nav__link">
+    <span class="md-ellipsis">
+      Hub .env
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#replace-the-bundled-registryjson-required" class="md-nav__link">
+    <span class="md-ellipsis">
+      Replace the bundled registry.json (required)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#start-the-hub" class="md-nav__link">
+    <span class="md-ellipsis">
+      Start the Hub
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-4-verify" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step 4 — Verify
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#step-4-start-the-stack-and-import-data" class="md-nav__link">
+  <a href="#see-also" class="md-nav__link">
     <span class="md-ellipsis">
-      Step 4 — Start the stack and import data
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#step-5-updating-data" class="md-nav__link">
-    <span class="md-ellipsis">
-      Step 5 — Updating data
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#applying-database-changes-without-a-full-re-import" class="md-nav__link">
-    <span class="md-ellipsis">
-      Applying database changes without a full re-import
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#testing-on-a-phone-lan-access" class="md-nav__link">
-    <span class="md-ellipsis">
-      Testing on a phone / LAN access
+      See also
     </span>
   </a>
   
@@ -625,27 +703,6 @@
   
 </nav>
       
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../federated-deployment/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Federated Deployment
-  </span>
-  
-
-      </a>
     </li>
   
 
@@ -1036,72 +1093,129 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#requirements" class="md-nav__link">
+  <a href="#topology" class="md-nav__link">
     <span class="md-ellipsis">
-      Requirements
+      Topology
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#step-1-find-your-regions-osm-relation-id" class="md-nav__link">
+  <a href="#prerequisites" class="md-nav__link">
     <span class="md-ellipsis">
-      Step 1 — Find your region's OSM relation ID
+      Prerequisites
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#step-2-find-a-geofabrik-pbf-extract" class="md-nav__link">
+  <a href="#step-1-stand-up-each-data-node" class="md-nav__link">
     <span class="md-ellipsis">
-      Step 2 — Find a Geofabrik PBF extract
+      Step 1 — Stand up each data-node
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Step 1 — Stand up each data-node">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#data-node-env" class="md-nav__link">
+    <span class="md-ellipsis">
+      Data-node .env
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#start-the-backend-and-import" class="md-nav__link">
+    <span class="md-ellipsis">
+      Start the backend and import
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#expose-api-to-the-hub" class="md-nav__link">
+    <span class="md-ellipsis">
+      Expose /api/ to the Hub
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-2-prepare-registryjson" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step 2 — Prepare registry.json
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#step-3-configure" class="md-nav__link">
+  <a href="#step-3-stand-up-the-hub" class="md-nav__link">
     <span class="md-ellipsis">
-      Step 3 — Configure
+      Step 3 — Stand up the Hub
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Step 3 — Stand up the Hub">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#hub-env" class="md-nav__link">
+    <span class="md-ellipsis">
+      Hub .env
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#replace-the-bundled-registryjson-required" class="md-nav__link">
+    <span class="md-ellipsis">
+      Replace the bundled registry.json (required)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#start-the-hub" class="md-nav__link">
+    <span class="md-ellipsis">
+      Start the Hub
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-4-verify" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step 4 — Verify
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#step-4-start-the-stack-and-import-data" class="md-nav__link">
+  <a href="#see-also" class="md-nav__link">
     <span class="md-ellipsis">
-      Step 4 — Start the stack and import data
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#step-5-updating-data" class="md-nav__link">
-    <span class="md-ellipsis">
-      Step 5 — Updating data
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#applying-database-changes-without-a-full-re-import" class="md-nav__link">
-    <span class="md-ellipsis">
-      Applying database changes without a full re-import
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#testing-on-a-phone-lan-access" class="md-nav__link">
-    <span class="md-ellipsis">
-      Testing on a phone / LAN access
+      See also
     </span>
   </a>
   
@@ -1122,7 +1236,7 @@
                   
 
   
-    <a href="https://github.com/mfuhrmann/spieli/edit/main/docs/ops/manual-deploy.md" title="Edit this page" class="md-content__button md-icon">
+    <a href="https://github.com/mfuhrmann/spieli/edit/main/docs/ops/federated-deployment.md" title="Edit this page" class="md-content__button md-icon">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -1130,87 +1244,162 @@
   
 
 
-<h1 id="manual-deploy-from-source">Manual Deploy (from source)<a class="headerlink" href="#manual-deploy-from-source" title="Permanent link">&para;</a></h1>
-<p>Use this path if you want to build the images yourself or run from a local clone. For most deployments the <a href="../../getting-started/quick-start/">Quick Start</a> installer is simpler.</p>
-<h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permanent link">&para;</a></h2>
+<h1 id="federated-deployment-hub-data-nodes">Federated Deployment (Hub + data-nodes)<a class="headerlink" href="#federated-deployment-hub-data-nodes" title="Permanent link">&para;</a></h1>
+<p>A <strong>federated</strong> deployment consists of one <strong>Hub UI</strong> (no local database) aggregating two or more regional <strong>data-nodes</strong> into a single map. Users browse at the Hub's URL; their browser talks directly to each data-node's PostgREST <code>/api/</code>, merging the results client-side.</p>
+<p>This walkthrough stands up the topology end-to-end. For a single-region deployment, see <a href="../manual-deploy/">Manual Deploy</a> instead.</p>
+<h2 id="topology">Topology<a class="headerlink" href="#topology" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>                ┌──────────────────────────────────────────────┐
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>                │                                              │
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>                │    Hub UI (DEPLOY_MODE=ui, APP_MODE=hub)     │
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>  Browser ────► │    • serves the app bundle                   │
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>                │    • serves registry.json                    │
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>                │    • NO database, NO /api                    │
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>                │                                              │
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>                └──────────┬─────────────────┬─────────────────┘
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>                           │                 │
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>                           │ CORS            │ CORS
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>                           ▼                 ▼
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>      ┌───────────────────────────┐ ┌───────────────────────────┐
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>      │ Data-node A               │ │ Data-node B               │
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>      │ DEPLOY_MODE=data-node-ui  │ │ DEPLOY_MODE=data-node-ui  │
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>      │ • PostGIS + PostgREST     │ │ • PostGIS + PostgREST     │
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>      │ • nginx serves /api/+CORS │ │ • nginx serves /api/+CORS │
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>      └───────────────────────────┘ └───────────────────────────┘
+</code></pre></div>
+<p>Each data-node runs the full <code>data-node-ui</code> profile so the shipped nginx config serves <code>/api/</code> with the CORS headers the Hub's browser clients need. The Hub is the same frontend image flipped to <code>APP_MODE=hub</code> with a <code>registry.json</code> listing the data-node API URLs, and no database of its own.</p>
+<div class="admonition note">
+<p class="admonition-title">Pure <code>DEPLOY_MODE=data-node</code> (advanced)</p>
+<p>The <code>data-node</code> profile (invoked with <code>--profile data-node</code>) ships db + PostgREST only — no HTTP server, no port publish, no CORS handling. You can use it if you run your own reverse proxy in front of the PostgREST container and add the right <code>Access-Control-Allow-*</code> headers to <code>/api/</code> responses. For the happy path, prefer <code>data-node-ui</code> — it's what this walkthrough assumes. In <code>data-node-ui</code> mode only <code>/api/</code> needs to be reachable from the Hub's origin; front the <code>APP_PORT</code> with a reverse proxy that blocks paths other than <code>/api/</code> if you don't want the secondary standalone UI publicly reachable.</p>
+</div>
+<h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="https://nodejs.org/">Node.js</a> v18 or newer</li>
-<li>Docker with the Compose plugin</li>
-<li><code>git</code></li>
+<li>One host (or cluster) per node — the Hub and each data-node can run on the same machine or on separate ones. Each must reach the others over HTTP/HTTPS.</li>
+<li>Docker with the Compose plugin on every host.</li>
+<li>One OSM relation ID and one Geofabrik PBF URL per data-node (<a href="../manual-deploy/#step-1-find-your-regions-osm-relation-id">how to find them</a>).</li>
+<li>HTTPS-terminating reverse proxy in front of each data-node in production — the browser must be able to fetch the data-node's <code>/api/</code> over HTTPS when the Hub itself is served over HTTPS.</li>
+<li>When co-locating nodes on one host, give each its own <code>APP_PORT</code> (e.g. <code>8080</code>, <code>8081</code>, <code>8082</code>) and its own <code>COMPOSE_PROJECT_NAME</code> (e.g. <code>spieli-fulda</code>, <code>spieli-neuhof</code>, <code>spieli-hub</code>) so port bindings and Docker resource names don't collide.</li>
 </ul>
-<h2 id="step-1-find-your-regions-osm-relation-id">Step 1 — Find your region's OSM relation ID<a class="headerlink" href="#step-1-find-your-regions-osm-relation-id" title="Permanent link">&para;</a></h2>
-<p>Search for your city, Kreis, or district on <a href="https://nominatim.openstreetmap.org">Nominatim</a> or <a href="https://openstreetmap.org">openstreetmap.org</a>. The relation ID appears in the URL — e.g. <code>openstreetmap.org/relation/62700</code> → ID is <code>62700</code>.</p>
-<h2 id="step-2-find-a-geofabrik-pbf-extract">Step 2 — Find a Geofabrik PBF extract<a class="headerlink" href="#step-2-find-a-geofabrik-pbf-extract" title="Permanent link">&para;</a></h2>
-<p>Browse <a href="https://download.geofabrik.de">download.geofabrik.de</a> for an extract covering your region. German Bundesländer and many sub-regions are available. The PBF only needs to <em>contain</em> your region — a Bundesland extract works fine for a single Kreis.</p>
-<h2 id="step-3-configure">Step 3 — Configure<a class="headerlink" href="#step-3-configure" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>cp<span class="w"> </span>.env.example<span class="w"> </span>.env
-</code></pre></div>
-<p>Edit <code>.env</code> and set at minimum:</p>
+<h2 id="step-1-stand-up-each-data-node">Step 1 — Stand up each data-node<a class="headerlink" href="#step-1-stand-up-each-data-node" title="Permanent link">&para;</a></h2>
+<p>Repeat on every data-node host. For this walkthrough the two backends are "Fulda" and "Neuhof".</p>
+<h3 id="data-node-env">Data-node <code>.env</code><a class="headerlink" href="#data-node-env" title="Permanent link">&para;</a></h3>
+<p>Replace <code>&lt;strong-random-password&gt;</code> with an actual generated secret (<code>openssl rand -base64 24</code> is fine) — the angle brackets are a placeholder, not a literal value.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>DEPLOY_MODE=data-node-ui
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>OSM_RELATION_ID=62700
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>OSM_RELATION_ID=454863
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>PBF_URL=https://download.geofabrik.de/europe/germany/hessen-latest.osm.pbf
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>POSTGRES_PASSWORD=&lt;strong-random-password&gt;
 </code></pre></div>
-<p>See <a href="../configuration/">Configuration</a> for all available variables, including <code>DEPLOY_MODE</code> options (<code>data-node</code>, <code>ui</code>, <code>data-node-ui</code>).</p>
-<h2 id="step-4-start-the-stack-and-import-data">Step 4 — Start the stack and import data<a class="headerlink" href="#step-4-start-the-stack-and-import-data" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Start the database, API, and web server</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>data-node-ui<span class="w"> </span>up<span class="w"> </span>-d
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="c1"># Import OSM data (downloads PBF, filters to region with osmium, runs osm2pgsql)</span>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>data-node<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>importer
+<p>No <code>APP_MODE</code>, no <code>REGISTRY_URL</code> — the frontend on a data-node runs in its default standalone mode purely so nginx can serve <code>/api/</code> with CORS. <code>API_BASE_URL</code> stays at its default <code>/api</code>.</p>
+<h3 id="start-the-backend-and-import">Start the backend and import<a class="headerlink" href="#start-the-backend-and-import" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.prod.yml<span class="w"> </span>--profile<span class="w"> </span>data-node-ui<span class="w"> </span>up<span class="w"> </span>-d
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.prod.yml<span class="w"> </span>--profile<span class="w"> </span>data-node-ui<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>importer
 </code></pre></div>
-<p>Replace <code>data-node-ui</code> with your chosen <code>DEPLOY_MODE</code>. The app will be available at <code>http://localhost:8080</code> (or the port set in <code>APP_PORT</code>).</p>
-<div class="admonition info">
-<p class="admonition-title">How the import works</p>
-<p>The importer runs a two-step osmium pipeline before osm2pgsql:</p>
-<ol>
-<li><strong>Bbox extract</strong> — clips the source PBF to your region's bounding box (~322 MB Bundesland → ~50 MB)</li>
-<li><strong>Tag filter</strong> — keeps only objects the app queries (playgrounds, trees, pitches, POIs, …), reducing the file to ~4–8 MB</li>
-</ol>
-<p>osm2pgsql then runs on that small file in a few seconds, regardless of how large the source PBF was.</p>
+<p>The first command starts <code>db</code>, <code>postgrest</code>, and the <code>app</code> container (which hosts nginx in front of PostgREST). The second runs the importer once — see <a href="../manual-deploy/#step-4-start-the-stack-and-import-data">Manual Deploy § Step 4</a> for what the import does and how long it takes.</p>
+<h3 id="expose-api-to-the-hub">Expose <code>/api/</code> to the Hub<a class="headerlink" href="#expose-api-to-the-hub" title="Permanent link">&para;</a></h3>
+<p>Because the Hub's browser clients hit <code>/api/</code> cross-origin, each data-node must be reachable at a stable URL (e.g. <code>https://fulda.example.com/api</code>) and respond with CORS headers. The shipped nginx config in <code>data-node-ui</code> mode adds <code>Access-Control-Allow-Origin: *</code> and the right methods on <code>/api/</code> automatically — no extra configuration needed. In production, front <code>APP_PORT</code> with an HTTPS-terminating reverse proxy.</p>
+<p>Verify from a machine that is <strong>not</strong> the data-node itself:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>curl<span class="w"> </span>-i<span class="w"> </span>https://fulda.example.com/api/rpc/get_meta
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="c1"># expect 200 OK, JSON body with { relation_id, name, playground_count, bbox }</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="c1"># response should also include: Access-Control-Allow-Origin: *</span>
+</code></pre></div>
+<h2 id="step-2-prepare-registryjson">Step 2 — Prepare <code>registry.json</code><a class="headerlink" href="#step-2-prepare-registryjson" title="Permanent link">&para;</a></h2>
+<p>The Hub discovers its data-nodes by fetching a <code>registry.json</code> from its own origin. Create the file you'll deploy with the Hub:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="p">{</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="nt">&quot;instances&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">    </span><span class="p">{</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">      </span><span class="nt">&quot;slug&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;fulda&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">      </span><span class="nt">&quot;url&quot;</span><span class="p">:</span><span class="w">  </span><span class="s2">&quot;https://fulda.example.com/api&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">      </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Fulda&quot;</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">    </span><span class="p">},</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">    </span><span class="p">{</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="w">      </span><span class="nt">&quot;slug&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;neuhof&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="w">      </span><span class="nt">&quot;url&quot;</span><span class="p">:</span><span class="w">  </span><span class="s2">&quot;https://neuhof.example.com/api&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="w">      </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Neuhof&quot;</span>
+<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="w">  </span><span class="p">]</span>
+<a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="p">}</span>
+</code></pre></div>
+<p><strong>Field rules</strong> — see the <a href="../../reference/registry-json/"><code>registry.json</code> reference</a> for the full schema. The short version:</p>
 <table>
 <thead>
 <tr>
-<th>Run</th>
-<th>What happens</th>
-<th>Typical time</th>
+<th>Field</th>
+<th>Required</th>
+<th>Notes</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>First (no PBF cached)</td>
-<td>Downloads source PBF, bbox clip, tag filter, import</td>
-<td>~2–5 min (mostly download)</td>
+<td><code>url</code></td>
+<td>yes</td>
+<td>Absolute URL of the data-node's PostgREST base — no trailing slash</td>
 </tr>
 <tr>
-<td>First (PBF already cached)</td>
-<td>Bbox clip, tag filter, import</td>
-<td>~30–60 s</td>
+<td><code>name</code></td>
+<td>recommended</td>
+<td>Human-readable label shown in the instance drawer. Falls back to the <code>url</code> if omitted, which gives ugly labels — always set it in practice</td>
 </tr>
 <tr>
-<td>Any subsequent run</td>
-<td>Reuses both cached filtered PBFs, import</td>
-<td>~20–30 s</td>
+<td><code>slug</code></td>
+<td>no</td>
+<td>Stable lowercase-ASCII identifier used in shareable deep-links</td>
 </tr>
 </tbody>
 </table>
-<p>All three files (source, bbox-clipped, tag-filtered) are stored in the <code>pbf_cache</code> Docker volume and reused automatically.</p>
-</div>
-<h2 id="step-5-updating-data">Step 5 — Updating data<a class="headerlink" href="#step-5-updating-data" title="Permanent link">&para;</a></h2>
-<p>Re-run the importer at any time to refresh from Geofabrik (extracts are updated daily):</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>data-node<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>importer
+<p>Do <strong>not</strong> add <code>version</code> or <code>region</code> fields — the Hub populates those at runtime from each backend's <code>/api/rpc/get_meta</code> response. Anything you put in <code>registry.json</code> for those keys is ignored.</p>
+<p>The file is served from the <strong>Hub's own origin</strong> under <code>/registry.json</code> (the default value of <code>REGISTRY_URL</code>). It is <em>not</em> fetched from one of the data-nodes. CORS is not needed for the registry file itself, only for the data-node APIs it points at (handled in Step 1).</p>
+<h2 id="step-3-stand-up-the-hub">Step 3 — Stand up the Hub<a class="headerlink" href="#step-3-stand-up-the-hub" title="Permanent link">&para;</a></h2>
+<h3 id="hub-env">Hub <code>.env</code><a class="headerlink" href="#hub-env" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>DEPLOY_MODE=ui
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>APP_MODE=hub
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>REGISTRY_URL=/registry.json
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>HUB_POLL_INTERVAL=300
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>APP_PORT=8080
 </code></pre></div>
-<h2 id="applying-database-changes-without-a-full-re-import">Applying database changes without a full re-import<a class="headerlink" href="#applying-database-changes-without-a-full-re-import" title="Permanent link">&para;</a></h2>
-<p>SQL changes to <code>importer/api.sql</code> (PostgREST functions, indexes) can be applied directly to the running database:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>make<span class="w"> </span>db-apply
+<p>Notes:</p>
+<ul>
+<li><code>REGISTRY_URL=/registry.json</code> is the default and means "same origin as the Hub". Set a different value only if you host the registry elsewhere. The value is sanitized by the container entrypoint — only <code>A-Z a-z 0-9 : / . + _ % ~ -</code> survive, so query strings (<code>?v=2</code>) and fragments (<code>#anchor</code>) are silently dropped. Use a clean path.</li>
+<li><code>HUB_POLL_INTERVAL</code> is seconds as a bare integer (e.g. <code>300</code>, not <code>300s</code>). Default 300 re-fetches playground data from every data-node every 5 minutes.</li>
+<li><strong><code>API_BASE_URL</code> is deliberately absent</strong> on a Hub. The Hub speaks to multiple data-nodes over CORS and reads their URLs from <code>registry.json</code>; a single <code>API_BASE_URL</code> would be meaningless.</li>
+<li><code>OSM_RELATION_ID</code>, <code>PBF_URL</code>, <code>POSTGRES_PASSWORD</code> are <strong>not</strong> set on the Hub — it has no database.</li>
+</ul>
+<h3 id="replace-the-bundled-registryjson-required">Replace the bundled <code>registry.json</code> (required)<a class="headerlink" href="#replace-the-bundled-registryjson-required" title="Permanent link">&para;</a></h3>
+<p>The Hub's shipped image bundles a development <code>registry.json</code> pointing at local <code>/api</code> and <code>/api2</code>. Those paths have no upstream in the <code>ui</code> profile, so a Hub started without this step will load with every backend marked red. Pick one of the following — <strong>neither is optional</strong>:</p>
+<p><strong>Option A — bind-mount (recommended, no rebuild)</strong></p>
+<p>Drop your file alongside <code>compose.prod.yml</code> as <code>registry.json</code>, then create <code>compose.override.yml</code> next to it:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nt">services</span><span class="p">:</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span><span class="nt">app</span><span class="p">:</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./registry.json:/usr/share/nginx/html/registry.json:ro</span>
 </code></pre></div>
-<h2 id="testing-on-a-phone-lan-access">Testing on a phone / LAN access<a class="headerlink" href="#testing-on-a-phone-lan-access" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>make<span class="w"> </span>lan-url
+<p>Compose <strong>does not</strong> auto-merge <code>compose.override.yml</code> when you pass <code>-f compose.prod.yml</code> explicitly. With Option A you must list both files on every invocation (see the Start command below); Option B doesn't need the override file at all.</p>
+<p><strong>Option B — custom image</strong></p>
+<p>Build your own image from source with your <code>registry.json</code> placed at <code>app/public/registry.json</code> before <code>make docker-build</code>. No override file needed in this case.</p>
+<h3 id="start-the-hub">Start the Hub<a class="headerlink" href="#start-the-hub" title="Permanent link">&para;</a></h3>
+<p>With Option A (bind-mount):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.prod.yml<span class="w"> </span>-f<span class="w"> </span>compose.override.yml<span class="w"> </span>--profile<span class="w"> </span>ui<span class="w"> </span>up<span class="w"> </span>-d
 </code></pre></div>
-<p>Prints your machine's LAN IP and ready-to-use URLs. The Vite dev server and Docker stack both bind to all interfaces, so the printed URLs work immediately on any device on the same WiFi.</p>
-<div class="admonition warning">
-<p class="admonition-title">Geolocation on mobile</p>
-<p>Browsers block the geolocation API on plain HTTP. If you need to test the location button on a phone, use Chrome and enable "Insecure origins treated as secure" at <code>chrome://flags</code>, or test against the production HTTPS URL.</p>
-</div>
+<p>With Option B (custom image — just the one file):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.prod.yml<span class="w"> </span>--profile<span class="w"> </span>ui<span class="w"> </span>up<span class="w"> </span>-d
+</code></pre></div>
+<p>The Hub has no importer, no database, no <code>run --rm importer</code> step.</p>
+<h2 id="step-4-verify">Step 4 — Verify<a class="headerlink" href="#step-4-verify" title="Permanent link">&para;</a></h2>
+<ol>
+<li>Open the Hub URL in a browser (e.g. <code>https://hub.example.com</code>).</li>
+<li>You should see the map render, fit to the union of all configured regions, with the instance pill in the bottom-left showing the aggregated region + playground counts (localized German: e.g. <code>2 Regionen · &lt;count&gt; Spielplätze</code> with a globe icon).</li>
+<li>Open DevTools → Network and reload. You should see:</li>
+<li>One <code>GET /registry.json</code> from the Hub's origin.</li>
+<li>One <code>GET /rpc/get_meta</code> and one <code>GET /rpc/get_playgrounds</code> per data-node, cross-origin, returning 200.</li>
+<li>Click the instance pill — the drawer lists both backends with their playground count. (A version badge renders only when a backend's <code>get_meta</code> exposes a <code>version</code> field, which the SQL function doesn't today, so the badge slot stays empty in current releases.)</li>
+<li>Click a playground in each region — the selection panel opens with that region's data.</li>
+</ol>
+<p>If any data-node request fails in DevTools, the instance drawer marks that backend red with the error message. Check the data-node's CORS headers (Step 1 verification) and that its URL in <code>registry.json</code> is reachable from the browser, not only from the Hub host.</p>
+<h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../../reference/registry-json/"><code>registry.json</code> reference</a> — full schema, slug rules, derived behaviours.</li>
+<li><a href="../../reference/federation/">Federation</a> — conceptual overview of Hub mode and federation endpoints.</li>
+<li><a href="../configuration/">Configuration</a> — full variables table including <code>REGISTRY_URL</code> and <code>HUB_POLL_INTERVAL</code>.</li>
+<li><a href="../../reference/architecture/">Architecture</a> — the <code>DEPLOY_MODE</code> × <code>APP_MODE</code> matrix that makes the legal combinations explicit.</li>
+</ul>
 
 
 

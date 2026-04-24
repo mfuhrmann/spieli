@@ -520,6 +520,27 @@
   
   
     <li class="md-nav__item">
+      <a href="../../ops/federated-deployment/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Federated Deployment
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../ops/configuration/" class="md-nav__link">
         
   
@@ -782,6 +803,21 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Deployment modes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#deploy_mode-app_mode-legal-combinations" class="md-nav__link">
+    <span class="md-ellipsis">
+      DEPLOY_MODE × APP_MODE — legal combinations
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1021,6 +1057,21 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Deployment modes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#deploy_mode-app_mode-legal-combinations" class="md-nav__link">
+    <span class="md-ellipsis">
+      DEPLOY_MODE × APP_MODE — legal combinations
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1117,6 +1168,35 @@
 </tr>
 </tbody>
 </table>
+<h3 id="deploy_mode-app_mode-legal-combinations"><code>DEPLOY_MODE</code> × <code>APP_MODE</code> — legal combinations<a class="headerlink" href="#deploy_mode-app_mode-legal-combinations" title="Permanent link">&para;</a></h3>
+<p><code>DEPLOY_MODE</code> picks which containers run. <code>APP_MODE</code> picks how the frontend behaves. They are orthogonal: one chooses <em>where</em> the code runs, the other chooses <em>what</em> the code does.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><code>APP_MODE=standalone</code></th>
+<th><code>APP_MODE=hub</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>DEPLOY_MODE=data-node</code></td>
+<td>N/A — no frontend, <code>APP_MODE</code> is ignored</td>
+<td>N/A — no frontend to run in hub mode</td>
+</tr>
+<tr>
+<td><code>DEPLOY_MODE=ui</code></td>
+<td>Remote-frontend for one region (<code>API_BASE_URL</code> points at a remote <code>/api/</code> — that backend must enable <a href="../../ops/federated-deployment/#expose-api-to-the-hub">CORS</a>)</td>
+<td><strong>Federated Hub</strong> — aggregates multiple data-nodes</td>
+</tr>
+<tr>
+<td><code>DEPLOY_MODE=data-node-ui</code></td>
+<td>Default single-region deployment</td>
+<td>Hub co-located with a local data-node — replace the bundled <code>registry.json</code> (see walkthrough), or the Hub will point at dev paths</td>
+</tr>
+</tbody>
+</table>
+<p>For the federated Hub topology (<code>DEPLOY_MODE=ui</code> + <code>APP_MODE=hub</code>), see <a href="../../ops/federated-deployment/">Federated Deployment</a>.</p>
 <h2 id="key-source-directories">Key source directories<a class="headerlink" href="#key-source-directories" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
