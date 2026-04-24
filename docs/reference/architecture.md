@@ -58,6 +58,18 @@ The compose file supports three profiles, selected at install time via `DEPLOY_M
 | `ui` | app (nginx) | Frontend connecting to a remote data node |
 | `data-node-ui` | All of the above | Self-contained single-region deployment |
 
+### `DEPLOY_MODE` × `APP_MODE` — legal combinations
+
+`DEPLOY_MODE` picks which containers run. `APP_MODE` picks how the frontend behaves. They are orthogonal: one chooses *where* the code runs, the other chooses *what* the code does.
+
+|                           | `APP_MODE=standalone`                                                                                 | `APP_MODE=hub`                                                                                                  |
+|---------------------------|-------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------|
+| `DEPLOY_MODE=data-node`   | N/A — no frontend, `APP_MODE` is ignored                                                              | N/A — no frontend to run in hub mode                                                                            |
+| `DEPLOY_MODE=ui`          | Remote-frontend for one region (`API_BASE_URL` points at a remote `/api/` — that backend must enable [CORS](../ops/federated-deployment.md#expose-api-to-the-hub)) | **Federated Hub** — aggregates multiple data-nodes                                                          |
+| `DEPLOY_MODE=data-node-ui`| Default single-region deployment                                                                      | Hub co-located with a local data-node — replace the bundled `registry.json` (see walkthrough), or the Hub will point at dev paths |
+
+For the federated Hub topology (`DEPLOY_MODE=ui` + `APP_MODE=hub`), see [Federated Deployment](../ops/federated-deployment.md).
+
 ## Key source directories
 
 | Path | Role |
