@@ -38,6 +38,7 @@ Each data-node runs the full `data-node-ui` profile so the shipped nginx config 
 - One OSM relation ID and one Geofabrik PBF URL per data-node ([how to find them](manual-deploy.md#step-1-find-your-regions-osm-relation-id)).
 - HTTPS-terminating reverse proxy in front of each data-node in production — the browser must be able to fetch the data-node's `/api/` over HTTPS when the Hub itself is served over HTTPS.
 - When co-locating nodes on one host, give each its own `APP_PORT` (e.g. `8080`, `8081`, `8082`) and its own `COMPOSE_PROJECT_NAME` (e.g. `spieli-fulda`, `spieli-neuhof`, `spieli-hub`) so port bindings and Docker resource names don't collide.
+- **Data-node version**: each data-node must run a release that ships the tiered playground API (`get_playground_clusters`, `get_playgrounds_bbox`, `get_playground`) and the completeness fields on `get_meta` (`complete`, `partial`, `missing`). These landed in the same release that introduced this walkthrough; an older data-node still joins successfully but degrades to a legacy fallback path — see the [federation reference's Federation endpoints table](../reference/federation.md#federation-endpoints) for the degradation matrix. If you can, upgrade every data-node before pointing a current Hub at it.
 
 ## Step 1 — Stand up each data-node
 
@@ -172,7 +173,9 @@ The Hub has no importer, no database, no `run --rm importer` step.
 2. You should see the map render, fit to the union of all configured regions, with the instance pill in the bottom-left showing the aggregated region + playground counts (localized German: e.g. `2 Regionen · <count> Spielplätze` with a globe icon).
 3. Open DevTools → Network and reload. You should see:
    - One `GET /registry.json` from the Hub's origin.
-   - One `GET /rpc/get_meta` and one `GET /rpc/get_playgrounds` per data-node, cross-origin, returning 200.
+   - One `GET /rpc/get_meta` per data-node, cross-origin, returning 200 with `playground_count` + `bbox` + completeness fields.
+   - On the first moveend, either `GET /rpc/get_playground_clusters?...` (cluster tier, zoom ≤ 13) or `GET /rpc/get_playgrounds_bbox?...` (polygon tier, zoom ≥ 14) per data-node whose bbox intersects the viewport. A data-node whose bbox sits entirely outside the viewport receives no request — that's the bbox router (see the federation reference's [Scale and clustering](../reference/federation.md#scale-and-clustering) section) doing its job, not a bug.
+   - At zoom ≤ 5 (continental view) you should see no per-playground requests at all — the country-level macro view renders entirely from the cached `get_meta` response. One ring per data-node.
 4. Click the instance pill — the drawer lists both backends with their playground count. (A version badge renders only when a backend's `get_meta` exposes a `version` field, which the SQL function doesn't today, so the badge slot stays empty in current releases.)
 5. Click a playground in each region — the selection panel opens with that region's data.
 

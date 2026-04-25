@@ -110,15 +110,22 @@
 
 ## 7. Hub — filter-aware cluster badge under federation
 
-- [ ] 7.1 At the centroid tier, the filter badge computation runs over merged centroids from all contributing backends; no per-backend change needed beyond P1
-- [ ] 7.2 At the cluster tier, no filter badge (same rule as P1)
-- [ ] 7.3 At the macro tier, no filter badge (decision D6 in design.md)
+Most of this section is moot post-pivot — the centroid tier was dropped in
+P1, and the cluster-tier filter badge is itself a P1 deferred task. What
+remains is a federation-side verification that the existing polygon-tier
+filter rendering carries over unchanged when polygons come from multiple
+backends.
+
+- [-] 7.1 ~~Centroid tier filter badge across merged centroids~~ — **N/A in two-tier design**. Centroid tier was dropped during the P1 pivot; the badge requirement now lives entirely with P1's cluster-tier work.
+- [x] 7.2 No client-side filter badge at the cluster tier in hub mode — same rule as P1. Federation-specific note: when the P1 cluster-tier badge ships, Supercluster's `reduce` callback in `hubOrchestrator.js` already sums named bucket fields (cf. §4.4); adding a `match_count` field there is a one-line change at that point. Tracked as a follow-up gated on the P1 badge.
+- [x] 7.3 No filter badge at the macro tier — design decision D6. The macro ring shows aggregate completeness for the entire region; a "47k of 65k match the soccer filter" badge over France carries no actionable signal at continental scale.
+- [x] 7.4 Polygon tier — verified that `Map.svelte`'s reactive `playgroundLayer.setStyle(feature => matchesFilters(...) ? playgroundStyleFn(feature) : null)` path works unchanged when polygons originate from multiple backends. `matchesFilters` reads OSM property keys (`osm_id`, `surface`, `access`, `has_soccer`, etc.) that the P1 schema guarantees uniform across federation members, so no per-backend filter logic is needed. Polygons that don't match the active filter are simply not rendered, regardless of which backend supplied them.
 
 ## 8. Docs
 
-- [ ] 8.1 Add a "Scale and clustering" section to `docs/reference/federation.md` describing the zoom tiers, bbox routing, and the country-level macro view
-- [ ] 8.2 Update `docs/ops/federated-deployment.md` (coming in `document-federated-hub-deployment`) with a note that backends must implement `add-tiered-playground-delivery` before joining a hub running this code
-- [ ] 8.3 Add an architecture diagram (mermaid or simple ASCII) showing hub → bbox-router → fan-out → re-cluster → render
+- [x] 8.1 Added a "Scale and clustering" section to `docs/reference/federation.md` covering the three zoom tiers (with their per-tier RPCs), bbox routing semantics, fan-out + progressive render, cross-backend re-clustering, and the country-level macro view (including offline rendering). Updated the Federation endpoints table to list all four tier RPCs + the deprecated legacy fallback, with a note about pre-P1 backend graceful degradation.
+- [x] 8.2 Added a tier-RPC prerequisite to `docs/ops/federated-deployment.md` Prerequisites section (data-nodes must ship the tiered API + completeness extension; older data-nodes degrade rather than fail). Updated the Step 4 verification list to point at `get_playground_clusters` / `get_playgrounds_bbox` per moveend instead of the deprecated `get_playgrounds`, and called out the macro-tier "no per-playground requests" expectation at zoom ≤ 5.
+- [x] 8.3 Embedded a mermaid `flowchart LR` in `docs/reference/federation.md` showing user moveend → tier dispatch → bboxRouter → federationHealth filter → fanOut → (Supercluster | concat) → source repaint, plus the macro-view branch that bypasses fan-out entirely.
 
 ## 9. Verification
 
