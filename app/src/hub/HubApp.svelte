@@ -44,8 +44,19 @@
 
   // Sync accessor for the slug-less broadcast deeplink path. AppShell fans
   // `fetchPlaygroundByOsmId` across these URLs in parallel; first hit wins.
+  // Also returns each backend's slug so the broadcast result can stamp
+  // `_backendSlug` on the hydrated feature — preserves the
+  // `#W<id>` → `#<slug>/W<id>` URL canonicalisation.
   function getAllBackendUrls() {
-    return get(backends).map(b => b.url);
+    return get(backends).map(b => ({ url: b.url, slug: b.slug ?? null }));
+  }
+
+  // Hub-only retry hook for AppShell.tryRestoreFromHash. The deeplink
+  // restore needs to re-run when the registry settles (slug becomes
+  // resolvable, broadcast URLs become available) — the polygon source
+  // never changes at cluster tier so the source-change retry isn't enough.
+  function subscribeBackendsForHashRetry(cb) {
+    return backends.subscribe(cb);
   }
 
   // Initial region fit: once the map is ready, every registered backend has
@@ -66,6 +77,7 @@
   let detachMap = null;
   let detachBbox = null;
   let detachBackends = null;
+  let detachMapAttach = null;
 
   function tryFit() {
     if (fitDone || !latestMap || !latestBbox || !backendsSettled) return;
@@ -108,7 +120,15 @@
     // fans out per-tier RPCs across registered backends on every (debounced)
     // moveend, populates clusterSource / polygonSource, and writes the
     // active tier to activeTierStore for layer-visibility toggling.
-    const detachAttach = mapStore.subscribe(map => {
+    //
+    // Map.svelte's onMount fires before HubApp's (children before parent in
+    // Svelte's lifecycle), so by the time we subscribe here, mapStore
+    // already has a value and the callback fires SYNCHRONOUSLY. That makes
+    // any self-unsubscribe pattern (`const detachAttach = ...; detachAttach()`)
+    // hit a TDZ on the const inside its own first invocation. We instead
+    // hold the unsubscribe externally and detach via onDestroy / once the
+    // attachment has run.
+    detachMapAttach = mapStore.subscribe(map => {
       if (!map || detachOrchestrator) return;
       detachOrchestrator = attachHubOrchestrator({
         map,
@@ -116,7 +136,9 @@
         clusterSource,
         polygonSource,
       });
-      detachAttach();
+      // Detach asynchronously so we're not unsubscribing while still inside
+      // svelte's subscriber dispatch loop.
+      queueMicrotask(() => { detachMapAttach?.(); detachMapAttach = null; });
     });
   });
 
@@ -124,6 +146,7 @@
     detachMap?.();
     detachBbox?.();
     detachBackends?.();
+    detachMapAttach?.();
     detachOrchestrator?.();
   });
 </script>
@@ -138,6 +161,7 @@
   nearestFetcher={fetchNearestAcrossBackends}
   {resolveSlugToBackendUrl}
   {getAllBackendUrls}
+  onBackendsUpdate={subscribeBackendsForHashRetry}
   {dataContribLinks}
 >
   {#snippet instancePanel()}

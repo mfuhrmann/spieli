@@ -169,12 +169,15 @@ export async function stubHubRegistry(page, { instanceA, instanceB }) {
   );
   await page.route('**/rpc/get_playground?**', route => {
     // Single-playground hydration: match the requested osm_id against the
-    // backend's fixture.
+    // backend's fixture. Returns `null` on no match — production behaviour;
+    // a `features[0]` fallback would mask broadcast deeplink correctness
+    // (the slug-less broadcast counts each backend's response as a
+    // potential match).
     const url = new URL(route.request().url());
     const wantedId = Number(url.searchParams.get('osm_id'));
     return dispatch(route, (b) => {
       const features = b.playgrounds?.features ?? [];
-      const match = features.find(f => f.properties?.osm_id === wantedId) ?? features[0] ?? null;
+      const match = features.find(f => f.properties?.osm_id === wantedId) ?? null;
       return {
         status: 200,
         contentType: 'application/json',

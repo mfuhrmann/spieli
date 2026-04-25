@@ -81,6 +81,13 @@ export function attachHubOrchestrator({
   // [NaN, NaN] (projects to ~0,0) or trip Supercluster's KDBush; we drop
   // those buckets and warn at most once per backend per session.
   const backendMalformedBucketWarned = new Set();
+  // The debounced orchestrator is referenced from the backends-subscribe
+  // callback below as well as the moveend handler below. Declare early so
+  // both references resolve out of TDZ regardless of how Svelte schedules
+  // the synchronous subscribe firings — see the §5 review for the original
+  // crash this avoids.
+  const debounced = debounce(orchestrate, 300);
+
   // Skip the very first subscribe-firing — the synchronous initial value is
   // the registry's empty bootstrap, and the first real load triggers the
   // immediate `orchestrate()` call at the bottom of this function. After
@@ -95,8 +102,7 @@ export function attachHubOrchestrator({
     }
     // Backends changed (registry poll or registry mutation) — re-orchestrate
     // on the same debounce as moveend so a flurry of poll-driven updates
-    // collapses to one fan-out. `debounced` is defined below; safe to call
-    // because the subscribe callback is async w.r.t. attach time.
+    // collapses to one fan-out.
     debounced();
   });
 
@@ -289,7 +295,6 @@ export function attachHubOrchestrator({
     }
   }
 
-  const debounced = debounce(orchestrate, 300);
   map.on('moveend', debounced);
   // Initial dispatch runs immediately (not debounced) so first paint
   // doesn't wait on a moveend.

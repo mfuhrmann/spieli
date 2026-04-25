@@ -88,13 +88,24 @@
   export let resolveSlugToBackendUrl = null;
 
   /**
-   * Hub-only "list every registered backend URL" accessor. Used by the
-   * slug-less deeplink path to broadcast `fetchPlaygroundByOsmId` across
-   * every backend; the first match wins, duplicates log a warning.
+   * Hub-only "list every registered backend" accessor returning
+   * `[{ url, slug }, ...]`. The slug is preserved through the broadcast
+   * hydration so a slug-less hash can still rewrite to its canonical
+   * `#<slug>/W<id>` form once the matching backend is identified.
    * Standalone passes `null`.
-   * @type {(() => string[]) | null}
+   * @type {(() => Array<{url: string, slug: string|null}>) | null}
    */
   export let getAllBackendUrls = null;
+
+  /**
+   * Hub-only registration: AppShell calls this with a callback to be invoked
+   * on every backends-store update. Used to re-trigger `tryRestoreFromHash`
+   * when a slug becomes resolvable (post-registry-load) or backends arrive
+   * after the initial source-change retry has stalled. Returns an unsubscribe.
+   * Standalone passes `null` and the source-change trigger alone is enough.
+   * @type {((cb: () => void) => () => void) | null}
+   */
+  export let onBackendsUpdate = null;
 
   // ── URL hash restore ──────────────────────────────────────────────────────
   //
@@ -171,13 +182,13 @@
     // Hub + slug-less broadcast — handled separately because it's the
     // only path that fans out across multiple backends in parallel.
     if (!parsed.slug && resolveSlugToBackendUrl && getAllBackendUrls) {
-      const urls = getAllBackendUrls();
-      if (urls.length === 0) return; // backends still loading — retry on next change
+      const targets = getAllBackendUrls();
+      if (targets.length === 0) return; // backends still loading — retry on next change
       hydrating = true;
       try {
-        const settled = await Promise.all(urls.map(url =>
+        const settled = await Promise.all(targets.map(({ url, slug }) =>
           fetchPlaygroundByOsmId(parsed.osmId, url)
-            .then(feat => feat ? { feat, url } : null)
+            .then(feat => feat ? { feat, url, slug } : null)
             .catch(() => null),
         ));
         const matches = settled.filter(Boolean);
@@ -185,19 +196,25 @@
           console.warn(`[deeplink] osm_id ${parsed.osmId} matched ${matches.length} backends — selecting the first`);
         }
         if (matches.length > 0) {
-          const { feat, url } = matches[0];
+          const { feat, url, slug } = matches[0];
           const olFeatures = geojsonFormat.readFeatures(
             { type: 'FeatureCollection', features: [feat] },
             { dataProjection: 'EPSG:4326', featureProjection: 'EPSG:3857' },
           );
-          for (const f of olFeatures) f.set('_backendUrl', url);
+          // Stamp both URL and (when present) slug — the slug is what the
+          // selection store uses to rewrite the hash from `#W<id>` to the
+          // canonical `#<slug>/W<id>` form on broadcast hits.
+          for (const f of olFeatures) {
+            f.set('_backendUrl', url);
+            if (slug) f.set('_backendSlug', slug);
+          }
           playgroundSource.addFeatures(olFeatures);
           // The standard match path inside `playgroundSource.on('change')`
           // will pick up the freshly-added features and complete the
           // selection + fit on the next tick.
         } else if (!warnedHydrationFailed) {
           warnedHydrationFailed = true;
-          console.warn(`[deeplink] no playground found for osm_id ${parsed.osmId} across ${urls.length} backend(s)`);
+          console.warn(`[deeplink] no playground found for osm_id ${parsed.osmId} across ${targets.length} backend(s)`);
           hashRestored = true;
         }
       } catch (err) {
@@ -265,7 +282,16 @@
     tryRestoreFromHash();
     // Otherwise wait for the source to populate.
     playgroundSource.on('change', tryRestoreFromHash);
-    return () => playgroundSource.un('change', tryRestoreFromHash);
+    // Hub-mode also retries on every backends-store update — covers the
+    // case where the initial tryRestoreFromHash runs before the registry
+    // has loaded (slug not yet resolvable, or `getAllBackendUrls` returns
+    // []), and the polygon source never changes at cluster tier so the
+    // source-change retry alone never fires.
+    const detachBackends = onBackendsUpdate?.(tryRestoreFromHash);
+    return () => {
+      playgroundSource.un('change', tryRestoreFromHash);
+      detachBackends?.();
+    };
   });
 
   let dataModalOpen = false;
