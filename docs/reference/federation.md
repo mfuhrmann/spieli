@@ -94,5 +94,6 @@ The scale-line sits just below the pill in the same bottom-left corner. All othe
 
 ## See also
 
+- [API reference](api.md) — request/response shapes for the tiered playground RPCs (`get_playground_clusters`, `get_playgrounds_bbox`, `get_playground`, `get_meta`).
 - [Federated Deployment](../ops/federated-deployment.md) — step-by-step walkthrough for standing up one Hub + N data-nodes.
 - [`registry.json` reference](registry-json.md) — registry schema, slug rules, derived aggregate behaviours.

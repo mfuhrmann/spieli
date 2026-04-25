@@ -23,6 +23,7 @@ window.APP_CONFIG = {
   hubPollInterval:   ${HUB_POLL_INTERVAL:-300},
   mapZoom:           ${MAP_ZOOM:-6},
   mapMinZoom:        ${MAP_MIN_ZOOM:-4},
+  clusterMaxZoom:    ${CLUSTER_MAX_ZOOM:-13},
   parentOrigin:      '${SAFE_PARENT_ORIGIN}'
 };
 JSEOF
@@ -37,6 +38,7 @@ window.APP_CONFIG = {
   mapMinZoom:                 ${MAP_MIN_ZOOM:-10},
   poiRadiusM:                 ${POI_RADIUS_M:-5000},
   apiBaseUrl:                 '${SAFE_API_BASE_URL}',
+  clusterMaxZoom:             ${CLUSTER_MAX_ZOOM:-13},
   parentOrigin:               '${SAFE_PARENT_ORIGIN}'
 };
 JSEOF

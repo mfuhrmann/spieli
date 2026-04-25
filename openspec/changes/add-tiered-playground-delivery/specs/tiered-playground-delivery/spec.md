@@ -55,9 +55,25 @@ Each data-node SHALL expose a function returning full playground polygons scoped
 - **THEN** only playgrounds whose geometry intersects the bbox are returned
 - **AND** a playground whose polygon partially overlaps the bbox edge is still returned in full (not clipped)
 
-### Requirement: get_meta includes completeness counts and data version
+### Requirement: Backend exposes single-feature playground lookup
 
-The `api.get_meta` response SHALL include per-backend aggregate completeness counts and a data-version bump timestamp, so clients can render a macro view (proposal P2) and clients can invalidate cached responses after an import.
+Each data-node SHALL expose a function returning a single playground feature by `osm_id`, so the client can hydrate a polygon on demand for deeplinks and nearby-list selections when the polygon source isn't populated for the current viewport.
+
+#### Scenario: Single-feature RPC returns one feature
+
+- **WHEN** a client calls `api.get_playground(osm_id)` for a known osm_id
+- **THEN** the response is a single GeoJSON `Feature` with the same per-feature property shape as one element of `get_playgrounds_bbox.features[*]` (`osm_id`, `osm_type`, `name`, `leisure`, `operator`, `access`, `surface`, `area`, plus the `playground_stats` counts)
+- **AND** when both a relation row (`osm_id < 0`) and a way row (`osm_id > 0`) exist with the same magnitude, the relation is returned (round-trip fidelity for `R`/`W` differentiation requires a follow-up to extend the deeplink format)
+
+#### Scenario: Single-feature RPC returns null body on miss
+
+- **WHEN** a client calls `api.get_playground(osm_id)` with an unknown osm_id
+- **THEN** the response is JSON `null` (PostgREST scalar-return on zero rows), HTTP 200
+- **AND** the frontend fetcher distinguishes this from server errors by throwing only on non-2xx responses
+
+### Requirement: get_meta includes completeness counts
+
+The `api.get_meta` response SHALL include per-backend aggregate completeness counts, so clients can render a macro view (proposal P2).
 
 #### Scenario: get_meta carries completeness counts
 
@@ -65,11 +81,14 @@ The `api.get_meta` response SHALL include per-backend aggregate completeness cou
 - **THEN** the response includes `complete`, `partial`, `missing` integer fields in addition to the existing `playground_count`
 - **AND** `playground_count = complete + partial + missing`
 
-#### Scenario: get_meta carries data_version
+<!--
+  The `data_version` cache-bust field was originally scoped into this change
+  (task 1.7) but has been moved to `add-federation-health-exposition`, which
+  introduces `api.import_status(last_import_at, ...)` — the better-scoped home
+  for import metadata surfaced via get_meta. Until that change lands, clients
+  treat `playground_count` changes as a weak cache-bust signal.
+-->
 
-- **WHEN** the importer successfully completes
-- **THEN** the next call to `api.get_meta` returns a `data_version` ISO-8601 timestamp equal to the import completion time
-- **AND** repeated calls return the same `data_version` until the next successful import
 
 ### Requirement: Legacy get_playgrounds is retained one release, marked deprecated
 
@@ -81,28 +100,32 @@ The existing `api.get_playgrounds(relation_id)` function SHALL remain callable a
 - **THEN** the response is unchanged from before this change
 - **AND** a SQL `COMMENT` on the function names the intended replacement (`get_playgrounds_bbox`) and signals deprecation
 
-### Requirement: Client orchestrates three layers by zoom
+### Requirement: Client orchestrates two layers by zoom
 
-The standalone client SHALL render playground data through exactly three zoom-scoped layers (cluster, centroid, polygon) whose visibility is determined by the current map zoom, and SHALL refetch the relevant layer's source on each debounced `moveend`.
+The standalone client SHALL render playground data through exactly two zoom-scoped layers (cluster, polygon) whose visibility is determined by the current map zoom, and SHALL refetch the relevant layer's source on each debounced `moveend`.
 
-#### Scenario: Zoom ≤ 10 shows the cluster layer only
+<!--
+  Original design was three tiers (cluster ≤10, centroid 11-13, polygon ≥14).
+  Pivoted to two tiers during implementation: the cluster tier now covers zoom
+  ≤ clusterMaxZoom (default 13) and renders as either the stacked ring
+  (multi-child bucket) or a single completeness dot (count === 1). The
+  server-side get_playground_centroids RPC still ships (Requirement above)
+  but is not consumed by the client in P1. Hub-side Supercluster re-clustering
+  across backends lands in add-federated-playground-clustering (P2).
+-->
 
-- **WHEN** the map zoom is less than or equal to `clusterMaxZoom` (default 10)
+#### Scenario: Zoom ≤ clusterMaxZoom shows the cluster layer only
+
+- **WHEN** the map zoom is less than or equal to `clusterMaxZoom` (default 13)
 - **THEN** the cluster layer is visible
-- **AND** the centroid layer and polygon layer are hidden (but not destroyed)
+- **AND** the polygon layer is hidden (but not destroyed)
 
-#### Scenario: Zoom 11–13 shows the centroid layer only
+#### Scenario: Zoom > clusterMaxZoom shows the polygon layer only
 
-- **WHEN** the map zoom is between `clusterMaxZoom + 1` and `centroidMaxZoom` (default 11 to 13)
-- **THEN** the centroid layer is visible
-- **AND** the cluster layer and polygon layer are hidden
-
-#### Scenario: Zoom ≥ 14 shows the polygon layer only
-
-- **WHEN** the map zoom is greater than `centroidMaxZoom`
+- **WHEN** the map zoom is greater than `clusterMaxZoom`
 - **THEN** the polygon layer is visible, rendered with `playgroundStyleFn`
-- **AND** the cluster layer and centroid layer are hidden
-- **AND** `playgroundSourceStore` is set to the polygon layer's source
+- **AND** the cluster layer is hidden
+- **AND** `playgroundSourceStore` exposes the polygon layer's source (the store is also non-null at cluster tier so widgets can hydrate single playgrounds on demand — see §"Deeplink restore hydrates the polygon tier on demand")
 
 #### Scenario: Moveend refetches the active layer
 
@@ -114,37 +137,39 @@ The standalone client SHALL render playground data through exactly three zoom-sc
 
 - **WHEN** the active tier's RPC returns HTTP 404 (backend older than this change)
 - **THEN** the client logs a one-time warning and falls back to `api.get_playgrounds(relation_id)` for that backend
-- **AND** the cluster / centroid layers remain empty for the affected backend
+- **AND** the cluster layer remains empty for the affected backend
 
 ### Requirement: Clusters are rendered as completeness-segmented stacked rings
 
-Cluster features SHALL be rendered on the map as a ring divided into three segments proportional to the complete / partial / missing counts, with the total count as a number at the centre.
+Cluster features SHALL be rendered on the map as a ring divided into up to four segments proportional to the complete / partial / missing / restricted counts, with the total count as a number at the centre. The restricted segment (access-restricted playgrounds) renders with a hatched light-gray pattern mirroring the CompletenessLegend's "not public" swatch. Segment colours match the legend fill palette (not the darker polygon strokes).
 
 #### Scenario: Ring segments are proportional
 
-- **WHEN** a cluster has `complete = 6`, `partial = 19`, `missing = 22` (count = 47)
-- **THEN** the rendered ring has three segments whose arc lengths are proportional to 6 : 19 : 22
-- **AND** segment colours match the polygon completeness colours (`#155215`, `#92400e`, `#991b1b`)
-- **AND** the centre displays `47` in bold tabular numerals
+- **WHEN** a cluster has `complete = 6`, `partial = 19`, `missing = 22`, `restricted = 3` (count = 50)
+- **THEN** the rendered ring has four segments whose arc lengths are proportional to 6 : 19 : 22 : 3
+- **AND** the complete / partial / missing segments use the legend fill-base palette (`#228b22`, `#eab308`, `#ef4444`)
+- **AND** the restricted segment uses a hatched light-gray pattern
+- **AND** the centre displays `50` in bold tabular numerals
+- **AND** the invariant `count = complete + partial + missing + restricted` holds by construction (enforced in the `get_playground_clusters` RPC)
 
 #### Scenario: Single-feature cluster collapses to a dot
 
 - **WHEN** a cluster has `count = 1`
 - **THEN** no ring is drawn
 - **AND** a solid dot is rendered in the single feature's completeness colour
-- **AND** the dot size matches the centroid tier's default point size
+- **AND** the dot size is 5 CSS px (matches the polygon-tier selection dot)
 
 #### Scenario: Ring renders scale with count
 
 - **WHEN** cluster counts are 5, 25, 100, and 500 respectively
-- **THEN** the outer ring radius is 12, 14, 18, and 22 CSS pixels respectively
+- **THEN** the outer ring radius is 18, 22, 28, and 34 CSS pixels respectively
 - **AND** the number remains readable at every size
 
-#### Scenario: Filter-badge appears only when filters are active and zoom is centroid or above
+#### Scenario: Filter-badge appears only when filters are active
 
-- **WHEN** the filter store has any active filter and the zoom is in the centroid tier (11–13)
+- **WHEN** the filter store has any active filter
 - **THEN** each rendered cluster shows a small "N match" pill below the count, where N is the filter-matching child count
-- **WHEN** the zoom is in the cluster tier (≤ 10) or no filter is active
+- **WHEN** no filter is active
 - **THEN** no filter badge is rendered
 
 #### Scenario: Cluster click zooms to extent

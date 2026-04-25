@@ -5,8 +5,13 @@ import fixture from './fixtures/playground.json' assert { type: 'json' };
 /**
  * Intercept the runtime config.js so the app uses PostgREST mode (non-empty
  * apiBaseUrl) instead of the Overpass fallback. Call before page.goto().
+ *
+ * Defaults to `clusterMaxZoom: 0` so the polygon tier is active at every
+ * test zoom — this isolates legacy-path tests from the cluster orchestrator.
+ * Pass `{ clusterMaxZoom: 13 }` (or any other override) when a test needs
+ * the cluster tier behaviour.
  */
-export async function injectApiConfig(page) {
+export async function injectApiConfig(page, overrides = {}) {
   await page.route('**/config.js', route =>
     route.fulfill({
       status: 200,
@@ -21,19 +26,58 @@ export async function injectApiConfig(page) {
         parentOrigin: '',
         registryUrl: './registry.json',
         hubPollInterval: 300,
+        clusterMaxZoom: 0,
+        ...overrides,
       })};`,
     })
   );
 }
 
 /**
- * Stub the four PostgREST endpoints used by the standalone app.
+ * Stub the PostgREST endpoints used by the standalone app. Both the legacy
+ * `get_playgrounds` and the new tiered RPCs are stubbed so tests run
+ * cleanly regardless of which tier the orchestrator activates.
+ *
+ * `clusters` defaults to one bucket covering every fixture playground; tests
+ * exercising cluster-tier rendering can pass their own array.
+ *
  * Call before page.goto().
  */
-export async function stubApiRoutes(page, playgrounds = fixture) {
-  await page.route('**/rpc/get_playgrounds**', route =>
-    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(playgrounds) })
+export async function stubApiRoutes(page, playgrounds = fixture, clusters = null) {
+  const fc = playgrounds.features ?? [];
+  const totalCount = fc.length;
+  const defaultClusters = clusters ?? (totalCount === 0
+    ? []
+    : [{
+        lon: fc[0].geometry.coordinates[0][0][0],
+        lat: fc[0].geometry.coordinates[0][0][1],
+        count: totalCount,
+        complete: 0,
+        partial: 0,
+        missing: totalCount,
+        restricted: 0,
+      }]);
+
+  await page.route('**/rpc/get_playgrounds**', route => {
+    // Both legacy `get_playgrounds(relation_id)` and bbox-scoped
+    // `get_playgrounds_bbox(...)` return the same FeatureCollection shape;
+    // the same fixture works for both — Playwright's URL glob matches both.
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(playgrounds) });
+  });
+  await page.route('**/rpc/get_playground_clusters**', route =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(defaultClusters) })
   );
+  await page.route('**/rpc/get_playground_centroids**', route =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([]) })
+  );
+  await page.route('**/rpc/get_playground?**', route => {
+    // Single-playground hydration. URL has `?osm_id=<id>`. Match the
+    // requested id against the fixture; fall back to the first feature.
+    const url = new URL(route.request().url());
+    const wantedId = Number(url.searchParams.get('osm_id'));
+    const match = fc.find(f => f.properties?.osm_id === wantedId) ?? fc[0] ?? null;
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(match) });
+  });
   await page.route('**/rpc/get_equipment**', route =>
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ type: 'FeatureCollection', features: [] }) })
   );

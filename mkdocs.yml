@@ -41,6 +41,7 @@ nav:
   - Reference:
       - Architecture: reference/architecture.md
       - Tech Stack: reference/tech-stack.md
+      - API: reference/api.md
       - Federation: reference/federation.md
       - registry.json: reference/registry-json.md
       - Glossary: reference/glossary.md

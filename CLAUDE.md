@@ -85,7 +85,8 @@ To test Hub mode locally: set `appMode: 'hub'` in `app/public/config.js`, run `m
 | `filters.js` | Active filter state (playground filters + `standalonePitches` layer toggle) |
 | `overlayLayer.js` | Bridge between PlaygroundPanel and Map — carries `{ equipment[], trees[] }` |
 | `map.js` | OL map instance reference |
-| `playgroundSource.js` | Shared OL VectorSource reference (used by completeness indicator) |
+| `playgroundSource.js` | Shared OL VectorSource for the polygon tier. Non-null while Map.svelte is mounted; reset to `null` on teardown. Widgets (NearbyPlaygrounds, AppShell deeplink restore) hydrate features into it on demand at any zoom — there is no separate "cluster source" store; the cluster `VectorSource` is owned by `StandaloneApp.svelte` and never published, since no widget consumes it externally. |
+| `tier.js` | Active zoom-tier — `null` \| `'cluster'` \| `'polygon'`. Written by the orchestrator, read by Map for layer visibility |
 
 ### Components (`app/src/components/`)
 
@@ -102,30 +103,56 @@ To test Hub mode locally: set `appMode: 'hub'` in `app/public/config.js`, run `m
 
 ### Layers in Map.svelte
 
-The map manages four OL layers beyond the basemap:
+The map manages five OL layers beyond the basemap. Tiered playground delivery uses two of them — the active one is driven by `activeTierStore`:
 
-1. **playgroundLayer** (zIndex 10) — playground polygons, styled by `playgroundStyleFn`, filtered by `filterStore`
-2. **treeLayer** (zIndex 15) — natural=tree dots, shown when a playground is selected
-3. **equipmentLayer** (zIndex 20) — playground devices/pitches/benches, shown when a playground is selected
-4. **pitchLayer** (zIndex 9) — standalone pitches outside any playground, loaded on `moveend` at zoom ≥ 12, visibility controlled by `filterStore.standalonePitches`
+1. **playgroundLayer** (zIndex 10) — polygon tier (zoom > `clusterMaxZoom`, default 13). Playground polygons styled by `playgroundStyleFn`, filtered by `filterStore`. Visible only when `$activeTierStore === 'polygon'`.
+2. **clusterLayer** (zIndex 12) — cluster tier (zoom ≤ `clusterMaxZoom`). Server-bucketed cluster rings + single-child dots rendered via the canvas `stackedRingRenderer` in `app/src/lib/clusterStyle.js`. Visible only when `$activeTierStore === 'cluster'`.
+3. **treeLayer** (zIndex 15) — natural=tree dots, shown when a playground is selected.
+4. **equipmentLayer** (zIndex 20) — playground devices/pitches/benches, shown when a playground is selected.
+5. **pitchLayer** (zIndex 9) — standalone pitches outside any playground, loaded on `moveend` at zoom ≥ 12, visibility controlled by `filterStore.standalonePitches`.
 
-Equipment and tree layers are driven by `overlayFeaturesStore` (written by PlaygroundPanel, read by Map).
+Equipment and tree layers are driven by `overlayFeaturesStore` (written by PlaygroundPanel, read by Map). Cluster vs polygon visibility is driven by `activeTierStore` (written by the orchestrator).
+
+### Zoom-tier orchestrator (`app/src/lib/tieredOrchestrator.js`)
+
+Standalone's data path is no longer a one-shot `fetchPlaygrounds` on mount. Instead `attachTieredOrchestrator(...)` wires a debounced (300 ms) `moveend` handler that:
+
+1. Computes the active tier from `view.getZoom()` against `clusterMaxZoom`.
+2. Publishes the tier via `activeTierStore`.
+3. Aborts any in-flight request via `AbortController`.
+4. Fetches the tier's RPC (`fetchPlaygroundClusters` or `fetchPlaygroundsBbox`) and populates the corresponding source.
+5. Falls back to the legacy `fetchPlaygrounds(relation_id)` once if a tier RPC 404s (backend skew during a deploy).
+
+Deeplinks at low zoom use the new `fetchPlaygroundByOsmId` (RPC `get_playground(osm_id)`) to hydrate the polygon source on demand without waiting for a polygon-tier moveend.
 
 ### API (`app/src/lib/api.js`)
 
 All PostgREST calls. Key functions:
-- `fetchPlaygrounds(baseUrl)` — all playgrounds in the region
+
+- `fetchPlaygroundClusters(zoom, extent, baseUrl, signal)` — cluster tier (zoom ≤ 13)
+- `fetchPlaygroundsBbox(extent, baseUrl, signal)` — polygon tier (zoom > 13)
+- `fetchPlaygroundByOsmId(osmId, baseUrl, signal)` — single-feature hydration; throws on non-OK, returns `null` on legitimate miss
+- `fetchPlaygroundCentroids(extent, baseUrl, signal)` — server-shipped, client unused in P1 (kept for federation)
 - `fetchPlaygroundEquipment(extentEPSG3857, osmId, baseUrl)` — equipment within a playground's bbox
 - `fetchStandaloneEquipment(extentEPSG3857, baseUrl)` — pitches + equipment NOT within any playground
 - `fetchTrees`, `fetchNearbyPOIs`, `fetchNearestPlaygrounds`, `fetchMeta`
+- `fetchPlaygrounds(baseUrl)` — region-scoped legacy fetcher; **deprecated**, logs a one-time console warning, will be removed in the release after next
 
 ### Database API (`importer/api.sql`)
 
-All PostgREST-exposed functions live in the `api` schema:
-- `get_playgrounds(relation_id)` — playground polygons for a region
+All PostgREST-exposed functions live in the `api` schema. See [`docs/reference/api.md`](docs/reference/api.md) for full request/response shapes.
+
+- `get_playground_clusters(z, bbox)` — pre-aggregated cluster buckets with `{count, complete, partial, missing, restricted}`
+- `get_playgrounds_bbox(bbox)` — polygon tier; same response shape as the legacy `get_playgrounds`
+- `get_playground(osm_id)` — single-feature lookup for deeplink/nearby hydration
+- `get_playground_centroids(bbox)` — lightweight per-feature rows (federation-ready, client unused in P1)
+- `get_meta()` — federation discovery; returns `{relation_id, name, playground_count, complete, partial, missing, bbox}`
 - `get_equipment(bbox)` — equipment within a bounding box (used per selected playground)
 - `get_standalone_equipment(bbox)` — pitches + equipment outside any playground polygon
-- `get_trees(bbox)`, `get_pois(lat, lon, radius_m)`, `get_nearest_playgrounds(lat, lon)`, `get_meta()`
+- `get_trees(bbox)`, `get_pois(lat, lon, radius_m)`, `get_nearest_playgrounds(lat, lon)`
+- `get_playgrounds(relation_id)` — **deprecated** region-scoped variant; SQL `COMMENT` flags it for removal
+
+The `playground_stats` materialised view is rebuilt with each `make db-apply` and carries the per-playground `completeness` (`'complete' | 'partial' | 'missing'`) — the rule mirrors `app/src/lib/completeness.js` exactly.
 
 Run `make db-apply` after modifying `api.sql` to apply changes without a full re-import.
 

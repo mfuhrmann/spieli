@@ -783,7 +783,7 @@ CREATE MATERIALIZED VIEW public.playground_stats AS
     LIMIT 1
   ),
   all_playgrounds AS (
-    SELECT p.osm_id, p.way
+    SELECT p.osm_id, p.way, p.name, p.operator, p.access, p.surface, p.tags
     FROM planet_osm_polygon p
     JOIN region r ON ST_Within(p.way, r.way)
     WHERE p.leisure = 'playground'
@@ -838,6 +838,24 @@ CREATE MATERIALIZED VIEW public.playground_stats AS
     FROM all_playgrounds pl
     LEFT JOIN all_equip e ON ST_Intersects(pl.way, e.way)
     GROUP BY pl.osm_id
+  ),
+  -- Mirrors app/src/lib/completeness.js so the server classification and the
+  -- client style function agree. Update both sides together if the rule changes.
+  completeness_attrs AS (
+    SELECT
+      pl.osm_id,
+      (pl.tags ? 'panoramax'
+        OR EXISTS (SELECT 1 FROM skeys(pl.tags) k WHERE k LIKE 'panoramax:%')
+      ) AS has_photo,
+      (NULLIF(pl.name, '') IS NOT NULL) AS has_name,
+      -- NULLIF('', '') IS NULL — matches JS truthy semantics on empty-string tags
+      (
+        NULLIF(pl.operator, '') IS NOT NULL
+        OR NULLIF(pl.surface, '') IS NOT NULL
+        OR (NULLIF(pl.access, '') IS NOT NULL AND pl.access <> 'yes')
+        OR NULLIF(pl.tags->'opening_hours', '') IS NOT NULL
+      ) AS has_info
+    FROM all_playgrounds pl
   )
   SELECT
     tc.osm_id,
@@ -851,12 +869,22 @@ CREATE MATERIALIZED VIEW public.playground_stats AS
     COALESCE(es.is_water,       false) AS is_water,
     COALESCE(es.for_baby,       false) AS for_baby,
     COALESCE(es.for_toddler,    false) AS for_toddler,
-    COALESCE(es.for_wheelchair, false) AS for_wheelchair
+    COALESCE(es.for_wheelchair, false) AS for_wheelchair,
+    -- Tiered-delivery (P1): persisted centroid + per-playground completeness
+    ST_Centroid(pl.way)                           AS centroid_3857,
+    (pl.access IN ('private', 'customers'))       AS access_restricted,
+    CASE
+      WHEN ca.has_photo AND ca.has_name AND ca.has_info THEN 'complete'
+      WHEN ca.has_photo OR  ca.has_name OR  ca.has_info THEN 'partial'
+      ELSE 'missing'
+    END                                           AS completeness
   FROM all_playgrounds pl
-  LEFT JOIN tree_counts  tc ON tc.osm_id = pl.osm_id
-  LEFT JOIN equip_stats  es ON es.osm_id = pl.osm_id;
+  LEFT JOIN tree_counts        tc ON tc.osm_id = pl.osm_id
+  LEFT JOIN equip_stats        es ON es.osm_id = pl.osm_id
+  LEFT JOIN completeness_attrs ca ON ca.osm_id = pl.osm_id;
 
 CREATE UNIQUE INDEX ON public.playground_stats (osm_id);
+CREATE INDEX        ON public.playground_stats USING GIST (centroid_3857);
 
 -- =========================================================================
 -- 1. get_playgrounds(relation_id)
@@ -931,6 +959,281 @@ AS $$
 $$;
 
 GRANT EXECUTE ON FUNCTION api.get_playgrounds(bigint) TO web_anon;
+
+COMMENT ON FUNCTION api.get_playgrounds(bigint) IS
+  'DEPRECATED: use api.get_playgrounds_bbox. Scheduled for removal in the release after next.';
+
+-- =========================================================================
+-- 1a. get_playground_clusters(z, bbox)
+--     Pre-aggregated cluster buckets for the cluster tier (zoom ≤
+--     clusterMaxZoom, default 13).
+-- =========================================================================
+DROP FUNCTION IF EXISTS api.get_playground_clusters(int, float8, float8, float8, float8);
+
+CREATE OR REPLACE FUNCTION api.get_playground_clusters(
+  z       int,
+  min_lon float8,
+  min_lat float8,
+  max_lon float8,
+  max_lat float8
+)
+RETURNS json
+LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path = public, api
+AS $$
+  WITH bbox AS (
+    SELECT ST_Transform(
+      ST_MakeEnvelope(min_lon, min_lat, max_lon, max_lat, 4326),
+      3857
+    ) AS geom
+  ),
+  cell_size AS (
+    -- Monotonic halving from 10 000 000 m at z=0. Extends through z=13 so
+    -- the cluster tier can cover zoom ≤ 13 (two-tier client design).
+    SELECT (CASE z
+      WHEN 0  THEN 10000000
+      WHEN 1  THEN  5000000
+      WHEN 2  THEN  2500000
+      WHEN 3  THEN  1250000
+      WHEN 4  THEN   625000
+      WHEN 5  THEN   312500
+      WHEN 6  THEN   156250
+      WHEN 7  THEN    78125
+      WHEN 8  THEN    39062
+      WHEN 9  THEN    19531
+      WHEN 10 THEN     9766
+      WHEN 11 THEN     4883
+      WHEN 12 THEN     2441
+      WHEN 13 THEN     1221
+      ELSE              610
+    END)::float8 AS m
+  ),
+  buckets AS (
+    SELECT
+      ST_SnapToGrid(ps.centroid_3857, cs.m) AS cell,
+      ps.completeness,
+      ps.access_restricted
+    FROM public.playground_stats ps, bbox b, cell_size cs
+    WHERE ST_Intersects(ps.centroid_3857, b.geom)
+  ),
+  aggregated AS (
+    -- Invariant: count = complete + partial + missing + restricted.
+    SELECT
+      cell,
+      COUNT(*)::int                                                                                 AS count,
+      SUM(CASE WHEN NOT access_restricted AND completeness = 'complete' THEN 1 ELSE 0 END)::int     AS complete,
+      SUM(CASE WHEN NOT access_restricted AND completeness = 'partial'  THEN 1 ELSE 0 END)::int     AS partial,
+      SUM(CASE WHEN NOT access_restricted AND completeness = 'missing'  THEN 1 ELSE 0 END)::int     AS missing,
+      SUM(CASE WHEN access_restricted                                   THEN 1 ELSE 0 END)::int     AS restricted
+    FROM buckets
+    GROUP BY cell
+  )
+  SELECT COALESCE(
+    json_agg(
+      json_build_object(
+        'lon',        ST_X(ST_Transform(cell, 4326)),
+        'lat',        ST_Y(ST_Transform(cell, 4326)),
+        'count',      count,
+        'complete',   complete,
+        'partial',    partial,
+        'missing',    missing,
+        'restricted', restricted
+      )
+    ),
+    '[]'::json
+  )
+  FROM aggregated;
+$$;
+
+GRANT EXECUTE ON FUNCTION api.get_playground_clusters(int, float8, float8, float8, float8) TO web_anon;
+
+-- =========================================================================
+-- 1b. get_playground_centroids(bbox)
+--     Lightweight per-feature rows; server-shipped for federation,
+--     unused by the standalone client after the two-tier pivot.
+-- =========================================================================
+DROP FUNCTION IF EXISTS api.get_playground_centroids(float8, float8, float8, float8);
+
+CREATE OR REPLACE FUNCTION api.get_playground_centroids(
+  min_lon float8,
+  min_lat float8,
+  max_lon float8,
+  max_lat float8
+)
+RETURNS json
+LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path = public, api
+AS $$
+  WITH bbox AS (
+    SELECT ST_Transform(
+      ST_MakeEnvelope(min_lon, min_lat, max_lon, max_lat, 4326),
+      3857
+    ) AS geom
+  )
+  SELECT COALESCE(
+    json_agg(
+      json_build_object(
+        'osm_id',       abs(ps.osm_id),
+        'lon',          ST_X(ST_Transform(ps.centroid_3857, 4326)),
+        'lat',          ST_Y(ST_Transform(ps.centroid_3857, 4326)),
+        'completeness', ps.completeness,
+        'filter_attrs', json_build_object(
+          'has_water',         ps.is_water,
+          'for_baby',          ps.for_baby,
+          'for_toddler',       ps.for_toddler,
+          'for_wheelchair',    ps.for_wheelchair,
+          'has_soccer',        ps.has_soccer,
+          'has_basketball',    ps.has_basketball,
+          'access_restricted', ps.access_restricted
+        )
+      )
+    ),
+    '[]'::json
+  )
+  FROM public.playground_stats ps, bbox b
+  WHERE ST_Intersects(ps.centroid_3857, b.geom);
+$$;
+
+GRANT EXECUTE ON FUNCTION api.get_playground_centroids(float8, float8, float8, float8) TO web_anon;
+
+-- =========================================================================
+-- 1c. get_playgrounds_bbox(bbox)
+--     Bbox-scoped counterpart of get_playgrounds; same response shape.
+--     Polygon-tier RPC for zoom > clusterMaxZoom (default 13).
+-- =========================================================================
+DROP FUNCTION IF EXISTS api.get_playgrounds_bbox(float8, float8, float8, float8);
+
+CREATE OR REPLACE FUNCTION api.get_playgrounds_bbox(
+  min_lon float8,
+  min_lat float8,
+  max_lon float8,
+  max_lat float8
+)
+RETURNS json
+LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path = public, api
+AS $$
+  WITH bbox AS (
+    SELECT ST_Transform(
+      ST_MakeEnvelope(min_lon, min_lat, max_lon, max_lat, 4326),
+      3857
+    ) AS geom
+  ),
+  playgrounds AS (
+    SELECT
+      p.osm_id,
+      p.name,
+      p.leisure,
+      p.operator,
+      p.access,
+      p.surface,
+      p.way_area::int AS area,
+      p.tags,
+      ST_Transform(p.way, 4326) AS geom
+    FROM planet_osm_polygon p
+    JOIN bbox b ON ST_Intersects(p.way, b.geom)
+    WHERE p.leisure = 'playground'
+  )
+  SELECT json_build_object(
+    'type', 'FeatureCollection',
+    'features', COALESCE(
+      json_agg(
+        json_build_object(
+          'type', 'Feature',
+          'geometry', ST_AsGeoJSON(pl.geom)::json,
+          'properties', (
+            jsonb_build_object(
+              'osm_id',             abs(pl.osm_id),
+              'osm_type',           CASE WHEN pl.osm_id < 0 THEN 'R' ELSE 'W' END,
+              'name',               pl.name,
+              'leisure',            pl.leisure,
+              'operator',           pl.operator,
+              'access',             pl.access,
+              'surface',            pl.surface,
+              'area',               pl.area,
+              'tree_count',         COALESCE(s.tree_count, 0),
+              'bench_count',        COALESCE(s.bench_count, 0),
+              'shelter_count',      COALESCE(s.shelter_count, 0),
+              'picnic_count',       COALESCE(s.picnic_count, 0),
+              'table_tennis_count', COALESCE(s.table_tennis_count, 0),
+              'has_soccer',         COALESCE(s.has_soccer, false),
+              'has_basketball',     COALESCE(s.has_basketball, false),
+              'is_water',           COALESCE(s.is_water, false),
+              'for_baby',           COALESCE(s.for_baby, false),
+              'for_toddler',        COALESCE(s.for_toddler, false),
+              'for_wheelchair',     COALESCE(s.for_wheelchair, false)
+            ) || COALESCE(hstore_to_jsonb(pl.tags), '{}'::jsonb)
+          )
+        )
+      ),
+      '[]'::json
+    )
+  )
+  FROM playgrounds pl
+  LEFT JOIN public.playground_stats s ON s.osm_id = pl.osm_id;
+$$;
+
+GRANT EXECUTE ON FUNCTION api.get_playgrounds_bbox(float8, float8, float8, float8) TO web_anon;
+
+-- =========================================================================
+-- 1d. get_playground(osm_id) — single-feature lookup for deeplink hydration.
+-- =========================================================================
+DROP FUNCTION IF EXISTS api.get_playground(bigint);
+
+CREATE OR REPLACE FUNCTION api.get_playground(osm_id bigint)
+RETURNS json
+LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path = public, api
+AS $$
+  WITH p AS (
+    SELECT
+      x.osm_id,
+      x.name,
+      x.leisure,
+      x.operator,
+      x.access,
+      x.surface,
+      x.way_area::int AS area,
+      x.tags,
+      ST_Transform(x.way, 4326) AS geom
+    FROM planet_osm_polygon x
+    WHERE x.leisure = 'playground'
+      AND abs(x.osm_id) = abs($1)
+    ORDER BY (x.osm_id < 0) DESC
+    LIMIT 1
+  )
+  SELECT json_build_object(
+    'type', 'Feature',
+    'geometry', ST_AsGeoJSON(p.geom)::json,
+    'properties', (
+      jsonb_build_object(
+        'osm_id',             abs(p.osm_id),
+        'osm_type',           CASE WHEN p.osm_id < 0 THEN 'R' ELSE 'W' END,
+        'name',               p.name,
+        'leisure',            p.leisure,
+        'operator',           p.operator,
+        'access',             p.access,
+        'surface',            p.surface,
+        'area',               p.area,
+        'tree_count',         COALESCE(s.tree_count, 0),
+        'bench_count',        COALESCE(s.bench_count, 0),
+        'shelter_count',      COALESCE(s.shelter_count, 0),
+        'picnic_count',       COALESCE(s.picnic_count, 0),
+        'table_tennis_count', COALESCE(s.table_tennis_count, 0),
+        'has_soccer',         COALESCE(s.has_soccer, false),
+        'has_basketball',     COALESCE(s.has_basketball, false),
+        'is_water',           COALESCE(s.is_water, false),
+        'for_baby',           COALESCE(s.for_baby, false),
+        'for_toddler',        COALESCE(s.for_toddler, false),
+        'for_wheelchair',     COALESCE(s.for_wheelchair, false)
+      ) || COALESCE(hstore_to_jsonb(p.tags), '{}'::jsonb)
+    )
+  )
+  FROM p
+  LEFT JOIN public.playground_stats s ON abs(s.osm_id) = abs(p.osm_id);
+$$;
+
+GRANT EXECUTE ON FUNCTION api.get_playground(bigint) TO web_anon;
 
 -- =========================================================================
 -- 2. get_equipment(min_lon, min_lat, max_lon, max_lat)
@@ -1207,15 +1510,26 @@ AS $$
     SELECT ST_Transform(way, 4326) AS geom FROM region
   ),
   counts AS (
-    SELECT COUNT(*) AS playground_count
+    -- INNER JOIN playground_stats so the invariant
+    --   playground_count = complete + partial + missing
+    -- holds by construction.
+    SELECT
+      COUNT(*)::int                                                        AS playground_count,
+      SUM(CASE WHEN ps.completeness = 'complete' THEN 1 ELSE 0 END)::int   AS complete,
+      SUM(CASE WHEN ps.completeness = 'partial'  THEN 1 ELSE 0 END)::int   AS partial,
+      SUM(CASE WHEN ps.completeness = 'missing'  THEN 1 ELSE 0 END)::int   AS missing
     FROM planet_osm_polygon p
     JOIN region r ON ST_Within(p.way, r.way)
+    JOIN public.playground_stats ps ON ps.osm_id = p.osm_id
     WHERE p.leisure = 'playground'
   )
   SELECT json_build_object(
     'relation_id',       relation_id,
     'name',              (SELECT name FROM region),
     'playground_count',  (SELECT playground_count FROM counts),
+    'complete',          (SELECT complete         FROM counts),
+    'partial',           (SELECT partial          FROM counts),
+    'missing',           (SELECT missing          FROM counts),
     'bbox',              ARRAY[
                            ST_XMin((SELECT geom FROM bbox)),
                            ST_YMin((SELECT geom FROM bbox)),

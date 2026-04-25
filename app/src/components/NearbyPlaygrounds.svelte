@@ -1,9 +1,9 @@
 <script>
-  import { getCenter } from 'ol/extent';
-  import { transform } from 'ol/proj';
+  import GeoJSON from 'ol/format/GeoJSON.js';
   import { playgroundSourceStore } from '../stores/playgroundSource.js';
   import { selection } from '../stores/selection.js';
   import { playgroundCompleteness } from '../lib/completeness.js';
+  import { fetchPlaygroundByOsmId } from '../lib/api.js';
   import { _ } from 'svelte-i18n';
 
   export let lat;
@@ -13,9 +13,9 @@
   /**
    * Fetcher returning `{ osm_id, name, distance_m, ... }` items sorted by
    * distance ascending. Standalone injects a single-backend PostgREST call;
-   * hub injects a merge across all registered backends. When null (e.g.
-   * local-dev mode with no API), the component falls back to a distance
-   * scan of the loaded vector source.
+   * hub injects a merge across all registered backends. Always present in
+   * production; null only in degraded local-dev modes where no PostgREST
+   * is configured, in which case the panel renders empty.
    */
   export let fetcher = null;
   /**
@@ -26,52 +26,24 @@
 
   let items = [];
   let loading = true;
+  const geojsonFormat = new GeoJSON();
 
   $: if (lat != null && lon != null) {
     load(lat, lon);
   }
 
-  function haversineM(lat1, lon1, lat2, lon2) {
-    const R = 6371000;
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = Math.sin(dLat / 2) ** 2 +
-              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-              Math.sin(dLon / 2) ** 2;
-    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  }
-
-  function nearestFromSource(lt, lg, maxResults = 5) {
-    const source = $playgroundSourceStore;
-    if (!source) return [];
-    return source.getFeatures()
-      .map(f => {
-        const [fLon, fLat] = transform(getCenter(f.getGeometry().getExtent()), 'EPSG:3857', 'EPSG:4326');
-        const props = f.getProperties();
-        return {
-          osm_id:     props.osm_id,
-          name:       props.name,
-          lat:        fLat,
-          lon:        fLon,
-          distance_m: haversineM(lt, lg, fLat, fLon),
-          tags:       props,
-        };
-      })
-      .sort((a, b) => a.distance_m - b.distance_m)
-      .slice(0, maxResults);
-  }
-
   async function load(lt, lg) {
     loading = true;
     items = [];
+    if (!fetcher) {
+      loading = false;
+      return;
+    }
     try {
-      const results = fetcher
-        ? await fetcher(lt, lg)
-        : nearestFromSource(lt, lg);
-      items = results.length > 0 ? results : nearestFromSource(lt, lg);
+      items = await fetcher(lt, lg);
     } catch (err) {
       console.error('Nearest playgrounds fetch failed:', err);
-      items = nearestFromSource(lt, lg);
+      items = [];
     } finally {
       loading = false;
     }
@@ -89,12 +61,35 @@
     return 'dot-missing';
   }
 
-  function selectSuggestion(item) {
+  async function selectSuggestion(item) {
     const source = $playgroundSourceStore;
-    const feature = source?.getFeatures().find(f => f.get('osm_id') === item.osm_id);
+    let feature = source?.getFeatures().find(f => f.get('osm_id') === item.osm_id);
+    const backendUrl = item._backendUrl ?? defaultBackendUrl;
+
+    // §5 — at cluster zoom the polygon source is empty. Hydrate the
+    // single playground so the panel can open with full data and the
+    // map can fit-to-extent. Stamp `_backendUrl` on the hydrated feature
+    // so subsequent reads (e.g. another selectSuggestion finding the same
+    // feature in-source) route to the right backend in hub mode.
+    if (!feature && source) {
+      try {
+        const json = await fetchPlaygroundByOsmId(item.osm_id, backendUrl);
+        if (json) {
+          const olFeatures = geojsonFormat.readFeatures(
+            { type: 'FeatureCollection', features: [json] },
+            { dataProjection: 'EPSG:4326', featureProjection: 'EPSG:3857' },
+          );
+          for (const f of olFeatures) f.set('_backendUrl', backendUrl);
+          source.addFeatures(olFeatures);
+          feature = olFeatures[0];
+        }
+      } catch (err) {
+        console.warn('[nearby] hydration failed:', err);
+      }
+    }
+
     if (feature) {
-      const backendUrl = feature.get('_backendUrl') ?? defaultBackendUrl;
-      selection.select(feature, backendUrl);
+      selection.select(feature, feature.get('_backendUrl') ?? backendUrl);
     }
     if (ondismiss) ondismiss();
   }

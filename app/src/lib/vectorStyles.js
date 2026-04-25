@@ -128,6 +128,14 @@ export const treeStyle = new Style({
     })
 });
 
+// ── Tiered-delivery styles (P1 §3 / §4) ───────────────────────────────────────
+
+// Cluster tier (zoom ≤ clusterMaxZoom) — canvas-rendered stacked ring with
+// complete/partial/missing segments and the count in the centre.
+// Single-child clusters (count === 1) render as a solid completeness dot.
+// See app/src/lib/clusterStyle.js for the renderer + bitmap cache.
+export { clusterRingStyleFn as clusterTierStyleFn } from './clusterStyle.js';
+
 /** Style function for the equipment overlay layer. Never uses icon image files. */
 export function equipmentLayerStyleFn(feature) {
     const geomType = feature.getGeometry()?.getType();

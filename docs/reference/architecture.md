@@ -70,6 +70,10 @@ The compose file supports three profiles, selected at install time via `DEPLOY_M
 
 For the federated Hub topology (`DEPLOY_MODE=ui` + `APP_MODE=hub`), see [Federated Deployment](../ops/federated-deployment.md).
 
+## See also
+
+- [API reference](api.md) — request/response shapes for the tiered playground RPCs that drive the standalone map.
+
 ## Key source directories
 
 | Path | Role |

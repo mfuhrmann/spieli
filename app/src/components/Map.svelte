@@ -10,17 +10,26 @@
   import { defaults as defaultInteractions } from 'ol/interaction/defaults';
 
   import { mapZoom, mapMinZoom, apiBaseUrl } from '../lib/config.js';
-  import { playgroundStyleFn, selectionStyle, equipmentLayerStyleFn, treeStyle } from '../lib/vectorStyles.js';
+  import {
+    playgroundStyleFn,
+    selectionStyle,
+    equipmentLayerStyleFn,
+    treeStyle,
+    clusterTierStyleFn,
+  } from '../lib/vectorStyles.js';
   import { selection } from '../stores/selection.js';
   import { mapStore } from '../stores/map.js';
   import { playgroundSourceStore } from '../stores/playgroundSource.js';
+  import { activeTierStore } from '../stores/tier.js';
   import { filterStore, matchesFilters } from '../stores/filters.js';
   import { overlayFeaturesStore } from '../stores/overlayLayer.js';
   import { debounce } from '../lib/utils.js';
 
-  // Props: the source is injected; Map itself never loads data.
-  /** @type {VectorSource | null} - when provided, the map uses this source instead of creating one */
+  // Props: the sources are injected by the shell; Map itself never loads data.
+  /** @type {VectorSource | null} - polygon-tier source (zoom > clusterMaxZoom) */
   export let playgroundSource = null;
+  /** @type {VectorSource | null} - cluster-tier source (zoom ≤ clusterMaxZoom) */
+  export let clusterSource = null;
   /** Backend URL used for selection — standalone passes apiBaseUrl, hub passes per-feature URL */
   export let defaultBackendUrl = apiBaseUrl;
   
@@ -35,20 +44,32 @@
 
   let mapContainer;
   let olMap = null;
-  let playgroundLayer = null; // exposed for filter reactivity
+  let playgroundLayer = null; // polygon tier (zoom > clusterMaxZoom) — exposed for filter reactivity
+  let clusterLayer = null;    // cluster tier (zoom ≤ clusterMaxZoom) — §3
   let equipmentLayer = null;  // overlay: equipment points/polygons
   let treeLayer = null;       // overlay: tree dots
   let overlayUnsubscribe = null;
+  let tierUnsubscribe = null;
 
   onMount(async () => {
-    // The shell owns the source; fall back to an empty one so the map still
+    // The shell owns the sources; fall back to empty ones so the map still
     // renders in degraded paths (e.g. tests that mount Map without a parent).
-    const source = playgroundSource ?? new VectorSource();
+    const polygonSrc = playgroundSource ?? new VectorSource();
+    const clusterSrc = clusterSource    ?? new VectorSource();
 
+    // Both tier layers start hidden; the activeTierStore subscription below
+    // reveals the right one once the orchestrator has chosen a tier.
     playgroundLayer = new VectorLayer({
-      source,
+      source: polygonSrc,
       zIndex: 10,
       style: playgroundStyleFn,
+      visible: false,
+    });
+    clusterLayer = new VectorLayer({
+      source: clusterSrc,
+      zIndex: 12,
+      style: clusterTierStyleFn,
+      visible: false,
     });
 
     const basemap = new TileLayer({
@@ -68,7 +89,7 @@
 
     olMap = new Map({
       target: mapContainer,
-      layers: [basemap, playgroundLayer],
+      layers: [basemap, playgroundLayer, clusterLayer],
       view,
       // Disable default zoom/rotate controls for cleaner UI like Google Maps
       controls: defaultControls({ 
@@ -115,22 +136,39 @@
       }
     });
 
-    // Click handler: select playground on click
+    // Click handler: tier-aware.
+    //  - Polygon tier: select + fit-to-extent (existing behaviour).
+    //  - Cluster tier (§4.5): zoom in ~2 levels toward the cluster centre;
+    //    a single-child cluster (count === 1) at high zoom transitions
+    //    naturally into the polygon tier.
+    //  - Empty space: clear selection.
     olMap.on('click', (evt) => {
-      const hit = olMap.forEachFeatureAtPixel(evt.pixel, (feature) => feature, {
+      const polygonHit = olMap.forEachFeatureAtPixel(evt.pixel, (f) => f, {
         layerFilter: (l) => l === playgroundLayer,
       });
-      if (hit) {
-        const backendUrl = hit.get('_backendUrl') ?? defaultBackendUrl;
-        selection.select(hit, backendUrl);
-        view.fit(hit.getGeometry().getExtent(), {
+      if (polygonHit) {
+        const backendUrl = polygonHit.get('_backendUrl') ?? defaultBackendUrl;
+        selection.select(polygonHit, backendUrl);
+        view.fit(polygonHit.getGeometry().getExtent(), {
           padding: [40, 40, 40, 420], // right/top/bottom clear; 420 = sidebar width + margin
           maxZoom: 19,
           duration: 400,
         });
-      } else {
-        selection.clear();
+        return;
       }
+      const clusterHit = olMap.forEachFeatureAtPixel(evt.pixel, (f) => f, {
+        layerFilter: (l) => l === clusterLayer,
+      });
+      if (clusterHit) {
+        const center = clusterHit.getGeometry().getCoordinates();
+        view.animate({
+          center,
+          zoom: Math.min((view.getZoom() ?? 0) + 2, view.getMaxZoom?.() ?? 19),
+          duration: 400,
+        });
+        return;
+      }
+      selection.clear();
     });
 
     // Pointer cursor on hover + hover preview callback
@@ -149,8 +187,13 @@
       const playHit = olMap.forEachFeatureAtPixel(evt.pixel, f => f, {
         layerFilter: l => l === playgroundLayer,
       });
+      // Cluster tier hits get the pointer cursor too — click-to-zoom is
+      // wired for them and users need the affordance.
+      const clusterHit = olMap.forEachFeatureAtPixel(evt.pixel, f => f, {
+        layerFilter: l => l === clusterLayer,
+      });
 
-      mapContainer.style.cursor = (overlayHit || playHit) ? 'pointer' : '';
+      mapContainer.style.cursor = (overlayHit || playHit || clusterHit) ? 'pointer' : '';
 
       // Overlay hover takes priority
       if (overlayHit !== lastEquipHoverFeature) {
@@ -189,13 +232,29 @@
       }
     });
 
-    // Publish the source so dependent components (filter reactivity,
-    // NearbyPlaygrounds fallback, URL-hash restore in AppShell) can react.
-    playgroundSourceStore.set(source);
+    // Publish the polygon source once. Consumers that need to know whether
+    // the polygon tier is *visible* read activeTierStore; consumers that
+    // only need to read or hydrate features (NearbyPlaygrounds, AppShell
+    // hash restore) get a stable reference at any tier.
+    playgroundSourceStore.set(polygonSrc);
+
+    // Tier-driven layer visibility. `tier === null` means the orchestrator
+    // hasn't run yet — keep both layers hidden.
+    tierUnsubscribe = activeTierStore.subscribe(tier => {
+      if (!playgroundLayer) return;
+      if (tier === null) {
+        playgroundLayer.setVisible(false);
+        clusterLayer.setVisible(false);
+        return;
+      }
+      playgroundLayer.setVisible(tier === 'polygon');
+      clusterLayer.setVisible(tier === 'cluster');
+    });
   });
 
   onDestroy(() => {
     if (overlayUnsubscribe) overlayUnsubscribe();
+    if (tierUnsubscribe) tierUnsubscribe();
     if (olMap) {
       olMap.setTarget(undefined);
       mapStore.set(null);
