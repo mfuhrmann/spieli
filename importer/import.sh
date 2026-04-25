@@ -44,11 +44,17 @@ done
 echo "[importer] PostgreSQL is ready."
 
 # --------------------------------------------------------------------------- #
-# Download PBF (skipped if already cached under the same filename)
+# Download PBF (skipped if already cached and intact)
 # --------------------------------------------------------------------------- #
 if [ -f "$PBF_FILE" ]; then
-    echo "[importer] Using cached $PBF_FILE ($(du -sh "$PBF_FILE" | cut -f1)) — delete volume to force re-download"
-else
+    if ! osmium fileinfo "$PBF_FILE" > /dev/null 2>&1; then
+        echo "[importer] Cached $PBF_FILE is corrupt or incomplete — re-downloading..."
+        rm -f "$PBF_FILE"
+    else
+        echo "[importer] Using cached $PBF_FILE ($(du -sh "$PBF_FILE" | cut -f1))"
+    fi
+fi
+if [ ! -f "$PBF_FILE" ]; then
     echo "[importer] Downloading $PBF_URL ..."
     wget --progress=dot:giga -O "$PBF_FILE" "$PBF_URL"
     echo "[importer] Download complete: $(du -sh "$PBF_FILE" | cut -f1)"
