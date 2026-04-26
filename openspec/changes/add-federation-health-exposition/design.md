@@ -46,6 +46,8 @@ The hub exposes *current* state; history is the problem of whoever runs the scra
 
 Singleton enforced via `CHECK (id = 1)`; `UPSERT` via `INSERT ... ON CONFLICT (id) DO UPDATE`.
 
+The table is created by `importer/api.sql` (the same file that defines `get_meta`). `importer/import.sh` applies `api.sql` *after* `osm2pgsql` finishes successfully, so the table doesn't exist until the schema-apply step runs. The UPSERT therefore must run in `import.sh` *between* the `psql … < /api.sql` invocation (currently lines 198–199) and the final `NOTIFY pgrst, 'reload schema'` block (currently lines 204–205) — not earlier in the sequence. An alternative is to move just the table definition into `db/init.sql` (which runs at db container init), but that splits the api schema across two files for one row of state — keeping it in `api.sql` and ordering the UPSERT correctly is the smaller drift.
+
 ### D4 — Prometheus text format for `/metrics`
 
 Chosen over OpenMetrics, JSON, or a custom format:
@@ -68,6 +70,24 @@ A stale `federation-status.json` (cron died, container frozen) is indistinguisha
 ### D7 — Scope is "minimum cut for backend #2 onboarding", not "observability v1"
 
 Explicit scope discipline: the two in-scope pains (importer failure + backend-down-unnoticed) are the minimum an external backend operator needs to trust the federation. Latency regression is covered only as a side effect of the `/metrics` shape — no in-repo dashboards. Frontend errors and cross-boundary traces are deferred entirely. This prevents the proposal from drifting into a general-purpose observability effort that would easily absorb weeks of work.
+
+### D8 — Build on the existing `federationHealth.js` stub, don't add a parallel module
+
+The `add-federated-playground-clustering` change (archived 2026-04-26) shipped a deliberate stub at `app/src/hub/federationHealth.js`:
+
+```js
+export function isBackendHealthy(_backend) {
+  // STUB: always healthy. See module comment.
+  return true;
+}
+export function filterHealthy(backends) { return backends.filter(isBackendHealthy); }
+```
+
+The hub orchestrator already calls `filterHealthy(selectBackends(viewportBbox, allBackends))` on every fan-out (`app/src/hub/hubOrchestrator.js`, the `selected` declaration in `orchestrate()`). That archived change deferred §9.6 — *Lifecycle: federation-status.json absent fallback* — explicitly to this proposal, with a comment in its tasks.md that the warn-once + fallback path "lands with the real implementation."
+
+This proposal therefore does **not** introduce a new orchestrator integration point. It replaces the stub's body with a real fetch of `/federation-status.json`, merges per-backend status into the existing `backends` readable store (`app/src/hub/registry.js`), and lets `isBackendHealthy()` consult that merged data. `federationHealth.js` itself does gain a startup-time fetch and refresh side-effect, but that is internal to the module — the orchestrator code path is untouched and the synchronous signatures of `isBackendHealthy(backend)` and `filterHealthy(backends)` are preserved bit-for-bit so `hubOrchestrator.js`'s call site at `filterHealthy(selectBackends(...))` does not change.
+
+This also keeps the **hub container poll** (60s cron writing flat files) cleanly separated from the **browser-side health read** (5-min refresh of `/federation-status.json` into the registry store). Both are independent of the third hub-side mechanism — Supercluster's kd-tree merge in `bucketToSuperclusterPoint` (which keys on `[lon, lat]`, not on health). All three coexist; none of them couple.
 
 ## Risks / Trade-offs
 
