@@ -6,10 +6,11 @@
 // backend ran the most recent import.
 //
 // Tie-breaking rules (in order):
-//   1. Both have `_lastImportAt` → newer timestamp wins (Date.parse numeric compare).
-//   2. One has `_lastImportAt`, the other null → the one with data wins.
-//   3. Both null (pre-#301 backends, degraded mode) → URL-alphabetical, so the
-//      result is at least deterministic and doesn't depend on arrival order.
+//   1. One timestamp is parseable, the other is null or unparseable → parseable wins.
+//   2. Both parseable and strictly different → newer wins.
+//   3. Both parseable and equal (including same instant in different TZ formats),
+//      or both null/unparseable → URL-alphabetical (raw JS < on _backendUrl,
+//      no case-folding, no normalisation) so the result is deterministic.
 //
 // Features without an `osm_id` property (shouldn't happen in practice) are
 // always added — no dedup attempted.
@@ -26,16 +27,19 @@ export function dedupWinner(a, b) {
   const ta = a.get('_lastImportAt'); // ISO string | null
   const tb = b.get('_lastImportAt');
 
-  if (ta == null && tb == null) {
-    // Degraded mode: neither backend has shipped #301 yet. Fall back to
-    // URL-alphabetical so the result is consistent across moveends.
-    return (a.get('_backendUrl') ?? '') <= (b.get('_backendUrl') ?? '') ? a : b;
-  }
-  if (ta == null) return b; // b has freshness data, a doesn't
-  if (tb == null) return a; // a has freshness data, b doesn't
-  // Both have timestamps — newer import wins (≥ so equal timestamps keep b,
-  // i.e. last arrival wins, matching the progressive-render append order).
-  return Date.parse(tb) >= Date.parse(ta) ? b : a;
+  const pa = ta != null && Number.isFinite(Date.parse(ta));
+  const pb = tb != null && Number.isFinite(Date.parse(tb));
+
+  if (!pa && !pb) return (a.get('_backendUrl') ?? '') <= (b.get('_backendUrl') ?? '') ? a : b;
+  if (!pa) return b;
+  if (!pb) return a;
+
+  const da = Date.parse(ta);
+  const db = Date.parse(tb);
+  if (db > da) return b;
+  if (da > db) return a;
+  // tie (equal or same instant in different TZ formats) → URL alphabetical
+  return (a.get('_backendUrl') ?? '') <= (b.get('_backendUrl') ?? '') ? a : b;
 }
 
 /**

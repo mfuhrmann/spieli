@@ -258,7 +258,7 @@ export function attachHubOrchestrator({
             const backend = backendByUrl.get(entry.backendUrl);
             const features = parsePolygonFeatures(entry.value, entry.backendUrl, backend);
             const { toAdd, toRemove } = applyDedup(features, polyByOsmId);
-            for (const f of toRemove) polygonSource.removeFeature(f);
+            polygonSource.removeFeatures(toRemove);
             polygonSource.addFeatures(toAdd);
           } else if (isNotFound(entry.error)) {
             markBackendLegacy(entry.backendUrl);
