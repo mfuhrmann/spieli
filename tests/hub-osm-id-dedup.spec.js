@@ -1,26 +1,16 @@
-// Cross-backend osm_id deduplication tests — #202
+// Cross-backend osm_id deduplication — Playwright tests for #202.
 //
-// The polygon tier can receive the same osm_id from two backends when a
-// playground sits on or near a region boundary. Without dedup, two overlapping
-// features land in the polygon source and clicking on either one routes
-// equipment fetches to whichever backend "owns" the feature under the cursor —
-// non-deterministic from the user's perspective.
-//
-// This file covers:
-//   1. Smoke: both backends load and polygon fetches complete without errors
-//      even when every osm_id in the result set overlaps across backends.
-//   2. Fan-out: get_playgrounds_bbox is still issued to both backends — dedup
-//      happens client-side AFTER the data arrives, not before the request.
-//   3. Timestamp-based winner: when backend B has a newer last_import_at, the
-//      deeplink selection of the shared osm_id goes to B for equipment fetches.
-//      (Tested via slug-scoped hash deeplink + get_equipment call tracking —
-//      this exercises the winning backend's _backendUrl being set correctly
-//      on the feature in the polygon source.)
-//
-// What is NOT yet tested (see TODO at the bottom):
-//   - Direct assertion that polygonSource.getFeatures() contains exactly one
-//     entry for the shared osm_id. That needs either a canvas-click or a DOM
-//     hook exposing the source length — neither is currently in the test harness.
+// Closes the test-coverage gaps from the bmad-code-review of PR #302:
+//   - the original "winner by timestamp" test used a slug-scoped deeplink
+//     that bypassed `applyDedup` entirely; this file uses
+//     `window.__spieli.polygonSource` (exposed by `HubApp.svelte`) to
+//     assert the post-merge source contents directly.
+//   - the original smoke test attached `page.on('pageerror')` AFTER
+//     `page.goto` — those handlers are now attached BEFORE navigation.
+//   - the original degraded-mode test verified "no crash" only; this
+//     file asserts the URL-alphabetical winner.
+//   - new: refresh-stability and refresh-flip tests cover the spec
+//     scenarios the original suite did not.
 
 import { test, expect } from '@playwright/test';
 import {
@@ -31,59 +21,88 @@ import {
 
 const SHARED_OSM_ID = 5000;
 
-// Both backends return the same osm_id. Backend B has a newer import.
-function makeFixtures({ lastImportAtA, lastImportAtB } = {}) {
-  const sharedPg = makePlayground({ osmId: SHARED_OSM_ID, name: 'Border Park', lon: 9.675, lat: 50.551 });
+// Helper: count features in `polygonSource` matching an osm_id, plus the
+// winning `_backendUrl` (or null if absent). Reads the test hook attached
+// in HubApp.svelte (`window.__spieli.polygonSource`).
+async function readPolygonSourceFor(page, osmId) {
+  return page.evaluate((id) => {
+    const src = window.__spieli?.polygonSource;
+    if (!src) return { available: false };
+    const all = src.getFeatures().filter(f => String(f.get('osm_id')) === String(id));
+    return {
+      available: true,
+      count: all.length,
+      backendUrls: all.map(f => f.get('_backendUrl') ?? null),
+      lastImportAts: all.map(f => f.get('_lastImportAt') ?? null),
+    };
+  }, osmId);
+}
 
+// `clusterMaxZoom: 0` + `macroMaxZoom: -1` makes the polygon tier active
+// at every zoom — the orchestrator's `tierForZoom` checks macro first
+// (`zoom <= macroMaxZoom`) then cluster (`zoom <= clusterMaxZoom`); a
+// negative macro threshold guarantees neither branch ever matches.
+function polygonOnlyOverrides() {
+  return { clusterMaxZoom: 0, macroMaxZoom: -1 };
+}
+
+function makeFixtures({ lastImportAtA = null, lastImportAtB = null, urlA = '/api-a', urlB = '/api-b' } = {}) {
+  const sharedPg = makePlayground({ osmId: SHARED_OSM_ID, name: 'Border Park', lon: 9.675, lat: 50.551 });
   const instanceA = {
     slug: 'slug-a',
-    url: '/api-a',
+    url: urlA,
     name: 'Backend A',
     playgrounds: { type: 'FeatureCollection', features: [sharedPg] },
     meta: {
       name: 'Region A',
       bbox: [9.6, 50.5, 9.7, 50.6],
       playground_count: 1, complete: 0, partial: 1, missing: 0,
-      last_import_at: lastImportAtA ?? null,
+      last_import_at: lastImportAtA,
     },
   };
-
   const instanceB = {
     slug: 'slug-b',
-    url: '/api-b',
+    url: urlB,
     name: 'Backend B',
     playgrounds: { type: 'FeatureCollection', features: [sharedPg] },
     meta: {
       name: 'Region B',
       bbox: [9.6, 50.5, 9.7, 50.6],
       playground_count: 1, complete: 0, partial: 1, missing: 0,
-      last_import_at: lastImportAtB ?? null,
+      last_import_at: lastImportAtB,
     },
   };
-
   return { instanceA, instanceB };
 }
 
+// Wait until the polygon source has settled with at least `expectedCount`
+// features for the shared osm_id. Avoids flake-prone fixed sleeps.
+async function waitForPolygonCount(page, osmId, expectedCount, timeout = 8000) {
+  await expect.poll(
+    async () => (await readPolygonSourceFor(page, osmId)).count,
+    { timeout, message: `expected ${expectedCount} features for osm_id=${osmId}` }
+  ).toBe(expectedCount);
+}
+
 test.describe('Hub polygon dedup — cross-backend osm_id', () => {
-  test('smoke: polygon tier loads without error when both backends share an osm_id', async ({ page }) => {
+  test('smoke: polygon tier loads without page errors when both backends share an osm_id', async ({ page }) => {
+    // Attach the error listener BEFORE navigation so bootstrap-time errors
+    // (parsePolygonFeatures, applyDedup, OL plumbing) are captured.
+    const errors = [];
+    page.on('pageerror', e => errors.push(e.message));
+
     const { instanceA, instanceB } = makeFixtures();
-    // Force polygon tier by disabling cluster (clusterMaxZoom: 0)
-    await injectHubConfig(page, { clusterMaxZoom: 0 });
+    await injectHubConfig(page, polygonOnlyOverrides());
     await stubHubRegistry(page, { instanceA, instanceB });
     await page.goto('/');
 
-    // Pill settles — both backends loaded, no unhandled errors
-    const pill = page.locator('.instance-slot .pill');
-    await expect(pill).toContainText(/2\s+(Regionen|regions)/, { timeout: 8000 });
-
-    // No uncaught errors logged that would indicate a dedup crash
-    const errors = [];
-    page.on('pageerror', e => errors.push(e.message));
-    await page.waitForTimeout(500);
-    expect(errors).toEqual([]);
+    await expect(page.locator('.instance-slot .pill'))
+      .toContainText(/2\s+(Regionen|regions)/, { timeout: 8000 });
+    await waitForPolygonCount(page, SHARED_OSM_ID, 1);
+    expect(errors, `unexpected page errors: ${errors.join(', ')}`).toEqual([]);
   });
 
-  test('fan-out: get_playgrounds_bbox is called on both backends despite shared osm_id', async ({ page }) => {
+  test('fan-out: get_playgrounds_bbox is issued to both backends despite shared osm_id', async ({ page }) => {
     const { instanceA, instanceB } = makeFixtures();
     const polygonCalls = { a: 0, b: 0 };
     page.on('request', req => {
@@ -93,97 +112,140 @@ test.describe('Hub polygon dedup — cross-backend osm_id', () => {
       if (u.includes('/api-b/')) polygonCalls.b += 1;
     });
 
-    await injectHubConfig(page, { clusterMaxZoom: 0 });
+    await injectHubConfig(page, polygonOnlyOverrides());
     await stubHubRegistry(page, { instanceA, instanceB });
     await page.goto('/');
 
-    await expect(page.locator('.instance-slot .pill')).toContainText(/2\s+(Regionen|regions)/, { timeout: 8000 });
+    await expect(page.locator('.instance-slot .pill'))
+      .toContainText(/2\s+(Regionen|regions)/, { timeout: 8000 });
     await expect.poll(() => polygonCalls.a, { timeout: 5000 }).toBeGreaterThanOrEqual(1);
     await expect.poll(() => polygonCalls.b, { timeout: 5000 }).toBeGreaterThanOrEqual(1);
   });
 
-  test('winner by timestamp: equipment fetched from newer-import backend on slug-scoped deeplink', async ({ page }) => {
-    // Backend B has a newer import → should be the winning backend.
-    // We verify via a slug-scoped deeplink (#slug-b/W5000): it calls
-    // get_playground on B, selects the feature, then fetches equipment from B.
-    // This is the deeplink path — it explicitly names the backend, so it
-    // does NOT directly test the polygon source dedup winner. However, it
-    // verifies that _lastImportAt is correctly stamped and that the winning
-    // backend's equipment endpoint is reachable, which is the user-visible
-    // outcome of the dedup.
-    //
-    // See TODO below for the direct polygon-source assertion.
-    const equipCalls = { a: 0, b: 0 };
-    page.on('request', req => {
-      const u = req.url();
-      if (!u.includes('/rpc/get_equipment')) return;
-      if (u.includes('/api-a/')) equipCalls.a += 1;
-      if (u.includes('/api-b/')) equipCalls.b += 1;
-    });
-
+  test('winner by timestamp: polygon source contains exactly one feature, owned by the fresher backend', async ({ page }) => {
     const { instanceA, instanceB } = makeFixtures({
       lastImportAtA: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
       lastImportAtB: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),      // 1 hour ago
     });
 
-    await injectHubConfig(page, { clusterMaxZoom: 0 });
-    await stubHubRegistry(page, { instanceA, instanceB });
-    await page.goto(`/#slug-b/W${SHARED_OSM_ID}`);
-
-    const panel = page.locator('aside.info-panel');
-    await expect(panel).toBeVisible({ timeout: 8000 });
-
-    // Equipment should come from backend B (the slug we navigated to)
-    await expect.poll(() => equipCalls.b, { timeout: 5000 }).toBeGreaterThanOrEqual(1);
-    expect(equipCalls.a).toBe(0);
-  });
-
-  test('degraded mode: both null last_import_at → URL-alphabetical winner, no errors', async ({ page }) => {
-    // Neither backend has shipped #301 yet → degraded mode.
-    // /api-a < /api-b alphabetically → A wins the tie-break.
-    // Test just verifies no crash and both backends are still queried.
-    const { instanceA, instanceB } = makeFixtures({ lastImportAtA: null, lastImportAtB: null });
-    const polygonCalls = { a: 0, b: 0 };
-    page.on('request', req => {
-      const u = req.url();
-      if (!u.includes('/rpc/get_playgrounds_bbox')) return;
-      if (u.includes('/api-a/')) polygonCalls.a += 1;
-      if (u.includes('/api-b/')) polygonCalls.b += 1;
-    });
-
-    await injectHubConfig(page, { clusterMaxZoom: 0 });
+    await injectHubConfig(page, polygonOnlyOverrides());
     await stubHubRegistry(page, { instanceA, instanceB });
     await page.goto('/');
 
-    await expect(page.locator('.instance-slot .pill')).toContainText(/2\s+(Regionen|regions)/, { timeout: 8000 });
-    await expect.poll(() => polygonCalls.a, { timeout: 5000 }).toBeGreaterThanOrEqual(1);
-    await expect.poll(() => polygonCalls.b, { timeout: 5000 }).toBeGreaterThanOrEqual(1);
+    await expect(page.locator('.instance-slot .pill'))
+      .toContainText(/2\s+(Regionen|regions)/, { timeout: 8000 });
+    await waitForPolygonCount(page, SHARED_OSM_ID, 1);
+
+    const state = await readPolygonSourceFor(page, SHARED_OSM_ID);
+    expect(state.available).toBe(true);
+    expect(state.count).toBe(1);
+    // B is fresher (1 hour vs 2 days) → B wins.
+    expect(state.backendUrls).toEqual(['/api-b']);
+    expect(state.lastImportAts[0]).toBe(instanceB.meta.last_import_at);
+  });
+
+  test('winner by URL alphabetical when timestamps are identical', async ({ page }) => {
+    // Both backends report the same instant in different TZ formats — the
+    // spec scenario "Same instant in different ISO TZ formats counts as a
+    // tie" requires URL-alphabetical to break the tie. /api-a < /api-b.
+    const { instanceA, instanceB } = makeFixtures({
+      lastImportAtA: '2026-04-25T12:00:00Z',
+      lastImportAtB: '2026-04-25T14:00:00+02:00', // same instant
+    });
+
+    await injectHubConfig(page, polygonOnlyOverrides());
+    await stubHubRegistry(page, { instanceA, instanceB });
+    await page.goto('/');
+
+    await waitForPolygonCount(page, SHARED_OSM_ID, 1);
+    const state = await readPolygonSourceFor(page, SHARED_OSM_ID);
+    expect(state.backendUrls).toEqual(['/api-a']);
+  });
+
+  test('degraded mode: both null last_import_at → URL-alphabetical winner (/api-a)', async ({ page }) => {
+    const errors = [];
+    page.on('pageerror', e => errors.push(e.message));
+
+    const { instanceA, instanceB } = makeFixtures({ lastImportAtA: null, lastImportAtB: null });
+    await injectHubConfig(page, polygonOnlyOverrides());
+    await stubHubRegistry(page, { instanceA, instanceB });
+    await page.goto('/');
+
+    await waitForPolygonCount(page, SHARED_OSM_ID, 1);
+    const state = await readPolygonSourceFor(page, SHARED_OSM_ID);
+    expect(state.backendUrls).toEqual(['/api-a']); // /api-a < /api-b
+    expect(state.lastImportAts).toEqual([null]);   // no inferred NaN sentinel
+    expect(errors).toEqual([]);                    // no console errors during degraded path
+  });
+
+  test('legacy backend (no last_import_at field at all) defaults to null and falls back to URL-alpha', async ({ page }) => {
+    // Backend A's get_meta omits the field entirely (pre-FHE shape).
+    // Backend B is also legacy. Should still produce one feature with
+    // /api-a (lower URL) winning.
+    const { instanceA, instanceB } = makeFixtures();
+    delete instanceA.meta.last_import_at;
+    delete instanceB.meta.last_import_at;
+
+    await injectHubConfig(page, polygonOnlyOverrides());
+    await stubHubRegistry(page, { instanceA, instanceB });
+    await page.goto('/');
+
+    await waitForPolygonCount(page, SHARED_OSM_ID, 1);
+    const state = await readPolygonSourceFor(page, SHARED_OSM_ID);
+    expect(state.backendUrls).toEqual(['/api-a']);
+  });
+
+  test('refresh stability: re-poll with unchanged inputs keeps the same winner', async ({ page }) => {
+    const { instanceA, instanceB } = makeFixtures({
+      lastImportAtA: '2026-04-25T03:00:00Z',
+      lastImportAtB: '2026-04-26T03:00:00Z', // B is fresher
+    });
+    await injectHubConfig(page, { ...polygonOnlyOverrides(), hubPollInterval: 1 });
+    await stubHubRegistry(page, { instanceA, instanceB });
+    await page.goto('/');
+
+    await waitForPolygonCount(page, SHARED_OSM_ID, 1);
+    const before = await readPolygonSourceFor(page, SHARED_OSM_ID);
+    expect(before.backendUrls).toEqual(['/api-b']);
+
+    // Wait long enough for the 1-s registry poll cadence to fire at least
+    // twice (the orchestrator re-orchestrates on backends-store updates).
+    await page.waitForTimeout(2500);
+
+    const after = await readPolygonSourceFor(page, SHARED_OSM_ID);
+    expect(after.count).toBe(1);
+    expect(after.backendUrls).toEqual(['/api-b']); // B still wins on stable inputs
+  });
+
+  test('refresh transition: bumping a backend\'s last_import_at flips the winner', async ({ page }) => {
+    // Initial state: A is fresher.
+    const { instanceA, instanceB } = makeFixtures({
+      lastImportAtA: '2026-04-26T03:00:00Z',
+      lastImportAtB: '2026-04-25T03:00:00Z',
+    });
+    await injectHubConfig(page, { ...polygonOnlyOverrides(), hubPollInterval: 1 });
+    await stubHubRegistry(page, { instanceA, instanceB });
+    await page.goto('/');
+
+    await waitForPolygonCount(page, SHARED_OSM_ID, 1);
+    const before = await readPolygonSourceFor(page, SHARED_OSM_ID);
+    expect(before.backendUrls).toEqual(['/api-a']);
+
+    // Re-stub B's get_meta so B is now fresher than A. Existing routes
+    // from stubHubRegistry are still active; page.route's most-recently-
+    // registered handler wins, so this override takes precedence.
+    await page.route('**/api-b/rpc/get_meta**', route => route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        ...instanceB.meta,
+        last_import_at: '2026-04-27T03:00:00Z',
+      }),
+    }));
+
+    await expect.poll(
+      async () => (await readPolygonSourceFor(page, SHARED_OSM_ID)).backendUrls?.[0],
+      { timeout: 10000, message: 'expected winner to flip to /api-b after B\'s last_import_at advances' }
+    ).toBe('/api-b');
   });
 });
-
-// TODO: direct polygon-source assertion
-//
-// The tests above verify behavior through observable side-effects (request
-// counts, UI state) but do not directly assert "polygonSource contains exactly
-// one feature for osm_id=5000, not two."
-//
-// To write that assertion without canvas clicks, two approaches are viable:
-//
-// Option A — DOM data attribute:
-//   In Map.svelte (or HubApp.svelte), write the polygon feature count into a
-//   data attribute after each source update:
-//     mapEl.dataset.polygonFeatureCount = polygonSource.getFeatures().length;
-//   Then the test can assert:
-//     await expect(page.locator('#map')).toHaveAttribute('data-polygon-feature-count', '1');
-//
-// Option B — window test hook:
-//   In dev/test mode, expose the polygon source on window:
-//     if (import.meta.env.DEV) window.__polygonSource = polygonSource;
-//   Then assert via page.evaluate:
-//     const count = await page.evaluate(() =>
-//       window.__polygonSource?.getFeatures().filter(f => f.get('osm_id') === 5000).length
-//     );
-//     expect(count).toBe(1);
-//
-// Once either mechanism is added, the direct assertion can replace the smoke
-// test above.

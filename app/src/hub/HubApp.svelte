@@ -12,6 +12,7 @@
   import { attachHubOrchestrator } from './hubOrchestrator.js';
   import { mapStore } from '../stores/map.js';
   import { clusterMaxZoom } from '../lib/config.js';
+  import * as osmIdDedup from './osmIdDedup.js';
 
   // Generic OSM wiki link for the contribution modal (hub is region-agnostic).
   const HUB_WIKI_URL = 'https://wiki.openstreetmap.org/wiki/Tag:leisure%3Dplayground';
@@ -25,6 +26,20 @@
   const clusterSource = new VectorSource();
   const macroSource   = new VectorSource();
   let detachOrchestrator = null;
+
+  // Test hooks. Used by the Playwright suite to make direct assertions
+  // about polygon-source contents and to unit-test the pure dedup helpers.
+  // The footprint is two property assignments + a few KB of bundled
+  // helpers — small enough to ship unconditionally rather than gate on a
+  // build-time flag. See tests/osmIdDedup.spec.js + tests/hub-osm-id-dedup.spec.js.
+  // Namespaced under `__spieli` so it does not collide with anything else.
+  if (typeof window !== 'undefined') {
+    window.__spieli = window.__spieli ?? {};
+    window.__spieli.polygonSource = polygonSource;
+    window.__spieli.clusterSource = clusterSource;
+    window.__spieli.macroSource   = macroSource;
+    window.__spieli.osmIdDedup    = osmIdDedup;
+  }
 
   const {
     backends,

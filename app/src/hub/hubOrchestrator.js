@@ -161,8 +161,9 @@ export function attachHubOrchestrator({
     // re-rendered set, so a separate latch would be dead.
     let polygonFirstArrival = true;
     // Per-orchestrate-call dedup index: osm_id (string) → winning OL Feature.
-    // Reset on first arrival together with the source clear so stale winners
-    // from the previous moveend don't influence the new fan-out.
+    // Created fresh per orchestrate() call so winners from the previous
+    // moveend don't influence the new fan-out — no explicit .clear() needed
+    // on first arrival because the const above is already the empty Map.
     const polyByOsmId = new Map();
 
     if (tier === 'cluster') {
@@ -252,7 +253,8 @@ export function attachHubOrchestrator({
           if (polygonFirstArrival) {
             polygonFirstArrival = false;
             polygonSource.clear();
-            polyByOsmId.clear();
+            // polyByOsmId is already empty (declared `new Map()` per orchestrate()
+            // call) — no .clear() needed.
           }
           if (entry.ok) {
             const backend = backendByUrl.get(entry.backendUrl);
@@ -391,8 +393,8 @@ function parsePolygonFeatures(geojson, backendUrl, backend) {
     featureProjection: 'EPSG:3857',
   });
   features.forEach(f => {
-    f.set('_backendUrl',     backendUrl);
-    f.set('_lastImportAt',  backend?.lastImportAt ?? null);
+    f.set('_backendUrl', backendUrl);
+    f.set('_lastImportAt', backend?.lastImportAt ?? null);
     if (backend?.slug) f.set('_backendSlug', backend.slug);
   });
   return features;
