@@ -70,6 +70,10 @@ The compose file supports three profiles, selected at install time via `DEPLOY_M
 
 For the federated Hub topology (`DEPLOY_MODE=ui` + `APP_MODE=hub`), see [Federated Deployment](../ops/federated-deployment.md).
 
+## Tiered playground delivery
+
+The standalone client switches between two zoom-scoped layers at `clusterMaxZoom` (default 13). Below the boundary it calls `get_playground_clusters(z, bbox)` for pre-aggregated count buckets; above it, `get_playgrounds_bbox(bbox)` for full polygons. The cluster RPC keeps two concerns deliberately separate: **grouping** is grid-based (each playground centroid is snapped to a zoom-dependent cell, which decides which features share a bucket) and stays grid-aligned across pans, deploys, and federation backends; **position** is the unweighted spatial mean of the bucket's member centroids, so the rendered dot tracks the geography of its members rather than the lattice. Federation cross-backend cluster merging (see [Federation](federation.md)) keys on the grouping cell, not on `lon` / `lat`, so the position semantics can change without touching the merge contract. See [API reference — `get_playground_clusters`](api.md#get_playground_clustersz-bbox) for the response shape.
+
 ## See also
 
 - [API reference](api.md) — request/response shapes for the tiered playground RPCs that drive the standalone map.

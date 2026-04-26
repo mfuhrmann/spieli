@@ -210,8 +210,12 @@ COMMENT ON FUNCTION api.get_playgrounds(bigint) IS
 -- 1a. get_playground_clusters(z, bbox)
 --     Pre-aggregated cluster buckets for the cluster tier (zoom ≤
 --     clusterMaxZoom, default 13). Snaps each playground centroid to a
---     zoom-appropriate grid and counts playgrounds per cell, broken down by
---     completeness plus a separate restricted count. The cell-size table is
+--     zoom-appropriate grid as the *grouping key* and counts playgrounds per
+--     cell, broken down by completeness plus a separate restricted count.
+--     The emitted `lon` / `lat` is the unweighted spatial mean of the
+--     bucket's member centroids (`ST_Centroid(ST_Collect(centroid_3857))`),
+--     not the grid anchor — so the dot tracks the geographic distribution
+--     of its members rather than a lattice. The cell-size table is
 --     hardcoded in metres at the equator and extends through z=13;
 --     lat-dependent visual correction is the client's concern.
 -- =========================================================================
@@ -258,6 +262,7 @@ AS $$
   buckets AS (
     SELECT
       ST_SnapToGrid(ps.centroid_3857, cs.m) AS cell,
+      ps.centroid_3857,
       ps.completeness,
       ps.access_restricted
     FROM public.playground_stats ps, bbox b, cell_size cs
@@ -270,6 +275,7 @@ AS $$
     --   count = complete + partial + missing + restricted
     SELECT
       cell,
+      ST_Centroid(ST_Collect(centroid_3857))                                                        AS bucket_centroid_3857,
       COUNT(*)::int                                                                                 AS count,
       SUM(CASE WHEN NOT access_restricted AND completeness = 'complete' THEN 1 ELSE 0 END)::int     AS complete,
       SUM(CASE WHEN NOT access_restricted AND completeness = 'partial'  THEN 1 ELSE 0 END)::int     AS partial,
@@ -281,8 +287,8 @@ AS $$
   SELECT COALESCE(
     json_agg(
       json_build_object(
-        'lon',        ST_X(ST_Transform(cell, 4326)),
-        'lat',        ST_Y(ST_Transform(cell, 4326)),
+        'lon',        ST_X(ST_Transform(bucket_centroid_3857, 4326)),
+        'lat',        ST_Y(ST_Transform(bucket_centroid_3857, 4326)),
         'count',      count,
         'complete',   complete,
         'partial',    partial,

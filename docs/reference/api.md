@@ -48,7 +48,7 @@ Pre-aggregated cluster buckets for the cluster tier. Each bucket counts playgrou
 
 **Invariant**: `count = complete + partial + missing + restricted` for every bucket. The three completeness counts include only public playgrounds; access-restricted playgrounds are pulled out into `restricted` so the client can render them as a hatched gray segment.
 
-**Bucket centre**: emitted at the snapped grid corner (lon/lat). The client's stacked-ring renderer draws there directly; visual artefacts at cell boundaries are sub-perceptual at the cluster tier's zoom range.
+**Bucket centre**: emitted `lon` / `lat` is the **unweighted spatial mean of the bucket's member centroids** (`ST_Centroid(ST_Collect(centroid_3857))`, reprojected to WGS84) — not the grid anchor. The grid still defines *which* playgrounds share a bucket (the grouping key), but the dot is drawn at the geographic mean of those members so it tracks settlements rather than a lattice. Output is deterministic for a given `(z, bbox)` and dataset: identical inputs produce identical positions. See [Architecture — Tiered playground delivery](architecture.md#tiered-playground-delivery) for the grouping-vs-position split.
 
 **Example**
 
