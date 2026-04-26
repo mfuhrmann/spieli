@@ -897,6 +897,32 @@ $$;
 GRANT EXECUTE ON FUNCTION api.get_trees(float8, float8, float8, float8) TO web_anon;
 
 -- =========================================================================
+-- import_status — singleton table persisting the last successful import time.
+--   Written by import.sh after each successful osm2pgsql + api.sql run.
+--   Read by get_meta to expose data freshness to the hub.
+--   CHECK (id = 1) enforces singleton; UPSERT via ON CONFLICT (id) DO UPDATE.
+-- =========================================================================
+CREATE TABLE IF NOT EXISTS api.import_status (
+  id                  int          PRIMARY KEY CHECK (id = 1),
+  last_import_at      timestamptz  NOT NULL,
+  -- osm_data_timestamp is the `osmosis_replication_timestamp` from the PBF
+  -- header — i.e. when Geofabrik (or whoever produced the PBF) last
+  -- snapshotted OSM. Distinct from `last_import_at` (when our importer
+  -- ran): the importer can run hourly against a PBF that refreshes
+  -- weekly. Surfaced to users as "OSM data is N days old"; surfaced to
+  -- operators as `last_import_at` ("did the cron run").
+  osm_data_timestamp  timestamptz,
+  source_pbf_url      text,
+  pbf_etag            text
+);
+
+-- Idempotent ALTER for upgrades from FHE-pre-osm-data-age deployments.
+ALTER TABLE api.import_status
+  ADD COLUMN IF NOT EXISTS osm_data_timestamp timestamptz;
+
+GRANT SELECT ON api.import_status TO web_anon;
+
+-- =========================================================================
 -- 5. get_meta(relation_id)
 --    Returns instance metadata for federation (Hub discovery).
 --    Includes the OSM relation name, playground count, and bounding box.
@@ -932,20 +958,31 @@ AS $$
     JOIN region r ON ST_Within(p.way, r.way)
     JOIN public.playground_stats ps ON ps.osm_id = p.osm_id
     WHERE p.leisure = 'playground'
+  ),
+  import_status AS (
+    -- NULL when no import has run yet (table empty); callers must handle NULL.
+    SELECT last_import_at, osm_data_timestamp FROM api.import_status WHERE id = 1
   )
   SELECT json_build_object(
-    'relation_id',       relation_id,
-    'name',              (SELECT name FROM region),
-    'playground_count',  (SELECT playground_count FROM counts),
-    'complete',          (SELECT complete         FROM counts),
-    'partial',           (SELECT partial          FROM counts),
-    'missing',           (SELECT missing          FROM counts),
-    'bbox',              ARRAY[
-                           ST_XMin((SELECT geom FROM bbox)),
-                           ST_YMin((SELECT geom FROM bbox)),
-                           ST_XMax((SELECT geom FROM bbox)),
-                           ST_YMax((SELECT geom FROM bbox))
-                         ]
+    'relation_id',           relation_id,
+    'name',                  (SELECT name FROM region),
+    'playground_count',      (SELECT playground_count FROM counts),
+    'complete',              (SELECT complete         FROM counts),
+    'partial',               (SELECT partial          FROM counts),
+    'missing',               (SELECT missing          FROM counts),
+    'bbox',                  ARRAY[
+                               ST_XMin((SELECT geom FROM bbox)),
+                               ST_YMin((SELECT geom FROM bbox)),
+                               ST_XMax((SELECT geom FROM bbox)),
+                               ST_YMax((SELECT geom FROM bbox))
+                             ],
+    'last_import_at',        (SELECT last_import_at FROM import_status),
+    'data_age_seconds',      (SELECT EXTRACT(EPOCH FROM (now() - last_import_at))::int FROM import_status),
+    -- `osm_data_timestamp` is the moment OSM last produced the data this
+    -- backend serves (PBF replication timestamp); `osm_data_age_seconds`
+    -- is the user-facing "how old is this data?" derived value.
+    'osm_data_timestamp',    (SELECT osm_data_timestamp FROM import_status),
+    'osm_data_age_seconds',  (SELECT EXTRACT(EPOCH FROM (now() - osm_data_timestamp))::int FROM import_status)
   );
 $$;
 

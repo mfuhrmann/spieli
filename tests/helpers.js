@@ -226,6 +226,40 @@ export async function stubHubRegistry(page, { instanceA, instanceB }) {
       body: JSON.stringify(b.nearest ?? []),
     }))
   );
+
+  // Default stub for the hub's federation-status.json poll. Without this
+  // the browser fires a real network request that 404s in the test runner.
+  // Fail-open: empty backends → all backends stay healthUp=null → treated as
+  // healthy. Tests that need specific health data should call
+  // stubFederationStatus() after stubHubRegistry() to override this.
+  await stubFederationStatus(page);
+}
+
+/**
+ * Stub /federation-status.json with the given payload. If `backends` is
+ * omitted the stub returns an empty-backends response so existing tests that
+ * don't care about health still get a 200 (fail-open: all backends treated
+ * as healthy). Pass a full payload to test drawer freshness / stale banner /
+ * filterHealthy behaviour.
+ *
+ * `generatedAt` defaults to "just now"; pass a past ISO string to trigger the
+ * stale-observation banner (> 2 × poll_interval_seconds = 120 s old).
+ *
+ * Call before page.goto().
+ */
+export async function stubFederationStatus(page, { backends = {}, generatedAt = null, pollIntervalSeconds = 60 } = {}) {
+  const ts = generatedAt ?? new Date().toISOString();
+  await page.route('**/federation-status.json', route =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        generated_at: ts,
+        poll_interval_seconds: pollIntervalSeconds,
+        backends,
+      }),
+    })
+  );
 }
 
 /** Builds a minimal valid playground GeoJSON fixture. */

@@ -9,8 +9,12 @@ This proposal delivers exactly that minimum — covering importer-failure and ba
 ## What Changes
 
 - **Backend (per data-node)**:
-    - `importer/import.sh` records a `last_import_at` timestamp after each successful osm2pgsql run (persisted in a small DB table). The UPSERT runs *after* `api.sql` is applied, since the `api.import_status` table is created in that schema apply step (or moves to `db/init.sql` if we'd rather not couple the timestamp to the api.sql apply path — see design D3).
-    - `api.get_meta` response gains `last_import_at` (and derived `data_age_seconds`) so the hub can observe freshness. The function already uses `region`/`bbox`/`counts` CTEs in `SECURITY DEFINER`; the addition is a new `import_status` CTE wired into the existing `json_build_object` output.
+    - `importer/import.sh` records **two** timestamps after each successful osm2pgsql + schema-apply run, persisted in `api.import_status`:
+        - `last_import_at` (always populated) — when our importer ran. Operator-facing: "is the cron healthy?"
+        - `osm_data_timestamp` (populated when the source PBF carries an `osmosis_replication_timestamp` header; null otherwise) — when OSM produced the data this backend serves. User-facing: "how old is the data I'm looking at?"
+        Both are read into `api.get_meta`'s response object alongside their derived `*_age_seconds` integers. The two timestamps diverge whenever the importer runs more often than the source PBF refreshes — the importer cron may run hourly against a Geofabrik extract that refreshes weekly, so `last_import_at` reads "5 min ago" while the OSM data itself is up to a week old.
+    - The UPSERT runs *after* `api.sql` is applied, since the `api.import_status` table is created in that schema apply step (or moves to `db/init.sql` if we'd rather not couple the timestamp to the api.sql apply path — see design D3).
+    - `api.get_meta` response gains four new fields: `last_import_at`, `data_age_seconds`, `osm_data_timestamp`, `osm_data_age_seconds`. The function already uses `region`/`bbox`/`counts` CTEs in `SECURITY DEFINER`; the addition is a new `import_status` CTE wired into the existing `json_build_object` output.
 
 - **Hub container**:
     - Poll script (busybox cron, every 60 seconds) reads `registry.json`, fetches `get_meta` from each backend, records reachability + latency + data age.
@@ -21,6 +25,7 @@ This proposal delivers exactly that minimum — covering importer-failure and ba
 
 - **Hub UI**:
     - `app/src/hub/federationHealth.js` already exists as a stub — `isBackendHealthy()` always returns true and `hubOrchestrator.js` already calls `filterHealthy(selectBackends(...))` on every fan-out (wired by the archived `add-federated-playground-clustering` change). This change replaces the stub with a real implementation that polls `/federation-status.json`, merges per-backend status into the existing `backends` store, and surfaces freshness in `InstancePanelDrawer.svelte` — no new integration points in the orchestrator, no signature changes for `filterHealthy()`.
+    - The drawer surfaces `osm_data_age_seconds` (user-facing: "OSM data: 2 days old"), falling back silently to `data_age_seconds` when the source PBF lacked the `osmosis_replication_timestamp` header. The operator-facing `data_age_seconds` is still exposed via Prometheus (`spielplatz_backend_data_age_seconds`) so monitoring dashboards can detect stuck cron jobs without UI noise.
 
 - **Docs**:
     - New page `docs/ops/monitoring.md` — three recipes: (a) external uptime monitor on `/federation-status.json`, (b) BYO Prometheus scrape of `/metrics`, (c) Sentry free tier for frontend errors (link only).

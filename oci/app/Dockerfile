@@ -18,10 +18,18 @@ RUN npm run build
 # ── Stage 2: Serve ────────────────────────────────────────────────────────────
 FROM nginx:alpine
 
+# busybox-suid provides crond; jq parses registry.json in the poll script
+RUN apk add --no-cache busybox-suid jq
+
 COPY --from=builder /build/dist      /usr/share/nginx/html
 COPY oci/app/nginx.conf              /etc/nginx/conf.d/default.conf
 COPY oci/app/docker-entrypoint.sh    /docker-entrypoint.sh
-RUN chmod +x /docker-entrypoint.sh
+COPY oci/app/poll-federation.sh      /usr/local/bin/poll-federation.sh
+RUN chmod +x /docker-entrypoint.sh /usr/local/bin/poll-federation.sh
+
+# Run poll script every minute as root
+RUN printf '* * * * * /usr/local/bin/poll-federation.sh >/dev/null 2>&1\n' \
+    > /etc/crontabs/root
 
 EXPOSE 80
 ENTRYPOINT ["/docker-entrypoint.sh"]

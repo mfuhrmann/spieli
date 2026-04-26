@@ -84,3 +84,4 @@ When a user selects a playground, the Hub rewrites the hash to its canonical slu
 ## See also
 
 - [Federation](federation.md) — Hub deployment and the `APP_MODE=hub` switch.
+- [Monitoring](../ops/monitoring.md) — `/federation-status.json` health rollup and `/metrics` Prometheus exposition.

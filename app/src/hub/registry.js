@@ -11,6 +11,7 @@ import { readable, writable, derived } from 'svelte/store';
 import { registryUrl, hubPollInterval } from '../lib/config.js';
 import { fetchMeta } from '../lib/api.js';
 import { isValidSlug } from '../lib/deeplink.js';
+import { startFederationHealthPoll, stopFederationHealthPoll } from './federationHealth.js';
 
 // Per-backend timeout for multi-backend nearest fan-out. A slow or unreachable
 // backend contributes zero results but never stalls the user interaction.
@@ -129,17 +130,23 @@ export function createRegistry() {
         // Support both { instances: [...] } and bare array formats
         const entries = Array.isArray(data) ? data : (data.instances ?? []);
         backends = entries.map(entry => ({
-          url:             entry.url,
-          name:            entry.name || entry.url,
-          slug:            normaliseSlug(entry.slug, entry.url),
-          loading:         true,
-          error:           null,
-          version:         null,
-          region:          null,
-          bbox:            null,
-          playgroundCount: 0,
-          completeness:    null, // populated after get_meta lands; see status-shape JSDoc
-          lastImportAt:    null, // from get_meta.last_import_at (#301); used by polygon dedup
+          url:              entry.url,
+          name:             entry.name || entry.url,
+          slug:             normaliseSlug(entry.slug, entry.url),
+          loading:          true,
+          error:            null,
+          version:          null,
+          region:           null,
+          bbox:             null,
+          playgroundCount:  0,
+          completeness:     null,  // populated after get_meta lands; see status-shape JSDoc
+          lastImportAt:     null,  // from get_meta.last_import_at; used by polygon-tier dedup (#202)
+          // Populated from /federation-status.json (hub-side cron poll, this change)
+          healthUp:         null,  // null = unknown, true/false = known
+          dataAgeSec:       null,  // seconds since the importer last ran (operator-facing)
+          osmDataAgeSec:    null,  // seconds since the OSM data was snapshotted (user-facing)
+          lastReachable:    null,  // ISO string of last successful hub probe
+          observationStale: false,
         }));
         notify();
 
@@ -163,8 +170,28 @@ export function createRegistry() {
 
     loadAll();
 
+    startFederationHealthPoll((statusBySlug, observationStale) => {
+      for (const b of backends) {
+        const key = b.slug ?? null;
+        const entry = key ? statusBySlug[key] : null;
+        if (!entry) continue;
+        patchBackend(b.url, {
+          healthUp:           entry.up ?? null,
+          // dataAgeSec       — when the importer last ran (operator concern)
+          dataAgeSec:         entry.data_age_seconds ?? null,
+          // osmDataAgeSec    — how old the OSM data is (user concern). Null
+          //                    on pre-osm-data-age backends; the drawer
+          //                    falls back to dataAgeSec in that case.
+          osmDataAgeSec:      entry.osm_data_age_seconds ?? null,
+          lastReachable:      entry.last_success ?? null,
+          observationStale,
+        });
+      }
+    });
+
     return () => {
       if (pollTimer) clearTimeout(pollTimer);
+      stopFederationHealthPoll();
     };
   });
 

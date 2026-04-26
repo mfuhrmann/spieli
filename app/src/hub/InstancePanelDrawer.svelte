@@ -2,7 +2,7 @@
   import { _ } from 'svelte-i18n';
   import { X } from 'lucide-svelte';
 
-  /** @type {Array<{ url: string, name: string, version: string|null, loading: boolean, error: string|null, playgroundCount: number }>} */
+  /** @type {Array<{ url: string, name: string, version: string|null, loading: boolean, error: string|null, playgroundCount: number, dataAgeSec: number|null, osmDataAgeSec: number|null, lastReachable: string|null, healthUp: boolean|null, observationStale: boolean }>} */
   export let backends;
   /** @type {string | null} */
   export let registryError;
@@ -29,6 +29,28 @@
       first.focus();
     }
   }
+
+  function formatDataAge(sec) {
+    if (sec == null) return null;
+    const m = Math.round(sec / 60);
+    if (m < 60)   return $_('hub.dataAgeMinutes', { values: { m } });
+    const h = Math.round(m / 60);
+    if (h < 48)   return $_('hub.dataAgeHours',   { values: { h } });
+    const d = Math.round(h / 24);
+    return $_('hub.dataAgeDays', { values: { d } });
+  }
+
+  function formatLastReachable(iso) {
+    if (!iso) return null;
+    const diffSec = Math.round((Date.now() - new Date(iso).getTime()) / 1000);
+    const m = Math.round(diffSec / 60);
+    if (m < 1)   return $_('hub.lastReachableJustNow');
+    if (m < 60)  return $_('hub.lastReachableMinutes', { values: { m } });
+    const h = Math.round(m / 60);
+    return $_('hub.lastReachableHours', { values: { h } });
+  }
+
+  $: observationStaleAny = backends.some(b => b.observationStale);
 </script>
 
 <div
@@ -63,6 +85,12 @@
       {$_('hub.loading')}
     </p>
   {:else}
+    {#if observationStaleAny}
+      <p class="drawer__stale-banner">
+        <i class="bi bi-exclamation-circle me-1"></i>
+        {$_('hub.observationStale')}
+      </p>
+    {/if}
     <ul class="instance-list">
       {#each backends as b (b.url)}
         <li class="instance-item">
@@ -82,12 +110,36 @@
             <div class="instance-status text-danger">
               <i class="bi bi-exclamation-triangle-fill me-1"></i>
               {$_('hub.instanceError')}
+              {#if b.lastReachable}
+                <span class="instance-freshness text-muted">
+                  · {formatLastReachable(b.lastReachable)}
+                </span>
+              {:else if b.healthUp === false}
+                <span class="instance-freshness text-muted">
+                  · {$_('hub.neverReachable')}
+                </span>
+              {/if}
             </div>
           {:else}
             <div class="instance-status text-muted">
               <i class="bi bi-geo-alt-fill me-1"></i>
               {$_('hub.playgroundCount', { values: { count: b.playgroundCount } })}
             </div>
+            {#if b.osmDataAgeSec != null}
+              <!-- Prefer the OSM source-data age (user-facing: "the data
+                   you are looking at is N old") over the import-run age
+                   (operator-facing: "did the cron run"). Pre-osm-data-age
+                   backends fall back to dataAgeSec via the {:else} below. -->
+              <div class="instance-freshness text-muted">
+                <i class="bi bi-clock me-1"></i>
+                {$_('hub.osmDataAge', { values: { age: formatDataAge(b.osmDataAgeSec) } })}
+              </div>
+            {:else if b.dataAgeSec != null}
+              <div class="instance-freshness text-muted">
+                <i class="bi bi-clock me-1"></i>
+                {$_('hub.dataAge', { values: { age: formatDataAge(b.dataAgeSec) } })}
+              </div>
+            {/if}
           {/if}
         </li>
       {/each}
@@ -200,5 +252,19 @@
 
   .instance-status {
     font-size: 0.75rem;
+  }
+
+  .instance-freshness {
+    font-size: 0.72rem;
+    margin-top: 0.1rem;
+  }
+
+  .drawer__stale-banner {
+    margin: 0;
+    padding: 0.4rem 0.75rem;
+    font-size: 0.75rem;
+    color: #92400e;
+    background: #fef3c7;
+    border-bottom: 1px solid #fde68a;
   }
 </style>

@@ -371,7 +371,17 @@
     "pillExpand": "Instanz-Liste öffnen",
     "pillCollapse": "Instanz-Liste schließen",
     "drawerTitle": "Verfügbare Instanzen",
-    "closeBtn": "Schließen"
+    "closeBtn": "Schließen",
+    "dataAge": "Daten: {age} alt",
+    "osmDataAge": "OSM-Datenstand: {age} alt",
+    "dataAgeMinutes": "{m} min",
+    "dataAgeHours": "{h} Std.",
+    "dataAgeDays": "{d} Tage",
+    "lastReachableJustNow": "zuletzt erreichbar: gerade eben",
+    "lastReachableMinutes": "zuletzt erreichbar: vor {m} min",
+    "lastReachableHours": "zuletzt erreichbar: vor {h} Std.",
+    "neverReachable": "noch nie erreichbar",
+    "observationStale": "Verbindungsstatus veraltet"
   },
   "details": {
     "sizeLabel": "Größe",

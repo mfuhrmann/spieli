@@ -16,7 +16,16 @@
 #   POSTGRES_PASSWORD      Required
 #   OSM2PGSQL_THREADS      Default: 4
 
-set -e
+# `-e` aborts on any unchecked non-zero exit. `pipefail` is the load-bearing
+# addition for the `envsubst | psql … < /api.sql` pipeline below: without it,
+# a failing envsubst (or any psql statement that errors *without* triggering
+# psql's own non-zero exit) would let the pipeline succeed overall and the
+# subsequent `api.import_status` UPSERT would record a fresh `last_import_at`
+# against a half-applied schema — exactly the silent-failure mode the
+# scheduled-importer spec scenario "Failed run does not update timestamp"
+# forbids. Pair with `psql -v ON_ERROR_STOP=1` at every `psql` callsite that
+# applies multi-statement SQL (api.sql, etc.).
+set -eo pipefail
 
 PBF_URL="${PBF_URL:-https://download.geofabrik.de/europe/germany/hessen-latest.osm.pbf}"
 PBF_FILE="/data/$(basename "$PBF_URL")"
@@ -195,8 +204,46 @@ echo "[importer] osm2pgsql finished."
 # Create PostgREST API schema (views / functions)
 # --------------------------------------------------------------------------- #
 echo "[importer] Applying API schema..."
+# ON_ERROR_STOP=1 + pipefail (set at top) guarantees a partial schema apply
+# aborts the script before the api.import_status UPSERT below runs.
 envsubst '$OSM_RELATION_ID' < /api.sql \
-    | psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB"
+    | psql -v ON_ERROR_STOP=1 \
+        -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB"
+
+# --------------------------------------------------------------------------- #
+# Record successful import timestamp (read by get_meta / federation-status).
+# Two timestamps are persisted:
+#   - last_import_at: when this script ran (operator-facing; "is the cron
+#     healthy?")
+#   - osm_data_timestamp: the `osmosis_replication_timestamp` from the source
+#     PBF header (user-facing; "how old is the data I'm looking at?")
+# These diverge whenever the importer runs more often than Geofabrik
+# refreshes its extracts — `last_import_at` can be "5 min ago" while the
+# OSM data itself is up to a week old.
+# --------------------------------------------------------------------------- #
+
+# Extract the OSM replication timestamp from the original PBF (before our
+# bbox+tags filtering, which can drop the header on some osmium versions).
+# `osmium fileinfo --json` emits ISO-8601 already — pass straight to psql.
+# Fall back to NULL if the header is missing (some non-Geofabrik PBFs).
+OSM_DATA_TS=$(osmium fileinfo --json "$PBF_FILE" 2>/dev/null \
+    | jq -r '.header.option.osmosis_replication_timestamp // empty' 2>/dev/null || true)
+
+if [ -n "$OSM_DATA_TS" ]; then
+    echo "[importer] Source PBF replication timestamp: $OSM_DATA_TS"
+    OSM_DATA_TS_SQL="'${OSM_DATA_TS}'::timestamptz"
+else
+    echo "[importer] WARNING: source PBF lacks osmosis_replication_timestamp header — osm_data_timestamp will be NULL."
+    OSM_DATA_TS_SQL="NULL"
+fi
+
+psql -v ON_ERROR_STOP=1 \
+    -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+    -c "INSERT INTO api.import_status (id, last_import_at, osm_data_timestamp)
+        VALUES (1, now(), ${OSM_DATA_TS_SQL})
+        ON CONFLICT (id) DO UPDATE
+        SET last_import_at      = EXCLUDED.last_import_at,
+            osm_data_timestamp  = COALESCE(EXCLUDED.osm_data_timestamp, api.import_status.osm_data_timestamp);"
 
 # --------------------------------------------------------------------------- #
 # Notify PostgREST to reload its schema cache
