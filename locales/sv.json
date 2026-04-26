@@ -17,7 +17,14 @@
     "hint": "Tryck på en lekplats för detaljer",
     "shareBtn": "Dela lekplats",
     "osmBtn": "Visa på OpenStreetMap",
-    "closeBtn": "Stäng"
+    "closeBtn": "Stäng",
+    "importedAt": "Imported",
+    "osmDataAge": "OSM data age",
+    "timestampUnknown": "unknown",
+    "timeJustNow": "just now",
+    "timeMinutesAgo": "{n} min. ago",
+    "timeHoursAgo": "{n} hr. ago",
+    "timeDaysAgo": "{n} days ago"
   },
   "completeness": {
     "complete": "Foton, namn och detaljer tillgängliga",
@@ -95,6 +102,13 @@
   },
   "modal": {
     "closeBtn": "Stäng",
+    "importedAt": "Imported",
+    "osmDataAge": "OSM data age",
+    "timestampUnknown": "unknown",
+    "timeJustNow": "just now",
+    "timeMinutesAgo": "{n} min. ago",
+    "timeHoursAgo": "{n} hr. ago",
+    "timeDaysAgo": "{n} days ago",
     "backToMap": "Tillbaka till kartan",
     "streetPhoto": "Gatufoto",
     "prevPhoto": "Föregående foto",

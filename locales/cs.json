@@ -17,7 +17,14 @@
     "hint": "Klepněte na hřiště pro zobrazení podrobností",
     "shareBtn": "Sdílet hřiště",
     "osmBtn": "Zobrazit na OpenStreetMap",
-    "closeBtn": "Zavřít"
+    "closeBtn": "Zavřít",
+    "importedAt": "Imported",
+    "osmDataAge": "OSM data age",
+    "timestampUnknown": "unknown",
+    "timeJustNow": "just now",
+    "timeMinutesAgo": "{n} min. ago",
+    "timeHoursAgo": "{n} hr. ago",
+    "timeDaysAgo": "{n} days ago"
   },
   "completeness": {
     "complete": "Fotografie, název a podrobnosti k dispozici",
@@ -100,6 +107,13 @@
   },
   "modal": {
     "closeBtn": "Zavřít",
+    "importedAt": "Imported",
+    "osmDataAge": "OSM data age",
+    "timestampUnknown": "unknown",
+    "timeJustNow": "just now",
+    "timeMinutesAgo": "{n} min. ago",
+    "timeHoursAgo": "{n} hr. ago",
+    "timeDaysAgo": "{n} days ago",
     "backToMap": "Zpět na mapu",
     "streetPhoto": "Fotografie ulice",
     "prevPhoto": "Předchozí fotografie",

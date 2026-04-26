@@ -17,7 +17,14 @@
     "hint": "Натисніть на майданчик, щоб побачити деталі",
     "shareBtn": "Поділитися майданчиком",
     "osmBtn": "Переглянути на OpenStreetMap",
-    "closeBtn": "Закрити"
+    "closeBtn": "Закрити",
+    "importedAt": "Imported",
+    "osmDataAge": "OSM data age",
+    "timestampUnknown": "unknown",
+    "timeJustNow": "just now",
+    "timeMinutesAgo": "{n} min. ago",
+    "timeHoursAgo": "{n} hr. ago",
+    "timeDaysAgo": "{n} days ago"
   },
   "completeness": {
     "complete": "Фотографії, назва та деталі доступні",
@@ -105,6 +112,13 @@
   },
   "modal": {
     "closeBtn": "Закрити",
+    "importedAt": "Imported",
+    "osmDataAge": "OSM data age",
+    "timestampUnknown": "unknown",
+    "timeJustNow": "just now",
+    "timeMinutesAgo": "{n} min. ago",
+    "timeHoursAgo": "{n} hr. ago",
+    "timeDaysAgo": "{n} days ago",
     "backToMap": "Повернутися до карти",
     "streetPhoto": "Фото вулиці",
     "prevPhoto": "Попередня фотографія",

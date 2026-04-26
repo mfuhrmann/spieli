@@ -30,6 +30,9 @@ const NEAREST_MAX_DISTANCE_M = 25_000;
  *   version: string | null,
  *   region: string | null,
  *   bbox: [minLon, minLat, maxLon, maxLat] | null,
+ *   importedAt: string | null,   // ISO timestamp of last import run
+ *   osmDataAge: string | null,   // ISO timestamp of OSM extract replication
+ *   relationId: number | null,
  * }
  */
 
@@ -68,9 +71,12 @@ export function createRegistry(vectorSource) {
         ]);
 
         if (meta) {
-          backend.version = meta.version ?? null;
-          backend.region  = meta.name    ?? null;
-          backend.bbox    = Array.isArray(meta.bbox) && meta.bbox.length === 4 ? meta.bbox : null;
+          backend.version    = meta.version     ?? null;
+          backend.region     = meta.name        ?? null;
+          backend.bbox       = Array.isArray(meta.bbox) && meta.bbox.length === 4 ? meta.bbox : null;
+          backend.importedAt = meta.imported_at  ?? null;
+          backend.osmDataAge = meta.osm_data_age ?? null;
+          backend.relationId = meta.relation_id  ?? null;
           if (!backend.name && backend.region) backend.name = backend.region;
         }
 
@@ -80,14 +86,38 @@ export function createRegistry(vectorSource) {
           featureProjection: 'EPSG:3857',
         });
         features.forEach(f => {
-          f.set('_backendUrl', backend.url);
+          f.set('_backendUrl',  backend.url);
+          f.set('_relationId',  backend.relationId);
           if (backend.slug) f.set('_backendSlug', backend.slug);
         });
 
-        // Atomic swap: remove stale then add new in the same JS turn
+        // Atomic swap: remove stale then add new in the same JS turn.
+        // Dedup by osm_id: keep the feature whose backend has the newer
+        // osm_data_age; null osm_data_age is treated as oldest.
         const stale = vectorSource.getFeatures().filter(f => f.get('_backendUrl') === backend.url);
         if (stale.length) vectorSource.removeFeatures(stale);
-        vectorSource.addFeatures(features);
+
+        const toAdd = [];
+        for (const feature of features) {
+          const osmId = feature.get('osm_id');
+          const existing = osmId != null
+            ? vectorSource.getFeatures().find(f => f.get('osm_id') === osmId)
+            : null;
+          if (existing) {
+            const existingAge = existing.get('_backendUrl')
+              ? backends.find(b => b.url === existing.get('_backendUrl'))?.osmDataAge ?? null
+              : null;
+            const incomingAge = backend.osmDataAge ?? null;
+            if (incomingAge && (!existingAge || incomingAge > existingAge)) {
+              console.debug(`[hub] dedup: replacing ${existing.get('_backendUrl')} with ${backend.url} for osm_id ${osmId} (${backend.url} is fresher)`);
+              vectorSource.removeFeature(existing);
+              toAdd.push(feature);
+            }
+          } else {
+            toAdd.push(feature);
+          }
+        }
+        vectorSource.addFeatures(toAdd);
 
         backend.featureCount = features.length;
         backend.loading      = false;
@@ -119,6 +149,9 @@ export function createRegistry(vectorSource) {
           version:      null,
           region:       null,
           bbox:         null,
+          importedAt:   null,
+          osmDataAge:   null,
+          relationId:   null,
         }));
         notify();
 

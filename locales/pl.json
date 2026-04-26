@@ -17,7 +17,14 @@
     "hint": "Dotknij plac zabaw, aby zobaczyć szczegóły",
     "shareBtn": "Udostępnij plac zabaw",
     "osmBtn": "Zobacz na OpenStreetMap",
-    "closeBtn": "Zamknij"
+    "closeBtn": "Zamknij",
+    "importedAt": "Imported",
+    "osmDataAge": "OSM data age",
+    "timestampUnknown": "unknown",
+    "timeJustNow": "just now",
+    "timeMinutesAgo": "{n} min. ago",
+    "timeHoursAgo": "{n} hr. ago",
+    "timeDaysAgo": "{n} days ago"
   },
   "completeness": {
     "complete": "Zdjęcia, nazwa i szczegóły dostępne",
@@ -105,6 +112,13 @@
   },
   "modal": {
     "closeBtn": "Zamknij",
+    "importedAt": "Imported",
+    "osmDataAge": "OSM data age",
+    "timestampUnknown": "unknown",
+    "timeJustNow": "just now",
+    "timeMinutesAgo": "{n} min. ago",
+    "timeHoursAgo": "{n} hr. ago",
+    "timeDaysAgo": "{n} days ago",
     "backToMap": "Wróć do mapy",
     "streetPhoto": "Zdjęcie uliczne",
     "prevPhoto": "Poprzednie zdjęcie",

@@ -17,7 +17,14 @@
     "hint": "Toque num parque para ver detalhes",
     "shareBtn": "Partilhar parque",
     "osmBtn": "Ver no OpenStreetMap",
-    "closeBtn": "Fechar"
+    "closeBtn": "Fechar",
+    "importedAt": "Imported",
+    "osmDataAge": "OSM data age",
+    "timestampUnknown": "unknown",
+    "timeJustNow": "just now",
+    "timeMinutesAgo": "{n} min. ago",
+    "timeHoursAgo": "{n} hr. ago",
+    "timeDaysAgo": "{n} days ago"
   },
   "completeness": {
     "complete": "Fotos, nome e detalhes disponíveis",
@@ -95,6 +102,13 @@
   },
   "modal": {
     "closeBtn": "Fechar",
+    "importedAt": "Imported",
+    "osmDataAge": "OSM data age",
+    "timestampUnknown": "unknown",
+    "timeJustNow": "just now",
+    "timeMinutesAgo": "{n} min. ago",
+    "timeHoursAgo": "{n} hr. ago",
+    "timeDaysAgo": "{n} days ago",
     "backToMap": "Voltar ao mapa",
     "streetPhoto": "Foto de rua",
     "prevPhoto": "Foto anterior",

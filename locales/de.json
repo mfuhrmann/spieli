@@ -371,7 +371,14 @@
     "pillExpand": "Instanz-Liste öffnen",
     "pillCollapse": "Instanz-Liste schließen",
     "drawerTitle": "Verfügbare Instanzen",
-    "closeBtn": "Schließen"
+    "closeBtn": "Schließen",
+    "importedAt": "Importiert",
+    "osmDataAge": "OSM-Datenstand",
+    "timestampUnknown": "unbekannt",
+    "timeJustNow": "gerade eben",
+    "timeMinutesAgo": "vor {n} Min.",
+    "timeHoursAgo": "vor {n} Std.",
+    "timeDaysAgo": "vor {n} Tagen"
   },
   "details": {
     "sizeLabel": "Größe",

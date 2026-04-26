@@ -17,7 +17,14 @@
     "hint": "Tik op een speeltuin voor details",
     "shareBtn": "Speeltuin delen",
     "osmBtn": "Bekijk op OpenStreetMap",
-    "closeBtn": "Sluiten"
+    "closeBtn": "Sluiten",
+    "importedAt": "Imported",
+    "osmDataAge": "OSM data age",
+    "timestampUnknown": "unknown",
+    "timeJustNow": "just now",
+    "timeMinutesAgo": "{n} min. ago",
+    "timeHoursAgo": "{n} hr. ago",
+    "timeDaysAgo": "{n} days ago"
   },
   "completeness": {
     "complete": "Foto's, naam & details beschikbaar",
@@ -95,6 +102,13 @@
   },
   "modal": {
     "closeBtn": "Sluiten",
+    "importedAt": "Imported",
+    "osmDataAge": "OSM data age",
+    "timestampUnknown": "unknown",
+    "timeJustNow": "just now",
+    "timeMinutesAgo": "{n} min. ago",
+    "timeHoursAgo": "{n} hr. ago",
+    "timeDaysAgo": "{n} days ago",
     "backToMap": "Terug naar de kaart",
     "streetPhoto": "Straatfoto",
     "prevPhoto": "Vorige foto",

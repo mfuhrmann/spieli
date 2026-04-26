@@ -11,6 +11,18 @@
 
   let drawerEl;
 
+  function relativeTime(iso) {
+    if (!iso) return null;
+    const diff = Date.now() - new Date(iso).getTime();
+    const mins  = Math.round(diff / 60_000);
+    const hours = Math.round(diff / 3_600_000);
+    const days  = Math.round(diff / 86_400_000);
+    if (mins  <  2) return $_('hub.timeJustNow');
+    if (mins  < 60) return $_('hub.timeMinutesAgo', { values: { n: mins  } });
+    if (hours < 24) return $_('hub.timeHoursAgo',   { values: { n: hours } });
+    return $_('hub.timeDaysAgo', { values: { n: days } });
+  }
+
   // Focus trap: keep keyboard focus inside the drawer while it's open. The
   // pill's own ESC handling closes the drawer — here we only trap Tab.
   function handleKeydown(e) {
@@ -87,6 +99,22 @@
             <div class="instance-status text-muted">
               <i class="bi bi-geo-alt-fill me-1"></i>
               {$_('hub.playgroundCount', { values: { count: b.featureCount } })}
+            </div>
+            <div class="instance-timestamps">
+              <span class="timestamp-label">{$_('hub.importedAt')}:</span>
+              {#if b.importedAt}
+                <span title={b.importedAt}>{relativeTime(b.importedAt)}</span>
+              {:else}
+                <span class="text-muted">{$_('hub.timestampUnknown')}</span>
+              {/if}
+            </div>
+            <div class="instance-timestamps">
+              <span class="timestamp-label">{$_('hub.osmDataAge')}:</span>
+              {#if b.osmDataAge}
+                <span title={b.osmDataAge}>{relativeTime(b.osmDataAge)}</span>
+              {:else}
+                <span class="text-muted">{$_('hub.timestampUnknown')}</span>
+              {/if}
             </div>
           {/if}
         </li>
@@ -200,5 +228,16 @@
 
   .instance-status {
     font-size: 0.75rem;
+  }
+
+  .instance-timestamps {
+    font-size: 0.72rem;
+    color: #6b7280;
+    margin-top: 0.1rem;
+  }
+
+  .timestamp-label {
+    color: #9ca3af;
+    margin-right: 0.2rem;
   }
 </style>

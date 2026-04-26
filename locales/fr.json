@@ -17,7 +17,14 @@
     "hint": "Appuyer sur une aire de jeux pour les détails",
     "shareBtn": "Partager",
     "osmBtn": "Voir sur OpenStreetMap",
-    "closeBtn": "Fermer"
+    "closeBtn": "Fermer",
+    "importedAt": "Imported",
+    "osmDataAge": "OSM data age",
+    "timestampUnknown": "unknown",
+    "timeJustNow": "just now",
+    "timeMinutesAgo": "{n} min. ago",
+    "timeHoursAgo": "{n} hr. ago",
+    "timeDaysAgo": "{n} days ago"
   },
   "completeness": {
     "complete": "Photos, nom & détails disponibles",
@@ -95,6 +102,13 @@
   },
   "modal": {
     "closeBtn": "Fermer",
+    "importedAt": "Imported",
+    "osmDataAge": "OSM data age",
+    "timestampUnknown": "unknown",
+    "timeJustNow": "just now",
+    "timeMinutesAgo": "{n} min. ago",
+    "timeHoursAgo": "{n} hr. ago",
+    "timeDaysAgo": "{n} days ago",
     "backToMap": "Retour à la carte",
     "streetPhoto": "Photo de rue",
     "prevPhoto": "Photo précédente",

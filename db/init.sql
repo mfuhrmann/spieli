@@ -31,3 +31,12 @@ END
 $$;
 
 GRANT USAGE ON SCHEMA api TO web_anon;
+
+-- Singleton table to persist importer run metadata across container restarts.
+-- Written by import.sh after each successful osm2pgsql run; read by get_meta().
+CREATE TABLE IF NOT EXISTS api.meta (
+  id            int PRIMARY KEY CHECK (id = 1),
+  imported_at   TIMESTAMPTZ,
+  osm_data_age  TIMESTAMPTZ
+);
+GRANT SELECT ON api.meta TO web_anon;

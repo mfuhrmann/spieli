@@ -885,6 +885,16 @@ GRANT EXECUTE ON FUNCTION api.get_trees(float8, float8, float8, float8) TO web_a
 --    Returns instance metadata for federation (Hub discovery).
 --    Includes the OSM relation name, playground count, and bounding box.
 -- =========================================================================
+
+-- Singleton table persisting importer timestamps. Created here (idempotent)
+-- so it exists on upgraded stacks where db/init.sql has already run.
+CREATE TABLE IF NOT EXISTS api.meta (
+  id            int PRIMARY KEY CHECK (id = 1),
+  imported_at   TIMESTAMPTZ,
+  osm_data_age  TIMESTAMPTZ
+);
+GRANT SELECT ON api.meta TO web_anon;
+
 DROP FUNCTION IF EXISTS api.get_meta(bigint);
 
 CREATE OR REPLACE FUNCTION api.get_meta(relation_id bigint DEFAULT ${OSM_RELATION_ID})
@@ -929,7 +939,9 @@ AS $$
                            ST_YMin((SELECT geom FROM bbox)),
                            ST_XMax((SELECT geom FROM bbox)),
                            ST_YMax((SELECT geom FROM bbox))
-                         ]
+                         ],
+    'imported_at',       (SELECT imported_at  FROM api.meta WHERE id = 1),
+    'osm_data_age',      (SELECT osm_data_age FROM api.meta WHERE id = 1)
   );
 $$;
 

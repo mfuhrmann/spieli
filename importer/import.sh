@@ -186,11 +186,37 @@ osm2pgsql \
 echo "[importer] osm2pgsql finished."
 
 # --------------------------------------------------------------------------- #
+# Record import timestamps (extracted now, written after api.sql creates table)
+# --------------------------------------------------------------------------- #
+OSM_DATA_AGE=""
+if osmium_output=$(osmium fileinfo --json "$IMPORT_PBF" 2>/dev/null); then
+    OSM_DATA_AGE=$(echo "$osmium_output" | jq -r '.header.option.osmosis_replication_timestamp // empty' 2>/dev/null || true)
+    if [ -z "$OSM_DATA_AGE" ]; then
+        echo "[importer] WARNING: osmosis_replication_timestamp not present in PBF header — osm_data_age will be NULL"
+    fi
+else
+    echo "[importer] WARNING: osmium fileinfo failed — osm_data_age will be NULL"
+fi
+
+# --------------------------------------------------------------------------- #
 # Create PostgREST API schema (views / functions)
 # --------------------------------------------------------------------------- #
 echo "[importer] Applying API schema..."
 envsubst '$OSM_RELATION_ID' < /api.sql \
     | psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB"
+
+# --------------------------------------------------------------------------- #
+# Upsert timestamps — api.meta is guaranteed to exist after api.sql runs above
+# --------------------------------------------------------------------------- #
+# Validate timestamp format before interpolating to prevent injection
+if echo "$OSM_DATA_AGE" | grep -qE '^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}'; then
+    AGE_EXPR="'${OSM_DATA_AGE}'"
+else
+    AGE_EXPR="NULL"
+fi
+psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+    -c "INSERT INTO api.meta (id, imported_at, osm_data_age) VALUES (1, now(), ${AGE_EXPR}) ON CONFLICT (id) DO UPDATE SET imported_at = EXCLUDED.imported_at, osm_data_age = EXCLUDED.osm_data_age;"
+echo "[importer] Timestamps recorded (osm_data_age=${OSM_DATA_AGE:-NULL})."
 
 # --------------------------------------------------------------------------- #
 # Notify PostgREST to reload its schema cache

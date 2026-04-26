@@ -17,7 +17,14 @@
     "hint": "遊び場をタップして詳細を表示",
     "shareBtn": "遊び場を共有",
     "osmBtn": "OpenStreetMapで表示",
-    "closeBtn": "閉じる"
+    "closeBtn": "閉じる",
+    "importedAt": "Imported",
+    "osmDataAge": "OSM data age",
+    "timestampUnknown": "unknown",
+    "timeJustNow": "just now",
+    "timeMinutesAgo": "{n} min. ago",
+    "timeHoursAgo": "{n} hr. ago",
+    "timeDaysAgo": "{n} days ago"
   },
   "completeness": {
     "complete": "写真・名称・詳細あり",
@@ -90,6 +97,13 @@
   },
   "modal": {
     "closeBtn": "閉じる",
+    "importedAt": "Imported",
+    "osmDataAge": "OSM data age",
+    "timestampUnknown": "unknown",
+    "timeJustNow": "just now",
+    "timeMinutesAgo": "{n} min. ago",
+    "timeHoursAgo": "{n} hr. ago",
+    "timeDaysAgo": "{n} days ago",
     "backToMap": "地図に戻る",
     "streetPhoto": "ストリート写真",
     "prevPhoto": "前の写真",

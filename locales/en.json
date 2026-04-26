@@ -371,7 +371,14 @@
     "pillExpand": "Show instance list",
     "pillCollapse": "Hide instance list",
     "drawerTitle": "Available instances",
-    "closeBtn": "Close"
+    "closeBtn": "Close",
+    "importedAt": "Imported",
+    "osmDataAge": "OSM data age",
+    "timestampUnknown": "unknown",
+    "timeJustNow": "just now",
+    "timeMinutesAgo": "{n} min. ago",
+    "timeHoursAgo": "{n} hr. ago",
+    "timeDaysAgo": "{n} days ago"
   },
   "details": {
     "sizeLabel": "Size",
