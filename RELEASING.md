@@ -2,7 +2,7 @@
 
 ## Container images
 
-Three images are published to GHCR on every release:
+Two images are published to GHCR on every release:
 
 | Image | Used by |
 |---|---|
@@ -32,10 +32,10 @@ Three images are published to GHCR on every release:
 $EDITOR app/package.json
 
 # 3. Commit.
-git commit -am "chore: release v0.2.6"
+git add app/package.json && git commit -m "chore: release v0.2.6"
 
 # 4. Tag and push the tag.  CI fires on the tag push and publishes
-#    :latest, :0.2.6, and :0.2 for all three images.
+#    :latest, :0.2.6, and :0.2 for both images.
 git tag v0.2.6
 git push origin main
 git push origin v0.2.6
@@ -60,13 +60,13 @@ ghcr.io/mfuhrmann/spieli-importer:0.2.6
 EOF
 )"
 
-# 6. Verify all three images are visible in GHCR and :latest is updated.
+# 6. Verify both images are visible in GHCR and :latest is updated.
 #    https://github.com/mfuhrmann?tab=packages&repo_name=spieli
 
 # 7. Bump main to the next -rc.
 #    Example: "0.2.6" → "0.2.7-rc"
 $EDITOR app/package.json
-git commit -am "chore: bump version to 0.2.7-rc"
+git add app/package.json && git commit -m "chore: bump version to 0.2.7-rc"
 git push origin main
 ```
 
