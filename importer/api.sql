@@ -263,6 +263,7 @@ AS $$
     SELECT
       ST_SnapToGrid(ps.centroid_3857, cs.m) AS cell,
       ps.centroid_3857,
+      ps.osm_id,
       ps.completeness,
       ps.access_restricted
     FROM public.playground_stats ps, bbox b, cell_size cs
@@ -273,9 +274,12 @@ AS $$
     -- completeness buckets so the ring renderer can paint them as a
     -- hatched "not public" segment. Invariant:
     --   count = complete + partial + missing + restricted
+    -- The ST_Collect() ORDER BY guarantees bit-stable centroid output
+    -- across plan changes (parallel scans, etc.) — the spec contract
+    -- "each bucket's lon/lat is identical between calls" depends on it.
     SELECT
       cell,
-      ST_Centroid(ST_Collect(centroid_3857))                                                        AS bucket_centroid_3857,
+      ST_Centroid(ST_Collect(centroid_3857 ORDER BY osm_id))                                        AS bucket_centroid_3857,
       COUNT(*)::int                                                                                 AS count,
       SUM(CASE WHEN NOT access_restricted AND completeness = 'complete' THEN 1 ELSE 0 END)::int     AS complete,
       SUM(CASE WHEN NOT access_restricted AND completeness = 'partial'  THEN 1 ELSE 0 END)::int     AS partial,

@@ -26,7 +26,8 @@ Each data-node SHALL expose a function that returns pre-aggregated playground co
 #### Scenario: Clusters RPC honours bbox filter
 
 - **WHEN** the caller supplies a bbox that covers only a subset of the region
-- **THEN** only buckets whose grouping cell intersects the bbox are returned
+- **THEN** only members whose centroid lies within the bbox contribute to a bucket
+- **AND** a bucket is returned only when at least one of its members satisfies that filter
 - **AND** no playgrounds outside the bbox contribute to any returned bucket
 
 #### Scenario: Clusters RPC scales cell size with zoom

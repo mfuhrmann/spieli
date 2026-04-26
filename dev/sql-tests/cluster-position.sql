@@ -9,10 +9,16 @@
 -- (or run from a host psql with the right -h/-U/-d). Asserts:
 --   1. At a zoom where ≥ 2 seeded playgrounds share a grid cell, the
 --      bucket's lon/lat equals ST_Centroid(ST_Collect(centroid_3857)) over
---      that cell's members (≤ 1e-6 deg float tolerance).
+--      that cell's members. Both sides are produced by identical
+--      ST_Transform reprojections of the same input geometry, so the
+--      comparison is bit-equality with a 1e-12 deg safety margin (~1e-7 mm
+--      at the equator) to absorb any aggregate-ordering noise — not a
+--      physical-distance tolerance.
 --   2. The bucket's lon/lat is *not* the WGS84 reprojection of the grid
---      cell anchor — i.e. the change is in effect, not the legacy
---      grid-anchor behaviour.
+--      cell anchor. A naive equality could false-fail on a degenerate but
+--      plausible seed (members placed symmetrically about the snap target
+--      → centroid equals anchor); the test inspects pg_get_functiondef to
+--      distinguish "pre-change regression" from "symmetry collision".
 
 DO $$
 DECLARE
@@ -101,7 +107,7 @@ BEGIN
   v_expected_lon := ST_X(ST_Transform(v_member_centroid, 4326));
   v_expected_lat := ST_Y(ST_Transform(v_member_centroid, 4326));
 
-  IF abs(v_lon - v_expected_lon) > 1e-6 OR abs(v_lat - v_expected_lat) > 1e-6 THEN
+  IF abs(v_lon - v_expected_lon) > 1e-12 OR abs(v_lat - v_expected_lat) > 1e-12 THEN
     RAISE EXCEPTION
       'Bucket position diverges from ST_Centroid(ST_Collect(centroid_3857)): bucket=(%, %), expected=(%, %)',
       v_lon, v_lat, v_expected_lon, v_expected_lat;
@@ -110,13 +116,26 @@ BEGIN
   v_anchor_lon := ST_X(ST_Transform(v_cell_anchor, 4326));
   v_anchor_lat := ST_Y(ST_Transform(v_cell_anchor, 4326));
 
-  IF abs(v_lon - v_anchor_lon) <= 1e-6 AND abs(v_lat - v_anchor_lat) <= 1e-6 THEN
-    RAISE EXCEPTION
-      'Bucket position equals the grid cell anchor — pre-change regression: bucket=(%, %), cell anchor=(%, %)',
-      v_lon, v_lat, v_anchor_lon, v_anchor_lat;
+  IF abs(v_lon - v_anchor_lon) <= 1e-12 AND abs(v_lat - v_anchor_lat) <= 1e-12 THEN
+    -- Disambiguate: is the function still projecting the grid anchor
+    -- (real regression), or did the seed produce a symmetric placement
+    -- that puts the centroid exactly on the anchor (false positive)?
+    IF position(
+      'bucket_centroid_3857' IN
+      pg_get_functiondef(
+        'api.get_playground_clusters(int,float8,float8,float8,float8)'::regprocedure
+      )
+    ) > 0 THEN
+      RAISE EXCEPTION
+        'Bucket position equals the cell anchor BUT api.get_playground_clusters projects bucket_centroid_3857 — symmetry collision in the seed (centroid landed exactly on the snap target). Use a bbox/zoom that produces a non-symmetric placement.';
+    ELSE
+      RAISE EXCEPTION
+        'Bucket position equals the grid cell anchor AND api.get_playground_clusters projects `cell` — pre-change regression: bucket=(%, %), cell anchor=(%, %)',
+        v_lon, v_lat, v_anchor_lon, v_anchor_lat;
+    END IF;
   END IF;
 
   RAISE NOTICE
-    'OK z=% bucket(% members) lon=%, lat=% — matches member centroid within 1e-6, distinct from cell anchor (%, %)',
+    'OK z=% bucket(% members) lon=%, lat=% — bit-equal to ST_Centroid(ST_Collect(...)) recompute, distinct from cell anchor (%, %)',
     v_z, v_count, v_lon, v_lat, v_anchor_lon, v_anchor_lat;
 END $$;
