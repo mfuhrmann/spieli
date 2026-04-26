@@ -30,10 +30,31 @@ CREATE MATERIALIZED VIEW public.playground_stats AS
     WHERE osm_id = -${OSM_RELATION_ID}
   ),
   all_playgrounds AS (
-    SELECT p.osm_id, p.way, p.name, p.operator, p.access, p.surface, p.tags
+    -- osm2pgsql can emit multiple rows per relation for multipolygon
+    -- playgrounds (one row per outer ring). Without dedup, the MV would
+    -- have multiple rows per osm_id and the unique index below would
+    -- fail to create. GROUP BY osm_id with ST_Union merges fragments
+    -- back into one (multi)polygon. Non-geometry columns (name,
+    -- operator, access, surface, tags) are tied to the relation, not
+    -- the fragment, so they're identical across the rows of one
+    -- multipolygon — `MAX()` for text and `(array_agg(...))[1]` for
+    -- hstore both pick a (stable) value. The hstore case can't use
+    -- MAX() because hstore lacks a < ordering operator.
+    SELECT
+      p.osm_id,
+      ST_Union(p.way)         AS way,
+      MAX(p.name)             AS name,
+      MAX(p.operator)         AS operator,
+      MAX(p.access)           AS access,
+      MAX(p.surface)          AS surface,
+      -- tags are identical across all fragments of one relation, but
+      -- order_by-area keeps the chosen value deterministic if a future
+      -- osm2pgsql change ever introduced per-fragment tag variance.
+      (array_agg(p.tags ORDER BY ST_Area(p.way) DESC))[1] AS tags
     FROM planet_osm_polygon p
     JOIN region r ON ST_Within(p.way, r.way)
     WHERE p.leisure = 'playground'
+    GROUP BY p.osm_id
   ),
   tree_counts AS (
     SELECT
@@ -945,19 +966,25 @@ AS $$
     SELECT ST_Transform(way, 4326) AS geom FROM region
   ),
   counts AS (
-    -- INNER JOIN playground_stats so the invariant
-    --   playground_count = complete + partial + missing
-    -- holds by construction. Every playground in the configured region has
-    -- a stats row because the MV is built from the same source table.
+    -- Iterate over `playground_stats` (post-#299 dedup, exactly one row per
+    -- osm_id) and use EXISTS to constrain to the requested region. The
+    -- earlier formulation joined `planet_osm_polygon` directly, which
+    -- inflated the count by the cross-product when a relation had multiple
+    -- polygon rows (multipolygon playgrounds) — `playground_count` was
+    -- 13971 vs 13847 distinct on the BaWü production deployment. EXISTS
+    -- counts each playground_stats row at most once.
     SELECT
       COUNT(*)::int                                                        AS playground_count,
       SUM(CASE WHEN ps.completeness = 'complete' THEN 1 ELSE 0 END)::int   AS complete,
       SUM(CASE WHEN ps.completeness = 'partial'  THEN 1 ELSE 0 END)::int   AS partial,
       SUM(CASE WHEN ps.completeness = 'missing'  THEN 1 ELSE 0 END)::int   AS missing
-    FROM planet_osm_polygon p
-    JOIN region r ON ST_Within(p.way, r.way)
-    JOIN public.playground_stats ps ON ps.osm_id = p.osm_id
-    WHERE p.leisure = 'playground'
+    FROM public.playground_stats ps
+    WHERE EXISTS (
+      SELECT 1 FROM planet_osm_polygon p, region r
+      WHERE p.osm_id = ps.osm_id
+        AND p.leisure = 'playground'
+        AND ST_Within(p.way, r.way)
+    )
   ),
   import_status AS (
     -- NULL when no import has run yet (table empty); callers must handle NULL.
