@@ -9,6 +9,7 @@
 
   import { createRegistry } from './registry.js';
   import { mapStore } from '../stores/map.js';
+  import { activeTierStore } from '../stores/tier.js';
 
   // Generic OSM wiki link for the contribution modal (hub is region-agnostic).
   const HUB_WIKI_URL = 'https://wiki.openstreetmap.org/wiki/Tag:leisure%3Dplayground';
@@ -51,6 +52,10 @@
   }
 
   onMount(() => {
+    // Hub mode loads all polygons directly — no tier orchestrator runs here.
+    // Keep the polygon layer visible until a proper hub orchestrator lands.
+    activeTierStore.set('polygon');
+
     let latestMap = null;
     let latestBbox = null;
     detachMap = mapStore.subscribe(m => { latestMap = m; tryFit(latestMap, latestBbox); });
