@@ -25,14 +25,26 @@
     }
     searching = true;
     try {
-      let url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&addressdetails=1&limit=5`;
+      let url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&addressdetails=1&limit=10`;
+      let viewCenterLon = null;
+      let viewCenterLat = null;
       if (regionExtent) {
         const [minLon, minLat, maxLon, maxLat] = regionExtent;
         url += `&viewbox=${minLon},${minLat},${maxLon},${maxLat}&bounded=0`;
+        viewCenterLon = (minLon + maxLon) / 2;
+        viewCenterLat = (minLat + maxLat) / 2;
       }
       const res = await fetch(url);
       if (!res.ok) throw new Error(`Nominatim error: ${res.status}`);
-      results = await res.json();
+      let hits = await res.json();
+      if (viewCenterLon !== null) {
+        hits = hits.slice().sort((a, b) => {
+          const da = (parseFloat(a.lon) - viewCenterLon) ** 2 + (parseFloat(a.lat) - viewCenterLat) ** 2;
+          const db = (parseFloat(b.lon) - viewCenterLon) ** 2 + (parseFloat(b.lat) - viewCenterLat) ** 2;
+          return da - db;
+        });
+      }
+      results = hits.slice(0, 5);
       showResults = results.length > 0;
     } catch (err) {
       console.error('Search failed:', err);
