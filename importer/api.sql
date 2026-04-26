@@ -19,9 +19,15 @@ DROP MATERIALIZED VIEW IF EXISTS public.playground_stats CASCADE;
 
 CREATE MATERIALIZED VIEW public.playground_stats AS
   WITH region AS (
-    SELECT way FROM planet_osm_polygon
+    -- osm2pgsql can emit multiple polygon rows per relation when the
+    -- relation is a multipolygon (states with exclaves / lakes / etc.) or
+    -- when member ways were clipped by a narrow PBF extract. ST_Union keeps
+    -- every fragment; LIMIT 1 picks one and silently drops the rest, which
+    -- on multipolygon relations like Baden-Württemberg (osm relation 62611,
+    -- 4 fragments) collapses the MV to a tiny subset of its true size.
+    -- Same pattern as get_playgrounds / get_meta below.
+    SELECT ST_Union(way) AS way FROM planet_osm_polygon
     WHERE osm_id = -${OSM_RELATION_ID}
-    LIMIT 1
   ),
   all_playgrounds AS (
     SELECT p.osm_id, p.way, p.name, p.operator, p.access, p.surface, p.tags
