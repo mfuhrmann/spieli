@@ -8,13 +8,13 @@
       
       
       
-        <link rel="canonical" href="https://mfuhrmann.github.io/spieli/reference/glossary/">
+        <link rel="canonical" href="https://mfuhrmann.github.io/spieli/ops/monitoring/">
       
       
-        <link rel="prev" href="../registry-json/">
+        <link rel="prev" href="../federated-deployment/">
       
       
-        <link rel="next" href="../../adr/0001-openspec-sharing-policy/">
+        <link rel="next" href="../configuration/">
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
@@ -22,7 +22,7 @@
     
     
       
-        <title>Glossary - spieli</title>
+        <title>Monitoring - spieli</title>
       
     
     
@@ -74,7 +74,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#glossary" class="md-skip">
+        <a href="#monitoring" class="md-skip">
           Skip to content
         </a>
       
@@ -108,7 +108,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Glossary
+              Monitoring
             
           </span>
         </div>
@@ -248,11 +248,13 @@
         
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../../ops/manual-deploy/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../manual-deploy/" class="md-tabs__link">
           
   
   Operations
@@ -284,13 +286,11 @@
         
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="../architecture/" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../../reference/architecture/" class="md-tabs__link">
           
   
   Reference
@@ -456,25 +456,30 @@
       
   
   
+    
   
   
+  
     
     
     
+      
+        
+        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
         
           
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
             
   
   <span class="md-ellipsis">
@@ -485,7 +490,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             Operations
@@ -499,7 +504,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ops/manual-deploy/" class="md-nav__link">
+      <a href="../manual-deploy/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -520,7 +525,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ops/federated-deployment/" class="md-nav__link">
+      <a href="../federated-deployment/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -538,10 +543,30 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../ops/monitoring/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Monitoring
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
@@ -550,6 +575,95 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#federation-statusjson" class="md-nav__link">
+    <span class="md-ellipsis">
+      /federation-status.json
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      /metrics
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#recipes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Recipes
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Recipes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#recipe-1-external-uptime-monitor" class="md-nav__link">
+    <span class="md-ellipsis">
+      Recipe 1 — External uptime monitor
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#recipe-2-byo-prometheus-grafana" class="md-nav__link">
+    <span class="md-ellipsis">
+      Recipe 2 — BYO Prometheus + Grafana
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#recipe-3-frontend-error-monitoring-sentry" class="md-nav__link">
+    <span class="md-ellipsis">
+      Recipe 3 — Frontend error monitoring (Sentry)
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      See also
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -562,7 +676,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ops/configuration/" class="md-nav__link">
+      <a href="../configuration/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -583,7 +697,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ops/troubleshooting/" class="md-nav__link">
+      <a href="../troubleshooting/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -697,30 +811,25 @@
       
   
   
-    
   
   
-  
     
     
     
-      
-        
-        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
         
           
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
             
   
   <span class="md-ellipsis">
@@ -731,7 +840,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             Reference
@@ -745,7 +854,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../architecture/" class="md-nav__link">
+      <a href="../../reference/architecture/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -766,7 +875,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../tech-stack/" class="md-nav__link">
+      <a href="../../reference/tech-stack/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -787,7 +896,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/" class="md-nav__link">
+      <a href="../../reference/api/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -808,7 +917,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../federation/" class="md-nav__link">
+      <a href="../../reference/federation/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -829,7 +938,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../registry-json/" class="md-nav__link">
+      <a href="../../reference/registry-json/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -847,30 +956,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  <span class="md-ellipsis">
-    Glossary
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../reference/glossary/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -879,71 +968,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#osm-relation-id" class="md-nav__link">
-    <span class="md-ellipsis">
-      OSM relation ID
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#pbf-file" class="md-nav__link">
-    <span class="md-ellipsis">
-      PBF file
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#osm2pgsql" class="md-nav__link">
-    <span class="md-ellipsis">
-      osm2pgsql
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#postgrest" class="md-nav__link">
-    <span class="md-ellipsis">
-      PostgREST
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#overpass-turbo" class="md-nav__link">
-    <span class="md-ellipsis">
-      Overpass Turbo
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1051,45 +1075,69 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#osm-relation-id" class="md-nav__link">
+  <a href="#federation-statusjson" class="md-nav__link">
     <span class="md-ellipsis">
-      OSM relation ID
+      /federation-status.json
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#pbf-file" class="md-nav__link">
+  <a href="#metrics" class="md-nav__link">
     <span class="md-ellipsis">
-      PBF file
+      /metrics
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#osm2pgsql" class="md-nav__link">
+  <a href="#recipes" class="md-nav__link">
     <span class="md-ellipsis">
-      osm2pgsql
+      Recipes
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Recipes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#recipe-1-external-uptime-monitor" class="md-nav__link">
+    <span class="md-ellipsis">
+      Recipe 1 — External uptime monitor
     </span>
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#postgrest" class="md-nav__link">
+        
+          <li class="md-nav__item">
+  <a href="#recipe-2-byo-prometheus-grafana" class="md-nav__link">
     <span class="md-ellipsis">
-      PostgREST
+      Recipe 2 — BYO Prometheus + Grafana
     </span>
   </a>
   
 </li>
+        
+          <li class="md-nav__item">
+  <a href="#recipe-3-frontend-error-monitoring-sentry" class="md-nav__link">
+    <span class="md-ellipsis">
+      Recipe 3 — Frontend error monitoring (Sentry)
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
       
         <li class="md-nav__item">
-  <a href="#overpass-turbo" class="md-nav__link">
+  <a href="#see-also" class="md-nav__link">
     <span class="md-ellipsis">
-      Overpass Turbo
+      See also
     </span>
   </a>
   
@@ -1110,7 +1158,7 @@
                   
 
   
-    <a href="https://github.com/mfuhrmann/spieli/edit/main/docs/reference/glossary.md" title="Edit this page" class="md-content__button md-icon">
+    <a href="https://github.com/mfuhrmann/spieli/edit/main/docs/ops/monitoring.md" title="Edit this page" class="md-content__button md-icon">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -1118,22 +1166,143 @@
   
 
 
-<h1 id="glossary">Glossary<a class="headerlink" href="#glossary" title="Permanent link">&para;</a></h1>
-<p>OSM-specific terms you'll encounter when working with this project.</p>
-<h2 id="osm-relation-id">OSM relation ID<a class="headerlink" href="#osm-relation-id" title="Permanent link">&para;</a></h2>
-<p>Every city, district, or region in OpenStreetMap has a numeric ID called a <strong>relation ID</strong>. spieli uses this ID to know which geographic area to show on the map.</p>
-<p>To find the relation ID for your region: search on <a href="https://nominatim.openstreetmap.org">Nominatim</a> or <a href="https://openstreetmap.org">openstreetmap.org</a> — it appears in the URL, e.g. <code>openstreetmap.org/relation/62700</code> → ID is <code>62700</code>.</p>
-<h2 id="pbf-file">PBF file<a class="headerlink" href="#pbf-file" title="Permanent link">&para;</a></h2>
-<p>A <strong>PBF file</strong> (Protocolbuffer Binary Format) is a compressed snapshot of OpenStreetMap data for a geographic region. Geofabrik publishes regularly-updated PBF extracts at <a href="https://download.geofabrik.de">download.geofabrik.de</a>.</p>
-<p>The importer reads a PBF file to populate the database. The file only needs to <em>contain</em> your region — a Bundesland extract works for a single Kreis within it.</p>
-<h2 id="osm2pgsql">osm2pgsql<a class="headerlink" href="#osm2pgsql" title="Permanent link">&para;</a></h2>
-<p><strong>osm2pgsql</strong> is the tool that reads a PBF file and imports the OSM data into PostgreSQL. You run it via <code>make import</code> to load data for the first time, and again whenever you want to refresh from a newer Geofabrik extract.</p>
-<p>More: <a href="https://osm2pgsql.org">osm2pgsql.org</a></p>
-<h2 id="postgrest">PostgREST<a class="headerlink" href="#postgrest" title="Permanent link">&para;</a></h2>
-<p><strong>PostgREST</strong> is a server that automatically turns a PostgreSQL database into a REST API. Instead of writing server-side code, you write SQL functions and PostgREST exposes them as HTTP endpoints. spieli's entire API layer is PostgREST — there is no custom backend application server.</p>
-<p>More: <a href="https://postgrest.org">postgrest.org</a></p>
-<h2 id="overpass-turbo">Overpass Turbo<a class="headerlink" href="#overpass-turbo" title="Permanent link">&para;</a></h2>
-<p><strong>Overpass Turbo</strong> (<a href="https://overpass-turbo.eu">overpass-turbo.eu</a>) is a web tool for running ad-hoc queries against live OpenStreetMap data. It is useful when adding support for a new device type — you can search for <code>playground=&lt;tag&gt;</code> to find real playgrounds that have the device mapped and use them for testing.</p>
+<h1 id="monitoring">Monitoring<a class="headerlink" href="#monitoring" title="Permanent link">&para;</a></h1>
+<p>The hub container exposes two endpoints for observing federation health:</p>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>Format</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/federation-status.json</code></td>
+<td>JSON</td>
+<td>Human-readable per-backend rollup</td>
+</tr>
+<tr>
+<td><code>/metrics</code></td>
+<td>Prometheus text</td>
+<td>Scrape target for Prometheus/Grafana stacks</td>
+</tr>
+</tbody>
+</table>
+<p>Both are written atomically every 60 seconds by a cron job inside the hub container. Neither endpoint requires authentication. <code>Cache-Control: no-store</code> is set on both.</p>
+<h2 id="federation-statusjson"><code>/federation-status.json</code><a class="headerlink" href="#federation-statusjson" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="p">{</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">&quot;generated_at&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-04-26T12:00:00Z&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span><span class="nt">&quot;poll_interval_seconds&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">60</span><span class="p">,</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">  </span><span class="nt">&quot;backends&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">    </span><span class="nt">&quot;fulda&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">      </span><span class="nt">&quot;url&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;https://fulda.example.com/api&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">      </span><span class="nt">&quot;up&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">      </span><span class="nt">&quot;latency_seconds&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.043</span><span class="p">,</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">      </span><span class="nt">&quot;last_success&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-04-26T12:00:00Z&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">      </span><span class="nt">&quot;last_import_at&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-04-25T03:12:00Z&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">      </span><span class="nt">&quot;data_age_seconds&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">118080</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="p">}</span>
+</code></pre></div>
+<p><strong>Fields:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>generated_at</code></td>
+<td>ISO 8601 timestamp when this file was written. Use this to detect a frozen hub (<code>generated_at</code> older than <code>2 × poll_interval_seconds</code>).</td>
+</tr>
+<tr>
+<td><code>poll_interval_seconds</code></td>
+<td>Always <code>60</code> in the current release.</td>
+</tr>
+<tr>
+<td><code>backends.&lt;slug&gt;.up</code></td>
+<td><code>true</code> if the backend responded to <code>GET /rpc/get_meta</code> within 3 s.</td>
+</tr>
+<tr>
+<td><code>backends.&lt;slug&gt;.latency_seconds</code></td>
+<td>Round-trip time of the last successful poll. <code>0</code> on failure.</td>
+</tr>
+<tr>
+<td><code>backends.&lt;slug&gt;.last_success</code></td>
+<td>ISO 8601 timestamp of the last successful probe, preserved across failures. <code>null</code> if the backend was never reachable.</td>
+</tr>
+<tr>
+<td><code>backends.&lt;slug&gt;.last_import_at</code></td>
+<td>Value of <code>api.import_status.last_import_at</code> from the backend DB. <code>null</code> if no import has run or backend is down.</td>
+</tr>
+<tr>
+<td><code>backends.&lt;slug&gt;.data_age_seconds</code></td>
+<td>Seconds since <code>last_import_at</code>. <code>null</code> if <code>last_import_at</code> is <code>null</code>.</td>
+</tr>
+</tbody>
+</table>
+<p>The hub UI reads this endpoint every 60 seconds and surfaces freshness labels in the instance drawer. It also shows a "stale observation" banner when <code>generated_at</code> is older than <code>2 × poll_interval_seconds</code> (i.e. the hub cron has stopped writing).</p>
+<h2 id="metrics"><code>/metrics</code><a class="headerlink" href="#metrics" title="Permanent link">&para;</a></h2>
+<p>Prometheus text exposition format (version 0.0.4):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a># HELP spielplatz_backend_up 1 if the backend responded to get_meta, 0 otherwise.
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a># TYPE spielplatz_backend_up gauge
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>spielplatz_backend_up{backend=&quot;fulda&quot;,url=&quot;https://fulda.example.com/api&quot;} 1
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a># HELP spielplatz_backend_latency_seconds Round-trip time for the last get_meta call.
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a># TYPE spielplatz_backend_latency_seconds gauge
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>spielplatz_backend_latency_seconds{backend=&quot;fulda&quot;,url=&quot;https://fulda.example.com/api&quot;} 0.043
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a># HELP spielplatz_backend_data_age_seconds Seconds since the backend last imported data.
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a># TYPE spielplatz_backend_data_age_seconds gauge
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>spielplatz_backend_data_age_seconds{backend=&quot;fulda&quot;,url=&quot;https://fulda.example.com/api&quot;} 118080
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a># HELP spielplatz_poll_generated_timestamp Unix timestamp when this scrape was generated.
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a># TYPE spielplatz_poll_generated_timestamp gauge
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>spielplatz_poll_generated_timestamp 1745668800
+</code></pre></div>
+<p><code>spielplatz_backend_data_age_seconds</code> is omitted for a backend when <code>last_import_at</code> is <code>null</code> (backend down or no import yet).</p>
+<h2 id="recipes">Recipes<a class="headerlink" href="#recipes" title="Permanent link">&para;</a></h2>
+<h3 id="recipe-1-external-uptime-monitor">Recipe 1 — External uptime monitor<a class="headerlink" href="#recipe-1-external-uptime-monitor" title="Permanent link">&para;</a></h3>
+<p>Point any HTTP uptime tool (UptimeRobot, Better Stack, etc.) at:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>GET https://&lt;hub-host&gt;/federation-status.json
+</code></pre></div>
+<p>Check that:</p>
+<ol>
+<li>The response is <code>200 OK</code>.</li>
+<li><code>generated_at</code> is within the last 5 minutes (guards against cron death).</li>
+<li>All expected <code>backends.&lt;slug&gt;.up</code> values are <code>true</code>.</li>
+</ol>
+<h3 id="recipe-2-byo-prometheus-grafana">Recipe 2 — BYO Prometheus + Grafana<a class="headerlink" href="#recipe-2-byo-prometheus-grafana" title="Permanent link">&para;</a></h3>
+<p>Add a scrape job to your <code>prometheus.yml</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nt">scrape_configs</span><span class="p">:</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">job_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">spieli_hub</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">    </span><span class="nt">static_configs</span><span class="p">:</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">targets</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&#39;&lt;hub-host&gt;:80&#39;</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">    </span><span class="nt">metrics_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/metrics</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">    </span><span class="nt">scrape_interval</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">60s</span>
+</code></pre></div>
+<p>Useful PromQL expressions:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># Is any backend currently down?</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="nv">spielplatz_backend_up</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="c1"># Alert if data is more than 48 hours old</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="nv">spielplatz_backend_data_age_seconds</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">172800</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="c1"># Alert if the hub poll has stopped writing (cron died)</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="kr">time</span><span class="o">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nv">spielplatz_poll_generated_timestamp</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">300</span>
+</code></pre></div>
+<h3 id="recipe-3-frontend-error-monitoring-sentry">Recipe 3 — Frontend error monitoring (Sentry)<a class="headerlink" href="#recipe-3-frontend-error-monitoring-sentry" title="Permanent link">&para;</a></h3>
+<p>The hub frontend does not ship in-repo error reporting. For production deployments, sign up for <a href="https://sentry.io/pricing/">Sentry's free tier</a> and add the Sentry browser SDK to your <code>nginx</code> serving config or <code>config.js</code> generation step. The DSN stays out of this repository.</p>
+<h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../../reference/federation/">Federation</a> — overall federation architecture, <code>registry.json</code> format.</li>
+<li><a href="../../reference/registry-json/">registry.json reference</a> — backend slug, URL, and metadata fields.</li>
+<li><a href="../../reference/api/">API reference</a> — <code>get_meta()</code> response shape including <code>last_import_at</code>.</li>
+</ul>
 
 
 

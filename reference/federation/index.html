@@ -541,6 +541,27 @@
   
   
     <li class="md-nav__item">
+      <a href="../../ops/monitoring/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Monitoring
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../ops/configuration/" class="md-nav__link">
         
   
@@ -1395,7 +1416,7 @@
 <h3 id="country-level-macro-view">Country-level macro view<a class="headerlink" href="#country-level-macro-view" title="Permanent link">&para;</a></h3>
 <p>At <code>zoom ≤ macroMaxZoom</code> the Hub renders one stacked-ring per registered backend, sized by <code>playground_count</code> and segmented by the <code>{complete, partial, missing}</code> counts the P1 <code>get_meta</code> extension ships. No per-playground fetch is issued at this zoom — the rings come entirely from the cached registry metadata.</p>
 <p>Clicking a macro ring animates <code>view.fit</code> to the backend's bbox, which lands in the cluster or polygon tier and triggers a tier fetch scoped to that backend only.</p>
-<p>Backends marked as offline (via <code>federation-status.json</code>, when <a href="https://github.com/mfuhrmann/spieli/issues/194">add-federation-health-exposition</a> ships) render as a dashed outline with their last-known count and an "offline" label, so the operator sees that the region exists but isn't currently reachable.</p>
+<p>Backends marked as offline (via <code>federation-status.json</code> — see <a href="../../ops/monitoring/">Monitoring</a>) render as a dashed outline with their last-known count and an "offline" label, so the operator sees that the region exists but isn't currently reachable.</p>
 <h3 id="architecture-flow">Architecture flow<a class="headerlink" href="#architecture-flow" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>flowchart LR
 <a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    user[User pans / zooms map] --&gt; moveend[Debounced moveend&lt;br/&gt;300 ms]
@@ -1424,6 +1445,7 @@
 <li><a href="../api/">API reference</a> — request/response shapes for the tiered playground RPCs (<code>get_playground_clusters</code>, <code>get_playgrounds_bbox</code>, <code>get_playground</code>, <code>get_meta</code>).</li>
 <li><a href="../../ops/federated-deployment/">Federated Deployment</a> — step-by-step walkthrough for standing up one Hub + N data-nodes.</li>
 <li><a href="../registry-json/"><code>registry.json</code> reference</a> — registry schema, slug rules, derived aggregate behaviours.</li>
+<li><a href="../../ops/monitoring/">Monitoring</a> — <code>/federation-status.json</code> and <code>/metrics</code> exposition, uptime and Prometheus recipes.</li>
 </ul>
 
 

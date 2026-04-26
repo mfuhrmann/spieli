@@ -541,6 +541,27 @@
   
   
     <li class="md-nav__item">
+      <a href="../../ops/monitoring/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Monitoring
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../ops/configuration/" class="md-nav__link">
         
   
@@ -1338,7 +1359,29 @@
 <a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="p">}</span>
 </code></pre></div>
 <p><strong>Invariant</strong>: <code>playground_count = complete + partial + missing</code> (<code>get_meta</code> does <em>not</em> split out access-restricted; they're rolled into the completeness counts here, unlike <code>get_playground_clusters</code>). Hub uses the three counts to render a country-level macro view — see <code>add-federated-playground-clustering</code>.</p>
-<p>A <code>data_version</code> cache-bust timestamp was originally scoped here but moved to <code>add-federation-health-exposition</code> (which introduces <code>api.import_status(last_import_at, ...)</code> as the better-scoped home).</p>
+<p>Two additional fields are included to expose import freshness:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>last_import_at</code></td>
+<td><code>timestamptz</code> | <code>null</code></td>
+<td>Timestamp of the last successful <code>import.sh</code> run. <code>null</code> before any import has run (first deploy).</td>
+</tr>
+<tr>
+<td><code>data_age_seconds</code></td>
+<td><code>int</code> | <code>null</code></td>
+<td><code>EXTRACT(EPOCH FROM (now() - last_import_at))::int</code>. <code>null</code> when <code>last_import_at</code> is <code>null</code>.</td>
+</tr>
+</tbody>
+</table>
+<p>The hub reads these fields via <code>/federation-status.json</code> (written by the hub container's 60-second cron poll) — see <a href="../../ops/monitoring/">Monitoring</a> for the full exposition format.</p>
 <h2 id="deprecated-get_playgroundsrelation_id">Deprecated: <code>get_playgrounds(relation_id)</code><a class="headerlink" href="#deprecated-get_playgroundsrelation_id" title="Permanent link">&para;</a></h2>
 <p>The pre-tiered region-scoped RPC stays available for one release for compatibility with Playwright fixtures and external consumers. Marked DEPRECATED via SQL <code>COMMENT</code>; the client <code>fetchPlaygrounds</code> logs a one-time console warning. It will be removed in the release after next.</p>
 <p>Migration: replace any caller with <code>fetchPlaygroundsBbox(extent, baseUrl)</code> driven by viewport extent.</p>
