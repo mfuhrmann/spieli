@@ -41,6 +41,7 @@ import { activeTierStore } from '../stores/tier.js';
 import { hubLoadingStore } from '../stores/hubLoading.js';
 import { selectBackends } from './bboxRouter.js';
 import { filterHealthy } from './federationHealth.js';
+import { applyDedup } from './osmIdDedup.js';
 import { fanOut } from './fanOut.js';
 import { debounce } from '../lib/utils.js';
 
@@ -159,6 +160,11 @@ export function attachHubOrchestrator({
     // arrival re-runs the Supercluster pipeline and clears+adds the full
     // re-rendered set, so a separate latch would be dead.
     let polygonFirstArrival = true;
+    // Per-orchestrate-call dedup index: osm_id (string) → winning OL Feature.
+    // Created fresh per orchestrate() call so winners from the previous
+    // moveend don't influence the new fan-out — no explicit .clear() needed
+    // on first arrival because the const above is already the empty Map.
+    const polyByOsmId = new Map();
 
     if (tier === 'cluster') {
       const z = Math.floor(zoom);
@@ -247,11 +253,15 @@ export function attachHubOrchestrator({
           if (polygonFirstArrival) {
             polygonFirstArrival = false;
             polygonSource.clear();
+            // polyByOsmId is already empty (declared `new Map()` per orchestrate()
+            // call) — no .clear() needed.
           }
           if (entry.ok) {
             const backend = backendByUrl.get(entry.backendUrl);
             const features = parsePolygonFeatures(entry.value, entry.backendUrl, backend);
-            polygonSource.addFeatures(features);
+            const { toAdd, toRemove } = applyDedup(features, polyByOsmId);
+            polygonSource.removeFeatures(toRemove);
+            polygonSource.addFeatures(toAdd);
           } else if (isNotFound(entry.error)) {
             markBackendLegacy(entry.backendUrl);
           }
@@ -384,6 +394,7 @@ function parsePolygonFeatures(geojson, backendUrl, backend) {
   });
   features.forEach(f => {
     f.set('_backendUrl', backendUrl);
+    f.set('_lastImportAt', backend?.lastImportAt ?? null);
     if (backend?.slug) f.set('_backendSlug', backend.slug);
   });
   return features;

@@ -104,6 +104,11 @@ export function createRegistry() {
           patch.completeness = hasCompleteness
             ? { complete: meta.complete, partial: meta.partial, missing: meta.missing }
             : null;
+          // ISO timestamp of the backend's last successful import. Null on
+          // pre-#301 backends that don't yet ship api.import_status. Used by
+          // the polygon-tier dedup to pick the fresher copy when two backends
+          // return the same osm_id.
+          patch.lastImportAt = meta.last_import_at ?? null;
           if (!backend.name && patch.region) patch.name = patch.region;
         }
 
@@ -134,6 +139,7 @@ export function createRegistry() {
           bbox:            null,
           playgroundCount: 0,
           completeness:    null, // populated after get_meta lands; see status-shape JSDoc
+          lastImportAt:    null, // from get_meta.last_import_at (#301); used by polygon dedup
         }));
         notify();
 
