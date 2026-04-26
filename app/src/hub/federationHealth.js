@@ -5,12 +5,27 @@
 // The two exported functions preserve the signatures that hubOrchestrator.js
 // already depends on — no call-site changes required.
 
-const POLL_INTERVAL_MS = 60_000;
-// Show "stale observation" banner when generated_at is older than this.
-const STALE_THRESHOLD_SECONDS = 120;
+import { hubPollInterval } from '../lib/config.js';
 
-let _applyStatus = null;
-let _pollTimer   = null;
+// Browser-side cadence: re-fetch the federation-status snapshot at the
+// same cadence as the registry poll (default 300 s). Design D5 forbids
+// coupling UX freshness to ops freshness — the server-side cron runs at
+// its own 60 s cadence; the browser reads at the slower registry cadence
+// and the cached `generated_at` keeps aging in real time so the
+// staleness banner still surfaces within a single poll window.
+const POLL_INTERVAL_MS = hubPollInterval * 1000;
+// Show "stale observation" banner when generated_at is older than this
+// (kept as a multiplier of `data.poll_interval_seconds` from the JSON
+// payload so the threshold tracks the server's own configured cadence).
+const STALE_THRESHOLD_MULTIPLIER = 2;
+
+let _applyStatus       = null;
+let _pollTimer         = null;
+// One-time `console.warn` per session for absent/unparseable
+// federation-status.json — task 3.6 of `add-federation-health-exposition`
+// requires the warn-once + fail-open path so a deploy without FHE is
+// observable in devtools without flooding the console on every poll.
+let _absentWarned      = false;
 
 /**
  * Starts polling /federation-status.json and applies each update to the
@@ -44,14 +59,27 @@ async function _fetchAndApply() {
         const generatedAt = data.generated_at ? new Date(data.generated_at) : null;
         const pollInterval = data.poll_interval_seconds ?? 60;
         const observationStale = generatedAt
-          ? (Date.now() - generatedAt.getTime()) / 1000 > pollInterval * 2
+          ? (Date.now() - generatedAt.getTime()) / 1000 > pollInterval * STALE_THRESHOLD_MULTIPLIER
           : true;
         _applyStatus(data.backends, observationStale);
       }
+    } else if (!_absentWarned) {
+      _absentWarned = true;
+      console.warn(
+        `[federation-health] /federation-status.json returned ${res.status}; ` +
+        `degrading to per-session health (all backends optimistic).`
+      );
     }
-  } catch {
+  } catch (err) {
     // Network error — federation-status.json absent or unreachable.
     // Fail open: all backends remain as-is (no patch applied), health unknown.
+    if (!_absentWarned) {
+      _absentWarned = true;
+      console.warn(
+        `[federation-health] /federation-status.json unreachable (${err.message}); ` +
+        `degrading to per-session health (all backends optimistic).`
+      );
+    }
   }
 
   _pollTimer = setTimeout(_fetchAndApply, POLL_INTERVAL_MS);
