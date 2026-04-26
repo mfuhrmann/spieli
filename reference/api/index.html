@@ -1230,7 +1230,7 @@
 <a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="p">]</span>
 </code></pre></div>
 <p><strong>Invariant</strong>: <code>count = complete + partial + missing + restricted</code> for every bucket. The three completeness counts include only public playgrounds; access-restricted playgrounds are pulled out into <code>restricted</code> so the client can render them as a hatched gray segment.</p>
-<p><strong>Bucket centre</strong>: emitted at the snapped grid corner (lon/lat). The client's stacked-ring renderer draws there directly; visual artefacts at cell boundaries are sub-perceptual at the cluster tier's zoom range.</p>
+<p><strong>Bucket centre</strong>: emitted <code>lon</code> / <code>lat</code> is the <strong>unweighted spatial mean of the bucket's member centroids</strong> (<code>ST_Centroid(ST_Collect(centroid_3857))</code>, reprojected to WGS84) — not the grid anchor. The grid still defines <em>which</em> playgrounds share a bucket (the grouping key), but the dot is drawn at the geographic mean of those members so it tracks settlements rather than a lattice. Output is deterministic for a given <code>(z, bbox)</code> and dataset: identical inputs produce identical positions. See <a href="../architecture/#tiered-playground-delivery">Architecture — Tiered playground delivery</a> for the grouping-vs-position split.</p>
 <p><strong>Example</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>curl<span class="w"> </span><span class="s1">&#39;https://example.com/api/rpc/get_playground_clusters?z=12&amp;min_lon=9&amp;min_lat=50&amp;max_lon=10&amp;max_lat=51&#39;</span>
 </code></pre></div>

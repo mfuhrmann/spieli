@@ -821,6 +821,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#tiered-playground-delivery" class="md-nav__link">
+    <span class="md-ellipsis">
+      Tiered playground delivery
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#see-also" class="md-nav__link">
     <span class="md-ellipsis">
       See also
@@ -1105,6 +1114,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#tiered-playground-delivery" class="md-nav__link">
+    <span class="md-ellipsis">
+      Tiered playground delivery
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#see-also" class="md-nav__link">
     <span class="md-ellipsis">
       See also
@@ -1236,6 +1254,10 @@
 </tbody>
 </table>
 <p>For the federated Hub topology (<code>DEPLOY_MODE=ui</code> + <code>APP_MODE=hub</code>), see <a href="../../ops/federated-deployment/">Federated Deployment</a>.</p>
+<h2 id="tiered-playground-delivery">Tiered playground delivery<a class="headerlink" href="#tiered-playground-delivery" title="Permanent link">&para;</a></h2>
+<p>The standalone client switches between two zoom-scoped layers at <code>clusterMaxZoom</code> (default 13). Below the boundary it calls <code>get_playground_clusters(z, bbox)</code> for pre-aggregated count buckets; above it, <code>get_playgrounds_bbox(bbox)</code> for full polygons. The cluster RPC keeps two concerns deliberately separate: <strong>grouping</strong> is grid-based — each playground centroid is snapped to a zoom-dependent cell that decides which features share a bucket — while <strong>position</strong> is the unweighted spatial mean of the bucket's member centroids, so the rendered dot tracks the geography of its members rather than the lattice.</p>
+<p>In hub mode (see <a href="../federation/">Federation</a>) the per-backend buckets are reduced client-side by Supercluster, which builds a kd-tree on the points' <code>(lon, lat)</code> and merges within a zoom-dependent radius — the merge target is <strong>proximity</strong>, not the grouping cell. Pre-2026, two backends contributing to the same cell shipped identical grid-anchor coordinates and Supercluster collapsed them trivially. With member-centroid positioning, two backends contributing to the same cell ship near-but-distinct points; whether they collapse depends on Supercluster's radius at the active zoom. The known interim consequence is that toggling a backend can shift the dot for a shared cell between the two backends' centroids — a residual jitter the user sees as movement, not as wrong data, since both positions sit inside the cluster's footprint. A follow-up to compute count-weighted means across backends in the hub merger is tracked but out of scope for the position-clusters change.</p>
+<p>See <a href="../api/#get_playground_clustersz-bbox">API reference — <code>get_playground_clusters</code></a> for the response shape.</p>
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="../api/">API reference</a> — request/response shapes for the tiered playground RPCs that drive the standalone map.</li>

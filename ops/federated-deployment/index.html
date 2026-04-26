@@ -1299,6 +1299,7 @@
 <li>One OSM relation ID and one Geofabrik PBF URL per data-node (<a href="../manual-deploy/#step-1-find-your-regions-osm-relation-id">how to find them</a>).</li>
 <li>HTTPS-terminating reverse proxy in front of each data-node in production — the browser must be able to fetch the data-node's <code>/api/</code> over HTTPS when the Hub itself is served over HTTPS.</li>
 <li>When co-locating nodes on one host, give each its own <code>APP_PORT</code> (e.g. <code>8080</code>, <code>8081</code>, <code>8082</code>) and its own <code>COMPOSE_PROJECT_NAME</code> (e.g. <code>spieli-fulda</code>, <code>spieli-neuhof</code>, <code>spieli-hub</code>) so port bindings and Docker resource names don't collide.</li>
+<li><strong>Data-node version</strong>: each data-node must run a release that ships the tiered playground API (<code>get_playground_clusters</code>, <code>get_playgrounds_bbox</code>, <code>get_playground</code>) and the completeness fields on <code>get_meta</code> (<code>complete</code>, <code>partial</code>, <code>missing</code>). These landed in the same release that introduced this walkthrough; an older data-node still joins successfully but degrades to a legacy fallback path — see the <a href="../../reference/federation/#federation-endpoints">federation reference's Federation endpoints table</a> for the degradation matrix. If you can, upgrade every data-node before pointing a current Hub at it.</li>
 </ul>
 <h2 id="step-1-stand-up-each-data-node">Step 1 — Stand up each data-node<a class="headerlink" href="#step-1-stand-up-each-data-node" title="Permanent link">&para;</a></h2>
 <p>Repeat on every data-node host. For this walkthrough the two backends are "Fulda" and "Neuhof".</p>
@@ -1409,7 +1410,9 @@
 <li>You should see the map render, fit to the union of all configured regions, with the instance pill in the bottom-left showing the aggregated region + playground counts (localized German: e.g. <code>2 Regionen · &lt;count&gt; Spielplätze</code> with a globe icon).</li>
 <li>Open DevTools → Network and reload. You should see:</li>
 <li>One <code>GET /registry.json</code> from the Hub's origin.</li>
-<li>One <code>GET /rpc/get_meta</code> and one <code>GET /rpc/get_playgrounds</code> per data-node, cross-origin, returning 200.</li>
+<li>One <code>GET /rpc/get_meta</code> per data-node, cross-origin, returning 200 with <code>playground_count</code> + <code>bbox</code> + completeness fields.</li>
+<li>On the first moveend, either <code>GET /rpc/get_playground_clusters?...</code> (cluster tier, zoom ≤ 13) or <code>GET /rpc/get_playgrounds_bbox?...</code> (polygon tier, zoom ≥ 14) per data-node whose bbox intersects the viewport. A data-node whose bbox sits entirely outside the viewport receives no request — that's the bbox router (see the federation reference's <a href="../../reference/federation/#scale-and-clustering">Scale and clustering</a> section) doing its job, not a bug.</li>
+<li>At zoom ≤ 5 (continental view) you should see no per-playground requests at all — the country-level macro view renders entirely from the cached <code>get_meta</code> response. One ring per data-node.</li>
 <li>Click the instance pill — the drawer lists both backends with their playground count. (A version badge renders only when a backend's <code>get_meta</code> exposes a <code>version</code> field, which the SQL function doesn't today, so the badge slot stays empty in current releases.)</li>
 <li>Click a playground in each region — the selection panel opens with that region's data.</li>
 </ol>
