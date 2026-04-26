@@ -103,15 +103,10 @@ test.describe('osmIdDedup unit — dedupWinner', () => {
     expect(result).toBe('a');
   });
 
-  test('existing parseable + incoming year-only (V8 accepts but spec rejects) → existing', async ({ page }) => {
-    const result = await page.evaluate((mockSrc) => {
-      const f = new Function('return ' + mockSrc)();
-      const a = f({ _lastImportAt: '2025-04-25T03:00:00Z', _backendUrl: '/api-a' });
-      const b = f({ _lastImportAt: '2026',                 _backendUrl: '/api-b' });
-      return window.__spieli.osmIdDedup.dedupWinner(a, b) === a ? 'a' : 'b';
-    }, MOCK_FEATURE);
-    expect(result).toBe('a');
-  });
+  // Note: per spec D2, `parseable(v) ≡ v != null && Number.isFinite(Date.parse(v))`.
+  // V8's `Date.parse('2026')` returns a finite number (Jan 1 2026 UTC) so a
+  // year-only string IS parseable per spec — not a reject case. Kept as a
+  // comment so future readers don't accidentally re-add a regex shape gate.
 
   test('existing null + incoming parseable → incoming', async ({ page }) => {
     const result = await page.evaluate((mockSrc) => {

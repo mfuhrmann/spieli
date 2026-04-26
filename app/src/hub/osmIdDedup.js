@@ -11,36 +11,45 @@
 //   2. Exactly one is parseable → the parseable one wins.
 //   3. Otherwise (both unparseable, or equal-numeric — e.g. same instant
 //      emitted in different ISO TZ formats) → URL alphabetical:
-//        - prefer the side with a non-empty `_backendUrl` over one missing it
-//        - identity collision (same `_backendUrl`) → existing wins (first-write)
+//        - prefer the side with a non-empty `_backendUrl` over one missing
+//          it (defensive — post-fan-out features are always stamped, but
+//          this guards against any future code path that injects features
+//          via a different code path)
+//        - identity collision (same `_backendUrl`) → existing wins
+//          (first-write — sanctioned by spec task 2.1)
 //        - else raw JS `<` compare on the unmodified URL string (no
 //          case-folding, no scheme/trailing-slash normalisation)
 //
-// "Parseable" means the value is a string matching the ISO-8601 date+time
-// shape (`YYYY-MM-DDTHH:MM…`) AND `Date.parse()` returns a finite number.
-// The shape regex rejects engine-dependent partial inputs like `"2026"` or
-// `"2026-01"` that V8's `Date.parse` happens to accept as Jan 1 of that
-// year — those are not values any well-behaved Postgres `timestamptz`
-// would emit, and accepting them risks letting a malformed timestamp
-// silently win against a valid one from a more recent date.
+// "Parseable" matches the spec's `parseable(v) ≡ v != null &&
+// Number.isFinite(Date.parse(v))` predicate exactly — no shape gate.
+// PostgreSQL `timestamptz` serialised through PostgREST always emits an
+// ISO-8601 date+time, but partial forms like `"2026"` or `"2026-04-25"`
+// (date-only) are accepted by V8's `Date.parse` and would also be treated
+// as parseable here; we trust the upstream wire format rather than gating
+// on a regex that disagrees with valid Postgres outputs (e.g. the
+// space-separated form `"2026-04-25 12:00:00+00"` that some
+// PostgREST configurations emit).
 //
 // Features without an `osm_id` property (shouldn't happen in practice) are
 // always added — no dedup attempted.
 
-const ISO_DATETIME_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/;
-
-function isParseableTimestamp(v) {
-  return typeof v === 'string'
-    && ISO_DATETIME_RE.test(v)
-    && Number.isFinite(Date.parse(v));
+/**
+ * Test whether a `_lastImportAt` value is parseable into a valid Date.
+ * Returns `{ ok, ms }` where `ms` is the parsed numeric (avoids re-parsing
+ * in `dedupWinner`).
+ */
+function parseTimestamp(v) {
+  if (v == null) return { ok: false, ms: NaN };
+  const ms = Date.parse(v);
+  return { ok: Number.isFinite(ms), ms };
 }
 
 function urlAlphaWinner(a, b) {
   const aUrl = a.get('_backendUrl') ?? '';
   const bUrl = b.get('_backendUrl') ?? '';
   // When one side has no _backendUrl (shouldn't happen post-fan-out, but
-  // could during a transient state), prefer the side with a real URL —
-  // never let an unstamped feature beat a stamped one.
+  // defensive against any future injection path), prefer the side with a
+  // real URL — never let an unstamped feature beat a stamped one.
   if (aUrl !== '' && bUrl === '') return a;
   if (aUrl === '' && bUrl !== '') return b;
   // Identity collision: same backend serving the same osm_id twice in one
@@ -59,24 +68,19 @@ function urlAlphaWinner(a, b) {
  * @returns {import('ol/Feature.js').default}
  */
 export function dedupWinner(a, b) {
-  const ta = a.get('_lastImportAt'); // ISO string | null | undefined
-  const tb = b.get('_lastImportAt');
-
-  const pa = isParseableTimestamp(ta);
-  const pb = isParseableTimestamp(tb);
+  const ta = parseTimestamp(a.get('_lastImportAt'));
+  const tb = parseTimestamp(b.get('_lastImportAt'));
 
   // Step 1: both parseable, strictly different → newer wins.
-  if (pa && pb) {
-    const da = Date.parse(ta);
-    const db = Date.parse(tb);
-    if (db > da) return b;
-    if (da > db) return a;
+  if (ta.ok && tb.ok) {
+    if (tb.ms > ta.ms) return b;
+    if (ta.ms > tb.ms) return a;
     // equal-numeric (e.g. same instant in different TZ formats) → step 3
     return urlAlphaWinner(a, b);
   }
   // Step 2: exactly one parseable → it wins.
-  if (pa) return a;
-  if (pb) return b;
+  if (ta.ok) return a;
+  if (tb.ok) return b;
   // Step 3: both unparseable → URL alphabetical.
   return urlAlphaWinner(a, b);
 }
