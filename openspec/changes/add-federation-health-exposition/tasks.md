@@ -82,3 +82,35 @@ Three review layers ran over the codebase-sync diff. Edge Case Hunter verified m
 - Blind Hunter "packaging chain (busybox-suid + crond + /etc/crontabs/root) unverified" — verified: `nginx:alpine` ships busybox userland *without* crond; `busybox-suid` is the canonical Alpine package providing `crond`; `/etc/crontabs/root` is the busybox cron path; `crond -b -L /dev/stderr` matches busybox crond's flag set.
 - Blind Hunter "entrypoint filename correction unverified" — verified: file is `oci/app/docker-entrypoint.sh`, line 48 is `exec nginx -g 'daemon off;'`.
 - Blind Hunter "`postgrest2` invented" — verified earlier in conversation: `docker compose ps` shows `spielplatzkarte-postgrest2-1` and `spielplatzkarte-db2-1` in the bundled compose stack, and `compose.yml` is unchanged by this PR.
+
+### Review Findings — Pass 2 (bmad-code-review of PR #301, 2026-04-26)
+
+Re-review of the implementation diff (PR #301, post-rebase against `main`). Three review layers ran. Convergent finding across all layers: **the feature is silently non-functional on the canonical registry shape** — `poll-federation.sh` reads `.backends[]` but the registry uses `.instances[]`. Combined with three more critical defects, the cron loop never produces useful output for any backend. Playwright tests don't catch this because they stub `/federation-status.json` directly and never exercise the shell script.
+
+#### Critical
+- [x] [Review][Patch] `poll-federation.sh:42-43` reads `.backends[]` from `registry.json`, but the canonical schema (and `registry.js:131`) uses `.instances[]` (or a bare top-level array). `jq -r '.backends[] | …'` produces zero rows for every real registry, the `while read` loop never executes, and `/federation-status.json` is permanently `{"backends":{}}`. Fixed by reading `(.instances // .)[] | …`.
+- [x] [Review][Patch] `poll-federation.sh:67-68` indexes `.[0].last_import_at` against the PostgREST `get_meta` response, which is a JSON object (verified by `app/src/lib/api.js:fetchMeta` reading `meta.bbox` directly). `.[0]` errors and `// empty` swallows the result. Fixed by dropping `.[0]`.
+- [x] [Review][Patch] `poll-federation.sh:89` interpolates `${LAST_IMPORT_AT}` (a bare ISO string) unquoted into the output JSON, producing invalid `"last_import_at":2026-04-25T03:00:00Z,`. Fixed by quoting via `jq -Rs .` and emitting the resulting JSON literal.
+- [x] [Review][Patch] `app/src/hub/federationHealth.js:9` hard-codes `POLL_INTERVAL_MS = 60_000`, violating spec D5 (UX freshness must stay decoupled from ops freshness — UI poll runs at `hubPollInterval`, default 300 s) and task 3.1. Fixed by importing `hubPollInterval` from config and using `hubPollInterval * 1000`.
+
+#### High
+- [x] [Review][Patch] Relative URLs in `registry.json` (e.g. `"/api"`) break `curl ${URL}/rpc/get_meta`. Fixed by resolving relative paths against `http://localhost` inside the script.
+- [x] [Review][Patch] `import.sh` lacks `set -o pipefail` and `psql -v ON_ERROR_STOP=1`. A partial schema apply (envsubst error, individual SQL statement failure) succeeds with exit 0 and the subsequent `api.import_status` UPSERT runs — directly violating the `scheduled-importer` spec scenario "Failed run does not update timestamp". Fixed both at the top of the script and at the api.sql apply call.
+- [x] [Review][Patch] `crond` only starts when `APP_MODE=hub`, so standalone deployments serve forever-stale placeholder `/metrics` and `/federation-status.json`. Fixed by writing a valid `spielplatz_poll_generated_timestamp` gauge in the placeholder so the standard "cron died" alert (`time() - spielplatz_poll_generated_timestamp > N`) fires correctly during the boot window AND when polling is disabled (standalone mode is a "polling not configured" sentinel).
+- [x] [Review][Patch] URL/SLUG injection into JSON without escaping. Fixed by passing both through `jq -Rs .` before interpolation.
+- [x] [Review][Patch] `LATENCY` (curl's `%{time_total}`) honours `LC_NUMERIC` — a non-`C` locale produces `0,043` (comma) which breaks both JSON and Prometheus parsers. Fixed by `LC_ALL=C; export LC_ALL` at the top of `poll-federation.sh`.
+- [x] [Review][Patch] No mutual exclusion on cron runs — a hung backend lasting >60 s causes concurrent `mv` calls on `status.json` + `metrics`, producing inconsistent snapshots. Fixed by `flock -n 9 || exit 0` at the top of the script.
+- [x] [Review][Patch] `mktemp -d` defaults to `/tmp` (tmpfs), so `mv` to `/usr/share/nginx/html/` is cross-filesystem and not atomic. Defeats the "atomic rename" comment. Fixed by `mktemp -d -p "$WEBROOT" .poll.XXXXXX`.
+- [x] [Review][Patch] `federationHealth.js` swallows fetch errors silently. Task 3.6 explicitly requires "a single `console.warn(...)` fires per session" on absent-file fallback. Fixed by adding a `_absentWarned` latch and console.warn on first 404 / network error.
+
+#### Medium
+- [ ] [Review][Patch] i18n keys added only to `de.json` / `en.json` — 10 locales fall back to English. Either add the keys (placeholder English values) to all 12 locales, or wire a tooling step that surfaces missing translations. Deferred to a docs-and-locales sweep PR.
+- [ ] [Review][Patch] Stale-banner uses `Date.now()` vs server `generated_at` with no clock-skew tolerance — a browser clock 2 minutes off shows "observation stale" on a healthy hub. Mitigation: trust an HTTP `Date` header, or compute relative to client fetch time. Deferred (low real-world impact; clock skew >120 s is rare).
+- [ ] [Review][Patch] `crond -b` daemon detached from PID 1 — SIGTERM to nginx doesn't propagate to crond. Mitigation: `tini` / `dumb-init` shim, or background-trap-forward in entrypoint. Deferred (polling resumes on container restart; orphan cron during graceful shutdown is cosmetic).
+- [ ] [Review][Patch] Slug fallback regex in poll script (`gsub("[^a-z0-9]"; "_")`) desyncs with `registry.js:normaliseSlug`. Practical impact: backends without explicit slugs render with mismatched keys between `/federation-status.json` and the frontend store. Defer until either side gets a real spec for slug derivation.
+- [ ] [Review][Patch] Playwright tests stub `/federation-status.json` directly and race the first poll application — pass intermittently. Mitigation: `await expect.poll(...)` on the drawer's freshness label. Deferred to a test-hardening sweep.
+
+#### Verified clean (no patch needed)
+- D1 (cron + flat JSON), D2 (exporter pattern), D3 (`CHECK (id = 1)` singleton), D4 (Prometheus `# HELP`/`# TYPE` present), D6 (`generated_at` mandatory), D8 (built on existing `federationHealth.js` stub) — all preserved.
+- Out-of-scope items (selection store, etc.) respected.
+- Singleton schema constraint correctly enforced.
