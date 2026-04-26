@@ -373,6 +373,7 @@
     "drawerTitle": "Available instances",
     "closeBtn": "Close",
     "dataAge": "data: {age} old",
+    "osmDataAge": "OSM data: {age} old",
     "dataAgeMinutes": "{m} min",
     "dataAgeHours": "{h} hr",
     "dataAgeDays": "{d} days",

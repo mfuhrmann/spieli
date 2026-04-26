@@ -373,6 +373,7 @@
     "drawerTitle": "Verfügbare Instanzen",
     "closeBtn": "Schließen",
     "dataAge": "Daten: {age} alt",
+    "osmDataAge": "OSM-Datenstand: {age} alt",
     "dataAgeMinutes": "{m} min",
     "dataAgeHours": "{h} Std.",
     "dataAgeDays": "{d} Tage",

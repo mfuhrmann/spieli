@@ -89,22 +89,30 @@ while IFS="	" read -r SLUG URL; do
 
     LAST_IMPORT_AT_JSON="null"
     DATA_AGE_SECONDS="null"
+    OSM_DATA_TIMESTAMP_JSON="null"
+    OSM_DATA_AGE_SECONDS="null"
     if [ "$UP" = "1" ] && [ -f "$META_TMP" ]; then
         RAW=$(cat "$META_TMP")
         # api.get_meta returns a JSON object directly (PostgREST scalar-RPC),
         # not a single-element array. Read fields without `.[0]` indexing.
-        # `last_import_at` is an ISO string and MUST be re-quoted on the way
-        # into our concatenated JSON; bare ISO strings interpolate as
-        # invalid JSON (`"last_import_at":2026-04-25T03:00:00Z` — unquoted).
+        # ISO-string fields MUST be re-quoted on the way into our
+        # concatenated JSON; bare ISO strings interpolate as invalid JSON
+        # (`"last_import_at":2026-04-25T03:00:00Z` — unquoted).
         LAST_IMPORT_AT=$(printf '%s' "$RAW" | jq -r '.last_import_at // empty' 2>/dev/null)
         DATA_AGE_SECONDS_RAW=$(printf '%s' "$RAW" | jq -r '.data_age_seconds // empty' 2>/dev/null)
+        OSM_DATA_TS=$(printf '%s' "$RAW" | jq -r '.osm_data_timestamp // empty' 2>/dev/null)
+        OSM_DATA_AGE_RAW=$(printf '%s' "$RAW" | jq -r '.osm_data_age_seconds // empty' 2>/dev/null)
         if [ -n "$LAST_IMPORT_AT" ]; then
-            # Quote-escape via jq so a maliciously-crafted timestamp can't break
-            # the surrounding JSON. (Operator-controlled, but cheap defence.)
             LAST_IMPORT_AT_JSON=$(printf '%s' "$LAST_IMPORT_AT" | jq -Rs .)
         fi
         if [ -n "$DATA_AGE_SECONDS_RAW" ]; then
             DATA_AGE_SECONDS="$DATA_AGE_SECONDS_RAW"
+        fi
+        if [ -n "$OSM_DATA_TS" ]; then
+            OSM_DATA_TIMESTAMP_JSON=$(printf '%s' "$OSM_DATA_TS" | jq -Rs .)
+        fi
+        if [ -n "$OSM_DATA_AGE_RAW" ]; then
+            OSM_DATA_AGE_SECONDS="$OSM_DATA_AGE_RAW"
         fi
     fi
 
@@ -130,7 +138,9 @@ while IFS="	" read -r SLUG URL; do
     BACKENDS_JSON="${BACKENDS_JSON}\"latency_seconds\":${LATENCY},"
     BACKENDS_JSON="${BACKENDS_JSON}\"last_success\":${LAST_SUCCESS_JSON},"
     BACKENDS_JSON="${BACKENDS_JSON}\"last_import_at\":${LAST_IMPORT_AT_JSON},"
-    BACKENDS_JSON="${BACKENDS_JSON}\"data_age_seconds\":${DATA_AGE_SECONDS}"
+    BACKENDS_JSON="${BACKENDS_JSON}\"data_age_seconds\":${DATA_AGE_SECONDS},"
+    BACKENDS_JSON="${BACKENDS_JSON}\"osm_data_timestamp\":${OSM_DATA_TIMESTAMP_JSON},"
+    BACKENDS_JSON="${BACKENDS_JSON}\"osm_data_age_seconds\":${OSM_DATA_AGE_SECONDS}"
     BACKENDS_JSON="${BACKENDS_JSON}}"
 
     # Append Prometheus metrics. Prometheus disallows `"` and `\` inside
@@ -144,6 +154,9 @@ while IFS="	" read -r SLUG URL; do
             METRICS_LINES="${METRICS_LINES}spielplatz_backend_latency_seconds{${LABEL}} ${LATENCY}\n"
             if [ "$DATA_AGE_SECONDS" != "null" ] && [ -n "$DATA_AGE_SECONDS" ]; then
                 METRICS_LINES="${METRICS_LINES}spielplatz_backend_data_age_seconds{${LABEL}} ${DATA_AGE_SECONDS}\n"
+            fi
+            if [ "$OSM_DATA_AGE_SECONDS" != "null" ] && [ -n "$OSM_DATA_AGE_SECONDS" ]; then
+                METRICS_LINES="${METRICS_LINES}spielplatz_backend_osm_data_age_seconds{${LABEL}} ${OSM_DATA_AGE_SECONDS}\n"
             fi
             ;;
     esac
@@ -161,6 +174,8 @@ printf '{"generated_at":"%s","poll_interval_seconds":%d,"backends":{%s}}\n' \
     printf '# TYPE spielplatz_backend_latency_seconds gauge\n'
     printf '# HELP spielplatz_backend_data_age_seconds Seconds since the backend last imported data.\n'
     printf '# TYPE spielplatz_backend_data_age_seconds gauge\n'
+    printf '# HELP spielplatz_backend_osm_data_age_seconds Seconds since the OSM source data the backend serves was snapshotted (PBF replication timestamp).\n'
+    printf '# TYPE spielplatz_backend_osm_data_age_seconds gauge\n'
     printf '# HELP spielplatz_poll_generated_timestamp Unix timestamp when this scrape was generated.\n'
     printf '# TYPE spielplatz_poll_generated_timestamp gauge\n'
     printf '%b' "$METRICS_LINES"

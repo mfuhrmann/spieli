@@ -1,20 +1,32 @@
 ## ADDED Requirements
 
-### Requirement: Backend exposes last-import timestamp
+### Requirement: Backend exposes last-import timestamp and OSM data age
 
-Each data-node SHALL expose the timestamp of its most recent successful import via `api.get_meta`, so the hub (and any external client) can observe data freshness per backend.
+Each data-node SHALL expose two timestamps via `api.get_meta`:
 
-#### Scenario: `get_meta` includes `last_import_at` after an import
+- `last_import_at` (with derived `data_age_seconds`) — the moment our importer last successfully ran. This is the **operator-facing** signal: "is the cron healthy?"
+- `osm_data_timestamp` (with derived `osm_data_age_seconds`) — the `osmosis_replication_timestamp` from the source PBF header, i.e. when OSM last produced the data this backend serves. This is the **user-facing** signal: "how old is the data I'm looking at?"
 
-- **WHEN** a client calls `/api/rpc/get_meta` after at least one successful importer run
+The two timestamps diverge whenever the importer runs more often than the source PBF refreshes — `last_import_at` can be "5 min ago" while the OSM data itself is up to a week old (typical Geofabrik weekly cadence vs hourly importer cron).
+
+#### Scenario: `get_meta` includes both timestamps after an import
+
+- **WHEN** a client calls `/api/rpc/get_meta` after at least one successful importer run against a PBF that carries an `osmosis_replication_timestamp` header
 - **THEN** the response contains `last_import_at` as an ISO-8601 timestamp
 - **AND** the response contains `data_age_seconds` as a non-negative integer equal to `now() - last_import_at` rounded to whole seconds
+- **AND** the response contains `osm_data_timestamp` as an ISO-8601 timestamp matching the PBF header
+- **AND** the response contains `osm_data_age_seconds` as a non-negative integer equal to `now() - osm_data_timestamp` rounded to whole seconds
+
+#### Scenario: `get_meta` includes only `last_import_at` when PBF lacks the replication header
+
+- **WHEN** a client calls `/api/rpc/get_meta` after a successful importer run against a PBF whose header does NOT include `osmosis_replication_timestamp` (e.g. a community-cut extract, an older PBF tool's output)
+- **THEN** `last_import_at` and `data_age_seconds` are populated as in the previous scenario
+- **AND** `osm_data_timestamp` and `osm_data_age_seconds` are present in the response with value `null`
 
 #### Scenario: `get_meta` before any import
 
 - **WHEN** a client calls `/api/rpc/get_meta` on a freshly provisioned backend that has never completed an importer run
-- **THEN** `last_import_at` is present in the response with value `null`
-- **AND** `data_age_seconds` is present with value `null`
+- **THEN** `last_import_at`, `data_age_seconds`, `osm_data_timestamp`, and `osm_data_age_seconds` are all present in the response with value `null`
 - **AND** no other fields are affected (backward-compatible extension)
 
 ### Requirement: Hub container polls backends and exposes status JSON
@@ -69,7 +81,8 @@ The hub container SHALL expose `/metrics` in Prometheus text exposition format, 
 - **THEN** the output includes at minimum:
     - `spielplatz_backend_up{backend}` — gauge, `1` if last poll succeeded, `0` otherwise
     - `spielplatz_backend_latency_seconds{backend}` — gauge, observed round-trip from the last successful poll
-    - `spielplatz_backend_data_age_seconds{backend}` — gauge, `data_age_seconds` from the last successful poll
+    - `spielplatz_backend_data_age_seconds{backend}` — gauge, `data_age_seconds` from the last successful poll (operator: how long since the importer ran)
+    - `spielplatz_backend_osm_data_age_seconds{backend}` — gauge, `osm_data_age_seconds` from the last successful poll (user: how old the OSM data being served is). Omitted when the backend's PBF lacked an `osmosis_replication_timestamp` header.
     - `spielplatz_poll_generated_timestamp` — gauge, unix timestamp of the last poll cycle start
 
 #### Scenario: Metrics survive a cron gap

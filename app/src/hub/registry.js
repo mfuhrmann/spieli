@@ -143,7 +143,8 @@ export function createRegistry() {
           lastImportAt:     null,  // from get_meta.last_import_at; used by polygon-tier dedup (#202)
           // Populated from /federation-status.json (hub-side cron poll, this change)
           healthUp:         null,  // null = unknown, true/false = known
-          dataAgeSec:       null,  // seconds since last import, or null
+          dataAgeSec:       null,  // seconds since the importer last ran (operator-facing)
+          osmDataAgeSec:    null,  // seconds since the OSM data was snapshotted (user-facing)
           lastReachable:    null,  // ISO string of last successful hub probe
           observationStale: false,
         }));
@@ -175,9 +176,14 @@ export function createRegistry() {
         const entry = key ? statusBySlug[key] : null;
         if (!entry) continue;
         patchBackend(b.url, {
-          healthUp:         entry.up ?? null,
-          dataAgeSec:       entry.data_age_seconds ?? null,
-          lastReachable:    entry.last_success ?? null,
+          healthUp:           entry.up ?? null,
+          // dataAgeSec       — when the importer last ran (operator concern)
+          dataAgeSec:         entry.data_age_seconds ?? null,
+          // osmDataAgeSec    — how old the OSM data is (user concern). Null
+          //                    on pre-osm-data-age backends; the drawer
+          //                    falls back to dataAgeSec in that case.
+          osmDataAgeSec:      entry.osm_data_age_seconds ?? null,
+          lastReachable:      entry.last_success ?? null,
           observationStale,
         });
       }

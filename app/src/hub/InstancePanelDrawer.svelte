@@ -2,7 +2,7 @@
   import { _ } from 'svelte-i18n';
   import { X } from 'lucide-svelte';
 
-  /** @type {Array<{ url: string, name: string, version: string|null, loading: boolean, error: string|null, playgroundCount: number, dataAgeSec: number|null, lastReachable: string|null, healthUp: boolean|null, observationStale: boolean }>} */
+  /** @type {Array<{ url: string, name: string, version: string|null, loading: boolean, error: string|null, playgroundCount: number, dataAgeSec: number|null, osmDataAgeSec: number|null, lastReachable: string|null, healthUp: boolean|null, observationStale: boolean }>} */
   export let backends;
   /** @type {string | null} */
   export let registryError;
@@ -125,7 +125,16 @@
               <i class="bi bi-geo-alt-fill me-1"></i>
               {$_('hub.playgroundCount', { values: { count: b.playgroundCount } })}
             </div>
-            {#if b.dataAgeSec != null}
+            {#if b.osmDataAgeSec != null}
+              <!-- Prefer the OSM source-data age (user-facing: "the data
+                   you are looking at is N old") over the import-run age
+                   (operator-facing: "did the cron run"). Pre-osm-data-age
+                   backends fall back to dataAgeSec via the {:else} below. -->
+              <div class="instance-freshness text-muted">
+                <i class="bi bi-clock me-1"></i>
+                {$_('hub.osmDataAge', { values: { age: formatDataAge(b.osmDataAgeSec) } })}
+              </div>
+            {:else if b.dataAgeSec != null}
               <div class="instance-freshness text-muted">
                 <i class="bi bi-clock me-1"></i>
                 {$_('hub.dataAge', { values: { age: formatDataAge(b.dataAgeSec) } })}
