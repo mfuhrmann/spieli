@@ -45,4 +45,21 @@ window.APP_CONFIG = {
 JSEOF
 fi
 
+# Write placeholder federation-status.json and metrics so nginx can serve
+# the endpoints immediately before the first cron tick (60 s).
+WEBROOT="/usr/share/nginx/html"
+INIT_TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+if [ ! -f "$WEBROOT/federation-status.json" ]; then
+    printf '{"generated_at":"%s","poll_interval_seconds":60,"backends":{}}\n' \
+        "$INIT_TS" > "$WEBROOT/federation-status.json"
+fi
+if [ ! -f "$WEBROOT/metrics" ]; then
+    printf '# spieli federation metrics — first poll pending\n' > "$WEBROOT/metrics"
+fi
+
+# Start crond in background (logs to stderr so Docker picks them up)
+if [ "$APP_MODE" = "hub" ]; then
+    crond -b -L /dev/stderr
+fi
+
 exec nginx -g 'daemon off;'

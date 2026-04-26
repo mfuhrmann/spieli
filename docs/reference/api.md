@@ -157,7 +157,14 @@ Existing federation-discovery RPC, extended with completeness counts.
 
 **Invariant**: `playground_count = complete + partial + missing` (`get_meta` does *not* split out access-restricted; they're rolled into the completeness counts here, unlike `get_playground_clusters`). Hub uses the three counts to render a country-level macro view — see `add-federated-playground-clustering`.
 
-A `data_version` cache-bust timestamp was originally scoped here but moved to `add-federation-health-exposition` (which introduces `api.import_status(last_import_at, ...)` as the better-scoped home).
+Two additional fields are included to expose import freshness:
+
+| Field | Type | Notes |
+|---|---|---|
+| `last_import_at` | `timestamptz` \| `null` | Timestamp of the last successful `import.sh` run. `null` before any import has run (first deploy). |
+| `data_age_seconds` | `int` \| `null` | `EXTRACT(EPOCH FROM (now() - last_import_at))::int`. `null` when `last_import_at` is `null`. |
+
+The hub reads these fields via `/federation-status.json` (written by the hub container's 60-second cron poll) — see [Monitoring](../ops/monitoring.md) for the full exposition format.
 
 ## Deprecated: `get_playgrounds(relation_id)`
 

@@ -33,6 +33,7 @@ nav:
   - Operations:
       - Manual Deploy: ops/manual-deploy.md
       - Federated Deployment: ops/federated-deployment.md
+      - Monitoring: ops/monitoring.md
       - Configuration: ops/configuration.md
       - Troubleshooting: ops/troubleshooting.md
   - Contributing:

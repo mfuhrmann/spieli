@@ -199,6 +199,12 @@ envsubst '$OSM_RELATION_ID' < /api.sql \
     | psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB"
 
 # --------------------------------------------------------------------------- #
+# Record successful import timestamp (read by get_meta / federation-status)
+# --------------------------------------------------------------------------- #
+psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+    -c "INSERT INTO api.import_status (id, last_import_at) VALUES (1, now()) ON CONFLICT (id) DO UPDATE SET last_import_at = EXCLUDED.last_import_at;"
+
+# --------------------------------------------------------------------------- #
 # Notify PostgREST to reload its schema cache
 # --------------------------------------------------------------------------- #
 psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" \

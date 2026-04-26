@@ -371,7 +371,16 @@
     "pillExpand": "Show instance list",
     "pillCollapse": "Hide instance list",
     "drawerTitle": "Available instances",
-    "closeBtn": "Close"
+    "closeBtn": "Close",
+    "dataAge": "data: {age} old",
+    "dataAgeMinutes": "{m} min",
+    "dataAgeHours": "{h} hr",
+    "dataAgeDays": "{d} days",
+    "lastReachableJustNow": "last reachable: just now",
+    "lastReachableMinutes": "last reachable: {m} min ago",
+    "lastReachableHours": "last reachable: {h} hr ago",
+    "neverReachable": "never reachable",
+    "observationStale": "Observation status outdated"
   },
   "details": {
     "sizeLabel": "Size",
