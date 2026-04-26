@@ -133,7 +133,7 @@ At `zoom ≤ macroMaxZoom` the Hub renders one stacked-ring per registered backe
 
 Clicking a macro ring animates `view.fit` to the backend's bbox, which lands in the cluster or polygon tier and triggers a tier fetch scoped to that backend only.
 
-Backends marked as offline (via `federation-status.json`, when [add-federation-health-exposition](../../openspec/changes/add-federation-health-exposition/proposal.md) ships) render as a dashed outline with their last-known count and an "offline" label, so the operator sees that the region exists but isn't currently reachable.
+Backends marked as offline (via `federation-status.json`, when [add-federation-health-exposition](https://github.com/mfuhrmann/spieli/issues/194) ships) render as a dashed outline with their last-known count and an "offline" label, so the operator sees that the region exists but isn't currently reachable.
 
 ### Architecture flow
 
