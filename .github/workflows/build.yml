@@ -40,7 +40,7 @@ jobs:
       - name: Build
         run: make build
 
-  # ── Docker images (matrix: app + data-node) ──────────────────────────────────
+  # ── Docker image ─────────────────────────────────────────────────────────────
   docker:
     name: Docker (${{ matrix.name }})
     runs-on: ubuntu-latest
@@ -59,12 +59,6 @@ jobs:
             image_suffix: ""
             context: .
             dockerfile: oci/app/Dockerfile
-
-          # Data node — nginx CORS proxy only, no frontend
-          - name: data-node
-            image_suffix: -data
-            context: oci/data-node
-            dockerfile: oci/data-node/Dockerfile
 
     steps:
       - name: Checkout

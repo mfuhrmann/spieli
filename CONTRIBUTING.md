@@ -9,7 +9,7 @@ All contributions are welcome — code, translations, bug reports, or documentat
 | `app/` | Svelte 5 frontend app (source in `app/src/`) |
 | `importer/` | osm2pgsql import scripts and PostgREST API SQL |
 | `db/` | PostgreSQL initialisation SQL |
-| `oci/` | Docker build contexts — `oci/app/` (Svelte app + nginx) and `oci/data-node/` |
+| `oci/` | Docker build contexts — `oci/app/` (Svelte app + nginx) |
 | `processing/` | OSM data pipeline scripts (Lua rules, SQL, shell) used during import |
 | `taginfo/` | [taginfo](https://taginfo.openstreetmap.org) metadata describing the OSM tags this project uses |
 | `locales/` | Translation files (`*.json`, one per language) — not yet active in the Svelte rewrite |

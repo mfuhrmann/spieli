@@ -7,7 +7,6 @@ Three images are published to GHCR on every release:
 | Image | Used by |
 |---|---|
 | `ghcr.io/mfuhrmann/spieli` | app container (standalone + hub) |
-| `ghcr.io/mfuhrmann/spieli-data` | data-node proxy (no frontend) |
 | `ghcr.io/mfuhrmann/spieli-importer` | OSM importer |
 
 ### Tags published per event
