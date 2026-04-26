@@ -16,16 +16,16 @@
 #   POSTGRES_PASSWORD      Required
 #   OSM2PGSQL_THREADS      Default: 4
 
-# `-e` aborts on any unchecked non-zero exit. `pipefail` is the load-bearing
-# addition for the `envsubst | psql … < /api.sql` pipeline below: without it,
-# a failing envsubst (or any psql statement that errors *without* triggering
-# psql's own non-zero exit) would let the pipeline succeed overall and the
-# subsequent `api.import_status` UPSERT would record a fresh `last_import_at`
-# against a half-applied schema — exactly the silent-failure mode the
-# scheduled-importer spec scenario "Failed run does not update timestamp"
-# forbids. Pair with `psql -v ON_ERROR_STOP=1` at every `psql` callsite that
-# applies multi-statement SQL (api.sql, etc.).
-set -eo pipefail
+# `-e` aborts on any unchecked non-zero exit. The script's shebang is
+# `#!/bin/sh` and the importer image's /bin/sh is busybox / dash, neither of
+# which supports `set -o pipefail` (bash extension). The `envsubst | psql`
+# pipeline that applies api.sql is therefore restructured to write to a
+# tempfile via `> "$TMP_API_SQL"` so `set -e` catches envsubst failures,
+# and psql is invoked with `-f "$TMP_API_SQL" -v ON_ERROR_STOP=1` so a SQL
+# error inside api.sql aborts before the api.import_status UPSERT runs —
+# matching the scheduled-importer spec scenario "Failed run does not
+# update timestamp" without depending on `pipefail`.
+set -e
 
 PBF_URL="${PBF_URL:-https://download.geofabrik.de/europe/germany/hessen-latest.osm.pbf}"
 PBF_FILE="/data/$(basename "$PBF_URL")"
@@ -204,11 +204,20 @@ echo "[importer] osm2pgsql finished."
 # Create PostgREST API schema (views / functions)
 # --------------------------------------------------------------------------- #
 echo "[importer] Applying API schema..."
-# ON_ERROR_STOP=1 + pipefail (set at top) guarantees a partial schema apply
-# aborts the script before the api.import_status UPSERT below runs.
-envsubst '$OSM_RELATION_ID' < /api.sql \
-    | psql -v ON_ERROR_STOP=1 \
-        -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB"
+# Stage the env-substituted SQL in a tempfile, then run psql against it with
+# `-f` and `ON_ERROR_STOP=1`. POSIX sh has no `pipefail`, so a piped
+# `envsubst | psql` would silently succeed on an envsubst failure — staging
+# via a tempfile lets `set -e` abort us properly when envsubst fails, AND
+# `ON_ERROR_STOP=1` aborts on any SQL error inside api.sql. Together these
+# guarantee the api.import_status UPSERT below only runs on a fully-applied
+# schema (matches scheduled-importer spec "Failed run does not update
+# timestamp").
+TMP_API_SQL=$(mktemp)
+trap 'rm -f "$TMP_API_SQL"' EXIT
+envsubst '$OSM_RELATION_ID' < /api.sql > "$TMP_API_SQL"
+psql -v ON_ERROR_STOP=1 \
+    -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+    -f "$TMP_API_SQL"
 
 # --------------------------------------------------------------------------- #
 # Record successful import timestamp (read by get_meta / federation-status).
