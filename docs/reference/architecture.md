@@ -70,6 +70,14 @@ The compose file supports three profiles, selected at install time via `DEPLOY_M
 
 For the federated Hub topology (`DEPLOY_MODE=ui` + `APP_MODE=hub`), see [Federated Deployment](../ops/federated-deployment.md).
 
+## Tiered playground delivery
+
+The standalone client switches between two zoom-scoped layers at `clusterMaxZoom` (default 13). Below the boundary it calls `get_playground_clusters(z, bbox)` for pre-aggregated count buckets; above it, `get_playgrounds_bbox(bbox)` for full polygons. The cluster RPC keeps two concerns deliberately separate: **grouping** is grid-based — each playground centroid is snapped to a zoom-dependent cell that decides which features share a bucket — while **position** is the unweighted spatial mean of the bucket's member centroids, so the rendered dot tracks the geography of its members rather than the lattice.
+
+In hub mode (see [Federation](federation.md)) the per-backend buckets are reduced client-side by Supercluster, which builds a kd-tree on the points' `(lon, lat)` and merges within a zoom-dependent radius — the merge target is **proximity**, not the grouping cell. Pre-2026, two backends contributing to the same cell shipped identical grid-anchor coordinates and Supercluster collapsed them trivially. With member-centroid positioning, two backends contributing to the same cell ship near-but-distinct points; whether they collapse depends on Supercluster's radius at the active zoom. The known interim consequence is that toggling a backend can shift the dot for a shared cell between the two backends' centroids — a residual jitter the user sees as movement, not as wrong data, since both positions sit inside the cluster's footprint. A follow-up to compute count-weighted means across backends in the hub merger is tracked but out of scope for the position-clusters change.
+
+See [API reference — `get_playground_clusters`](api.md#get_playground_clustersz-bbox) for the response shape.
+
 ## See also
 
 - [API reference](api.md) — request/response shapes for the tiered playground RPCs that drive the standalone map.
