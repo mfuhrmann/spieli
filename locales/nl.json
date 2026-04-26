@@ -17,7 +17,8 @@
     "hint": "Tik op een speeltuin voor details",
     "shareBtn": "Speeltuin delen",
     "osmBtn": "Bekijk op OpenStreetMap",
-    "closeBtn": "Sluiten"
+    "closeBtn": "Sluiten",
+    "backToMap": "Terug naar kaart"
   },
   "completeness": {
     "complete": "Foto's, naam & details beschikbaar",

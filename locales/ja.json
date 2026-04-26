@@ -17,7 +17,8 @@
     "hint": "遊び場をタップして詳細を表示",
     "shareBtn": "遊び場を共有",
     "osmBtn": "OpenStreetMapで表示",
-    "closeBtn": "閉じる"
+    "closeBtn": "閉じる",
+    "backToMap": "地図に戻る"
   },
   "completeness": {
     "complete": "写真・名称・詳細あり",

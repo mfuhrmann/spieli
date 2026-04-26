@@ -17,7 +17,8 @@
     "hint": "Klepněte na hřiště pro zobrazení podrobností",
     "shareBtn": "Sdílet hřiště",
     "osmBtn": "Zobrazit na OpenStreetMap",
-    "closeBtn": "Zavřít"
+    "closeBtn": "Zavřít",
+    "backToMap": "Zpět na mapu"
   },
   "completeness": {
     "complete": "Fotografie, název a podrobnosti k dispozici",

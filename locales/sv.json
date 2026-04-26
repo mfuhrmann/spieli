@@ -17,7 +17,8 @@
     "hint": "Tryck på en lekplats för detaljer",
     "shareBtn": "Dela lekplats",
     "osmBtn": "Visa på OpenStreetMap",
-    "closeBtn": "Stäng"
+    "closeBtn": "Stäng",
+    "backToMap": "Tillbaka till kartan"
   },
   "completeness": {
     "complete": "Foton, namn och detaljer tillgängliga",

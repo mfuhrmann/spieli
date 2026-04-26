@@ -17,7 +17,8 @@
     "hint": "Toca un parque para ver detalles",
     "shareBtn": "Compartir parque",
     "osmBtn": "Ver en OpenStreetMap",
-    "closeBtn": "Cerrar"
+    "closeBtn": "Cerrar",
+    "backToMap": "Volver al mapa"
   },
   "completeness": {
     "complete": "Fotos, nombre y detalles disponibles",

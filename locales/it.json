@@ -17,7 +17,8 @@
     "hint": "Tocca un parco giochi per i dettagli",
     "shareBtn": "Condividi parco",
     "osmBtn": "Visualizza su OpenStreetMap",
-    "closeBtn": "Chiudi"
+    "closeBtn": "Chiudi",
+    "backToMap": "Torna alla mappa"
   },
   "completeness": {
     "complete": "Foto, nome e dettagli disponibili",

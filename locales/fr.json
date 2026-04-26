@@ -17,7 +17,8 @@
     "hint": "Appuyer sur une aire de jeux pour les détails",
     "shareBtn": "Partager",
     "osmBtn": "Voir sur OpenStreetMap",
-    "closeBtn": "Fermer"
+    "closeBtn": "Fermer",
+    "backToMap": "Retour à la carte"
   },
   "completeness": {
     "complete": "Photos, nom & détails disponibles",

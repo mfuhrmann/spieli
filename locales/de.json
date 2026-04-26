@@ -14,33 +14,33 @@
     "layers": "Ebenen",
     "standalonePitches": "Sportflächen (außerhalb Spielplätze)",
     "labels": {
-      "private":     "Nur öffentlich",
-      "water":       "Wasserspielplatz",
-      "baby":        "Baby-geeignet",
-      "toddler":     "Kleinkind-geeignet",
-      "wheelchair":  "Rollstuhlgerecht",
-      "bench":       "Mit Sitzbank",
-      "picnic":      "Mit Picknicktisch",
-      "shelter":     "Mit Unterstand",
+      "private": "Nur öffentlich",
+      "water": "Wasserspielplatz",
+      "baby": "Baby-geeignet",
+      "toddler": "Kleinkind-geeignet",
+      "wheelchair": "Rollstuhlgerecht",
+      "bench": "Mit Sitzbank",
+      "picnic": "Mit Picknicktisch",
+      "shelter": "Mit Unterstand",
       "tableTennis": "Tischtennisplatte",
-      "soccer":      "Mit Bolzplatz",
-      "basketball":  "Basketballfeld"
+      "soccer": "Mit Bolzplatz",
+      "basketball": "Basketballfeld"
     }
   },
   "hover": {
-    "tagWater":     "Wasser",
-    "tagBaby":      "Baby",
-    "tagTrees":     "Bäume",
-    "tagAccessible":"Barrierefrei",
-    "playground":   "Spielplatz"
+    "tagWater": "Wasser",
+    "tagBaby": "Baby",
+    "tagTrees": "Bäume",
+    "tagAccessible": "Barrierefrei",
+    "playground": "Spielplatz"
   },
   "zoom": {
-    "in":  "Vergrößern",
+    "in": "Vergrößern",
     "out": "Verkleinern"
   },
   "panoramax": {
-    "noPhotos":  "Noch keine Fotos vorhanden.",
-    "fullscreen":"Vollbild anzeigen"
+    "noPhotos": "Noch keine Fotos vorhanden.",
+    "fullscreen": "Vollbild anzeigen"
   },
   "search": {
     "placeholder": "Suchen …",
@@ -60,7 +60,8 @@
     "shareBtn": "Spielplatz teilen",
     "osmBtn": "Bei OpenStreetMap anzeigen",
     "closeBtn": "Schließen",
-    "copyLink": "Link kopieren"
+    "copyLink": "Link kopieren",
+    "backToMap": "Zurück zur Karte"
   },
   "completeness": {
     "complete": "Fotos, Name & Details vorhanden",
@@ -109,31 +110,31 @@
     "addLink": "Spielgerät hinzufügen",
     "mapcompleteHint": "Hilf mit und trage Spielgeräte auf {link} ein.",
     "pitches": {
-      "soccer":      "Bolzplatz",
-      "basketball":  "Basketballfeld",
-      "table_tennis":"Tischtennisplatte",
-      "volleyball":  "Volleyballfeld",
-      "tennis":      "Tennisfeld",
-      "handball":    "Handballfeld",
-      "badminton":   "Badmintonfeld",
-      "boules":      "Boulesbahn",
-      "petanque":    "Pétanquebahn",
-      "multi":       "Mehrzweckspielfeld",
-      "skateboard":      "Skatepark",
-      "bmx":             "BMX-Bahn",
-      "climbing":        "Kletteranlage",
-      "fitness":         "Fitnessbereich",
-      "cycling":         "Radstrecke",
-      "kick_scooter":    "Tretroller-Bahn",
-      "roller_skating":  "Rollschuhbahn",
-      "hockey":          "Hockeyfeld",
-      "athletics":       "Leichtathletikanlage",
-      "baseball":        "Baseballfeld",
-      "cricket":         "Cricketfeld",
-      "rugby":           "Rugbyfeld",
-      "archery":         "Bogenschießanlage",
-      "golf":            "Golfplatz",
-      "gymnastics":      "Turnanlage"
+      "soccer": "Bolzplatz",
+      "basketball": "Basketballfeld",
+      "table_tennis": "Tischtennisplatte",
+      "volleyball": "Volleyballfeld",
+      "tennis": "Tennisfeld",
+      "handball": "Handballfeld",
+      "badminton": "Badmintonfeld",
+      "boules": "Boulesbahn",
+      "petanque": "Pétanquebahn",
+      "multi": "Mehrzweckspielfeld",
+      "skateboard": "Skatepark",
+      "bmx": "BMX-Bahn",
+      "climbing": "Kletteranlage",
+      "fitness": "Fitnessbereich",
+      "cycling": "Radstrecke",
+      "kick_scooter": "Tretroller-Bahn",
+      "roller_skating": "Rollschuhbahn",
+      "hockey": "Hockeyfeld",
+      "athletics": "Leichtathletikanlage",
+      "baseball": "Baseballfeld",
+      "cricket": "Cricketfeld",
+      "rugby": "Rugbyfeld",
+      "archery": "Bogenschießanlage",
+      "golf": "Golfplatz",
+      "gymnastics": "Turnanlage"
     },
     "devices": {
       "slide": "Rutsche",
@@ -357,8 +358,14 @@
     }
   },
   "compass": {
-    "N": "N", "NE": "NO", "E": "O", "SE": "SO",
-    "S": "S", "SW": "SW", "W": "W", "NW": "NW"
+    "N": "N",
+    "NE": "NO",
+    "E": "O",
+    "SE": "SO",
+    "S": "S",
+    "SW": "SW",
+    "W": "W",
+    "NW": "NW"
   },
   "hub": {
     "title": "spieli Hub",

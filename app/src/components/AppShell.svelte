@@ -5,14 +5,14 @@
   import LocateButton from './LocateButton.svelte';
   import FilterPanel from './FilterPanel.svelte';
   import FilterChips from './FilterChips.svelte';
-  import BottomSheet from './BottomSheet.svelte';
+
   import HoverPreview from './HoverPreview.svelte';
   import EquipmentTooltip from './EquipmentTooltip.svelte';
   import NearbyPlaygrounds from './NearbyPlaygrounds.svelte';
   import DataContributionModal from './DataContributionModal.svelte';
   import CompletenessLegend from './CompletenessLegend.svelte';
   import { onDestroy, onMount } from 'svelte';
-  import { Pencil, Plus, Minus } from 'lucide-svelte';
+  import { Pencil, Plus, Minus, ArrowLeft } from 'lucide-svelte';
   import { _ } from 'svelte-i18n';
   import GeoJSON from 'ol/format/GeoJSON.js';
   import { mapStore } from '../stores/map.js';
@@ -328,34 +328,16 @@
     checkMobile();
   }
 
-  // Bottom sheet state for mobile
-  let bottomSheetOpen = false;
-  let bottomSheetSnap = 'half';
-  let sheetHeight = 0;
-  let sheetDragging = false;
-
-  // Keep controls above the sheet — follows live height during drag, animates on snap
-  $: controlsBottomStyle = (() => {
-    if (!isMobile || !bottomSheetOpen || sheetHeight === 0) return '';
-    const noTransition = sheetDragging ? 'transition: none; ' : '';
-    return `${noTransition}bottom: calc(${sheetHeight}px + 1rem)`;
-  })();
-
-  // Sync bottom sheet with selection on mobile
+  // Center the map on the selected playground before the full-screen panel opens
   $: if (isMobile && $hasSelection) {
-    bottomSheetOpen = true;
-    bottomSheetSnap = 'peek';
     const feat = $selection.feature;
     if (feat && $mapStore) {
       $mapStore.getView().fit(feat.getGeometry().getExtent(), {
-        padding: [40, 40, 180, 40],
+        padding: [60, 60, 60, 60],
         maxZoom: 19,
         duration: 400,
       });
     }
-  }
-  $: if (isMobile && !$hasSelection) {
-    bottomSheetOpen = false;
   }
 
   // Hover preview state
@@ -416,7 +398,7 @@
     onclearequipmenthover={clearEquipHover}
   />
 
-  {#if !(isMobile && bottomSheetSnap === 'full')}
+  {#if !(isMobile && $hasSelection)}
     <div class="search-area">
       <SearchBar regionExtent={$searchExtent} onlocation={handleLocation} />
       <FilterChips />
@@ -446,7 +428,7 @@
       </button>
     </div>
 
-    <div class="controls-bottom-right" style={controlsBottomStyle}>
+    <div class="controls-bottom-right">
       <LocateButton onlocation={handleLocation} />
       <div class="zoom-controls">
         <button
@@ -469,7 +451,7 @@
     </div>
 
     {#if instancePanel}
-      <div class="instance-slot" style={controlsBottomStyle}>
+      <div class="instance-slot">
         {@render instancePanel()}
       </div>
     {/if}
@@ -482,18 +464,22 @@
     </div>
   {/if}
 
-  {#if isMobile}
-    <BottomSheet
-      bind:open={bottomSheetOpen}
-      bind:snapPoint={bottomSheetSnap}
-      bind:currentHeight={sheetHeight}
-      bind:isDragging={sheetDragging}
-      title=""
-    >
-      {#if $hasSelection}
+  {#if isMobile && $hasSelection}
+    <div class="mobile-detail-panel">
+      <div class="mobile-detail-header">
+        <button
+          class="mobile-back-btn"
+          onclick={() => selection.clear()}
+          aria-label={$_('info.closeBtn')}
+        >
+          <ArrowLeft class="h-5 w-5" />
+          <span>{$_('info.backToMap')}</span>
+        </button>
+      </div>
+      <div class="mobile-detail-body">
         <PlaygroundPanel embedded={true} />
-      {/if}
-    </BottomSheet>
+      </div>
+    </div>
   {/if}
 
   <HoverPreview position={$hasSelection ? null : hoverPosition} feature={$hasSelection ? null : hoverFeature} />
@@ -610,6 +596,50 @@
     .instance-slot {
       left: 0.75rem;
     }
+  }
+
+  .mobile-detail-panel {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    display: flex;
+    flex-direction: column;
+    background: #ffffff;
+    color-scheme: light;
+    --color-background: #ffffff;
+    --color-foreground: #1f2937;
+    --color-card: #ffffff;
+    --color-card-foreground: #1f2937;
+    --color-muted: #f3f4f6;
+    --color-muted-foreground: #6b7280;
+    --color-border: #e5e7eb;
+  }
+
+  .mobile-detail-header {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #e5e7eb;
+    flex-shrink: 0;
+  }
+
+  .mobile-back-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    color: #4b5563;
+    font-size: 0.9rem;
+    padding: 0.25rem 0;
+  }
+
+  .mobile-detail-body {
+    flex: 1;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 0 1rem 1rem;
   }
 
   .side-panel {

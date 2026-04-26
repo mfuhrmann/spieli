@@ -17,7 +17,8 @@
     "hint": "Dotknij plac zabaw, aby zobaczyć szczegóły",
     "shareBtn": "Udostępnij plac zabaw",
     "osmBtn": "Zobacz na OpenStreetMap",
-    "closeBtn": "Zamknij"
+    "closeBtn": "Zamknij",
+    "backToMap": "Powrót do mapy"
   },
   "completeness": {
     "complete": "Zdjęcia, nazwa i szczegóły dostępne",
