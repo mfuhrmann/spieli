@@ -18,6 +18,7 @@
     fetchStandaloneEquipment,
   } from '../lib/api.js';
   import { fetchRegionInfo } from '../lib/region.js';
+  import { parseHash } from '../lib/deeplink.js';
   import { attachTieredOrchestrator } from '../lib/tieredOrchestrator.js';
   import { equipmentLayerStyleFn } from '../lib/vectorStyles.js';
   import { debounce } from '../lib/utils.js';
@@ -80,13 +81,17 @@
       detachMapSub?.();
       detachMapSub = null;
 
-      // Region fit via Nominatim bbox.
+      // Region fit via Nominatim bbox — skipped when the URL carries a
+      // deeplink hash so that the hash-restore zoom-in is not overwritten
+      // by the (slower) Nominatim response.
       try {
         const region = await fetchRegionInfo(osmRelationId);
-        map.getView().fit(transformExtent(region.extent, 'EPSG:4326', 'EPSG:3857'), {
-          padding: [20, 20, 20, 380], // leave room for the side panel on desktop
-          duration: 0,
-        });
+        if (!parseHash(window.location.hash)) {
+          map.getView().fit(transformExtent(region.extent, 'EPSG:4326', 'EPSG:3857'), {
+            padding: [20, 20, 20, 380], // leave room for the side panel on desktop
+            duration: 0,
+          });
+        }
         document.title = `spieli ${region.name}`;
       } catch (err) {
         console.warn('Nominatim region fetch failed, using default extent:', err);
