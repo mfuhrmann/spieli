@@ -619,6 +619,21 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Variables">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ram-sizing" class="md-nav__link">
+    <span class="md-ellipsis">
+      RAM sizing
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1030,6 +1045,21 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Variables">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ram-sizing" class="md-nav__link">
+    <span class="md-ellipsis">
+      RAM sizing
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1171,46 +1201,96 @@
 <td><code>OSM2PGSQL_THREADS</code></td>
 <td><code>4</code></td>
 <td>data-node, data-node-ui</td>
-<td>CPU threads for the import</td>
+<td>CPU threads for the osm2pgsql data-loading step</td>
 </tr>
 <tr>
-<td><code>OSM_BBOX</code></td>
-<td><em>(auto)</em></td>
+<td><code>PG_MAX_PARALLEL_WORKERS</code></td>
+<td><code>2</code></td>
 <td>data-node, data-node-ui</td>
-<td>Manual bounding box for the osmium pre-filter (<code>west,south,east,north</code>). Skips Nominatim lookup when set.</td>
+<td>Total parallel worker processes available to PostgreSQL (set ≤ CPU count). Persisted via <code>ALTER SYSTEM</code> in <code>api.sql</code>.</td>
 </tr>
 <tr>
-<td><code>OSM_BBOX_PADDING</code></td>
-<td><code>0.15</code></td>
+<td><code>PG_MAX_PARALLEL_WORKERS_PER_GATHER</code></td>
+<td><code>2</code></td>
 <td>data-node, data-node-ui</td>
-<td>Degrees of padding added to each side of the Nominatim bbox (≈ 15 km).</td>
+<td>Parallel workers per query. Must be ≤ <code>PG_MAX_PARALLEL_WORKERS</code>.</td>
 </tr>
 <tr>
-<td><code>OSM_PREFILTER_MIN_MB</code></td>
-<td><code>20</code></td>
+<td><code>PG_MAX_PARALLEL_MAINTENANCE_WORKERS</code></td>
+<td><code>2</code></td>
 <td>data-node, data-node-ui</td>
-<td>Source PBF files smaller than this many MB skip the osmium pre-filter step.</td>
+<td>Parallel workers for <code>CREATE INDEX</code> / <code>VACUUM</code>. Must be ≤ <code>PG_MAX_PARALLEL_WORKERS</code>.</td>
 </tr>
 <tr>
-<td><code>GEOSERVER_URL</code></td>
-<td><em>(disabled)</em></td>
+<td><code>PG_MAINTENANCE_WORK_MEM</code></td>
+<td><code>256MB</code></td>
 <td>data-node, data-node-ui</td>
-<td>Base URL of a GeoServer instance for the shadow WMS layer; leave empty to disable</td>
+<td>Memory per maintenance operation (index builds etc.). Total peak ≈ <code>value × (PG_MAX_PARALLEL_MAINTENANCE_WORKERS + 1)</code>. <strong>Must include a unit suffix</strong> (<code>kB</code>, <code>MB</code>, <code>GB</code>, <code>TB</code>); a bare integer is interpreted as kilobytes by PostgreSQL.</td>
 </tr>
 <tr>
-<td><code>GEOSERVER_WORKSPACE</code></td>
-<td><code>spieli</code></td>
+<td><code>PG_WORK_MEM</code></td>
+<td><code>32MB</code></td>
 <td>data-node, data-node-ui</td>
-<td>GeoServer workspace name — only used when <code>GEOSERVER_URL</code> is set</td>
-</tr>
-<tr>
-<td><code>HUB_POLL_INTERVAL</code></td>
-<td><code>300</code></td>
-<td>hub</td>
-<td>Seconds between Hub re-fetches of playground data from all registered instances. Bare integer, no unit suffix. See <a href="../federated-deployment/">Federated Deployment</a>.</td>
+<td>Memory per sort/hash operation inside parallel workers. Total peak per query ≈ <code>value × (PG_MAX_PARALLEL_WORKERS_PER_GATHER + 1) × hash/sort nodes</code>. <strong>Must include a unit suffix</strong> (<code>kB</code>, <code>MB</code>, <code>GB</code>, <code>TB</code>); a bare integer is interpreted as kilobytes by PostgreSQL.</td>
 </tr>
 </tbody>
 </table>
+<blockquote>
+<p><strong>How <code>PG_*</code> values are applied.</strong> <code>make db-apply</code> (and <code>make import</code>) runs
+<code>ALTER SYSTEM SET …</code> at the top of <code>api.sql</code>, then <code>SELECT pg_reload_conf()</code>.
+The values are persisted to <code>postgresql.auto.conf</code> inside the data volume
+and apply to every connection — including PostgREST — without restarting
+the database container. To re-tune, edit <code>.env</code> and run <code>make db-apply</code>.</p>
+</blockquote>
+<h3 id="ram-sizing">RAM sizing<a class="headerlink" href="#ram-sizing" title="Permanent link">&para;</a></h3>
+<p>Defaults are sized for a <strong>2-core / 4 GB host</strong> (peak ≈ 1.5 GB during the
+heaviest single operation, <code>CREATE INDEX</code>). Recommended values per host
+size:</p>
+<table>
+<thead>
+<tr>
+<th>Host RAM / cores</th>
+<th><code>WORKERS</code> / <code>PER_GATHER</code> / <code>MAINT</code></th>
+<th><code>MAINT_WORK_MEM</code></th>
+<th><code>WORK_MEM</code></th>
+<th>Approx. peak</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>4 GB / 2 core (default)</td>
+<td>2 / 2 / 2</td>
+<td>256MB</td>
+<td>32MB</td>
+<td>~1.5 GB</td>
+</tr>
+<tr>
+<td>8 GB / 4–6 core</td>
+<td>4 / 2 / 4</td>
+<td>512MB</td>
+<td>64MB</td>
+<td>~3 GB</td>
+</tr>
+<tr>
+<td>16 GB / 8 core</td>
+<td>8 / 4 / 4</td>
+<td>1GB</td>
+<td>128MB</td>
+<td>~6 GB</td>
+</tr>
+</tbody>
+</table>
+<p>The driver of the peak is <code>CREATE INDEX</code> parallelism (≈ <code>MAINT_WORK_MEM ×
+(MAINT_WORKERS + 1)</code>) followed by the materialised view rebuild (≈
+<code>WORK_MEM × (PER_GATHER + 1) × ~4 hash/sort nodes</code>). These run sequentially,
+so the budget is the larger of the two plus baseline (~700 MB for
+<code>shared_buffers</code> default + PostgREST pool + WAL + autovacuum).
+| <code>OSM_BBOX</code> | <em>(auto)</em> | data-node, data-node-ui | Manual bounding box for the osmium pre-filter (<code>west,south,east,north</code>). Skips Nominatim lookup when set. |
+| <code>OSM_BBOX_PADDING</code> | <code>0.15</code> | data-node, data-node-ui | Degrees of padding added to each side of the Nominatim bbox (≈ 15 km). |
+| <code>OSM_PREFILTER_MIN_MB</code> | <code>20</code> | data-node, data-node-ui | Source PBF files smaller than this many MB skip the osmium pre-filter step. |
+| <code>GEOSERVER_URL</code> | <em>(disabled)</em> | data-node, data-node-ui | Base URL of a GeoServer instance for the shadow WMS layer; leave empty to disable |
+| <code>GEOSERVER_WORKSPACE</code> | <code>spieli</code> | data-node, data-node-ui | GeoServer workspace name — only used when <code>GEOSERVER_URL</code> is set |
+| <code>HUB_POLL_INTERVAL</code> | <code>300</code> | hub | Seconds between Hub re-fetches of playground data from all registered instances. Bare integer, no unit suffix. See <a href="../federated-deployment/">Federated Deployment</a>. |</p>
 <h2 id="applying-changes">Applying changes<a class="headerlink" href="#applying-changes" title="Permanent link">&para;</a></h2>
 <p>After editing <code>.env</code>, restart the relevant containers. Replace <code>&lt;mode&gt;</code> with your <code>DEPLOY_MODE</code> value (<code>data-node</code>, <code>ui</code>, or <code>data-node-ui</code>):</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># Restart app only (config changes)</span>
