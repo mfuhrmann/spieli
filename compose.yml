@@ -14,13 +14,21 @@ services:
   # ── PostGIS database ────────────────────────────────────────────────────────
   db:
     image: postgis/postgis:16-3.4-alpine
-    command: >-
-      postgres
-      -c max_parallel_workers=${PG_MAX_PARALLEL_WORKERS:-6}
-      -c max_parallel_workers_per_gather=${PG_MAX_PARALLEL_WORKERS_PER_GATHER:-4}
-      -c max_parallel_maintenance_workers=${PG_MAX_PARALLEL_MAINTENANCE_WORKERS:-4}
-      -c maintenance_work_mem=${PG_MAINTENANCE_WORK_MEM:-512MB}
-      -c work_mem=${PG_WORK_MEM:-128MB}
+    # Exec-form so SIGTERM reaches postgres directly (fast shutdown). Each
+    # `-c key=value` is its own arg, so values containing whitespace (e.g.
+    # "512 MB") do not get re-split by the shell.
+    command:
+      - postgres
+      - -c
+      - max_parallel_workers=${PG_MAX_PARALLEL_WORKERS:-6}
+      - -c
+      - max_parallel_workers_per_gather=${PG_MAX_PARALLEL_WORKERS_PER_GATHER:-4}
+      - -c
+      - max_parallel_maintenance_workers=${PG_MAX_PARALLEL_MAINTENANCE_WORKERS:-4}
+      - -c
+      - maintenance_work_mem=${PG_MAINTENANCE_WORK_MEM:-512MB}
+      - -c
+      - work_mem=${PG_WORK_MEM:-128MB}
     environment:
       POSTGRES_DB:       osm
       POSTGRES_USER:     osm
@@ -83,13 +91,18 @@ services:
   # Populate with: docker compose run --rm importer2
   db2:
     image: postgis/postgis:16-3.4-alpine
-    command: >-
-      postgres
-      -c max_parallel_workers=${PG_MAX_PARALLEL_WORKERS:-6}
-      -c max_parallel_workers_per_gather=${PG_MAX_PARALLEL_WORKERS_PER_GATHER:-4}
-      -c max_parallel_maintenance_workers=${PG_MAX_PARALLEL_MAINTENANCE_WORKERS:-4}
-      -c maintenance_work_mem=${PG_MAINTENANCE_WORK_MEM:-512MB}
-      -c work_mem=${PG_WORK_MEM:-128MB}
+    command:
+      - postgres
+      - -c
+      - max_parallel_workers=${PG_MAX_PARALLEL_WORKERS:-6}
+      - -c
+      - max_parallel_workers_per_gather=${PG_MAX_PARALLEL_WORKERS_PER_GATHER:-4}
+      - -c
+      - max_parallel_maintenance_workers=${PG_MAX_PARALLEL_MAINTENANCE_WORKERS:-4}
+      - -c
+      - maintenance_work_mem=${PG_MAINTENANCE_WORK_MEM:-512MB}
+      - -c
+      - work_mem=${PG_WORK_MEM:-128MB}
     environment:
       POSTGRES_DB:       osm
       POSTGRES_USER:     osm

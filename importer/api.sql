@@ -22,15 +22,6 @@ SET max_parallel_maintenance_workers = ${PG_MAX_PARALLEL_MAINTENANCE_WORKERS};
 SET maintenance_work_mem             = '${PG_MAINTENANCE_WORK_MEM}';
 SET work_mem                         = '${PG_WORK_MEM}';
 
--- Terminate idle PostgREST connections before dropping the MV so the
--- DROP does not block waiting for an AccessExclusiveLock. PostgREST
--- reconnects automatically; active (non-idle) queries are left alone.
-SELECT pg_terminate_backend(pid)
-FROM   pg_stat_activity
-WHERE  datname = current_database()
-  AND  state   = 'idle'
-  AND  pid    <> pg_backend_pid();
-
 -- Make sure web_anon can call everything we create here.
 GRANT USAGE ON SCHEMA api TO web_anon;
 
@@ -38,6 +29,40 @@ GRANT USAGE ON SCHEMA api TO web_anon;
 -- playground_stats — materialized view pre-computing per-playground stats.
 -- Rebuilt on every import / db-apply so get_playgrounds is a plain lookup.
 -- =========================================================================
+
+-- Terminate PostgREST connections that hold (or could re-acquire) locks on
+-- playground_stats so the subsequent DROP does not block on
+-- AccessExclusiveLock. We target *all* PostgREST connection states (active,
+-- idle, idle in transaction) because:
+--   - 'active' / 'idle in transaction' actually hold the AccessShareLock
+--     that blocks the DROP — these are the ones that matter.
+--   - 'idle' connections can reconnect and re-acquire the lock between our
+--     terminate and the DROP, so killing them too closes the race window.
+-- We scope by application_name='PostgREST' (PostgREST sets this by default)
+-- so admin shells / monitoring / replication helpers are not collateral.
+-- pg_terminate_backend requires superuser or pg_signal_backend membership;
+-- the DO block fails loudly if the role lacks that privilege rather than
+-- silently leaving the DROP to block.
+DO $playground_stats_unblock$
+DECLARE
+  failed int;
+BEGIN
+  SELECT COUNT(*) INTO failed FROM (
+    SELECT NOT pg_terminate_backend(pid) AS still_alive
+    FROM   pg_stat_activity
+    WHERE  datname          = current_database()
+      AND  application_name = 'PostgREST'
+      AND  state            IN ('active', 'idle', 'idle in transaction')
+      AND  pid             <> pg_backend_pid()
+  ) t WHERE still_alive;
+  IF failed > 0 THEN
+    RAISE EXCEPTION
+      'Could not terminate % PostgREST connection(s) — current role lacks pg_signal_backend?',
+      failed;
+  END IF;
+END
+$playground_stats_unblock$;
+
 DROP MATERIALIZED VIEW IF EXISTS public.playground_stats CASCADE;
 
 CREATE MATERIALIZED VIEW public.playground_stats AS
