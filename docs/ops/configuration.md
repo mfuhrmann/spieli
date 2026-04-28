@@ -22,11 +22,17 @@ All variables are set in `.env` (copy from `.env.example`). The installer genera
 | `POSTGRES_PASSWORD` | `change-me` | data-node, data-node-ui | Database password — **change in production** |
 | `POI_RADIUS_M` | `5000` | ui, data-node-ui | Radius in metres for nearby POI search |
 | `OSM2PGSQL_THREADS` | `4` | data-node, data-node-ui | CPU threads for the osm2pgsql data-loading step |
-| `PG_MAX_PARALLEL_WORKERS` | `6` | data-node, data-node-ui | Total parallel worker processes available to PostgreSQL (set ≤ CPU count) |
-| `PG_MAX_PARALLEL_WORKERS_PER_GATHER` | `4` | data-node, data-node-ui | Parallel workers per query — applied at the top of `api.sql` for the schema step (`playground_stats` MV rebuild and any other parallel-eligible query in that psql session). Must be ≤ `PG_MAX_PARALLEL_WORKERS`. |
-| `PG_MAX_PARALLEL_MAINTENANCE_WORKERS` | `4` | data-node, data-node-ui | Parallel workers for `CREATE INDEX` during the schema step. Must be ≤ `PG_MAX_PARALLEL_WORKERS`. |
+| `PG_MAX_PARALLEL_WORKERS` | `6` | data-node, data-node-ui | Total parallel worker processes available to PostgreSQL (set ≤ CPU count). Persisted via `ALTER SYSTEM` in `api.sql`. |
+| `PG_MAX_PARALLEL_WORKERS_PER_GATHER` | `4` | data-node, data-node-ui | Parallel workers per query. Must be ≤ `PG_MAX_PARALLEL_WORKERS`. |
+| `PG_MAX_PARALLEL_MAINTENANCE_WORKERS` | `4` | data-node, data-node-ui | Parallel workers for `CREATE INDEX` / `VACUUM`. Must be ≤ `PG_MAX_PARALLEL_WORKERS`. |
 | `PG_MAINTENANCE_WORK_MEM` | `512MB` | data-node, data-node-ui | Memory per maintenance operation (index builds etc.) — aim for ~6 % of total RAM. **Must include a unit suffix** (`kB`, `MB`, `GB`, `TB`); a bare integer is interpreted as kilobytes by PostgreSQL. |
 | `PG_WORK_MEM` | `128MB` | data-node, data-node-ui | Memory per sort/hash operation inside parallel workers. **Must include a unit suffix** (`kB`, `MB`, `GB`, `TB`); a bare integer is interpreted as kilobytes by PostgreSQL. |
+
+> **How `PG_*` values are applied.** `make db-apply` (and `make import`) runs
+> `ALTER SYSTEM SET …` at the top of `api.sql`, then `SELECT pg_reload_conf()`.
+> The values are persisted to `postgresql.auto.conf` inside the data volume
+> and apply to every connection — including PostgREST — without restarting
+> the database container. To re-tune, edit `.env` and run `make db-apply`.
 | `OSM_BBOX` | *(auto)* | data-node, data-node-ui | Manual bounding box for the osmium pre-filter (`west,south,east,north`). Skips Nominatim lookup when set. |
 | `OSM_BBOX_PADDING` | `0.15` | data-node, data-node-ui | Degrees of padding added to each side of the Nominatim bbox (≈ 15 km). |
 | `OSM_PREFILTER_MIN_MB` | `20` | data-node, data-node-ui | Source PBF files smaller than this many MB skip the osmium pre-filter step. |

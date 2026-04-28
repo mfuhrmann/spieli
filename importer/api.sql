@@ -9,13 +9,26 @@
 --   - Uncommon tags land in other_tags (hstore)
 
 -- =========================================================================
--- Session tuning — applied only to this psql session; does not affect
--- PostgREST connections. OSM2PGSQL_THREADS only covers the osm2pgsql step;
--- the CREATE MATERIALIZED VIEW and CREATE INDEX work happens here in psql
--- and benefits from these settings instead.
+-- Parallel-query / memory tuning. We persist via ALTER SYSTEM (writes to
+-- postgresql.auto.conf in the data volume) so the values survive container
+-- recreation and apply to every connection — including PostgREST's runtime
+-- queries — without needing `command:` overrides in compose files. All five
+-- GUCs are reload-eligible, so pg_reload_conf() is enough; no restart.
+--
+-- We *also* SET them at the session level so the current psql session (the
+-- import / db-apply run that follows immediately below) picks up the new
+-- values without depending on the SIGHUP-reload race window.
+--
 -- Values are substituted by envsubst in import.sh / make db-apply.
 -- Tune via PG_* variables in .env (see .env.example).
 -- =========================================================================
+ALTER SYSTEM SET max_parallel_workers             = ${PG_MAX_PARALLEL_WORKERS};
+ALTER SYSTEM SET max_parallel_workers_per_gather  = ${PG_MAX_PARALLEL_WORKERS_PER_GATHER};
+ALTER SYSTEM SET max_parallel_maintenance_workers = ${PG_MAX_PARALLEL_MAINTENANCE_WORKERS};
+ALTER SYSTEM SET maintenance_work_mem             = '${PG_MAINTENANCE_WORK_MEM}';
+ALTER SYSTEM SET work_mem                         = '${PG_WORK_MEM}';
+SELECT pg_reload_conf();
+
 SET max_parallel_workers             = ${PG_MAX_PARALLEL_WORKERS};
 SET max_parallel_workers_per_gather  = ${PG_MAX_PARALLEL_WORKERS_PER_GATHER};
 SET max_parallel_maintenance_workers = ${PG_MAX_PARALLEL_MAINTENANCE_WORKERS};

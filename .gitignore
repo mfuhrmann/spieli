@@ -4,6 +4,10 @@ dist
 .vite
 data/berlin-latest.osm.pbf
 
+# Local env file — may contain credentials (POSTGRES_PASSWORD, etc.).
+# Use .env.example as the template.
+.env
+
 # New Svelte app
 app/node_modules/
 app/dist/
