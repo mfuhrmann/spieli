@@ -1,12 +1,21 @@
+<script context="module">
+  // Module-scoped cache so a single `get_meta()` per backend URL is shared
+  // across every PlaygroundPanel mount (the panel re-mounts on every
+  // selection cycle in standalone). Successful results stay cached for
+  // the page lifetime; failures are NOT cached so a transient network
+  // blip doesn't permanently hide the chip.
+  const metaCache = new Map();
+</script>
+
 <script>
   import { onMount, onDestroy } from 'svelte';
   import OpeningHours from 'opening_hours';
   import { transform } from 'ol/proj';
-  import { X, Share2, Check, ChevronDown, ChevronRight, Pencil, Clock, ExternalLink, Image, Package, Navigation, Star } from 'lucide-svelte';
+  import { X, Share2, Check, ChevronDown, ChevronUp, ChevronRight, Pencil, Clock, ExternalLink, Image, Package, Navigation, Star, Info } from 'lucide-svelte';
   import { _ } from 'svelte-i18n';
 
   import { selection } from '../stores/selection.js';
-  import { fetchPlaygroundEquipment, fetchNearbyPOIs, fetchTrees } from '../lib/api.js';
+  import { fetchPlaygroundEquipment, fetchNearbyPOIs, fetchTrees, fetchMeta } from '../lib/api.js';
   import { overlayFeaturesStore } from '../stores/overlayLayer.js';
   import { playgroundCompleteness } from '../lib/completeness.js';
   import { poiRadiusM } from '../lib/config.js';
@@ -33,6 +42,124 @@
   let pois = [];
   let equipmentLoading = false;
   let poisLoading = false;
+
+  // ── Backend metadata (data age) ───────────────────────────────────────────
+  // metaCache is module-scoped (see <script context="module"> above) so the
+  // get_meta() result survives the panel's per-selection remount cycle.
+  let osmDataAgeSec = null;
+  // Generation guard so a slow earlier loadMeta() can't overwrite a faster
+  // later one when the user selects two playgrounds in quick succession.
+  let metaGen = 0;
+
+  async function loadMeta(url) {
+    const gen = ++metaGen;
+    if (!url) { osmDataAgeSec = null; return; }
+    if (metaCache.has(url)) {
+      if (gen === metaGen) osmDataAgeSec = metaCache.get(url);
+      return;
+    }
+    try {
+      const meta = await fetchMeta(url);
+      // Prefer the user-facing OSM snapshot age; fall back to import-run age.
+      const ageSec = meta?.osm_data_age_seconds ?? meta?.data_age_seconds ?? null;
+      metaCache.set(url, ageSec);
+      if (gen === metaGen) osmDataAgeSec = ageSec;
+    } catch {
+      // Don't cache failures — a transient network error must not permanently
+      // hide the chip for this backend URL.
+      if (gen === metaGen) osmDataAgeSec = null;
+    }
+  }
+
+  function formatDataAge(sec) {
+    if (!Number.isFinite(sec) || sec < 0) return null;
+    if (sec < 60) return $_('hub.dataAgeJustNow');
+    const m = Math.round(sec / 60);
+    if (m < 60)   return $_('hub.dataAgeMinutes', { values: { m } });
+    const h = Math.round(m / 60);
+    if (h < 48)   return $_('hub.dataAgeHours',   { values: { h } });
+    const d = Math.round(h / 24);
+    if (d <= 365) return $_('hub.dataAgeDays',    { values: { d } });
+    const y = Math.round(d / 365);
+    return $_('hub.dataAgeYears', { values: { y } });
+  }
+
+  $: loadMeta(backendUrl);
+  $: dataAgeFormatted = formatDataAge(osmDataAgeSec);
+  // Close the popover when the user picks a different playground / backend
+  // — the popover's body text references `dataAgeFormatted`, which would
+  // otherwise show stale content next to the new title until the user
+  // dismisses the popover.
+  $: if (backendUrl !== undefined) dataAgePopoverOpen = false;
+
+  // ── Data age popover ──────────────────────────────────────────────────────
+  let dataAgePopoverOpen = false;
+  let dataAgePopoverStyle = '';
+  let chipEl;
+
+  function recomputePopoverStyle() {
+    if (!chipEl) return;
+    const chip = chipEl.getBoundingClientRect();
+    // Clamp right edge against the panel's right boundary; floor the width
+    // so we never compute a zero/negative width on very narrow viewports.
+    const panel = chipEl.closest('aside, [data-panel]');
+    const panelRight = panel ? panel.getBoundingClientRect().right : window.innerWidth;
+    const maxWidth = Math.max(140, Math.min(260, panelRight - chip.left - 12));
+    dataAgePopoverStyle = [
+      `top:${chip.bottom + 6}px`,
+      `left:${chip.left}px`,
+      `width:${maxWidth}px`,
+    ].join(';');
+  }
+
+  function onDocumentClick(e) {
+    // Don't close when the click is inside the popover (so users can select
+    // text) or on the chip button itself (its own onclick handles toggle).
+    if (e.target?.closest?.('.data-age-popover, .data-age-chip')) return;
+    closeDataAgePopover();
+  }
+  function onPopoverKeydown(e) {
+    if (e.key === 'Escape' && dataAgePopoverOpen) {
+      // Stop propagation so the panel-level Escape handler doesn't also fire
+      // and close the entire panel.
+      e.stopPropagation();
+      closeDataAgePopover();
+    }
+  }
+  function onViewportChange() {
+    // Scroll/resize/sheet-drag invalidate the fixed-position style. Cheaper
+    // and less surprising to close than to chase the chip around the screen.
+    closeDataAgePopover();
+  }
+
+  function openDataAgePopover() {
+    recomputePopoverStyle();
+    dataAgePopoverOpen = true;
+    // Defer listener attachment by a tick so the click that opened the
+    // popover doesn't immediately close it via document-level capture.
+    setTimeout(() => {
+      window.addEventListener('click', onDocumentClick);
+      window.addEventListener('keydown', onPopoverKeydown);
+      window.addEventListener('resize', onViewportChange);
+      // capture: catches scroll on any ancestor (panel, bottom sheet, page)
+      window.addEventListener('scroll', onViewportChange, true);
+    }, 0);
+  }
+
+  function closeDataAgePopover() {
+    if (!dataAgePopoverOpen) return;
+    dataAgePopoverOpen = false;
+    window.removeEventListener('click', onDocumentClick);
+    window.removeEventListener('keydown', onPopoverKeydown);
+    window.removeEventListener('resize', onViewportChange);
+    window.removeEventListener('scroll', onViewportChange, true);
+  }
+
+  function toggleDataAgePopover(e) {
+    e.stopPropagation();
+    if (dataAgePopoverOpen) closeDataAgePopover();
+    else                    openDataAgePopover();
+  }
 
   // Centre of selected playground in WGS84
   let centerLat = 0, centerLon = 0;
@@ -114,6 +241,8 @@
 
   onDestroy(() => {
     overlayFeaturesStore.set({ equipment: [], trees: [] });
+    // Bail out cleanly if unmount happens while popover is open.
+    closeDataAgePopover();
   });
 
   // ── Completeness badge ────────────────────────────────────────────────────
@@ -259,7 +388,28 @@
     {#if !embedded}
       <div class="info-panel__header">
         <div class="flex-1 min-w-0">
-          <h2 class="panel-title">{getPlaygroundTitle(attr, $_)}</h2>
+          <div class="flex items-center gap-2 flex-wrap">
+            <h2 class="panel-title">{getPlaygroundTitle(attr, $_)}</h2>
+            {#if dataAgeFormatted}
+              <button
+                bind:this={chipEl}
+                class="data-age-chip"
+                onclick={toggleDataAgePopover}
+                title={$_('details.osmDataAgeTitle')}
+                aria-haspopup="dialog"
+                aria-controls="data-age-popover"
+                aria-expanded={dataAgePopoverOpen}
+              >
+                <Info class="h-3 w-3" />
+                {$_('details.osmDataAgeChip', { values: { age: dataAgeFormatted } })}
+                {#if dataAgePopoverOpen}
+                  <ChevronUp class="h-3 w-3" />
+                {:else}
+                  <ChevronDown class="h-3 w-3" />
+                {/if}
+              </button>
+            {/if}
+          </div>
           {#if getPlaygroundLocation(attr, $_)}
             <p class="text-sm text-muted-foreground mt-0.5">{getPlaygroundLocation(attr, $_)}</p>
           {/if}
@@ -277,7 +427,28 @@
       <!-- Embedded header (bottom sheet) -->
       <div class="flex items-start justify-between gap-2 mb-4">
         <div class="flex-1 min-w-0">
-          <h2 class="panel-title">{getPlaygroundTitle(attr, $_)}</h2>
+          <div class="flex items-center gap-2 flex-wrap">
+            <h2 class="panel-title">{getPlaygroundTitle(attr, $_)}</h2>
+            {#if dataAgeFormatted}
+              <button
+                bind:this={chipEl}
+                class="data-age-chip"
+                onclick={toggleDataAgePopover}
+                title={$_('details.osmDataAgeTitle')}
+                aria-haspopup="dialog"
+                aria-controls="data-age-popover"
+                aria-expanded={dataAgePopoverOpen}
+              >
+                <Info class="h-3 w-3" />
+                {$_('details.osmDataAgeChip', { values: { age: dataAgeFormatted } })}
+                {#if dataAgePopoverOpen}
+                  <ChevronUp class="h-3 w-3" />
+                {:else}
+                  <ChevronDown class="h-3 w-3" />
+                {/if}
+              </button>
+            {/if}
+          </div>
           {#if getPlaygroundLocation(attr, $_)}
             <p class="text-sm text-muted-foreground mt-0.5">{getPlaygroundLocation(attr, $_)}</p>
           {/if}
@@ -479,6 +650,21 @@
       </div>
     </div>
   </aside>
+{/if}
+
+{#if dataAgePopoverOpen && dataAgeFormatted}
+  <div
+    id="data-age-popover"
+    class="data-age-popover"
+    style={dataAgePopoverStyle}
+    role="dialog"
+    aria-labelledby="data-age-popover-title"
+  >
+    <p id="data-age-popover-title" class="data-age-popover__title">{$_('details.osmDataAgeTitle')}</p>
+    <p class="data-age-popover__body">
+      {$_('details.osmDataAgeBody', { values: { age: dataAgeFormatted } })}
+    </p>
+  </div>
 {/if}
 
 <style>
@@ -727,5 +913,56 @@
     color: #9ca3af;
     text-transform: uppercase;
     letter-spacing: 0.06em;
+  }
+
+  /* ── Data-age chip + fixed popover ──────────────────────────────────── */
+  .data-age-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 7px;
+    border-radius: 9999px;
+    font-size: 10px;
+    font-weight: 600;
+    color: #6b7280;
+    background: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s, color 0.15s;
+    line-height: 1.4;
+  }
+
+  .data-age-chip:hover,
+  .data-age-chip[aria-expanded="true"] {
+    background: #e5e7eb;
+    color: #374151;
+  }
+
+  /* Rendered outside the aside so overflow-y: auto can't clip it. */
+  :global(.data-age-popover) {
+    position: fixed;
+    z-index: 500;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    padding: 10px 12px;
+  }
+
+  :global(.data-age-popover__title) {
+    font-size: 10px;
+    font-weight: 700;
+    color: #374151;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin: 0 0 4px;
+  }
+
+  :global(.data-age-popover__body) {
+    font-size: 12px;
+    color: #6b7280;
+    line-height: 1.5;
+    margin: 0;
   }
 </style>
