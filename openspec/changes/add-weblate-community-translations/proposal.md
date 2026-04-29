@@ -1,31 +1,30 @@
 ## Why
 
-UI strings in spieli are hardcoded German with only DE and EN supported, making the app inaccessible to non-German-speaking communities who discover it through OSM. Weblate gives community translators a web UI to contribute new languages without needing GitHub access, turning translation into a self-service OSM community activity.
+spieli's UI is fully localised in DE and EN, but no other language is active in the app. The OSM community is global — connecting spieli to hosted.weblate.org puts it in front of community translators and raises project visibility, turning translation into a self-service activity that runs without developer involvement. The two prerequisite blockers (#249 project rename, #157 svelte-i18n epic) are both closed: setup can begin now.
 
 ## What Changes
 
-- Add a `.weblate.yml` component-discovery config to the repo root so hosted.weblate.org can auto-detect the translation component
-- Register the project on hosted.weblate.org (free OSS tier) as "spieli", linked to the GitHub repo via webhook
-- Configure Weblate to use EN as the source language and `locales/en.json` as the template, with `json-i18n` format (ICU plural-aware)
-- Keep existing `locales/*.json` files (cs, es, fr, it, ja, nl, pl, pt, sv, uk) as partial starting points for community translators
-- Weblate pushes translation updates to a dedicated `weblate-translations` branch; maintainer merges via PR (never direct to `main`)
-- Document language graduation threshold: when a language reaches ≥ 80% translated in Weblate, add it to `SUPPORTED` in `i18n.js` and add a `register()` call
+- Add `.weblate.yml` to the repo root so hosted.weblate.org auto-discovers the translation component
+- Register spieli on hosted.weblate.org (free OSS tier) linked to the GitHub repo via webhook
+- Clean up stale plural-suffix keys (`_one`, `_few`, `_other`) from the ten partial locale files — these predate the ICU-inline format and would appear as untranslatable noise in Weblate
+- Configure Weblate to use EN as the source language and `json-i18n` file format (ICU-plural-aware)
+- Set the push branch to `weblate-translations`; all translation PRs go through maintainer review before reaching `main`
+- Document the language graduation threshold (≥ 80% completion) in the Weblate project description
 
 ## Capabilities
 
 ### New Capabilities
 
-- `weblate-integration`: Weblate component config, repo webhook, push-branch PR workflow, and language graduation process
+- `weblate-integration`: Weblate component config, repo webhook, push-branch PR workflow, and partial-locale cleanup
 
 ### Modified Capabilities
 
-- `i18n-language-support`: graduation threshold added — new languages go live in the app only once they reach ≥ 80% completion in Weblate
+- `i18n-language-support`: graduation threshold clarified — 80% of 580 keys (~464) needed before a language is added to `SUPPORTED` in `i18n.js`; EN is the authoritative source for new strings
 
 ## Impact
 
-- **New file**: `.weblate.yml` in repo root (Weblate component discovery)
-- **`app/src/lib/i18n.js`**: updated when new languages graduate (≥ 80% complete)
-- **`locales/`**: new language JSON files added over time via Weblate PRs
+- **New file**: `.weblate.yml` in repo root
+- **Modified files**: `locales/cs.json`, `es.json`, `fr.json`, `it.json`, `ja.json`, `nl.json`, `pl.json`, `pt.json`, `sv.json`, `uk.json` — remove 15 stale `_one`/`_few`/`_other` plural keys each
+- **`app/src/lib/i18n.js`**: updated when languages graduate (one-time per language, maintainer-triggered)
 - **External dependency**: hosted.weblate.org account and project setup (one-time manual step)
-- **Sequencing**: should be set up after issue #249 (project rename to "spieli") so the Weblate project name matches the final repo name
-- **No changes** to the JSON translation format — the existing nested ICU structure is already compatible with Weblate's `json-i18n` format
+- **No changes** to `locales/en.json`, `locales/de.json`, or the JSON translation format

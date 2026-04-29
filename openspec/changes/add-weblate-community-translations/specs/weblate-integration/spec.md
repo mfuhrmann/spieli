@@ -1,5 +1,15 @@
 ## ADDED Requirements
 
+### Requirement: Partial locale files cleaned of stale plural-suffix keys before Weblate import
+
+Before connecting hosted.weblate.org to the repository, all ten partial locale files (cs, es, fr, it, ja, nl, pl, pt, sv, uk) SHALL have their 15 stale `_one`/`_few`/`_other` plural-suffix keys removed. These keys are from a prior plural format and have no counterpart in `locales/en.json`; Weblate would import them as untranslatable orphans.
+
+#### Scenario: Weblate imports a cleaned partial locale
+
+- **WHEN** Weblate imports `locales/cs.json` after cleanup
+- **THEN** every key in `cs.json` matches a key in `locales/en.json`
+- **AND** no untranslatable orphan keys appear in the Weblate component
+
 ### Requirement: Weblate component discovery file
 
 The repository SHALL contain a `.weblate.yml` file in the root that configures Weblate component auto-discovery with the following settings: file format `json-i18n`, file mask `locales/*.json`, template `locales/en.json`, source language `en`, push branch `weblate-translations`.
@@ -26,15 +36,15 @@ The Weblate component SHALL be configured to push translation commits to a branc
 - **THEN** the updated `locales/*.json` files are bundled into the next Docker build
 - **AND** the changes become visible in the live app after `make docker-build`
 
-### Requirement: Existing locale files preserved as starting points
+### Requirement: Existing locale files preserved as starting points (after cleanup)
 
-All existing locale files in `locales/` (cs, es, fr, it, ja, nl, pl, pt, sv, uk) SHALL be retained in the repository and SHALL be imported by Weblate as partially-translated starting points. They SHALL NOT be deleted or replaced with empty files.
+After the stale-key cleanup (see above), the remaining valid keys in the ten partial locale files SHALL be retained and imported by Weblate. They cover the app-shell strings (search, navigation, completeness labels, info panel) and give translators a non-blank starting point.
 
 #### Scenario: Community translator opens an existing language
 
 - **WHEN** a translator opens e.g. the French component in Weblate
-- **THEN** they see partially pre-filled translations (from the existing auto-generated `fr.json`)
-- **AND** they can review, correct, and complete the strings rather than starting from blank
+- **THEN** they see ~99 pre-filled translations covering core UI strings
+- **AND** they can review, correct, and complete the remaining strings rather than starting from blank
 
 ### Requirement: ICU plural forms presented correctly in Weblate UI
 

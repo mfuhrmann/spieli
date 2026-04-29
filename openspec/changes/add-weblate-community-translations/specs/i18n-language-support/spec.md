@@ -2,7 +2,7 @@
 
 ### Requirement: Language graduation threshold
 
-A language SHALL only be added to the app's `SUPPORTED` array in `app/src/lib/i18n.js` when it has reached ≥ 80% translation completion in Weblate. Languages below this threshold SHALL remain in `locales/` (available in Weblate for contributor work) but SHALL NOT appear in the running application.
+A language SHALL only be added to the app's `SUPPORTED` array in `app/src/lib/i18n.js` when it has reached ≥ 80% translation completion in Weblate. With the current 580-key source (`locales/en.json`), that is ≥ 464 keys translated. Languages below this threshold SHALL remain in `locales/` (available in Weblate for contributor work) but SHALL NOT appear in the running application.
 
 #### Scenario: Language reaches 80% in Weblate
 

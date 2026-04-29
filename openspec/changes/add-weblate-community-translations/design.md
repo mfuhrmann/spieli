@@ -1,21 +1,31 @@
 ## Context
 
-spieli currently supports DE and EN via `svelte-i18n` with flat JSON files using ICU message format (`locales/de.json`, `locales/en.json`, ~320 keys each). Ten additional locale files exist in `locales/` from a previous attempt (cs, es, fr, it, ja, nl, pl, pt, sv, uk) but are auto-generated and not registered in `i18n.js`. There is no external translation tooling — strings are edited directly in the repo.
+spieli uses `svelte-i18n` with nested JSON files in `locales/`. DE and EN are complete at 580 keys each. Ten additional locale files (cs, es, fr, it, ja, nl, pl, pt, sv, uk) exist from a previous attempt — they cover 15–19% of current strings and each contains 15 stale plural-suffix keys (`_one`, `_few`, `_other`) that predate the current ICU-inline plural format.
 
-The goal is to invite OSM community translators to contribute new languages. Translators in this context are non-developers who should not need GitHub access or knowledge of ICU syntax.
+Current state of partial locales vs. what Weblate would see:
 
-**Constraint**: Setup should happen after issue #249 (project rename to "spieli") so the Weblate project name is consistent with the final repo and DNS name.
+```
+cs/es/fr/…  ████░░░░░░░░░░░░░░░░  ~17% of 580 keys
+             + 15 orphaned _one/_few/_other keys
+               (no match in en.json → Weblate imports as noise)
+```
+
+After cleanup: 89–94 valid keys per language remain. These are genuinely useful as a translator starting point for the app-shell strings (search, filters, nav, completeness), even though the large equipment vocabulary sections are blank.
+
+Both blocking prerequisites are resolved: #249 (project rename to "spieli") and #157 (svelte-i18n re-integration) are closed.
 
 ## Goals / Non-Goals
 
 **Goals:**
-- Enable community translation contributions via a web UI (no GitHub access required)
+- Enable community translation contributions via a Weblate web UI — no GitHub access required
 - Keep translation PRs in the maintainer's review queue — no direct pushes to `main`
-- Support existing `locales/*.json` format with zero changes to file structure
+- Import existing partial locale files as starting points with minimal friction
 - Provide a clear threshold for when a new language goes live in the app
+- Raise spieli's profile in the OSM translator community
 
 **Non-Goals:**
-- Automated language promotion (adding to `SUPPORTED` stays a manual maintainer decision)
+- Pre-populating the equipment vocabulary sections from external data sources (OSM wiki, iD translations) — valuable but out of scope; that's a future bootstrap task
+- Automated language promotion — adding to `SUPPORTED` stays a manual maintainer step
 - Self-hosted Weblate infrastructure
 - Changing the JSON translation format or ICU syntax
 
@@ -23,65 +33,43 @@ The goal is to invite OSM community translators to contribute new languages. Tra
 
 ### 1. EN as Weblate source language (not DE)
 
-**Decision**: `locales/en.json` is the Weblate template; translators work from English.
-
-**Rationale**: The vast majority of community translators on hosted.weblate.org work from English. Using DE as source would require translators to know German grammar — a significant barrier, especially for e.g. Japanese or Czech contributors. The German genitive suffix in `{regionName}er spieli` (vs. `{regionName} Playground Map` in EN) illustrates the problem concretely.
-
-**Trade-off**: The maintainer must keep `locales/en.json` and `locales/de.json` in sync manually (as they do today). Weblate treats DE as a translation like any other, but the maintainer edits it directly in the repo rather than via Weblate UI.
-
-**Alternative considered**: DE as source. Rejected — see rationale above.
+`locales/en.json` is the Weblate template; translators work from English. The vast majority of hosted.weblate.org translators work from EN. Using DE as source would require knowledge of German grammar for e.g. Japanese or Czech contributors. Maintainer keeps DE in sync manually, as today.
 
 ### 2. hosted.weblate.org, free OSS tier
 
-**Decision**: Use hosted.weblate.org rather than self-hosted Weblate.
+spieli qualifies as libre open-source. Zero infrastructure. Weblate handles GitHub webhook integration, translation memory, machine translation suggestions, and quality checks. No self-hosting burden.
 
-**Rationale**: spieli qualifies as a libre open-source project. Zero infrastructure to maintain. Weblate handles GitHub webhook integration, translation memory, machine translation suggestions, and quality checks out of the box.
+### 3. `json-i18n` file format
 
-**Alternative considered**: Self-hosted Weblate (Docker). Rejected — adds operational burden with no benefit for a volunteer-maintained project.
+`locales/*.json` uses ICU message format for plurals (`{count, plural, one {# bench} other {# benches}}`). Weblate's `json-i18n` format understands ICU syntax and presents plural forms as separate fields. Plain `json-nested` treats ICU strings as opaque — wrong for this format.
 
-### 3. `json-i18n` file format (not `json-nested`)
+### 4. Clean up stale plural keys before import
 
-**Decision**: Configure the Weblate component with file format `json-i18n`.
+The 15 `_one`/`_few`/`_other` keys in each partial locale are from an older format where plural forms were separate keys. They have no counterpart in `en.json`. Weblate would import them as untranslatable orphans. Strip them from all ten files before the Weblate component is connected.
 
-**Rationale**: The locale files use ICU message format for plurals (`{count, plural, one {# Spielgerät} other {# Spielgeräte}}`). Weblate's plain `json-nested` format treats these as opaque strings, losing plural form awareness. `json-i18n` understands ICU syntax and presents plural forms as separate translation fields in the UI.
+The valid residual content (89–94 keys per language) is worth keeping — these cover the app-shell strings (search, navigation, completeness labels, info panel) that translators encounter first.
 
-**Risk**: ICU plural syntax in Weblate requires translators to understand the `{count, plural, ...}` pattern for their target language's plural rules (e.g. Slavic languages have 3–4 plural forms). Weblate surfaces this automatically in the UI, so it's manageable.
+### 5. Push to dedicated branch, merge via PR
 
-### 4. Push to dedicated branch, merge via PR
+Weblate pushes commits to `weblate-translations`. PR to `main` for maintainer review. Matches the project's "never push directly to main" policy. Weblate's GitHub integration can open PRs automatically, or the maintainer creates them manually.
 
-**Decision**: Weblate pushes translation commits to a `weblate-translations` branch. A PR from that branch to `main` is opened for maintainer review.
+### 6. 80% completion threshold for language graduation
 
-**Rationale**: Matches the project's `Never push directly to main` policy (CLAUDE.md). Maintainer can review, squash, and merge on their own schedule. Prevents unreviewed strings landing in production.
+A language is added to `SUPPORTED` in `i18n.js` only when it reaches ≥ 80% translated in Weblate. With 580 keys, 80% = 464 keys. This is more work than the original estimate (~256 keys at the old 320-key count), but the quality bar is correct: below 80%, the equipment vocabulary sections would be largely untranslated and the app experience would be jarring.
 
-**Configuration**: In Weblate project settings, set "Push branch" to `weblate-translations`. The Weblate GitHub integration can open PRs automatically, or the maintainer creates them manually.
+The threshold is documented in the Weblate project description. Translator motivation: Weblate shows percentage bars and activity badges — reaching 80% is a visible milestone.
 
-### 5. 80% completion threshold for language graduation
+### 7. Developer workflow: EN first, DE in same commit
 
-**Decision**: A language is added to `SUPPORTED` in `i18n.js` (and becomes visible in the app) only when it reaches ≥ 80% translated strings in Weblate.
-
-**Rationale**: A language at 30% completion produces a jarring mixed-language UI. 80% ensures most screens are fully translated before users encounter the language. The threshold is documented in the Weblate project description so translators know the bar.
-
-**Note**: The maintainer adds the language manually: add to `SUPPORTED` array in `i18n.js`, add a `register()` call, and add a `register()` call targeting `locales/<lang>.json`.
-
-### 6. Old locale files kept as starting points
-
-**Decision**: Retain `locales/cs.json`, `es.json`, `fr.json`, `it.json`, `ja.json`, `nl.json`, `pl.json`, `pt.json`, `sv.json`, `uk.json`.
-
-**Rationale**: Even auto-generated translations provide a starting point and populate Weblate's translation memory. Weblate quality checks flag suspicious strings. Community translators benefit from having something to review rather than a blank slate.
+When a new string is added, `en.json` is updated first, `de.json` in the same commit. Weblate detects the new EN key and surfaces it to all language translators immediately. Adding to `de.json` only without an EN counterpart breaks the source → translation chain.
 
 ## Risks / Trade-offs
 
-- **Stale EN/DE sync**: If a new string is added to `de.json` but not `en.json`, Weblate won't surface it to translators. Mitigation: treat EN as the authoritative source; add new strings to `en.json` first, then `de.json`.
-- **ICU plural complexity**: Languages with complex plural rules (Polish, Russian, Arabic) require translators to handle multiple forms. Weblate guides this but can't prevent wrong plural patterns. Mitigation: Weblate's built-in plural validation catches most errors.
-- **Weblate PR flood**: Active translation periods may produce frequent PRs. Mitigation: Weblate batches commits; "Squash commits" option in Weblate settings keeps PR history clean.
-- **`.weblate.yml` format drift**: Weblate's discovery file format may differ by version. Mitigation: verify exact YAML schema against hosted.weblate.org docs at setup time.
-
-## Migration Plan
-
-1. Wait for issue #249 (rename to "spieli") to land
-2. Register on hosted.weblate.org, create project "spieli" linked to the GitHub repo
-3. Add `.weblate.yml` to repo root (component discovery config)
-4. Configure component: file format `json-i18n`, template `locales/en.json`, push branch `weblate-translations`
-5. Weblate imports existing locale files — translators see partially-completed languages
-6. Document graduation threshold in Weblate project description
-7. As languages reach 80%: open PR to add them to `i18n.js`
+| Risk | Likelihood | Mitigation |
+|---|---|---|
+| Stale keys missed during cleanup — Weblate imports orphans | Low | Python script to diff `locales/*.json` against `en.json` before connecting |
+| EN/DE sync drift — new strings added only to `de.json` | Medium | Dev workflow documented; CI lint rule possible future addition |
+| ICU plural complexity confuses translators | Low | Weblate surfaces plural forms as separate fields with language-specific plural rules; most common case (one/other) needs no explanation |
+| Weblate PR flood during active translation periods | Low | Weblate squash-commits option; batch push delay setting |
+| 80% threshold feels too high for minority languages with few speakers | Low–Medium | Threshold can be lowered per-language by maintainer; documented as guidance not hard policy |
+| `.weblate.yml` format drift between Weblate versions | Low | Verify exact schema against hosted.weblate.org docs at setup time |
