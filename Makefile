@@ -85,7 +85,11 @@ db-apply: require-docker  ## Apply importer/api.sql to the running database and 
 	    echo "PG_MAX_PARALLEL_WORKERS_PER_GATHER and PG_MAX_PARALLEL_MAINTENANCE_WORKERS must each be ≤ PG_MAX_PARALLEL_WORKERS ($$PG_MAX_PARALLEL_WORKERS)" >&2; exit 1; \
 	fi && \
 	envsubst '$$OSM_RELATION_ID $$PG_MAX_PARALLEL_WORKERS $$PG_MAX_PARALLEL_WORKERS_PER_GATHER $$PG_MAX_PARALLEL_MAINTENANCE_WORKERS $$PG_MAINTENANCE_WORK_MEM $$PG_WORK_MEM' \
-	< importer/api.sql | docker compose exec -T db psql -U osm -d osm --single-transaction
+	< importer/api.sql | grep -E '^ALTER SYSTEM' | \
+	docker compose exec -T db psql -U osm -d osm && \
+	envsubst '$$OSM_RELATION_ID $$PG_MAX_PARALLEL_WORKERS $$PG_MAX_PARALLEL_WORKERS_PER_GATHER $$PG_MAX_PARALLEL_MAINTENANCE_WORKERS $$PG_MAINTENANCE_WORK_MEM $$PG_WORK_MEM' \
+	< importer/api.sql | grep -v '^ALTER SYSTEM' | \
+	docker compose exec -T db psql -U osm -d osm --single-transaction
 	docker compose exec db psql -U osm -d osm -c "NOTIFY pgrst, 'reload schema';"
 
 db-shell: require-docker  ## Open a psql shell in the running database container
