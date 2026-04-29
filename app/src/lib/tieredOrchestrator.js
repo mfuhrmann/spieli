@@ -39,13 +39,17 @@ export function tierForZoom(zoom) {
  * @param {string} opts.baseUrl  PostgREST base URL (may be '' for dev without backend)
  * @param {import('ol/source/Vector.js').default} opts.clusterSource
  * @param {import('ol/source/Vector.js').default} opts.polygonSource
- * @returns {() => void} detach function
+ * @param {() => object|null} [opts.getFilters]  Returns current cluster-relevant filter snapshot.
+ *   Called on every orchestrate() run — including debounced moveend — so filters stay in sync
+ *   without the caller having to pass them explicitly on each moveend event.
+ * @returns {{ detach: () => void, rerun: () => void }}
  */
 export function attachTieredOrchestrator({
   map,
   baseUrl,
   clusterSource,
   polygonSource,
+  getFilters = () => null,
 }) {
   let abort = null;
   let useLegacy = false; // sticky: once a tier RPC 404s, route to legacy for the rest of the session
@@ -61,6 +65,7 @@ export function attachTieredOrchestrator({
     const signal = abort.signal;
 
     const extent3857 = view.calculateExtent(map.getSize());
+    const filters = getFilters();
 
     try {
       if (useLegacy) {
@@ -68,7 +73,7 @@ export function attachTieredOrchestrator({
         if (signal.aborted) return;
         fillPolygonSource(polygonSource, geojson);
       } else if (tier === 'cluster') {
-        const buckets = await fetchPlaygroundClusters(Math.floor(zoom), extent3857, baseUrl, signal);
+        const buckets = await fetchPlaygroundClusters(Math.floor(zoom), extent3857, baseUrl, signal, filters);
         if (signal.aborted) return;
         fillClusterSource(clusterSource, buckets);
       } else {
@@ -100,10 +105,15 @@ export function attachTieredOrchestrator({
   // Initial load runs immediately, not debounced.
   orchestrate();
 
-  return () => {
-    debounced.cancel?.();
-    if (abort) abort.abort();
-    map.un('moveend', debounced);
+  return {
+    detach() {
+      debounced.cancel?.();
+      if (abort) abort.abort();
+      map.un('moveend', debounced);
+    },
+    rerun() {
+      orchestrate();
+    },
   };
 }
 

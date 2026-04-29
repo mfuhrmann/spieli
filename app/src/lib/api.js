@@ -47,9 +47,28 @@ export async function fetchPlaygrounds(baseUrl = defaultApiBaseUrl, signal) {
  * bucket objects, grid-aligned to a zoom-dependent cell size on the server.
  * Invariant: `count = complete + partial + missing + restricted`.
  */
-export async function fetchPlaygroundClusters(zoom, extentEPSG3857, baseUrl = defaultApiBaseUrl, signal) {
+const clusterFilterMap = {
+    private:      'filter_private',
+    water:        'filter_water',
+    baby:         'filter_baby',
+    toddler:      'filter_toddler',
+    wheelchair:   'filter_wheelchair',
+    bench:        'filter_bench',
+    picnic:       'filter_picnic',
+    shelter:      'filter_shelter',
+    tableTennis:  'filter_table_tennis',
+    soccer:       'filter_soccer',
+    basketball:   'filter_basketball',
+};
+
+export async function fetchPlaygroundClusters(zoom, extentEPSG3857, baseUrl = defaultApiBaseUrl, signal, filters = null) {
     const [minLon, minLat, maxLon, maxLat] = transformExtent(extentEPSG3857, 'EPSG:3857', 'EPSG:4326');
     const params = new URLSearchParams({ z: zoom, min_lon: minLon, min_lat: minLat, max_lon: maxLon, max_lat: maxLat });
+    if (filters) {
+        for (const [key, param] of Object.entries(clusterFilterMap)) {
+            if (filters[key]) params.set(param, 'true');
+        }
+    }
     const res = await fetch(`${baseUrl}/rpc/get_playground_clusters?${params}`, { signal });
     if (res.ok) return res.json();
     throw new Error(`get_playground_clusters failed: ${res.status}`);

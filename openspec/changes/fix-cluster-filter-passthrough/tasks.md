@@ -1,32 +1,32 @@
 ## 1. GitHub issue & branch
 
-- [ ] 1.1 Confirm issue #305 is open and link this change to it
-- [ ] 1.2 Create branch `fix/305-cluster-filter-passthrough` from `main`
+- [x] 1.1 Confirm issue #305 is open and link this change to it
+- [x] 1.2 Create branch `fix/305-cluster-filter-passthrough` from `main`
 
 ## 2. Database — `get_playground_clusters`
 
-- [ ] 2.1 Add 11 `boolean DEFAULT false` filter params to the function signature in `importer/api.sql` (`filter_private`, `filter_water`, `filter_baby`, `filter_toddler`, `filter_wheelchair`, `filter_bench`, `filter_picnic`, `filter_shelter`, `filter_table_tennis`, `filter_soccer`, `filter_basketball`)
-- [ ] 2.2 Add `AND (NOT filter_x OR <expr>)` clauses to the `buckets` CTE for each param, matching the mapping in design.md D2
-- [ ] 2.3 Update the `GRANT EXECUTE` statement to cover the new function signature (or switch to schema-level grant as noted in design.md D4)
+- [x] 2.1 Add 11 `boolean DEFAULT false` filter params to the function signature in `importer/api.sql` (`filter_private`, `filter_water`, `filter_baby`, `filter_toddler`, `filter_wheelchair`, `filter_bench`, `filter_picnic`, `filter_shelter`, `filter_table_tennis`, `filter_soccer`, `filter_basketball`)
+- [x] 2.2 Add `AND (NOT filter_x OR <expr>)` clauses to the `buckets` CTE for each param, matching the mapping in design.md D2
+- [x] 2.3 Update the `GRANT EXECUTE` statement to cover the new function signature (or switch to schema-level grant as noted in design.md D4)
 - [ ] 2.4 Run `make db-apply` and verify the function is callable with no params (unfiltered baseline) and with individual filter flags
 
 ## 3. API — `fetchPlaygroundClusters`
 
-- [ ] 3.1 Add optional `filters` parameter to `fetchPlaygroundClusters` in `app/src/lib/api.js`
-- [ ] 3.2 Implement filter serialisation: iterate the `filterMap` (see design.md D3), append only active (true) flags as URL params
-- [ ] 3.3 Ensure `standalonePitches` is absent from the filter map
+- [x] 3.1 Add optional `filters` parameter to `fetchPlaygroundClusters` in `app/src/lib/api.js`
+- [x] 3.2 Implement filter serialisation: iterate the `filterMap` (see design.md D3), append only active (true) flags as URL params
+- [x] 3.3 Ensure `standalonePitches` is absent from the filter map
 
 ## 4. Orchestrator — `tieredOrchestrator.js`
 
-- [ ] 4.1 Change `attachTieredOrchestrator` to accept an optional `filters` snapshot in `orchestrate(filters)`
-- [ ] 4.2 Pass `filters` through to `fetchPlaygroundClusters` in the cluster tier branch
-- [ ] 4.3 Change the return value from `() => void` to `{ detach, rerun }` where `rerun(filters?)` calls `orchestrate(filters)` directly (not debounced)
+- [x] 4.1 Change `attachTieredOrchestrator` to accept an optional `filters` snapshot in `orchestrate(filters)`
+- [x] 4.2 Pass `filters` through to `fetchPlaygroundClusters` in the cluster tier branch
+- [x] 4.3 Change the return value from `() => void` to `{ detach, rerun }` where `rerun(filters?)` calls `orchestrate(filters)` directly (not debounced)
 
 ## 5. StandaloneApp integration
 
-- [ ] 5.1 Update destructuring of `attachTieredOrchestrator` return value in `app/src/standalone/StandaloneApp.svelte` to `{ detach: detachOrchestrator, rerun: rerunOrchestrator }`
-- [ ] 5.2 Add reactive statement: `$: if ($filterStore && $activeTierStore === 'cluster') rerunOrchestrator($filterStore)` — guard on both tier and store availability
-- [ ] 5.3 Verify the reactive statement fires only when tier is `cluster` (not on polygon zoom)
+- [x] 5.1 Update destructuring of `attachTieredOrchestrator` return value in `app/src/standalone/StandaloneApp.svelte` to `{ detach: detachOrchestrator, rerun: rerunOrchestrator }`
+- [x] 5.2 Add reactive statement guarded by `rerunOrchestrator && activeTierStore === 'cluster'`, using a string fingerprint to exclude standalonePitches changes
+- [x] 5.3 Verify the reactive statement fires only when tier is `cluster` (not on polygon zoom)
 
 ## 6. Manual verification
 

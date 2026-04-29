@@ -308,13 +308,25 @@ COMMENT ON FUNCTION api.get_playgrounds(bigint) IS
 --     lat-dependent visual correction is the client's concern.
 -- =========================================================================
 DROP FUNCTION IF EXISTS api.get_playground_clusters(int, float8, float8, float8, float8);
+DROP FUNCTION IF EXISTS api.get_playground_clusters(int, float8, float8, float8, float8, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean);
 
 CREATE OR REPLACE FUNCTION api.get_playground_clusters(
-  z       int,
-  min_lon float8,
-  min_lat float8,
-  max_lon float8,
-  max_lat float8
+  z                   int,
+  min_lon             float8,
+  min_lat             float8,
+  max_lon             float8,
+  max_lat             float8,
+  filter_private      boolean DEFAULT false,
+  filter_water        boolean DEFAULT false,
+  filter_baby         boolean DEFAULT false,
+  filter_toddler      boolean DEFAULT false,
+  filter_wheelchair   boolean DEFAULT false,
+  filter_bench        boolean DEFAULT false,
+  filter_picnic       boolean DEFAULT false,
+  filter_shelter      boolean DEFAULT false,
+  filter_table_tennis boolean DEFAULT false,
+  filter_soccer       boolean DEFAULT false,
+  filter_basketball   boolean DEFAULT false
 )
 RETURNS json
 LANGUAGE sql STABLE SECURITY DEFINER
@@ -356,6 +368,17 @@ AS $$
       ps.access_restricted
     FROM public.playground_stats ps, bbox b, cell_size cs
     WHERE ST_Intersects(ps.centroid_3857, b.geom)
+      AND (NOT filter_private     OR NOT ps.access_restricted)
+      AND (NOT filter_water       OR ps.is_water)
+      AND (NOT filter_baby        OR ps.for_baby)
+      AND (NOT filter_toddler     OR ps.for_toddler)
+      AND (NOT filter_wheelchair  OR ps.for_wheelchair)
+      AND (NOT filter_bench       OR ps.bench_count > 0)
+      AND (NOT filter_picnic      OR ps.picnic_count > 0)
+      AND (NOT filter_shelter     OR ps.shelter_count > 0)
+      AND (NOT filter_table_tennis OR ps.table_tennis_count > 0)
+      AND (NOT filter_soccer      OR ps.has_soccer)
+      AND (NOT filter_basketball  OR ps.has_basketball)
   ),
   aggregated AS (
     -- Restricted playgrounds are counted separately from the three
@@ -393,7 +416,7 @@ AS $$
   FROM aggregated;
 $$;
 
-GRANT EXECUTE ON FUNCTION api.get_playground_clusters(int, float8, float8, float8, float8) TO web_anon;
+GRANT EXECUTE ON FUNCTION api.get_playground_clusters(int, float8, float8, float8, float8, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean) TO web_anon;
 
 -- =========================================================================
 -- 1b. get_playground_centroids(bbox)
