@@ -26,6 +26,20 @@ More: [osm2pgsql.org](https://osm2pgsql.org)
 
 More: [postgrest.org](https://postgrest.org)
 
+## Data Quality indicator
+
+Each playground carries a **Data Quality** badge whose colour reflects how completely it has been mapped in OpenStreetMap:
+
+| Colour | Meaning |
+|--------|---------|
+| Green  | Photos, a name, and at least one detail (equipment, surface, …) are present |
+| Yellow | At least one of the above is present, but not all |
+| Red    | None of the above — the playground exists in OSM but has no additional data |
+
+The badge label is always "Datenqualität" / "Data Quality"; the colour alone communicates the state. The same three-state breakdown is used in the map legend, cluster rings, and the federation macro view.
+
+Internally, the three states are referred to as `complete`, `partial`, and `missing`. These values appear in the API responses (see [`api.md`](api.md)) and in the database (`playground_stats` materialised view). The display label is intentionally kept neutral — it describes *what* is shown, not a judgement.
+
 ## Overpass Turbo
 
 **Overpass Turbo** ([overpass-turbo.eu](https://overpass-turbo.eu)) is a web tool for running ad-hoc queries against live OpenStreetMap data. It is useful when adding support for a new device type — you can search for `playground=<tag>` to find real playgrounds that have the device mapped and use them for testing.

@@ -278,8 +278,8 @@
   };
   const COMPLETENESS_KEY = {
     complete: 'completeness.badgeComplete',
-    partial:  'completeness.partial',
-    missing:  'completeness.dotMissing',
+    partial:  'completeness.badgePartial',
+    missing:  'completeness.badgeMissing',
   };
   $: completenessLevel = attr ? playgroundCompleteness(attr) : null;
   $: completeness = completenessLevel

@@ -70,7 +70,9 @@
     "dotComplete": "Data complete",
     "dotPartial": "Partially mapped",
     "dotMissing": "No data",
-    "badgeComplete": "Complete",
+    "badgeComplete": "Data Quality",
+    "badgePartial": "Data Quality",
+    "badgeMissing": "Data Quality",
     "restrictedHint": "hatched = not public"
   },
   "accordion": {

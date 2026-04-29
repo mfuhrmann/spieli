@@ -70,7 +70,9 @@
     "dotComplete": "Daten vollständig",
     "dotPartial": "Teilweise erfasst",
     "dotMissing": "Daten fehlen",
-    "badgeComplete": "Vollständig",
+    "badgeComplete": "Datenqualität",
+    "badgePartial": "Datenqualität",
+    "badgeMissing": "Datenqualität",
     "restrictedHint": "schraffiert = nicht öffentlich"
   },
   "accordion": {
