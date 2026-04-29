@@ -161,6 +161,7 @@
     olMap.on('click', (evt) => {
       const polygonHit = olMap.forEachFeatureAtPixel(evt.pixel, (f) => f, {
         layerFilter: (l) => l === playgroundLayer,
+        hitTolerance: 10,
       });
       if (polygonHit) {
         const backendUrl = polygonHit.get('_backendUrl') ?? defaultBackendUrl;
@@ -215,6 +216,7 @@
       });
       const playHit = olMap.forEachFeatureAtPixel(evt.pixel, f => f, {
         layerFilter: l => l === playgroundLayer,
+        hitTolerance: 10,
       });
       // Cluster tier hits get the pointer cursor too — click-to-zoom is
       // wired for them and users need the affordance.
