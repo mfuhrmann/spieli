@@ -179,6 +179,7 @@
           baseUrl: apiBaseUrl,
           clusterSource,
           polygonSource: playgroundSource,
+          getFilters: () => JSON.parse(clusterFilterFingerprint),
         });
         detachOrchestrator = orchestrator.detach;
         rerunOrchestrator  = orchestrator.rerun;
@@ -199,7 +200,8 @@
 
   // Re-fetch clusters when cluster-relevant filters change at cluster zoom.
   // Polygon tier handles filter changes client-side via matchesFilters() — no refetch needed.
-  $: if (rerunOrchestrator && $activeTierStore === 'cluster') rerunOrchestrator(JSON.parse(clusterFilterFingerprint));
+  // orchestrate() reads the current filter state via getFilters(), so no arg needed here.
+  $: if (rerunOrchestrator && $activeTierStore === 'cluster') rerunOrchestrator();
 
   onDestroy(() => {
     detachTierDeselect();
