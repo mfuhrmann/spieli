@@ -122,7 +122,7 @@
         <span class="pill__sep">·</span>
         {$_('hub.playgroundCount', { values: { count: playgroundCount } })}
       </span>
-      <span class="pill__text pill__text--compact" aria-hidden="true">{playgroundCount}</span>
+      <span class="pill__text pill__text--compact">{playgroundCount}</span>
     {/if}
   </button>
 </div>

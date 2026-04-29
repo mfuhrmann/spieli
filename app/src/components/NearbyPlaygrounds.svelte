@@ -1,9 +1,7 @@
 <script>
   import GeoJSON from 'ol/format/GeoJSON.js';
-  import { get } from 'svelte/store';
   import { playgroundSourceStore } from '../stores/playgroundSource.js';
   import { selection } from '../stores/selection.js';
-  import { mapStore } from '../stores/map.js';
   import { playgroundCompleteness } from '../lib/completeness.js';
   import { fetchPlaygroundByOsmId } from '../lib/api.js';
   import { _ } from 'svelte-i18n';
@@ -29,6 +27,7 @@
   let items = [];
   let loading = true;
   const geojsonFormat = new GeoJSON();
+  let selectAbort = null; // cancels any in-flight hydration when a new suggestion is tapped
 
   $: if (lat != null && lon != null) {
     load(lat, lon);
@@ -64,6 +63,10 @@
   }
 
   async function selectSuggestion(item) {
+    if (selectAbort) selectAbort.abort();
+    selectAbort = new AbortController();
+    const { signal } = selectAbort;
+
     const source = $playgroundSourceStore;
     let feature = source?.getFeatures().find(f => f.get('osm_id') === item.osm_id);
     const backendUrl = item._backendUrl ?? defaultBackendUrl;
@@ -75,7 +78,8 @@
     // feature in-source) route to the right backend in hub mode.
     if (!feature && source) {
       try {
-        const json = await fetchPlaygroundByOsmId(item.osm_id, backendUrl);
+        const json = await fetchPlaygroundByOsmId(item.osm_id, backendUrl, signal);
+        if (signal.aborted) return;
         if (json) {
           const olFeatures = geojsonFormat.readFeatures(
             { type: 'FeatureCollection', features: [json] },
@@ -86,24 +90,14 @@
           feature = olFeatures[0];
         }
       } catch (err) {
+        if (err.name === 'AbortError') return;
         console.warn('[nearby] hydration failed:', err);
       }
     }
 
+    if (signal.aborted) return;
     if (feature) {
       selection.select(feature, feature.get('_backendUrl') ?? backendUrl);
-      const map = get(mapStore);
-      if (map) {
-        const geom = feature.getGeometry();
-        if (geom) {
-          const isMobile = window.innerWidth < 1024;
-          map.getView().fit(geom.getExtent(), {
-            padding: isMobile ? [100, 20, 250, 20] : [40, 40, 40, 420],
-            maxZoom: 19,
-            duration: 400,
-          });
-        }
-      }
     }
     if (ondismiss) ondismiss();
   }

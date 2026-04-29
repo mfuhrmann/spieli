@@ -328,12 +328,15 @@
     checkMobile();
   }
 
-  // Center the map on the selected playground before the full-screen panel opens
+  // Center the map on the selected playground before the full-screen panel opens.
+  // Bottom padding accounts for the bottom sheet (~250 px) so the polygon
+  // isn't hidden behind it. This is the single canonical fit for all mobile
+  // selection paths (map click, nearby list, deeplink).
   $: if (isMobile && $hasSelection) {
     const feat = $selection.feature;
     if (feat && $mapStore) {
       $mapStore.getView().fit(feat.getGeometry().getExtent(), {
-        padding: [60, 60, 60, 60],
+        padding: [60, 20, 250, 20],
         maxZoom: 19,
         duration: 400,
       });
