@@ -3,6 +3,7 @@
 </script>
 
 <aside class="legend">
+  <p class="legend-title">{$_('completeness.legendTitle')}</p>
   <ul class="legend-list">
     <li class="legend-item">
       <span class="swatch swatch--complete"></span>
@@ -33,6 +34,15 @@
     font-size: 0.72rem;
     color: #374151;
     max-width: 200px;
+  }
+
+  .legend-title {
+    margin: 0 0 0.35rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #6b7280;
   }
 
   .legend-list {

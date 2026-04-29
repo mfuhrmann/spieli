@@ -64,9 +64,10 @@
     "backToMap": "Zurück zur Karte"
   },
   "completeness": {
-    "complete": "Fotos, Name & Details vorhanden",
-    "partial": "Teilweise erfasst",
-    "missing": "Noch keine Daten",
+    "legendTitle": "Datenqualität",
+    "complete": "hoch",
+    "partial": "mittel",
+    "missing": "niedrig",
     "dotComplete": "Daten vollständig",
     "dotPartial": "Teilweise erfasst",
     "dotMissing": "Daten fehlen",

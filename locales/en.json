@@ -64,9 +64,10 @@
     "backToMap": "Back to map"
   },
   "completeness": {
-    "complete": "Photos, name & details available",
-    "partial": "Partially mapped",
-    "missing": "No data yet",
+    "legendTitle": "Data Quality",
+    "complete": "high",
+    "partial": "medium",
+    "missing": "low",
     "dotComplete": "Data complete",
     "dotPartial": "Partially mapped",
     "dotMissing": "No data",
