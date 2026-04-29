@@ -328,17 +328,29 @@
     checkMobile();
   }
 
-  // Center the map on the selected playground before the full-screen panel opens.
-  // Bottom padding accounts for the bottom sheet (~250 px) so the polygon
-  // isn't hidden behind it. This is the single canonical fit for all mobile
-  // selection paths (map click, nearby list, deeplink).
-  $: if (isMobile && $hasSelection) {
-    const feat = $selection.feature;
-    if (feat && $mapStore) {
+  // Center the map on the selected playground when the mobile full-screen panel
+  // opens, and re-center when it closes so the full area is visible on return.
+  // Uses balanced padding — the full-screen panel covers the map entirely while
+  // open, so there is no bottom-sheet offset to account for.
+  let lastMobileFeature = null;
+  $: {
+    if (isMobile && $hasSelection) {
+      const feat = $selection.feature;
+      if (feat && $mapStore) {
+        lastMobileFeature = feat;
+        $mapStore.getView().fit(feat.getGeometry().getExtent(), {
+          padding: [60, 20, 60, 20],
+          maxZoom: 19,
+          duration: 400,
+        });
+      }
+    } else if (isMobile && !$hasSelection && lastMobileFeature && $mapStore) {
+      const feat = lastMobileFeature;
+      lastMobileFeature = null;
       $mapStore.getView().fit(feat.getGeometry().getExtent(), {
-        padding: [60, 20, 250, 20],
+        padding: [80, 40, 80, 40],
         maxZoom: 19,
-        duration: 400,
+        duration: 300,
       });
     }
   }
