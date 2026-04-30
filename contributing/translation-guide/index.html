@@ -1236,15 +1236,29 @@ Your translation makes it accessible to communities in your language.</p>
 <p>Some strings contain a count, like:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>{count, plural, one {# bench} other {# benches}}
 </code></pre></div>
-<p>Keep the <code>{count, plural, ...}</code> wrapper and translate only the text inside:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>{count, plural, one {# Sitzbank} other {# Sitzbänke}}
+<p>Keep the <code>{count, plural, ...}</code> wrapper and translate only the text inside.
+Weblate shows this as a <strong>single input field</strong> — you must write the complete ICU string including all plural forms for your language.</p>
+<p><strong>Languages with two plural forms</strong> (German, Spanish, French, Italian, Dutch, Swedish, Portuguese):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>{count, plural, one {# Bank} other {# Bänke}}
 </code></pre></div>
-<p>If your language has more than two plural forms (e.g. Polish, Czech),
-Weblate will show you the correct number of fields automatically.</p>
+<p><strong>Languages with no plural forms</strong> (Japanese): use <code>other</code> only:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>{count, plural, other {# ベンチ}}
+</code></pre></div>
+<p><strong>Languages with four plural forms</strong> (Polish, Czech, Ukrainian) — you must include <code>one</code>, <code>few</code>, <code>many</code>, and <code>other</code>:</p>
+<p>Polish example:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>{count, plural, one {# ławka} few {# ławki} many {# ławek} other {# ławki}}
+</code></pre></div></p>
+<p>Czech example:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>{count, plural, one {# lavička} few {# lavičky} many {# laviček} other {# lavičky}}
+</code></pre></div></p>
+<p>Ukrainian example:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>{count, plural, one {# лавка} few {# лавки} many {# лавок} other {# лавки}}
+</code></pre></div></p>
+<p>Weblate will warn you if the ICU syntax is broken — fix any flagged strings before saving.</p>
 <h2 id="things-to-keep-as-is">Things to keep as-is<a class="headerlink" href="#things-to-keep-as-is" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Placeholders like <code>{regionName}</code>, <code>{count}</code>, <code>{name}</code> — do not translate these</li>
-<li>The <code>{count, plural, one {...} other {...}}</code> structure — only translate the text inside the <code>{}</code></li>
+<li>The <code>{count, plural, ...}</code> structure — only translate the text inside the <code>{}</code></li>
 </ul>
 <h2 id="when-does-my-translation-go-live">When does my translation go live?<a class="headerlink" href="#when-does-my-translation-go-live" title="Permanent link">&para;</a></h2>
 <p>A language appears in the app once it reaches <strong>80% completion</strong>.
