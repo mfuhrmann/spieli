@@ -32,19 +32,44 @@ Some strings contain a count, like:
 {count, plural, one {# bench} other {# benches}}
 ```
 
-Keep the `{count, plural, ...}` wrapper and translate only the text inside:
+Keep the `{count, plural, ...}` wrapper and translate only the text inside.
+Weblate shows this as a **single input field** — you must write the complete ICU string including all plural forms for your language.
+
+**Languages with two plural forms** (German, Spanish, French, Italian, Dutch, Swedish, Portuguese):
 
 ```
-{count, plural, one {# Sitzbank} other {# Sitzbänke}}
+{count, plural, one {# Bank} other {# Bänke}}
 ```
 
-If your language has more than two plural forms (e.g. Polish, Czech),
-Weblate will show you the correct number of fields automatically.
+**Languages with no plural forms** (Japanese): use `other` only:
+
+```
+{count, plural, other {# ベンチ}}
+```
+
+**Languages with four plural forms** (Polish, Czech, Ukrainian) — you must include `one`, `few`, `many`, and `other`:
+
+Polish example:
+```
+{count, plural, one {# ławka} few {# ławki} many {# ławek} other {# ławki}}
+```
+
+Czech example:
+```
+{count, plural, one {# lavička} few {# lavičky} many {# laviček} other {# lavičky}}
+```
+
+Ukrainian example:
+```
+{count, plural, one {# лавка} few {# лавки} many {# лавок} other {# лавки}}
+```
+
+Weblate will warn you if the ICU syntax is broken — fix any flagged strings before saving.
 
 ## Things to keep as-is
 
 - Placeholders like `{regionName}`, `{count}`, `{name}` — do not translate these
-- The `{count, plural, one {...} other {...}}` structure — only translate the text inside the `{}`
+- The `{count, plural, ...}` structure — only translate the text inside the `{}`
 
 ## When does my translation go live?
 
