@@ -62,3 +62,65 @@ Replace `data-node-ui` with whichever mode you chose at install time (`DEPLOY_MO
 
 - [Configuration reference](../ops/configuration.md) — all available environment variables
 - [Troubleshooting](../ops/troubleshooting.md) — common problems and fixes
+
+---
+
+## Joining an existing Hub
+
+If someone is running a spieli Hub and you want your region to appear on it, you need to stand up a data-node and send them your API URL. The hub operator then adds you to their `registry.json`.
+
+### Backend operator (you)
+
+**1. Run the installer**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/mfuhrmann/spieli/main/install.sh -o install.sh
+bash install.sh
+```
+
+When prompted for deployment mode, choose:
+
+- **`data-node-ui`** — easiest path; nginx is included and adds CORS headers automatically.
+- **`data-node`** — db + PostgREST only, no nginx. Choose this if you run your own reverse proxy and will add CORS headers yourself.
+
+Enter your OSM relation ID and Geofabrik PBF URL when asked, and run the import.
+
+**2. Expose `/api/` over HTTPS**
+
+Put an HTTPS-terminating reverse proxy (nginx, Caddy, Traefik, …) in front of your stack. The Hub's browser clients fetch your `/api/` cross-origin, so HTTPS and CORS are both required.
+
+- With `data-node-ui`: CORS is already configured in the shipped nginx — nothing extra to do.
+- With `data-node`: add `Access-Control-Allow-Origin: *` (and `Access-Control-Allow-Methods`, `Access-Control-Allow-Headers`) to your proxy's `/api/` location block.
+
+**3. Verify**
+
+From a different machine:
+
+```bash
+curl -i https://your-city.example.com/api/rpc/get_meta
+# expect: 200 OK, JSON body, and Access-Control-Allow-Origin: * in the response headers
+```
+
+**4. Send the hub operator your API URL**: `https://your-city.example.com/api`
+
+---
+
+### Hub operator
+
+Add the new backend to `registry.json` (the file your Hub serves at `/registry.json`):
+
+```json
+{
+  "instances": [
+    { "slug": "existing-region", "url": "https://existing.example.com/api", "name": "Existing Region" },
+    { "slug": "new-city",        "url": "https://your-city.example.com/api", "name": "New City" }
+  ]
+}
+```
+
+The Hub re-reads `registry.json` every 5 minutes — no restart needed.
+
+!!! tip "Choosing a slug"
+    The `slug` is optional but recommended — it makes deep-links shareable and stable (e.g. `https://hub.example.com/#new-city/W123456`). Use lowercase ASCII letters, digits, and hyphens only.
+
+For the full federation walkthrough including topology diagrams and verification steps, see [Federated Deployment](../ops/federated-deployment.md).
