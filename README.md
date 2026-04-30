@@ -5,11 +5,11 @@
 *Pronunciation:* **[ˈʃpiːli]**
 
 <u>Meaning/Definition:</u>
-A German word, that usually marks an area for children, often equipped with various facilities or devices for playing [Usage: children’s language]
+A German word, that usually marks an area for children, often equipped with various facilities or devices for playing [Usage: children's language]
 
 <u>Article/Gender:</u>
-In German, the grammatical gender is masculine: „der Spieli“.
-In English, it is used as a neuter noun: “the spieli”.
+In German, the grammatical gender is masculine: „der Spieli".
+In English, it is used as a neuter noun: "the spieli".
 
 ---
 
@@ -26,26 +26,13 @@ A free, interactive web map for exploring playgrounds based on [OpenStreetMap](h
 Come and let's play:
 https://matrix.to/#/#spieli:matrix.org
 
+---
 
-## Modes
+## Documentation
 
-**Standalone** — a single-region map backed by its own database.
+**[mfuhrmann.github.io/spieli](https://mfuhrmann.github.io/spieli/)**
 
-```
-Browser ──► nginx ──► PostgREST ──► PostgreSQL/PostGIS
-             │
-             └── serves the app, proxies /api/ to PostgREST
-```
-
-**Hub** — aggregates multiple standalone instances onto one shared map. No own database; the Hub fetches data from registered backends over HTTP:
-
-```
-                   ┌─ backend A ──► PostgREST ──► PostgreSQL (region A) ─┐
-Browser ──► nginx ─┤                                                     │
-  (Hub UI)         └─ backend B ──► PostgREST ──► PostgreSQL (region B) ─┘
-```
-
-Set `APP_MODE=standalone` (default) or `APP_MODE=hub` in `.env`.
+Includes deployment guides, configuration reference, contributing how-tos, and architecture docs.
 
 ---
 
@@ -82,98 +69,11 @@ For deploying from source, see [Manual Deploy](https://mfuhrmann.github.io/spiel
 
 ---
 
-## Configuration
-
-Key variables (full reference at [docs/ops/configuration](https://mfuhrmann.github.io/spieli/ops/configuration/)):
-
-| Variable | Default | Description |
-|---|---|---|
-| `APP_MODE` | `standalone` | `standalone` for a single region; `hub` to aggregate multiple backends |
-| `OSM_RELATION_ID` | `454863` | OSM relation ID for backend 1 (standalone + hub) |
-| `OSM_RELATION_ID2` | `454881` | OSM relation ID for backend 2 (hub dev testing only) |
-| `PBF_URL` | Hessen extract | Geofabrik `.osm.pbf` download URL |
-| `REGISTRY_URL` | `/registry.json` | URL of the registry JSON listing backends (hub mode only) |
-| `APP_PORT` | `8080` | Host port the app is exposed on |
-| `MAP_ZOOM` | `12` | Initial map zoom level |
-| `POSTGRES_PASSWORD` | `change-me` | Database password — **change in production** |
-
----
-
-## Local development
-
-**Requirements:** Node.js v18+, Docker with Docker Compose
-
-### Standalone mode
-
-```bash
-make install      # install Node dependencies (once)
-make up           # start db + PostgREST + nginx
-make import       # download Hessen PBF and import Fulda Stadt (454863) — ~300 MB, run once
-make dev          # Vite dev server with hot-reload at http://localhost:5173
-```
-
-For quick testing without a full import, load the bundled fixture (4 Fulda playgrounds):
-
-```bash
-make seed-load
-```
-
-### Hub mode
-
-The stack includes a second backend (`db2` / `postgrest2`) pre-wired at `/api2/`. Both backends use the Hessen PBF — the importer caches it by filename, so the second import reuses the download.
-
-```bash
-# In .env: set APP_MODE=hub (and optionally OSM_RELATION_ID / OSM_RELATION_ID2)
-make docker-build
-make up
-make import       # imports Fulda Stadt (454863) into db  — downloads Hessen PBF (~300 MB)
-make import2      # imports Neuhof (454881) into db2 — reuses cached PBF
-```
-
-`registry.json` lists both backends (`/api` = Fulda, `/api2` = Neuhof). Open `http://localhost:8080` to see the Hub with two real regions.
-
-Run `make help` to list all available targets.
-
----
-
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the full workflow (branch → commit → PR), or the [docs](https://mfuhrmann.github.io/spieli/) for how-to guides (e.g. [adding a playground device](https://mfuhrmann.github.io/spieli/contributing/add-device/)).
 
 New to OSM concepts like relation IDs or PBF files? See the [glossary](https://mfuhrmann.github.io/spieli/reference/glossary/).
-
----
-
-## Federation (Hub mode)
-
-Multiple regional instances can be aggregated into a single Hub map by deploying with `APP_MODE=hub` and pointing `REGISTRY_URL` at a JSON file that lists the backends:
-
-```json
-{
-  "instances": [
-    { "slug": "fulda",      "url": "https://fulda.example.com",      "name": "Fulda" },
-    { "slug": "vogelsberg", "url": "https://vogelsberg.example.com", "name": "Vogelsberg" }
-  ]
-}
-```
-
-The Hub fetches playground data from every listed backend and renders them on a shared map. Each regional instance exposes `/api/rpc/get_playgrounds` and `/api/rpc/get_meta` for cross-origin federation. See [docs/reference/federation](https://mfuhrmann.github.io/spieli/reference/federation/).
-
----
-
-## External services
-
-| Service | Purpose |
-|---|---|
-| [Geofabrik](https://download.geofabrik.de) | Source of OSM PBF extracts for import |
-| [Nominatim](https://nominatim.openstreetmap.org) | Location search and region bounding box |
-| [CartoDB Voyager](https://carto.com/basemaps) | Background map tiles |
-| [Panoramax](https://panoramax.xyz) | Street-level photos |
-| [Mangrove.reviews](https://mangrove.reviews) | Pseudonymous community reviews |
-| [MapComplete](https://mapcomplete.org) | Contribute photos and equipment |
-| [Wikidata](https://wikidata.org) | Operator entity linking |
-
-All data comes from OpenStreetMap or the free services listed above. No proprietary data, no user accounts, no tracking.
 
 ---
 
