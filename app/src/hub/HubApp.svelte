@@ -2,7 +2,7 @@
   import VectorSource from 'ol/source/Vector.js';
   import { onDestroy, onMount } from 'svelte';
   import { get } from 'svelte/store';
-  import { transformExtent } from 'ol/proj';
+  import { transformExtent, fromLonLat } from 'ol/proj';
 
   import AppShell from '../components/AppShell.svelte';
   import InstancePanel from './InstancePanel.svelte';
@@ -94,24 +94,39 @@
   let detachBackends = null;
   let detachMapAttach = null;
 
+  // Geolocation for initial view: prefer the user's current location over the
+  // aggregated bbox. geolocDone gates tryFit so we don't bbox-fit and then
+  // immediately jump to the user's location. Resolves within 3 s or falls back.
+  let geolocDone = false;
+  let geolocCoord = null; // [lon, lat] in EPSG:4326, or null if unavailable
+
   function tryFit() {
-    if (fitDone || !latestMap || !latestBbox || !backendsSettled) return;
-    // Single-backend hubs always clamp to clusterMaxZoom + 1 (spec §6.1):
-    // a single small city's bbox fitted with normal padding lands in the
-    // macro tier, where one giant ring covers a city the user already
-    // implied they wanted to look at. Clamping forces the initial paint
-    // into the cluster tier.
-    //
-    // Multi-backend hubs accept whatever the union dictates (spec §6.2)
-    // — a Germany+France union legitimately wants the macro continent
-    // overview now that §5 ships and macro rings render properly.
-    const backendCount = get(backends).length;
-    const fitOpts = { padding: [20, 20, 20, 380], duration: 0 };
-    if (backendCount <= 1) fitOpts.maxZoom = clusterMaxZoom + 1;
-    latestMap.getView().fit(
-      transformExtent(latestBbox, 'EPSG:4326', 'EPSG:3857'),
-      fitOpts,
-    );
+    if (fitDone || !latestMap || !latestBbox || !backendsSettled || !geolocDone) return;
+    if (geolocCoord) {
+      latestMap.getView().animate({
+        center: fromLonLat(geolocCoord),
+        zoom: clusterMaxZoom + 1,
+        duration: 0,
+      });
+    } else {
+      // No location — fall back to aggregated bbox.
+      // Single-backend hubs always clamp to clusterMaxZoom + 1 (spec §6.1):
+      // a single small city's bbox fitted with normal padding lands in the
+      // macro tier, where one giant ring covers a city the user already
+      // implied they wanted to look at. Clamping forces the initial paint
+      // into the cluster tier.
+      //
+      // Multi-backend hubs accept whatever the union dictates (spec §6.2)
+      // — a Germany+France union legitimately wants the macro continent
+      // overview now that §5 ships and macro rings render properly.
+      const backendCount = get(backends).length;
+      const fitOpts = { padding: [20, 20, 20, 380], duration: 0 };
+      if (backendCount <= 1) fitOpts.maxZoom = clusterMaxZoom + 1;
+      latestMap.getView().fit(
+        transformExtent(latestBbox, 'EPSG:4326', 'EPSG:3857'),
+        fitOpts,
+      );
+    }
     fitDone = true;
     detachMap?.();
     detachBbox?.();
@@ -120,6 +135,24 @@
   }
 
   onMount(() => {
+    // Request geolocation early so the result is likely in hand before
+    // backends settle. Uses a 3 s timeout and a 5-min cache so a repeat
+    // page-load doesn't trigger another GPS fix. On error or timeout,
+    // geolocDone is set so tryFit falls through to the bbox fit.
+    if (typeof navigator !== 'undefined' && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        pos => {
+          geolocCoord = [pos.coords.longitude, pos.coords.latitude];
+          geolocDone = true;
+          tryFit();
+        },
+        () => { geolocDone = true; tryFit(); },
+        { timeout: 3000, maximumAge: 300000 },
+      );
+    } else {
+      geolocDone = true;
+    }
+
     detachMap = mapStore.subscribe(m => { latestMap = m; tryFit(); });
     detachBbox = aggregatedBbox.subscribe(b => { latestBbox = b; tryFit(); });
     detachBackends = backends.subscribe(bs => {
