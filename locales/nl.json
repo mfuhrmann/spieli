@@ -46,16 +46,6 @@
     "thisLocation": "deze locatie"
   },
   "equipment": {
-    "devices_one": "{{count}} speeltoestel",
-    "devices_other": "{{count}} speeltoestellen",
-    "fitness_one": "{{count}} fitnesstoestel",
-    "fitness_other": "{{count}} fitnesstoestellen",
-    "benches_one": "{{count}} bank",
-    "benches_other": "{{count}} banken",
-    "shelters_one": "{{count}} overkapping",
-    "shelters_other": "{{count}} overkappingen",
-    "picnic_one": "{{count}} picknicktafel",
-    "picnic_other": "{{count}} picknicktafels",
     "fitnessDefault": "Fitnesstoestel",
     "addHint": "Toestellen nog niet individueel in kaart gebracht – help mee! 👇",
     "addLink": "Toestel toevoegen",

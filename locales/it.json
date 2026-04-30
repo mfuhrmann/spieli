@@ -46,16 +46,6 @@
     "thisLocation": "questa posizione"
   },
   "equipment": {
-    "devices_one": "{{count}} attrezzo",
-    "devices_other": "{{count}} attrezzi",
-    "fitness_one": "{{count}} attrezzo fitness",
-    "fitness_other": "{{count}} attrezzi fitness",
-    "benches_one": "{{count}} panchina",
-    "benches_other": "{{count}} panchine",
-    "shelters_one": "{{count}} riparo",
-    "shelters_other": "{{count}} ripari",
-    "picnic_one": "{{count}} tavolo da picnic",
-    "picnic_other": "{{count}} tavoli da picnic",
     "fitnessDefault": "Attrezzo fitness",
     "addHint": "Attrezzature non ancora mappate individualmente – aiuta! 👇",
     "addLink": "Aggiungi attrezzo",

@@ -46,16 +46,6 @@
     "thisLocation": "denna plats"
   },
   "equipment": {
-    "devices_one": "{{count}} lekredskap",
-    "devices_other": "{{count}} lekredskap",
-    "fitness_one": "{{count}} fitnessredskap",
-    "fitness_other": "{{count}} fitnessredskap",
-    "benches_one": "{{count}} bänk",
-    "benches_other": "{{count}} bänkar",
-    "shelters_one": "{{count}} skydd",
-    "shelters_other": "{{count}} skydd",
-    "picnic_one": "{{count}} picknicbord",
-    "picnic_other": "{{count}} picknicbord",
     "fitnessDefault": "Fitnessredskap",
     "addHint": "Utrustning inte kartlagd individuellt ännu – hjälp till! 👇",
     "addLink": "Lägg till utrustning",

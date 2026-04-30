@@ -46,16 +46,6 @@
     "thisLocation": "esta localização"
   },
   "equipment": {
-    "devices_one": "{{count}} equipamento",
-    "devices_other": "{{count}} equipamentos",
-    "fitness_one": "{{count}} equipamento de fitness",
-    "fitness_other": "{{count}} equipamentos de fitness",
-    "benches_one": "{{count}} banco",
-    "benches_other": "{{count}} bancos",
-    "shelters_one": "{{count}} abrigo",
-    "shelters_other": "{{count}} abrigos",
-    "picnic_one": "{{count}} mesa de piquenique",
-    "picnic_other": "{{count}} mesas de piquenique",
     "fitnessDefault": "Equipamento de fitness",
     "addHint": "Equipamentos ainda não mapeados individualmente – ajude! 👇",
     "addLink": "Adicionar equipamento",

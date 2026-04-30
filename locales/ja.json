@@ -46,11 +46,6 @@
     "thisLocation": "この場所"
   },
   "equipment": {
-    "devices_other": "遊具 {{count}} 個",
-    "fitness_other": "フィットネス器具 {{count}} 個",
-    "benches_other": "ベンチ {{count}} 脚",
-    "shelters_other": "シェルター {{count}} 基",
-    "picnic_other": "ピクニックテーブル {{count}} 台",
     "fitnessDefault": "フィットネス器具",
     "addHint": "遊具はまだ個別にマッピングされていません – ご協力ください！ 👇",
     "addLink": "遊具を追加",
