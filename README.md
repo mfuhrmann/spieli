@@ -21,27 +21,6 @@ A free, interactive web map for exploring playgrounds based on [OpenStreetMap](h
 
 > **Origin:** This project is a further development of the original [Berliner Spielplatzkarte](https://github.com/SupaplexOSM/spielplatzkarte) by Alex Seidel.
 
-## Matrix Contact
-
-Come and let's play:
-https://matrix.to/#/#spieli:matrix.org
-
----
-
-## Documentation
-
-**[mfuhrmann.github.io/spieli](https://mfuhrmann.github.io/spieli/)**
-
-Includes deployment guides, configuration reference, contributing how-tos, and architecture docs.
-
----
-
-## Tech stack
-
-Svelte 5 · OpenLayers · PostgreSQL/PostGIS · PostgREST · nginx · Docker
-
-Full details: [Tech stack reference](https://mfuhrmann.github.io/spieli/reference/tech-stack/)
-
 ---
 
 ## Deploy
@@ -61,11 +40,34 @@ For deploying from source, see [Manual Deploy](https://mfuhrmann.github.io/spiel
 
 ---
 
+## Documentation
+
+**[mfuhrmann.github.io/spieli](https://mfuhrmann.github.io/spieli/)**
+
+Includes deployment guides, configuration reference, contributing how-tos, and architecture docs.
+
+---
+
+## Tech stack
+
+Svelte 5 · OpenLayers · PostgreSQL/PostGIS · PostgREST · nginx · Docker
+
+Full details: [Tech stack reference](https://mfuhrmann.github.io/spieli/reference/tech-stack/)
+
+---
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the full workflow (branch → commit → PR), or the [docs](https://mfuhrmann.github.io/spieli/) for how-to guides (e.g. [adding a playground device](https://mfuhrmann.github.io/spieli/contributing/add-device/)).
 
 New to OSM concepts like relation IDs or PBF files? See the [glossary](https://mfuhrmann.github.io/spieli/reference/glossary/).
+
+---
+
+## Matrix Contact
+
+Come and let's play:
+https://matrix.to/#/#spieli:matrix.org
 
 ---
 
