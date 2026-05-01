@@ -1,6 +1,22 @@
 # API Reference
 
-PostgREST exposes the `api` schema as JSON-RPC endpoints under `/api/rpc/`. This page documents the playground-delivery RPCs that drive the standalone client's two-tier rendering. Equipment, tree, POI and nearest-playground RPCs are not yet documented here — see `importer/api.sql` for their signatures.
+PostgREST exposes the `api` schema as JSON-RPC endpoints under `/api/rpc/`. All endpoints accept GET requests with query-string parameters.
+
+## Full RPC index
+
+| RPC | Used by | Notes |
+|---|---|---|
+| [`get_playground_clusters`](#get_playground_clustersz-bbox) | Standalone cluster tier | zoom ≤ `clusterMaxZoom` |
+| [`get_playgrounds_bbox`](#get_playgrounds_bboxbbox) | Standalone polygon tier | zoom > `clusterMaxZoom` |
+| [`get_playground`](#get_playgroundosm_id) | Deeplink restore, nearby-list hydration | single feature |
+| [`get_playground_centroids`](#get_playground_centroidsbbox-server-only-in-p1) | Federation re-clustering (P2), not consumed by standalone | server-shipped |
+| [`get_equipment`](#get_equipmentbbox) | PlaygroundPanel | devices, pitches, benches within a bbox |
+| [`get_standalone_equipment`](#get_standalone_equipmentbbox) | Standalone pitch layer | pitches/benches outside playgrounds |
+| [`get_pois`](#get_poislat-lon-radius_m) | PlaygroundPanel | nearby toilets, bus stops, cafés |
+| [`get_trees`](#get_treesbbox) | PlaygroundPanel tree layer | natural=tree nodes |
+| [`get_meta`](#get_meta) | Hub federation discovery | instance metadata + import freshness |
+| [`get_nearest_playgrounds`](#get_nearest_playgroundslat-lon) | NearbyPlaygrounds component | ordered by distance |
+| [`get_playgrounds` (deprecated)](#deprecated-get_playgroundsrelation_id) | Legacy fallback | region-scoped, will be removed |
 
 ## Two-tier client contract
 
@@ -171,6 +187,211 @@ The hub reads these fields via `/federation-status.json` (written by the hub con
 The pre-tiered region-scoped RPC stays available for one release for compatibility with Playwright fixtures and external consumers. Marked DEPRECATED via SQL `COMMENT`; the client `fetchPlaygrounds` logs a one-time console warning. It will be removed in the release after next.
 
 Migration: replace any caller with `fetchPlaygroundsBbox(extent, baseUrl)` driven by viewport extent.
+
+## `get_equipment(bbox)`
+
+Returns all playground equipment within a WGS84 bounding box — devices (`playground=*`), pitches (`leisure=pitch`), benches (`amenity=bench`), shelters (`amenity=shelter`), fitness stations (`leisure=fitness_station`), and picnic tables (`leisure=picnic_table`).
+
+Covers nodes, polygon ways, and linear ways. Used by `PlaygroundPanel` to populate the equipment list and overlay layers when a playground is selected.
+
+**Parameters**
+
+| Name | Type | Notes |
+|---|---|---|
+| `min_lon`, `min_lat`, `max_lon`, `max_lat` | `float8` | WGS84 bbox — typically the selected playground's extent |
+
+**Response** — GeoJSON `FeatureCollection`. Each feature's `properties` include `osm_id`, `osm_type` (`N` or `W`), `name`, `amenity`, `leisure`, `sport`, plus all OSM tags from the hstore column spread onto the properties object.
+
+```json
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [9.71, 50.54] },
+      "properties": {
+        "osm_id":    12345678,
+        "osm_type":  "N",
+        "amenity":   null,
+        "leisure":   null,
+        "sport":     null,
+        "playground": "slide",
+        "height":    "1.2"
+      }
+    }
+  ]
+}
+```
+
+**Example**
+
+```bash
+curl 'https://example.com/api/rpc/get_equipment?min_lon=9.70&min_lat=50.53&max_lon=9.72&max_lat=50.55'
+```
+
+---
+
+## `get_standalone_equipment(bbox)`
+
+Returns pitches, benches, shelters, picnic tables, and fitness stations that do **not** lie within any `leisure=playground` polygon. Used by the standalone pitch layer (`filterStore.standalonePitches`).
+
+Same parameter and response shape as `get_equipment`. Returns an empty `FeatureCollection` when `apiBaseUrl` is empty (Overpass/dev mode).
+
+**Example**
+
+```bash
+curl 'https://example.com/api/rpc/get_standalone_equipment?min_lon=9.60&min_lat=50.50&max_lon=9.80&max_lat=50.60'
+```
+
+---
+
+## `get_pois(lat, lon, radius_m)`
+
+Returns nearby points of interest within `radius_m` metres of the given WGS84 point. Used by `PlaygroundPanel` to show nearby amenities.
+
+**Parameters**
+
+| Name | Type | Default | Notes |
+|---|---|---|---|
+| `lat` | `float8` | — | WGS84 latitude |
+| `lon` | `float8` | — | WGS84 longitude |
+| `radius_m` | `integer` | `500` | Search radius in metres (configurable via `POI_RADIUS_M` env var) |
+
+**POI types returned:**
+
+| Category | OSM tag |
+|---|---|
+| Toilets | `amenity=toilets` |
+| Ice cream | `amenity=ice_cream` or `amenity=cafe/restaurant` + `cuisine=*ice_cream*` |
+| Emergency | `emergency=yes` + hospital/clinic, or `healthcare:speciality=emergency` |
+| Bus stop | `highway=bus_stop` |
+| Pharmacy | `shop=chemist` |
+| Supermarket / convenience | `shop=supermarket`, `shop=convenience` |
+
+**Response** — JSON array:
+
+```json
+[
+  {
+    "osm_id":  987654321,
+    "lat":     50.5421,
+    "lon":     9.7133,
+    "name":    "Spielplatz-WC",
+    "amenity": "toilets",
+    "shop":    null,
+    "highway": null,
+    "tags":    {}
+  }
+]
+```
+
+**Example**
+
+```bash
+curl 'https://example.com/api/rpc/get_pois?lat=50.54&lon=9.71&radius_m=300'
+```
+
+---
+
+## `get_trees(bbox)`
+
+Returns `natural=tree` nodes within a WGS84 bounding box. Used by `PlaygroundPanel` to populate the tree overlay layer when a playground is selected.
+
+**Parameters**
+
+| Name | Type | Notes |
+|---|---|---|
+| `min_lon`, `min_lat`, `max_lon`, `max_lat` | `float8` | WGS84 bbox |
+
+**Response** — GeoJSON `FeatureCollection`. Each feature is a `Point` with `properties.osm_id`, `properties.name`, plus all OSM tags from the hstore column.
+
+**Example**
+
+```bash
+curl 'https://example.com/api/rpc/get_trees?min_lon=9.70&min_lat=50.53&max_lon=9.72&max_lat=50.55'
+```
+
+---
+
+## `get_meta()`
+
+Returns instance metadata used by the Hub for federation discovery. Required for a backend to participate in a Hub.
+
+**Parameters:** none (uses the configured `OSM_RELATION_ID`)
+
+**Response:**
+
+```json
+{
+  "relation_id":          62700,
+  "name":                 "Landkreis Fulda",
+  "playground_count":     147,
+  "complete":             42,
+  "partial":              81,
+  "missing":              24,
+  "bbox":                 [9.43, 50.36, 10.08, 50.81],
+  "last_import_at":       "2026-04-30T03:12:00Z",
+  "data_age_seconds":     86400,
+  "osm_data_timestamp":   "2026-04-29T21:00:00Z",
+  "osm_data_age_seconds": 108000
+}
+```
+
+**Field notes:**
+
+| Field | Notes |
+|---|---|
+| `playground_count` | Total playgrounds in the region. Equals `complete + partial + missing`. |
+| `complete`, `partial`, `missing` | Completeness breakdown (access-restricted playgrounds roll into these counts, unlike `get_playground_clusters`). |
+| `bbox` | `[west, south, east, north]` in WGS84. `null` when the relation is not found. |
+| `last_import_at` | When `import.sh` last ran successfully. `null` before any import. |
+| `data_age_seconds` | Seconds since `last_import_at`. `null` when `last_import_at` is null. |
+| `osm_data_timestamp` | PBF replication timestamp (when Geofabrik last generated the extract). `null` when the PBF header lacks this field. |
+| `osm_data_age_seconds` | Seconds since `osm_data_timestamp`. `null` when `osm_data_timestamp` is null. |
+
+**Example**
+
+```bash
+curl 'https://example.com/api/rpc/get_meta'
+```
+
+---
+
+## `get_nearest_playgrounds(lat, lon)`
+
+Returns the nearest playgrounds to a WGS84 point, ordered by distance ascending. Used by the `NearbyPlaygrounds` component. Returns an empty array when `apiBaseUrl` is empty (Overpass/dev mode).
+
+**Parameters**
+
+| Name | Type | Default | Notes |
+|---|---|---|---|
+| `lat` | `float8` | — | WGS84 latitude |
+| `lon` | `float8` | — | WGS84 longitude |
+| `relation_id` | `bigint` | `OSM_RELATION_ID` | Scope to this region |
+| `max_results` | `int` | `5` | Maximum results |
+
+**Response** — JSON array:
+
+```json
+[
+  {
+    "osm_id":     37808214,
+    "name":       "Grezzbachpark",
+    "lat":        50.5438,
+    "lon":        9.7096,
+    "distance_m": 342,
+    "tags":       { "name": "Grezzbachpark", "operator": "…", "access": "yes" }
+  }
+]
+```
+
+**Example**
+
+```bash
+curl 'https://example.com/api/rpc/get_nearest_playgrounds?lat=50.54&lon=9.71'
+```
+
+---
 
 ## See also
 

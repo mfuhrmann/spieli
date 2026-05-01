@@ -19,6 +19,7 @@ playwright-report/
 # AI tools
 _bmad-output/
 _bmad/
+docs/project-scan-report.json
 
 # Claude Code — per-user overlays
 .claude/settings.local.json

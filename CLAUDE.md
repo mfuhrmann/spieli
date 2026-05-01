@@ -161,3 +161,16 @@ Run `make db-apply` after modifying `api.sql` to apply changes without a full re
 - `playgroundStyleFn` — playground polygon fill/stroke, colour-coded by completeness
 - `equipmentLayerStyleFn` — equipment points/polygons (green for pitches, teal for fitness, grey for devices)
 - `treeStyle` — small green dot for trees
+
+## Documentation
+
+When adding or changing something covered by the `docs/` structure, update the relevant page (or create a new one and add it to `mkdocs.yml`). Relevant mappings:
+
+- New API RPC → `docs/reference/api.md`
+- New config env var → `docs/ops/configuration.md`
+- New OSM tag / import rule → `docs/contributing/import-pipeline.md`
+- New frontend store or component → `docs/contributing/frontend-guide.md`
+- New make target or dev workflow step → `docs/contributing/local-dev.md`
+- New troubleshooting scenario → `docs/ops/troubleshooting.md`
+
+Run `make docs-build` before pushing to catch broken links.

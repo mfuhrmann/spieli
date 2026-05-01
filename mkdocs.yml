@@ -28,26 +28,39 @@ theme:
 
 nav:
   - Home: index.md
+  - User Guide: user-guide.md
   - Getting Started:
       - Quick Start: getting-started/quick-start.md
   - Operations:
       - Manual Deploy: ops/manual-deploy.md
       - Federated Deployment: ops/federated-deployment.md
-      - Monitoring: ops/monitoring.md
       - Configuration: ops/configuration.md
+      - Upgrading: ops/upgrade.md
+      - Scheduled Import: ops/scheduled-import.md
+      - Backup and Restore: ops/backup-restore.md
+      - Monitoring: ops/monitoring.md
+      - Security: ops/security.md
       - Troubleshooting: ops/troubleshooting.md
   - Contributing:
+      - Local Development: contributing/local-dev.md
+      - Frontend Guide: contributing/frontend-guide.md
+      - Import Pipeline: contributing/import-pipeline.md
+      - Testing Guide: contributing/testing.md
       - Add a Playground Device: contributing/add-device.md
       - Add a Sport Pitch Type: contributing/add-sport-type.md
       - Translate spieli: contributing/translations.md
       - Translation Guide: contributing/translation-guide.md
+      - Maintainer Guide: contributing/maintaining.md
   - Reference:
       - Architecture: reference/architecture.md
       - Tech Stack: reference/tech-stack.md
       - API: reference/api.md
       - Federation: reference/federation.md
       - registry.json: reference/registry-json.md
+      - External Services: reference/external-services.md
       - Glossary: reference/glossary.md
+      - Project Overview: project-overview.md
+      - Source Tree: source-tree-analysis.md
   - Decisions:
       - ADR-0001 — OpenSpec sharing policy: adr/0001-openspec-sharing-policy.md
 
