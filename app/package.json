@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "serve": "vite preview",
-    "test:unit": "node src/lib/equipmentGrouping.test.js"
+    "test:unit": "node src/lib/equipmentGrouping.test.js && node src/lib/completeness.test.js && node src/lib/deeplink.test.js && node --conditions=node src/stores/filters.test.js"
   },
   "dependencies": {
     "bootstrap": "^5.3.8",
