@@ -94,11 +94,14 @@ export function getEquipmentAttributesFromProps(props, t) {
     else if (backrest === 'no') content.push(t('equipAttr.noBackrest'));
 
     const sport = g('sport');
-    if (sport && !['table_tennis','soccer','basketball'].includes(sport)) {
-        // Normalize semicolon-separated combos (e.g. "soccer;basketball" → "soccer_basketball")
-        const sportKey = sport.split(';').sort().join('_');
-        const label = tl(t, `equipAttr.sports.${sportKey}`, escapeHtml(sport));
-        content.push(`${t('equipAttr.sport')}: ${label}`);
+    // For pitches the sport is already shown as the list item label — adding it
+    // here would be redundant.  For other feature types (fitness stations, …)
+    // we do show it, and format multi-value strings with human-readable labels.
+    if (sport && g('leisure') !== 'pitch' && !['table_tennis','soccer','basketball'].includes(sport)) {
+        const sportLabel = sport.split(';')
+            .map(s => tl(t, `equipAttr.sports.${s.trim()}`, escapeHtml(s.trim())))
+            .join(' / ');
+        content.push(`${t('equipAttr.sport')}: ${sportLabel}`);
     }
 
     const surface = g('surface');
