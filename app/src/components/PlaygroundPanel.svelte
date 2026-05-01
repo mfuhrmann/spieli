@@ -477,6 +477,22 @@
         <p class="text-sm text-muted-foreground italic mb-3">{part}</p>
       {/each}
 
+      <!-- Opening Hours + Age inline -->
+      {#if openingHoursInfo || attr.min_age || attr.max_age}
+        <div class="status-row mb-4">
+          {#if openingHoursInfo}
+            <div class="status-pill" class:status-pill--open={openingHoursInfo.open} class:status-pill--closed={!openingHoursInfo.open}>
+              <span class="status-dot" class:status-dot--open={openingHoursInfo.open} class:status-dot--closed={!openingHoursInfo.open}></span>
+              <Clock class="h-3.5 w-3.5 shrink-0" />
+              <span>{openingHoursInfo.text}</span>
+            </div>
+          {/if}
+          {#if attr.min_age || attr.max_age}
+            <AgeChip minAge={attr.min_age ? Number(attr.min_age) : null} maxAge={attr.max_age ? Number(attr.max_age) : null} />
+          {/if}
+        </div>
+      {/if}
+
       <!-- Quick Facts Grid -->
       <div class="grid grid-cols-2 gap-x-4 gap-y-2 mb-4">
         {#if attr.area > 0}
@@ -505,24 +521,7 @@
           </div>
         {/if}
 
-
       </div>
-
-      <!-- Opening Hours + Age inline -->
-      {#if openingHoursInfo || attr.min_age || attr.max_age}
-        <div class="status-row mb-4">
-          {#if openingHoursInfo}
-            <div class="status-pill" class:status-pill--open={openingHoursInfo.open} class:status-pill--closed={!openingHoursInfo.open}>
-              <span class="status-dot" class:status-dot--open={openingHoursInfo.open} class:status-dot--closed={!openingHoursInfo.open}></span>
-              <Clock class="h-3.5 w-3.5 shrink-0" />
-              <span>{openingHoursInfo.text}</span>
-            </div>
-          {/if}
-          {#if attr.min_age || attr.max_age}
-            <AgeChip minAge={attr.min_age ? Number(attr.min_age) : null} maxAge={attr.max_age ? Number(attr.max_age) : null} />
-          {/if}
-        </div>
-      {/if}
 
       <!-- Contact Info -->
       {#if attr['contact:email'] || attr.email || attr['contact:phone'] || attr.phone || attr.operator}
