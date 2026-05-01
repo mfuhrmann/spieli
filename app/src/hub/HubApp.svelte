@@ -14,9 +14,6 @@
   import { clusterMaxZoom } from '../lib/config.js';
   import * as osmIdDedup from './osmIdDedup.js';
 
-  // Generic OSM wiki link for the contribution modal (hub is region-agnostic).
-  const HUB_WIKI_URL = 'https://wiki.openstreetmap.org/wiki/Tag:leisure%3Dplayground';
-
   // Three sources owned by the hub — the orchestrator populates cluster /
   // polygon on every moveend; MacroView (P2 §5) populates macro from
   // backend metadata (no fetch). Map.svelte toggles layer visibility from
@@ -48,7 +45,7 @@
     fetchNearestAcrossBackends,
   } = createRegistry();
 
-  const dataContribLinks = { wikiUrl: HUB_WIKI_URL, chatUrl: null };
+  const dataContribLinks = { chatUrl: null };
 
   // Sync resolver for deep-link slug → backend URL. Reads the current backends
   // list via `get()` so AppShell can call it from its restore loop without

@@ -313,11 +313,9 @@
     "nextPhoto": "Nächstes Foto",
     "ok": "OK",
     "addData": {
-      "introText": "Die Daten dieser Karte stammen aus {name}. Du kannst sie direkt bearbeiten – kein Account nötig bei MapComplete.",
-      "equipTitle": "Spielgeräte & Details ergänzen",
-      "mapcompleteText": "Spielgeräte, Fotos und weitere Details einfach per Klick eintragen.",
-      "wikiTitle": "OSM-Wiki",
-      "wikiLinkText": "Erfassungsregeln für Spielplätze in dieser Region",
+      "introText": "Die Daten dieser Karte stammen aus {osmLink}. Du kannst sie direkt mit {mapcompleteLink} bearbeiten – kein weiterer Account außer einem OpenStreetMap-Konto (kostenlos) erforderlich.",
+      "wikiLinkText": "OSM-Wiki: Spielplätze",
+      "githubLabel": "Quellcode auf GitHub",
       "osm": {
         "label": "OpenStreetMap",
         "text": "Die Daten stammen aus {osmLink} — einer freien, kollaborativen Weltkarte von Millionen Freiwilligen. Nur was eingetragen wurde, erscheint auch hier.",

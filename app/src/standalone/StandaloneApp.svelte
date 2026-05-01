@@ -10,7 +10,6 @@
   import {
     apiBaseUrl,
     osmRelationId,
-    regionPlaygroundWikiUrl,
     regionChatUrl,
   } from '../lib/config.js';
   import {
@@ -82,7 +81,6 @@
     : null;
 
   const dataContribLinks = {
-    wikiUrl: regionPlaygroundWikiUrl,
     chatUrl: regionChatUrl,
   };
 
