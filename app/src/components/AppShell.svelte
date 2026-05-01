@@ -645,6 +645,7 @@
     display: flex;
     flex-direction: column;
     background: #ffffff;
+    touch-action: pan-y;
     color-scheme: light;
     --color-background: #ffffff;
     --color-foreground: #1f2937;
