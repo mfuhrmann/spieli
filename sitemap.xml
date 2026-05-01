@@ -2,82 +2,126 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://mfuhrmann.github.io/spieli/</loc>
-         <lastmod>2026-04-30</lastmod>
+         <lastmod>2026-05-01</lastmod>
+    </url>
+    <url>
+         <loc>https://mfuhrmann.github.io/spieli/project-overview/</loc>
+         <lastmod>2026-05-01</lastmod>
+    </url>
+    <url>
+         <loc>https://mfuhrmann.github.io/spieli/source-tree-analysis/</loc>
+         <lastmod>2026-05-01</lastmod>
+    </url>
+    <url>
+         <loc>https://mfuhrmann.github.io/spieli/user-guide/</loc>
+         <lastmod>2026-05-01</lastmod>
     </url>
     <url>
          <loc>https://mfuhrmann.github.io/spieli/adr/0001-openspec-sharing-policy/</loc>
-         <lastmod>2026-04-30</lastmod>
+         <lastmod>2026-05-01</lastmod>
     </url>
     <url>
          <loc>https://mfuhrmann.github.io/spieli/contributing/add-device/</loc>
-         <lastmod>2026-04-30</lastmod>
+         <lastmod>2026-05-01</lastmod>
     </url>
     <url>
          <loc>https://mfuhrmann.github.io/spieli/contributing/add-sport-type/</loc>
-         <lastmod>2026-04-30</lastmod>
+         <lastmod>2026-05-01</lastmod>
+    </url>
+    <url>
+         <loc>https://mfuhrmann.github.io/spieli/contributing/frontend-guide/</loc>
+         <lastmod>2026-05-01</lastmod>
+    </url>
+    <url>
+         <loc>https://mfuhrmann.github.io/spieli/contributing/import-pipeline/</loc>
+         <lastmod>2026-05-01</lastmod>
     </url>
     <url>
          <loc>https://mfuhrmann.github.io/spieli/contributing/local-dev/</loc>
-         <lastmod>2026-04-30</lastmod>
+         <lastmod>2026-05-01</lastmod>
+    </url>
+    <url>
+         <loc>https://mfuhrmann.github.io/spieli/contributing/maintaining/</loc>
+         <lastmod>2026-05-01</lastmod>
+    </url>
+    <url>
+         <loc>https://mfuhrmann.github.io/spieli/contributing/testing/</loc>
+         <lastmod>2026-05-01</lastmod>
     </url>
     <url>
          <loc>https://mfuhrmann.github.io/spieli/contributing/translation-guide/</loc>
-         <lastmod>2026-04-30</lastmod>
+         <lastmod>2026-05-01</lastmod>
     </url>
     <url>
          <loc>https://mfuhrmann.github.io/spieli/contributing/translations/</loc>
-         <lastmod>2026-04-30</lastmod>
+         <lastmod>2026-05-01</lastmod>
     </url>
     <url>
          <loc>https://mfuhrmann.github.io/spieli/getting-started/quick-start/</loc>
-         <lastmod>2026-04-30</lastmod>
+         <lastmod>2026-05-01</lastmod>
+    </url>
+    <url>
+         <loc>https://mfuhrmann.github.io/spieli/ops/backup-restore/</loc>
+         <lastmod>2026-05-01</lastmod>
     </url>
     <url>
          <loc>https://mfuhrmann.github.io/spieli/ops/configuration/</loc>
-         <lastmod>2026-04-30</lastmod>
+         <lastmod>2026-05-01</lastmod>
     </url>
     <url>
          <loc>https://mfuhrmann.github.io/spieli/ops/federated-deployment/</loc>
-         <lastmod>2026-04-30</lastmod>
+         <lastmod>2026-05-01</lastmod>
     </url>
     <url>
          <loc>https://mfuhrmann.github.io/spieli/ops/manual-deploy/</loc>
-         <lastmod>2026-04-30</lastmod>
+         <lastmod>2026-05-01</lastmod>
     </url>
     <url>
          <loc>https://mfuhrmann.github.io/spieli/ops/monitoring/</loc>
-         <lastmod>2026-04-30</lastmod>
+         <lastmod>2026-05-01</lastmod>
+    </url>
+    <url>
+         <loc>https://mfuhrmann.github.io/spieli/ops/scheduled-import/</loc>
+         <lastmod>2026-05-01</lastmod>
+    </url>
+    <url>
+         <loc>https://mfuhrmann.github.io/spieli/ops/security/</loc>
+         <lastmod>2026-05-01</lastmod>
     </url>
     <url>
          <loc>https://mfuhrmann.github.io/spieli/ops/troubleshooting/</loc>
-         <lastmod>2026-04-30</lastmod>
+         <lastmod>2026-05-01</lastmod>
+    </url>
+    <url>
+         <loc>https://mfuhrmann.github.io/spieli/ops/upgrade/</loc>
+         <lastmod>2026-05-01</lastmod>
     </url>
     <url>
          <loc>https://mfuhrmann.github.io/spieli/reference/api/</loc>
-         <lastmod>2026-04-30</lastmod>
+         <lastmod>2026-05-01</lastmod>
     </url>
     <url>
          <loc>https://mfuhrmann.github.io/spieli/reference/architecture/</loc>
-         <lastmod>2026-04-30</lastmod>
+         <lastmod>2026-05-01</lastmod>
     </url>
     <url>
          <loc>https://mfuhrmann.github.io/spieli/reference/external-services/</loc>
-         <lastmod>2026-04-30</lastmod>
+         <lastmod>2026-05-01</lastmod>
     </url>
     <url>
          <loc>https://mfuhrmann.github.io/spieli/reference/federation/</loc>
-         <lastmod>2026-04-30</lastmod>
+         <lastmod>2026-05-01</lastmod>
     </url>
     <url>
          <loc>https://mfuhrmann.github.io/spieli/reference/glossary/</loc>
-         <lastmod>2026-04-30</lastmod>
+         <lastmod>2026-05-01</lastmod>
     </url>
     <url>
          <loc>https://mfuhrmann.github.io/spieli/reference/registry-json/</loc>
-         <lastmod>2026-04-30</lastmod>
+         <lastmod>2026-05-01</lastmod>
     </url>
     <url>
          <loc>https://mfuhrmann.github.io/spieli/reference/tech-stack/</loc>
-         <lastmod>2026-04-30</lastmod>
+         <lastmod>2026-05-01</lastmod>
     </url>
 </urlset>

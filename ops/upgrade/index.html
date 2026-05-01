@@ -8,11 +8,13 @@
       
       
       
-        <link rel="canonical" href="https://mfuhrmann.github.io/spieli/adr/0001-openspec-sharing-policy/">
+        <link rel="canonical" href="https://mfuhrmann.github.io/spieli/ops/upgrade/">
       
       
-        <link rel="prev" href="../../source-tree-analysis/">
+        <link rel="prev" href="../configuration/">
       
+      
+        <link rel="next" href="../scheduled-import/">
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
@@ -20,7 +22,7 @@
     
     
       
-        <title>ADR-0001 — OpenSpec sharing policy - spieli</title>
+        <title>Upgrading - spieli</title>
       
     
     
@@ -72,7 +74,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#adr-0001-share-openspec-specs-and-archive-in-git" class="md-skip">
+        <a href="#upgrading-spieli" class="md-skip">
           Skip to content
         </a>
       
@@ -106,7 +108,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              ADR-0001 — OpenSpec sharing policy
+              Upgrading
             
           </span>
         </div>
@@ -263,11 +265,13 @@
         
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../../ops/manual-deploy/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../manual-deploy/" class="md-tabs__link">
           
   
   Operations
@@ -317,13 +321,11 @@
         
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="./" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../../adr/0001-openspec-sharing-policy/" class="md-tabs__link">
           
   
   Decisions
@@ -491,25 +493,30 @@
       
   
   
+    
   
   
+  
     
     
     
+      
+        
+        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
         
           
-          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
             
   
   <span class="md-ellipsis">
@@ -520,7 +527,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             Operations
@@ -534,7 +541,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ops/manual-deploy/" class="md-nav__link">
+      <a href="../manual-deploy/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -555,7 +562,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ops/federated-deployment/" class="md-nav__link">
+      <a href="../federated-deployment/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -576,7 +583,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ops/configuration/" class="md-nav__link">
+      <a href="../configuration/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -594,10 +601,30 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../ops/upgrade/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Upgrading
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
@@ -606,6 +633,98 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#check-the-current-version" class="md-nav__link">
+    <span class="md-ellipsis">
+      Check the current version
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#standard-upgrade-same-minor-version" class="md-nav__link">
+    <span class="md-ellipsis">
+      Standard upgrade (same minor version)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#when-to-run-a-full-re-import" class="md-nav__link">
+    <span class="md-ellipsis">
+      When to run a full re-import
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#applying-sql-changes-without-a-full-re-import" class="md-nav__link">
+    <span class="md-ellipsis">
+      Applying SQL changes without a full re-import
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#upgrading-the-docker-compose-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      Upgrading the Docker Compose file
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#hub-upgrades" class="md-nav__link">
+    <span class="md-ellipsis">
+      Hub upgrades
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#downgrading" class="md-nav__link">
+    <span class="md-ellipsis">
+      Downgrading
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      See also
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -618,7 +737,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ops/scheduled-import/" class="md-nav__link">
+      <a href="../scheduled-import/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -639,7 +758,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ops/backup-restore/" class="md-nav__link">
+      <a href="../backup-restore/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -660,7 +779,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ops/monitoring/" class="md-nav__link">
+      <a href="../monitoring/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -681,7 +800,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ops/security/" class="md-nav__link">
+      <a href="../security/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -702,7 +821,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ops/troubleshooting/" class="md-nav__link">
+      <a href="../troubleshooting/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1199,30 +1318,25 @@
       
   
   
-    
   
   
-  
     
     
     
-      
-        
-        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
         
           
-          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
             
   
   <span class="md-ellipsis">
@@ -1233,7 +1347,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_7">
             <span class="md-nav__icon md-icon"></span>
             Decisions
@@ -1244,30 +1358,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  <span class="md-ellipsis">
-    ADR-0001 — OpenSpec sharing policy
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../adr/0001-openspec-sharing-policy/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1276,104 +1370,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#context" class="md-nav__link">
-    <span class="md-ellipsis">
-      Context
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#decision" class="md-nav__link">
-    <span class="md-ellipsis">
-      Decision
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#alternatives-considered" class="md-nav__link">
-    <span class="md-ellipsis">
-      Alternatives considered
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#consequences" class="md-nav__link">
-    <span class="md-ellipsis">
-      Consequences
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#implementation-plan" class="md-nav__link">
-    <span class="md-ellipsis">
-      Implementation plan
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#references" class="md-nav__link">
-    <span class="md-ellipsis">
-      References
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#revision-2026-04-20" class="md-nav__link">
-    <span class="md-ellipsis">
-      Revision 2026-04-20
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Revision 2026-04-20">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#trigger" class="md-nav__link">
-    <span class="md-ellipsis">
-      Trigger
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1413,80 +1409,74 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#context" class="md-nav__link">
+  <a href="#check-the-current-version" class="md-nav__link">
     <span class="md-ellipsis">
-      Context
+      Check the current version
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#decision" class="md-nav__link">
+  <a href="#standard-upgrade-same-minor-version" class="md-nav__link">
     <span class="md-ellipsis">
-      Decision
+      Standard upgrade (same minor version)
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#alternatives-considered" class="md-nav__link">
+  <a href="#when-to-run-a-full-re-import" class="md-nav__link">
     <span class="md-ellipsis">
-      Alternatives considered
+      When to run a full re-import
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#consequences" class="md-nav__link">
+  <a href="#applying-sql-changes-without-a-full-re-import" class="md-nav__link">
     <span class="md-ellipsis">
-      Consequences
+      Applying SQL changes without a full re-import
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#implementation-plan" class="md-nav__link">
+  <a href="#upgrading-the-docker-compose-file" class="md-nav__link">
     <span class="md-ellipsis">
-      Implementation plan
+      Upgrading the Docker Compose file
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#references" class="md-nav__link">
+  <a href="#hub-upgrades" class="md-nav__link">
     <span class="md-ellipsis">
-      References
+      Hub upgrades
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#revision-2026-04-20" class="md-nav__link">
+  <a href="#downgrading" class="md-nav__link">
     <span class="md-ellipsis">
-      Revision 2026-04-20
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Revision 2026-04-20">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#trigger" class="md-nav__link">
-    <span class="md-ellipsis">
-      Trigger
+      Downgrading
     </span>
   </a>
   
 </li>
-        
-      </ul>
-    </nav>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      See also
+    </span>
+  </a>
   
 </li>
       
@@ -1505,7 +1495,7 @@
                   
 
   
-    <a href="https://github.com/mfuhrmann/spieli/edit/main/docs/adr/0001-openspec-sharing-policy.md" title="Edit this page" class="md-content__button md-icon">
+    <a href="https://github.com/mfuhrmann/spieli/edit/main/docs/ops/upgrade.md" title="Edit this page" class="md-content__button md-icon">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -1513,277 +1503,71 @@
   
 
 
-<h1 id="adr-0001-share-openspec-specs-and-archive-in-git">ADR-0001: Share OpenSpec specs and archive in git<a class="headerlink" href="#adr-0001-share-openspec-specs-and-archive-in-git" title="Permanent link">&para;</a></h1>
-<ul>
-<li><strong>Status:</strong> Revised (see ## Revision 2026-04-20 below)</li>
-<li><strong>Date:</strong> 2026-04-19</li>
-<li><strong>Deciders:</strong> @mfuhrmann</li>
-</ul>
-<h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
-<p>We use <a href="https://github.com/tbwiss/openspec">OpenSpec</a> as an AI-assisted
-spec/change workflow alongside Claude Code. It writes three things to
-<code>openspec/</code> in the repo root:</p>
-<table>
-<thead>
-<tr>
-<th>Path</th>
-<th>Contents</th>
-<th>Lifecycle</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>openspec/specs/&lt;capability&gt;/spec.md</code></td>
-<td>Durable per-capability requirements</td>
-<td>Long-lived, updated when requirements change</td>
-</tr>
-<tr>
-<td><code>openspec/changes/&lt;name&gt;/</code></td>
-<td>In-flight change proposals (proposal, design, tasks, deltas)</td>
-<td>Short-lived — created, worked on, archived</td>
-</tr>
-<tr>
-<td><code>openspec/changes/archive/&lt;date&gt;-&lt;name&gt;/</code></td>
-<td>Frozen record of a shipped change</td>
-<td>Long-lived, append-only</td>
-</tr>
-</tbody>
-</table>
-<p>Today <code>.gitignore</code> contains a single line:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>openspec/
+<h1 id="upgrading-spieli">Upgrading spieli<a class="headerlink" href="#upgrading-spieli" title="Permanent link">&para;</a></h1>
+<p>This guide explains how to update a running spieli deployment to a newer release.</p>
+<h2 id="check-the-current-version">Check the current version<a class="headerlink" href="#check-the-current-version" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>docker<span class="w"> </span>compose<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>app<span class="w"> </span>cat<span class="w"> </span>/usr/share/nginx/html/config.js<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>version
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="c1"># or look at the image tag:</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>docker<span class="w"> </span>compose<span class="w"> </span>ps
 </code></pre></div>
-<p>That made sense while we were the only user of the tool, but the repo
-has since accumulated enough OpenSpec state that the wholesale ignore
-costs more than it saves:</p>
-<ul>
-<li><strong>7 capability specs</strong> live only on one laptop. The knowledge they
-  capture (deployment-mode-selection, hub-ui-parity, mkdocs-site,
-  playwright-ci, rc-container-tag, scheduled-importer, slim-readme) is
-  already reflected in shipped code and docs, but the <em>why</em> behind each
-  requirement is locked up.</li>
-<li><strong>6 archived change decisions</strong> (proposal + design + tasks for each
-  shipped change) record the trade-offs we walked through. None of that
-  survives in git history — commit messages capture <em>what</em> shipped, not
-  <em>why we rejected the alternatives</em>.</li>
-<li>We can't hand off an OpenSpec-driven task to a collaborator via a PR.
-  Issue [#190] worked around this by pasting the design inline into the
-  issue body, which is fragile.</li>
-<li>Claude Code can't read prior design decisions on a fresh clone,
-  which defeats the point of writing them down.</li>
-</ul>
-<p>A second contributor (@ronnytrommer) also uses Claude Code + OpenSpec,
-so the tool is no longer single-operator.</p>
-<h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>Track <code>openspec/specs/</code> and <code>openspec/changes/archive/</code> in git. Keep
-active <code>openspec/changes/&lt;name&gt;/</code> directories ignored.</p>
-<p>Replace the <code>openspec/</code> line in <code>.gitignore</code> with:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a># OpenSpec — track specs + archived decisions, hide in-flight changes
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>openspec/changes/*/
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>!openspec/changes/archive/
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>!openspec/changes/archive/**
+<p>Check <a href="https://github.com/mfuhrmann/spieli/releases">GitHub Releases</a> for the latest version and any breaking changes.</p>
+<h2 id="standard-upgrade-same-minor-version">Standard upgrade (same minor version)<a class="headerlink" href="#standard-upgrade-same-minor-version" title="Permanent link">&para;</a></h2>
+<p>For patch and minor version upgrades with no breaking changes:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nb">cd</span><span class="w"> </span>/path/to/your/spieli-deployment
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="c1"># Pull the latest images</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.prod.yml<span class="w"> </span>pull
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="c1"># Restart app container (zero-database-downtime)</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.prod.yml<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>up<span class="w"> </span>-d<span class="w"> </span>app
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="c1"># If the API SQL changed (check the release notes):</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.prod.yml<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>importer
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="c1"># or just apply the schema change without a full re-import:</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>make<span class="w"> </span>db-apply<span class="w">    </span><span class="c1"># only if running from source clone</span>
 </code></pre></div>
-<p>This gives us:</p>
-<table>
-<thead>
-<tr>
-<th>Path</th>
-<th>Tracked?</th>
-<th>Why</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>openspec/specs/**</code></td>
-<td><strong>yes</strong></td>
-<td>Durable requirements; AI tools benefit from reading them on a fresh clone</td>
-</tr>
-<tr>
-<td><code>openspec/changes/archive/**</code></td>
-<td><strong>yes</strong></td>
-<td>Decision log — the "why" that commit messages don't carry</td>
-</tr>
-<tr>
-<td><code>openspec/changes/&lt;active&gt;/**</code></td>
-<td>no</td>
-<td>In-flight, churny, often private-in-progress thinking</td>
-</tr>
-<tr>
-<td><code>openspec/AGENTS.md</code>, top-level config</td>
-<td><strong>yes</strong></td>
-<td>So clones know what the directory is for</td>
-</tr>
-</tbody>
-</table>
-<p>An <code>openspec/README.md</code> pointing at this ADR goes in as part of the
-implementation so a confused first-time reader has a landing.</p>
-<h2 id="alternatives-considered">Alternatives considered<a class="headerlink" href="#alternatives-considered" title="Permanent link">&para;</a></h2>
+<p>Replace <code>&lt;mode&gt;</code> with your <code>DEPLOY_MODE</code> (<code>data-node</code>, <code>ui</code>, or <code>data-node-ui</code>).</p>
+<h2 id="when-to-run-a-full-re-import">When to run a full re-import<a class="headerlink" href="#when-to-run-a-full-re-import" title="Permanent link">&para;</a></h2>
+<p>A full re-import (<code>docker compose run --rm importer</code>) is needed when:</p>
 <ul>
-<li><strong>P0 — Keep <code>openspec/</code> wholesale ignored.</strong> The current state. Cheap
-  to maintain but makes every decision a single-laptop secret.</li>
-<li><strong>P1 — Track <code>openspec/specs/</code> only.</strong> Gets the durable requirements
-  into git but loses the decision log — the most expensive thing to
-  recreate. Rejected.</li>
-<li><strong>P3 — Track everything under <code>openspec/</code>.</strong> Includes in-flight
-  changes. Creates noisy diffs on every exploration session and forces
-  "is my WIP proposal ready for a teammate to see?" into a constant
-  judgment call. Rejected.</li>
+<li>The release notes say "run <code>make db-apply</code> or re-import after upgrading"</li>
+<li><code>importer/api.sql</code> changed in a way that requires rebuilding the <code>playground_stats</code> materialised view</li>
+<li>A new OSM tag type was added to <code>processing/lua/osm_import.lua</code> — the new columns won't exist in the existing data until a fresh import</li>
 </ul>
-<p>P2 (this ADR) is the sweet spot: tracks the two artifact kinds with
-long-term value, leaves working-memory unshared.</p>
-<h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
-<p><strong>Positive:</strong></p>
+<p>A schema-only update (<code>make db-apply</code> / the <code>db-apply</code> step of the importer) is safe and fast (seconds) when only PostgREST functions changed, since it drops and recreates functions without touching the <code>planet_osm_*</code> tables.</p>
+<h2 id="applying-sql-changes-without-a-full-re-import">Applying SQL changes without a full re-import<a class="headerlink" href="#applying-sql-changes-without-a-full-re-import" title="Permanent link">&para;</a></h2>
+<p>If you are running from a source clone and only API functions changed:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>make<span class="w"> </span>db-apply
+</code></pre></div>
+<p>This runs <code>envsubst &lt; importer/api.sql | psql</code> against the running database and sends <code>NOTIFY pgrst, 'reload schema'</code> to PostgREST. The app continues to serve requests during the apply; PostgREST picks up the new schema within a second of the reload.</p>
+<h2 id="upgrading-the-docker-compose-file">Upgrading the Docker Compose file<a class="headerlink" href="#upgrading-the-docker-compose-file" title="Permanent link">&para;</a></h2>
+<p>When the <code>compose.prod.yml</code> itself changes (new services, new volume mounts, etc.):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># From a source clone:</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>git<span class="w"> </span>pull
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1"># Or download the updated file directly:</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>curl<span class="w"> </span>-O<span class="w"> </span>https://raw.githubusercontent.com/mfuhrmann/spieli/main/compose.prod.yml
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="c1"># Then recreate:</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.prod.yml<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>down
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.prod.yml<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>up<span class="w"> </span>-d
+</code></pre></div>
+<h2 id="hub-upgrades">Hub upgrades<a class="headerlink" href="#hub-upgrades" title="Permanent link">&para;</a></h2>
+<p>Upgrade each data-node first, verify it works, then upgrade the Hub UI. The Hub is backwards-compatible with older data-nodes (it falls back to the legacy <code>get_playgrounds</code> RPC if the tiered RPCs return 404), but an older Hub is not guaranteed to understand new data-node response fields.</p>
+<h2 id="downgrading">Downgrading<a class="headerlink" href="#downgrading" title="Permanent link">&para;</a></h2>
+<p>Downgrading is supported only within the same minor version. Images are tagged <code>:X.Y.Z</code> and <code>:X.Y</code>, so:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># Pin to a specific version:</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="c1"># Edit compose.prod.yml to use ghcr.io/mfuhrmann/spieli:0.4.0 instead of :latest</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.prod.yml<span class="w"> </span>pull
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.prod.yml<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>up<span class="w"> </span>-d
+</code></pre></div>
+<p>The database schema is <strong>not</strong> automatically rolled back on a downgrade. If the new version added new columns or functions, the older app may ignore them safely, but this is not tested. When in doubt, re-import from scratch.</p>
+<h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Specs and archived decisions survive across machines and appear in
-  fresh clones.</li>
-<li>A collaborator can take over an issue and, after the change is
-  archived, the decision rationale ships with the merge.</li>
-<li>Claude Code (or any AI tool) can read <code>openspec/specs/</code> and prior
-  archives as grounding context.</li>
-<li>Git history becomes the AI memory multiplier — every future session
-  inherits the reasoning of past sessions.</li>
+<li><a href="../configuration/">Configuration reference</a> — check for new or changed variables before upgrading</li>
+<li><a href="../troubleshooting/">Troubleshooting</a> — common post-upgrade issues</li>
+<li><a href="https://github.com/mfuhrmann/spieli/blob/main/RELEASING.md">RELEASING.md</a> — how releases are cut (maintainer reference)</li>
 </ul>
-<p><strong>Negative / to manage:</strong></p>
-<ul>
-<li><strong>First-time coordination gotcha.</strong> @ronnytrommer has a local
-  <code>openspec/</code> with specs and archives that diverge from
-  @mfuhrmann's. When we commit the baseline, one of us will have a
-  messy first pull. Two options:</li>
-<li><em>Option A (default):</em> @mfuhrmann lands the baseline. @ronnytrommer
-    reviews the diff against his local state, rebases any genuine
-    differences onto the shared baseline in a follow-up PR.</li>
-<li><em>Option B:</em> pre-sync by diffing the two <code>openspec/specs/</code> trees
-    before committing. More work, smaller follow-up.</li>
-<li><strong>In-flight proposals are no longer on the teammate's radar by
-  default.</strong> For handoff we'll keep using GitHub issues with the
-  proposal pasted inline (pattern established by issue #190). If this
-  becomes a real friction we can revisit.</li>
-<li><strong><code>openspec validate</code> must stay green on <code>main</code>.</strong> Add it to CI as
-  part of the implementation so broken archives don't rot the shared
-  history.</li>
-</ul>
-<h2 id="implementation-plan">Implementation plan<a class="headerlink" href="#implementation-plan" title="Permanent link">&para;</a></h2>
-<p>Tracked in issue [#193]. Summary:</p>
-<ol>
-<li><code>.gitignore</code>: replace the <code>openspec/</code> line with the pattern in
-   "Decision" above.</li>
-<li>Baseline commit: add <code>openspec/specs/</code>, <code>openspec/changes/archive/</code>,
-   <code>openspec/AGENTS.md</code>, <code>openspec/project.md</code>, and a small
-   <code>openspec/README.md</code> pointing at this ADR.</li>
-<li><code>.claude/CLAUDE.md</code> (or project CLAUDE.md): note that archived
-   changes and specs are now tracked, so Claude can read them; active
-   changes remain local.</li>
-<li>Coordinate the baseline with @ronnytrommer using Option A above,
-   unless Option B is obviously cheaper by then.</li>
-<li>Optional follow-up: add <code>openspec validate</code> to CI.</li>
-</ol>
-<h2 id="references">References<a class="headerlink" href="#references" title="Permanent link">&para;</a></h2>
-<ul>
-<li><a href="https://github.com/tbwiss/openspec">OpenSpec</a></li>
-<li>Issue [#190] — handoff workaround that motivated this ADR</li>
-<li>Issue [#193] — implementation</li>
-</ul>
-<h2 id="revision-2026-04-20">Revision 2026-04-20<a class="headerlink" href="#revision-2026-04-20" title="Permanent link">&para;</a></h2>
-<ul>
-<li><strong>Status:</strong> Accepted (supersedes the original Decision above)</li>
-<li><strong>Deciders:</strong> @mfuhrmann, @ronnytrommer</li>
-</ul>
-<h3 id="trigger">Trigger<a class="headerlink" href="#trigger" title="Permanent link">&para;</a></h3>
-<p>The "real friction" scenario anticipated in <strong>Negative / to manage</strong>
-above has fired sooner than expected. During a collaborative <code>/opsx:explore</code>
-session, @ronnytrommer drafted two multi-file change proposals
-(<code>add-tiered-playground-delivery</code>, <code>add-federated-playground-clustering</code>)
-that each span four files: <code>proposal.md</code>, <code>design.md</code>, <code>tasks.md</code>, and a
-nested <code>specs/&lt;capability&gt;/spec.md</code>. The original ADR's prescribed
-handoff — paste the proposal inline into a GitHub issue (pattern from</p>
-<h1 id="190-does-not-scale-to-multi-file-proposals-eight-files-pasted-into">190) — does not scale to multi-file proposals: eight files pasted into<a class="headerlink" href="#190-does-not-scale-to-multi-file-proposals-eight-files-pasted-into" title="Permanent link">&para;</a></h1>
-<p>one issue body is unreadable, and round-tripping edits between issue
-comments and local <code>openspec/changes/</code> diverges almost immediately.</p>
-<p>Waiting to see whether this pattern recurs before revisiting would
-create the same single-laptop-knowledge problem the original ADR was
-written to fix, just one level down.</p>
-<h3 id="revised-decision">Revised decision<a class="headerlink" href="#revised-decision" title="Permanent link">&para;</a></h3>
-<p>Track the whole <code>openspec/</code> tree in git, including active
-<code>openspec/changes/&lt;name&gt;/</code> directories. Replace the selective pattern
-with a simple removal of the <code>openspec/</code> line from <code>.gitignore</code>.</p>
-<table>
-<thead>
-<tr>
-<th>Path</th>
-<th>Tracked?</th>
-<th>Change from original</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>openspec/specs/**</code></td>
-<td>yes</td>
-<td>unchanged</td>
-</tr>
-<tr>
-<td><code>openspec/changes/archive/**</code></td>
-<td>yes</td>
-<td>unchanged</td>
-</tr>
-<tr>
-<td><code>openspec/changes/&lt;active&gt;/**</code></td>
-<td><strong>yes</strong></td>
-<td><strong>new</strong> — was excluded</td>
-</tr>
-<tr>
-<td><code>openspec/config.yaml</code>, <code>openspec/AGENTS.md</code>, top-level</td>
-<td>yes</td>
-<td>unchanged</td>
-</tr>
-</tbody>
-</table>
-<h3 id="consequences-of-the-revision">Consequences of the revision<a class="headerlink" href="#consequences-of-the-revision" title="Permanent link">&para;</a></h3>
-<p><strong>Positive (additive to the original Consequences):</strong></p>
-<ul>
-<li>Multi-file proposals can be handed off via ordinary branch + PR
-  workflow, not issue-paste.</li>
-<li>Every commit that touches a proposal surfaces in normal code-review
-  tooling.</li>
-<li>Claude Code agents on any account read the same active-proposal set
-  on a fresh clone.</li>
-</ul>
-<p><strong>Accepted costs:</strong></p>
-<ul>
-<li><em>Noisy diffs on every exploration session.</em> Mitigated by branch
-  discipline: exploratory thinking stays on an unpushed local branch
-  until it is "worth showing." Only merge to <code>main</code> when a proposal is
-  ready for collaboration or ready to implement.</li>
-<li><em>"Is my WIP ready for a teammate?" as a constant judgment call.</em>
-  Resolved by the same branch discipline. Local branch = private
-  thinking; pushed branch / draft PR = ready for collaboration;
-  <code>main</code> = shared baseline.</li>
-<li><em>Active-change churn in <code>main</code> history.</em> Accepted. Use draft PRs for
-  in-progress proposals so the history of the proposal is legible
-  (one PR per proposal is the default; multiple commits within the PR
-  are fine).</li>
-</ul>
-<h3 id="coordination-for-the-baseline-commit">Coordination for the baseline commit<a class="headerlink" href="#coordination-for-the-baseline-commit" title="Permanent link">&para;</a></h3>
-<p>Both contributors already have local <code>openspec/</code> directories that
-diverge (see original <strong>Negative / to manage</strong>). The original ADR
-proposed Option A (one contributor lands the baseline, the other
-rebases) with @mfuhrmann as the default baseliner.</p>
-<p>Under this revision the baseline includes active proposals too, which
-amplifies the divergence risk. We switch to a coordinated baseline:</p>
-<ol>
-<li>@ronnytrommer opens a PR containing: (a) this ADR revision,
-   (b) the <code>.gitignore</code> change, (c) his local <code>openspec/</code> tree.</li>
-<li>@mfuhrmann reviews the PR, resolves any conflict with his own local
-   tree in review (if his active proposals differ from what @ronnytrommer
-   has captured, he commits the authoritative versions onto the PR
-   branch before merge).</li>
-<li>On merge, both contributors hard-reset their local <code>openspec/</code> to
-   the committed tree, then cherry-pick any diverged local commits back
-   on top.</li>
-</ol>
-<h3 id="when-to-revert">When to revert<a class="headerlink" href="#when-to-revert" title="Permanent link">&para;</a></h3>
-<p>If the branch-discipline cost outlives the collaboration benefit,
-revert by restoring the <code>.gitignore</code> pattern from the original Decision
-and going back to issue-paste handoff. The original Decision remains
-available verbatim above this revision block.</p>
 
 
 
