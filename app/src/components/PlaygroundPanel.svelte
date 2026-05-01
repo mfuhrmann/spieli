@@ -417,32 +417,6 @@
           {#if getPlaygroundLocation(attr, $_)}
             <p class="text-sm text-muted-foreground mt-0.5">{getPlaygroundLocation(attr, $_)}</p>
           {/if}
-          {#if completeness || dataAgeFormatted}
-            <div class="flex items-center gap-2 flex-wrap mt-2">
-              {#if completeness}
-                <Badge variant={completeness.variant}>{$_(completeness.key)}</Badge>
-              {/if}
-              {#if dataAgeFormatted}
-                <button
-                  bind:this={chipEl}
-                  class="data-age-chip"
-                  onclick={toggleDataAgePopover}
-                  title={$_('details.osmDataAgeTitle')}
-                  aria-haspopup="dialog"
-                  aria-controls="data-age-popover"
-                  aria-expanded={dataAgePopoverOpen}
-                >
-                  <Info class="h-3 w-3" />
-                  {$_('details.osmDataAgeChip', { values: { age: dataAgeFormatted } })}
-                  {#if dataAgePopoverOpen}
-                    <ChevronUp class="h-3 w-3" />
-                  {:else}
-                    <ChevronDown class="h-3 w-3" />
-                  {/if}
-                </button>
-              {/if}
-            </div>
-          {/if}
         </div>
         <div class="flex items-center gap-1 shrink-0">
           <button class="panel-icon-btn" onclick={() => selection.clear()} aria-label={$_('info.closeBtn')}>
@@ -458,32 +432,6 @@
           {#if getPlaygroundLocation(attr, $_)}
             <p class="text-sm text-muted-foreground mt-0.5">{getPlaygroundLocation(attr, $_)}</p>
           {/if}
-          {#if completeness || dataAgeFormatted}
-            <div class="flex items-center gap-2 flex-wrap mt-2">
-              {#if completeness}
-                <Badge variant={completeness.variant}>{$_(completeness.key)}</Badge>
-              {/if}
-              {#if dataAgeFormatted}
-                <button
-                  bind:this={chipEl}
-                  class="data-age-chip"
-                  onclick={toggleDataAgePopover}
-                  title={$_('details.osmDataAgeTitle')}
-                  aria-haspopup="dialog"
-                  aria-controls="data-age-popover"
-                  aria-expanded={dataAgePopoverOpen}
-                >
-                  <Info class="h-3 w-3" />
-                  {$_('details.osmDataAgeChip', { values: { age: dataAgeFormatted } })}
-                  {#if dataAgePopoverOpen}
-                    <ChevronUp class="h-3 w-3" />
-                  {:else}
-                    <ChevronDown class="h-3 w-3" />
-                  {/if}
-                </button>
-              {/if}
-            </div>
-          {/if}
         </div>
         <button class="panel-icon-btn shrink-0" onclick={sharePlayground} aria-label={$_('info.copyLink')}>
           {#if shareConfirmed}
@@ -496,6 +444,34 @@
     {/if}
 
     <div class={cn(embedded ? '' : 'info-panel__body')}>
+      <!-- Metadata chips: completeness quality + data age -->
+      {#if completeness || dataAgeFormatted}
+        <div class="flex items-center gap-2 flex-wrap mb-4">
+          {#if completeness}
+            <Badge variant={completeness.variant}>{$_(completeness.key)}</Badge>
+          {/if}
+          {#if dataAgeFormatted}
+            <button
+              bind:this={chipEl}
+              class="data-age-chip"
+              onclick={toggleDataAgePopover}
+              title={$_('details.osmDataAgeTitle')}
+              aria-haspopup="dialog"
+              aria-controls="data-age-popover"
+              aria-expanded={dataAgePopoverOpen}
+            >
+              <Info class="h-3 w-3" />
+              {$_('details.osmDataAgeChip', { values: { age: dataAgeFormatted } })}
+              {#if dataAgePopoverOpen}
+                <ChevronUp class="h-3 w-3" />
+              {:else}
+                <ChevronDown class="h-3 w-3" />
+              {/if}
+            </button>
+          {/if}
+        </div>
+      {/if}
+
       <!-- Description -->
       {#each descriptionParts as part}
         <p class="text-sm text-muted-foreground italic mb-3">{part}</p>
