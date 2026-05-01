@@ -11,7 +11,7 @@
   import { onMount, onDestroy } from 'svelte';
   import OpeningHours from 'opening_hours';
   import { transform } from 'ol/proj';
-  import { X, Share2, Check, ChevronDown, ChevronUp, ChevronRight, Clock, Image, Package, Navigation, Star, Info } from 'lucide-svelte';
+  import { X, Share2, Check, ChevronDown, ChevronUp, ChevronRight, Clock, Image, Package, Navigation, Star, Info, Phone, Mail } from 'lucide-svelte';
   import { _ } from 'svelte-i18n';
 
   import { selection } from '../stores/selection.js';
@@ -413,33 +413,35 @@
     {#if !embedded}
       <div class="info-panel__header">
         <div class="flex-1 min-w-0">
-          <div class="flex items-center gap-2 flex-wrap">
-            <h2 class="panel-title">{getPlaygroundTitle(attr, $_)}</h2>
-            {#if dataAgeFormatted}
-              <button
-                bind:this={chipEl}
-                class="data-age-chip"
-                onclick={toggleDataAgePopover}
-                title={$_('details.osmDataAgeTitle')}
-                aria-haspopup="dialog"
-                aria-controls="data-age-popover"
-                aria-expanded={dataAgePopoverOpen}
-              >
-                <Info class="h-3 w-3" />
-                {$_('details.osmDataAgeChip', { values: { age: dataAgeFormatted } })}
-                {#if dataAgePopoverOpen}
-                  <ChevronUp class="h-3 w-3" />
-                {:else}
-                  <ChevronDown class="h-3 w-3" />
-                {/if}
-              </button>
-            {/if}
-          </div>
+          <h2 class="panel-title">{getPlaygroundTitle(attr, $_)}</h2>
           {#if getPlaygroundLocation(attr, $_)}
             <p class="text-sm text-muted-foreground mt-0.5">{getPlaygroundLocation(attr, $_)}</p>
           {/if}
-          {#if completeness}
-            <Badge variant={completeness.variant} class="mt-2">{$_(completeness.key)}</Badge>
+          {#if completeness || dataAgeFormatted}
+            <div class="flex items-center gap-2 flex-wrap mt-2">
+              {#if completeness}
+                <Badge variant={completeness.variant}>{$_(completeness.key)}</Badge>
+              {/if}
+              {#if dataAgeFormatted}
+                <button
+                  bind:this={chipEl}
+                  class="data-age-chip"
+                  onclick={toggleDataAgePopover}
+                  title={$_('details.osmDataAgeTitle')}
+                  aria-haspopup="dialog"
+                  aria-controls="data-age-popover"
+                  aria-expanded={dataAgePopoverOpen}
+                >
+                  <Info class="h-3 w-3" />
+                  {$_('details.osmDataAgeChip', { values: { age: dataAgeFormatted } })}
+                  {#if dataAgePopoverOpen}
+                    <ChevronUp class="h-3 w-3" />
+                  {:else}
+                    <ChevronDown class="h-3 w-3" />
+                  {/if}
+                </button>
+              {/if}
+            </div>
           {/if}
         </div>
         <div class="flex items-center gap-1 shrink-0">
@@ -449,36 +451,38 @@
         </div>
       </div>
     {:else}
-      <!-- Embedded header (bottom sheet) -->
+      <!-- Embedded header (mobile full-screen panel) -->
       <div class="flex items-start justify-between gap-2 mb-4">
         <div class="flex-1 min-w-0">
-          <div class="flex items-center gap-2 flex-wrap">
-            <h2 class="panel-title">{getPlaygroundTitle(attr, $_)}</h2>
-            {#if dataAgeFormatted}
-              <button
-                bind:this={chipEl}
-                class="data-age-chip"
-                onclick={toggleDataAgePopover}
-                title={$_('details.osmDataAgeTitle')}
-                aria-haspopup="dialog"
-                aria-controls="data-age-popover"
-                aria-expanded={dataAgePopoverOpen}
-              >
-                <Info class="h-3 w-3" />
-                {$_('details.osmDataAgeChip', { values: { age: dataAgeFormatted } })}
-                {#if dataAgePopoverOpen}
-                  <ChevronUp class="h-3 w-3" />
-                {:else}
-                  <ChevronDown class="h-3 w-3" />
-                {/if}
-              </button>
-            {/if}
-          </div>
+          <h2 class="panel-title">{getPlaygroundTitle(attr, $_)}</h2>
           {#if getPlaygroundLocation(attr, $_)}
             <p class="text-sm text-muted-foreground mt-0.5">{getPlaygroundLocation(attr, $_)}</p>
           {/if}
-          {#if completeness}
-            <Badge variant={completeness.variant} class="mt-2">{$_(completeness.key)}</Badge>
+          {#if completeness || dataAgeFormatted}
+            <div class="flex items-center gap-2 flex-wrap mt-2">
+              {#if completeness}
+                <Badge variant={completeness.variant}>{$_(completeness.key)}</Badge>
+              {/if}
+              {#if dataAgeFormatted}
+                <button
+                  bind:this={chipEl}
+                  class="data-age-chip"
+                  onclick={toggleDataAgePopover}
+                  title={$_('details.osmDataAgeTitle')}
+                  aria-haspopup="dialog"
+                  aria-controls="data-age-popover"
+                  aria-expanded={dataAgePopoverOpen}
+                >
+                  <Info class="h-3 w-3" />
+                  {$_('details.osmDataAgeChip', { values: { age: dataAgeFormatted } })}
+                  {#if dataAgePopoverOpen}
+                    <ChevronUp class="h-3 w-3" />
+                  {:else}
+                    <ChevronDown class="h-3 w-3" />
+                  {/if}
+                </button>
+              {/if}
+            </div>
           {/if}
         </div>
         <button class="panel-icon-btn shrink-0" onclick={sharePlayground} aria-label={$_('info.copyLink')}>
@@ -496,6 +500,22 @@
       {#each descriptionParts as part}
         <p class="text-sm text-muted-foreground italic mb-3">{part}</p>
       {/each}
+
+      <!-- Opening Hours + Age inline -->
+      {#if openingHoursInfo || attr.min_age || attr.max_age}
+        <div class="status-row mb-4">
+          {#if openingHoursInfo}
+            <div class="status-pill" class:status-pill--open={openingHoursInfo.open} class:status-pill--closed={!openingHoursInfo.open}>
+              <span class="status-dot" class:status-dot--open={openingHoursInfo.open} class:status-dot--closed={!openingHoursInfo.open}></span>
+              <Clock class="h-3.5 w-3.5 shrink-0" />
+              <span>{openingHoursInfo.text}</span>
+            </div>
+          {/if}
+          {#if attr.min_age || attr.max_age}
+            <AgeChip minAge={attr.min_age ? Number(attr.min_age) : null} maxAge={attr.max_age ? Number(attr.max_age) : null} />
+          {/if}
+        </div>
+      {/if}
 
       <!-- Quick Facts Grid -->
       <div class="grid grid-cols-2 gap-x-4 gap-y-2 mb-4">
@@ -525,30 +545,13 @@
           </div>
         {/if}
 
-
       </div>
-
-      <!-- Opening Hours + Age inline -->
-      {#if openingHoursInfo || attr.min_age || attr.max_age}
-        <div class="status-row mb-4">
-          {#if openingHoursInfo}
-            <div class="status-pill" class:status-pill--open={openingHoursInfo.open} class:status-pill--closed={!openingHoursInfo.open}>
-              <span class="status-dot" class:status-dot--open={openingHoursInfo.open} class:status-dot--closed={!openingHoursInfo.open}></span>
-              <Clock class="h-3.5 w-3.5 shrink-0" />
-              <span>{openingHoursInfo.text}</span>
-            </div>
-          {/if}
-          {#if attr.min_age || attr.max_age}
-            <AgeChip minAge={attr.min_age ? Number(attr.min_age) : null} maxAge={attr.max_age ? Number(attr.max_age) : null} />
-          {/if}
-        </div>
-      {/if}
 
       <!-- Contact Info -->
       {#if attr['contact:email'] || attr.email || attr['contact:phone'] || attr.phone || attr.operator}
-        <div class="space-y-2 mb-4">
+        <div class="mb-4">
           {#if attr.operator}
-            <div class="fact-item" data-testid="operator-value">
+            <div class="fact-item mb-1" data-testid="operator-value">
               <span class="info-label">{$_('details.operatorLabel')}</span>
               {#if attr['operator:wikidata']}
                 <a href="https://www.wikidata.org/wiki/{attr['operator:wikidata']}"
@@ -558,22 +561,32 @@
               {/if}
             </div>
           {/if}
-          {#if attr['contact:phone'] || attr.phone}
-            {@const phone = attr['contact:phone'] || attr.phone}
-            <div class="fact-item">
-              <span class="info-label">{$_('details.phoneLabel')}</span>
-              {#if /^\+?\d/.test(phone.trim())}
-                <a href="tel:{phone}" class="fact-value text-primary hover:underline">{phone}</a>
-              {:else}<span class="fact-value">{phone}</span>{/if}
-            </div>
-          {/if}
-          {#if attr['contact:email'] || attr.email}
-            {@const email = attr['contact:email'] || attr.email}
-            <div class="fact-item">
-              <span class="info-label">{$_('details.emailLabel')}</span>
-              {#if email.includes('@') && !/^javascript:/i.test(email.trim())}
-                <a href="mailto:{email}" class="fact-value text-primary hover:underline">{email}</a>
-              {:else}<span class="fact-value">{email}</span>{/if}
+          {#if attr['contact:phone'] || attr.phone || attr['contact:email'] || attr.email}
+            <div class="contact-row">
+              {#if attr['contact:phone'] || attr.phone}
+                {@const phone = attr['contact:phone'] || attr.phone}
+                {#if /^\+?\d/.test(phone.trim())}
+                  <a href="tel:{phone}" class="contact-link">
+                    <Phone class="h-3.5 w-3.5 shrink-0" /><span>{phone}</span>
+                  </a>
+                {:else}
+                  <span class="contact-link contact-link--plain">
+                    <Phone class="h-3.5 w-3.5 shrink-0" /><span>{phone}</span>
+                  </span>
+                {/if}
+              {/if}
+              {#if attr['contact:email'] || attr.email}
+                {@const email = attr['contact:email'] || attr.email}
+                {#if email.includes('@') && !/^javascript:/i.test(email.trim())}
+                  <a href="mailto:{email}" class="contact-link">
+                    <Mail class="h-3.5 w-3.5 shrink-0" /><span>{email}</span>
+                  </a>
+                {:else}
+                  <span class="contact-link contact-link--plain">
+                    <Mail class="h-3.5 w-3.5 shrink-0" /><span>{email}</span>
+                  </span>
+                {/if}
+              {/if}
             </div>
           {/if}
         </div>
@@ -867,12 +880,37 @@
   }
   .action-btn--icon:hover { background: #e5e7eb; color: #1f2937; }
 
+  /* ── Contact row (phone + email inline) ─────────────── */
+  .contact-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .contact-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 13px;
+    color: #10b981;
+    text-decoration: none;
+    min-width: 0;
+  }
+  .contact-link span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .contact-link:hover { text-decoration: underline; }
+  .contact-link--plain { color: #1f2937; cursor: default; }
+  .contact-link--plain:hover { text-decoration: none; }
+
   /* ── Status row (opening hours + age chip) ──────────── */
   .status-row {
     display: flex;
     align-items: center;
     gap: 8px;
-    flex-wrap: wrap;
   }
 
   .status-pill {
@@ -884,6 +922,12 @@
     font-size: 12px;
     font-weight: 600;
     white-space: nowrap;
+    min-width: 0;
+    overflow: hidden;
+  }
+  .status-pill span:last-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .status-pill--open   { background: #ecfdf5; border: 1px solid rgba(16, 185, 129, 0.4); color: #065f46; }
   .status-pill--closed { background: #fef2f2; border: 1px solid rgba(239, 68, 68, 0.4);  color: #b91c1c; }
