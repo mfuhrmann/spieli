@@ -317,7 +317,10 @@
     if (dismissUnsub) { dismissUnsub(); dismissUnsub = null; }
   }
 
-  onDestroy(() => { if (dismissUnsub) dismissUnsub(); });
+  onDestroy(() => {
+    if (dismissUnsub) dismissUnsub();
+    clearTimeout(panelBlockTimer);
+  });
 
   // Responsive: track if we're on mobile
   let isMobile = false;
@@ -326,6 +329,22 @@
   }
   $: if (typeof window !== 'undefined') {
     checkMobile();
+  }
+
+  // Briefly block pointer events on the mobile detail panel body after it opens
+  // to prevent the map tap that triggered the selection from bleeding into links
+  // (email, Panoramax, etc.) that appear at the same screen coordinates.
+  let panelBlockTouch = false;
+  let panelBlockTimer = null;
+  let _panelWasOpen = false;
+  $: {
+    const panelOpen = isMobile && $hasSelection;
+    if (panelOpen && !_panelWasOpen) {
+      panelBlockTouch = true;
+      clearTimeout(panelBlockTimer);
+      panelBlockTimer = setTimeout(() => { panelBlockTouch = false; }, 350);
+    }
+    _panelWasOpen = panelOpen;
   }
 
   // Center the map on the selected playground when the mobile full-screen panel
@@ -498,7 +517,7 @@
           <span>{$_('info.backToMap')}</span>
         </button>
       </div>
-      <div class="mobile-detail-body">
+      <div class="mobile-detail-body" style={panelBlockTouch ? 'pointer-events: none' : ''}>
         <PlaygroundPanel embedded={true} />
       </div>
     </div>
