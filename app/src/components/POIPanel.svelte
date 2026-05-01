@@ -84,11 +84,11 @@
         {@const osmUrl = `https://www.openstreetmap.org/directions?engine=fossgis_osrm_foot&route=${centerLat},${centerLon};${poi.lat},${poi.lon}`}
         <a href={geoUrl} class="poi-row link-mobile-only" title={$_('poi.openNavApp')}>
           <span class="poi-name">{name}{#if hint}<span class="poi-hint">({hint})</span>{/if}</span>
-          <span class="poi-dist">{formatDistance(poi.dist)} 🧭</span>
+          <span class="poi-dist">{formatDistance(poi.dist)}</span>
         </a>
         <a href={osmUrl} target="_blank" rel="noopener" class="poi-row link-desktop-only" title={$_('poi.openInBrowser')}>
           <span class="poi-name">{name}{#if hint}<span class="poi-hint">({hint})</span>{/if}</span>
-          <span class="poi-dist">{formatDistance(poi.dist)} 🧭</span>
+          <span class="poi-dist">{formatDistance(poi.dist)}</span>
         </a>
       {/each}
     </div>
@@ -103,10 +103,10 @@
     gap: 0.5rem;
     margin-top: 0.25rem;
     font-size: smaller;
-    color: inherit;
+    color: #10b981;
     text-decoration: none;
   }
-  .poi-row:hover { text-decoration: underline; }
+  .poi-row:hover .poi-name { text-decoration: underline; }
   .poi-name { flex: 1; }
   .poi-hint {
     color: #6b7280;
