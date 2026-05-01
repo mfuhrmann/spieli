@@ -12,7 +12,7 @@
   import DataContributionModal from './DataContributionModal.svelte';
   import CompletenessLegend from './CompletenessLegend.svelte';
   import { onDestroy, onMount } from 'svelte';
-  import { Pencil, Plus, Minus, ArrowLeft } from 'lucide-svelte';
+  import { Info, Plus, Minus, ArrowLeft } from 'lucide-svelte';
   import { _ } from 'svelte-i18n';
   import GeoJSON from 'ol/format/GeoJSON.js';
   import { mapStore } from '../stores/map.js';
@@ -60,8 +60,8 @@
   export let nearestFetcher = null;
 
   /**
-   * Links shown in the data-contribution modal.
-   * @type {{ wikiUrl: string, chatUrl: string | null }}
+   * Links shown in the info modal.
+   * @type {{ chatUrl: string | null }}
    */
   export let dataContribLinks;
 
@@ -436,10 +436,10 @@
       <button
         class="control-btn"
         onclick={() => dataModalOpen = true}
-        title={$_('nav.addData')}
-        aria-label={$_('nav.addData')}
+        title={$_('nav.about')}
+        aria-label={$_('nav.about')}
       >
-        <Pencil class="h-5 w-5" />
+        <Info class="h-5 w-5" />
       </button>
       <FilterPanel />
     </div>
@@ -509,7 +509,6 @@
 
   <DataContributionModal
     bind:open={dataModalOpen}
-    wikiUrl={dataContribLinks.wikiUrl}
     chatUrl={dataContribLinks.chatUrl}
   />
 </div>

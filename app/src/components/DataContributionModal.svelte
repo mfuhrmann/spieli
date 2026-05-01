@@ -1,12 +1,11 @@
 <script>
-  import { regionPlaygroundWikiUrl, regionChatUrl } from '../lib/config.js';
-  import { _ } from 'svelte-i18n';
+  import { _ , locale } from 'svelte-i18n';
+  import { version } from '../../package.json';
 
   export let open = false;
-  /** OSM wiki page shown as "Erfassungsregeln für Spielplätze in dieser Region". */
-  export let wikiUrl = regionPlaygroundWikiUrl;
   /** Community chat URL; hidden when null/falsy. */
-  export let chatUrl = regionChatUrl;
+  export let chatUrl = null;
+
   function close() { open = false; }
 
   function onBackdropClick(e) {
@@ -16,6 +15,10 @@
   function onKeydown(e) {
     if (open && e.key === 'Escape') close();
   }
+
+  $: osmWikiUrl = $locale?.startsWith('de')
+    ? 'https://wiki.openstreetmap.org/wiki/DE:Tag:leisure%3Dplayground'
+    : 'https://wiki.openstreetmap.org/wiki/Tag:leisure%3Dplayground';
 </script>
 
 <svelte:window onkeydown={onKeydown} />
@@ -24,36 +27,28 @@
   <!-- svelte-ignore a11y-click-events-have-key-events -->
   <!-- svelte-ignore a11y-no-static-element-interactions -->
   <div class="modal-backdrop" onclick={onBackdropClick}>
-    <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="dc-title">
+    <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="info-title">
       <div class="modal-header">
-        <h5 class="modal-title" id="dc-title">{$_('nav.addData')}</h5>
+        <h5 class="modal-title" id="info-title">{$_('nav.about')}</h5>
         <button type="button" class="close-btn" onclick={close} aria-label={$_('info.closeBtn')}>✕</button>
       </div>
       <div class="modal-body">
         <p class="small">
-          {@html $_('modal.addData.introText', { values: { name: '<a href="https://www.openstreetmap.org/" target="_blank" rel="noopener">OpenStreetMap</a>' } })}
+          {@html $_('modal.addData.introText', { values: {
+            osmLink: '<a href="https://www.openstreetmap.org/" target="_blank" rel="noopener">OpenStreetMap</a>',
+            mapcompleteLink: '<a href="https://mapcomplete.org/playgrounds.html" target="_blank" rel="noopener">MapComplete</a>'
+          } })}
         </p>
 
-        <h6 class="section-heading">{$_('modal.addData.equipTitle')}</h6>
-        <p class="small">
-          <a href="https://mapcomplete.org/playgrounds.html" target="_blank" rel="noopener">MapComplete</a>
-          — {$_('modal.addData.mapcompleteText')}
-        </p>
+        <div class="links">
+          <a href={osmWikiUrl} target="_blank" rel="noopener">{$_('modal.addData.wikiLinkText')} ↗</a>
+          {#if chatUrl}
+            <a href={chatUrl} target="_blank" rel="noopener">{$_('modal.addData.community.simpleChatLabel')} ↗</a>
+          {/if}
+          <a href="https://github.com/mfuhrmann/spieli" target="_blank" rel="noopener">{$_('modal.addData.githubLabel')} ↗</a>
+        </div>
 
-        <h6 class="section-heading">{$_('modal.addData.wikiTitle')}</h6>
-        <p class="small">
-          <a href={wikiUrl} target="_blank" rel="noopener">
-            {$_('modal.addData.wikiLinkText')}
-          </a>
-        </p>
-
-        {#if chatUrl}
-          <h6 class="section-heading">{$_('modal.addData.community.label')}</h6>
-          <p class="small">
-            {$_('modal.addData.community.simpleText')}
-            <a href={chatUrl} target="_blank" rel="noopener">{$_('modal.addData.community.simpleChatLabel')}</a>.
-          </p>
-        {/if}
+        <p class="version">v{version}</p>
       </div>
       <div class="modal-footer">
         <button type="button" class="ok-btn" onclick={close}>{$_('modal.ok')}</button>
@@ -76,7 +71,7 @@
   .modal-box {
     background: #fff;
     border-radius: 6px;
-    width: min(90vw, 480px);
+    width: min(90vw, 440px);
     max-height: 80vh;
     overflow-y: auto;
     box-shadow: 0 4px 24px rgba(0,0,0,0.2);
@@ -106,12 +101,26 @@
 
   .modal-body { padding: 1rem; }
 
-  .small { font-size: 0.875rem; color: #495057; margin: 0 0 0.5rem; }
+  .small { font-size: 0.875rem; color: #495057; margin: 0 0 1rem; }
 
-  .section-heading { font-size: 0.875rem; font-weight: 600; margin: 0.75rem 0 0.25rem; }
+  .links {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    margin-bottom: 1rem;
+  }
 
-  a { color: #6c757d; }
-  a:hover { color: #343a40; }
+  .links a {
+    font-size: 0.875rem;
+    color: #6c757d;
+  }
+  .links a:hover { color: #343a40; }
+
+  .version {
+    font-size: 0.75rem;
+    color: #adb5bd;
+    margin: 0;
+  }
 
   .modal-footer {
     padding: 0.5rem 1rem;
