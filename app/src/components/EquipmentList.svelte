@@ -346,26 +346,22 @@
             {@const detail = getEquipmentAttributesFromProps(f.properties, $_)}
             {@const id = uid(f)}
             <li>
-              {#if detail.html || detail.panoramaxUuid}
-                <button type="button" class="device-toggle" onclick={() => toggleItem(id)}>
-                  <span style="color:{color}">●</span> {label}
-                  <span class="bi {openItems.has(id) ? 'bi-chevron-up' : 'bi-chevron-down'} device-chevron"></span>
-                </button>
-                {#if openItems.has(id)}
-                  <div class="device-detail">
-                    {#if detail.panoramaxUuid}
-                      <button type="button" class="photo-thumb-btn" onclick={() => modalUuid = detail.panoramaxUuid} title={$_('popup.devicePhoto')}>
-                        <img src={thumbUrl(detail.panoramaxUuid)} alt={$_('modal.streetPhoto')} class="photo-thumb" />
-                        <span class="photo-label"><span class="bi bi-camera"></span> {$_('popup.devicePhoto')}</span>
-                      </button>
-                    {:else}
-                      <MapCompleteLink href={detail.mcUrl} label={$_('popup.addPhoto')} />
-                    {/if}
-                    {@html detail.html}
-                  </div>
-                {/if}
-              {:else}
+              <button type="button" class="device-toggle" onclick={() => toggleItem(id)}>
                 <span style="color:{color}">●</span> {label}
+                <span class="bi {openItems.has(id) ? 'bi-chevron-up' : 'bi-chevron-down'} device-chevron"></span>
+              </button>
+              {#if openItems.has(id)}
+                <div class="device-detail">
+                  {#if detail.panoramaxUuid}
+                    <button type="button" class="photo-thumb-btn" onclick={() => modalUuid = detail.panoramaxUuid} title={$_('popup.devicePhoto')}>
+                      <img src={thumbUrl(detail.panoramaxUuid)} alt={$_('modal.streetPhoto')} class="photo-thumb" />
+                      <span class="photo-label"><span class="bi bi-camera"></span> {$_('popup.devicePhoto')}</span>
+                    </button>
+                  {:else}
+                    <MapCompleteLink href={detail.mcUrl} label={$_('popup.addPhoto')} />
+                  {/if}
+                  {@html detail.html}
+                </div>
               {/if}
             </li>
           {/each}
