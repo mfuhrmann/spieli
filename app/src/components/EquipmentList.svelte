@@ -59,7 +59,7 @@
       if (!map.has(k)) map.set(k, []);
       map.get(k).push(f);
     }
-    return [...map.values()].map(items => ({ items, collapsed: items.length > 2 }));
+    return [...map.values()].map(items => ({ items, collapsed: items.length >= 2 }));
   }
 
   // Collect all deduped panoramax UUIDs from a list of features.
