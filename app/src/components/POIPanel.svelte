@@ -82,30 +82,45 @@
         {@const hint = cat.hint ? cat.hint(poi) : null}
         {@const geoUrl = `geo:${poi.lat},${poi.lon}?q=${poi.lat},${poi.lon}(${encodeURIComponent(name)})`}
         {@const osmUrl = `https://www.openstreetmap.org/directions?engine=fossgis_osrm_foot&route=${centerLat},${centerLon};${poi.lat},${poi.lon}`}
-        <div class="d-flex justify-content-between align-items-baseline mt-1">
-          <span style="font-size:smaller;">
-            {name}{#if hint}<span class="text-muted ms-1" style="font-size:0.7rem;">({hint})</span>{/if}
-          </span>
-          <span class="ms-2 text-nowrap">
-            <a href={geoUrl} class="text-muted text-decoration-none link-mobile-only" style="font-size:smaller;"
-               title={$_('poi.openNavApp')}>{formatDistance(poi.dist)} 🧭</a>
-            <a href={osmUrl} target="_blank" rel="noopener"
-               class="text-muted text-decoration-none ms-1 link-desktop-only" style="font-size:smaller;"
-               title={$_('poi.openInBrowser')}>{formatDistance(poi.dist)} 🧭</a>
-          </span>
-        </div>
+        <a href={geoUrl} class="poi-row link-mobile-only" title={$_('poi.openNavApp')}>
+          <span class="poi-name">{name}{#if hint}<span class="poi-hint">({hint})</span>{/if}</span>
+          <span class="poi-dist">{formatDistance(poi.dist)} 🧭</span>
+        </a>
+        <a href={osmUrl} target="_blank" rel="noopener" class="poi-row link-desktop-only" title={$_('poi.openInBrowser')}>
+          <span class="poi-name">{name}{#if hint}<span class="poi-hint">({hint})</span>{/if}</span>
+          <span class="poi-dist">{formatDistance(poi.dist)} 🧭</span>
+        </a>
       {/each}
     </div>
   {/each}
 {/if}
 
 <style>
-  /* geo: links open mobile nav apps (CoMaps, GMaps app) — hide on desktop */
-  .link-mobile-only  { display: inline; }
-  .link-desktop-only { display: none;   }
+  .poi-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+    font-size: smaller;
+    color: inherit;
+    text-decoration: none;
+  }
+  .poi-row:hover { text-decoration: underline; }
+  .poi-name { flex: 1; }
+  .poi-hint {
+    color: #6b7280;
+    margin-left: 0.25rem;
+    font-size: 0.7rem;
+  }
+  .poi-dist { white-space: nowrap; color: #6b7280; }
+
+  /* geo: links open mobile nav apps — hide on desktop */
+  .link-mobile-only  { display: flex; }
+  .link-desktop-only { display: none; }
 
   @media (min-width: 1024px) {
-    .link-mobile-only  { display: none;   }
-    .link-desktop-only { display: inline; }
+    .link-mobile-only  { display: none; }
+    .link-desktop-only { display: flex; }
   }
 </style>
