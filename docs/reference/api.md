@@ -84,6 +84,8 @@ Polygon-tier RPC. Returns the same `FeatureCollection` shape as the legacy regio
 
 **Response** — GeoJSON `FeatureCollection`. Each feature's `properties` include `osm_id`, `osm_type` (`R` or `W`), `name`, `leisure`, `operator`, `access`, `surface`, `area`, the playground-stats counts (`tree_count`, `bench_count`, etc.), and the per-equipment booleans (`is_water`, `for_baby`, `for_toddler`, `for_wheelchair`, `has_soccer`, `has_basketball`). The original tag hstore is spread on top so any OSM tag is reachable.
 
+The equipment booleans are aggregated across all equipment within the playground polygon. `for_baby` is `true` when any equipment has `baby=yes`, `capacity:baby` set, or `playground` ∈ `baby_swing`, `basketswing`, `sandpit`, `springy`. See [Import Pipeline](../contributing/import-pipeline.md#filter-flags-for_baby-for_toddler-is_water-) for the full trigger list.
+
 > Note: the polygon RPC names the water flag `is_water` (legacy from the materialised-view column). The centroid RPC's `filter_attrs` payload (below) renames it to `has_water` for consistency with the other client-side filter keys (`for_baby`, `has_soccer`, …). Same boolean, different key.
 
 ```json

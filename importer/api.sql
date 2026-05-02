@@ -157,7 +157,7 @@ CREATE MATERIALIZED VIEW public.playground_stats AS
               AND (e.tags->'playground' ~* 'water'
                    OR e.tags->'playground' IN ('splash_pad','pump')))           AS is_water,
       BOOL_OR((e.tags->'baby' = 'yes')
-              OR (e.tags->'playground' IN ('baby_swing','basketswing'))
+              OR (e.tags->'playground' IN ('baby_swing','basketswing','sandpit','springy'))
               OR (e.tags ? 'playground' AND e.tags->'capacity:baby' IS NOT NULL)) AS for_baby,
       BOOL_OR((e.tags->'provided_for:toddler' = 'yes')
               OR (e.tags->'playground' = 'basketswing'))                        AS for_toddler,

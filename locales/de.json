@@ -404,6 +404,12 @@
     "ageRange": "{min}–{max} Jahre",
     "ageMin": "ab {age} Jahren",
     "ageMax": "bis {age} Jahre",
+    "ageGroups": {
+      "toddler": "Kleinkind",
+      "child": "Kind",
+      "preteen": "Schulkind",
+      "teen": "Jugendliche"
+    },
     "operatorLabel": "Betreiber",
     "phoneLabel": "Telefon",
     "emailLabel": "E-Mail",

@@ -27,9 +27,9 @@
   import POIPanel from './POIPanel.svelte';
   import PanoramaxViewer from './PanoramaxViewer.svelte';
   import ReviewsPanel from './ReviewsPanel.svelte';
-  import AgeChip from './AgeChip.svelte';
   import Badge from './ui/Badge.svelte';
   import Button from './ui/Button.svelte';
+  import AgeChip from './AgeChip.svelte';
 
   /** When true, renders without the fixed sidebar wrapper (for bottom sheet embedding) */
   export let embedded = false;
@@ -501,7 +501,7 @@
         <p class="text-sm text-muted-foreground italic mb-3">{part}</p>
       {/each}
 
-      <!-- Opening Hours + Age inline -->
+      <!-- Opening Hours + Age -->
       {#if openingHoursInfo || attr.min_age || attr.max_age}
         <div class="status-row mb-4">
           {#if openingHoursInfo}
