@@ -1,31 +1,33 @@
 <script>
+  import { _ } from 'svelte-i18n';
+
   /** @type {number|null} */
   export let minAge = null;
   /** @type {number|null} */
   export let maxAge = null;
 
   const AGE_GROUPS = [
-    { label: 'Toddler',  emoji: '🍼', lo: 0,  hi: 3  },
-    { label: 'Child',    emoji: '🧒', lo: 4,  hi: 7  },
-    { label: 'Pre-teen', emoji: '🏃', lo: 8,  hi: 11 },
-    { label: 'Teen',     emoji: '🧑', lo: 12, hi: 16 },
+    { key: 'toddler',  emoji: '🍼', lo: 0,  hi: 3  },
+    { key: 'child',    emoji: '🧒', lo: 4,  hi: 7  },
+    { key: 'preteen',  emoji: '🏃', lo: 8,  hi: 11 },
+    { key: 'teen',     emoji: '🧑', lo: 12, hi: 16 },
   ];
 
-  // The single best-matching group: highest group whose lo <= target.
   $: target = maxAge ?? minAge ?? null;
   $: match  = target !== null
     ? ([...AGE_GROUPS].reverse().find(g => target >= g.lo) ?? AGE_GROUPS[0])
     : null;
 
-  $: label = (minAge && maxAge) ? `${minAge}–${maxAge}`
-    : minAge  ? `from ${minAge}`
-    : maxAge  ? `up to ${maxAge}`
+  $: label = (minAge && maxAge)
+    ? $_('details.ageRange', { values: { min: minAge, max: maxAge } })
+    : minAge  ? $_('details.ageMin',   { values: { age: minAge } })
+    : maxAge  ? $_('details.ageMax',   { values: { age: maxAge } })
     : null;
 </script>
 
 {#if match}
   <span class="age-chip">
-    {match.emoji} {match.label}
+    {match.emoji} {$_('details.ageGroups.' + match.key)}
     {#if label}<span class="age-range">{label}</span>{/if}
   </span>
 {/if}

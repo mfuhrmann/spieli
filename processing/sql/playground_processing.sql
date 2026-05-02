@@ -338,6 +338,8 @@ SET for_baby =
     -- ...oder bestimmte Baby-gerechte Spielgeräte vorhanden sind...
     playground_devices LIKE ';baby_swing;' OR
     playground_devices LIKE ';basketswing;' OR
+    playground_devices LIKE ';sandpit;' OR
+    playground_devices LIKE ';springy;' OR
     -- ...oder es innerhalb der Spielplatzgeometrie Spielgeräte mit "baby=yes" gibt
     EXISTS (
         SELECT 1

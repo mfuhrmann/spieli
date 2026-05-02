@@ -404,6 +404,12 @@
     "ageRange": "{min}–{max} years",
     "ageMin": "from {age} years",
     "ageMax": "up to {age} years",
+    "ageGroups": {
+      "toddler": "Toddler",
+      "child": "Child",
+      "preteen": "Pre-teen",
+      "teen": "Teen"
+    },
     "operatorLabel": "Operator",
     "phoneLabel": "Phone",
     "emailLabel": "Email",

@@ -90,6 +90,27 @@ The completeness logic in `api.sql` must stay in sync with `app/src/lib/complete
 
 **If you change the completeness criteria**, update both files and rebuild the materialised view with `make db-apply`.
 
+## Filter flags (`for_baby`, `for_toddler`, `is_water`, …)
+
+Several boolean columns are computed from equipment present within each playground polygon. They drive both the filter UI and the `filter_attrs` payload in the centroid RPC.
+
+| Flag | Triggers |
+|---|---|
+| `for_baby` | `baby=yes` on any equipment; `playground` ∈ `baby_swing`, `basketswing`, `sandpit`, `springy`; `capacity:baby` present on any equipment |
+| `for_toddler` | `provided_for:toddler=yes` on any equipment; `playground=basketswing` |
+| `is_water` | `playground` contains `water` or ∈ `splash_pad`, `pump` |
+| `for_wheelchair` | `wheelchair=yes` on any equipment |
+| `has_soccer` / `has_basketball` | `leisure=pitch` with matching `sport` value |
+
+The logic lives in two places that must stay in sync:
+
+- **`importer/api.sql`** — `equip_stats` CTE, `BOOL_OR(…) AS for_baby` etc. Used by `get_playgrounds_bbox` and `get_playground_clusters`.
+- **`processing/sql/playground_processing.sql`** — `UPDATE playgrounds SET for_baby = …` etc. Used by the legacy materialised view path.
+
+**If you add a new trigger**, update both files and run `make db-apply`. A full `make import` is only needed if the new trigger depends on a tag not yet stored in `planet_osm_*` (check the tag filter in `importer/import.sh` first).
+
+> **Testing**: there are no SQL unit tests. Verify changes with a real import (`make import`) against a region that has playgrounds with the relevant equipment, then check the filter chip appears correctly in the UI.
+
 ## Applying schema changes without a full re-import
 
 `make db-apply` runs only the `api.sql` step (skips the osm2pgsql data load). Use it when:
