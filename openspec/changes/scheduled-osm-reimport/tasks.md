@@ -2,7 +2,7 @@
 
 - [x] 1.1 Add `importing BOOLEAN NOT NULL DEFAULT false` column to `api.import_status` in `importer/api.sql` (use `ADD COLUMN IF NOT EXISTS`)
 - [x] 1.2 Add `'importing', importing` to the `json_build_object` in `get_meta` in `importer/api.sql`
-- [ ] 1.3 Run `make db-apply` and verify `curl .../rpc/get_meta | jq .importing` returns `false`
+- [x] 1.3 Run `make db-apply` and verify `curl .../rpc/get_meta | jq .importing` returns `false`
 
 ## 2. Importer script — importing flag
 
@@ -21,13 +21,13 @@
 ## 4. Hub poll pipeline
 
 - [x] 4.1 Update `oci/app/poll-federation.sh` to extract `importing` from `get_meta` and include it in the per-backend entry written to `/federation-status.json` (default `false` if field absent via `jq`'s `// false`)
-- [ ] 4.2 Verify `/federation-status.json` includes `"importing": false` for all backends during normal operation
+- [x] 4.2 Verify `/federation-status.json` includes `"importing": false` for all backends during normal operation
 
 ## 5. Hub drawer UI
 
 - [x] 5.1 In the hub instances drawer component, read each backend's `importing` field from the federation-status data
 - [x] 5.2 Render an "updating" badge (distinct colour from error/down state) next to the backend name when `importing: true`
-- [ ] 5.3 Confirm no "updating" badge appears when `importing` is `false` or absent
+- [x] 5.3 Confirm no "updating" badge appears when `importing` is `false` or absent
 
 ## 6. compose.prod.yml
 
