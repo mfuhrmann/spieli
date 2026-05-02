@@ -1018,12 +1018,17 @@ CREATE TABLE IF NOT EXISTS api.import_status (
   -- operators as `last_import_at` ("did the cron run").
   osm_data_timestamp  timestamptz,
   source_pbf_url      text,
-  pbf_etag            text
+  pbf_etag            text,
+  -- Set to true by import.sh immediately before osm2pgsql runs;
+  -- cleared unconditionally via EXIT trap (success, failure, or signal).
+  importing           boolean      NOT NULL DEFAULT false
 );
 
--- Idempotent ALTER for upgrades from FHE-pre-osm-data-age deployments.
+-- Idempotent ALTERs for upgrades from older deployments.
 ALTER TABLE api.import_status
   ADD COLUMN IF NOT EXISTS osm_data_timestamp timestamptz;
+ALTER TABLE api.import_status
+  ADD COLUMN IF NOT EXISTS importing boolean NOT NULL DEFAULT false;
 
 GRANT SELECT ON api.import_status TO web_anon;
 
@@ -1072,7 +1077,7 @@ AS $$
   ),
   import_status AS (
     -- NULL when no import has run yet (table empty); callers must handle NULL.
-    SELECT last_import_at, osm_data_timestamp FROM api.import_status WHERE id = 1
+    SELECT last_import_at, osm_data_timestamp, importing FROM api.import_status WHERE id = 1
   )
   SELECT json_build_object(
     'relation_id',           relation_id,
@@ -1094,6 +1099,7 @@ AS $$
     -- is the user-facing "how old is this data?" derived value.
     'osm_data_timestamp',    (SELECT osm_data_timestamp FROM import_status),
     'osm_data_age_seconds',  (SELECT EXTRACT(EPOCH FROM (now() - osm_data_timestamp))::int FROM import_status),
+    'importing',             COALESCE((SELECT importing FROM import_status), false),
     'version',               '${SPIELI_VERSION}'
   );
 $$;

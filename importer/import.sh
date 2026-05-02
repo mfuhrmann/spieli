@@ -15,6 +15,10 @@
 #   POSTGRES_USER          Default: osm
 #   POSTGRES_PASSWORD      Required
 #   OSM2PGSQL_THREADS      Default: 4
+#   REIMPORT_INTERVAL_MIN_DAYS   Minimum days between automatic re-imports (daemon mode).
+#                                Both MIN and MAX must be set to enable daemon mode.
+#   REIMPORT_INTERVAL_MAX_DAYS   Maximum days between automatic re-imports (daemon mode).
+#                                A uniformly random interval in [MIN, MAX] is chosen each cycle.
 
 # `-e` aborts on any unchecked non-zero exit. The script's shebang is
 # `#!/bin/sh` and the importer image's /bin/sh is busybox / dash, neither of
@@ -47,6 +51,9 @@ PG_MAX_PARALLEL_MAINTENANCE_WORKERS="${PG_MAX_PARALLEL_MAINTENANCE_WORKERS:-2}"
 PG_MAINTENANCE_WORK_MEM="${PG_MAINTENANCE_WORK_MEM:-256MB}"
 PG_WORK_MEM="${PG_WORK_MEM:-32MB}"
 
+REIMPORT_INTERVAL_MIN_DAYS="${REIMPORT_INTERVAL_MIN_DAYS:-}"
+REIMPORT_INTERVAL_MAX_DAYS="${REIMPORT_INTERVAL_MAX_DAYS:-}"
+
 # Validate PG_* before they reach envsubst → SQL. Strict regexes prevent
 # both injection (the values flow into raw SQL via `SET … = '${VAR}';`) and
 # silent kB-vs-MB confusion (PostgreSQL parses bare integers in memory GUCs
@@ -78,221 +85,320 @@ fi
 
 export PGPASSWORD="$POSTGRES_PASSWORD"
 
-# --------------------------------------------------------------------------- #
-# Wait for PostGIS to be ready
-# --------------------------------------------------------------------------- #
-echo "[importer] Waiting for PostgreSQL at ${POSTGRES_HOST}:${POSTGRES_PORT}..."
-until pg_isready -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -q; do
-    sleep 2
-done
-echo "[importer] PostgreSQL is ready."
+# Helper: clear importing flag. Called from EXIT trap inside run_import and
+# after the successful UPSERT. Ignores errors — the table may not exist on
+# the very first import (created by schema-apply), or the DB may be
+# temporarily unreachable on container shutdown.
+_clear_importing() {
+    psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+        -c "UPDATE api.import_status SET importing = false WHERE id = 1" \
+        2>/dev/null || true
+}
 
-# --------------------------------------------------------------------------- #
-# Download PBF (skipped if already cached and intact)
-# --------------------------------------------------------------------------- #
-if [ -f "$PBF_FILE" ]; then
-    if ! osmium fileinfo "$PBF_FILE" > /dev/null 2>&1; then
-        echo "[importer] Cached $PBF_FILE is corrupt or incomplete — re-downloading..."
-        rm -f "$PBF_FILE"
-    else
-        echo "[importer] Using cached $PBF_FILE ($(du -sh "$PBF_FILE" | cut -f1))"
-    fi
-fi
-if [ ! -f "$PBF_FILE" ]; then
-    echo "[importer] Downloading $PBF_URL ..."
-    wget --progress=dot:giga -O "$PBF_FILE" "$PBF_URL"
-    echo "[importer] Download complete: $(du -sh "$PBF_FILE" | cut -f1)"
-fi
+# Helper: pick a uniformly random integer in [MIN_DAYS, MAX_DAYS].
+_random_days() {
+    awk -v min="$REIMPORT_INTERVAL_MIN_DAYS" \
+        -v max="$REIMPORT_INTERVAL_MAX_DAYS" \
+        'BEGIN { srand(); print min + int(rand() * (max - min + 1)) }'
+}
 
-# --------------------------------------------------------------------------- #
-# Step 1 — Bbox pre-filter: clip PBF to region bounding box
-# --------------------------------------------------------------------------- #
-SKIP_PREFILTER=0
-IMPORT_PBF="$PBF_FILE"
+# =========================================================================== #
+# run_import — full import pipeline in a subshell.
+#
+# Running in a subshell ( ) isolates the EXIT trap so TMP_API_SQL and the
+# importing flag are always cleaned up on exit (success, failure, or signal)
+# without interfering with the parent daemon loop's trap context.
+# =========================================================================== #
+run_import() (
+    set -e
 
-# Skip for already-small source PBFs (city-level extracts, etc.)
-PBF_SIZE_MB=$(du -m "$PBF_FILE" | cut -f1)
-if [ "$PBF_SIZE_MB" -lt "$OSM_PREFILTER_MIN_MB" ]; then
-    echo "[importer] Source PBF is small (${PBF_SIZE_MB} MB < ${OSM_PREFILTER_MIN_MB} MB), skipping bbox pre-filter"
-    SKIP_PREFILTER=1
-fi
+    # --------------------------------------------------------------------------- #
+    # Wait for PostGIS to be ready
+    # --------------------------------------------------------------------------- #
+    echo "[importer] Waiting for PostgreSQL at ${POSTGRES_HOST}:${POSTGRES_PORT}..."
+    until pg_isready -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -q; do
+        sleep 2
+    done
+    echo "[importer] PostgreSQL is ready."
 
-if [ "$SKIP_PREFILTER" -eq 0 ]; then
-    if [ -n "$OSM_BBOX" ]; then
-        echo "[importer] Using OSM_BBOX override: $OSM_BBOX"
-        RESOLVED_BBOX="$OSM_BBOX"
-    else
-        echo "[importer] Querying Nominatim for bbox of relation ${OSM_RELATION_ID}..."
-        NOMINATIM_RESPONSE=$(curl -sf --max-time 15 \
-            "https://nominatim.openstreetmap.org/lookup?osm_ids=R${OSM_RELATION_ID}&format=json" \
-            -H "User-Agent: spielplatzkarte-importer/1.0" || true)
-
-        RAW_BBOX=$(echo "$NOMINATIM_RESPONSE" | jq -r '.[0].boundingbox // empty' 2>/dev/null || true)
-
-        if [ -z "$RAW_BBOX" ]; then
-            echo "[importer] WARNING: bbox lookup failed, importing full PBF"
-            SKIP_PREFILTER=1
+    # --------------------------------------------------------------------------- #
+    # Download PBF (skipped if already cached and intact)
+    # --------------------------------------------------------------------------- #
+    if [ -f "$PBF_FILE" ]; then
+        if ! osmium fileinfo "$PBF_FILE" > /dev/null 2>&1; then
+            echo "[importer] Cached $PBF_FILE is corrupt or incomplete — re-downloading..."
+            rm -f "$PBF_FILE"
         else
-            # Nominatim returns [south, north, west, east]; reorder and pad to west,south,east,north
-            SOUTH=$(echo "$RAW_BBOX" | jq -r '.[0]')
-            NORTH=$(echo "$RAW_BBOX" | jq -r '.[1]')
-            WEST=$(echo "$RAW_BBOX"  | jq -r '.[2]')
-            EAST=$(echo "$RAW_BBOX"  | jq -r '.[3]')
-            RESOLVED_BBOX=$(awk -v w="$WEST" -v s="$SOUTH" -v e="$EAST" -v n="$NORTH" \
-                -v pad="$OSM_BBOX_PADDING" \
-                'BEGIN { printf "%.6f,%.6f,%.6f,%.6f", w-pad, s-pad, e+pad, n+pad }')
-            echo "[importer] Resolved bbox (padded ${OSM_BBOX_PADDING}°): $RESOLVED_BBOX"
+            echo "[importer] Using cached $PBF_FILE ($(du -sh "$PBF_FILE" | cut -f1))"
         fi
     fi
-fi
-
-if [ "$SKIP_PREFILTER" -eq 0 ]; then
-    BBOX_PBF="/data/${PBF_BASENAME}_${OSM_RELATION_ID}.pbf"
-
-    if [ -f "$BBOX_PBF" ] && [ "$BBOX_PBF" -nt "$PBF_FILE" ]; then
-        echo "[importer] Bbox cache hit: $BBOX_PBF is newer than source, skipping osmium extract"
-    else
-        echo "[importer] Running osmium extract (bbox=$RESOLVED_BBOX)..."
-        osmium extract \
-            --bbox="$RESOLVED_BBOX" \
-            --strategy=smart \
-            -o "$BBOX_PBF" \
-            "$PBF_FILE" \
-            --overwrite
-        echo "[importer] Bbox extract complete: $(du -sh "$BBOX_PBF" | cut -f1)"
+    if [ ! -f "$PBF_FILE" ]; then
+        echo "[importer] Downloading $PBF_URL ..."
+        wget --progress=dot:giga -O "$PBF_FILE" "$PBF_URL"
+        echo "[importer] Download complete: $(du -sh "$PBF_FILE" | cut -f1)"
     fi
 
-    IMPORT_PBF="$BBOX_PBF"
-fi
+    # --------------------------------------------------------------------------- #
+    # Step 1 — Bbox pre-filter: clip PBF to region bounding box
+    # --------------------------------------------------------------------------- #
+    SKIP_PREFILTER=0
+    IMPORT_PBF="$PBF_FILE"
 
-# --------------------------------------------------------------------------- #
-# Step 2 — Tag filter: keep only objects the app actually queries
-# --------------------------------------------------------------------------- #
-TAGS_PBF="/data/${PBF_BASENAME}_${OSM_RELATION_ID}_tags.pbf"
+    # Skip for already-small source PBFs (city-level extracts, etc.)
+    PBF_SIZE_MB=$(du -m "$PBF_FILE" | cut -f1)
+    if [ "$PBF_SIZE_MB" -lt "$OSM_PREFILTER_MIN_MB" ]; then
+        echo "[importer] Source PBF is small (${PBF_SIZE_MB} MB < ${OSM_PREFILTER_MIN_MB} MB), skipping bbox pre-filter"
+        SKIP_PREFILTER=1
+    fi
 
-if [ -f "$TAGS_PBF" ] && [ "$TAGS_PBF" -nt "$IMPORT_PBF" ]; then
-    echo "[importer] Tag-filter cache hit: $TAGS_PBF is newer than source, skipping osmium tags-filter"
+    if [ "$SKIP_PREFILTER" -eq 0 ]; then
+        if [ -n "$OSM_BBOX" ]; then
+            echo "[importer] Using OSM_BBOX override: $OSM_BBOX"
+            RESOLVED_BBOX="$OSM_BBOX"
+        else
+            echo "[importer] Querying Nominatim for bbox of relation ${OSM_RELATION_ID}..."
+            NOMINATIM_RESPONSE=$(curl -sf --max-time 15 \
+                "https://nominatim.openstreetmap.org/lookup?osm_ids=R${OSM_RELATION_ID}&format=json" \
+                -H "User-Agent: spielplatzkarte-importer/1.0" || true)
+
+            RAW_BBOX=$(echo "$NOMINATIM_RESPONSE" | jq -r '.[0].boundingbox // empty' 2>/dev/null || true)
+
+            if [ -z "$RAW_BBOX" ]; then
+                echo "[importer] WARNING: bbox lookup failed, importing full PBF"
+                SKIP_PREFILTER=1
+            else
+                # Nominatim returns [south, north, west, east]; reorder and pad to west,south,east,north
+                SOUTH=$(echo "$RAW_BBOX" | jq -r '.[0]')
+                NORTH=$(echo "$RAW_BBOX" | jq -r '.[1]')
+                WEST=$(echo "$RAW_BBOX"  | jq -r '.[2]')
+                EAST=$(echo "$RAW_BBOX"  | jq -r '.[3]')
+                RESOLVED_BBOX=$(awk -v w="$WEST" -v s="$SOUTH" -v e="$EAST" -v n="$NORTH" \
+                    -v pad="$OSM_BBOX_PADDING" \
+                    'BEGIN { printf "%.6f,%.6f,%.6f,%.6f", w-pad, s-pad, e+pad, n+pad }')
+                echo "[importer] Resolved bbox (padded ${OSM_BBOX_PADDING}°): $RESOLVED_BBOX"
+            fi
+        fi
+    fi
+
+    if [ "$SKIP_PREFILTER" -eq 0 ]; then
+        BBOX_PBF="/data/${PBF_BASENAME}_${OSM_RELATION_ID}.pbf"
+
+        if [ -f "$BBOX_PBF" ] && [ "$BBOX_PBF" -nt "$PBF_FILE" ]; then
+            echo "[importer] Bbox cache hit: $BBOX_PBF is newer than source, skipping osmium extract"
+        else
+            echo "[importer] Running osmium extract (bbox=$RESOLVED_BBOX)..."
+            osmium extract \
+                --bbox="$RESOLVED_BBOX" \
+                --strategy=smart \
+                -o "$BBOX_PBF" \
+                "$PBF_FILE" \
+                --overwrite
+            echo "[importer] Bbox extract complete: $(du -sh "$BBOX_PBF" | cut -f1)"
+        fi
+
+        IMPORT_PBF="$BBOX_PBF"
+    fi
+
+    # --------------------------------------------------------------------------- #
+    # Step 2 — Tag filter: keep only objects the app actually queries
+    # --------------------------------------------------------------------------- #
+    TAGS_PBF="/data/${PBF_BASENAME}_${OSM_RELATION_ID}_tags.pbf"
+
+    if [ -f "$TAGS_PBF" ] && [ "$TAGS_PBF" -nt "$IMPORT_PBF" ]; then
+        echo "[importer] Tag-filter cache hit: $TAGS_PBF is newer than source, skipping osmium tags-filter"
+    else
+        echo "[importer] Running osmium tags-filter..."
+        osmium tags-filter \
+            -o "$TAGS_PBF" \
+            "$IMPORT_PBF" \
+            --overwrite \
+            n/natural=tree \
+            n/leisure=playground \
+            n/leisure=pitch \
+            n/leisure=fitness_station \
+            n/leisure=picnic_table \
+            n/amenity=bench \
+            n/amenity=shelter \
+            n/amenity=toilets \
+            n/amenity=ice_cream \
+            n/amenity=cafe \
+            n/amenity=restaurant \
+            n/highway=bus_stop \
+            n/shop=chemist \
+            n/shop=supermarket \
+            n/shop=convenience \
+            n/emergency \
+            n/playground \
+            w/leisure=playground \
+            w/leisure=pitch \
+            w/leisure=fitness_station \
+            w/leisure=picnic_table \
+            w/amenity=bench \
+            w/amenity=shelter \
+            w/amenity=toilets \
+            w/amenity=ice_cream \
+            w/amenity=cafe \
+            w/amenity=restaurant \
+            w/shop=chemist \
+            w/shop=supermarket \
+            w/shop=convenience \
+            w/playground \
+            r/leisure=playground \
+            r/leisure=pitch \
+            r/type=multipolygon \
+            r/boundary=administrative
+        echo "[importer] Tag-filter complete: $(du -sh "$TAGS_PBF" | cut -f1)"
+    fi
+
+    IMPORT_PBF="$TAGS_PBF"
+
+    # --------------------------------------------------------------------------- #
+    # Import with osm2pgsql
+    # --------------------------------------------------------------------------- #
+    # Signal hub that data is being rebuilt. The flag is cleared unconditionally
+    # by the EXIT trap so a killed or failed importer never leaves it stuck true.
+    # Uses `|| true` because api.import_status may not exist on the first-ever
+    # import (the table is created by the schema-apply step below).
+    psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+        -c "UPDATE api.import_status SET importing = true WHERE id = 1" \
+        2>/dev/null || true
+    # In POSIX sh, EXIT trap does not fire on SIGTERM/SIGINT — add explicit
+    # signal handlers that call exit so the EXIT trap below runs on container stop.
+    trap 'exit' TERM INT
+    trap '_clear_importing' EXIT
+
+    echo "[importer] Starting osm2pgsql import on $IMPORT_PBF..."
+    osm2pgsql \
+        --host     "$POSTGRES_HOST" \
+        --port     "$POSTGRES_PORT" \
+        --database "$POSTGRES_DB"   \
+        --username "$POSTGRES_USER" \
+        --slim     \
+        --drop     \
+        --hstore   \
+        --number-processes "$OSM2PGSQL_THREADS" \
+        "$IMPORT_PBF"
+
+    echo "[importer] osm2pgsql finished."
+
+    # --------------------------------------------------------------------------- #
+    # Create PostgREST API schema (views / functions)
+    # --------------------------------------------------------------------------- #
+    echo "[importer] Applying API schema..."
+    # Stage the env-substituted SQL in a tempfile, then run psql against it with
+    # `-f` and `ON_ERROR_STOP=1`. POSIX sh has no `pipefail`, so a piped
+    # `envsubst | psql` would silently succeed on an envsubst failure — staging
+    # via a tempfile lets `set -e` abort us properly when envsubst fails, AND
+    # `ON_ERROR_STOP=1` aborts on any SQL error inside api.sql. Together these
+    # guarantee the api.import_status UPSERT below only runs on a fully-applied
+    # schema (matches scheduled-importer spec "Failed run does not update
+    # timestamp").
+    TMP_API_SQL=$(mktemp)
+    trap 'rm -f "$TMP_API_SQL"; _clear_importing' EXIT
+    envsubst '$OSM_RELATION_ID $PG_MAX_PARALLEL_WORKERS $PG_MAX_PARALLEL_WORKERS_PER_GATHER $PG_MAX_PARALLEL_MAINTENANCE_WORKERS $PG_MAINTENANCE_WORK_MEM $PG_WORK_MEM $SPIELI_VERSION' < /api.sql > "$TMP_API_SQL"
+    psql -v ON_ERROR_STOP=1 \
+        -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+        -f "$TMP_API_SQL"
+
+    # --------------------------------------------------------------------------- #
+    # Record successful import timestamp (read by get_meta / federation-status).
+    # Two timestamps are persisted:
+    #   - last_import_at: when this script ran (operator-facing; "is the cron
+    #     healthy?")
+    #   - osm_data_timestamp: the `osmosis_replication_timestamp` from the source
+    #     PBF header (user-facing; "how old is the data I'm looking at?")
+    # These diverge whenever the importer runs more often than Geofabrik
+    # refreshes its extracts — `last_import_at` can be "5 min ago" while the
+    # OSM data itself is up to a week old.
+    # --------------------------------------------------------------------------- #
+
+    # Extract the OSM replication timestamp from the original PBF (before our
+    # bbox+tags filtering, which can drop the header on some osmium versions).
+    # `osmium fileinfo --json` emits ISO-8601 already — pass straight to psql.
+    # Fall back to NULL if the header is missing (some non-Geofabrik PBFs).
+    OSM_DATA_TS=$(osmium fileinfo --json "$PBF_FILE" 2>/dev/null \
+        | jq -r '.header.option.osmosis_replication_timestamp // empty' 2>/dev/null || true)
+
+    if [ -n "$OSM_DATA_TS" ]; then
+        echo "[importer] Source PBF replication timestamp: $OSM_DATA_TS"
+        OSM_DATA_TS_SQL="'${OSM_DATA_TS}'::timestamptz"
+    else
+        echo "[importer] WARNING: source PBF lacks osmosis_replication_timestamp header — osm_data_timestamp will be NULL."
+        OSM_DATA_TS_SQL="NULL"
+    fi
+
+    psql -v ON_ERROR_STOP=1 \
+        -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+        -c "INSERT INTO api.import_status (id, last_import_at, osm_data_timestamp, importing)
+            VALUES (1, now(), ${OSM_DATA_TS_SQL}, false)
+            ON CONFLICT (id) DO UPDATE
+            SET last_import_at      = EXCLUDED.last_import_at,
+                osm_data_timestamp  = COALESCE(EXCLUDED.osm_data_timestamp, api.import_status.osm_data_timestamp),
+                importing           = false;"
+
+    # --------------------------------------------------------------------------- #
+    # Notify PostgREST to reload its schema cache
+    # --------------------------------------------------------------------------- #
+    psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+        -c "NOTIFY pgrst, 'reload schema';"
+
+    echo "[importer] Done. PostgREST schema reloaded."
+)
+
+# =========================================================================== #
+# Execution — one-shot or daemon mode
+# =========================================================================== #
+
+if [ -n "$REIMPORT_INTERVAL_MIN_DAYS" ] && [ -n "$REIMPORT_INTERVAL_MAX_DAYS" ]; then
+    # ── Daemon mode ─────────────────────────────────────────────────────────── #
+    echo "[importer] Daemon mode: interval ${REIMPORT_INTERVAL_MIN_DAYS}–${REIMPORT_INTERVAL_MAX_DAYS} days."
+
+    # Clear any stuck importing flag left by a previously SIGKILL'd container.
+    # POSIX sh EXIT traps don't fire on SIGKILL, so this startup reset is the
+    # reliable fallback. Ignored if the DB isn't up yet (|| true).
+    _clear_importing
+
+    # Startup grace check: if a recent import is on record in the DB, sleep
+    # until the next scheduled time rather than importing immediately. This
+    # prevents an unplanned full re-import every time the container is
+    # restarted (e.g. after a Watchtower image update).
+    # Falls through immediately when:
+    #   - api.import_status doesn't exist yet (fresh DB — first-ever import)
+    #   - the DB is unreachable (psql fails — run_import will wait for it)
+    #   - last_import_at is overdue (import is past due)
+    LAST_TS=$(psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" \
+        -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -A \
+        -c "SELECT EXTRACT(EPOCH FROM last_import_at)::bigint \
+            FROM api.import_status WHERE id = 1" \
+        2>/dev/null || true)
+
+    if [ -n "$LAST_TS" ]; then
+        GRACE_DAYS=$(_random_days)
+        NOW=$(date +%s)
+        NEXT_RUN=$((LAST_TS + GRACE_DAYS * 86400))
+        if [ "$NOW" -lt "$NEXT_RUN" ]; then
+            SLEEP_SECS=$((NEXT_RUN - NOW))
+            echo "[importer] Last import < ${GRACE_DAYS}d ago. Sleeping ${SLEEP_SECS}s until next scheduled run."
+            sleep "$SLEEP_SECS"
+        fi
+    fi
+
+    # First run (and all subsequent runs in the loop)
+    while true; do
+        if run_import; then
+            echo "[importer] Import completed successfully."
+        else
+            echo "[importer] Import failed. Retrying in 1 hour." >&2
+            sleep 3600
+            continue
+        fi
+        DAYS=$(_random_days)
+        echo "[importer] Sleeping ${DAYS} days until next import."
+        sleep $((DAYS * 86400))
+    done
 else
-    echo "[importer] Running osmium tags-filter..."
-    osmium tags-filter \
-        -o "$TAGS_PBF" \
-        "$IMPORT_PBF" \
-        --overwrite \
-        n/natural=tree \
-        n/leisure=playground \
-        n/leisure=pitch \
-        n/leisure=fitness_station \
-        n/leisure=picnic_table \
-        n/amenity=bench \
-        n/amenity=shelter \
-        n/amenity=toilets \
-        n/amenity=ice_cream \
-        n/amenity=cafe \
-        n/amenity=restaurant \
-        n/highway=bus_stop \
-        n/shop=chemist \
-        n/shop=supermarket \
-        n/shop=convenience \
-        n/emergency \
-        n/playground \
-        w/leisure=playground \
-        w/leisure=pitch \
-        w/leisure=fitness_station \
-        w/leisure=picnic_table \
-        w/amenity=bench \
-        w/amenity=shelter \
-        w/amenity=toilets \
-        w/amenity=ice_cream \
-        w/amenity=cafe \
-        w/amenity=restaurant \
-        w/shop=chemist \
-        w/shop=supermarket \
-        w/shop=convenience \
-        w/playground \
-        r/leisure=playground \
-        r/leisure=pitch \
-        r/type=multipolygon \
-        r/boundary=administrative
-    echo "[importer] Tag-filter complete: $(du -sh "$TAGS_PBF" | cut -f1)"
+    # ── One-shot mode (default, backward-compatible) ─────────────────────── #
+    # Clear any stuck importing flag from a previously crashed container.
+    _clear_importing
+    run_import
 fi
-
-IMPORT_PBF="$TAGS_PBF"
-
-# --------------------------------------------------------------------------- #
-# Import with osm2pgsql
-# --------------------------------------------------------------------------- #
-echo "[importer] Starting osm2pgsql import on $IMPORT_PBF..."
-osm2pgsql \
-    --host     "$POSTGRES_HOST" \
-    --port     "$POSTGRES_PORT" \
-    --database "$POSTGRES_DB"   \
-    --username "$POSTGRES_USER" \
-    --slim     \
-    --drop     \
-    --hstore   \
-    --number-processes "$OSM2PGSQL_THREADS" \
-    "$IMPORT_PBF"
-
-echo "[importer] osm2pgsql finished."
-
-# --------------------------------------------------------------------------- #
-# Create PostgREST API schema (views / functions)
-# --------------------------------------------------------------------------- #
-echo "[importer] Applying API schema..."
-# Stage the env-substituted SQL in a tempfile, then run psql against it with
-# `-f` and `ON_ERROR_STOP=1`. POSIX sh has no `pipefail`, so a piped
-# `envsubst | psql` would silently succeed on an envsubst failure — staging
-# via a tempfile lets `set -e` abort us properly when envsubst fails, AND
-# `ON_ERROR_STOP=1` aborts on any SQL error inside api.sql. Together these
-# guarantee the api.import_status UPSERT below only runs on a fully-applied
-# schema (matches scheduled-importer spec "Failed run does not update
-# timestamp").
-TMP_API_SQL=$(mktemp)
-trap 'rm -f "$TMP_API_SQL"' EXIT
-envsubst '$OSM_RELATION_ID $PG_MAX_PARALLEL_WORKERS $PG_MAX_PARALLEL_WORKERS_PER_GATHER $PG_MAX_PARALLEL_MAINTENANCE_WORKERS $PG_MAINTENANCE_WORK_MEM $PG_WORK_MEM $SPIELI_VERSION' < /api.sql > "$TMP_API_SQL"
-psql -v ON_ERROR_STOP=1 \
-    -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
-    -f "$TMP_API_SQL"
-
-# --------------------------------------------------------------------------- #
-# Record successful import timestamp (read by get_meta / federation-status).
-# Two timestamps are persisted:
-#   - last_import_at: when this script ran (operator-facing; "is the cron
-#     healthy?")
-#   - osm_data_timestamp: the `osmosis_replication_timestamp` from the source
-#     PBF header (user-facing; "how old is the data I'm looking at?")
-# These diverge whenever the importer runs more often than Geofabrik
-# refreshes its extracts — `last_import_at` can be "5 min ago" while the
-# OSM data itself is up to a week old.
-# --------------------------------------------------------------------------- #
-
-# Extract the OSM replication timestamp from the original PBF (before our
-# bbox+tags filtering, which can drop the header on some osmium versions).
-# `osmium fileinfo --json` emits ISO-8601 already — pass straight to psql.
-# Fall back to NULL if the header is missing (some non-Geofabrik PBFs).
-OSM_DATA_TS=$(osmium fileinfo --json "$PBF_FILE" 2>/dev/null \
-    | jq -r '.header.option.osmosis_replication_timestamp // empty' 2>/dev/null || true)
-
-if [ -n "$OSM_DATA_TS" ]; then
-    echo "[importer] Source PBF replication timestamp: $OSM_DATA_TS"
-    OSM_DATA_TS_SQL="'${OSM_DATA_TS}'::timestamptz"
-else
-    echo "[importer] WARNING: source PBF lacks osmosis_replication_timestamp header — osm_data_timestamp will be NULL."
-    OSM_DATA_TS_SQL="NULL"
-fi
-
-psql -v ON_ERROR_STOP=1 \
-    -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
-    -c "INSERT INTO api.import_status (id, last_import_at, osm_data_timestamp)
-        VALUES (1, now(), ${OSM_DATA_TS_SQL})
-        ON CONFLICT (id) DO UPDATE
-        SET last_import_at      = EXCLUDED.last_import_at,
-            osm_data_timestamp  = COALESCE(EXCLUDED.osm_data_timestamp, api.import_status.osm_data_timestamp);"
-
-# --------------------------------------------------------------------------- #
-# Notify PostgREST to reload its schema cache
-# --------------------------------------------------------------------------- #
-psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
-    -c "NOTIFY pgrst, 'reload schema';"
-
-echo "[importer] Done. PostgREST schema reloaded."

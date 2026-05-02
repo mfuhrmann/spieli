@@ -187,6 +187,7 @@ fi
 
 APP_PORT=""
 OSM2PGSQL_THREADS=""
+AUTO_UPDATE=false
 
 printf "\n${BOLD}── Optional: infrastructure ────────────────────────────────────${RESET}\n"
 
@@ -196,6 +197,19 @@ fi
 
 if [[ "$DEPLOY_MODE" != "ui" ]]; then
     ask OSM2PGSQL_THREADS "CPU threads for the OSM import" "4"
+fi
+
+if [[ "$DEPLOY_MODE" != "ui" ]]; then
+    printf "\n"
+    printf "Automatic updates keep OSM data and software fresh without manual work.\n"
+    printf "The importer will re-run every 2–10 days (randomised) and container\n"
+    printf "images will be updated daily via Watchtower.\n\n"
+    if confirm "Automatically keep data and software up to date? (recommended)"; then
+        AUTO_UPDATE=true
+        success "Auto-update enabled."
+    else
+        warn "Manual mode selected. See instructions at the end of this setup."
+    fi
 fi
 
 # ── Generate password (data-node and data-node-ui only) ───────────────────────
@@ -269,6 +283,14 @@ success "Files downloaded."
     if [[ "$DEPLOY_MODE" != "ui" ]]; then
         printf "OSM2PGSQL_THREADS=%s\n\n" "$OSM2PGSQL_THREADS"
 
+        if [[ "$AUTO_UPDATE" == "true" ]]; then
+            printf "# ── Auto-update: re-import interval ─────────────────────────────\n"
+            printf "# The importer will re-run every 2–10 days (randomised) in daemon mode.\n"
+            printf "# Watchtower pulls updated images daily (requires --profile auto-update).\n"
+            printf "REIMPORT_INTERVAL_MIN_DAYS=2\n"
+            printf "REIMPORT_INTERVAL_MAX_DAYS=10\n\n"
+        fi
+
         printf "# ── Database (auto-generated — do not edit) ─────────────────────\n"
         printf "POSTGRES_PASSWORD=%s\n" "$POSTGRES_PASSWORD"
     fi
@@ -316,23 +338,32 @@ if confirm "Start the stack now?"; then
         data-node-ui) info "Starting db, PostgREST, and app..." ;;
     esac
 
+    COMPOSE_PROFILES="$DEPLOY_MODE"
+    [[ "$AUTO_UPDATE" == "true" ]] && COMPOSE_PROFILES="${COMPOSE_PROFILES},auto-update"
+
     docker compose -f "$DEPLOY_DIR/compose.yml" --env-file "$DEPLOY_DIR/.env" \
-        --profile "$DEPLOY_MODE" up -d
+        --profile "$COMPOSE_PROFILES" up -d
     success "Stack started."
 
     # ── Run import (data-node and data-node-ui only) ───────────────────────────
     if [[ "$DEPLOY_MODE" != "ui" ]]; then
         printf "\n"
-        warn "The map will be empty until you import OSM data."
-        if confirm "Run the OSM import now? (downloads the PBF and may take several minutes)"; then
-            info "Starting importer..."
-            docker compose -f "$DEPLOY_DIR/compose.yml" --env-file "$DEPLOY_DIR/.env" \
-                --profile "$DEPLOY_MODE" run --rm importer
-            success "Import complete."
+        if [[ "$AUTO_UPDATE" == "true" ]]; then
+            success "The importer is running in daemon mode and will begin the first import automatically."
+            printf "  Monitor progress with: ${CYAN}docker compose -f %s/compose.yml logs -f importer${RESET}\n" \
+                "$DEPLOY_DIR"
         else
-            printf "\nRun the import later with:\n"
-            printf "  ${CYAN}docker compose -f %s/compose.yml --profile %s run --rm importer${RESET}\n" \
-                "$DEPLOY_DIR" "$DEPLOY_MODE"
+            warn "The map will be empty until you import OSM data."
+            if confirm "Run the OSM import now? (downloads the PBF and may take several minutes)"; then
+                info "Starting importer..."
+                docker compose -f "$DEPLOY_DIR/compose.yml" --env-file "$DEPLOY_DIR/.env" \
+                    --profile "$DEPLOY_MODE" run --rm importer
+                success "Import complete."
+            else
+                printf "\nRun the import later with:\n"
+                printf "  ${CYAN}docker compose -f %s/compose.yml --profile %s run --rm importer${RESET}\n" \
+                    "$DEPLOY_DIR" "$DEPLOY_MODE"
+            fi
         fi
     fi
 fi
@@ -351,7 +382,17 @@ printf "  docker compose --profile %s up -d        # start the stack\n" "$DEPLOY
 printf "  docker compose --profile %s down         # stop the stack\n" "$DEPLOY_MODE"
 
 if [[ "$DEPLOY_MODE" != "ui" ]]; then
-    printf "  docker compose --profile %s run --rm importer  # re-import OSM data\n" "$DEPLOY_MODE"
+    if [[ "$AUTO_UPDATE" == "true" ]]; then
+        printf "  docker compose restart importer             # trigger an early re-import\n"
+    else
+        printf "  docker compose --profile %s run --rm importer  # re-import OSM data\n" "$DEPLOY_MODE"
+        printf "\n"
+        printf "${YELLOW}Manual update reminders:${RESET}\n"
+        printf "  • Re-run the importer periodically to refresh OSM data.\n"
+        printf "  • Pull updated images with: ${CYAN}docker compose pull${RESET}\n"
+        printf "  • Systemd timer units for scheduled imports: ${CYAN}%s/deploy/${RESET}\n" \
+            "$(cd "$DEPLOY_DIR" && pwd)"
+    fi
 fi
 
 if [[ "$DEPLOY_MODE" != "data-node" ]]; then

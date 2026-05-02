@@ -392,7 +392,8 @@
     "lastReachableMinutes": "zuletzt erreichbar: vor {m} min",
     "lastReachableHours": "zuletzt erreichbar: vor {h} Std.",
     "neverReachable": "noch nie erreichbar",
-    "observationStale": "Verbindungsstatus veraltet"
+    "observationStale": "Verbindungsstatus veraltet",
+    "importing": "Aktualisierung"
   },
   "details": {
     "sizeLabel": "Größe",

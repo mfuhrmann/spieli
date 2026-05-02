@@ -394,7 +394,8 @@
     "lastReachableMinutes": "dernière connexion : il y a {m} min",
     "lastReachableHours": "dernière connexion : il y a {h} h",
     "neverReachable": "jamais accessible",
-    "observationStale": "Statut d'observation obsolète"
+    "observationStale": "Statut d'observation obsolète",
+    "importing": "mise à jour"
   },
   "details": {
     "sizeLabel": "Taille",

@@ -57,6 +57,44 @@ so the budget is the larger of the two plus baseline (~700 MB for
 | `GEOSERVER_URL` | *(disabled)* | data-node, data-node-ui | Base URL of a GeoServer instance for the shadow WMS layer; leave empty to disable |
 | `GEOSERVER_WORKSPACE` | `spieli` | data-node, data-node-ui | GeoServer workspace name — only used when `GEOSERVER_URL` is set |
 | `HUB_POLL_INTERVAL` | `300` | hub | Seconds between Hub re-fetches of playground data from all registered instances. Bare integer, no unit suffix. See [Federated Deployment](federated-deployment.md). |
+| `REIMPORT_INTERVAL_MIN_DAYS` | *(unset)* | data-node, data-node-ui | Minimum days between automatic OSM re-imports (daemon mode). Leave unset to run one-shot (import once and exit). Must be set together with `REIMPORT_INTERVAL_MAX_DAYS`. |
+| `REIMPORT_INTERVAL_MAX_DAYS` | *(unset)* | data-node, data-node-ui | Maximum days between automatic OSM re-imports. The importer picks a random interval in `[MIN, MAX]` days after each successful run. Recommended: `2`–`10`. Must be set together with `REIMPORT_INTERVAL_MIN_DAYS`. |
+
+## Compose profiles
+
+| Profile | Description |
+|---|---|
+| `data-node` | Starts `db`, `importer`, and `postgrest` (no frontend). |
+| `data-node-ui` | Starts everything: `db`, `importer`, `postgrest`, and `app`. |
+| `ui` | Starts `app` only — connects to a remote PostgREST backend via `API_BASE_URL`. |
+| `auto-update` | Starts a [Watchtower](https://containrrr.dev/watchtower/) container that polls Docker Hub/GHCR every 24 hours and automatically restarts containers whose images have changed. Recommended for unattended data-node deployments. Enable by appending it to your active profile, e.g. `--profile data-node-ui --profile auto-update`. The installer offers this as an opt-in (default: enabled). When enabled, `REIMPORT_INTERVAL_MIN_DAYS` and `REIMPORT_INTERVAL_MAX_DAYS` are written to `.env` so the importer runs in daemon mode — the startup grace check (`last_import_at`) prevents an unplanned re-import when Watchtower restarts the container after an image update. |
+
+## Scheduling OSM re-imports
+
+There are two ways to keep your OSM data up to date:
+
+### Daemon mode (recommended)
+
+Set `REIMPORT_INTERVAL_MIN_DAYS` and `REIMPORT_INTERVAL_MAX_DAYS` in `.env` (the installer does this when you choose the auto-update option). The importer container runs in a loop: after each successful import it sleeps for a random number of days within the configured range, then re-imports.
+
+When combined with the `auto-update` profile (Watchtower), new spieli releases are applied automatically: Watchtower restarts the importer container after an image update, and the startup grace check reads `last_import_at` from the database — if the last import ran recently (within the configured interval), the container sleeps until the next scheduled time instead of re-importing immediately.
+
+```bash
+# .env — daemon mode
+REIMPORT_INTERVAL_MIN_DAYS=2
+REIMPORT_INTERVAL_MAX_DAYS=10
+```
+
+### Manual / systemd timer
+
+If you prefer to manage scheduling outside Docker, leave the interval variables unset. The importer then runs once and exits (one-shot mode). You can trigger it on a schedule using a systemd timer or cron:
+
+```bash
+# one-shot import
+docker compose -f compose.prod.yml --profile data-node run --rm importer
+```
+
+Example systemd unit files for timer-based scheduling are available in `deploy/`.
 
 ## Applying changes
 

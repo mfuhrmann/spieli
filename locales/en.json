@@ -392,7 +392,8 @@
     "lastReachableMinutes": "last reachable: {m} min ago",
     "lastReachableHours": "last reachable: {h} hr ago",
     "neverReachable": "never reachable",
-    "observationStale": "Observation status outdated"
+    "observationStale": "Observation status outdated",
+    "importing": "updating"
   },
   "details": {
     "sizeLabel": "Size",
