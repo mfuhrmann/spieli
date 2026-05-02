@@ -54,9 +54,30 @@ services:
       PG_MAX_PARALLEL_MAINTENANCE_WORKERS: ${PG_MAX_PARALLEL_MAINTENANCE_WORKERS:-4}
       PG_MAINTENANCE_WORK_MEM:             ${PG_MAINTENANCE_WORK_MEM:-512MB}
       PG_WORK_MEM:                         ${PG_WORK_MEM:-128MB}
+      # Set both to enable daemon mode (automatic recurring re-imports).
+      # When unset (default) the importer runs once and exits (one-shot mode).
+      REIMPORT_INTERVAL_MIN_DAYS: ${REIMPORT_INTERVAL_MIN_DAYS:-}
+      REIMPORT_INTERVAL_MAX_DAYS: ${REIMPORT_INTERVAL_MAX_DAYS:-}
     volumes:
       - pbf_cache:/data
-    restart: "no"
+    # on-failure: retries crashed imports; exits-0 (one-shot success) are not restarted.
+    # In daemon mode the script loops forever — on-failure only fires on an actual crash.
+    restart: on-failure
+
+  # ── Watchtower — optional automatic image updates ────────────────────────────
+  # Pulls updated spieli images daily and restarts affected containers.
+  # The importer's startup grace check prevents an unplanned re-import when
+  # the container is restarted by Watchtower after an image update.
+  # Enable with: --profile auto-update (set by install.sh when operator opts in).
+  watchtower:
+    image: containrrr/watchtower
+    profiles: [auto-update]
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      WATCHTOWER_POLL_INTERVAL: 86400
+      WATCHTOWER_CLEANUP: "true"
+    restart: unless-stopped
 
   # ── PostgREST — auto-generates REST API from the api schema ─────────────────
   postgrest:

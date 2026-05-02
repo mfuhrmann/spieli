@@ -12,10 +12,10 @@
 
 ## 3. Importer script — daemon mode and startup grace check
 
-- [ ] 3.1 Wrap the main import logic in a `run_import` function
-- [ ] 3.2 Add startup grace check: query `api.import_status.last_import_at`; if within the configured interval, compute next scheduled time and sleep until then; if absent or overdue, proceed immediately. Handle DB unavailability with a short retry loop (max 30 s) before falling back to "run immediately".
-- [ ] 3.3 Add daemon loop: if `REIMPORT_INTERVAL_MIN_DAYS` and `REIMPORT_INTERVAL_MAX_DAYS` are set, after a successful import sleep for a uniformly random duration between the bounds, then loop back to `run_import`. On a failed run, sleep for a short retry interval (≤ 1 hour) before retrying.
-- [ ] 3.4 Ensure daemon mode never exits with code 0 between runs (loop is infinite); exit code propagates only on unexpected crash.
+- [x] 3.1 Wrap the main import logic in a `run_import` function
+- [x] 3.2 Add startup grace check: query `api.import_status.last_import_at`; if within the configured interval, compute next scheduled time and sleep until then; if absent or overdue, proceed immediately. Handle DB unavailability with a short retry loop (max 30 s) before falling back to "run immediately".
+- [x] 3.3 Add daemon loop: if `REIMPORT_INTERVAL_MIN_DAYS` and `REIMPORT_INTERVAL_MAX_DAYS` are set, after a successful import sleep for a uniformly random duration between the bounds, then loop back to `run_import`. On a failed run, sleep for a short retry interval (≤ 1 hour) before retrying.
+- [x] 3.4 Ensure daemon mode never exits with code 0 between runs (loop is infinite); exit code propagates only on unexpected crash.
 - [ ] 3.5 Verify one-shot behaviour is unchanged when interval vars are absent
 
 ## 4. Hub poll pipeline
@@ -31,16 +31,16 @@
 
 ## 6. compose.prod.yml
 
-- [ ] 6.1 Change importer `restart: "no"` → `restart: on-failure`
-- [ ] 6.2 Add `REIMPORT_INTERVAL_MIN_DAYS: ${REIMPORT_INTERVAL_MIN_DAYS:-}` and `REIMPORT_INTERVAL_MAX_DAYS: ${REIMPORT_INTERVAL_MAX_DAYS:-}` to the importer environment (empty default = one-shot mode)
-- [ ] 6.3 Add `watchtower` service under `profiles: [auto-update]` with `WATCHTOWER_POLL_INTERVAL: 86400`, `WATCHTOWER_CLEANUP: "true"`, `restart: unless-stopped`, and `/var/run/docker.sock` volume mount
+- [x] 6.1 Change importer `restart: "no"` → `restart: on-failure`
+- [x] 6.2 Add `REIMPORT_INTERVAL_MIN_DAYS: ${REIMPORT_INTERVAL_MIN_DAYS:-}` and `REIMPORT_INTERVAL_MAX_DAYS: ${REIMPORT_INTERVAL_MAX_DAYS:-}` to the importer environment (empty default = one-shot mode)
+- [x] 6.3 Add `watchtower` service under `profiles: [auto-update]` with `WATCHTOWER_POLL_INTERVAL: 86400`, `WATCHTOWER_CLEANUP: "true"`, `restart: unless-stopped`, and `/var/run/docker.sock` volume mount
 
 ## 7. install.sh — auto-update prompt
 
-- [ ] 7.1 Add auto-update prompt in the "Optional: infrastructure" section (default yes, shown only for `data-node` and `data-node-ui` modes)
-- [ ] 7.2 On yes: write `REIMPORT_INTERVAL_MIN_DAYS=2` and `REIMPORT_INTERVAL_MAX_DAYS=10` to `.env`; append `auto-update` to the list of active profiles for the `docker compose up` invocation
-- [ ] 7.3 On no: omit interval vars from `.env`; after the final "Done!" block print: "Run imports manually: `docker compose run --rm importer`. See `deploy/` for systemd timer units."
-- [ ] 7.4 In auto-update mode, skip the "Run the OSM import now?" prompt — the daemon will run the first import automatically on container start
+- [x] 7.1 Add auto-update prompt in the "Optional: infrastructure" section (default yes, shown only for `data-node` and `data-node-ui` modes)
+- [x] 7.2 On yes: write `REIMPORT_INTERVAL_MIN_DAYS=2` and `REIMPORT_INTERVAL_MAX_DAYS=10` to `.env`; append `auto-update` to the list of active profiles for the `docker compose up` invocation
+- [x] 7.3 On no: omit interval vars from `.env`; after the final "Done!" block print: "Run imports manually: `docker compose run --rm importer`. See `deploy/` for systemd timer units."
+- [x] 7.4 In auto-update mode, skip the "Run the OSM import now?" prompt — the daemon will run the first import automatically on container start
 
 ## 8. Tests
 
@@ -51,6 +51,6 @@
 
 - [x] 9.1 Update `docs/reference/api.md` — add `importing` to the `get_meta` response table
 - [x] 9.2 Add a note to `docs/ops/troubleshooting.md` explaining how to manually clear a stuck `importing=true` flag (`UPDATE api.import_status SET importing = false WHERE id = 1`)
-- [ ] 9.3 Update `docs/ops/configuration.md` — document `REIMPORT_INTERVAL_MIN_DAYS`, `REIMPORT_INTERVAL_MAX_DAYS`, and the `auto-update` compose profile
-- [ ] 9.4 Update the local-dev guide or ops docs to describe the two scheduling approaches (daemon mode vs systemd) and when to use each
+- [x] 9.3 Update `docs/ops/configuration.md` — document `REIMPORT_INTERVAL_MIN_DAYS`, `REIMPORT_INTERVAL_MAX_DAYS`, and the `auto-update` compose profile
+- [x] 9.4 Update the local-dev guide or ops docs to describe the two scheduling approaches (daemon mode vs systemd) and when to use each
 - [ ] 9.5 Close issue #406 in the PR description or release notes, referencing this change
