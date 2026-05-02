@@ -925,6 +925,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#filter-flags-for_baby-for_toddler-is_water" class="md-nav__link">
+    <span class="md-ellipsis">
+      Filter flags (for_baby, for_toddler, is_water, …)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#applying-schema-changes-without-a-full-re-import" class="md-nav__link">
     <span class="md-ellipsis">
       Applying schema changes without a full re-import
@@ -1475,6 +1484,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#filter-flags-for_baby-for_toddler-is_water" class="md-nav__link">
+    <span class="md-ellipsis">
+      Filter flags (for_baby, for_toddler, is_water, …)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#applying-schema-changes-without-a-full-re-import" class="md-nav__link">
     <span class="md-ellipsis">
       Applying schema changes without a full re-import
@@ -1613,6 +1631,47 @@
 <li><code>missing</code> = none present</li>
 </ul>
 <p><strong>If you change the completeness criteria</strong>, update both files and rebuild the materialised view with <code>make db-apply</code>.</p>
+<h2 id="filter-flags-for_baby-for_toddler-is_water">Filter flags (<code>for_baby</code>, <code>for_toddler</code>, <code>is_water</code>, …)<a class="headerlink" href="#filter-flags-for_baby-for_toddler-is_water" title="Permanent link">&para;</a></h2>
+<p>Several boolean columns are computed from equipment present within each playground polygon. They drive both the filter UI and the <code>filter_attrs</code> payload in the centroid RPC.</p>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Triggers</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>for_baby</code></td>
+<td><code>baby=yes</code> on any equipment; <code>playground</code> ∈ <code>baby_swing</code>, <code>basketswing</code>, <code>sandpit</code>, <code>springy</code>; <code>capacity:baby</code> present on any equipment</td>
+</tr>
+<tr>
+<td><code>for_toddler</code></td>
+<td><code>provided_for:toddler=yes</code> on any equipment; <code>playground=basketswing</code></td>
+</tr>
+<tr>
+<td><code>is_water</code></td>
+<td><code>playground</code> contains <code>water</code> or ∈ <code>splash_pad</code>, <code>pump</code></td>
+</tr>
+<tr>
+<td><code>for_wheelchair</code></td>
+<td><code>wheelchair=yes</code> on any equipment</td>
+</tr>
+<tr>
+<td><code>has_soccer</code> / <code>has_basketball</code></td>
+<td><code>leisure=pitch</code> with matching <code>sport</code> value</td>
+</tr>
+</tbody>
+</table>
+<p>The logic lives in two places that must stay in sync:</p>
+<ul>
+<li><strong><code>importer/api.sql</code></strong> — <code>equip_stats</code> CTE, <code>BOOL_OR(…) AS for_baby</code> etc. Used by <code>get_playgrounds_bbox</code> and <code>get_playground_clusters</code>.</li>
+<li><strong><code>processing/sql/playground_processing.sql</code></strong> — <code>UPDATE playgrounds SET for_baby = …</code> etc. Used by the legacy materialised view path.</li>
+</ul>
+<p><strong>If you add a new trigger</strong>, update both files and run <code>make db-apply</code>. A full <code>make import</code> is only needed if the new trigger depends on a tag not yet stored in <code>planet_osm_*</code> (check the tag filter in <code>importer/import.sh</code> first).</p>
+<blockquote>
+<p><strong>Testing</strong>: there are no SQL unit tests. Verify changes with a real import (<code>make import</code>) against a region that has playgrounds with the relevant equipment, then check the filter chip appears correctly in the UI.</p>
+</blockquote>
 <h2 id="applying-schema-changes-without-a-full-re-import">Applying schema changes without a full re-import<a class="headerlink" href="#applying-schema-changes-without-a-full-re-import" title="Permanent link">&para;</a></h2>
 <p><code>make db-apply</code> runs only the <code>api.sql</code> step (skips the osm2pgsql data load). Use it when:
 - You added or changed a PostgREST function

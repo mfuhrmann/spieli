@@ -1799,6 +1799,7 @@
 </tbody>
 </table>
 <p><strong>Response</strong> — GeoJSON <code>FeatureCollection</code>. Each feature's <code>properties</code> include <code>osm_id</code>, <code>osm_type</code> (<code>R</code> or <code>W</code>), <code>name</code>, <code>leisure</code>, <code>operator</code>, <code>access</code>, <code>surface</code>, <code>area</code>, the playground-stats counts (<code>tree_count</code>, <code>bench_count</code>, etc.), and the per-equipment booleans (<code>is_water</code>, <code>for_baby</code>, <code>for_toddler</code>, <code>for_wheelchair</code>, <code>has_soccer</code>, <code>has_basketball</code>). The original tag hstore is spread on top so any OSM tag is reachable.</p>
+<p>The equipment booleans are aggregated across all equipment within the playground polygon. <code>for_baby</code> is <code>true</code> when any equipment has <code>baby=yes</code>, <code>capacity:baby</code> set, or <code>playground</code> ∈ <code>baby_swing</code>, <code>basketswing</code>, <code>sandpit</code>, <code>springy</code>. See <a href="../../contributing/import-pipeline/#filter-flags-for_baby-for_toddler-is_water-">Import Pipeline</a> for the full trigger list.</p>
 <blockquote>
 <p>Note: the polygon RPC names the water flag <code>is_water</code> (legacy from the materialised-view column). The centroid RPC's <code>filter_attrs</code> payload (below) renames it to <code>has_water</code> for consistency with the other client-side filter keys (<code>for_baby</code>, <code>has_soccer</code>, …). Same boolean, different key.</p>
 </blockquote>
