@@ -1,27 +1,15 @@
 <script>
   import { _ } from 'svelte-i18n';
+  import Badge from './ui/Badge.svelte';
 </script>
 
 <aside class="legend">
   <p class="legend-title">{$_('completeness.legendTitle')}</p>
-  <ul class="legend-list">
-    <li class="legend-item">
-      <span class="swatch swatch--complete"></span>
-      <span>{$_('completeness.complete')}</span>
-    </li>
-    <li class="legend-item">
-      <span class="swatch swatch--partial"></span>
-      <span>{$_('completeness.partial')}</span>
-    </li>
-    <li class="legend-item">
-      <span class="swatch swatch--missing"></span>
-      <span>{$_('completeness.missing')}</span>
-    </li>
-    <li class="legend-item legend-item--hatch">
-      <span class="swatch swatch--hatch"></span>
-      <span>{$_('completeness.restrictedHint')}</span>
-    </li>
-  </ul>
+  <div class="legend-chips">
+    <Badge variant="success">{$_('completeness.complete')}</Badge>
+    <Badge variant="warning">{$_('completeness.partial')}</Badge>
+    <Badge variant="destructive">{$_('completeness.missing')}</Badge>
+  </div>
 </aside>
 
 <style>
@@ -45,64 +33,10 @@
     color: #6b7280;
   }
 
-  .legend-list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
+  .legend-chips {
     display: flex;
-    flex-direction: column;
+    flex-wrap: wrap;
     gap: 0.3rem;
   }
 
-  .legend-item {
-    display: flex;
-    align-items: center;
-    gap: 0.45rem;
-    line-height: 1.2;
-  }
-
-  .legend-item--hatch {
-    border-top: 1px solid #e5e7eb;
-    padding-top: 0.3rem;
-    margin-top: 0.05rem;
-    color: #6b7280;
-  }
-
-  .swatch {
-    flex-shrink: 0;
-    width: 14px;
-    height: 14px;
-    border-radius: 3px;
-    border: 1.5px solid;
-  }
-
-  /* Match vectorStyles.js colours exactly */
-  .swatch--complete {
-    background-color: rgba(34, 139, 34, 0.22);
-    border-color: #155215;
-  }
-
-  .swatch--partial {
-    background-color: rgba(234, 179, 8, 0.22);
-    border-color: #92400e;
-  }
-
-  .swatch--missing {
-    background-color: rgba(239, 68, 68, 0.18);
-    border-color: #991b1b;
-  }
-
-  /* Diagonal hatch matching the canvas pattern in vectorStyles.js */
-  .swatch--hatch {
-    background:
-      repeating-linear-gradient(
-        -45deg,
-        rgba(34, 139, 34, 0.55) 0px,
-        rgba(34, 139, 34, 0.55) 1.5px,
-        rgba(34, 139, 34, 0.08) 1.5px,
-        rgba(34, 139, 34, 0.08) 5px
-      );
-    border-color: #155215;
-    border-style: dashed;
-  }
 </style>
