@@ -147,6 +147,7 @@ export function createRegistry() {
           osmDataAgeSec:    null,  // seconds since the OSM data was snapshotted (user-facing)
           lastReachable:    null,  // ISO string of last successful hub probe
           observationStale: false,
+          importing:        false, // true while osm2pgsql is actively running
         }));
         notify();
 
@@ -193,6 +194,8 @@ export function createRegistry() {
           osmDataAgeSec:      entry.osm_data_age_seconds ?? null,
           lastReachable:      entry.last_success ?? null,
           observationStale,
+          // false on older backends that don't yet ship the importing field
+          importing:          entry.importing ?? false,
         });
       }
     });

@@ -394,7 +394,8 @@
     "lastReachableMinutes": "último contacto: hace {m} min",
     "lastReachableHours": "último contacto: hace {h} h",
     "neverReachable": "nunca accesible",
-    "observationStale": "Estado de observación desactualizado"
+    "observationStale": "Estado de observación desactualizado",
+    "importing": "actualizando"
   },
   "details": {
     "sizeLabel": "Tamaño",

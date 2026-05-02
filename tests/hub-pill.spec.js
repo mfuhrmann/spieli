@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { injectHubConfig, stubHubRegistry, makePlayground } from './helpers.js';
+import { injectHubConfig, stubHubRegistry, stubFederationStatus, makePlayground } from './helpers.js';
 
 const instanceA = {
   slug: 'slug-a',
@@ -88,5 +88,51 @@ test.describe('Hub instance pill + drawer', () => {
     const badges = page.locator('.drawer[role="dialog"] .instance-badge');
     await expect(badges).toHaveCount(2);
     await expect(badges.first()).toContainText('0.2.1');
+  });
+
+  test('drawer shows "updating" badge when federation-status marks backend as importing', async ({ page }) => {
+    await stubFederationStatus(page, {
+      backends: {
+        'slug-a': { url: '/api-a', up: true, importing: true },
+        'slug-b': { url: '/api-b', up: true, importing: false },
+      },
+    });
+
+    await page.goto('/');
+    const pill = page.locator('.instance-slot .pill');
+    await expect(pill).toContainText(/2\s+(Regionen|regions)/, { timeout: 8000 });
+
+    await pill.click();
+
+    const drawer = page.locator('.drawer[role="dialog"]');
+    await expect(drawer).toBeVisible();
+
+    // Instanz A is importing — should show the updating badge
+    const itemA = drawer.locator('.instance-item').filter({ hasText: 'Instanz A' });
+    await expect(itemA.locator('.instance-badge--importing')).toBeVisible();
+
+    // Instanz B is not importing — should show version badge, not updating badge
+    const itemB = drawer.locator('.instance-item').filter({ hasText: 'Instanz B' });
+    await expect(itemB.locator('.instance-badge--importing')).toHaveCount(0);
+    await expect(itemB.locator('.instance-badge')).toContainText('0.2.1');
+  });
+
+  test('drawer shows no "updating" badge when importing is false or absent', async ({ page }) => {
+    await stubFederationStatus(page, {
+      backends: {
+        'slug-a': { url: '/api-a', up: true, importing: false },
+        'slug-b': { url: '/api-b', up: true },
+      },
+    });
+
+    await page.goto('/');
+    const pill = page.locator('.instance-slot .pill');
+    await expect(pill).toContainText(/2\s+(Regionen|regions)/, { timeout: 8000 });
+
+    await pill.click();
+
+    const drawer = page.locator('.drawer[role="dialog"]');
+    await expect(drawer).toBeVisible();
+    await expect(drawer.locator('.instance-badge--importing')).toHaveCount(0);
   });
 });

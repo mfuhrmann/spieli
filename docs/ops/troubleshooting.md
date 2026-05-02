@@ -163,3 +163,21 @@ VACUUM FULL public.playground_stats;
 ```
 
 Or simply recreate the data volume after a re-import — the volume will start clean.
+
+---
+
+## Hub drawer shows "updating" badge that never clears
+
+**Symptom:** One or more backends in the Hub instance drawer permanently show an "updating" badge, even though no import is running.
+
+**Cause:** The `importing` flag in `api.import_status` was left `true` by an importer that was killed with SIGKILL (bypasses the EXIT trap) or crashed in a way that prevented the trap from firing.
+
+**Fix:** Connect to the affected data-node's database and clear the flag manually:
+
+```bash
+# From the data-node host
+docker compose exec db psql -U osm -d osm \
+  -c "UPDATE api.import_status SET importing = false WHERE id = 1;"
+```
+
+The Hub will pick up the corrected value on its next poll cycle (within 60 seconds).

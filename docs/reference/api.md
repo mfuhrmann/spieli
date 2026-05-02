@@ -336,6 +336,7 @@ Returns instance metadata used by the Hub for federation discovery. Required for
   "data_age_seconds":     86400,
   "osm_data_timestamp":   "2026-04-29T21:00:00Z",
   "osm_data_age_seconds": 108000,
+  "importing":            false,
   "version":              "0.4.1"
 }
 ```
@@ -351,6 +352,7 @@ Returns instance metadata used by the Hub for federation discovery. Required for
 | `data_age_seconds` | Seconds since `last_import_at`. `null` when `last_import_at` is null. |
 | `osm_data_timestamp` | PBF replication timestamp (when Geofabrik last generated the extract). `null` when the PBF header lacks this field. |
 | `osm_data_age_seconds` | Seconds since `osm_data_timestamp`. `null` when `osm_data_timestamp` is null. |
+| `importing` | `true` while `osm2pgsql` is actively running (data partially rebuilt); `false` at all other times. `false` on older backends that pre-date this field. The Hub drawer shows an "updating" badge while this is `true`. |
 | `version` | spieli version string baked in at import time from `package.json` (e.g. `"0.4.1"`). Displayed in the Hub's instance drawer. |
 
 **Example**

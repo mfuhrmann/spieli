@@ -131,5 +131,8 @@
         "repoLabel": "openbaar beschikbaar"
       }
     }
+  },
+  "hub": {
+    "importing": "bijwerken"
   }
 }

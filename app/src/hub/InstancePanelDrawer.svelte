@@ -96,7 +96,9 @@
         <li class="instance-item">
           <div class="instance-row">
             <span class="instance-name">{b.name}</span>
-            {#if b.version}
+            {#if b.importing}
+              <span class="badge instance-badge instance-badge--importing">{$_('hub.importing')}</span>
+            {:else if b.version}
               <span class="badge instance-badge text-bg-secondary">{b.version}</span>
             {/if}
           </div>
@@ -248,6 +250,11 @@
   .instance-badge {
     font-size: 0.65rem;
     flex-shrink: 0;
+  }
+
+  .instance-badge--importing {
+    background-color: #0d6efd;
+    color: #fff;
   }
 
   .instance-status {

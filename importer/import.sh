@@ -78,6 +78,15 @@ fi
 
 export PGPASSWORD="$POSTGRES_PASSWORD"
 
+# Helper: clear importing flag. Called from EXIT trap and after UPSERT.
+# Ignores errors (table may not exist on the very first import before schema
+# apply has run, or the DB may be temporarily unreachable on shutdown).
+_clear_importing() {
+    psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+        -c "UPDATE api.import_status SET importing = false WHERE id = 1" \
+        2>/dev/null || true
+}
+
 # --------------------------------------------------------------------------- #
 # Wait for PostGIS to be ready
 # --------------------------------------------------------------------------- #
@@ -221,6 +230,15 @@ IMPORT_PBF="$TAGS_PBF"
 # --------------------------------------------------------------------------- #
 # Import with osm2pgsql
 # --------------------------------------------------------------------------- #
+# Signal hub that data is being rebuilt. The flag is cleared unconditionally
+# by the EXIT trap so a killed or failed importer never leaves it stuck true.
+# Uses `|| true` because api.import_status may not exist on the first-ever
+# import (the table is created by the schema-apply step below).
+psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+    -c "UPDATE api.import_status SET importing = true WHERE id = 1" \
+    2>/dev/null || true
+trap '_clear_importing' EXIT
+
 echo "[importer] Starting osm2pgsql import on $IMPORT_PBF..."
 osm2pgsql \
     --host     "$POSTGRES_HOST" \
@@ -248,7 +266,7 @@ echo "[importer] Applying API schema..."
 # schema (matches scheduled-importer spec "Failed run does not update
 # timestamp").
 TMP_API_SQL=$(mktemp)
-trap 'rm -f "$TMP_API_SQL"' EXIT
+trap 'rm -f "$TMP_API_SQL"; _clear_importing' EXIT
 envsubst '$OSM_RELATION_ID $PG_MAX_PARALLEL_WORKERS $PG_MAX_PARALLEL_WORKERS_PER_GATHER $PG_MAX_PARALLEL_MAINTENANCE_WORKERS $PG_MAINTENANCE_WORK_MEM $PG_WORK_MEM $SPIELI_VERSION' < /api.sql > "$TMP_API_SQL"
 psql -v ON_ERROR_STOP=1 \
     -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
@@ -283,11 +301,12 @@ fi
 
 psql -v ON_ERROR_STOP=1 \
     -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
-    -c "INSERT INTO api.import_status (id, last_import_at, osm_data_timestamp)
-        VALUES (1, now(), ${OSM_DATA_TS_SQL})
+    -c "INSERT INTO api.import_status (id, last_import_at, osm_data_timestamp, importing)
+        VALUES (1, now(), ${OSM_DATA_TS_SQL}, false)
         ON CONFLICT (id) DO UPDATE
         SET last_import_at      = EXCLUDED.last_import_at,
-            osm_data_timestamp  = COALESCE(EXCLUDED.osm_data_timestamp, api.import_status.osm_data_timestamp);"
+            osm_data_timestamp  = COALESCE(EXCLUDED.osm_data_timestamp, api.import_status.osm_data_timestamp),
+            importing           = false;"
 
 # --------------------------------------------------------------------------- #
 # Notify PostgREST to reload its schema cache

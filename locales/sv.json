@@ -131,5 +131,8 @@
         "repoLabel": "offentligt tillgängligt"
       }
     }
+  },
+  "hub": {
+    "importing": "uppdaterar"
   }
 }
