@@ -2,7 +2,7 @@
   import OpeningHours from 'opening_hours';
   import { cn } from '../lib/utils.js';
   import { getPlaygroundTitle } from '../lib/playgroundHelpers.js';
-  import { MapPin, Droplets, Baby, TreeDeciduous, Accessibility, Clock } from 'lucide-svelte';
+  import { MapPin, Droplets, Baby, TreeDeciduous, Accessibility, Clock, LockKeyhole } from 'lucide-svelte';
   import { _ } from 'svelte-i18n';
 
   /** @type {{ x: number, y: number } | null} */
@@ -16,6 +16,7 @@
   $: hasTrees = attr?.tree_count > 0;
   $: forBaby = attr?.for_baby;
   $: isWheelchair = attr?.wheelchair === 'yes' || attr?.wheelchair === 'limited';
+  $: isRestricted = attr?.access === 'private' || attr?.access === 'customers';
   $: area = attr?.area > 0 ? `${Math.round(attr.area / 10) * 10 || attr.area} m²` : null;
 
   $: surface = attr?.surface
@@ -65,6 +66,11 @@
           {#if isWheelchair}
             <span class="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full" style="background:rgba(99,102,241,.1);color:#6366f1;">
               <Accessibility class="h-3 w-3" />{$_('hover.tagAccessible')}
+            </span>
+          {/if}
+          {#if isRestricted}
+            <span class="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full" style="background:rgba(107,114,128,.1);color:#6b7280;">
+              <LockKeyhole class="h-3 w-3" />{$_('completeness.restrictedHint')}
             </span>
           {/if}
         </div>
