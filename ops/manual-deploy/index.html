@@ -800,6 +800,27 @@
   
   
     <li class="md-nav__item">
+      <a href="../refresh-data/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Refresh Data
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../backup-restore/" class="md-nav__link">
         
   
@@ -1656,6 +1677,7 @@
 <p>Re-run the importer at any time to refresh from Geofabrik (extracts are updated daily):</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>data-node<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>importer
 </code></pre></div>
+<p>For daemon mode deployments or troubleshooting a stale import, see <a href="../refresh-data/">Refresh Data</a>.</p>
 <h2 id="applying-database-changes-without-a-full-re-import">Applying database changes without a full re-import<a class="headerlink" href="#applying-database-changes-without-a-full-re-import" title="Permanent link">&para;</a></h2>
 <p>SQL changes to <code>importer/api.sql</code> (PostgREST functions, indexes) can be applied directly to the running database:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>make<span class="w"> </span>db-apply

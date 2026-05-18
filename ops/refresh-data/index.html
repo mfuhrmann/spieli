@@ -8,13 +8,13 @@
       
       
       
-        <link rel="canonical" href="https://mfuhrmann.github.io/spieli/reference/external-services/">
+        <link rel="canonical" href="https://mfuhrmann.github.io/spieli/ops/refresh-data/">
       
       
-        <link rel="prev" href="../registry-json/">
+        <link rel="prev" href="../scheduled-import/">
       
       
-        <link rel="next" href="../equipment/">
+        <link rel="next" href="../backup-restore/">
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
@@ -22,7 +22,7 @@
     
     
       
-        <title>External Services - spieli</title>
+        <title>Refresh Data - spieli</title>
       
     
     
@@ -74,7 +74,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#external-services" class="md-skip">
+        <a href="#refreshing-osm-data-on-demand" class="md-skip">
           Skip to content
         </a>
       
@@ -108,7 +108,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              External Services
+              Refresh Data
             
           </span>
         </div>
@@ -265,11 +265,13 @@
         
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../../ops/manual-deploy/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../manual-deploy/" class="md-tabs__link">
           
   
   Operations
@@ -301,13 +303,11 @@
         
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="../architecture/" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../../reference/architecture/" class="md-tabs__link">
           
   
   Reference
@@ -493,25 +493,30 @@
       
   
   
+    
   
   
+  
     
     
     
+      
+        
+        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
         
           
-          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
             
   
   <span class="md-ellipsis">
@@ -522,7 +527,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             Operations
@@ -536,7 +541,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ops/manual-deploy/" class="md-nav__link">
+      <a href="../manual-deploy/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -557,7 +562,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ops/https-setup/" class="md-nav__link">
+      <a href="../https-setup/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -578,7 +583,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ops/federated-deployment/" class="md-nav__link">
+      <a href="../federated-deployment/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -599,7 +604,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ops/configuration/" class="md-nav__link">
+      <a href="../configuration/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -620,7 +625,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ops/upgrade/" class="md-nav__link">
+      <a href="../upgrade/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -641,7 +646,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ops/switch-region/" class="md-nav__link">
+      <a href="../switch-region/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -662,7 +667,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ops/scheduled-import/" class="md-nav__link">
+      <a href="../scheduled-import/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -680,10 +685,30 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../ops/refresh-data/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Refresh Data
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
@@ -692,6 +717,80 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#before-you-start-know-your-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      Before you start: know your setup
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#one-shot-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      One-shot mode
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#daemon-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      Daemon mode
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#verify-the-import-ran" class="md-nav__link">
+    <span class="md-ellipsis">
+      Verify the import ran
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-long-does-it-take" class="md-nav__link">
+    <span class="md-ellipsis">
+      How long does it take?
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      See also
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -704,7 +803,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ops/backup-restore/" class="md-nav__link">
+      <a href="../backup-restore/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -725,7 +824,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ops/monitoring/" class="md-nav__link">
+      <a href="../monitoring/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -746,7 +845,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ops/security/" class="md-nav__link">
+      <a href="../security/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -767,7 +866,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ops/troubleshooting/" class="md-nav__link">
+      <a href="../troubleshooting/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -788,7 +887,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ops/uninstall/" class="md-nav__link">
+      <a href="../uninstall/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1049,30 +1148,25 @@
       
   
   
-    
   
   
-  
     
     
     
-      
-        
-        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
         
           
-          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
             
   
   <span class="md-ellipsis">
@@ -1083,7 +1177,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_6">
             <span class="md-nav__icon md-icon"></span>
             Reference
@@ -1097,7 +1191,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../architecture/" class="md-nav__link">
+      <a href="../../reference/architecture/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1118,7 +1212,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../tech-stack/" class="md-nav__link">
+      <a href="../../reference/tech-stack/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1139,7 +1233,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/" class="md-nav__link">
+      <a href="../../reference/api/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1160,7 +1254,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../federation/" class="md-nav__link">
+      <a href="../../reference/federation/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1181,7 +1275,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../registry-json/" class="md-nav__link">
+      <a href="../../reference/registry-json/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1199,19 +1293,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../reference/external-services/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1220,7 +1305,6 @@
   
 
       </a>
-      
     </li>
   
 
@@ -1233,7 +1317,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../equipment/" class="md-nav__link">
+      <a href="../../reference/equipment/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1254,7 +1338,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../glossary/" class="md-nav__link">
+      <a href="../../reference/glossary/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1405,6 +1489,68 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#before-you-start-know-your-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      Before you start: know your setup
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#one-shot-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      One-shot mode
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#daemon-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      Daemon mode
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#verify-the-import-ran" class="md-nav__link">
+    <span class="md-ellipsis">
+      Verify the import ran
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-long-does-it-take" class="md-nav__link">
+    <span class="md-ellipsis">
+      How long does it take?
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      See also
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -1418,7 +1564,7 @@
                   
 
   
-    <a href="https://github.com/mfuhrmann/spieli/edit/main/docs/reference/external-services.md" title="Edit this page" class="md-content__button md-icon">
+    <a href="https://github.com/mfuhrmann/spieli/edit/main/docs/ops/refresh-data.md" title="Edit this page" class="md-content__button md-icon">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -1426,47 +1572,74 @@
   
 
 
-<h1 id="external-services">External Services<a class="headerlink" href="#external-services" title="Permanent link">&para;</a></h1>
-<p>spieli integrates with the following free external services at runtime:</p>
+<h1 id="refreshing-osm-data-on-demand">Refreshing OSM Data On Demand<a class="headerlink" href="#refreshing-osm-data-on-demand" title="Permanent link">&para;</a></h1>
+<p>Geofabrik publishes updated OSM extracts daily. The importer pulls the latest extract, filters it to your region, and loads it into the database. This page explains how to trigger that process right now, outside of any automated schedule.</p>
+<p>For setting up automatic re-imports, see <a href="../scheduled-import/">Scheduled Import</a>.</p>
+<h2 id="before-you-start-know-your-setup">Before you start: know your setup<a class="headerlink" href="#before-you-start-know-your-setup" title="Permanent link">&para;</a></h2>
+<p>Check which import mode the installer configured. Run from your deployment directory (where <code>compose.yml</code> and <code>.env</code> live):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>grep<span class="w"> </span>REIMPORT_INTERVAL<span class="w"> </span>.env
+</code></pre></div>
 <table>
 <thead>
 <tr>
-<th>Service</th>
-<th>Purpose</th>
+<th>Result</th>
+<th>Mode</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><a href="https://download.geofabrik.de">Geofabrik</a></td>
-<td>Source of OSM PBF extracts for import</td>
+<td>Both vars absent or empty</td>
+<td><strong>One-shot</strong> — importer runs once and exits</td>
 </tr>
 <tr>
-<td><a href="https://nominatim.openstreetmap.org">Nominatim</a></td>
-<td>Location search and region bounding box</td>
-</tr>
-<tr>
-<td><a href="https://carto.com/basemaps">CartoDB Voyager</a></td>
-<td>Background map tiles</td>
-</tr>
-<tr>
-<td><a href="https://panoramax.xyz">Panoramax</a></td>
-<td>Street-level photos</td>
-</tr>
-<tr>
-<td><a href="https://mangrove.reviews">Mangrove.reviews</a></td>
-<td>Pseudonymous community reviews</td>
-</tr>
-<tr>
-<td><a href="https://mapcomplete.org">MapComplete</a></td>
-<td>Contribute photos and equipment</td>
-</tr>
-<tr>
-<td><a href="https://wikidata.org">Wikidata</a></td>
-<td>Operator entity linking</td>
+<td>Both vars set (e.g. <code>MIN=2</code>, <code>MAX=10</code>)</td>
+<td><strong>Daemon</strong> — importer loops; different steps apply</td>
 </tr>
 </tbody>
 </table>
-<p>All map data comes from OpenStreetMap or the free services listed above. No proprietary data, no user accounts, no tracking.</p>
+<p>Check your <code>DEPLOY_MODE</code> too — you need it for the <code>--profile</code> flag:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>grep<span class="w"> </span>DEPLOY_MODE<span class="w"> </span>.env
+</code></pre></div>
+<p>Valid values: <code>data-node</code>, <code>data-node-ui</code>. (Hub-only deployments — <code>DEPLOY_MODE=ui</code> — have no database and no importer.)</p>
+<h2 id="one-shot-mode">One-shot mode<a class="headerlink" href="#one-shot-mode" title="Permanent link">&para;</a></h2>
+<p>Run the importer once from your deployment directory. It exits when done.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>data-node-ui<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>importer
+</code></pre></div>
+<p>Replace <code>data-node-ui</code> with your <code>DEPLOY_MODE</code> value.</p>
+<h2 id="daemon-mode">Daemon mode<a class="headerlink" href="#daemon-mode" title="Permanent link">&para;</a></h2>
+<p>When <code>REIMPORT_INTERVAL_MIN_DAYS</code> and <code>REIMPORT_INTERVAL_MAX_DAYS</code> are set, the importer container runs in a loop. On startup it checks <code>last_import_at</code> in the database — if the last import was recent (within a randomly chosen interval), it sleeps until the next scheduled time rather than importing again.</p>
+<p>This means <strong>restarting the container does not force an immediate re-import</strong> unless the data is already overdue.</p>
+<p>To force a re-import right now:</p>
+<p><strong>Step 1 — Stop the running daemon</strong> (from your deployment directory):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>stop<span class="w"> </span>importer
+</code></pre></div>
+<p><strong>Step 2 — Run a one-shot import (interval vars unset inline):</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span>-e<span class="w"> </span><span class="nv">REIMPORT_INTERVAL_MIN_DAYS</span><span class="o">=</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">  </span>-e<span class="w"> </span><span class="nv">REIMPORT_INTERVAL_MAX_DAYS</span><span class="o">=</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">  </span>importer
+</code></pre></div>
+<p>Unsetting the vars inline overrides <code>.env</code> without editing the file. The container runs once and exits.</p>
+<p><strong>Step 3 — Resume the daemon:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>up<span class="w"> </span>-d<span class="w"> </span>importer
+</code></pre></div>
+<p>The daemon restarts, sees the fresh <code>last_import_at</code>, and sleeps for the next scheduled interval.</p>
+<h2 id="verify-the-import-ran">Verify the import ran<a class="headerlink" href="#verify-the-import-ran" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>curl<span class="w"> </span>-s<span class="w"> </span>http://localhost:8080/api/rpc/get_meta<span class="w"> </span><span class="p">|</span><span class="w"> </span>python3<span class="w"> </span>-m<span class="w"> </span>json.tool<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>last_import_at
+</code></pre></div>
+<p>Or from outside the host:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>curl<span class="w"> </span>-s<span class="w"> </span>https://your-domain.example.com/api/rpc/get_meta<span class="w"> </span><span class="p">|</span><span class="w"> </span>python3<span class="w"> </span>-m<span class="w"> </span>json.tool<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>last_import_at
+</code></pre></div>
+<p><code>last_import_at</code> is the timestamp of when the importer script ran. <code>osm_data_timestamp</code> reflects when Geofabrik generated the extract (can be up to a day behind).</p>
+<h2 id="how-long-does-it-take">How long does it take?<a class="headerlink" href="#how-long-does-it-take" title="Permanent link">&para;</a></h2>
+<p>See the timing table in <a href="../scheduled-import/#how-long-does-an-import-take">Scheduled Import → How long does an import take?</a></p>
+<p>For most small regions, subsequent imports complete in under a minute once the PBF is cached.</p>
+<h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../scheduled-import/">Scheduled Import</a> — set up automatic re-imports with daemon mode or a systemd timer</li>
+<li><a href="../monitoring/">Monitoring</a> — track import freshness via <code>federation-status.json</code> and Prometheus</li>
+<li><a href="../upgrade/">Upgrading</a> — re-importing after a spieli version upgrade</li>
+</ul>
 
 
 
