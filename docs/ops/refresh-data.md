@@ -6,10 +6,10 @@ For setting up automatic re-imports, see [Scheduled Import](scheduled-import.md)
 
 ## Before you start: know your setup
 
-Check which import mode the installer configured:
+Check which import mode the installer configured. Run from your deployment directory (where `compose.yml` and `.env` live):
 
 ```bash
-grep REIMPORT_INTERVAL /opt/spieli/.env
+grep REIMPORT_INTERVAL .env
 ```
 
 | Result | Mode |
@@ -20,17 +20,16 @@ grep REIMPORT_INTERVAL /opt/spieli/.env
 Check your `DEPLOY_MODE` too — you need it for the `--profile` flag:
 
 ```bash
-grep DEPLOY_MODE /opt/spieli/.env
+grep DEPLOY_MODE .env
 ```
 
 Valid values: `data-node`, `data-node-ui`. (Hub-only deployments — `DEPLOY_MODE=ui` — have no database and no importer.)
 
 ## One-shot mode
 
-Run the importer once. It exits when done.
+Run the importer once from your deployment directory. It exits when done.
 
 ```bash
-cd /opt/spieli
 docker compose --profile data-node-ui run --rm importer
 ```
 
@@ -44,10 +43,9 @@ This means **restarting the container does not force an immediate re-import** un
 
 To force a re-import right now:
 
-**Step 1 — Stop the running daemon:**
+**Step 1 — Stop the running daemon** (from your deployment directory):
 
 ```bash
-cd /opt/spieli
 docker compose stop importer
 ```
 
