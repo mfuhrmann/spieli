@@ -31,13 +31,13 @@ REIMPORT_INTERVAL_MAX_DAYS=8
 Then restart the importer so it picks up the new env:
 
 ```bash
-docker compose -f compose.prod.yml --profile data-node-ui restart importer
+docker compose --profile data-node-ui restart importer
 ```
 
 Check that it entered daemon mode:
 
 ```bash
-docker compose -f compose.prod.yml logs importer | grep -i daemon
+docker compose logs importer | grep -i daemon
 # [importer] Daemon mode: interval 6–8 days.
 ```
 
@@ -48,7 +48,7 @@ Watchtower complements daemon mode: it pulls updated spieli images daily and res
 Enable Watchtower by including the `auto-update` profile:
 
 ```bash
-docker compose -f compose.prod.yml --profile data-node-ui --profile auto-update up -d
+docker compose --profile data-node-ui --profile auto-update up -d
 ```
 
 Or add `auto-update` to any existing `up` invocation. Watchtower polls Docker Hub every 24 hours and cleans up old images automatically.
@@ -87,7 +87,7 @@ sudo cp deploy/spieli-import.timer   /etc/systemd/system/
 
 Open `/etc/systemd/system/spieli-import.service` and set:
 
-- `WorkingDirectory=` — directory where `compose.prod.yml` and `.env` live (e.g. `/opt/spieli`)
+- `WorkingDirectory=` — directory where `compose.yml` and `.env` live (e.g. `/opt/spieli`)
 - `EnvironmentFile=` — path to `.env` (usually `WorkingDirectory/.env`)
 - `User=` — user in the `docker` group that owns the deployment directory
 
@@ -111,7 +111,7 @@ systemctl list-timers spieli-import.timer
 ### Host cron
 
 ```cron
-0 4 * * 0 cd /opt/spieli && docker compose -f compose.prod.yml --profile data-node-ui run --rm importer >> /var/log/spieli-import.log 2>&1
+0 4 * * 0 cd /opt/spieli && docker compose --profile data-node-ui run --rm importer >> /var/log/spieli-import.log 2>&1
 ```
 
 ## See also

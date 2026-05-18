@@ -60,8 +60,8 @@ No `APP_MODE`, no `REGISTRY_URL` — the frontend on a data-node runs in its def
 ### Start the backend and import
 
 ```bash
-docker compose -f compose.prod.yml --profile data-node-ui up -d
-docker compose -f compose.prod.yml --profile data-node-ui run --rm importer
+docker compose --profile data-node-ui up -d
+docker compose --profile data-node-ui run --rm importer
 ```
 
 The first command starts `db`, `postgrest`, and the `app` container (which hosts nginx in front of PostgREST). The second runs the importer once — see [Manual Deploy § Step 4](manual-deploy.md#step-4-start-the-stack-and-import-data) for what the import does and how long it takes.
@@ -136,7 +136,7 @@ The Hub's shipped image bundles a default `registry.json` pointing at `/api` (th
 
 **Option A — bind-mount (recommended, no rebuild)**
 
-Drop your file alongside `compose.prod.yml` as `registry.json`. The `compose.prod.yml` app service already has the bind-mount line — uncomment the `volumes:` block:
+Drop your file alongside `compose.yml` as `registry.json`. The `compose.yml` app service already has the bind-mount line — uncomment the `volumes:` block:
 
 ```yaml
 services:
@@ -145,7 +145,7 @@ services:
       - ./registry.json:/usr/share/nginx/html/registry.json:ro
 ```
 
-Then restart the app service: `docker compose -f compose.prod.yml --profile ui up -d`. No rebuild required; nginx serves the file immediately.
+Then restart the app service: `docker compose --profile ui up -d`. No rebuild required; nginx serves the file immediately.
 
 **Option B — custom image**
 
@@ -156,13 +156,13 @@ Build your own image from source with your `registry.json` placed at `app/public
 With Option A (bind-mount):
 
 ```bash
-docker compose -f compose.prod.yml -f compose.override.yml --profile ui up -d
+docker compose -f compose.yml -f compose.override.yml --profile ui up -d
 ```
 
 With Option B (custom image — just the one file):
 
 ```bash
-docker compose -f compose.prod.yml --profile ui up -d
+docker compose --profile ui up -d
 ```
 
 The Hub has no importer, no database, no `run --rm importer` step.
@@ -214,8 +214,8 @@ POSTGRES_PASSWORD=<strong-random-password>
 ```
 
 ```bash
-docker compose -f compose.prod.yml --profile data-node-ui up -d
-docker compose -f compose.prod.yml --profile data-node-ui run --rm importer
+docker compose --profile data-node-ui up -d
+docker compose --profile data-node-ui run --rm importer
 ```
 
 ### Step 2 — Prepare `registry.json` for the Hub
@@ -253,16 +253,16 @@ REGISTRY_URL=/registry.json
 APP_PORT=8080
 ```
 
-Uncomment the `registry.json` bind-mount in `compose.prod.yml` (see [Replace the bundled registry.json](#replace-the-bundled-registryjson-required)), place your `registry.json` next to `compose.prod.yml`, then start:
+Uncomment the `registry.json` bind-mount in `compose.yml` (see [Replace the bundled registry.json](#replace-the-bundled-registryjson-required)), place your `registry.json` next to `compose.yml`, then start:
 
 ```bash
-docker compose -f compose.prod.yml --profile ui up -d
+docker compose --profile ui up -d
 ```
 
 To update `registry.json` later (add/remove a data-node), edit the file and restart only the app container — no rebuild needed:
 
 ```bash
-docker compose -f compose.prod.yml --profile ui restart app
+docker compose --profile ui restart app
 ```
 
 ### Port layout example

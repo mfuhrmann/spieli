@@ -53,7 +53,7 @@ docker compose --profile data-node-ui up -d db
 gunzip -c spieli-backup-20260501.sql.gz | docker compose exec -T db psql -U osm osm
 
 # Apply the API schema (recreates PostgREST functions + materialised view)
-docker compose -f compose.prod.yml --profile data-node-ui run --rm importer
+docker compose --profile data-node-ui run --rm importer
 
 # Restart the full stack
 docker compose --profile data-node-ui up -d
