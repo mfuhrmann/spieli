@@ -134,9 +134,9 @@ Notes:
 
 The Hub's shipped image bundles a default `registry.json` pointing at `/api` (the local backend). That path has no upstream in the `ui` profile, so a Hub started without this step will load with every backend marked red. Pick one of the following — **neither is optional**:
 
-**Option A — bind-mount (recommended, no rebuild)**
+**Option A — bind-mount via `compose.override.yml` (recommended, no rebuild)**
 
-Drop your file alongside `compose.yml` as `registry.json`. The `compose.yml` app service already has the bind-mount line — uncomment the `volumes:` block:
+Create `compose.override.yml` alongside `compose.yml`:
 
 ```yaml
 services:
@@ -145,7 +145,7 @@ services:
       - ./registry.json:/usr/share/nginx/html/registry.json:ro
 ```
 
-Then restart the app service: `docker compose --profile ui up -d`. No rebuild required; nginx serves the file immediately.
+Docker Compose merges this file automatically — no extra `-f` flags needed, and it survives future `compose.yml` upgrades.
 
 **Option B — custom image**
 
@@ -153,17 +153,11 @@ Build your own image from source with your `registry.json` placed at `app/public
 
 ### Start the Hub
 
-With Option A (bind-mount):
-
-```bash
-docker compose -f compose.yml -f compose.override.yml --profile ui up -d
-```
-
-With Option B (custom image — just the one file):
-
 ```bash
 docker compose --profile ui up -d
 ```
+
+No rebuild required; nginx serves the file immediately.
 
 The Hub has no importer, no database, no `run --rm importer` step.
 
@@ -253,7 +247,7 @@ REGISTRY_URL=/registry.json
 APP_PORT=8080
 ```
 
-Uncomment the `registry.json` bind-mount in `compose.yml` (see [Replace the bundled registry.json](#replace-the-bundled-registryjson-required)), place your `registry.json` next to `compose.yml`, then start:
+Create `compose.override.yml` with the bind-mount (see [Replace the bundled registry.json](#replace-the-bundled-registryjson-required)), place your `registry.json` next to `compose.yml`, then start:
 
 ```bash
 docker compose --profile ui up -d
