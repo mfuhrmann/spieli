@@ -34,7 +34,7 @@ All variables are set in `.env` (copy from `.env.example`). The installer genera
 > every connection — including PostgREST — without restarting the database
 > container. To re-tune, edit `.env` and re-run the importer:
 > ```bash
-> docker compose -f compose.prod.yml --profile <mode> run --rm importer
+> docker compose --profile <mode> run --rm importer
 > ```
 
 ### RAM sizing
@@ -74,11 +74,11 @@ so the budget is the larger of the two plus baseline (~700 MB for
 > **Legal pages — two-step update.** Changing `IMPRESSUM_*` or `SITE_URL` requires two steps to take full effect:
 > 1. Restart the app container — `docker-entrypoint.sh` regenerates `impressum.html` / `datenschutz.html` and updates `config.js`:
 >    ```bash
->    docker compose -f compose.prod.yml --profile <mode> up -d app
+>    docker compose --profile <mode> up -d app
 >    ```
 > 2. Re-run the importer to update `get_meta()` — legal URLs are baked into the database at import time:
 >    ```bash
->    docker compose -f compose.prod.yml --profile <mode> run --rm importer
+>    docker compose --profile <mode> run --rm importer
 >    ```
 
 ## Compose profiles
@@ -112,7 +112,7 @@ If you prefer to manage scheduling outside Docker, leave the interval variables 
 
 ```bash
 # one-shot import
-docker compose -f compose.prod.yml --profile data-node run --rm importer
+docker compose --profile data-node run --rm importer
 ```
 
 Example systemd unit files for timer-based scheduling are available in `deploy/`.

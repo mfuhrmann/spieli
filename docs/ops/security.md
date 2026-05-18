@@ -55,10 +55,10 @@ Caddy handles HTTPS automatically with Let's Encrypt.
 
 ## Restrict database port exposure
 
-The `compose.prod.yml` does not publish the PostgreSQL or PostgREST ports to the host — only the app container's `APP_PORT` is published. Verify with:
+The `compose.yml` does not publish the PostgreSQL or PostgREST ports to the host — only the app container's `APP_PORT` is published. Verify with:
 
 ```bash
-docker compose -f compose.prod.yml ps
+docker compose ps
 ```
 
 The `db` and `postgrest` services should show no host port bindings. If you see `0.0.0.0:5432->5432/tcp`, your database is accessible from the network. Remove the `ports:` entry for the `db` service from your compose file.
@@ -100,7 +100,7 @@ Data-nodes (`data-node-ui` mode) respond with `Access-Control-Allow-Origin: *` o
 
 ## Keeping images up to date
 
-Pin a specific version tag in `compose.prod.yml` and update regularly:
+Pin a specific version tag in `compose.yml` and update regularly:
 
 ```yaml
 image: ghcr.io/mfuhrmann/spieli:0.4.1   # pin a version
