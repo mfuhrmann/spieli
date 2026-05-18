@@ -59,9 +59,10 @@ Or add `auto-update` to any existing `up` invocation. Watchtower polls Docker Hu
 |---|---|
 | First run, PBF not cached | download time + 2–5 min |
 | First run, PBF cached | 2–5 min |
-| Re-run, filtered PBFs cached | 30–60 s for small regions; 30+ min for large (e.g. all of Germany) |
+| Re-run, Geofabrik has a newer extract | download time + 2–5 min |
+| Re-run, Geofabrik extract unchanged | 30–60 s for small regions; 30+ min for large (e.g. all of Germany) |
 
-All three files (source PBF, bbox-clipped PBF, tag-filtered PBF) are stored in the `pbf_cache` Docker volume and reused automatically. Only the final osm2pgsql + api.sql step runs every time.
+The source PBF is checked against Geofabrik on every run using HTTP `If-Modified-Since`. When no newer extract is available the download is skipped and the existing bbox and tag-filtered caches are reused — only the final osm2pgsql + api.sql step runs.
 
 ## How fresh is the data?
 

@@ -127,21 +127,27 @@ run_import() (
     echo "[importer] PostgreSQL is ready."
 
     # --------------------------------------------------------------------------- #
-    # Download PBF (skipped if already cached and intact)
+    # Download PBF — re-download only if Geofabrik has a newer version.
+    # wget -N sends If-Modified-Since using the local file's mtime; the server
+    # returns 304 Not Modified when the extract hasn't changed, skipping the
+    # download. When a newer extract is available wget updates the file and its
+    # mtime, which automatically invalidates the bbox and tag-filter caches
+    # below (they use -nt comparisons against the source PBF).
     # --------------------------------------------------------------------------- #
     if [ -f "$PBF_FILE" ]; then
         if ! osmium fileinfo "$PBF_FILE" > /dev/null 2>&1; then
             echo "[importer] Cached $PBF_FILE is corrupt or incomplete — re-downloading..."
             rm -f "$PBF_FILE"
+            wget --progress=dot:giga -O "$PBF_FILE" "$PBF_URL"
         else
-            echo "[importer] Using cached $PBF_FILE ($(du -sh "$PBF_FILE" | cut -f1))"
+            echo "[importer] Checking for updated PBF at $PBF_URL ..."
+            wget --progress=dot:giga -N -P /data/ "$PBF_URL"
         fi
-    fi
-    if [ ! -f "$PBF_FILE" ]; then
+    else
         echo "[importer] Downloading $PBF_URL ..."
         wget --progress=dot:giga -O "$PBF_FILE" "$PBF_URL"
-        echo "[importer] Download complete: $(du -sh "$PBF_FILE" | cut -f1)"
     fi
+    echo "[importer] PBF ready: $(du -sh "$PBF_FILE" | cut -f1)"
 
     # --------------------------------------------------------------------------- #
     # Step 1 — Bbox pre-filter: clip PBF to region bounding box
