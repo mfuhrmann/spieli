@@ -1702,12 +1702,16 @@
 <td>2–5 min</td>
 </tr>
 <tr>
-<td>Re-run, filtered PBFs cached</td>
+<td>Re-run, Geofabrik has a newer extract</td>
+<td>download time + 2–5 min</td>
+</tr>
+<tr>
+<td>Re-run, Geofabrik extract unchanged</td>
 <td>30–60 s for small regions; 30+ min for large (e.g. all of Germany)</td>
 </tr>
 </tbody>
 </table>
-<p>All three files (source PBF, bbox-clipped PBF, tag-filtered PBF) are stored in the <code>pbf_cache</code> Docker volume and reused automatically. Only the final osm2pgsql + api.sql step runs every time.</p>
+<p>The source PBF is checked against Geofabrik on every run using HTTP <code>If-Modified-Since</code>. When no newer extract is available the download is skipped and the existing bbox and tag-filtered caches are reused — only the final osm2pgsql + api.sql step runs.</p>
 <h2 id="how-fresh-is-the-data">How fresh is the data?<a class="headerlink" href="#how-fresh-is-the-data" title="Permanent link">&para;</a></h2>
 <p>Geofabrik refreshes most regional extracts daily. The importer stores two timestamps in the database:</p>
 <ul>
