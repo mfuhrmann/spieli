@@ -62,6 +62,20 @@ docker compose --profile <mode> down
 docker compose --profile <mode> up -d
 ```
 
+## Upgrading with Watchtower (auto-update profile)
+
+When the `auto-update` profile is active, Watchtower pulls new images and restarts containers automatically — no manual `docker compose pull` needed. However, **the version reported by `get_meta` (visible in the Hub regions panel) lags behind** until the next scheduled daemon import cycle.
+
+Why: the importer's startup grace check fires after a Watchtower-triggered restart. If the last import was recent, the importer sleeps for the remaining interval without re-applying `api.sql`. The version in `get_meta` only updates when `api.sql` is applied.
+
+To update the version immediately after Watchtower has restarted the importer:
+
+```bash
+docker compose run --rm -e API_ONLY=1 importer
+```
+
+This re-applies `api.sql` (including the new version) without a full re-import and completes in seconds.
+
 ## Hub upgrades
 
 Upgrade each data-node first, verify it works, then upgrade the Hub UI. The Hub is backwards-compatible with older data-nodes (it falls back to the legacy `get_playgrounds` RPC if the tiered RPCs return 404), but an older Hub is not guaranteed to understand new data-node response fields.
