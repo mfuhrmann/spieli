@@ -116,6 +116,7 @@ systemctl list-timers spieli-import.timer
 
 ## See also
 
+- [Refresh Data](refresh-data.md) — trigger an immediate re-import outside of the schedule
 - [Monitoring](monitoring.md) — observe import freshness via federation-status and Prometheus
 - [Backup and Restore](backup-restore.md) — database backups before major import runs
 - [Configuration reference](configuration.md) — `OSM_RELATION_ID`, `PBF_URL`, `OSM2PGSQL_THREADS`, `REIMPORT_INTERVAL_MIN_DAYS`, `REIMPORT_INTERVAL_MAX_DAYS`

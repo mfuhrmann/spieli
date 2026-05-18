@@ -68,6 +68,8 @@ Re-run the importer at any time to refresh from Geofabrik (extracts are updated 
 docker compose --profile data-node run --rm importer
 ```
 
+For daemon mode deployments or troubleshooting a stale import, see [Refresh Data](refresh-data.md).
+
 ## Applying database changes without a full re-import
 
 SQL changes to `importer/api.sql` (PostgREST functions, indexes) can be applied directly to the running database:

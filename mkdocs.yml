@@ -40,6 +40,7 @@ nav:
       - Upgrading: ops/upgrade.md
       - Switching Regions: ops/switch-region.md
       - Scheduled Import: ops/scheduled-import.md
+      - Refresh Data: ops/refresh-data.md
       - Backup and Restore: ops/backup-restore.md
       - Monitoring: ops/monitoring.md
       - Security: ops/security.md
