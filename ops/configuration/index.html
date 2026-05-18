@@ -1740,7 +1740,7 @@ at the top of <code>api.sql</code>, then <code>SELECT pg_reload_conf()</code>. T
 persisted to <code>postgresql.auto.conf</code> inside the data volume and apply to
 every connection — including PostgREST — without restarting the database
 container. To re-tune, edit <code>.env</code> and re-run the importer:
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.prod.yml<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>importer
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>importer
 </code></pre></div></p>
 </blockquote>
 <h3 id="ram-sizing">RAM sizing<a class="headerlink" href="#ram-sizing" title="Permanent link">&para;</a></h3>
@@ -1805,10 +1805,10 @@ so the budget is the larger of the two plus baseline (~700 MB for
 <blockquote>
 <p><strong>Legal pages — two-step update.</strong> Changing <code>IMPRESSUM_*</code> or <code>SITE_URL</code> requires two steps to take full effect:
 1. Restart the app container — <code>docker-entrypoint.sh</code> regenerates <code>impressum.html</code> / <code>datenschutz.html</code> and updates <code>config.js</code>:
-   <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.prod.yml<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>up<span class="w"> </span>-d<span class="w"> </span>app
+   <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>up<span class="w"> </span>-d<span class="w"> </span>app
 </code></pre></div>
 2. Re-run the importer to update <code>get_meta()</code> — legal URLs are baked into the database at import time:
-   <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.prod.yml<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>importer
+   <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>importer
 </code></pre></div></p>
 </blockquote>
 <h2 id="compose-profiles">Compose profiles<a class="headerlink" href="#compose-profiles" title="Permanent link">&para;</a></h2>
@@ -1850,7 +1850,7 @@ so the budget is the larger of the two plus baseline (~700 MB for
 <h3 id="manual-systemd-timer">Manual / systemd timer<a class="headerlink" href="#manual-systemd-timer" title="Permanent link">&para;</a></h3>
 <p>If you prefer to manage scheduling outside Docker, leave the interval variables unset. The importer then runs once and exits (one-shot mode). You can trigger it on a schedule using a systemd timer or cron:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># one-shot import</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.prod.yml<span class="w"> </span>--profile<span class="w"> </span>data-node<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>importer
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>data-node<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>importer
 </code></pre></div>
 <p>Example systemd unit files for timer-based scheduling are available in <code>deploy/</code>.</p>
 <h2 id="applying-changes">Applying changes<a class="headerlink" href="#applying-changes" title="Permanent link">&para;</a></h2>

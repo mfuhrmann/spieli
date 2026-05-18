@@ -1687,8 +1687,8 @@
 </code></pre></div>
 <p>Caddy handles HTTPS automatically with Let's Encrypt.</p>
 <h2 id="restrict-database-port-exposure">Restrict database port exposure<a class="headerlink" href="#restrict-database-port-exposure" title="Permanent link">&para;</a></h2>
-<p>The <code>compose.prod.yml</code> does not publish the PostgreSQL or PostgREST ports to the host — only the app container's <code>APP_PORT</code> is published. Verify with:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.prod.yml<span class="w"> </span>ps
+<p>The <code>compose.yml</code> does not publish the PostgreSQL or PostgREST ports to the host — only the app container's <code>APP_PORT</code> is published. Verify with:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>ps
 </code></pre></div>
 <p>The <code>db</code> and <code>postgrest</code> services should show no host port bindings. If you see <code>0.0.0.0:5432-&gt;5432/tcp</code>, your database is accessible from the network. Remove the <code>ports:</code> entry for the <code>db</code> service from your compose file.</p>
 <h2 id="nginx-security-headers">nginx security headers<a class="headerlink" href="#nginx-security-headers" title="Permanent link">&para;</a></h2>
@@ -1739,7 +1739,7 @@
 <h2 id="cors-for-hub-data-nodes">CORS for Hub data-nodes<a class="headerlink" href="#cors-for-hub-data-nodes" title="Permanent link">&para;</a></h2>
 <p>Data-nodes (<code>data-node-ui</code> mode) respond with <code>Access-Control-Allow-Origin: *</code> on all <code>/api/</code> endpoints. This is intentional — the Hub's browser must be able to query data-nodes cross-origin. If you want to restrict CORS to specific Hub origins, edit the <code>add_header Access-Control-Allow-Origin</code> lines in <code>oci/app/nginx.conf</code> before building your image.</p>
 <h2 id="keeping-images-up-to-date">Keeping images up to date<a class="headerlink" href="#keeping-images-up-to-date" title="Permanent link">&para;</a></h2>
-<p>Pin a specific version tag in <code>compose.prod.yml</code> and update regularly:</p>
+<p>Pin a specific version tag in <code>compose.yml</code> and update regularly:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ghcr.io/mfuhrmann/spieli:0.4.1</span><span class="w">   </span><span class="c1"># pin a version</span>
 </code></pre></div>
 <p>Subscribe to <a href="https://github.com/mfuhrmann/spieli/releases">GitHub Releases</a> to be notified of new versions.</p>

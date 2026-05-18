@@ -1868,8 +1868,8 @@
 </code></pre></div>
 <p>No <code>APP_MODE</code>, no <code>REGISTRY_URL</code> — the frontend on a data-node runs in its default standalone mode purely so nginx can serve <code>/api/</code> with CORS. <code>API_BASE_URL</code> stays at its default <code>/api</code>.</p>
 <h3 id="start-the-backend-and-import">Start the backend and import<a class="headerlink" href="#start-the-backend-and-import" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.prod.yml<span class="w"> </span>--profile<span class="w"> </span>data-node-ui<span class="w"> </span>up<span class="w"> </span>-d
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.prod.yml<span class="w"> </span>--profile<span class="w"> </span>data-node-ui<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>importer
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>data-node-ui<span class="w"> </span>up<span class="w"> </span>-d
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>data-node-ui<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>importer
 </code></pre></div>
 <p>The first command starts <code>db</code>, <code>postgrest</code>, and the <code>app</code> container (which hosts nginx in front of PostgREST). The second runs the importer once — see <a href="../manual-deploy/#step-4-start-the-stack-and-import-data">Manual Deploy § Step 4</a> for what the import does and how long it takes.</p>
 <h3 id="expose-api-to-the-hub">Expose <code>/api/</code> to the Hub<a class="headerlink" href="#expose-api-to-the-hub" title="Permanent link">&para;</a></h3>
@@ -1943,21 +1943,21 @@
 <h3 id="replace-the-bundled-registryjson-required">Replace the bundled <code>registry.json</code> (required)<a class="headerlink" href="#replace-the-bundled-registryjson-required" title="Permanent link">&para;</a></h3>
 <p>The Hub's shipped image bundles a default <code>registry.json</code> pointing at <code>/api</code> (the local backend). That path has no upstream in the <code>ui</code> profile, so a Hub started without this step will load with every backend marked red. Pick one of the following — <strong>neither is optional</strong>:</p>
 <p><strong>Option A — bind-mount (recommended, no rebuild)</strong></p>
-<p>Drop your file alongside <code>compose.prod.yml</code> as <code>registry.json</code>. The <code>compose.prod.yml</code> app service already has the bind-mount line — uncomment the <code>volumes:</code> block:</p>
+<p>Drop your file alongside <code>compose.yml</code> as <code>registry.json</code>. The <code>compose.yml</code> app service already has the bind-mount line — uncomment the <code>volumes:</code> block:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nt">services</span><span class="p">:</span>
 <a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span><span class="nt">app</span><span class="p">:</span>
 <a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
 <a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./registry.json:/usr/share/nginx/html/registry.json:ro</span>
 </code></pre></div>
-<p>Then restart the app service: <code>docker compose -f compose.prod.yml --profile ui up -d</code>. No rebuild required; nginx serves the file immediately.</p>
+<p>Then restart the app service: <code>docker compose --profile ui up -d</code>. No rebuild required; nginx serves the file immediately.</p>
 <p><strong>Option B — custom image</strong></p>
 <p>Build your own image from source with your <code>registry.json</code> placed at <code>app/public/registry.json</code> before building. No override file needed in this case. (Source clone required — skip if using pre-built images.)</p>
 <h3 id="start-the-hub">Start the Hub<a class="headerlink" href="#start-the-hub" title="Permanent link">&para;</a></h3>
 <p>With Option A (bind-mount):</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.prod.yml<span class="w"> </span>-f<span class="w"> </span>compose.override.yml<span class="w"> </span>--profile<span class="w"> </span>ui<span class="w"> </span>up<span class="w"> </span>-d
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.yml<span class="w"> </span>-f<span class="w"> </span>compose.override.yml<span class="w"> </span>--profile<span class="w"> </span>ui<span class="w"> </span>up<span class="w"> </span>-d
 </code></pre></div>
 <p>With Option B (custom image — just the one file):</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.prod.yml<span class="w"> </span>--profile<span class="w"> </span>ui<span class="w"> </span>up<span class="w"> </span>-d
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>ui<span class="w"> </span>up<span class="w"> </span>-d
 </code></pre></div>
 <p>The Hub has no importer, no database, no <code>run --rm importer</code> step.</p>
 <h2 id="step-4-verify">Step 4 — Verify<a class="headerlink" href="#step-4-verify" title="Permanent link">&para;</a></h2>
@@ -1995,8 +1995,8 @@
 <a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>PBF_URL=https://download.geofabrik.de/europe/germany/hessen-latest.osm.pbf
 <a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>POSTGRES_PASSWORD=&lt;strong-random-password&gt;
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.prod.yml<span class="w"> </span>--profile<span class="w"> </span>data-node-ui<span class="w"> </span>up<span class="w"> </span>-d
-<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.prod.yml<span class="w"> </span>--profile<span class="w"> </span>data-node-ui<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>importer
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>data-node-ui<span class="w"> </span>up<span class="w"> </span>-d
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>data-node-ui<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>importer
 </code></pre></div>
 <h3 id="step-2-prepare-registryjson-for-the-hub">Step 2 — Prepare <code>registry.json</code> for the Hub<a class="headerlink" href="#step-2-prepare-registryjson-for-the-hub" title="Permanent link">&para;</a></h3>
 <p>The data-node's <code>/api/</code> is only reachable within the Docker host at <code>http://localhost:8081/api</code>. From a browser over HTTPS the Hub must refer to the public URL:</p>
@@ -2022,11 +2022,11 @@
 <a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a>REGISTRY_URL=/registry.json
 <a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a>APP_PORT=8080
 </code></pre></div>
-<p>Uncomment the <code>registry.json</code> bind-mount in <code>compose.prod.yml</code> (see <a href="#replace-the-bundled-registryjson-required">Replace the bundled registry.json</a>), place your <code>registry.json</code> next to <code>compose.prod.yml</code>, then start:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.prod.yml<span class="w"> </span>--profile<span class="w"> </span>ui<span class="w"> </span>up<span class="w"> </span>-d
+<p>Uncomment the <code>registry.json</code> bind-mount in <code>compose.yml</code> (see <a href="#replace-the-bundled-registryjson-required">Replace the bundled registry.json</a>), place your <code>registry.json</code> next to <code>compose.yml</code>, then start:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>ui<span class="w"> </span>up<span class="w"> </span>-d
 </code></pre></div>
 <p>To update <code>registry.json</code> later (add/remove a data-node), edit the file and restart only the app container — no rebuild needed:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.prod.yml<span class="w"> </span>--profile<span class="w"> </span>ui<span class="w"> </span>restart<span class="w"> </span>app
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>ui<span class="w"> </span>restart<span class="w"> </span>app
 </code></pre></div>
 <h3 id="port-layout-example">Port layout example<a class="headerlink" href="#port-layout-example" title="Permanent link">&para;</a></h3>
 <table>

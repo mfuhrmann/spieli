@@ -1651,16 +1651,16 @@
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>REIMPORT_INTERVAL_MAX_DAYS=8
 </code></pre></div>
 <p>Then restart the importer so it picks up the new env:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.prod.yml<span class="w"> </span>--profile<span class="w"> </span>data-node-ui<span class="w"> </span>restart<span class="w"> </span>importer
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>data-node-ui<span class="w"> </span>restart<span class="w"> </span>importer
 </code></pre></div>
 <p>Check that it entered daemon mode:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.prod.yml<span class="w"> </span>logs<span class="w"> </span>importer<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-i<span class="w"> </span>daemon
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>logs<span class="w"> </span>importer<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-i<span class="w"> </span>daemon
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="c1"># [importer] Daemon mode: interval 6–8 days.</span>
 </code></pre></div>
 <h2 id="automatic-image-updates-with-watchtower">Automatic image updates with Watchtower<a class="headerlink" href="#automatic-image-updates-with-watchtower" title="Permanent link">&para;</a></h2>
 <p>Watchtower complements daemon mode: it pulls updated spieli images daily and restarts the affected containers. The importer's startup grace check (see above) prevents an unplanned re-import on Watchtower-triggered restarts.</p>
 <p>Enable Watchtower by including the <code>auto-update</code> profile:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.prod.yml<span class="w"> </span>--profile<span class="w"> </span>data-node-ui<span class="w"> </span>--profile<span class="w"> </span>auto-update<span class="w"> </span>up<span class="w"> </span>-d
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>data-node-ui<span class="w"> </span>--profile<span class="w"> </span>auto-update<span class="w"> </span>up<span class="w"> </span>-d
 </code></pre></div>
 <p>Or add <code>auto-update</code> to any existing <code>up</code> invocation. Watchtower polls Docker Hub every 24 hours and cleans up old images automatically.</p>
 <h2 id="how-long-does-an-import-take">How long does an import take?<a class="headerlink" href="#how-long-does-an-import-take" title="Permanent link">&para;</a></h2>
@@ -1703,7 +1703,7 @@
 </code></pre></div>
 <p>Open <code>/etc/systemd/system/spieli-import.service</code> and set:</p>
 <ul>
-<li><code>WorkingDirectory=</code> — directory where <code>compose.prod.yml</code> and <code>.env</code> live (e.g. <code>/opt/spieli</code>)</li>
+<li><code>WorkingDirectory=</code> — directory where <code>compose.yml</code> and <code>.env</code> live (e.g. <code>/opt/spieli</code>)</li>
 <li><code>EnvironmentFile=</code> — path to <code>.env</code> (usually <code>WorkingDirectory/.env</code>)</li>
 <li><code>User=</code> — user in the <code>docker</code> group that owns the deployment directory</li>
 </ul>
@@ -1719,7 +1719,7 @@
 <a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>systemctl<span class="w"> </span>list-timers<span class="w"> </span>spieli-import.timer
 </code></pre></div>
 <h3 id="host-cron">Host cron<a class="headerlink" href="#host-cron" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>0 4 * * 0 cd /opt/spieli &amp;&amp; docker compose -f compose.prod.yml --profile data-node-ui run --rm importer &gt;&gt; /var/log/spieli-import.log 2&gt;&amp;1
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>0 4 * * 0 cd /opt/spieli &amp;&amp; docker compose --profile data-node-ui run --rm importer &gt;&gt; /var/log/spieli-import.log 2&gt;&amp;1
 </code></pre></div>
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
