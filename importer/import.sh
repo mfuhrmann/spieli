@@ -224,6 +224,7 @@ run_import() (
             "$IMPORT_PBF" \
             --overwrite \
             n/natural=tree \
+            w/natural=tree_row \
             n/leisure=playground \
             n/leisure=pitch \
             n/leisure=fitness_station \

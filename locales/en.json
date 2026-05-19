@@ -415,6 +415,7 @@
     "sizeUnknown": "unknown",
     "surfaceLabel": "Surface",
     "treesLabel": "Trees (min.)",
+    "treeShadow": "Trees / rows",
     "accessLabel": "Accessibility",
     "ageLabel": "Age",
     "ageRange": "{min}–{max} years",

@@ -14,7 +14,7 @@
     playgroundStyleFn,
     selectionStyle,
     equipmentLayerStyleFn,
-    treeStyle,
+    treeStyleFn,
     clusterTierStyleFn,
   } from '../lib/vectorStyles.js';
   import { macroRingStyleFn } from '../hub/macroRingStyle.js';
@@ -144,7 +144,7 @@
           { type: 'FeatureCollection', features: trees },
           { dataProjection: 'EPSG:4326', featureProjection: 'EPSG:3857' }
         ));
-        treeLayer = new VectorLayer({ source: src, zIndex: 15, style: () => treeStyle });
+        treeLayer = new VectorLayer({ source: src, zIndex: 15, style: treeStyleFn });
         olMap.addLayer(treeLayer);
       }
     });
