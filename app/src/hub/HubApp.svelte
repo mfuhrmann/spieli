@@ -42,6 +42,7 @@
     backends,
     registryError,
     aggregatedBbox,
+    overlapWarnings,
     fetchNearestAcrossBackends,
   } = createRegistry();
 
@@ -234,6 +235,6 @@
   {dataContribLinks}
 >
   {#snippet instancePanel()}
-    <InstancePanel {backends} {registryError} />
+    <InstancePanel {backends} {registryError} {overlapWarnings} />
   {/snippet}
 </AppShell>

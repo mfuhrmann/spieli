@@ -407,7 +407,8 @@
     "lastReachableHours": "zuletzt erreichbar: vor {h} Std.",
     "neverReachable": "noch nie erreichbar",
     "observationStale": "Verbindungsstatus veraltet",
-    "importing": "Aktualisierung"
+    "importing": "Aktualisierung",
+    "bboxOverlap": "Überschneidung mit {name}"
   },
   "details": {
     "sizeLabel": "Größe",

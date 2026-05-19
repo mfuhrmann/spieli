@@ -230,6 +230,40 @@ export function createRegistry() {
     }, [Infinity, Infinity, -Infinity, -Infinity]);
   });
 
+  // Map from backend URL to array of overlapping backend names.
+  // Two backends overlap when their bbox intersection area exceeds 25% of the
+  // smaller backend's bbox area — large enough to catch containment (e.g. a
+  // city inside a Bundesland) while ignoring rectangular-bbox border slivers
+  // between adjacent regions. Backends without a bbox are ignored.
+  const overlapWarnings = derived(store, ($backends) => {
+    const withBbox = $backends.filter(b => b.bbox);
+    /** @type {Map<string, string[]>} */
+    const warnings = new Map();
+    for (let i = 0; i < withBbox.length; i++) {
+      for (let j = i + 1; j < withBbox.length; j++) {
+        const a = withBbox[i];
+        const b = withBbox[j];
+        const [aMinLon, aMinLat, aMaxLon, aMaxLat] = a.bbox;
+        const [bMinLon, bMinLat, bMaxLon, bMaxLat] = b.bbox;
+        const iMinLon = Math.max(aMinLon, bMinLon);
+        const iMinLat = Math.max(aMinLat, bMinLat);
+        const iMaxLon = Math.min(aMaxLon, bMaxLon);
+        const iMaxLat = Math.min(aMaxLat, bMaxLat);
+        if (iMaxLon <= iMinLon || iMaxLat <= iMinLat) continue;
+        const intersectArea = (iMaxLon - iMinLon) * (iMaxLat - iMinLat);
+        const aArea = (aMaxLon - aMinLon) * (aMaxLat - aMinLat);
+        const bArea = (bMaxLon - bMinLon) * (bMaxLat - bMinLat);
+        if (intersectArea / Math.min(aArea, bArea) > 0.25) {
+          if (!warnings.has(a.url)) warnings.set(a.url, []);
+          if (!warnings.has(b.url)) warnings.set(b.url, []);
+          warnings.get(a.url).push(b.name);
+          warnings.get(b.url).push(a.name);
+        }
+      }
+    }
+    return warnings;
+  });
+
   // Multi-backend nearest-playground search.
   //
   // Fires `get_nearest_playgrounds` against every registered backend in
@@ -260,6 +294,7 @@ export function createRegistry() {
     backends:                   store,
     registryError,
     aggregatedBbox,
+    overlapWarnings,
     fetchNearestAcrossBackends,
   };
 }

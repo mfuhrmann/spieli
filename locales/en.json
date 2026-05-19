@@ -407,7 +407,8 @@
     "lastReachableHours": "last reachable: {h} hr ago",
     "neverReachable": "never reachable",
     "observationStale": "Observation status outdated",
-    "importing": "updating"
+    "importing": "updating",
+    "bboxOverlap": "overlaps with {name}"
   },
   "details": {
     "sizeLabel": "Size",
