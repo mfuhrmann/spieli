@@ -128,6 +128,15 @@ export const treeStyle = new Style({
     })
 });
 
+const treeRowStyle = new Style({
+    stroke: new Stroke({ color: '#155215', width: 2 })
+});
+
+export function treeStyleFn(feature) {
+    const type = feature.getGeometry()?.getType();
+    return type === 'LineString' || type === 'MultiLineString' ? treeRowStyle : treeStyle;
+}
+
 // ── Tiered-delivery styles (P1 §3 / §4) ───────────────────────────────────────
 
 // Cluster tier (zoom ≤ clusterMaxZoom) — canvas-rendered stacked ring with

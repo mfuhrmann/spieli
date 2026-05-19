@@ -1057,7 +1057,10 @@ GRANT EXECUTE ON FUNCTION api.get_pois(float8, float8, integer) TO web_anon;
 
 -- =========================================================================
 -- 4. get_trees(min_lon, min_lat, max_lon, max_lat)
---    Returns natural=tree nodes within a WGS84 bounding box as GeoJSON.
+--    Returns natural=tree nodes and natural=tree_row lines within a WGS84
+--    bounding box as GeoJSON. Each feature carries a `feature_type` property
+--    ('tree' or 'tree_row'). Tree rows also carry `length_m` (rounded metres)
+--    so the frontend can display row lengths without a fake tree-count estimate.
 -- =========================================================================
 DROP FUNCTION IF EXISTS api.get_trees(float8, float8, float8, float8);
 
@@ -1076,6 +1079,29 @@ AS $$
       ST_MakeEnvelope(min_lon, min_lat, max_lon, max_lat, 4326),
       3857
     ) AS geom
+  ),
+  features AS (
+    SELECT
+      p.osm_id,
+      p.name,
+      p.way,
+      'tree'::text    AS feature_type,
+      NULL::int       AS length_m,
+      hstore_to_jsonb(p.tags) AS tags
+    FROM planet_osm_point p, bbox b
+    WHERE p.way && b.geom
+      AND p.natural = 'tree'
+    UNION ALL
+    SELECT
+      l.osm_id,
+      l.name,
+      l.way,
+      'tree_row'::text                            AS feature_type,
+      round(ST_Length(ST_Transform(l.way, 4326)::geography))::int AS length_m,
+      hstore_to_jsonb(l.tags)                     AS tags
+    FROM planet_osm_line l, bbox b
+    WHERE l.way && b.geom
+      AND l.natural = 'tree_row'
   )
   SELECT json_build_object(
     'type', 'FeatureCollection',
@@ -1083,19 +1109,19 @@ AS $$
       json_agg(
         json_build_object(
           'type', 'Feature',
-          'geometry', ST_AsGeoJSON(ST_Transform(p.way, 4326))::json,
+          'geometry', ST_AsGeoJSON(ST_Transform(f.way, 4326))::json,
           'properties', jsonb_build_object(
-            'osm_id', p.osm_id,
-            'name',   p.name
-          ) || COALESCE(hstore_to_jsonb(p.tags), '{}'::jsonb)
+            'osm_id',       f.osm_id,
+            'name',         f.name,
+            'feature_type', f.feature_type,
+            'length_m',     f.length_m
+          ) || COALESCE(f.tags, '{}'::jsonb)
         )
       ),
       '[]'::json
     )
   )
-  FROM planet_osm_point p, bbox b
-  WHERE p.way && b.geom
-    AND p.natural = 'tree';
+  FROM features f;
 $$;
 
 GRANT EXECUTE ON FUNCTION api.get_trees(float8, float8, float8, float8) TO web_anon;

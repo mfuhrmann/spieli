@@ -415,6 +415,7 @@
     "sizeUnknown": "unbekannt",
     "surfaceLabel": "Bodenbelag",
     "treesLabel": "Bäume mind.",
+    "treeShadow": "Bäume / Reihen",
     "accessLabel": "Zugänglichkeit",
     "ageLabel": "Alter",
     "ageRange": "{min}–{max} Jahre",

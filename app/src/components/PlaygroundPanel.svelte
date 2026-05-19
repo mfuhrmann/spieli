@@ -44,6 +44,7 @@
   let equipmentFeatures = [];
   let equipmentGroups = [];
   let pois = [];
+  let treeRows = [];
   let equipmentLoading = false;
   let poisLoading = false;
 
@@ -177,6 +178,7 @@
     equipmentFeatures = [];
     equipmentGroups = [];
     pois = [];
+    treeRows = [];
     overlayFeaturesStore.set({ equipment: [], trees: [] });
   }
 
@@ -225,6 +227,7 @@
       if (gen === loadGen) {
         equipmentFeatures = [];
         equipmentGroups = [];
+        treeRows = [];
         // Clear stale equipment from the previous selection's overlay so
         // the map doesn't keep showing wrong dots on the new playground.
         overlayFeaturesStore.set({ equipment: [], trees: [] });
@@ -235,7 +238,12 @@
 
     try {
       const treeGeojson = await fetchTrees(ext, url);
-      if (gen === loadGen) localTrees = treeGeojson.features ?? [];
+      if (gen === loadGen) {
+        localTrees = treeGeojson.features ?? [];
+        treeRows = localTrees
+          .filter(f => f.properties?.feature_type === 'tree_row' && f.properties?.length_m != null)
+          .map(f => f.properties.length_m);
+      }
     } catch (err) {
       // Trees silently ignored on error (e.g. Overpass/dev mode)
     }
@@ -545,10 +553,15 @@
           </div>
         {/if}
 
-        {#if attr.tree_count > 0}
+        {#if attr.tree_count > 0 || treeRows.length > 0}
           <div class="fact-item">
-            <span class="info-label">{$_('hover.tagTrees')}</span>
-            <span class="fact-value">{attr.tree_count}</span>
+            <span class="info-label">{$_('details.treeShadow')}{treeRows.length > 0 ? ` (${treeRows.length})` : ''}</span>
+            <span class="fact-value">
+              {[
+                attr.tree_count > 0 ? `${attr.tree_count} ${$_('hover.tagTrees')}` : null,
+                treeRows.length > 0 ? treeRows.map(m => `${m} m`).join(', ') : null,
+              ].filter(Boolean).join(' / ')}
+            </span>
           </div>
         {/if}
 
