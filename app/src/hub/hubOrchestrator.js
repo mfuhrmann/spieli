@@ -396,6 +396,7 @@ function parsePolygonFeatures(geojson, backendUrl, backend) {
     f.set('_backendUrl', backendUrl);
     f.set('_lastImportAt', backend?.lastImportAt ?? null);
     if (backend?.slug) f.set('_backendSlug', backend.slug);
+    if (backend?.name) f.set('_backendName', backend.name);
   });
   return features;
 }
