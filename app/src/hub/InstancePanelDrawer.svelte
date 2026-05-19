@@ -7,6 +7,8 @@
   export let backends;
   /** @type {string | null} */
   export let registryError;
+  /** @type {Map<string, string[]>} */
+  export let overlapWarnings = new Map();
   /** @type {() => void} */
   export let onclose;
 
@@ -200,6 +202,12 @@
                 {$_('hub.dataAge', { values: { age: formatDataAge(b.dataAgeSec) } })}
               </div>
             {/if}
+            {#each (overlapWarnings.get(b.url) ?? []) as overlapName}
+              <div class="instance-overlap text-warning">
+                <i class="bi bi-exclamation-triangle me-1"></i>
+                {$_('hub.bboxOverlap', { values: { name: overlapName } })}
+              </div>
+            {/each}
           {/if}
         </li>
       {/each}
@@ -347,6 +355,11 @@
   }
 
   .instance-freshness {
+    font-size: 0.72rem;
+    margin-top: 0.1rem;
+  }
+
+  .instance-overlap {
     font-size: 0.72rem;
     margin-top: 0.1rem;
   }

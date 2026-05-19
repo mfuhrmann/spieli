@@ -8,6 +8,8 @@
   export let backends;
   /** @type {import('svelte/store').Readable<string|null>} */
   export let registryError;
+  /** @type {import('svelte/store').Readable<Map<string,string[]>>} */
+  export let overlapWarnings;
 
   let open = false;
   let pillEl;
@@ -87,6 +89,7 @@
       <InstancePanelDrawer
         backends={$backends}
         registryError={$registryError}
+        overlapWarnings={$overlapWarnings}
         onclose={close}
       />
     </div>
