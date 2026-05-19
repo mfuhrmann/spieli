@@ -84,7 +84,7 @@
    * on every source `change` event as more backends populate, but only log the
    * "unknown slug" warning once. Standalone passes `null`, so any slug in the
    * hash is silently ignored.
-   * @type {((slug: string) => string | null) | null}
+   * @type {((slug: string) => {url: string, name: string|null} | null) | null}
    */
   export let resolveSlugToBackendUrl = null;
 
@@ -94,7 +94,7 @@
    * hydration so a slug-less hash can still rewrite to its canonical
    * `#<slug>/W<id>` form once the matching backend is identified.
    * Standalone passes `null`.
-   * @type {(() => Array<{url: string, slug: string|null}>) | null}
+   * @type {(() => Array<{url: string, slug: string|null, name: string|null}>) | null}
    */
   export let getAllBackendUrls = null;
 
@@ -130,15 +130,15 @@
     let candidates = playgroundSource.getFeatures();
 
     if (parsed.slug && resolveSlugToBackendUrl) {
-      const targetUrl = resolveSlugToBackendUrl(parsed.slug);
-      if (!targetUrl) {
+      const resolved = resolveSlugToBackendUrl(parsed.slug);
+      if (!resolved) {
         if (!warnedUnknownSlug) {
           console.warn(`[deeplink] unknown registry slug "${parsed.slug}" — will retry as backends load`);
           warnedUnknownSlug = true;
         }
         return;
       }
-      candidates = candidates.filter(f => f.get('_backendUrl') === targetUrl);
+      candidates = candidates.filter(f => f.get('_backendUrl') === resolved.url);
     }
 
     const matches = candidates.filter(f => f.get('osm_id') === parsed.osmId);
@@ -197,17 +197,17 @@
           console.warn(`[deeplink] osm_id ${parsed.osmId} matched ${matches.length} backends — selecting the first`);
         }
         if (matches.length > 0) {
-          const { feat, url, slug } = matches[0];
+          const { feat, url, slug, name } = matches[0];
           const olFeatures = geojsonFormat.readFeatures(
             { type: 'FeatureCollection', features: [feat] },
             { dataProjection: 'EPSG:4326', featureProjection: 'EPSG:3857' },
           );
-          // Stamp both URL and (when present) slug — the slug is what the
-          // selection store uses to rewrite the hash from `#W<id>` to the
-          // canonical `#<slug>/W<id>` form on broadcast hits.
+          // Stamp URL, slug (for hash canonicalisation), and name (for the
+          // backend subtitle in PlaygroundPanel) on every hydrated feature.
           for (const f of olFeatures) {
             f.set('_backendUrl', url);
             if (slug) f.set('_backendSlug', slug);
+            if (name) f.set('_backendName', name);
           }
           playgroundSource.addFeatures(olFeatures);
           // The standard match path inside `playgroundSource.on('change')`
@@ -231,9 +231,12 @@
     }
 
     let hydrateFromUrl = null;
+    let hydrateFromName = null;
     if (parsed.slug && resolveSlugToBackendUrl) {
-      hydrateFromUrl = resolveSlugToBackendUrl(parsed.slug);
-      if (!hydrateFromUrl) return; // unknown slug — keep waiting (warned above)
+      const resolved = resolveSlugToBackendUrl(parsed.slug);
+      if (!resolved) return; // unknown slug — keep waiting (warned above)
+      hydrateFromUrl = resolved.url;
+      hydrateFromName = resolved.name;
     } else if (!parsed.slug && !resolveSlugToBackendUrl) {
       hydrateFromUrl = defaultBackendUrl;
     } else {
@@ -247,12 +250,13 @@
           { type: 'FeatureCollection', features: [feature] },
           { dataProjection: 'EPSG:4326', featureProjection: 'EPSG:3857' },
         );
-        // Stamp `_backendUrl` (and `_backendSlug` when present) so the
-        // standard match path's `f.get('_backendUrl') ?? defaultBackendUrl`
-        // routes selection to the right hub backend.
+        // Stamp `_backendUrl`, `_backendSlug` (when present), and `_backendName`
+        // so the standard match path routes to the right hub backend and
+        // PlaygroundPanel can show the backend name subtitle.
         for (const f of olFeatures) {
           f.set('_backendUrl', hydrateFromUrl);
           if (parsed.slug) f.set('_backendSlug', parsed.slug);
+          if (hydrateFromName) f.set('_backendName', hydrateFromName);
         }
         playgroundSource.addFeatures(olFeatures);
       } else {

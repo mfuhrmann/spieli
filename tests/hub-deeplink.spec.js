@@ -70,4 +70,11 @@ test.describe('Hub deep-link', () => {
     // the warning never triggers. Pinning this would make the test flaky.
     await expect(panel).toContainText(/Shared [AB] copy/);
   });
+
+  test('backend name subtitle shown in panel after hub selection', async ({ page }) => {
+    await page.goto(`/#slug-a/W111`);
+    const panel = page.locator('aside.info-panel');
+    await expect(panel).toBeVisible({ timeout: 8000 });
+    await expect(panel.locator('.backend-name')).toContainText('Instanz A');
+  });
 });
