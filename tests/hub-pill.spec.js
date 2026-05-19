@@ -175,7 +175,7 @@ test.describe('Hub instance pill + drawer', () => {
 
 test.describe('Hub bbox overlap warning', () => {
   // instanceA has a large bbox; instanceB's bbox is fully contained within it.
-  // Intersection area / smaller area = 1.0 > 0.25 → warning must appear for both.
+  // Intersection area / smaller area = 1.0 > 0.5 → warning must appear for both.
   const outer = {
     slug: 'slug-outer', url: '/api-outer', name: 'Outer Region',
     playgrounds: { type: 'FeatureCollection', features: [makePlayground({ osmId: 10, name: 'P outer', lon: 9.5, lat: 50.5 })] },

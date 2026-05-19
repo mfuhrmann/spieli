@@ -232,10 +232,11 @@ export function createRegistry() {
   });
 
   // Map from backend URL to array of overlapping backend names.
-  // Two backends overlap when their bbox intersection area exceeds 25% of the
+  // Two backends overlap when their bbox intersection area exceeds 50% of the
   // smaller backend's bbox area — large enough to catch containment (e.g. a
-  // city inside a Bundesland) while ignoring rectangular-bbox border slivers
-  // between adjacent regions. Backends without a bbox are ignored.
+  // Kreis inside a Bundesland, ratio ~1.0) while ignoring the rectangular-bbox
+  // border clips that occur between neighbouring regions (typically 10–30%).
+  // Backends without a bbox are ignored.
   const overlapWarnings = derived(store, ($backends) => {
     const withBbox = $backends.filter(b => b.bbox);
     /** @type {Map<string, string[]>} */
@@ -254,7 +255,7 @@ export function createRegistry() {
         const intersectArea = (iMaxLon - iMinLon) * (iMaxLat - iMinLat);
         const aArea = (aMaxLon - aMinLon) * (aMaxLat - aMinLat);
         const bArea = (bMaxLon - bMinLon) * (bMaxLat - bMinLat);
-        if (intersectArea / Math.min(aArea, bArea) > 0.25) {
+        if (intersectArea / Math.min(aArea, bArea) > 0.5) {
           if (!warnings.has(a.url)) warnings.set(a.url, []);
           if (!warnings.has(b.url)) warnings.set(b.url, []);
           warnings.get(a.url).push(b.name);
