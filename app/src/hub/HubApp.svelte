@@ -71,16 +71,16 @@
   // list via `get()` so AppShell can call it from its restore loop without
   // taking a store subscription of its own.
   function resolveSlugToBackendUrl(slug) {
-    return get(backends).find(b => b.slug === slug)?.url ?? null;
+    const b = get(backends).find(b => b.slug === slug);
+    return b ? { url: b.url, name: b.name ?? null } : null;
   }
 
   // Sync accessor for the slug-less broadcast deeplink path. AppShell fans
   // `fetchPlaygroundByOsmId` across these URLs in parallel; first hit wins.
-  // Also returns each backend's slug so the broadcast result can stamp
-  // `_backendSlug` on the hydrated feature — preserves the
-  // `#W<id>` → `#<slug>/W<id>` URL canonicalisation.
+  // Returns slug and name so deeplink hydration can stamp both `_backendSlug`
+  // and `_backendName` on the hydrated feature.
   function getAllBackendUrls() {
-    return get(backends).map(b => ({ url: b.url, slug: b.slug ?? null }));
+    return get(backends).map(b => ({ url: b.url, slug: b.slug ?? null, name: b.name ?? null }));
   }
 
   // Hub-only retry hook for AppShell.tryRestoreFromHash. The deeplink

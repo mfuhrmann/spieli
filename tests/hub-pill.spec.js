@@ -172,3 +172,68 @@ test.describe('Hub instance pill + drawer', () => {
     await expect(itemA.locator('.instance-badge--importing')).toHaveCount(0, { timeout: 5000 });
   });
 });
+
+test.describe('Hub bbox overlap warning', () => {
+  // instanceA has a large bbox; instanceB's bbox is fully contained within it.
+  // Intersection area / smaller area = 1.0 > 0.25 → warning must appear for both.
+  const outer = {
+    slug: 'slug-outer', url: '/api-outer', name: 'Outer Region',
+    playgrounds: { type: 'FeatureCollection', features: [makePlayground({ osmId: 10, name: 'P outer', lon: 9.5, lat: 50.5 })] },
+    meta: { name: 'Outer Region', bbox: [9.0, 50.0, 10.0, 51.0], playground_count: 1, complete: 1, partial: 0, missing: 0 },
+  };
+  const inner = {
+    slug: 'slug-inner', url: '/api-inner', name: 'Inner Region',
+    playgrounds: { type: 'FeatureCollection', features: [makePlayground({ osmId: 20, name: 'P inner', lon: 9.5, lat: 50.5 })] },
+    meta: { name: 'Inner Region', bbox: [9.2, 50.2, 9.8, 50.8], playground_count: 1, complete: 0, partial: 1, missing: 0 },
+  };
+
+  test('overlap warning shown in drawer when backend bboxes overlap significantly', async ({ page }) => {
+    await injectHubConfig(page);
+    await stubHubRegistry(page, { instanceA: outer, instanceB: inner });
+    await page.goto('/');
+
+    const pill = page.locator('.instance-slot .pill');
+    await expect(pill).toContainText(/2\s+(Regionen|regions)/, { timeout: 8000 });
+
+    await pill.click();
+    const drawer = page.locator('.drawer[role="dialog"]');
+    await expect(drawer).toBeVisible();
+
+    // Both backends share significant bbox overlap → each must carry a warning row.
+    await expect(drawer.locator('.instance-overlap')).toHaveCount(2);
+    // The outer backend's warning names the inner backend, and vice-versa.
+    // Use .instance-name to avoid matching the other backend's warning text.
+    const outerItem = drawer.locator('.instance-item').filter({
+      has: page.locator('.instance-name', { hasText: 'Outer Region' }),
+    });
+    await expect(outerItem.locator('.instance-overlap')).toContainText('Inner Region');
+    const innerItem = drawer.locator('.instance-item').filter({
+      has: page.locator('.instance-name', { hasText: 'Inner Region' }),
+    });
+    await expect(innerItem.locator('.instance-overlap')).toContainText('Outer Region');
+  });
+
+  test('no overlap warning when backend bboxes are non-overlapping', async ({ page }) => {
+    const west = {
+      slug: 'slug-west', url: '/api-west', name: 'West Region',
+      playgrounds: { type: 'FeatureCollection', features: [makePlayground({ osmId: 30, name: 'P west', lon: 8.5, lat: 50.5 })] },
+      meta: { name: 'West Region', bbox: [8.0, 50.0, 9.0, 51.0], playground_count: 1, complete: 1, partial: 0, missing: 0 },
+    };
+    const east = {
+      slug: 'slug-east', url: '/api-east', name: 'East Region',
+      playgrounds: { type: 'FeatureCollection', features: [makePlayground({ osmId: 40, name: 'P east', lon: 10.5, lat: 50.5 })] },
+      meta: { name: 'East Region', bbox: [10.0, 50.0, 11.0, 51.0], playground_count: 1, complete: 0, partial: 1, missing: 0 },
+    };
+
+    await injectHubConfig(page);
+    await stubHubRegistry(page, { instanceA: west, instanceB: east });
+    await page.goto('/');
+
+    const pill = page.locator('.instance-slot .pill');
+    await expect(pill).toContainText(/2\s+(Regionen|regions)/, { timeout: 8000 });
+
+    await pill.click();
+    await expect(page.locator('.drawer[role="dialog"]')).toBeVisible();
+    await expect(page.locator('.instance-overlap')).toHaveCount(0);
+  });
+});
