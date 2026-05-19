@@ -56,6 +56,8 @@ services:
       PG_MAINTENANCE_WORK_MEM:             ${PG_MAINTENANCE_WORK_MEM:-512MB}
       PG_WORK_MEM:                         ${PG_WORK_MEM:-128MB}
       SPIELI_VERSION:                      ${SPIELI_VERSION:-unknown}
+      REIMPORT_INTERVAL_MIN_DAYS:          ${REIMPORT_INTERVAL_MIN_DAYS:-}
+      REIMPORT_INTERVAL_MAX_DAYS:          ${REIMPORT_INTERVAL_MAX_DAYS:-}
       IMPRESSUM_NAME:                      ${IMPRESSUM_NAME:-}
       IMPRESSUM_ORG:                       ${IMPRESSUM_ORG:-}
       IMPRESSUM_ADDRESS:                   ${IMPRESSUM_ADDRESS:-}
