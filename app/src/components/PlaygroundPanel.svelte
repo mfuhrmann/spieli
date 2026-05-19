@@ -19,7 +19,7 @@
   import { overlayFeaturesStore } from '../stores/overlayLayer.js';
   import { groupEquipment } from '../lib/equipmentGrouping.js';
   import { playgroundCompleteness } from '../lib/completeness.js';
-  import { poiRadiusM } from '../lib/config.js';
+  import { poiRadiusM, appMode } from '../lib/config.js';
   import { getPlaygroundTitle, getPlaygroundLocation } from '../lib/playgroundHelpers.js';
   import { cn } from '../lib/utils.js';
   import EquipmentList from './EquipmentList.svelte';
@@ -35,9 +35,10 @@
   export let embedded = false;
 
   // ── Derived state from selection store ────────────────────────────────────
-  $: feature    = $selection.feature;
-  $: backendUrl = $selection.backendUrl;
-  $: attr       = feature ? feature.getProperties() : null;
+  $: feature     = $selection.feature;
+  $: backendUrl  = $selection.backendUrl;
+  $: attr        = feature ? feature.getProperties() : null;
+  $: backendName = appMode === 'hub' ? (feature?.get('_backendName') ?? null) : null;
 
   // ── Async data ────────────────────────────────────────────────────────────
   let equipmentFeatures = [];
@@ -417,6 +418,9 @@
           {#if getPlaygroundLocation(attr, $_)}
             <p class="text-sm text-muted-foreground mt-0.5">{getPlaygroundLocation(attr, $_)}</p>
           {/if}
+          {#if backendName}
+            <p class="backend-name">{backendName}</p>
+          {/if}
           {#if completeness || dataAgeFormatted}
             <div class="flex items-center gap-2 flex-wrap mt-2">
               {#if completeness}
@@ -457,6 +461,9 @@
           <h2 class="panel-title">{getPlaygroundTitle(attr, $_)}</h2>
           {#if getPlaygroundLocation(attr, $_)}
             <p class="text-sm text-muted-foreground mt-0.5">{getPlaygroundLocation(attr, $_)}</p>
+          {/if}
+          {#if backendName}
+            <p class="backend-name">{backendName}</p>
           {/if}
           {#if completeness || dataAgeFormatted}
             <div class="flex items-center gap-2 flex-wrap mt-2">
@@ -970,6 +977,15 @@
     color: #9ca3af;
     text-transform: uppercase;
     letter-spacing: 0.06em;
+  }
+
+  .backend-name {
+    margin: 0.15rem 0 0;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: #9ca3af;
   }
 
   /* ── Data-age chip + fixed popover ──────────────────────────────────── */

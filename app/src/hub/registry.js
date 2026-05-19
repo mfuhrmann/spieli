@@ -109,7 +109,7 @@ export function createRegistry() {
           // pre-#301 backends that don't yet ship api.import_status. Used by
           // the polygon-tier dedup to pick the fresher copy when two backends
           // return the same osm_id.
-          patch.lastImportAt = meta.last_import_at ?? null;
+          patch.lastImportAt = backend.lastImportAt ?? meta.last_import_at ?? null;
           if (!backend.name && patch.region) patch.name = patch.region;
         }
 
@@ -140,7 +140,7 @@ export function createRegistry() {
           bbox:             null,
           playgroundCount:  0,
           completeness:     null,  // populated after get_meta lands; see status-shape JSDoc
-          lastImportAt:     null,  // from get_meta.last_import_at; used by polygon-tier dedup (#202)
+          lastImportAt:     entry.lastImportAt ?? null,  // registry.json override takes priority; else from get_meta.last_import_at
           // Populated from /federation-status.json (hub-side cron poll, this change)
           healthUp:         null,  // null = unknown, true/false = known
           dataAgeSec:       null,  // seconds since the importer last ran (operator-facing)
