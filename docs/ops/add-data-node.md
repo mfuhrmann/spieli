@@ -59,9 +59,11 @@ Generate a strong password: `openssl rand -base64 24`
     can surface legal links. Omitting these leaves the backend with `has_legal: false` in
     `get_meta()`.
 
-    To apply legal content without a full re-import (e.g. after updating the `.env`):
+    Legal content is written by `run_import`, not `API_ONLY`. After updating the `.env`,
+    the content is applied on the next scheduled reimport (within 24 h in daemon mode).
+    To apply immediately, trigger a full re-import:
     ```bash
-    docker compose --profile data-node-ui run --rm -e API_ONLY=true importer
+    docker compose --profile data-node-ui run --rm importer
     ```
 
 !!! warning "Special characters in POSTGRES_PASSWORD"
