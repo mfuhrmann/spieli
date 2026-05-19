@@ -1157,33 +1157,28 @@ LANGUAGE sql STABLE SECURITY DEFINER
 SET search_path = public, api
 AS $$
   WITH region AS (
-    -- See get_playgrounds for why ST_Union is needed. Name is identical
-    -- across fragments of the same relation, so max() picks any non-null.
-    SELECT max(name) AS name, ST_Union(way) AS way
+    -- ST_Extent gives the bounding box without materialising the full union
+    -- geometry. ST_Union is only needed when the way is used for spatial
+    -- filtering (ST_Within), which counts no longer requires: every row in
+    -- playground_stats was already filtered to this region when the MV was
+    -- built, so a redundant ST_Within here wastes 10+ seconds on large
+    -- regions (e.g. Bayern with 22 k playgrounds). Name is identical across
+    -- fragments of the same relation; max() picks any non-null.
+    SELECT max(name) AS name,
+           ST_Transform(ST_SetSRID(ST_Extent(way)::geometry, 3857), 4326) AS bbox_geom
     FROM planet_osm_polygon
     WHERE osm_id = -relation_id
   ),
-  bbox AS (
-    SELECT ST_Transform(way, 4326) AS geom FROM region
-  ),
   counts AS (
-    -- Iterate over `playground_stats` (post-#299 dedup, exactly one row per
-    -- osm_id) and use EXISTS to constrain to the requested region. The
-    -- earlier formulation joined `planet_osm_polygon` directly, which
-    -- inflated the count by the cross-product when a relation had multiple
-    -- polygon rows (multipolygon playgrounds) — `playground_count` was
-    -- 13971 vs 13847 distinct on the BaWü production deployment. EXISTS
-    -- counts each playground_stats row at most once.
+    -- playground_stats is scoped to this instance's configured region at
+    -- materialised-view build time (WHERE ST_Within in its definition).
+    -- No spatial filter needed here: every row is already within the region.
     SELECT
       COUNT(*)::int                                                        AS playground_count,
       SUM(CASE WHEN ps.completeness = 'complete' THEN 1 ELSE 0 END)::int   AS complete,
       SUM(CASE WHEN ps.completeness = 'partial'  THEN 1 ELSE 0 END)::int   AS partial,
       SUM(CASE WHEN ps.completeness = 'missing'  THEN 1 ELSE 0 END)::int   AS missing
-    -- Filter by centroid instead of joining planet_osm_polygon: avoids count
-    -- inflation from multipolygon fragments and covers node playgrounds whose
-    -- geometry lives in planet_osm_point, not planet_osm_polygon.
-    FROM public.playground_stats ps, region r
-    WHERE ST_Within(ps.centroid_3857, r.way)
+    FROM public.playground_stats ps
   ),
   import_status AS (
     -- NULL when no import has run yet (table empty); callers must handle NULL.
@@ -1197,10 +1192,10 @@ AS $$
     'partial',               (SELECT partial          FROM counts),
     'missing',               (SELECT missing          FROM counts),
     'bbox',                  ARRAY[
-                               ST_XMin((SELECT geom FROM bbox)),
-                               ST_YMin((SELECT geom FROM bbox)),
-                               ST_XMax((SELECT geom FROM bbox)),
-                               ST_YMax((SELECT geom FROM bbox))
+                               ST_XMin((SELECT bbox_geom FROM region)),
+                               ST_YMin((SELECT bbox_geom FROM region)),
+                               ST_XMax((SELECT bbox_geom FROM region)),
+                               ST_YMax((SELECT bbox_geom FROM region))
                              ],
     'last_import_at',        (SELECT last_import_at FROM import_status),
     'data_age_seconds',      (SELECT EXTRACT(EPOCH FROM (now() - last_import_at))::int FROM import_status),
