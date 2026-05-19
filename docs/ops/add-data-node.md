@@ -43,9 +43,26 @@ PBF_URL=https://download.geofabrik.de/europe/germany/berlin-latest.osm.pbf
 POSTGRES_PASSWORD=<strong-random-password>
 REIMPORT_INTERVAL_MIN_DAYS=1
 REIMPORT_INTERVAL_MAX_DAYS=1
+
+# Legal / Impressum (required under German law for public instances)
+IMPRESSUM_NAME=Max Mustermann
+IMPRESSUM_ADDRESS=Musterstraße 1, 12345 Berlin
+IMPRESSUM_EMAIL=kontakt@example.com
 ```
 
 Generate a strong password: `openssl rand -base64 24`
+
+!!! warning "Legal requirement (Germany)"
+    Public instances in Germany require an Impressum. Set at minimum `IMPRESSUM_NAME`,
+    `IMPRESSUM_ADDRESS`, and `IMPRESSUM_EMAIL`. The importer writes the generated HTML to
+    `api.legal_content` and `get_meta()` exposes `impressum_url` / `privacy_url` so the Hub
+    can surface legal links. Omitting these leaves the backend with `has_legal: false` in
+    `get_meta()`.
+
+    To apply legal content without a full re-import (e.g. after updating the `.env`):
+    ```bash
+    docker compose --profile data-node-ui run --rm -e API_ONLY=true importer
+    ```
 
 !!! warning "Special characters in POSTGRES_PASSWORD"
     `compose.yml` uses the password in a PostgreSQL URI
@@ -95,26 +112,24 @@ docker compose --profile data-node-ui up -d
     containers on the Docker host. Adding a second Watchtower via `--profile auto-update`
     causes both instances to fight over the same containers, killing each other on startup.
 
-Wait for the DB to become healthy before running the importer:
-
-```bash
-docker ps | grep spieli-berlin-db
-# wait for (healthy) to appear
-```
-
 ## Step 5 — Import OSM data
 
-```bash
-docker compose --profile data-node-ui run --rm importer
-```
-
-Berlin (~93 MB PBF) takes a few minutes. Watch progress:
+The importer started automatically in Step 4 (daemon mode). Watch progress:
 
 ```bash
 docker logs -f spieli-berlin-importer-1
 ```
 
-The import is complete when you see `[importer] Import completed successfully.`
+Berlin (~93 MB PBF) takes a few minutes. The import is complete when you see `[importer] Import completed successfully.` The importer then sleeps until the next scheduled run.
+
+### Verify playground count
+
+```bash
+curl -s https://berlin.example.com/api/rpc/get_meta | \
+  python3 -c "import sys,json; d=json.load(sys.stdin); print(d['playground_count'], d['relation_id'])"
+```
+
+`playground_count` must be greater than zero. If it returns `0` despite a successful import, see [Wrong relation ID](#wrong-relation-id-playground_count-0) below.
 
 ### Forcing a re-import (corrupt cache)
 
@@ -130,9 +145,34 @@ docker run --rm -v spieli-berlin_pbf_cache:/cache alpine \
 docker exec -u postgres spieli-berlin-db-1 psql -U osm osm \
   -c "DELETE FROM api.import_status WHERE id = 1;"
 
-docker restart spieli-berlin-importer-1
+docker compose --profile data-node-ui up -d --force-recreate importer
 docker logs -f spieli-berlin-importer-1
 ```
+
+### Wrong relation ID (`playground_count: 0`)
+
+If `get_meta` returns `playground_count: 0` after a successful import (osm2pgsql ran, no errors), the most likely cause is a wrong `OSM_RELATION_ID`. The `playground_stats` view filters playgrounds by the state boundary polygon — if the relation ID doesn't match any polygon in the database, no playgrounds are counted.
+
+**Diagnose:** check which admin boundary was actually imported:
+
+```bash
+docker exec spieli-berlin-db-1 psql -U osm osm \
+  -c "SELECT osm_id, name FROM planet_osm_polygon WHERE boundary='administrative' AND admin_level='4';"
+```
+
+If the returned `osm_id` is `-62423` but your `.env` has `OSM_RELATION_ID=62422`, fix the `.env` and re-apply the API schema without a full re-import:
+
+```bash
+sed -i 's/OSM_RELATION_ID=62422/OSM_RELATION_ID=62423/' .env
+docker compose --profile data-node-ui run --rm -e API_ONLY=true importer
+```
+
+The `API_ONLY` run rebuilds `playground_stats` with the corrected relation ID in under a minute.
+
+!!! note "OSM relation IDs for German Bundesländer"
+    Several commonly-cited relation IDs are off. Confirmed correct values:
+    Mecklenburg-Vorpommern → **28322**, Sachsen-Anhalt → **62607**, Schleswig-Holstein → **51529**.
+    After any new import, run the boundary check above to confirm.
 
 ## Step 6 — Expose via reverse proxy
 
