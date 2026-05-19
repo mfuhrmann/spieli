@@ -467,6 +467,12 @@ elif [ -n "$REIMPORT_INTERVAL_MIN_DAYS" ] && [ -n "$REIMPORT_INTERVAL_MAX_DAYS" 
     # reliable fallback. Ignored if the DB isn't up yet (|| true).
     _clear_importing
 
+    # Always apply api.sql on startup so schema changes from a new image take
+    # effect immediately — even when the PBF reimport is deferred by the grace
+    # check below. Without this, a Watchtower image update would leave the app
+    # running against the old schema for up to REIMPORT_INTERVAL days.
+    run_api_apply
+
     # Startup grace check: if a recent import is on record in the DB, sleep
     # until the next scheduled time rather than importing immediately. This
     # prevents an unplanned full re-import every time the container is
