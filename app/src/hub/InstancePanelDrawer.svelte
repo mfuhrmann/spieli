@@ -187,6 +187,22 @@
               <i class="bi bi-geo-alt-fill me-1"></i>
               {$_('hub.playgroundCount', { values: { count: b.playgroundCount } })}
             </div>
+            {#if b.completeness}
+              {@const { complete, partial, missing } = b.completeness}
+              {@const total = complete + partial + missing}
+              <div class="instance-completeness">
+                <span class="cdot cdot--complete"></span>{complete} {$_('completeness.complete')}
+                <span class="cdot cdot--partial"></span>{partial} {$_('completeness.partial')}
+                <span class="cdot cdot--missing"></span>{missing} {$_('completeness.missing')}
+              </div>
+              {#if total > 0}
+                <div class="completeness-bar" title="{Math.round(complete / total * 100)} %">
+                  <div class="completeness-bar__seg completeness-bar__seg--complete" style="width: {complete / total * 100}%"></div>
+                  <div class="completeness-bar__seg completeness-bar__seg--partial"  style="width: {partial  / total * 100}%"></div>
+                  <div class="completeness-bar__seg completeness-bar__seg--missing"  style="width: {missing  / total * 100}%"></div>
+                </div>
+              {/if}
+            {/if}
             {#if b.osmDataAgeSec != null}
               <!-- Prefer the OSM source-data age (user-facing: "the data
                    you are looking at is N old") over the import-run age
@@ -358,6 +374,44 @@
     font-size: 0.72rem;
     margin-top: 0.1rem;
   }
+
+  .instance-completeness {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.72rem;
+    color: #6b7280;
+    margin-top: 0.15rem;
+  }
+
+  .cdot {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .cdot--complete { background: #16a34a; }
+  .cdot--partial  { background: #d97706; }
+  .cdot--missing  { background: #dc2626; }
+
+  .completeness-bar {
+    display: flex;
+    height: 4px;
+    border-radius: 2px;
+    overflow: hidden;
+    background: #e5e7eb;
+    margin-top: 0.2rem;
+  }
+
+  .completeness-bar__seg {
+    height: 100%;
+    min-width: 0;
+    transition: width 0.3s ease;
+  }
+  .completeness-bar__seg--complete { background: #16a34a; }
+  .completeness-bar__seg--partial  { background: #d97706; }
+  .completeness-bar__seg--missing  { background: #dc2626; }
 
   .instance-overlap {
     font-size: 0.72rem;

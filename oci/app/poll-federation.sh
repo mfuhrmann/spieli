@@ -96,6 +96,10 @@ while IFS="	" read -r SLUG URL; do
     PRIVACY_URL_VAL="null"
     HAS_LEGAL_VAL="false"
     VERSION_VAL="null"
+    PLAYGROUND_COUNT_VAL="null"
+    COMPLETE_VAL="null"
+    PARTIAL_VAL="null"
+    MISSING_VAL="null"
     if [ "$UP" = "1" ] && [ -f "$META_TMP" ]; then
         RAW=$(cat "$META_TMP")
         # api.get_meta returns a JSON object directly (PostgREST scalar-RPC),
@@ -126,6 +130,16 @@ while IFS="	" read -r SLUG URL; do
         if [ -n "$OSM_DATA_AGE_RAW" ]; then
             OSM_DATA_AGE_SECONDS="$OSM_DATA_AGE_RAW"
         fi
+        # Completeness counts — absent on pre-P1 backends; emit null in that case
+        # so consumers can distinguish "unknown" from "zero".
+        PLAYGROUND_COUNT_RAW=$(printf '%s' "$RAW" | jq -r '.playground_count // empty' 2>/dev/null)
+        COMPLETE_RAW=$(printf '%s' "$RAW" | jq -r '.complete // empty' 2>/dev/null)
+        PARTIAL_RAW=$(printf '%s' "$RAW" | jq -r '.partial // empty' 2>/dev/null)
+        MISSING_RAW=$(printf '%s' "$RAW" | jq -r '.missing // empty' 2>/dev/null)
+        [ -n "$PLAYGROUND_COUNT_RAW" ] && PLAYGROUND_COUNT_VAL="$PLAYGROUND_COUNT_RAW"
+        [ -n "$COMPLETE_RAW" ]         && COMPLETE_VAL="$COMPLETE_RAW"
+        [ -n "$PARTIAL_RAW" ]          && PARTIAL_VAL="$PARTIAL_RAW"
+        [ -n "$MISSING_RAW" ]          && MISSING_VAL="$MISSING_RAW"
     fi
 
     # Preserve last_success from previous run if backend is currently down.
@@ -157,7 +171,11 @@ while IFS="	" read -r SLUG URL; do
     BACKENDS_JSON="${BACKENDS_JSON}\"impressum_url\":${IMPRESSUM_URL_VAL},"
     BACKENDS_JSON="${BACKENDS_JSON}\"privacy_url\":${PRIVACY_URL_VAL},"
     BACKENDS_JSON="${BACKENDS_JSON}\"has_legal\":${HAS_LEGAL_VAL},"
-    BACKENDS_JSON="${BACKENDS_JSON}\"version\":${VERSION_VAL}"
+    BACKENDS_JSON="${BACKENDS_JSON}\"version\":${VERSION_VAL},"
+    BACKENDS_JSON="${BACKENDS_JSON}\"playground_count\":${PLAYGROUND_COUNT_VAL},"
+    BACKENDS_JSON="${BACKENDS_JSON}\"complete\":${COMPLETE_VAL},"
+    BACKENDS_JSON="${BACKENDS_JSON}\"partial\":${PARTIAL_VAL},"
+    BACKENDS_JSON="${BACKENDS_JSON}\"missing\":${MISSING_VAL}"
     BACKENDS_JSON="${BACKENDS_JSON}}"
 
     # Append Prometheus metrics. Prometheus disallows `"` and `\` inside
@@ -174,6 +192,18 @@ while IFS="	" read -r SLUG URL; do
             fi
             if [ "$OSM_DATA_AGE_SECONDS" != "null" ] && [ -n "$OSM_DATA_AGE_SECONDS" ]; then
                 METRICS_LINES="${METRICS_LINES}spielplatz_backend_osm_data_age_seconds{${LABEL}} ${OSM_DATA_AGE_SECONDS}\n"
+            fi
+            if [ "$PLAYGROUND_COUNT_VAL" != "null" ] && [ -n "$PLAYGROUND_COUNT_VAL" ]; then
+                METRICS_LINES="${METRICS_LINES}spielplatz_backend_playgrounds_total{${LABEL}} ${PLAYGROUND_COUNT_VAL}\n"
+            fi
+            if [ "$COMPLETE_VAL" != "null" ] && [ -n "$COMPLETE_VAL" ]; then
+                METRICS_LINES="${METRICS_LINES}spielplatz_backend_playgrounds_complete{${LABEL}} ${COMPLETE_VAL}\n"
+            fi
+            if [ "$PARTIAL_VAL" != "null" ] && [ -n "$PARTIAL_VAL" ]; then
+                METRICS_LINES="${METRICS_LINES}spielplatz_backend_playgrounds_partial{${LABEL}} ${PARTIAL_VAL}\n"
+            fi
+            if [ "$MISSING_VAL" != "null" ] && [ -n "$MISSING_VAL" ]; then
+                METRICS_LINES="${METRICS_LINES}spielplatz_backend_playgrounds_missing{${LABEL}} ${MISSING_VAL}\n"
             fi
             ;;
     esac
@@ -193,6 +223,14 @@ printf '{"generated_at":"%s","poll_interval_seconds":%d,"backends":{%s}}\n' \
     printf '# TYPE spielplatz_backend_data_age_seconds gauge\n'
     printf '# HELP spielplatz_backend_osm_data_age_seconds Seconds since the OSM source data the backend serves was snapshotted (PBF replication timestamp).\n'
     printf '# TYPE spielplatz_backend_osm_data_age_seconds gauge\n'
+    printf '# HELP spielplatz_backend_playgrounds_total Total number of playgrounds in the region.\n'
+    printf '# TYPE spielplatz_backend_playgrounds_total gauge\n'
+    printf '# HELP spielplatz_backend_playgrounds_complete Playgrounds with complete equipment data.\n'
+    printf '# TYPE spielplatz_backend_playgrounds_complete gauge\n'
+    printf '# HELP spielplatz_backend_playgrounds_partial Playgrounds with partial equipment data.\n'
+    printf '# TYPE spielplatz_backend_playgrounds_partial gauge\n'
+    printf '# HELP spielplatz_backend_playgrounds_missing Playgrounds with no equipment data.\n'
+    printf '# TYPE spielplatz_backend_playgrounds_missing gauge\n'
     printf '# HELP spielplatz_poll_generated_timestamp Unix timestamp when this scrape was generated.\n'
     printf '# TYPE spielplatz_poll_generated_timestamp gauge\n'
     printf '%b' "$METRICS_LINES"
