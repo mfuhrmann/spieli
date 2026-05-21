@@ -169,6 +169,17 @@ If `playground_count` is `0` and `bbox` is `[null,null,null,null]`, the database
    ```
 2. **PBF doesn't cover the relation** — See [Map loads but shows no playgrounds](#map-loads-but-shows-no-playgrounds), cause 3.
 3. **Outdated image** — See [Hub backend returns "function not found" errors](#hub-backend-returns-function-not-found-errors).
+4. **Daemon importer sleeping after a failed/corrupt previous run** — If the importer ran but was OOM-killed during preprocessing, osm2pgsql may have ingested a partial file and recorded a successful `last_import_at`. The daemon will not retry until the next scheduled interval. Force an immediate one-shot reimport:
+   ```bash
+   # Clear any stale cached PBF files left by the killed run
+   docker compose run --rm importer sh -c "rm -f /data/*.pbf"
+   # Run a one-shot reimport regardless of last_import_at
+   docker compose run --rm \
+     -e REIMPORT_INTERVAL_MIN_DAYS= \
+     -e REIMPORT_INTERVAL_MAX_DAYS= \
+     importer
+   ```
+   Unsetting both interval variables forces one-shot mode, bypassing the grace check.
 
 ---
 
