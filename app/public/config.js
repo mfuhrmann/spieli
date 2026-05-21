@@ -32,5 +32,5 @@ window.APP_CONFIG = {
   // --- Federated clustering (hub mode, P2) ---
   // Zoom ≤ macroMaxZoom shows the country-level macro view (one ring per
   // backend) and the orchestrator skips per-tier fetches entirely.
-  macroMaxZoom: 5,
+  macroMaxZoom: 7,
 };
