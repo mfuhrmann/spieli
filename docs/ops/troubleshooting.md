@@ -309,3 +309,17 @@ docker compose -f compose.yml --profile <mode> run --rm importer
 **Cause:** `IMPRESSUM_ADDRESS` is also required. The entrypoint skips generation when either of the two required vars is empty.
 
 **Fix:** Set both `IMPRESSUM_NAME` and `IMPRESSUM_ADDRESS` in `.env`, then `make docker-build`.
+
+---
+
+**Symptom:** PostgREST logs `relation "public.playground_stats" does not exist` after an upgrade.
+
+**Cause:** The `API_ONLY=1` importer run dropped the `playground_stats` materialised view but failed before recreating it, leaving the database in a broken state.
+
+**Fix:** Run a full re-import to rebuild everything from scratch:
+
+```bash
+docker compose -f compose.yml --profile <mode> run --rm importer
+```
+
+This re-applies `api.sql` (recreating `playground_stats`) and re-imports OSM data. It takes longer than `API_ONLY=1` but is always safe.
