@@ -707,6 +707,7 @@ AS $$
         'surface',            p.surface,
         'area',               p.area,
         'tree_count',         COALESCE(s.tree_count, 0),
+        'device_count',       COALESCE(s.device_count, 0),
         'bench_count',        COALESCE(s.bench_count, 0),
         'shelter_count',      COALESCE(s.shelter_count, 0),
         'picnic_count',       COALESCE(s.picnic_count, 0),
