@@ -1676,20 +1676,16 @@
 <a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>up<span class="w"> </span>-d
 </code></pre></div>
 <h2 id="upgrading-with-watchtower-auto-update-profile">Upgrading with Watchtower (auto-update profile)<a class="headerlink" href="#upgrading-with-watchtower-auto-update-profile" title="Permanent link">&para;</a></h2>
-<p>When the <code>auto-update</code> profile is active, Watchtower pulls new images and restarts containers automatically — no manual <code>docker compose pull</code> needed. However, <strong>the version reported by <code>get_meta</code> (visible in the Hub regions panel) lags behind</strong> until the next scheduled daemon import cycle.</p>
-<p>Why: the importer's startup grace check fires after a Watchtower-triggered restart. If the last import was recent, the importer sleeps for the remaining interval without re-applying <code>api.sql</code>. The version in <code>get_meta</code> only updates when <code>api.sql</code> is applied.</p>
-<p>To update the version immediately after Watchtower has restarted the importer:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>-e<span class="w"> </span><span class="nv">API_ONLY</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>importer
-</code></pre></div>
-<p>This re-applies <code>api.sql</code> (including the new version) without a full re-import and completes in seconds.</p>
+<p>When the <code>auto-update</code> profile is active, Watchtower pulls new images and restarts containers automatically — no manual <code>docker compose pull</code> needed.</p>
+<p>The importer applies <code>api.sql</code> on every daemon-mode startup, so schema changes from a new image take effect within seconds of a Watchtower-triggered restart — even when the full PBF re-import is deferred by the grace-period check. No manual intervention is needed for schema-only upgrades.</p>
 <h2 id="hub-upgrades">Hub upgrades<a class="headerlink" href="#hub-upgrades" title="Permanent link">&para;</a></h2>
 <p>Upgrade each data-node first, verify it works, then upgrade the Hub UI. The Hub is backwards-compatible with older data-nodes (it falls back to the legacy <code>get_playgrounds</code> RPC if the tiered RPCs return 404), but an older Hub is not guaranteed to understand new data-node response fields.</p>
 <h2 id="downgrading">Downgrading<a class="headerlink" href="#downgrading" title="Permanent link">&para;</a></h2>
 <p>Downgrading is supported only within the same minor version. Images are tagged <code>:X.Y.Z</code> and <code>:X.Y</code>, so:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># Pin to a specific version by editing compose.yml:</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="c1"># Change ghcr.io/mfuhrmann/spieli:latest to ghcr.io/mfuhrmann/spieli:0.4.0</span>
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>docker<span class="w"> </span>compose<span class="w"> </span>pull
-<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>up<span class="w"> </span>-d
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># Pin to a specific version by editing compose.yml:</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="c1"># Change ghcr.io/mfuhrmann/spieli:latest to ghcr.io/mfuhrmann/spieli:0.4.0</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>docker<span class="w"> </span>compose<span class="w"> </span>pull
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>up<span class="w"> </span>-d
 </code></pre></div>
 <p>The database schema is <strong>not</strong> automatically rolled back on a downgrade. If the new version added new columns or functions, the older app may ignore them safely, but this is not tested. When in doubt, re-import from scratch.</p>
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>

@@ -1823,7 +1823,8 @@
 </code></pre></div>
 <ul>
 <li><strong>Instance pill</strong> (bottom-left): collapsed view shows a globe icon plus aggregated <code>&lt;N&gt; Regionen · &lt;M&gt; Spielplätze</code>. While the registry is loading the pill shows a spinner; once the registry is known but backends are still fetching their data, the pill shows <code>&lt;completed&gt;/&lt;total&gt; Regionen</code> with a spinner until every backend has settled (success or error) — the fraction only appears on the first load, not on subsequent 5-min refresh polls. If the registry can't be fetched the pill turns red and reads "Registry nicht erreichbar".</li>
-<li><strong>Instance drawer</strong>: clicking the pill slides up a drawer listing each backend with its name, version badge (from <code>get_meta</code>), and individual playground count. ESC, outside-click, or re-clicking the pill collapses it.</li>
+<li><strong>Instance drawer</strong>: clicking the pill slides up a drawer listing each backend with its name, version badge (from <code>get_meta</code>), and individual playground count. If two backends' region polygons overlap (determined from the <code>region_geom</code> field in <code>get_meta</code>), the affected backends show a warning badge in the drawer. ESC, outside-click, or re-clicking the pill collapses it.</li>
+<li><strong>Backend name in PlaygroundPanel</strong>: when a playground is selected in hub mode, a small uppercase label below the playground title shows which backend it comes from.</li>
 <li><strong>Deep-link scheme</strong>: see the <a href="../registry-json/#deep-link-behaviour">deep-link behaviour table</a> in the registry reference.</li>
 </ul>
 <p>The scale-line sits just below the pill in the same bottom-left corner. All other controls (search, filters, locate, zoom, contribute) are shared with standalone mode and behave identically.</p>
@@ -1841,13 +1842,13 @@
 </thead>
 <tbody>
 <tr>
-<td><code>0–5</code> (<code>≤ macroMaxZoom</code>)</td>
+<td><code>0–7</code> (<code>≤ macroMaxZoom</code>)</td>
 <td><strong>macro</strong></td>
 <td>nothing — uses cached <code>get_meta</code></td>
 <td>client renders one ring per backend at the bbox centroid</td>
 </tr>
 <tr>
-<td><code>6–13</code> (<code>≤ clusterMaxZoom</code>)</td>
+<td><code>8–13</code> (<code>≤ clusterMaxZoom</code>)</td>
 <td><strong>cluster</strong></td>
 <td><code>get_playground_clusters(z, bbox)</code> returns pre-aggregated buckets</td>
 <td>server bucketing + client re-clustering across border seams</td>
@@ -1860,7 +1861,7 @@
 </tr>
 </tbody>
 </table>
-<p><code>macroMaxZoom</code> and <code>clusterMaxZoom</code> are independent config knobs (defaults 5 and 13). The macro tier is hub-only — standalone reads <code>macroMaxZoom</code> but never enters the macro tier.</p>
+<p><code>macroMaxZoom</code> and <code>clusterMaxZoom</code> are independent config knobs (defaults 7 and 13). The macro tier is hub-only — standalone reads <code>macroMaxZoom</code> but never enters the macro tier.</p>
 <h3 id="bbox-routing-only-intersecting-backends-are-queried">Bbox routing — only intersecting backends are queried<a class="headerlink" href="#bbox-routing-only-intersecting-backends-are-queried" title="Permanent link">&para;</a></h3>
 <p>Every backend's <code>get_meta</code> response carries a <code>bbox</code>. On every (debounced) moveend, the Hub intersects the current viewport with each backend's bbox and only fans out to backends whose bbox intersects. A viewport over Berlin doesn't issue a request to a Köln-only backend; a viewport spanning the German-Polish border issues parallel requests to both backends.</p>
 <p>The bboxes are refreshed on the existing 5-minute registry poll, so a backend that extends its OSM relation mid-session sees the change at the next poll without a hub restart.</p>

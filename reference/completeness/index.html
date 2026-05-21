@@ -1488,16 +1488,16 @@
 <td>At least one <code>panoramax</code> or <code>panoramax:*</code> tag is present</td>
 </tr>
 <tr>
-<td><strong>hasName</strong></td>
-<td>A <code>name</code> tag is present</td>
+<td><strong>hasEquipment</strong></td>
+<td>At least one mapped piece of equipment exists inside the playground (devices, benches, pitches, fitness stations, etc.)</td>
 </tr>
 <tr>
 <td><strong>hasInfo</strong></td>
-<td>Any one of <code>operator</code>, <code>opening_hours</code>, <code>surface</code>, or <code>access</code> (with a value other than <code>yes</code>) is present</td>
+<td>Any one of <code>opening_hours</code>, <code>surface</code>, or <code>access</code> (with a value other than <code>yes</code>) is present</td>
 </tr>
 </tbody>
 </table>
-<p>Each criterion is satisfied by the presence of <strong>any</strong> qualifying tag — <code>hasInfo</code> does not require all four tags.</p>
+<p>Each criterion is satisfied by the presence of <strong>any</strong> qualifying tag — <code>hasInfo</code> does not require all three tags.</p>
 <h2 id="states">States<a class="headerlink" href="#states" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -1516,7 +1516,7 @@
 <tr>
 <td><code>partial</code></td>
 <td>At least one criterion satisfied</td>
-<td>Yellow</td>
+<td>Orange</td>
 </tr>
 <tr>
 <td><code>missing</code></td>
@@ -1533,7 +1533,7 @@
 </ul>
 <p>Run <code>make db-apply</code> after changing the SQL definition to rebuild the materialized view.</p>
 <h2 id="locale-keys">Locale keys<a class="headerlink" href="#locale-keys" title="Permanent link">&para;</a></h2>
-<p>All UI strings live under the <code>completeness.*</code> namespace in <code>locales/de.json</code> and <code>locales/en.json</code>.</p>
+<p>All UI strings live under the <code>completeness.*</code> namespace in <code>locales/de.json</code> and <code>locales/en.json</code> (repo root).</p>
 <table>
 <thead>
 <tr>
@@ -1544,29 +1544,24 @@
 </thead>
 <tbody>
 <tr>
-<td><code>completeness.label</code></td>
+<td><code>completeness.legendTitle</code></td>
 <td>Datenqualität</td>
-<td>Data quality</td>
+<td>Data Quality</td>
 </tr>
 <tr>
 <td><code>completeness.complete</code></td>
-<td>Fotos, Name &amp; Details vorhanden</td>
-<td>Photos, name &amp; details available</td>
+<td>hoch</td>
+<td>high</td>
 </tr>
 <tr>
 <td><code>completeness.partial</code></td>
-<td>Teilweise erfasst</td>
-<td>Partially mapped</td>
+<td>mittel</td>
+<td>medium</td>
 </tr>
 <tr>
 <td><code>completeness.missing</code></td>
-<td>Noch keine Daten</td>
-<td>No data yet</td>
-</tr>
-<tr>
-<td><code>completeness.badgeComplete</code></td>
-<td>Vollständig</td>
-<td>Complete</td>
+<td>niedrig</td>
+<td>low</td>
 </tr>
 <tr>
 <td><code>completeness.dotComplete</code></td>
@@ -1585,8 +1580,8 @@
 </tr>
 <tr>
 <td><code>completeness.restrictedHint</code></td>
-<td>schraffiert = nicht öffentlich</td>
-<td>hatched = not public</td>
+<td>nicht öffentlich</td>
+<td>not public</td>
 </tr>
 </tbody>
 </table>

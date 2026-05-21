@@ -1823,7 +1823,7 @@
 <tr>
 <td><a href="#get_treesbbox"><code>get_trees</code></a></td>
 <td>PlaygroundPanel tree layer</td>
-<td>natural=tree nodes</td>
+<td>natural=tree nodes and natural=tree_row lines</td>
 </tr>
 <tr>
 <td><a href="#get_meta"><code>get_meta</code></a></td>
@@ -2197,7 +2197,7 @@
 </code></pre></div>
 <hr />
 <h2 id="get_treesbbox"><code>get_trees(bbox)</code><a class="headerlink" href="#get_treesbbox" title="Permanent link">&para;</a></h2>
-<p>Returns <code>natural=tree</code> nodes within a WGS84 bounding box. Used by <code>PlaygroundPanel</code> to populate the tree overlay layer when a playground is selected.</p>
+<p>Returns <code>natural=tree</code> nodes and <code>natural=tree_row</code> line features within a WGS84 bounding box. Used by <code>PlaygroundPanel</code> to populate the tree overlay layer when a playground is selected. Tree rows render as dark green lines on the map; the panel merges both signals into a single shade hint ("N trees / M m").</p>
 <p><strong>Parameters</strong></p>
 <table>
 <thead>
@@ -2215,7 +2215,7 @@
 </tr>
 </tbody>
 </table>
-<p><strong>Response</strong> — GeoJSON <code>FeatureCollection</code>. Each feature is a <code>Point</code> with <code>properties.osm_id</code>, <code>properties.name</code>, plus all OSM tags from the hstore column.</p>
+<p><strong>Response</strong> — GeoJSON <code>FeatureCollection</code>. Point features (<code>natural=tree</code>) carry <code>properties.osm_id</code>, <code>properties.name</code>, plus OSM tags. LineString features (<code>natural=tree_row</code>) additionally carry <code>properties.length_m</code> (row length in metres, from <code>ST_Length</code>).</p>
 <p><strong>Example</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>curl<span class="w"> </span><span class="s1">&#39;https://example.com/api/rpc/get_trees?min_lon=9.70&amp;min_lat=50.53&amp;max_lon=9.72&amp;max_lat=50.55&#39;</span>
 </code></pre></div>

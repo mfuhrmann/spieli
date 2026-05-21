@@ -1948,7 +1948,7 @@
 </ul>
 <p>Clicking a playground writes <code>#W&lt;osm_id&gt;</code> (or <code>#&lt;slug&gt;/W&lt;osm_id&gt;</code> in hub mode) to the URL hash and opens <code>PlaygroundPanel</code>, which loads equipment, trees, POIs, and reviews.</p>
 <h3 id="hub-mode-app_modehub">Hub mode (<code>APP_MODE=hub</code>)<a class="headerlink" href="#hub-mode-app_modehub" title="Permanent link">&para;</a></h3>
-<p>Aggregates multiple regional data-nodes. The hub orchestrator adds a macro view (zoom ≤ 5) rendering one ring per backend from <code>get_meta</code>. At higher zooms it fans out to all backends whose bbox intersects the viewport, merges results via Supercluster, and renders the union.</p>
+<p>Aggregates multiple regional data-nodes. The hub orchestrator adds a macro view (zoom ≤ <code>macroMaxZoom</code>, default 7) rendering one ring per backend from <code>get_meta</code>. At higher zooms it fans out to all backends whose bbox intersects the viewport, merges results via Supercluster, and renders the union.</p>
 <hr />
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
