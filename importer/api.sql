@@ -164,6 +164,7 @@ CREATE MATERIALIZED VIEW public.playground_stats AS
     SELECT
       pl.osm_id,
       pl.osm_type,
+      COUNT(CASE WHEN e.tags ? 'playground'      THEN 1 END)::int AS device_count,
       COUNT(CASE WHEN e.amenity = 'bench'        THEN 1 END)::int AS bench_count,
       COUNT(CASE WHEN e.amenity = 'shelter'      THEN 1 END)::int AS shelter_count,
       COUNT(CASE WHEN e.leisure = 'picnic_table' THEN 1 END)::int AS picnic_count,
@@ -198,20 +199,37 @@ CREATE MATERIALIZED VIEW public.playground_stats AS
       (pl.tags ? 'panoramax'
         OR EXISTS (SELECT 1 FROM skeys(pl.tags) k WHERE k LIKE 'panoramax:%')
       ) AS has_photo,
-      -- NULLIF('', '') IS NULL — matches JS truthy semantics on empty-string tags
-      -- `name` is intentionally excluded — see completeness.js for rationale.
+      -- Any mapped equipment inside the playground area (devices, benches,
+      -- pitches, etc.). device_count covers playground=* nodes/polygons;
+      -- the other columns cover amenity/leisure-tagged items.
       (
-        NULLIF(pl.operator, '') IS NOT NULL
-        OR NULLIF(pl.surface, '') IS NOT NULL
+        COALESCE(es.device_count,        0) > 0
+        OR COALESCE(es.bench_count,      0) > 0
+        OR COALESCE(es.shelter_count,    0) > 0
+        OR COALESCE(es.picnic_count,     0) > 0
+        OR COALESCE(es.table_tennis_count, 0) > 0
+        OR COALESCE(es.has_soccer,     false)
+        OR COALESCE(es.has_basketball, false)
+        OR COALESCE(es.is_water,       false)
+        OR COALESCE(es.for_baby,       false)
+        OR COALESCE(es.for_toddler,    false)
+        OR COALESCE(es.for_wheelchair, false)
+      ) AS has_equipment,
+      -- NULLIF('', '') IS NULL — matches JS truthy semantics on empty-string tags.
+      -- operator excluded: it's administrative data, not useful to parents.
+      (
+        NULLIF(pl.surface, '') IS NOT NULL
         OR (NULLIF(pl.access, '') IS NOT NULL AND pl.access <> 'yes')
         OR NULLIF(pl.tags->'opening_hours', '') IS NOT NULL
       ) AS has_info
     FROM all_playgrounds pl
+    LEFT JOIN equip_stats es ON es.osm_id = pl.osm_id AND es.osm_type = pl.osm_type
   )
   SELECT
     tc.osm_id,
     pl.osm_type,
     tc.tree_count,
+    COALESCE(es.device_count,       0) AS device_count,
     COALESCE(es.bench_count,        0) AS bench_count,
     COALESCE(es.shelter_count,      0) AS shelter_count,
     COALESCE(es.picnic_count,       0) AS picnic_count,
@@ -226,8 +244,8 @@ CREATE MATERIALIZED VIEW public.playground_stats AS
     ST_Centroid(pl.way)                           AS centroid_3857,
     (pl.access IN ('private', 'customers'))       AS access_restricted,
     CASE
-      WHEN ca.has_photo AND ca.has_info THEN 'complete'
-      WHEN ca.has_photo OR  ca.has_info THEN 'partial'
+      WHEN ca.has_photo AND ca.has_equipment AND ca.has_info THEN 'complete'
+      WHEN ca.has_photo OR  ca.has_equipment OR  ca.has_info THEN 'partial'
       ELSE 'missing'
     END                                           AS completeness
   FROM all_playgrounds pl
@@ -308,6 +326,7 @@ AS $$
               'surface',            pl.surface,
               'area',               pl.area,
               'tree_count',         COALESCE(s.tree_count, 0),
+              'device_count',       COALESCE(s.device_count, 0),
               'bench_count',        COALESCE(s.bench_count, 0),
               'shelter_count',      COALESCE(s.shelter_count, 0),
               'picnic_count',       COALESCE(s.picnic_count, 0),
@@ -595,6 +614,7 @@ AS $$
               'surface',            pl.surface,
               'area',               pl.area,
               'tree_count',         COALESCE(s.tree_count, 0),
+              'device_count',       COALESCE(s.device_count, 0),
               'bench_count',        COALESCE(s.bench_count, 0),
               'shelter_count',      COALESCE(s.shelter_count, 0),
               'picnic_count',       COALESCE(s.picnic_count, 0),
