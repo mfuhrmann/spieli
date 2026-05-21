@@ -196,8 +196,8 @@ test.describe('Hub federation health drawer', () => {
     const drawer = await openDrawer(page);
 
     // Wait for the drawer to receive completeness data from the get_meta stub
-    await expect(drawer.locator('.instance-completeness')).toBeVisible({ timeout: 5000 });
-    await expect(drawer.locator('.completeness-bar')).toBeVisible({ timeout: 5000 });
+    await expect(drawer.locator('.instance-completeness').first()).toBeVisible({ timeout: 5000 });
+    await expect(drawer.locator('.completeness-bar').first()).toBeVisible({ timeout: 5000 });
 
     // Verify each count is rendered (instanceWithCompleteness has 4/1/1)
     const completeness = drawer.locator('.instance-completeness').first();
