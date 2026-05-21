@@ -198,8 +198,8 @@ CREATE MATERIALIZED VIEW public.playground_stats AS
       (pl.tags ? 'panoramax'
         OR EXISTS (SELECT 1 FROM skeys(pl.tags) k WHERE k LIKE 'panoramax:%')
       ) AS has_photo,
-      (NULLIF(pl.name, '') IS NOT NULL) AS has_name,
       -- NULLIF('', '') IS NULL — matches JS truthy semantics on empty-string tags
+      -- `name` is intentionally excluded — see completeness.js for rationale.
       (
         NULLIF(pl.operator, '') IS NOT NULL
         OR NULLIF(pl.surface, '') IS NOT NULL
@@ -226,8 +226,8 @@ CREATE MATERIALIZED VIEW public.playground_stats AS
     ST_Centroid(pl.way)                           AS centroid_3857,
     (pl.access IN ('private', 'customers'))       AS access_restricted,
     CASE
-      WHEN ca.has_photo AND ca.has_name AND ca.has_info THEN 'complete'
-      WHEN ca.has_photo OR  ca.has_name OR  ca.has_info THEN 'partial'
+      WHEN ca.has_photo AND ca.has_info THEN 'complete'
+      WHEN ca.has_photo OR  ca.has_info THEN 'partial'
       ELSE 'missing'
     END                                           AS completeness
   FROM all_playgrounds pl
