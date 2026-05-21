@@ -1658,10 +1658,14 @@
 <a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">      </span><span class="nt">&quot;latency_seconds&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.043</span><span class="p">,</span>
 <a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">      </span><span class="nt">&quot;last_success&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-04-26T12:00:00Z&quot;</span><span class="p">,</span>
 <a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">      </span><span class="nt">&quot;last_import_at&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-04-25T03:12:00Z&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">      </span><span class="nt">&quot;data_age_seconds&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">118080</span>
-<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">    </span><span class="p">}</span>
-<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="w">  </span><span class="p">}</span>
-<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="p">}</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">      </span><span class="nt">&quot;data_age_seconds&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">118080</span><span class="p">,</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">      </span><span class="nt">&quot;playground_count&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">42</span><span class="p">,</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="w">      </span><span class="nt">&quot;complete&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">28</span><span class="p">,</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="w">      </span><span class="nt">&quot;partial&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="w">      </span><span class="nt">&quot;missing&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">4</span>
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="p">}</span>
 </code></pre></div>
 <p><strong>Fields:</strong></p>
 <table>
@@ -1700,6 +1704,22 @@
 <td><code>backends.&lt;slug&gt;.data_age_seconds</code></td>
 <td>Seconds since <code>last_import_at</code>. <code>null</code> if <code>last_import_at</code> is <code>null</code>.</td>
 </tr>
+<tr>
+<td><code>backends.&lt;slug&gt;.playground_count</code></td>
+<td>Total playgrounds in the region. <code>null</code> on pre-P1 backends or when backend is down.</td>
+</tr>
+<tr>
+<td><code>backends.&lt;slug&gt;.complete</code></td>
+<td>Playgrounds with complete equipment data. <code>null</code> on pre-P1 backends.</td>
+</tr>
+<tr>
+<td><code>backends.&lt;slug&gt;.partial</code></td>
+<td>Playgrounds with partial equipment data. <code>null</code> on pre-P1 backends.</td>
+</tr>
+<tr>
+<td><code>backends.&lt;slug&gt;.missing</code></td>
+<td>Playgrounds with no equipment data. <code>null</code> on pre-P1 backends.</td>
+</tr>
 </tbody>
 </table>
 <p>The hub UI reads this endpoint every 60 seconds and surfaces freshness labels in the instance drawer. It also shows a "stale observation" banner when <code>generated_at</code> is older than <code>2 × poll_interval_seconds</code> (i.e. the hub cron has stopped writing).</p>
@@ -1717,11 +1737,27 @@
 <a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a># TYPE spielplatz_backend_data_age_seconds gauge
 <a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>spielplatz_backend_data_age_seconds{backend=&quot;fulda&quot;,url=&quot;https://fulda.example.com/api&quot;} 118080
 <a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>
-<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a># HELP spielplatz_poll_generated_timestamp Unix timestamp when this scrape was generated.
-<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a># TYPE spielplatz_poll_generated_timestamp gauge
-<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>spielplatz_poll_generated_timestamp 1745668800
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a># HELP spielplatz_backend_playgrounds_total Total number of playgrounds in the region.
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a># TYPE spielplatz_backend_playgrounds_total gauge
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>spielplatz_backend_playgrounds_total{backend=&quot;fulda&quot;,url=&quot;https://fulda.example.com/api&quot;} 42
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>
+<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a># HELP spielplatz_backend_playgrounds_complete Playgrounds with complete equipment data.
+<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a># TYPE spielplatz_backend_playgrounds_complete gauge
+<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>spielplatz_backend_playgrounds_complete{backend=&quot;fulda&quot;,url=&quot;https://fulda.example.com/api&quot;} 28
+<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>
+<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a># HELP spielplatz_backend_playgrounds_partial Playgrounds with partial equipment data.
+<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a># TYPE spielplatz_backend_playgrounds_partial gauge
+<a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a>spielplatz_backend_playgrounds_partial{backend=&quot;fulda&quot;,url=&quot;https://fulda.example.com/api&quot;} 10
+<a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a>
+<a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a># HELP spielplatz_backend_playgrounds_missing Playgrounds with no equipment data.
+<a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a># TYPE spielplatz_backend_playgrounds_missing gauge
+<a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a>spielplatz_backend_playgrounds_missing{backend=&quot;fulda&quot;,url=&quot;https://fulda.example.com/api&quot;} 4
+<a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a>
+<a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a># HELP spielplatz_poll_generated_timestamp Unix timestamp when this scrape was generated.
+<a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a># TYPE spielplatz_poll_generated_timestamp gauge
+<a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a>spielplatz_poll_generated_timestamp 1745668800
 </code></pre></div>
-<p><code>spielplatz_backend_data_age_seconds</code> is omitted for a backend when <code>last_import_at</code> is <code>null</code> (backend down or no import yet).</p>
+<p><code>spielplatz_backend_data_age_seconds</code> and the four completeness gauges are omitted for a backend when the field is <code>null</code> (backend down, pre-P1 backend, or no import yet).</p>
 <h2 id="recipes">Recipes<a class="headerlink" href="#recipes" title="Permanent link">&para;</a></h2>
 <h3 id="recipe-1-external-uptime-monitor">Recipe 1 — External uptime monitor<a class="headerlink" href="#recipe-1-external-uptime-monitor" title="Permanent link">&para;</a></h3>
 <p>Point any HTTP uptime tool (UptimeRobot, Better Stack, etc.) at:</p>
@@ -1751,6 +1787,15 @@
 <a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>
 <a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="c1"># Alert if the hub poll has stopped writing (cron died)</span>
 <a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="kr">time</span><span class="o">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nv">spielplatz_poll_generated_timestamp</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">300</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="c1"># Completeness ratio per backend (fraction of playgrounds with full data)</span>
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="nv">spielplatz_backend_playgrounds_complete</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nv">spielplatz_backend_playgrounds_total</span>
+<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>
+<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="c1"># Total playgrounds with missing data across all backends</span>
+<a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="k">sum</span><span class="o">(</span><span class="nv">spielplatz_backend_playgrounds_missing</span><span class="o">)</span>
+<a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a>
+<a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="c1"># Alert if completeness ratio drops below 50 % for any backend</span>
+<a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="nv">spielplatz_backend_playgrounds_complete</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nv">spielplatz_backend_playgrounds_total</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mf">0.5</span>
 </code></pre></div>
 <h3 id="recipe-3-frontend-error-monitoring-sentry">Recipe 3 — Frontend error monitoring (Sentry)<a class="headerlink" href="#recipe-3-frontend-error-monitoring-sentry" title="Permanent link">&para;</a></h3>
 <p>The hub frontend does not ship in-repo error reporting. For production deployments, sign up for <a href="https://sentry.io/pricing/">Sentry's free tier</a> and add the Sentry browser SDK to your <code>nginx</code> serving config or <code>config.js</code> generation step. The DSN stays out of this repository.</p>
