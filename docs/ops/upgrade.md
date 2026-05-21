@@ -36,6 +36,9 @@ Replace `<mode>` with your `DEPLOY_MODE` (`data-node`, `ui`, or `data-node-ui`).
 !!! note
     The `API_ONLY=1` step is required on every upgrade, not just when the release notes mention SQL changes. The version number visible in the Hub regions panel comes from the database (written by the importer), not the app image — skipping this step leaves the reported version stale.
 
+!!! warning "If API_ONLY fails mid-run"
+    `API_ONLY=1` drops and recreates the `playground_stats` materialised view. If it crashes partway through, the view is gone and PostgREST will log errors like `relation "public.playground_stats" does not exist`. Recovery: run a **full re-import** (see below) — this recreates everything from scratch.
+
 ## When to run a full re-import
 
 A full re-import (without `API_ONLY`) is needed when:
