@@ -174,20 +174,22 @@ test.describe('Hub instance pill + drawer', () => {
 });
 
 test.describe('Hub bbox overlap warning', () => {
-  // instanceA has a large bbox; instanceB's bbox is fully contained within it.
-  // Intersection area / smaller area = 1.0 > 0.5 → warning must appear for both.
+  // instanceA has a large polygon; instanceB's polygon is fully contained within it.
+  // booleanContains(outer, inner) → true → warning must appear for both.
+  const outerPoly = { type: 'Polygon', coordinates: [[[9.0,50.0],[10.0,50.0],[10.0,51.0],[9.0,51.0],[9.0,50.0]]] };
+  const innerPoly = { type: 'Polygon', coordinates: [[[9.2,50.2],[9.8,50.2],[9.8,50.8],[9.2,50.8],[9.2,50.2]]] };
   const outer = {
     slug: 'slug-outer', url: '/api-outer', name: 'Outer Region',
     playgrounds: { type: 'FeatureCollection', features: [makePlayground({ osmId: 10, name: 'P outer', lon: 9.5, lat: 50.5 })] },
-    meta: { name: 'Outer Region', bbox: [9.0, 50.0, 10.0, 51.0], playground_count: 1, complete: 1, partial: 0, missing: 0 },
+    meta: { name: 'Outer Region', bbox: [9.0, 50.0, 10.0, 51.0], playground_count: 1, complete: 1, partial: 0, missing: 0, region_geom: outerPoly },
   };
   const inner = {
     slug: 'slug-inner', url: '/api-inner', name: 'Inner Region',
     playgrounds: { type: 'FeatureCollection', features: [makePlayground({ osmId: 20, name: 'P inner', lon: 9.5, lat: 50.5 })] },
-    meta: { name: 'Inner Region', bbox: [9.2, 50.2, 9.8, 50.8], playground_count: 1, complete: 0, partial: 1, missing: 0 },
+    meta: { name: 'Inner Region', bbox: [9.2, 50.2, 9.8, 50.8], playground_count: 1, complete: 0, partial: 1, missing: 0, region_geom: innerPoly },
   };
 
-  test('overlap warning shown in drawer when backend bboxes overlap significantly', async ({ page }) => {
+  test('overlap warning shown in drawer when one backend polygon contains the other', async ({ page }) => {
     await injectHubConfig(page);
     await stubHubRegistry(page, { instanceA: outer, instanceB: inner });
     await page.goto('/');
@@ -199,7 +201,7 @@ test.describe('Hub bbox overlap warning', () => {
     const drawer = page.locator('.drawer[role="dialog"]');
     await expect(drawer).toBeVisible();
 
-    // Both backends share significant bbox overlap → each must carry a warning row.
+    // Inner polygon is fully contained within outer → each must carry a warning row.
     await expect(drawer.locator('.instance-overlap')).toHaveCount(2);
     // The outer backend's warning names the inner backend, and vice-versa.
     // Use .instance-name to avoid matching the other backend's warning text.
