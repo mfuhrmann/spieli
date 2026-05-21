@@ -1191,7 +1191,17 @@ AS $$
     -- regions (e.g. Bayern with 22 k playgrounds). Name is identical across
     -- fragments of the same relation; max() picks any non-null.
     SELECT max(name) AS name,
-           ST_Transform(ST_SetSRID(ST_Extent(way)::geometry, 3857), 4326) AS bbox_geom
+           ST_Transform(ST_SetSRID(ST_Extent(way)::geometry, 3857), 4326) AS bbox_geom,
+           -- Simplified boundary polygon for hub overlap detection. ST_Union
+           -- merges multipolygon fragments (exclaves, islands). Simplification
+           -- at 0.05° (~5 km) keeps the payload small while preserving enough
+           -- shape for accurate polygon intersection checks in the browser.
+           ST_AsGeoJSON(
+               ST_SimplifyPreserveTopology(
+                   ST_Transform(ST_Union(way), 4326),
+                   0.05
+               )
+           )::jsonb AS region_geom
     FROM planet_osm_polygon
     WHERE osm_id = -relation_id
   ),
@@ -1252,7 +1262,8 @@ AS $$
                                WHEN to_regclass('api.legal_content') IS NOT NULL
                                THEN EXISTS(SELECT 1 FROM api.legal_content)
                                ELSE false
-                             END
+                             END,
+    'region_geom',           (SELECT region_geom FROM region)
   );
 $$;
 
