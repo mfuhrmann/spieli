@@ -12,6 +12,7 @@ import { registryUrl, hubPollInterval } from '../lib/config.js';
 import { fetchMeta } from '../lib/api.js';
 import { isValidSlug } from '../lib/deeplink.js';
 import { startFederationHealthPoll, stopFederationHealthPoll } from './federationHealth.js';
+import booleanContains from '@turf/boolean-contains';
 
 // Per-backend timeout for multi-backend nearest fan-out. A slow or unreachable
 // backend contributes zero results but never stalls the user interaction.
@@ -110,6 +111,7 @@ export function createRegistry() {
           // the polygon-tier dedup to pick the fresher copy when two backends
           // return the same osm_id.
           patch.lastImportAt = backend._lastImportAtOverride ?? meta.last_import_at ?? null;
+          patch.regionGeom   = meta.region_geom ?? null;
           if (!backend.name && patch.region) patch.name = patch.region;
         }
 
@@ -141,6 +143,7 @@ export function createRegistry() {
           playgroundCount:  0,
           completeness:     null,  // populated after get_meta lands; see status-shape JSDoc
           lastImportAt:     null,  // from get_meta.last_import_at; used by polygon-tier dedup (#202)
+          regionGeom:       null,  // GeoJSON Feature geometry from get_meta.region_geom; used for polygon overlap detection (#532)
           _lastImportAtOverride: entry.lastImportAt ?? null,  // registry.json static override; takes priority over meta on every poll
           // Populated from /federation-status.json (hub-side cron poll, this change)
           healthUp:         null,  // null = unknown, true/false = known
@@ -232,34 +235,28 @@ export function createRegistry() {
   });
 
   // Map from backend URL to array of overlapping backend names.
-  // Two backends overlap when their bbox intersection area exceeds 50% of the
-  // smaller backend's bbox area — large enough to catch containment (e.g. a
-  // Kreis inside a Bundesland, ratio ~1.0) while ignoring the rectangular-bbox
-  // border clips that occur between neighbouring regions (typically 10–30%).
-  // Backends without a bbox are ignored.
+  // Uses actual region boundary polygons (region_geom from get_meta).
+  // Fires when one region contains the other (e.g. a city backend inside a
+  // state backend). Adjacent regions that merely share a border are not
+  // flagged. Falls back to no warning for backends without region_geom
+  // (pre-#532 images).
   const overlapWarnings = derived(store, ($backends) => {
-    const withBbox = $backends.filter(b => b.bbox);
+    const withGeom = $backends.filter(b => b.regionGeom);
     /** @type {Map<string, string[]>} */
     const warnings = new Map();
-    for (let i = 0; i < withBbox.length; i++) {
-      for (let j = i + 1; j < withBbox.length; j++) {
-        const a = withBbox[i];
-        const b = withBbox[j];
-        const [aMinLon, aMinLat, aMaxLon, aMaxLat] = a.bbox;
-        const [bMinLon, bMinLat, bMaxLon, bMaxLat] = b.bbox;
-        const iMinLon = Math.max(aMinLon, bMinLon);
-        const iMinLat = Math.max(aMinLat, bMinLat);
-        const iMaxLon = Math.min(aMaxLon, bMaxLon);
-        const iMaxLat = Math.min(aMaxLat, bMaxLat);
-        if (iMaxLon <= iMinLon || iMaxLat <= iMinLat) continue;
-        const intersectArea = (iMaxLon - iMinLon) * (iMaxLat - iMinLat);
-        const aArea = (aMaxLon - aMinLon) * (aMaxLat - aMinLat);
-        const bArea = (bMaxLon - bMinLon) * (bMaxLat - bMinLat);
-        if (intersectArea / Math.min(aArea, bArea) > 0.5) {
-          if (!warnings.has(a.url)) warnings.set(a.url, []);
-          if (!warnings.has(b.url)) warnings.set(b.url, []);
-          warnings.get(a.url).push(b.name);
-          warnings.get(b.url).push(a.name);
+    for (let i = 0; i < withGeom.length; i++) {
+      for (let j = i + 1; j < withGeom.length; j++) {
+        const a = withGeom[i];
+        const b = withGeom[j];
+        try {
+          if (booleanContains(a.regionGeom, b.regionGeom) || booleanContains(b.regionGeom, a.regionGeom)) {
+            if (!warnings.has(a.url)) warnings.set(a.url, []);
+            if (!warnings.has(b.url)) warnings.set(b.url, []);
+            warnings.get(a.url).push(b.name);
+            warnings.get(b.url).push(a.name);
+          }
+        } catch {
+          // Malformed geometry — skip this pair rather than crashing the store.
         }
       }
     }

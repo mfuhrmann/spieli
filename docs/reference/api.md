@@ -175,14 +175,15 @@ Existing federation-discovery RPC, extended with completeness counts.
 
 **Invariant**: `playground_count = complete + partial + missing` (`get_meta` does *not* split out access-restricted; they're rolled into the completeness counts here, unlike `get_playground_clusters`). Hub uses the three counts to render a country-level macro view — see `add-federated-playground-clustering`.
 
-Two additional fields are included to expose import freshness:
+Additional fields:
 
 | Field | Type | Notes |
 |---|---|---|
 | `last_import_at` | `timestamptz` \| `null` | Timestamp of the last successful `import.sh` run. `null` before any import has run (first deploy). |
 | `data_age_seconds` | `int` \| `null` | `EXTRACT(EPOCH FROM (now() - last_import_at))::int`. `null` when `last_import_at` is `null`. |
+| `region_geom` | GeoJSON geometry \| `null` | Simplified boundary polygon of the backend's region (`ST_SimplifyPreserveTopology` at 0.05°, WGS84). Used by the hub for accurate polygon-based overlap detection. `null` when the region relation is absent from `planet_osm_polygon`. Backends running a pre-0.4.13 image omit this field — the hub falls back to no overlap warning for those backends. |
 
-The hub reads these fields via `/federation-status.json` (written by the hub container's 60-second cron poll) — see [Monitoring](../ops/monitoring.md) for the full exposition format.
+The hub reads `last_import_at` and `data_age_seconds` via `/federation-status.json` (written by the hub container's 60-second cron poll) — see [Monitoring](../ops/monitoring.md) for the full exposition format. `region_geom` is read directly by the browser-side registry store and used by `@turf/boolean-intersects` to determine whether two backends genuinely share geographic area.
 
 ## Deprecated: `get_playgrounds(relation_id)`
 
