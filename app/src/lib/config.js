@@ -59,4 +59,4 @@ export const clusterMaxZoom = c.clusterMaxZoom ?? 13;
 //   zoom ≤ macroMaxZoom              → macro view (no fan-out)
 //   macroMaxZoom < zoom ≤ clusterMaxZoom → cluster tier fan-out
 //   zoom >  clusterMaxZoom            → polygon tier fan-out
-export const macroMaxZoom = c.macroMaxZoom ?? 5;
+export const macroMaxZoom = c.macroMaxZoom ?? 7;

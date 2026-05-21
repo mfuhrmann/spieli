@@ -105,7 +105,7 @@ The Hub is designed to stay responsive across two and thirty backends without an
 | Zoom | Tier | What ships per backend | Where the work happens |
 |---|---|---|---|
 | `0–7` (`≤ macroMaxZoom`) | **macro** | nothing — uses cached `get_meta` | client renders one ring per backend at the bbox centroid |
-| `6–13` (`≤ clusterMaxZoom`) | **cluster** | `get_playground_clusters(z, bbox)` returns pre-aggregated buckets | server bucketing + client re-clustering across border seams |
+| `8–13` (`≤ clusterMaxZoom`) | **cluster** | `get_playground_clusters(z, bbox)` returns pre-aggregated buckets | server bucketing + client re-clustering across border seams |
 | `14+` | **polygon** | `get_playgrounds_bbox(bbox)` returns full GeoJSON polygons | client just concatenates per-backend polygons (each tagged with `_backendUrl`) |
 
 `macroMaxZoom` and `clusterMaxZoom` are independent config knobs (defaults 7 and 13). The macro tier is hub-only — standalone reads `macroMaxZoom` but never enters the macro tier.

@@ -298,7 +298,7 @@ curl 'https://example.com/api/rpc/get_pois?lat=50.54&lon=9.71&radius_m=300'
 
 ## `get_trees(bbox)`
 
-Returns `natural=tree` nodes and `natural=tree_row` line features within a WGS84 bounding box. Used by `PlaygroundPanel` to populate the tree overlay layer when a playground is selected. Tree rows render as dark green lines on the map; the panel merges both signals into a single shade hint ("N Bäume / M m").
+Returns `natural=tree` nodes and `natural=tree_row` line features within a WGS84 bounding box. Used by `PlaygroundPanel` to populate the tree overlay layer when a playground is selected. Tree rows render as dark green lines on the map; the panel merges both signals into a single shade hint ("N trees / M m").
 
 **Parameters**
 
