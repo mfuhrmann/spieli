@@ -13,7 +13,7 @@ PostgREST exposes the `api` schema as JSON-RPC endpoints under `/api/rpc/`. All 
 | [`get_equipment`](#get_equipmentbbox) | PlaygroundPanel | devices, pitches, benches within a bbox |
 | [`get_standalone_equipment`](#get_standalone_equipmentbbox) | Standalone pitch layer | pitches/benches outside playgrounds |
 | [`get_pois`](#get_poislat-lon-radius_m) | PlaygroundPanel | nearby toilets, bus stops, cafés |
-| [`get_trees`](#get_treesbbox) | PlaygroundPanel tree layer | natural=tree nodes |
+| [`get_trees`](#get_treesbbox) | PlaygroundPanel tree layer | natural=tree nodes and natural=tree_row lines |
 | [`get_meta`](#get_meta) | Hub federation discovery | instance metadata + import freshness |
 | [`get_nearest_playgrounds`](#get_nearest_playgroundslat-lon) | NearbyPlaygrounds component | ordered by distance |
 | [`get_playgrounds` (deprecated)](#deprecated-get_playgroundsrelation_id) | Legacy fallback | region-scoped, will be removed |
@@ -298,7 +298,7 @@ curl 'https://example.com/api/rpc/get_pois?lat=50.54&lon=9.71&radius_m=300'
 
 ## `get_trees(bbox)`
 
-Returns `natural=tree` nodes within a WGS84 bounding box. Used by `PlaygroundPanel` to populate the tree overlay layer when a playground is selected.
+Returns `natural=tree` nodes and `natural=tree_row` line features within a WGS84 bounding box. Used by `PlaygroundPanel` to populate the tree overlay layer when a playground is selected. Tree rows render as dark green lines on the map; the panel merges both signals into a single shade hint ("N trees / M m").
 
 **Parameters**
 
@@ -306,7 +306,7 @@ Returns `natural=tree` nodes within a WGS84 bounding box. Used by `PlaygroundPan
 |---|---|---|
 | `min_lon`, `min_lat`, `max_lon`, `max_lat` | `float8` | WGS84 bbox |
 
-**Response** — GeoJSON `FeatureCollection`. Each feature is a `Point` with `properties.osm_id`, `properties.name`, plus all OSM tags from the hstore column.
+**Response** — GeoJSON `FeatureCollection`. Point features (`natural=tree`) carry `properties.osm_id`, `properties.name`, plus OSM tags. LineString features (`natural=tree_row`) additionally carry `properties.length_m` (row length in metres, from `ST_Length`).
 
 **Example**
 

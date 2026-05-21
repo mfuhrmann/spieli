@@ -64,17 +64,9 @@ docker compose --profile <mode> up -d
 
 ## Upgrading with Watchtower (auto-update profile)
 
-When the `auto-update` profile is active, Watchtower pulls new images and restarts containers automatically — no manual `docker compose pull` needed. However, **the version reported by `get_meta` (visible in the Hub regions panel) lags behind** until the next scheduled daemon import cycle.
+When the `auto-update` profile is active, Watchtower pulls new images and restarts containers automatically — no manual `docker compose pull` needed.
 
-Why: the importer's startup grace check fires after a Watchtower-triggered restart. If the last import was recent, the importer sleeps for the remaining interval without re-applying `api.sql`. The version in `get_meta` only updates when `api.sql` is applied.
-
-To update the version immediately after Watchtower has restarted the importer:
-
-```bash
-docker compose run --rm -e API_ONLY=1 importer
-```
-
-This re-applies `api.sql` (including the new version) without a full re-import and completes in seconds.
+The importer applies `api.sql` on every daemon-mode startup, so schema changes from a new image take effect within seconds of a Watchtower-triggered restart — even when the full PBF re-import is deferred by the grace-period check. No manual intervention is needed for schema-only upgrades.
 
 ## Hub upgrades
 

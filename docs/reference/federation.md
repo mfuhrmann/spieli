@@ -90,7 +90,8 @@ The Hub renders the same layout as a standalone regional map, with two additions
 ```
 
 - **Instance pill** (bottom-left): collapsed view shows a globe icon plus aggregated `<N> Regionen · <M> Spielplätze`. While the registry is loading the pill shows a spinner; once the registry is known but backends are still fetching their data, the pill shows `<completed>/<total> Regionen` with a spinner until every backend has settled (success or error) — the fraction only appears on the first load, not on subsequent 5-min refresh polls. If the registry can't be fetched the pill turns red and reads "Registry nicht erreichbar".
-- **Instance drawer**: clicking the pill slides up a drawer listing each backend with its name, version badge (from `get_meta`), and individual playground count. ESC, outside-click, or re-clicking the pill collapses it.
+- **Instance drawer**: clicking the pill slides up a drawer listing each backend with its name, version badge (from `get_meta`), and individual playground count. If two backends' region polygons overlap (determined from the `region_geom` field in `get_meta`), the affected backends show a warning badge in the drawer. ESC, outside-click, or re-clicking the pill collapses it.
+- **Backend name in PlaygroundPanel**: when a playground is selected in hub mode, a small uppercase label below the playground title shows which backend it comes from.
 - **Deep-link scheme**: see the [deep-link behaviour table](registry-json.md#deep-link-behaviour) in the registry reference.
 
 The scale-line sits just below the pill in the same bottom-left corner. All other controls (search, filters, locate, zoom, contribute) are shared with standalone mode and behave identically.
@@ -103,11 +104,11 @@ The Hub is designed to stay responsive across two and thirty backends without an
 
 | Zoom | Tier | What ships per backend | Where the work happens |
 |---|---|---|---|
-| `0–5` (`≤ macroMaxZoom`) | **macro** | nothing — uses cached `get_meta` | client renders one ring per backend at the bbox centroid |
-| `6–13` (`≤ clusterMaxZoom`) | **cluster** | `get_playground_clusters(z, bbox)` returns pre-aggregated buckets | server bucketing + client re-clustering across border seams |
+| `0–7` (`≤ macroMaxZoom`) | **macro** | nothing — uses cached `get_meta` | client renders one ring per backend at the bbox centroid |
+| `8–13` (`≤ clusterMaxZoom`) | **cluster** | `get_playground_clusters(z, bbox)` returns pre-aggregated buckets | server bucketing + client re-clustering across border seams |
 | `14+` | **polygon** | `get_playgrounds_bbox(bbox)` returns full GeoJSON polygons | client just concatenates per-backend polygons (each tagged with `_backendUrl`) |
 
-`macroMaxZoom` and `clusterMaxZoom` are independent config knobs (defaults 5 and 13). The macro tier is hub-only — standalone reads `macroMaxZoom` but never enters the macro tier.
+`macroMaxZoom` and `clusterMaxZoom` are independent config knobs (defaults 7 and 13). The macro tier is hub-only — standalone reads `macroMaxZoom` but never enters the macro tier.
 
 ### Bbox routing — only intersecting backends are queried
 
