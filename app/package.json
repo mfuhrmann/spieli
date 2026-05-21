@@ -1,7 +1,7 @@
 {
   "name": "spieli-app",
   "private": true,
-  "version": "0.4.13",
+  "version": "0.4.14-rc",
   "type": "module",
   "scripts": {
     "dev": "vite",
