@@ -1,0 +1,17 @@
+changelog:
+  categories:
+    - title: "⚠️ Database changes — API_ONLY run required after upgrading"
+      labels:
+        - requires-schema-update
+    - title: "🔴 Full re-import required after upgrading"
+      labels:
+        - requires-reimport
+    - title: "New features"
+      labels:
+        - enhancement
+    - title: "Bug fixes"
+      labels:
+        - bug
+    - title: "Other changes"
+      labels:
+        - "*"
