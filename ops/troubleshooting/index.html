@@ -1882,48 +1882,58 @@
 </code></pre></div></li>
 <li><strong>PBF doesn't cover the relation</strong> — See <a href="#map-loads-but-shows-no-playgrounds">Map loads but shows no playgrounds</a>, cause 3.</li>
 <li><strong>Outdated image</strong> — See <a href="#hub-backend-returns-function-not-found-errors">Hub backend returns "function not found" errors</a>.</li>
+<li><strong>Daemon importer sleeping after a failed/corrupt previous run</strong> — If the importer ran but was OOM-killed during preprocessing, osm2pgsql may have ingested a partial file and recorded a successful <code>last_import_at</code>. The daemon will not retry until the next scheduled interval. Force an immediate one-shot reimport:
+   <div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="c1"># Clear any stale cached PBF files left by the killed run</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>importer<span class="w"> </span>sh<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;rm -f /data/*.pbf&quot;</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="c1"># Run a one-shot reimport regardless of last_import_at</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>docker<span class="w"> </span>compose<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="w">  </span>-e<span class="w"> </span><span class="nv">REIMPORT_INTERVAL_MIN_DAYS</span><span class="o">=</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="w">  </span>-e<span class="w"> </span><span class="nv">REIMPORT_INTERVAL_MAX_DAYS</span><span class="o">=</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="w">  </span>importer
+</code></pre></div>
+   Unsetting both interval variables forces one-shot mode, bypassing the grace check.</li>
 </ol>
 <hr />
 <h2 id="hub-backend-returns-function-not-found-errors">Hub backend returns "function not found" errors<a class="headerlink" href="#hub-backend-returns-function-not-found-errors" title="Permanent link">&para;</a></h2>
 <p><strong>Symptom:</strong> The hub operator checks the data-node API and gets:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="p">{</span><span class="nt">&quot;code&quot;</span><span class="p">:</span><span class="s2">&quot;PGRST202&quot;</span><span class="p">,</span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="s2">&quot;Could not find the function api.get_playgrounds_bbox(bbox) in the schema cache.&quot;</span><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="p">{</span><span class="nt">&quot;code&quot;</span><span class="p">:</span><span class="s2">&quot;PGRST202&quot;</span><span class="p">,</span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="s2">&quot;Could not find the function api.get_playgrounds_bbox(bbox) in the schema cache.&quot;</span><span class="p">}</span>
 </code></pre></div>
 <p>The Hub shows 0 playgrounds for that backend.</p>
 <p><strong>Hub operator — diagnose remotely:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>curl<span class="w"> </span>https://the-data-node.example.com/api/rpc/get_meta
-<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="c1"># check &quot;version&quot; — if older than v0.4.9, the image needs updating</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>curl<span class="w"> </span>https://the-data-node.example.com/api/rpc/get_meta
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="c1"># check &quot;version&quot; — if older than v0.4.9, the image needs updating</span>
 </code></pre></div>
 <p><strong>Data-node operator — fix:</strong></p>
 <p>The image predates the tiered-fetch functions added in v0.4.9. Update and re-import:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="nb">cd</span><span class="w"> </span>~/spieli<span class="w">   </span><span class="c1"># or wherever spieli was installed</span>
-<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>pull
-<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>data-node<span class="w"> </span>down
-<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>data-node<span class="w"> </span>up<span class="w"> </span>-d
-<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>data-node<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>importer
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="nb">cd</span><span class="w"> </span>~/spieli<span class="w">   </span><span class="c1"># or wherever spieli was installed</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>pull
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>data-node<span class="w"> </span>down
+<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>data-node<span class="w"> </span>up<span class="w"> </span>-d
+<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>data-node<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>importer
 </code></pre></div>
 <p><strong>Hub operator — verify after the data-node operator confirms the update:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>curl<span class="w"> </span>https://the-data-node.example.com/api/rpc/get_meta
-<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="c1"># playground_count should now be &gt; 0</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>curl<span class="w"> </span>https://the-data-node.example.com/api/rpc/get_meta
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="c1"># playground_count should now be &gt; 0</span>
 </code></pre></div>
 <hr />
 <h2 id="importer-fails-with-permission-denied-on-schema-apply">Importer fails with "permission denied" on schema apply<a class="headerlink" href="#importer-fails-with-permission-denied-on-schema-apply" title="Permanent link">&para;</a></h2>
 <p><strong>Symptom:</strong> <code>psql</code> reports <code>permission denied</code> when the importer runs <code>api.sql</code>.</p>
 <p><strong>Cause:</strong> The SQL runs as the database user configured in <code>.env</code>. This user needs <code>SUPERUSER</code> or at minimum <code>pg_signal_backend</code> (to terminate PostgREST connections) and <code>CREATE</code> on the <code>public</code> schema. The default user (<code>osm</code>) is a superuser — if you changed <code>POSTGRES_USER</code>, verify the role has these privileges.</p>
 <p><strong>Fix:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.yml<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>db<span class="w"> </span>psql<span class="w"> </span>-U<span class="w"> </span>osm<span class="w"> </span>osm
-<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="c1"># in psql:</span>
-<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>ALTER<span class="w"> </span>ROLE<span class="w"> </span>your_user<span class="w"> </span>SUPERUSER<span class="p">;</span>
-<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="se">\q</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.yml<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>db<span class="w"> </span>psql<span class="w"> </span>-U<span class="w"> </span>osm<span class="w"> </span>osm
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="c1"># in psql:</span>
+<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>ALTER<span class="w"> </span>ROLE<span class="w"> </span>your_user<span class="w"> </span>SUPERUSER<span class="p">;</span>
+<a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="se">\q</span>
 </code></pre></div>
 <p>Then re-run the importer:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.yml<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>importer
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.yml<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>importer
 </code></pre></div>
 <hr />
 <h2 id="database-volume-is-very-large-after-repeated-imports">Database volume is very large after repeated imports<a class="headerlink" href="#database-volume-is-very-large-after-repeated-imports" title="Permanent link">&para;</a></h2>
 <p><strong>Symptom:</strong> The <code>pgdata</code> Docker volume grows beyond expectations over time.</p>
 <p><strong>Cause:</strong> <code>api.sql</code> uses <code>DROP MATERIALIZED VIEW … CASCADE</code> + <code>CREATE MATERIALIZED VIEW</code> on every apply. PostgreSQL does not reclaim the space immediately — it marks pages as dead and waits for autovacuum. After many re-imports, dead tuple bloat can be significant.</p>
 <p><strong>Fix:</strong> Run VACUUM FULL (briefly locks the table):</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.yml<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>db<span class="w"> </span>psql<span class="w"> </span>-U<span class="w"> </span>osm<span class="w"> </span>osm<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;VACUUM FULL public.playground_stats;&quot;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.yml<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>db<span class="w"> </span>psql<span class="w"> </span>-U<span class="w"> </span>osm<span class="w"> </span>osm<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;VACUUM FULL public.playground_stats;&quot;</span>
 </code></pre></div>
 <p>Or simply recreate the data volume after a re-import — the volume will start clean.</p>
 <hr />
@@ -1931,14 +1941,14 @@
 <p><strong>Symptom:</strong> One or more backends in the Hub instance drawer permanently show an "updating" badge, even though no import is running.</p>
 <p><strong>Cause:</strong> The <code>importing</code> flag in <code>api.import_status</code> was left <code>true</code> by an importer that was killed with SIGKILL (bypasses the EXIT trap) or crashed before the trap could fire.</p>
 <p><strong>Self-healing:</strong> The importer clears the flag automatically at startup. Restarting the container is usually enough:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>restart<span class="w"> </span>importer
-<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="c1"># or, in daemon mode, the container is already running — it will clear the flag</span>
-<a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a><span class="c1"># on its next scheduled run</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>restart<span class="w"> </span>importer
+<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="c1"># or, in daemon mode, the container is already running — it will clear the flag</span>
+<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a><span class="c1"># on its next scheduled run</span>
 </code></pre></div>
 <p><strong>Manual fix</strong> (if you need it cleared immediately without waiting for a restart):</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="c1"># From the data-node host</span>
-<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>docker<span class="w"> </span>compose<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>db<span class="w"> </span>psql<span class="w"> </span>-U<span class="w"> </span>osm<span class="w"> </span>-d<span class="w"> </span>osm<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a><span class="w">  </span>-c<span class="w"> </span><span class="s2">&quot;UPDATE api.import_status SET importing = false WHERE id = 1;&quot;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="c1"># From the data-node host</span>
+<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>docker<span class="w"> </span>compose<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>db<span class="w"> </span>psql<span class="w"> </span>-U<span class="w"> </span>osm<span class="w"> </span>-d<span class="w"> </span>osm<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a><span class="w">  </span>-c<span class="w"> </span><span class="s2">&quot;UPDATE api.import_status SET importing = false WHERE id = 1;&quot;</span>
 </code></pre></div>
 <p>The Hub will pick up the corrected value on its next poll cycle (within 60 seconds).</p>
 <hr />
@@ -1946,10 +1956,10 @@
 <p><strong>Symptom:</strong> <code>/impressum</code> or <code>/datenschutz</code> returns 404, or the pages show stale contact information after updating <code>IMPRESSUM_*</code> vars.</p>
 <p><strong>Cause:</strong> The HTML files are generated by <code>docker-entrypoint.sh</code> at container startup. A rebuild is required to pick up changed env vars.</p>
 <p><strong>Fix:</strong> Restart the app container to regenerate legal pages from current env vars:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.yml<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>up<span class="w"> </span>-d<span class="w"> </span>app
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.yml<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>up<span class="w"> </span>-d<span class="w"> </span>app
 </code></pre></div>
 <p>If <code>get_meta()</code> still returns the old <code>impressum_url</code> / <code>privacy_url</code>, the legal URLs are baked into the database at import time. Re-run the importer to apply them:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.yml<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>importer
+<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.yml<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>importer
 </code></pre></div>
 <p><strong>Symptom:</strong> <code>/impressum</code> returns 404 despite <code>IMPRESSUM_NAME</code> being set.</p>
 <p><strong>Cause:</strong> <code>IMPRESSUM_ADDRESS</code> is also required. The entrypoint skips generation when either of the two required vars is empty.</p>
