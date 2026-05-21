@@ -12,7 +12,7 @@ import { registryUrl, hubPollInterval } from '../lib/config.js';
 import { fetchMeta } from '../lib/api.js';
 import { isValidSlug } from '../lib/deeplink.js';
 import { startFederationHealthPoll, stopFederationHealthPoll } from './federationHealth.js';
-import booleanIntersects from '@turf/boolean-intersects';
+import booleanContains from '@turf/boolean-contains';
 
 // Per-backend timeout for multi-backend nearest fan-out. A slow or unreachable
 // backend contributes zero results but never stalls the user interaction.
@@ -235,11 +235,11 @@ export function createRegistry() {
   });
 
   // Map from backend URL to array of overlapping backend names.
-  // Uses actual region boundary polygons (region_geom from get_meta) for
-  // accurate geographic intersection. Two backends overlap when their region
-  // polygons genuinely share area — adjacent states that merely share a border
-  // line do not trigger a warning. Falls back to no warning for backends that
-  // haven't yet populated region_geom (pre-#532 images).
+  // Uses actual region boundary polygons (region_geom from get_meta).
+  // Fires when one region contains the other (e.g. a city backend inside a
+  // state backend). Adjacent regions that merely share a border are not
+  // flagged. Falls back to no warning for backends without region_geom
+  // (pre-#532 images).
   const overlapWarnings = derived(store, ($backends) => {
     const withGeom = $backends.filter(b => b.regionGeom);
     /** @type {Map<string, string[]>} */
@@ -249,7 +249,7 @@ export function createRegistry() {
         const a = withGeom[i];
         const b = withGeom[j];
         try {
-          if (booleanIntersects(a.regionGeom, b.regionGeom)) {
+          if (booleanContains(a.regionGeom, b.regionGeom) || booleanContains(b.regionGeom, a.regionGeom)) {
             if (!warnings.has(a.url)) warnings.set(a.url, []);
             if (!warnings.has(b.url)) warnings.set(b.url, []);
             warnings.get(a.url).push(b.name);
