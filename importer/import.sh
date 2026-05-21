@@ -57,6 +57,7 @@ PG_WORK_MEM="${PG_WORK_MEM:-32MB}"
 
 REIMPORT_INTERVAL_MIN_DAYS="${REIMPORT_INTERVAL_MIN_DAYS:-}"
 REIMPORT_INTERVAL_MAX_DAYS="${REIMPORT_INTERVAL_MAX_DAYS:-}"
+REIMPORT_STARTUP_JITTER_MAX_HOURS="${REIMPORT_STARTUP_JITTER_MAX_HOURS:-0}"
 API_ONLY="${API_ONLY:-}"
 
 # Validate PG_* before they reach envsubst → SQL. Strict regexes prevent
@@ -495,6 +496,17 @@ elif [ -n "$REIMPORT_INTERVAL_MIN_DAYS" ] && [ -n "$REIMPORT_INTERVAL_MAX_DAYS" 
             SLEEP_SECS=$((NEXT_RUN - NOW))
             echo "[importer] Last import < ${GRACE_DAYS}d ago. Sleeping ${SLEEP_SECS}s until next scheduled run."
             sleep "$SLEEP_SECS"
+        fi
+    else
+        # Fresh DB (no prior import_status record). On multi-backend deployments
+        # all containers start simultaneously, causing a thundering herd of
+        # concurrent osm2pgsql processes that exhausts host memory.
+        # REIMPORT_STARTUP_JITTER_MAX_HOURS spreads first imports over time.
+        if [ "$REIMPORT_STARTUP_JITTER_MAX_HOURS" -gt 0 ] 2>/dev/null; then
+            JITTER_SECS=$(awk -v max="$REIMPORT_STARTUP_JITTER_MAX_HOURS" \
+                'BEGIN { srand(); print int(rand() * max * 3600) }')
+            echo "[importer] Fresh install — startup jitter: sleeping ${JITTER_SECS}s (max ${REIMPORT_STARTUP_JITTER_MAX_HOURS}h) to avoid thundering herd."
+            sleep "$JITTER_SECS"
         fi
     fi
 
