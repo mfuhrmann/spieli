@@ -2028,7 +2028,7 @@
 <a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="p">}</span>
 </code></pre></div>
 <p><strong>Invariant</strong>: <code>playground_count = complete + partial + missing</code> (<code>get_meta</code> does <em>not</em> split out access-restricted; they're rolled into the completeness counts here, unlike <code>get_playground_clusters</code>). Hub uses the three counts to render a country-level macro view — see <code>add-federated-playground-clustering</code>.</p>
-<p>Two additional fields are included to expose import freshness:</p>
+<p>Additional fields:</p>
 <table>
 <thead>
 <tr>
@@ -2048,9 +2048,14 @@
 <td><code>int</code> | <code>null</code></td>
 <td><code>EXTRACT(EPOCH FROM (now() - last_import_at))::int</code>. <code>null</code> when <code>last_import_at</code> is <code>null</code>.</td>
 </tr>
+<tr>
+<td><code>region_geom</code></td>
+<td>GeoJSON geometry | <code>null</code></td>
+<td>Simplified boundary polygon of the backend's region (<code>ST_SimplifyPreserveTopology</code> at 0.05°, WGS84). Used by the hub for accurate polygon-based overlap detection. <code>null</code> when the region relation is absent from <code>planet_osm_polygon</code>. Backends running a pre-0.4.13 image omit this field — the hub falls back to no overlap warning for those backends.</td>
+</tr>
 </tbody>
 </table>
-<p>The hub reads these fields via <code>/federation-status.json</code> (written by the hub container's 60-second cron poll) — see <a href="../../ops/monitoring/">Monitoring</a> for the full exposition format.</p>
+<p>The hub reads <code>last_import_at</code> and <code>data_age_seconds</code> via <code>/federation-status.json</code> (written by the hub container's 60-second cron poll) — see <a href="../../ops/monitoring/">Monitoring</a> for the full exposition format. <code>region_geom</code> is read directly by the browser-side registry store and used by <code>@turf/boolean-intersects</code> to determine whether two backends genuinely share geographic area.</p>
 <h2 id="deprecated-get_playgroundsrelation_id">Deprecated: <code>get_playgrounds(relation_id)</code><a class="headerlink" href="#deprecated-get_playgroundsrelation_id" title="Permanent link">&para;</a></h2>
 <p>The pre-tiered region-scoped RPC stays available for one release for compatibility with Playwright fixtures and external consumers. Marked DEPRECATED via SQL <code>COMMENT</code>; the client <code>fetchPlaygrounds</code> logs a one-time console warning. It will be removed in the release after next.</p>
 <p>Migration: replace any caller with <code>fetchPlaygroundsBbox(extent, baseUrl)</code> driven by viewport extent.</p>
