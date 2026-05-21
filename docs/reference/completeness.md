@@ -11,17 +11,17 @@ Three independent criteria are evaluated per playground:
 | Criterion | Satisfied when |
 |---|---|
 | **hasPhoto** | At least one `panoramax` or `panoramax:*` tag is present |
-| **hasName** | A `name` tag is present |
-| **hasInfo** | Any one of `operator`, `opening_hours`, `surface`, or `access` (with a value other than `yes`) is present |
+| **hasEquipment** | At least one mapped piece of equipment exists inside the playground (devices, benches, pitches, fitness stations, etc.) |
+| **hasInfo** | Any one of `opening_hours`, `surface`, or `access` (with a value other than `yes`) is present |
 
-Each criterion is satisfied by the presence of **any** qualifying tag — `hasInfo` does not require all four tags.
+Each criterion is satisfied by the presence of **any** qualifying tag — `hasInfo` does not require all three tags.
 
 ## States
 
 | State | Rule | Color |
 |---|---|---|
 | `complete` | All three criteria satisfied | Green |
-| `partial` | At least one criterion satisfied | Yellow |
+| `partial` | At least one criterion satisfied | Orange |
 | `missing` | No criteria satisfied | Red |
 
 ## Implementation
@@ -35,16 +35,15 @@ Run `make db-apply` after changing the SQL definition to rebuild the materialize
 
 ## Locale keys
 
-All UI strings live under the `completeness.*` namespace in `locales/de.json` and `locales/en.json`.
+All UI strings live under the `completeness.*` namespace in `locales/de.json` and `locales/en.json` (repo root).
 
 | Key | DE | EN |
 |---|---|---|
-| `completeness.label` | Datenqualität | Data quality |
-| `completeness.complete` | Fotos, Name & Details vorhanden | Photos, name & details available |
-| `completeness.partial` | Teilweise erfasst | Partially mapped |
-| `completeness.missing` | Noch keine Daten | No data yet |
-| `completeness.badgeComplete` | Vollständig | Complete |
+| `completeness.legendTitle` | Datenqualität | Data Quality |
+| `completeness.complete` | hoch | high |
+| `completeness.partial` | mittel | medium |
+| `completeness.missing` | niedrig | low |
 | `completeness.dotComplete` | Daten vollständig | Data complete |
 | `completeness.dotPartial` | Teilweise erfasst | Partially mapped |
 | `completeness.dotMissing` | Daten fehlen | No data |
-| `completeness.restrictedHint` | schraffiert = nicht öffentlich | hatched = not public |
+| `completeness.restrictedHint` | nicht öffentlich | not public |

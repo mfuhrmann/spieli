@@ -77,7 +77,7 @@ Config constants used across the codebase:
 | `apiBaseUrl` | `''` | Empty → Overpass fallback |
 | `osmRelationId` | `62700` | Fulda (dev default) |
 | `clusterMaxZoom` | `13` | Zoom threshold for tier switch |
-| `macroMaxZoom` | `5` | Hub macro view threshold |
+| `macroMaxZoom` | `7` | Hub macro view threshold |
 
 ## The tiered orchestrator
 

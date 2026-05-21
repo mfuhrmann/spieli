@@ -66,7 +66,7 @@ Before osm2pgsql runs, `osmium tags-filter` keeps only objects with tags the app
 
 - `leisure=playground`, `leisure=pitch`, `leisure=fitness_station`, `leisure=picnic_table`
 - `amenity=bench`, `amenity=shelter`, `amenity=toilets`, `amenity=ice_cream`, `amenity=cafe`, `amenity=restaurant`
-- `natural=tree`, `playground=*`
+- `natural=tree`, `natural=tree_row`, `playground=*`
 - `highway=bus_stop`, `shop=chemist/supermarket/convenience`, `emergency=*`
 - `boundary=administrative`, `type=multipolygon`
 

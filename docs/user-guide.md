@@ -17,9 +17,9 @@ Each playground is colour-coded to show how completely it has been mapped in Ope
 
 | Colour | What it means |
 |---|---|
-| Green | Well-mapped — has a photo, a name, and at least one detail (surface, operator, opening hours, etc.) |
-| Yellow | Partially mapped — some details present, but not all |
-| Red | Barely mapped — the playground exists in OSM but has little or no detail |
+| Green | Well-mapped — has a photo, mapped equipment, and at least one detail (surface, opening hours, or access) |
+| Orange | Partially mapped — at least one of photo, equipment, or detail is present |
+| Red | Barely mapped — the playground exists in OSM but has no photo, no mapped equipment, and no details |
 
 The colours reflect the OSM data, not the real-world quality of the playground.
 

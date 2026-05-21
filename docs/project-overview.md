@@ -145,7 +145,7 @@ Clicking a playground writes `#W<osm_id>` (or `#<slug>/W<osm_id>` in hub mode) t
 
 ### Hub mode (`APP_MODE=hub`)
 
-Aggregates multiple regional data-nodes. The hub orchestrator adds a macro view (zoom ≤ 5) rendering one ring per backend from `get_meta`. At higher zooms it fans out to all backends whose bbox intersects the viewport, merges results via Supercluster, and renders the union.
+Aggregates multiple regional data-nodes. The hub orchestrator adds a macro view (zoom ≤ `macroMaxZoom`, default 7) rendering one ring per backend from `get_meta`. At higher zooms it fans out to all backends whose bbox intersects the viewport, merges results via Supercluster, and renders the union.
 
 ---
 
