@@ -191,7 +191,7 @@ export function createRegistry() {
       for (const b of backends) {
         const entry = entriesByUrl.get(b.url);
         if (!entry) continue;
-        patchBackend(b.url, {
+        const patch = {
           healthUp:           entry.up ?? null,
           // dataAgeSec       — when the importer last ran (operator concern)
           dataAgeSec:         entry.data_age_seconds ?? null,
@@ -207,7 +207,17 @@ export function createRegistry() {
           privacyUrl:         entry.privacy_url  ?? null,
           hasLegal:           entry.has_legal     ?? false,
           version:            entry.version       ?? null,
-        });
+        };
+        // Completeness counts added to federation-status in #545. Absent on
+        // older hub releases — skip the patch so the direct get_meta path
+        // (registry.js loadBackend) isn't overwritten with undefined.
+        // When present, this path is faster on first load: federation-status.json
+        // is served from the hub itself vs. N parallel get_meta calls to remotes.
+        const hasEntryCompleteness = ['complete', 'partial', 'missing'].every(k => Number.isFinite(entry[k]));
+        if (hasEntryCompleteness) {
+          patch.completeness = { complete: entry.complete, partial: entry.partial, missing: entry.missing };
+        }
+        patchBackend(b.url, patch);
       }
     });
 

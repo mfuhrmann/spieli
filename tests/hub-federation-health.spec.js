@@ -173,6 +173,67 @@ test.describe('Hub federation health drawer', () => {
 
     await expect(drawer).toContainText(/2\s*(Tage|days)/, { timeout: 5000 });
   });
+
+  // #544: completeness breakdown (colored dots + progress bar) should appear
+  // in the drawer for backends whose get_meta carries complete/partial/missing.
+  test('shows completeness breakdown for a backend with completeness data', async ({ page }) => {
+    const instanceWithCompleteness = {
+      ...instanceA,
+      meta: {
+        ...instanceA.meta,
+        playground_count: 6,
+        complete: 4,
+        partial: 1,
+        missing: 1,
+      },
+    };
+
+    await injectHubConfig(page);
+    await stubHubRegistry(page, { instanceA: instanceWithCompleteness, instanceB });
+    await stubFederationStatus(page);
+
+    await page.goto('/');
+    const drawer = await openDrawer(page);
+
+    // Wait for the drawer to receive completeness data from the get_meta stub
+    await expect(drawer.locator('.instance-completeness').first()).toBeVisible({ timeout: 5000 });
+    await expect(drawer.locator('.completeness-bar').first()).toBeVisible({ timeout: 5000 });
+
+    // Verify each count is rendered (instanceWithCompleteness has 4/1/1)
+    const completeness = drawer.locator('.instance-completeness').first();
+    await expect(completeness).toContainText('4');
+    await expect(completeness).toContainText('1');
+  });
+
+  // #545: completeness fields arriving via federation-status.json should also
+  // patch the backend and render in the drawer.
+  test('shows completeness breakdown sourced from federation-status.json', async ({ page }) => {
+    await injectHubConfig(page);
+    await stubHubRegistry(page, { instanceA, instanceB });
+
+    await stubFederationStatus(page, {
+      backends: {
+        'slug-a': {
+          url: instanceA.url,
+          up: true,
+          latency_seconds: 0.02,
+          last_success: new Date().toISOString(),
+          last_import_at: null,
+          data_age_seconds: null,
+          playground_count: 3,
+          complete: 2,
+          partial: 1,
+          missing: 0,
+        },
+      },
+    });
+
+    await page.goto('/');
+    const drawer = await openDrawer(page);
+
+    await expect(drawer.locator('.instance-completeness').first()).toBeVisible({ timeout: 5000 });
+    await expect(drawer.locator('.completeness-bar').first()).toBeVisible({ timeout: 5000 });
+  });
 });
 
 // TODO: filterHealthy skip-down-backend test
