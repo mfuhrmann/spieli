@@ -1657,6 +1657,10 @@
 <p class="admonition-title">Note</p>
 <p>The <code>API_ONLY=1</code> step is required on every upgrade, not just when the release notes mention SQL changes. The version number visible in the Hub regions panel comes from the database (written by the importer), not the app image — skipping this step leaves the reported version stale.</p>
 </div>
+<div class="admonition warning">
+<p class="admonition-title">If API_ONLY fails mid-run</p>
+<p><code>API_ONLY=1</code> drops and recreates the <code>playground_stats</code> materialised view. If it crashes partway through, the view is gone and PostgREST will log errors like <code>relation "public.playground_stats" does not exist</code>. Recovery: run a <strong>full re-import</strong> (see below) — this recreates everything from scratch.</p>
+</div>
 <h2 id="when-to-run-a-full-re-import">When to run a full re-import<a class="headerlink" href="#when-to-run-a-full-re-import" title="Permanent link">&para;</a></h2>
 <p>A full re-import (without <code>API_ONLY</code>) is needed when:</p>
 <ul>

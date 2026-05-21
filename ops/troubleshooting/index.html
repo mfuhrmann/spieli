@@ -1964,6 +1964,13 @@
 <p><strong>Symptom:</strong> <code>/impressum</code> returns 404 despite <code>IMPRESSUM_NAME</code> being set.</p>
 <p><strong>Cause:</strong> <code>IMPRESSUM_ADDRESS</code> is also required. The entrypoint skips generation when either of the two required vars is empty.</p>
 <p><strong>Fix:</strong> Set both <code>IMPRESSUM_NAME</code> and <code>IMPRESSUM_ADDRESS</code> in <code>.env</code>, then <code>make docker-build</code>.</p>
+<hr />
+<p><strong>Symptom:</strong> PostgREST logs <code>relation "public.playground_stats" does not exist</code> after an upgrade.</p>
+<p><strong>Cause:</strong> The <code>API_ONLY=1</code> importer run dropped the <code>playground_stats</code> materialised view but failed before recreating it, leaving the database in a broken state.</p>
+<p><strong>Fix:</strong> Run a full re-import to rebuild everything from scratch:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.yml<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>importer
+</code></pre></div>
+<p>This re-applies <code>api.sql</code> (recreating <code>playground_stats</code>) and re-imports OSM data. It takes longer than <code>API_ONLY=1</code> but is always safe.</p>
 
 
 
