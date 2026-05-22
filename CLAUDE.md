@@ -17,9 +17,10 @@ spieli is an interactive web map for exploring playgrounds based on OpenStreetMa
 
 ### Release procedure
 
-1. Bump `package.json` version: remove `-rc` (e.g. `0.1.7-rc` → `0.1.7`). Commit: `chore: release v0.1.7`.
-2. Tag: `git tag v0.1.7 && git push origin v0.1.7`. CI publishes `:latest`, `:0.1.7`, `:0.1` images and creates a GitHub release automatically.
-3. Advance `main`: bump to next `-rc` (e.g. `0.1.8-rc`). Commit: `chore: bump version to 0.1.8-rc`.
+1. Bump `app/package.json` version: remove `-rc` (e.g. `0.1.7-rc` → `0.1.7`). Commit: `chore: release v0.1.7`.
+2. Update `TAG=` in both `install` blocks in `docs/getting-started/quick-start.md` to the new tag. Commit together with step 1 or separately.
+3. Tag: `git tag v0.1.7 && git push origin v0.1.7`. CI publishes `:latest`, `:0.1.7`, `:0.1` images, creates a GitHub release, and uploads `install.sh` + `install.sh.sha256` as release assets.
+4. Advance `main`: bump to next `-rc` (e.g. `0.1.8-rc`). Commit: `chore: bump version to 0.1.8-rc`.
 
 **PR labels for release notes** — label PRs before merging so the auto-generated release notes show the correct upgrade action:
 - `requires-schema-update` — `api.sql` changed; operators must run `API_ONLY=1` after upgrading.
