@@ -368,6 +368,7 @@ COMMENT ON FUNCTION api.get_playgrounds(bigint) IS
 -- =========================================================================
 DROP FUNCTION IF EXISTS api.get_playground_clusters(int, float8, float8, float8, float8);
 DROP FUNCTION IF EXISTS api.get_playground_clusters(int, float8, float8, float8, float8, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean);
+DROP FUNCTION IF EXISTS api.get_playground_clusters(int, float8, float8, float8, float8, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean);
 
 CREATE OR REPLACE FUNCTION api.get_playground_clusters(
   z                   int,
@@ -385,7 +386,10 @@ CREATE OR REPLACE FUNCTION api.get_playground_clusters(
   filter_shelter      boolean DEFAULT false,
   filter_table_tennis boolean DEFAULT false,
   filter_soccer       boolean DEFAULT false,
-  filter_basketball   boolean DEFAULT false
+  filter_basketball   boolean DEFAULT false,
+  filter_complete     boolean DEFAULT true,
+  filter_partial      boolean DEFAULT true,
+  filter_missing      boolean DEFAULT true
 )
 RETURNS json
 LANGUAGE sql STABLE SECURITY DEFINER
@@ -438,6 +442,11 @@ AS $$
       AND (NOT filter_table_tennis OR ps.table_tennis_count > 0)
       AND (NOT filter_soccer      OR ps.has_soccer)
       AND (NOT filter_basketball  OR ps.has_basketball)
+      AND (
+        (ps.completeness = 'complete' AND filter_complete)
+        OR (ps.completeness = 'partial'  AND filter_partial)
+        OR (ps.completeness = 'missing'  AND filter_missing)
+      )
   ),
   aggregated AS (
     -- Restricted playgrounds are counted separately from the three
@@ -475,7 +484,7 @@ AS $$
   FROM aggregated;
 $$;
 
-GRANT EXECUTE ON FUNCTION api.get_playground_clusters(int, float8, float8, float8, float8, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean) TO web_anon;
+GRANT EXECUTE ON FUNCTION api.get_playground_clusters(int, float8, float8, float8, float8, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean) TO web_anon;
 
 -- =========================================================================
 -- 1b. get_playground_centroids(bbox)

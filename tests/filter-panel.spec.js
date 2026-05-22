@@ -87,4 +87,40 @@ test.describe('FilterPanel', () => {
     await expect(pitchToggle).toBeVisible();
     await expect(pitchToggle).not.toBeChecked();
   });
+
+  test('completeness section is visible with three checked toggles', async ({ page }) => {
+    await page.locator('.filter-container button').click();
+    await expect(page.locator('.completeness-section')).toBeVisible();
+    const checkboxes = page.locator('.completeness-section input[type="checkbox"]');
+    await expect(checkboxes).toHaveCount(3);
+    for (let i = 0; i < 3; i++) {
+      await expect(checkboxes.nth(i)).toBeChecked();
+    }
+  });
+
+  test('no badge shown when all completeness states are on (default)', async ({ page }) => {
+    await expect(page.locator('.filter-container .badge')).not.toBeVisible();
+  });
+
+  test('unchecking a completeness state shows badge and marks row hidden', async ({ page }) => {
+    await page.locator('.filter-container button').click();
+    const first = page.locator('.completeness-section input[type="checkbox"]').first();
+    await first.click();
+    await expect(page.locator('.filter-container .badge')).toBeVisible();
+    await expect(page.locator('.filter-container .badge')).toHaveText('1');
+    await expect(
+      page.locator('.completeness-section .filter-item').first()
+    ).toHaveClass(/completeness-hidden/);
+  });
+
+  test('clear-all restores all completeness states to checked', async ({ page }) => {
+    await page.locator('.filter-container button').click();
+    await page.locator('.completeness-section input[type="checkbox"]').first().click();
+    await page.locator('.clear-btn').click();
+    const checkboxes = page.locator('.completeness-section input[type="checkbox"]');
+    for (let i = 0; i < 3; i++) {
+      await expect(checkboxes.nth(i)).toBeChecked();
+    }
+    await expect(page.locator('.filter-container .badge')).not.toBeVisible();
+  });
 });

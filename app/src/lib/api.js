@@ -68,6 +68,9 @@ export async function fetchPlaygroundClusters(zoom, extentEPSG3857, baseUrl = de
         for (const [key, param] of Object.entries(clusterFilterMap)) {
             if (filters[key]) params.set(param, 'true');
         }
+        if (filters.showComplete === false) params.set('filter_complete', 'false');
+        if (filters.showPartial  === false) params.set('filter_partial',  'false');
+        if (filters.showMissing  === false) params.set('filter_missing',  'false');
     }
     const res = await fetch(`${baseUrl}/rpc/get_playground_clusters?${params}`, { signal });
     if (res.ok) return res.json();

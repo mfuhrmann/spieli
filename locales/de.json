@@ -25,6 +25,12 @@
       "tableTennis": "Tischtennisplatte",
       "soccer": "Mit Bolzplatz",
       "basketball": "Basketballfeld"
+    },
+    "completeness": {
+      "title": "Datenqualität",
+      "showComplete": "Vollständig",
+      "showPartial": "Teilweise",
+      "showMissing": "Fehlend"
     }
   },
   "hover": {

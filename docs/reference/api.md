@@ -41,10 +41,24 @@ Pre-aggregated cluster buckets for the cluster tier. Each bucket counts playgrou
 
 **Parameters**
 
-| Name | Type | Notes |
-|---|---|---|
-| `z` | `int` | Zoom level — drives cell size via a hardcoded table (10 Mm at z=0, halving each level down to ~1.2 km at z=13) |
-| `min_lon`, `min_lat`, `max_lon`, `max_lat` | `float8` | WGS84 bounding box |
+| Name | Type | Default | Notes |
+|---|---|---|---|
+| `z` | `int` | — | Zoom level — drives cell size via a hardcoded table (10 Mm at z=0, halving each level down to ~1.2 km at z=13) |
+| `min_lon`, `min_lat`, `max_lon`, `max_lat` | `float8` | — | WGS84 bounding box |
+| `filter_private` | `boolean` | `false` | When `true`, exclude access-restricted playgrounds |
+| `filter_water` | `boolean` | `false` | When `true`, include only water playgrounds |
+| `filter_baby` | `boolean` | `false` | When `true`, include only baby-friendly playgrounds |
+| `filter_toddler` | `boolean` | `false` | When `true`, include only toddler-friendly playgrounds |
+| `filter_wheelchair` | `boolean` | `false` | When `true`, include only wheelchair-accessible playgrounds |
+| `filter_bench` | `boolean` | `false` | When `true`, include only playgrounds with a bench |
+| `filter_picnic` | `boolean` | `false` | When `true`, include only playgrounds with a picnic table |
+| `filter_shelter` | `boolean` | `false` | When `true`, include only playgrounds with a shelter |
+| `filter_table_tennis` | `boolean` | `false` | When `true`, include only playgrounds with a table tennis table |
+| `filter_soccer` | `boolean` | `false` | When `true`, include only playgrounds with a football pitch |
+| `filter_basketball` | `boolean` | `false` | When `true`, include only playgrounds with a basketball court |
+| `filter_complete` | `boolean` | `true` | When `false`, exclude complete playgrounds |
+| `filter_partial` | `boolean` | `true` | When `false`, exclude partial playgrounds |
+| `filter_missing` | `boolean` | `true` | When `false`, exclude missing playgrounds |
 
 **Response** — JSON array of bucket objects:
 

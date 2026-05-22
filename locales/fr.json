@@ -25,6 +25,12 @@
       "tableTennis": "Table de ping-pong",
       "soccer": "Avec terrain de football",
       "basketball": "Terrain de basketball"
+    },
+    "completeness": {
+      "title": "Qualité des données",
+      "showComplete": "Complet",
+      "showPartial": "Partiel",
+      "showMissing": "Manquant"
     }
   },
   "hover": {

@@ -25,6 +25,12 @@
       "tableTennis": "Table tennis table",
       "soccer": "With football pitch",
       "basketball": "Basketball court"
+    },
+    "completeness": {
+      "title": "Data quality",
+      "showComplete": "Complete",
+      "showPartial": "Partial",
+      "showMissing": "Missing"
     }
   },
   "hover": {

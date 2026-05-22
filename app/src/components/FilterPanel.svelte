@@ -1,13 +1,13 @@
 <script>
-  import { filterStore, hasActiveFilters } from '../stores/filters.js';
+  import { filterStore, hasActiveFilters, activeFilterCount, defaultFilters } from '../stores/filters.js';
   import { _ } from 'svelte-i18n';
-  import { Filter, Droplets, Baby, Accessibility, Armchair, UtensilsCrossed, Home, RectangleHorizontal, Goal, CircleDot, Lock, Layers } from 'lucide-svelte';
+  import { Filter, Droplets, Baby, Accessibility, Armchair, UtensilsCrossed, Home, RectangleHorizontal, Goal, CircleDot, Lock, Layers, BarChart3 } from 'lucide-svelte';
 
   let open = false;
   let wrap;
 
   function onWindowClick(e) {
-    if (open && wrap && !wrap.contains(e.target)) open = false;
+    if (open && wrap && !e.composedPath().includes(wrap)) open = false;
   }
 
   const FILTER_ICONS = {
@@ -31,14 +31,16 @@
   }));
 
   $: active = hasActiveFilters($filterStore);
-  $: activeCount = Object.values($filterStore).filter(Boolean).length;
+  $: activeCount = activeFilterCount($filterStore);
+
+  const COMPLETENESS_STATES = ['showComplete', 'showPartial', 'showMissing'];
 
   function toggle(key) {
     filterStore.update(f => ({ ...f, [key]: !f[key] }));
   }
 
   function clearAll() {
-    filterStore.update(f => Object.fromEntries(Object.keys(f).map(k => [k, false])));
+    filterStore.set({ ...defaultFilters });
   }
 </script>
 
@@ -80,6 +82,21 @@
             />
             <svelte:component this={f.icon} class="h-4 w-4" />
             <span>{f.label}</span>
+          </label>
+        {/each}
+      </div>
+
+      <div class="completeness-section">
+        <span class="layer-title"><BarChart3 class="h-3 w-3" /> {$_('filter.completeness.title')}</span>
+        {#each COMPLETENESS_STATES as key}
+          <label class="filter-item" class:completeness-hidden={!$filterStore[key]}>
+            <input
+              type="checkbox"
+              checked={$filterStore[key]}
+              onchange={() => toggle(key)}
+            />
+            <span class="completeness-dot {key}-dot"></span>
+            <span>{$_('filter.completeness.' + key)}</span>
           </label>
         {/each}
       </div>
@@ -230,6 +247,28 @@
     height: 18px;
     accent-color: #1b5e20;
     cursor: pointer;
+  }
+
+  .completeness-section {
+    border-top: 1px solid #e8eaed;
+    padding-top: 4px;
+  }
+
+  .completeness-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+    border: 2px solid;
+    flex-shrink: 0;
+  }
+
+  .showComplete-dot { border-color: #155215; background: rgba(21, 82, 21, 0.15); }
+  .showPartial-dot  { border-color: #92400e; background: rgba(146, 64, 14, 0.15); }
+  .showMissing-dot  { border-color: #991b1b; background: rgba(153, 27, 27, 0.15); }
+
+  .filter-item.completeness-hidden {
+    opacity: 0.5;
+    text-decoration: line-through;
   }
 
   .layer-section {

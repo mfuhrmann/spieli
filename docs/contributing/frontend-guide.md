@@ -116,24 +116,23 @@ Layer visibility is driven by reactive `$:`  statements that subscribe to the st
 
 ## Adding a new filter
 
-Adding a filter touches four files:
+### Standard boolean filter (default off)
 
-**1. `app/src/stores/filters.js`** — add the key to `filterStore`'s initial state:
+Most filters default to `false` (inactive). Enabling one restricts the map to playgrounds that have the feature. Example: water playground filter.
+
+**1. `app/src/stores/filters.js`** — add the key to `defaultFilters` and add match logic to `matchesFilters()`:
 
 ```js
-export const filterStore = writable({
+export const defaultFilters = {
     …
     myNewFilter: false,
-});
-```
+};
 
-Also add the match logic to `matchesFilters()`:
-
-```js
+// in matchesFilters():
 if (filters.myNewFilter && !props.my_flag) return false;
 ```
 
-**2. `app/src/lib/api.js`** — add the cluster tier filter param (if the filter should apply to cluster buckets):
+**2. `app/src/lib/api.js`** — add the cluster-tier RPC param to `clusterFilterMap`:
 
 ```js
 const clusterFilterMap = {
@@ -142,9 +141,38 @@ const clusterFilterMap = {
 };
 ```
 
-**3. `importer/api.sql`** — add a filter parameter to `get_playground_clusters()` and handle it in the SQL WHERE clause. Run `make db-apply` to apply.
+**3. `importer/api.sql`** — add a parameter to `get_playground_clusters()` (default `false`) and a WHERE clause. Also drop the old function signature and update the GRANT. Run `make db-apply` to apply.
 
-**4. `app/src/components/FilterPanel.svelte`** — add the toggle to the filter UI.
+**4. `app/src/components/FilterPanel.svelte`** — add the icon to `FILTER_ICONS` and a translation key to `locales/*.json`.
+
+**5. Unit tests** — add cases to `app/src/stores/filters.test.js`.
+
+### Visibility filter (default on)
+
+Use this pattern when users toggle which _categories_ to show rather than requiring a feature. Example: the completeness filter (`showComplete/showPartial/showMissing`).
+
+Key differences from the standard pattern:
+
+- Default value is `true` (show all); deactivating hides a category.
+- `matchesFilters()` checks the prop and returns `false` to hide.
+- `hasActiveFilters()` detects activity via `!filters.myVisibilityKey`.
+- `activeFilterCount()` increments when `false`, not `true`.
+- `clearAll()` uses `filterStore.set({ ...defaultFilters })` — already resets visibility filters to `true` automatically.
+- Cluster RPC params default `true`; pass `'false'` only when deactivated:
+
+```js
+// api.js — in fetchPlaygroundClusters:
+if (filters.showMyCategory === false) params.set('filter_my_category', 'false');
+```
+
+- SQL param defaults `true`; add a WHERE clause that ORs across all enabled states:
+
+```sql
+AND (
+  (ps.my_col = 'a' AND filter_a)
+  OR (ps.my_col = 'b' AND filter_b)
+)
+```
 
 ## Internationalisation
 

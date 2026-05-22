@@ -51,6 +51,18 @@ Open the filter panel to show only playgrounds that match your needs:
 
 Active filters appear as chips below the search bar. Click a chip to remove that filter.
 
+### Data quality filter
+
+The **Datenqualität** section lets you show or hide playgrounds by their OSM data completeness:
+
+| State | Meaning |
+|---|---|
+| **Complete** (green) | Has photo, mapped equipment, and at least one detail (surface, opening hours, or access) |
+| **Partial** (amber) | Has at least one of the above |
+| **Missing** (red) | No mapped data at all |
+
+All three states are shown by default. Deactivate a state to hide those playgrounds — for example, uncheck **Missing** and **Partial** to see only well-documented playgrounds, or uncheck **Complete** and **Partial** to find playgrounds still needing OSM survey work.
+
 ## Playground detail panel
 
 Click any playground to open its detail panel. The panel shows:
