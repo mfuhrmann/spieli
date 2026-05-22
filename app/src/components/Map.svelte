@@ -47,6 +47,7 @@
 
   let mapContainer;
   let olMap = null;
+  let backendPopup = null; // { x, y, name, offline, degraded }
   let playgroundLayer = null; // polygon tier (zoom > clusterMaxZoom) — exposed for filter reactivity
   let clusterLayer = null;    // cluster tier (zoom ≤ clusterMaxZoom) — §3
   let macroLayer = null;      // macro tier (hub-only, zoom ≤ macroMaxZoom) — P2 §5
@@ -201,6 +202,19 @@
         layerFilter: (l) => l === macroLayer,
       });
       if (macroHit) {
+        const isOffline  = macroHit.get('_offline');
+        const isDegraded = macroHit.get('_degraded');
+        if (isOffline || isDegraded) {
+          backendPopup = {
+            x:        evt.pixel[0],
+            y:        evt.pixel[1],
+            name:     macroHit.get('_name') ?? 'Backend',
+            offline:  isOffline,
+            degraded: isDegraded,
+          };
+          return;
+        }
+        backendPopup = null;
         const bbox4326 = macroHit.get('_bbox');
         if (Array.isArray(bbox4326) && bbox4326.length === 4) {
           view.fit(transformExtent(bbox4326, 'EPSG:4326', 'EPSG:3857'), {
@@ -210,6 +224,7 @@
         }
         return;
       }
+      backendPopup = null;
       selection.clear();
     });
 
@@ -321,7 +336,36 @@
   }
 </script>
 
-<div bind:this={mapContainer} class="map-container"></div>
+<div bind:this={mapContainer} class="map-container">
+  {#if backendPopup}
+    <div
+      class="backend-popup"
+      style="left: {backendPopup.x}px; top: {backendPopup.y}px"
+      role="dialog"
+      aria-label="Backend status"
+    >
+      <button class="backend-popup-close" on:click={() => backendPopup = null} aria-label="Close">×</button>
+      <strong class="backend-popup-name">{backendPopup.name}</strong>
+      {#if backendPopup.offline}
+        <p class="backend-popup-msg">Backend ist nicht erreichbar. Möglicherweise liegt ein Konfigurationsproblem im Hub oder beim Backend vor.</p>
+        <a
+          class="backend-popup-link"
+          href="https://mfuhrmann.github.io/spieli/ops/troubleshooting/#hub-shows-all-backends-as-red--unreachable"
+          target="_blank"
+          rel="noopener noreferrer"
+        >Troubleshooting →</a>
+      {:else}
+        <p class="backend-popup-msg">Backend erreichbar, aber keine Spielplatzdaten vorhanden. Der Import wurde möglicherweise noch nicht ausgeführt.</p>
+        <a
+          class="backend-popup-link"
+          href="https://mfuhrmann.github.io/spieli/ops/troubleshooting/#hub-shows-a-backend-as-reachable-but-with-0-playgrounds"
+          target="_blank"
+          rel="noopener noreferrer"
+        >Troubleshooting →</a>
+      {/if}
+    </div>
+  {/if}
+</div>
 
 <style>
   .map-container {
@@ -329,6 +373,60 @@
     height: 100%;
     position: absolute;
     inset: 0;
+  }
+
+  .backend-popup {
+    position: absolute;
+    z-index: 200;
+    transform: translate(-50%, calc(-100% - 12px));
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+    padding: 12px 14px 10px;
+    width: 240px;
+    font-size: 13px;
+    line-height: 1.4;
+    pointer-events: all;
+  }
+
+  .backend-popup-close {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    background: none;
+    border: none;
+    font-size: 16px;
+    line-height: 1;
+    color: #6b7280;
+    cursor: pointer;
+    padding: 0 2px;
+  }
+
+  .backend-popup-close:hover {
+    color: #111827;
+  }
+
+  .backend-popup-name {
+    display: block;
+    font-size: 14px;
+    margin-bottom: 5px;
+    padding-right: 16px;
+    color: #111827;
+  }
+
+  .backend-popup-msg {
+    margin: 0 0 8px;
+    color: #374151;
+  }
+
+  .backend-popup-link {
+    color: #2563eb;
+    text-decoration: none;
+    font-weight: 500;
+  }
+
+  .backend-popup-link:hover {
+    text-decoration: underline;
   }
 
   /* Custom scale line styling - bottom left, minimal */

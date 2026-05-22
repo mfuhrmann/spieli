@@ -5,8 +5,9 @@
 //
 //   1. Always rendered as rings, never as the cluster-tier single-child dot
 //      (a backend with one playground is still a "region", not a singleton).
-//   2. Two visual variants — healthy (filled segments + count) and offline
-//      (dashed outline, muted, "offline" label, last known count).
+//   2. Three visual variants — healthy (filled segments + count), offline
+//      (dashed outline, muted, "offline" label, last known count), and
+//      degraded (amber ring, "no data" label — backend reachable but empty).
 //
 // The bitmap cache from clusterStyle.js isn't reused here: macro features are
 // at most one per registered backend (typically <20), so per-frame redraws
@@ -25,9 +26,12 @@ const RING_WIDTH      = 14; // slightly thicker than cluster (12) for country-sc
 const CENTER_FILL     = 'rgba(255, 255, 255, 0.95)';
 const CENTER_STROKE   = '#1f2937';
 const CENTER_TEXT     = '#1f2937';
-const OFFLINE_STROKE  = '#9ca3af';
-const OFFLINE_FILL    = 'rgba(255, 255, 255, 0.85)';
-const OFFLINE_TEXT    = '#6b7280';
+const OFFLINE_STROKE   = '#9ca3af';
+const OFFLINE_FILL     = 'rgba(255, 255, 255, 0.85)';
+const OFFLINE_TEXT     = '#6b7280';
+const DEGRADED_STROKE  = '#d97706'; // amber-600
+const DEGRADED_FILL    = 'rgba(255, 251, 235, 0.92)'; // amber-50
+const DEGRADED_TEXT    = '#92400e'; // amber-800
 const COUNT_FONT      = 'bold 22px ui-monospace, "SF Mono", Menlo, system-ui, -apple-system, sans-serif';
 const LABEL_FONT      = '600 11px system-ui, -apple-system, "Helvetica Neue", sans-serif';
 
@@ -124,6 +128,33 @@ function renderOfflineMacroRing(pixelCoords, state) {
   ctx.fillText('offline', x, y + 11);
 }
 
+function renderDegradedMacroRing(pixelCoords, state) {
+  const [x, y] = pixelCoords;
+  const ctx    = state.context;
+  const radius = 26; // minimum — count is 0
+
+  ctx.lineWidth   = RING_WIDTH;
+  ctx.lineCap     = 'butt';
+  ctx.strokeStyle = DEGRADED_STROKE;
+  ctx.beginPath();
+  ctx.arc(x, y, radius, 0, Math.PI * 2);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(x, y, radius - RING_WIDTH / 2 - 1, 0, Math.PI * 2);
+  ctx.fillStyle   = DEGRADED_FILL;
+  ctx.strokeStyle = DEGRADED_STROKE;
+  ctx.lineWidth   = 1;
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle    = DEGRADED_TEXT;
+  ctx.font         = LABEL_FONT;
+  ctx.textAlign    = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('no data', x, y);
+}
+
 // Compact display: 65000 → "65k", 1500 → "1.5k", <1000 unchanged. Spec
 // scenario uses 65000 directly but at radius 44 the digit string blows
 // outside the inner disc; the "k" suffix keeps it inside.
@@ -133,9 +164,12 @@ function formatCount(n) {
   return `${Math.round(n / 1000)}k`;
 }
 
-const healthyStyle = new Style({ renderer: renderHealthyMacroRing });
-const offlineStyle = new Style({ renderer: renderOfflineMacroRing });
+const healthyStyle  = new Style({ renderer: renderHealthyMacroRing });
+const offlineStyle  = new Style({ renderer: renderOfflineMacroRing });
+const degradedStyle = new Style({ renderer: renderDegradedMacroRing });
 
 export function macroRingStyleFn(feature) {
-  return feature.get('_offline') ? offlineStyle : healthyStyle;
+  if (feature.get('_offline'))  return offlineStyle;
+  if (feature.get('_degraded')) return degradedStyle;
+  return healthyStyle;
 }
