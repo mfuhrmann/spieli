@@ -1,6 +1,6 @@
 <script>
   import { onMount, onDestroy } from 'svelte';
-  import { readable } from 'svelte/store';
+  import { readable, get } from 'svelte/store';
   import VectorSource from 'ol/source/Vector.js';
   import { Vector as VectorLayer } from 'ol/layer.js';
   import GeoJSON from 'ol/format/GeoJSON.js';
@@ -32,7 +32,6 @@
   const playgroundSource = new VectorSource(); // polygon tier (zoom > clusterMaxZoom)
   const clusterSource    = new VectorSource(); // cluster tier (zoom ≤ clusterMaxZoom)
   let detachOrchestrator = null;
-  let rerunOrchestrator  = null;
   let clusterFilterFingerprint = '';
 
   // Deselect the playground when the user zooms out past the cluster threshold.
@@ -180,7 +179,19 @@
           getFilters: () => JSON.parse(clusterFilterFingerprint),
         });
         detachOrchestrator = orchestrator.detach;
-        rerunOrchestrator  = orchestrator.rerun;
+
+        // Subscribe to filter changes imperatively — avoids Svelte $: dependency-tracking
+        // uncertainty for variables set inside async/nested callbacks.
+        // Skip the immediate invocation (filters start all-false, orchestrator just ran).
+        let filterSubReady = false;
+        const unsubFilters = filterStore.subscribe(filters => {
+          const { standalonePitches: _sp, ...cf } = filters;
+          clusterFilterFingerprint = JSON.stringify(cf);
+          if (!filterSubReady) { filterSubReady = true; return; }
+          if (get(activeTierStore) === 'cluster') orchestrator.rerun();
+        });
+        const baseDetach = orchestrator.detach;
+        detachOrchestrator = () => { baseDetach(); unsubFilters(); };
       } else {
         console.info('[standalone] apiBaseUrl empty — tiered orchestrator not attached (local dev without Docker)');
       }
@@ -189,17 +200,6 @@
 
   // Toggle pitch-layer visibility from the filter store.
   $: if (pitchLayer) pitchLayer.setVisible($filterStore.standalonePitches);
-
-  // String fingerprint of cluster-relevant filters — excludes standalonePitches
-  // (layer toggle, not a playground data filter). Svelte only propagates to
-  // the rerun block when the string changes, so toggling standalonePitches alone
-  // doesn't trigger a cluster re-fetch.
-  $: { const { standalonePitches: _sp, ...cf } = $filterStore; clusterFilterFingerprint = JSON.stringify(cf); }
-
-  // Re-fetch clusters when cluster-relevant filters change at cluster zoom.
-  // Polygon tier handles filter changes client-side via matchesFilters() — no refetch needed.
-  // orchestrate() reads the current filter state via getFilters(), so no arg needed here.
-  $: if (rerunOrchestrator && $activeTierStore === 'cluster') rerunOrchestrator();
 
   onDestroy(() => {
     detachTierDeselect();
