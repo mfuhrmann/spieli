@@ -25,6 +25,12 @@
 
 {#if hasFilters}
   <div class="chips-container">
+    {#if activeFilters.length > 1}
+      <button class="clear-all" onclick={clearAll}>
+        {$_('filter.clearChips')}
+      </button>
+    {/if}
+
     {#each activeFilters as filter (filter.key)}
       <span class="chip">
         <span class="chip-label">{filter.label}</span>
@@ -37,12 +43,6 @@
         </button>
       </span>
     {/each}
-
-    {#if activeFilters.length > 1}
-      <button class="clear-all" onclick={clearAll}>
-        {$_('filter.clearChips')}
-      </button>
-    {/if}
   </div>
 {/if}
 
@@ -53,6 +53,8 @@
     gap: 8px;
     flex-wrap: wrap;
     padding: 8px 0;
+    justify-content: flex-end;
+    max-width: 220px;
   }
 
   .chip {
@@ -92,16 +94,19 @@
   }
 
   .clear-all {
-    font-size: 12px;
-    color: #1a73e8;
-    background: none;
+    font-size: 13px;
+    font-weight: 600;
+    color: #c62828;
+    background: white;
     border: none;
+    border-radius: 16px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
     cursor: pointer;
-    padding: 6px 8px;
+    padding: 6px 12px;
     white-space: nowrap;
   }
 
   .clear-all:hover {
-    text-decoration: underline;
+    background: #ffebee;
   }
 </style>

@@ -440,7 +440,6 @@
   {#if !(isMobile && $hasSelection)}
     <div class="search-area">
       <SearchBar regionExtent={$searchExtent} onlocation={handleLocation} />
-      <FilterChips />
       {#if nearbyLocation}
         <NearbyPlaygrounds
           lat={nearbyLocation.lat}
@@ -457,15 +456,18 @@
 
     <!-- On mobile: pencil (info) on top, filter below — avoids clashing with search bar -->
     <div class="controls-top-right">
-      <button
-        class="control-btn"
-        onclick={() => dataModalOpen = true}
-        title={$_('nav.about')}
-        aria-label={$_('nav.about')}
-      >
-        <Info class="h-5 w-5" />
-      </button>
-      <FilterPanel />
+      <div class="controls-row">
+        <button
+          class="control-btn"
+          onclick={() => dataModalOpen = true}
+          title={$_('nav.about')}
+          aria-label={$_('nav.about')}
+        >
+          <Info class="h-5 w-5" />
+        </button>
+        <FilterPanel />
+      </div>
+      <FilterChips />
     </div>
 
     <div class="controls-bottom-right">
@@ -562,6 +564,13 @@
     top: 1rem;
     right: 1rem;
     z-index: 100;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: flex-end;
+  }
+
+  .controls-row {
     display: flex;
     flex-direction: row;
     gap: 0.5rem;
@@ -735,6 +744,9 @@
     .controls-top-right {
       top: 0.75rem;
       right: 0.75rem;
+    }
+
+    .controls-row {
       /* Stack vertically on mobile so they don't overlap the search bar. */
       flex-direction: column;
     }
