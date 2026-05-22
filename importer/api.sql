@@ -169,7 +169,7 @@ CREATE MATERIALIZED VIEW public.playground_stats AS
       COUNT(CASE WHEN e.amenity = 'shelter'      THEN 1 END)::int AS shelter_count,
       COUNT(CASE WHEN e.leisure = 'picnic_table' THEN 1 END)::int AS picnic_count,
       COUNT(CASE WHEN e.leisure = 'pitch'
-                  AND e.tags->'sport' = 'table_tennis' THEN 1 END)::int AS table_tennis_count,
+                  AND (e.sport = 'table_tennis' OR e.tags->'sport' = 'table_tennis') THEN 1 END)::int AS table_tennis_count,
       BOOL_OR(e.leisure = 'pitch'
               AND (e.sport = 'soccer' OR e.tags->'sport' = 'soccer'))          AS has_soccer,
       BOOL_OR(e.leisure = 'pitch'
