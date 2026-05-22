@@ -7,12 +7,15 @@ The easiest way to deploy spieli is with the interactive installer. It downloads
 - Docker with the Compose plugin
 - `bash`
 - `openssl`
+- `sha256sum` (Linux) or `shasum` (macOS — use `shasum -a 256 --check` instead)
 
 ## Install
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/mfuhrmann/spieli/main/install.sh -o install.sh
-bash install.sh
+TAG=v0.4.13  # check https://github.com/mfuhrmann/spieli/releases for the latest tag
+curl -fsSL "https://github.com/mfuhrmann/spieli/releases/download/${TAG}/install.sh" -o install.sh
+curl -fsSL "https://github.com/mfuhrmann/spieli/releases/download/${TAG}/install.sh.sha256" -o install.sh.sha256
+sha256sum --check install.sh.sha256 && bash install.sh
 ```
 
 ## What the installer does
@@ -90,8 +93,10 @@ If someone is running a spieli Hub and you want your region to appear on it, sta
 **1. Run the installer**
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/mfuhrmann/spieli/main/install.sh -o install.sh
-bash install.sh
+TAG=v0.4.13  # check https://github.com/mfuhrmann/spieli/releases for the latest tag
+curl -fsSL "https://github.com/mfuhrmann/spieli/releases/download/${TAG}/install.sh" -o install.sh
+curl -fsSL "https://github.com/mfuhrmann/spieli/releases/download/${TAG}/install.sh.sha256" -o install.sh.sha256
+sha256sum --check install.sh.sha256 && bash install.sh
 ```
 
 When prompted for deployment mode, choose `data-node` or `data-node-ui`. Run the import when asked.

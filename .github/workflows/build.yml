@@ -122,12 +122,14 @@ jobs:
             | 🔴 Full re-import required | Pull + restart + full re-import (no `API_ONLY`) |
             | *(no label)* | Pull + restart is sufficient |
         run: |
+          sha256sum install.sh > install.sh.sha256
           gh release create "${{ github.ref_name }}" \
             --title "${{ github.ref_name }}" \
             --generate-notes \
             --notes-file <(gh api "/repos/${{ github.repository }}/releases/generate-notes" \
               -f tag_name="${{ github.ref_name }}" \
-              --jq '.body' && printf '%s' "$RELEASE_FOOTER")
+              --jq '.body' && printf '%s' "$RELEASE_FOOTER") \
+            install.sh install.sh.sha256
 
   # ── Importer image (unchanged) ───────────────────────────────────────────────
   docker-importer:
