@@ -176,7 +176,7 @@
           baseUrl: apiBaseUrl,
           clusterSource,
           polygonSource: playgroundSource,
-          getFilters: () => JSON.parse(clusterFilterFingerprint),
+          getFilters: () => clusterFilterFingerprint ? JSON.parse(clusterFilterFingerprint) : null,
         });
         detachOrchestrator = orchestrator.detach;
 
