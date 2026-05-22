@@ -108,10 +108,12 @@ docker compose --profile data-node-ui up -d app
 docker compose --profile data-node-ui run --rm -e API_ONLY=1 importer
 ```
 
-For the hub stack (which also carries Watchtower), include `--profile auto-update` on the `up` command:
+For the hub stack (pure `DEPLOY_MODE=ui` — no importer, no `API_ONLY` step):
 
 ```bash
-docker compose --profile data-node-ui --profile auto-update up -d app
+cd ~/spieli
+docker compose pull
+docker compose --profile ui --profile auto-update up -d app
 ```
 
 !!! note "API_ONLY=1 bypasses daemon mode"
