@@ -1889,6 +1889,7 @@
 <tr>
 <th>Name</th>
 <th>Type</th>
+<th>Default</th>
 <th>Notes</th>
 </tr>
 </thead>
@@ -1896,12 +1897,98 @@
 <tr>
 <td><code>z</code></td>
 <td><code>int</code></td>
+<td>—</td>
 <td>Zoom level — drives cell size via a hardcoded table (10 Mm at z=0, halving each level down to ~1.2 km at z=13)</td>
 </tr>
 <tr>
 <td><code>min_lon</code>, <code>min_lat</code>, <code>max_lon</code>, <code>max_lat</code></td>
 <td><code>float8</code></td>
+<td>—</td>
 <td>WGS84 bounding box</td>
+</tr>
+<tr>
+<td><code>filter_private</code></td>
+<td><code>boolean</code></td>
+<td><code>false</code></td>
+<td>When <code>true</code>, exclude access-restricted playgrounds</td>
+</tr>
+<tr>
+<td><code>filter_water</code></td>
+<td><code>boolean</code></td>
+<td><code>false</code></td>
+<td>When <code>true</code>, include only water playgrounds</td>
+</tr>
+<tr>
+<td><code>filter_baby</code></td>
+<td><code>boolean</code></td>
+<td><code>false</code></td>
+<td>When <code>true</code>, include only baby-friendly playgrounds</td>
+</tr>
+<tr>
+<td><code>filter_toddler</code></td>
+<td><code>boolean</code></td>
+<td><code>false</code></td>
+<td>When <code>true</code>, include only toddler-friendly playgrounds</td>
+</tr>
+<tr>
+<td><code>filter_wheelchair</code></td>
+<td><code>boolean</code></td>
+<td><code>false</code></td>
+<td>When <code>true</code>, include only wheelchair-accessible playgrounds</td>
+</tr>
+<tr>
+<td><code>filter_bench</code></td>
+<td><code>boolean</code></td>
+<td><code>false</code></td>
+<td>When <code>true</code>, include only playgrounds with a bench</td>
+</tr>
+<tr>
+<td><code>filter_picnic</code></td>
+<td><code>boolean</code></td>
+<td><code>false</code></td>
+<td>When <code>true</code>, include only playgrounds with a picnic table</td>
+</tr>
+<tr>
+<td><code>filter_shelter</code></td>
+<td><code>boolean</code></td>
+<td><code>false</code></td>
+<td>When <code>true</code>, include only playgrounds with a shelter</td>
+</tr>
+<tr>
+<td><code>filter_table_tennis</code></td>
+<td><code>boolean</code></td>
+<td><code>false</code></td>
+<td>When <code>true</code>, include only playgrounds with a table tennis table</td>
+</tr>
+<tr>
+<td><code>filter_soccer</code></td>
+<td><code>boolean</code></td>
+<td><code>false</code></td>
+<td>When <code>true</code>, include only playgrounds with a football pitch</td>
+</tr>
+<tr>
+<td><code>filter_basketball</code></td>
+<td><code>boolean</code></td>
+<td><code>false</code></td>
+<td>When <code>true</code>, include only playgrounds with a basketball court</td>
+</tr>
+<tr>
+<td><code>filter_complete</code></td>
+<td><code>boolean</code></td>
+<td><code>true</code></td>
+<td>When <code>false</code>, exclude complete playgrounds</td>
+</tr>
+<tr>
+<td><code>filter_partial</code></td>
+<td><code>boolean</code></td>
+<td><code>true</code></td>
+<td>When <code>false</code>, exclude partial playgrounds</td>
+</tr>
+<tr>
+<td><code>filter_missing</code></td>
+<td><code>boolean</code></td>
+<td><code>true</code></td>
+<td>When <code>false</code>, exclude missing playgrounds</td>
 </tr>
 </tbody>
 </table>

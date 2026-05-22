@@ -1033,6 +1033,30 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Adding a new filter">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#standard-boolean-filter-default-off" class="md-nav__link">
+    <span class="md-ellipsis">
+      Standard boolean filter (default off)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#visibility-filter-default-on" class="md-nav__link">
+    <span class="md-ellipsis">
+      Visibility filter (default on)
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1661,6 +1685,30 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Adding a new filter">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#standard-boolean-filter-default-off" class="md-nav__link">
+    <span class="md-ellipsis">
+      Standard boolean filter (default off)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#visibility-filter-default-on" class="md-nav__link">
+    <span class="md-ellipsis">
+      Visibility filter (default on)
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1906,31 +1954,55 @@
 </ul>
 <p><code>selection.select()</code> automatically writes the hash. On page load, <code>AppShell.svelte</code> reads the hash and dispatches <code>fetchPlaygroundByOsmId</code> to hydrate the polygon source before selecting.</p>
 <h2 id="adding-a-new-filter">Adding a new filter<a class="headerlink" href="#adding-a-new-filter" title="Permanent link">&para;</a></h2>
-<p>Adding a filter touches four files:</p>
-<p><strong>1. <code>app/src/stores/filters.js</code></strong> — add the key to <code>filterStore</code>'s initial state:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">export</span><span class="w"> </span><span class="kd">const</span><span class="w"> </span><span class="nx">filterStore</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">writable</span><span class="p">({</span>
+<h3 id="standard-boolean-filter-default-off">Standard boolean filter (default off)<a class="headerlink" href="#standard-boolean-filter-default-off" title="Permanent link">&para;</a></h3>
+<p>Most filters default to <code>false</code> (inactive). Enabling one restricts the map to playgrounds that have the feature. Example: water playground filter.</p>
+<p><strong>1. <code>app/src/stores/filters.js</code></strong> — add the key to <code>defaultFilters</code> and add match logic to <code>matchesFilters()</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">export</span><span class="w"> </span><span class="kd">const</span><span class="w"> </span><span class="nx">defaultFilters</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span>
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">    </span><span class="err">…</span>
 <a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">    </span><span class="nx">myNewFilter</span><span class="o">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="p">});</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="p">};</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="c1">// in matchesFilters():</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">filters</span><span class="p">.</span><span class="nx">myNewFilter</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="o">!</span><span class="nx">props</span><span class="p">.</span><span class="nx">my_flag</span><span class="p">)</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="kc">false</span><span class="p">;</span>
 </code></pre></div>
-<p>Also add the match logic to <code>matchesFilters()</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">filters</span><span class="p">.</span><span class="nx">myNewFilter</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="o">!</span><span class="nx">props</span><span class="p">.</span><span class="nx">my_flag</span><span class="p">)</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="kc">false</span><span class="p">;</span>
+<p><strong>2. <code>app/src/lib/api.js</code></strong> — add the cluster-tier RPC param to <code>clusterFilterMap</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kd">const</span><span class="w"> </span><span class="nx">clusterFilterMap</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">    </span><span class="err">…</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">    </span><span class="nx">myNewFilter</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;filter_my_new&#39;</span><span class="p">,</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="p">};</span>
 </code></pre></div>
-<p><strong>2. <code>app/src/lib/api.js</code></strong> — add the cluster tier filter param (if the filter should apply to cluster buckets):</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kd">const</span><span class="w"> </span><span class="nx">clusterFilterMap</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">    </span><span class="err">…</span>
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">    </span><span class="nx">myNewFilter</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;filter_my_new&#39;</span><span class="p">,</span>
-<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="p">};</span>
+<p><strong>3. <code>importer/api.sql</code></strong> — add a parameter to <code>get_playground_clusters()</code> (default <code>false</code>) and a WHERE clause. Also drop the old function signature and update the GRANT. Run <code>make db-apply</code> to apply.</p>
+<p><strong>4. <code>app/src/components/FilterPanel.svelte</code></strong> — add the icon to <code>FILTER_ICONS</code> and a translation key to <code>locales/*.json</code>.</p>
+<p><strong>5. Unit tests</strong> — add cases to <code>app/src/stores/filters.test.js</code>.</p>
+<h3 id="visibility-filter-default-on">Visibility filter (default on)<a class="headerlink" href="#visibility-filter-default-on" title="Permanent link">&para;</a></h3>
+<p>Use this pattern when users toggle which <em>categories</em> to show rather than requiring a feature. Example: the completeness filter (<code>showComplete/showPartial/showMissing</code>).</p>
+<p>Key differences from the standard pattern:</p>
+<ul>
+<li>Default value is <code>true</code> (show all); deactivating hides a category.</li>
+<li><code>matchesFilters()</code> checks the prop and returns <code>false</code> to hide.</li>
+<li><code>hasActiveFilters()</code> detects activity via <code>!filters.myVisibilityKey</code>.</li>
+<li><code>activeFilterCount()</code> increments when <code>false</code>, not <code>true</code>.</li>
+<li><code>clearAll()</code> uses <code>filterStore.set({ ...defaultFilters })</code> — already resets visibility filters to <code>true</code> automatically.</li>
+<li>Cluster RPC params default <code>true</code>; pass <code>'false'</code> only when deactivated:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1">// api.js — in fetchPlaygroundClusters:</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">filters</span><span class="p">.</span><span class="nx">showMyCategory</span><span class="w"> </span><span class="o">===</span><span class="w"> </span><span class="kc">false</span><span class="p">)</span><span class="w"> </span><span class="nx">params</span><span class="p">.</span><span class="nx">set</span><span class="p">(</span><span class="s1">&#39;filter_my_category&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;false&#39;</span><span class="p">);</span>
 </code></pre></div>
-<p><strong>3. <code>importer/api.sql</code></strong> — add a filter parameter to <code>get_playground_clusters()</code> and handle it in the SQL WHERE clause. Run <code>make db-apply</code> to apply.</p>
-<p><strong>4. <code>app/src/components/FilterPanel.svelte</code></strong> — add the toggle to the filter UI.</p>
+<ul>
+<li>SQL param defaults <code>true</code>; add a WHERE clause that ORs across all enabled states:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">AND</span><span class="w"> </span><span class="p">(</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span><span class="p">(</span><span class="n">ps</span><span class="p">.</span><span class="n">my_col</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;a&#39;</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="n">filter_a</span><span class="p">)</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">  </span><span class="k">OR</span><span class="w"> </span><span class="p">(</span><span class="n">ps</span><span class="p">.</span><span class="n">my_col</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;b&#39;</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="n">filter_b</span><span class="p">)</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="p">)</span>
+</code></pre></div>
 <h2 id="internationalisation">Internationalisation<a class="headerlink" href="#internationalisation" title="Permanent link">&para;</a></h2>
 <p>Translations live in <code>locales/*.json</code> and are loaded by <code>lib/i18n.js</code> using svelte-i18n. In components, use the <code>$t</code> store:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>&lt;script&gt;
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>  import { t } from &#39;svelte-i18n&#39;;
-<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>&lt;/script&gt;
-<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>
-<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>&lt;p&gt;{$t(&#39;myKey&#39;)}&lt;/p&gt;
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>&lt;script&gt;
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>  import { t } from &#39;svelte-i18n&#39;;
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>&lt;/script&gt;
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>&lt;p&gt;{$t(&#39;myKey&#39;)}&lt;/p&gt;
 </code></pre></div>
 <p>Add new keys to <code>locales/en.json</code> and <code>locales/de.json</code>. Translation to other languages happens via <a href="../translation-guide/">Weblate</a>.</p>
 <h2 id="style-system">Style system<a class="headerlink" href="#style-system" title="Permanent link">&para;</a></h2>
