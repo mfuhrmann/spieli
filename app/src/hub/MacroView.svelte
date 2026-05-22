@@ -46,8 +46,9 @@
     const offline = !isBackendHealthy(backend);
     // Pre-P1 backends → unknown completeness; map the count into the
     // restricted bucket so the renderer draws a flat gray ring.
-    const c = backend.completeness;
+    const c     = backend.completeness;
     const count = backend.playgroundCount ?? 0;
+    const degraded = !offline && count === 0;
     const props = c
       ? {
           count,
@@ -70,6 +71,7 @@
       _backendSlug: backend.slug ?? null,
       _bbox:        backend.bbox,
       _offline:     offline,
+      _degraded:    degraded,
       _name:        backend.name ?? backend.region ?? backend.slug ?? backend.url,
       ...props,
     });
