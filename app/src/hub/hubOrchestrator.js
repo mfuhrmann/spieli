@@ -61,13 +61,15 @@ export function tierForZoom(zoom) {
  * @param {import('svelte/store').Readable<Array>} opts.backendsStore
  * @param {import('ol/source/Vector.js').default} opts.clusterSource
  * @param {import('ol/source/Vector.js').default} opts.polygonSource
- * @returns {() => void} detach function
+ * @param {() => object|null} [opts.getFilters]  Returns current cluster-relevant filter snapshot.
+ * @returns {{ detach: () => void, rerun: () => void }}
  */
 export function attachHubOrchestrator({
   map,
   backendsStore,
   clusterSource,
   polygonSource,
+  getFilters = () => null,
 }) {
   let abort = null;
   let allBackends = [];
@@ -139,6 +141,7 @@ export function attachHubOrchestrator({
 
     const extent3857 = view.calculateExtent(map.getSize());
     const viewportBbox = transformExtent(extent3857, 'EPSG:3857', 'EPSG:4326');
+    const filters = getFilters();
     const selected = filterHealthy(selectBackends(viewportBbox, allBackends));
 
     if (selected.length === 0) {
@@ -197,7 +200,7 @@ export function attachHubOrchestrator({
         },
       });
       await fanOut({
-        fetcher: (url, sig) => clusterFetcherFor(url)(z, extent3857, url, sig),
+        fetcher: (url, sig) => clusterFetcherFor(url)(z, extent3857, url, sig, filters),
         backends: selected,
         signal,
         onResult: (entry) => {
@@ -310,11 +313,16 @@ export function attachHubOrchestrator({
   // doesn't wait on a moveend.
   orchestrate();
 
-  return () => {
-    debounced.cancel?.();
-    if (abort) abort.abort();
-    map.un('moveend', debounced);
-    detachStore();
+  return {
+    detach() {
+      debounced.cancel?.();
+      if (abort) abort.abort();
+      map.un('moveend', debounced);
+      detachStore();
+    },
+    rerun() {
+      orchestrate();
+    },
   };
 }
 
