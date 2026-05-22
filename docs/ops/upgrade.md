@@ -78,6 +78,51 @@ The importer applies `api.sql` on every daemon-mode startup, so schema changes f
 
 Upgrade each data-node first, verify it works, then upgrade the Hub UI. The Hub is backwards-compatible with older data-nodes (it falls back to the legacy `get_playgrounds` RPC if the tiered RPCs return 404), but an older Hub is not guaranteed to understand new data-node response fields.
 
+### Multiple stacks on one host
+
+When the Hub and its data-nodes share a single VPS, each stack lives in its own directory with a unique `COMPOSE_PROJECT_NAME`. Upgrade in order: **data-nodes first, hub last**. Never upgrade stacks in parallel — concurrent API_ONLY runs plus the resident daemon importers can exhaust RAM.
+
+Use the provided helper script for a one-command upgrade:
+
+```bash
+bash ~/spieli/scripts/upgrade-stacks.sh
+```
+
+The script is in `scripts/upgrade-stacks.sh`. Edit the `STACKS` array at the top to match your deployment before the first run:
+
+```bash
+STACKS=(
+  "$HOME/spieli-berlin:data-node-ui:8082"
+  "$HOME/spieli:data-node-ui auto-update:8080"
+)
+```
+
+Each entry is `directory:profiles:local-port`. The script pulls images, restarts the app container, runs `API_ONLY=1`, and verifies `get_meta` — then moves to the next stack.
+
+To upgrade a single stack manually:
+
+```bash
+cd ~/spieli-<region>
+docker compose pull
+docker compose --profile data-node-ui up -d app
+docker compose --profile data-node-ui run --rm -e API_ONLY=1 importer
+```
+
+For the hub stack (which also carries Watchtower), include `--profile auto-update` on the `up` command:
+
+```bash
+docker compose --profile data-node-ui --profile auto-update up -d app
+```
+
+!!! note "API_ONLY=1 bypasses daemon mode"
+    `docker compose run --rm -e API_ONLY=1 importer` starts a fresh one-shot container. The importer entrypoint checks `API_ONLY` before any reimport logic, so `REIMPORT_INTERVAL_*` settings have no effect — the container applies `api.sql` and exits regardless of how recently data was imported.
+
+!!! note "One Watchtower covers all containers"
+    Only the hub stack should run `--profile auto-update`. Adding a second Watchtower to any data-node stack causes both instances to fight over the same containers. Data-node stacks without `auto-update` are still restarted by the single Watchtower instance when it detects a new image.
+
+!!! note "Daemon importer and API_ONLY"
+    On stacks managed by Watchtower, the importer applies `api.sql` automatically on every daemon-mode restart — the explicit `API_ONLY=1` step is not strictly required. Running it during a manual upgrade just ensures `get_meta()` reports the correct version immediately, without waiting for the next scheduled daemon restart.
+
 ## Downgrading
 
 Downgrading is supported only within the same minor version. Images are tagged `:X.Y.Z` and `:X.Y`, so:
