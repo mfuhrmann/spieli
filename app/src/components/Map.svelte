@@ -158,6 +158,9 @@
         selection.clear();
         selectionZoom = null;
       }
+      // P1: popup is anchored to a click pixel; dismiss it on any pan/zoom so it
+      // doesn't drift away from its ring.
+      backendPopup = null;
     });
 
     // Click handler: tier-aware.
@@ -310,6 +313,8 @@
         macroLayer.setVisible(false);
         return;
       }
+      // P2: dismiss the popup whenever we leave macro tier.
+      if (tier !== 'macro') backendPopup = null;
       playgroundLayer.setVisible(tier === 'polygon');
       clusterLayer.setVisible(tier === 'cluster');
       macroLayer.setVisible(tier === 'macro');
@@ -336,13 +341,15 @@
   }
 </script>
 
+<svelte:window on:keydown={(e) => { if (e.key === 'Escape' && backendPopup) backendPopup = null; }} />
 <div bind:this={mapContainer} class="map-container">
   {#if backendPopup}
     <div
       class="backend-popup"
       style="left: {backendPopup.x}px; top: {backendPopup.y}px"
-      role="dialog"
+      role="status"
       aria-label="Backend status"
+      aria-live="polite"
     >
       <button class="backend-popup-close" on:click={() => backendPopup = null} aria-label="Close">×</button>
       <strong class="backend-popup-name">{backendPopup.name}</strong>
@@ -355,7 +362,7 @@
           rel="noopener noreferrer"
         >Troubleshooting →</a>
       {:else}
-        <p class="backend-popup-msg">Backend erreichbar, aber keine Spielplatzdaten vorhanden. Der Import wurde möglicherweise noch nicht ausgeführt.</p>
+        <p class="backend-popup-msg">Backend erreichbar, aber keine Spielplatzdaten vorhanden.</p>
         <a
           class="backend-popup-link"
           href="https://mfuhrmann.github.io/spieli/ops/troubleshooting/#hub-shows-a-backend-as-reachable-but-with-0-playgrounds"
@@ -412,6 +419,9 @@
     margin-bottom: 5px;
     padding-right: 16px;
     color: #111827;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .backend-popup-msg {
