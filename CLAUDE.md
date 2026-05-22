@@ -25,6 +25,12 @@ spieli is an interactive web map for exploring playgrounds based on OpenStreetMa
 **PR labels for release notes** — label PRs before merging so the auto-generated release notes show the correct upgrade action:
 - `requires-schema-update` — `api.sql` changed; operators must run `API_ONLY=1` after upgrading.
 - `requires-reimport` — data model changed; operators must run a full re-import.
+- `requires-env-update` — new or removed env var in `.env`; operators must update their `.env` before starting.
+- `requires-compose-update` — `compose.yml` changed structurally (new service, renamed service, removed volume); operators must re-run `install.sh` or update manually.
+
+**Versioning rule** — breaking = "pull + restart is NOT sufficient":
+- Any merged PR carries a breaking label → next release bumps **minor** (e.g. `0.4.x` → `0.5.0`).
+- No breaking labels → **patch** bump (e.g. `0.5.0` → `0.5.1`).
 
 ## Development commands
 

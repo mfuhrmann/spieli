@@ -120,6 +120,8 @@ jobs:
             |---|---|
             | ⚠️ Database changes | Pull + restart + `docker compose --profile <mode> run --rm -e API_ONLY=1 importer` |
             | 🔴 Full re-import required | Pull + restart + full re-import (no `API_ONLY`) |
+            | 🔧 Environment variables changed | Update `.env` first, then pull + restart |
+            | 🔧 Compose file changed | Re-run `install.sh` or update `compose.yml` manually, then pull + restart |
             | *(no label)* | Pull + restart is sufficient |
         run: |
           sha256sum install.sh > install.sh.sha256
