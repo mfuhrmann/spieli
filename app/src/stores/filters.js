@@ -52,8 +52,8 @@ export function matchesFilters(props, filters) {
 
 /** Returns true if any filter (including deactivated completeness states) is active. */
 export function hasActiveFilters(filters) {
-    const { showComplete, showPartial, showMissing, standalonePitches, ...boolFilters } = filters;
-    return Object.values(boolFilters).some(Boolean)
+    const { showComplete, showPartial, showMissing, ...rest } = filters;
+    return Object.values(rest).some(Boolean)
         || !showComplete || !showPartial || !showMissing;
 }
 
