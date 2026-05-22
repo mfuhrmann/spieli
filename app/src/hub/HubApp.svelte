@@ -11,6 +11,8 @@
   import { createRegistry } from './registry.js';
   import { attachHubOrchestrator } from './hubOrchestrator.js';
   import { mapStore } from '../stores/map.js';
+  import { filterStore } from '../stores/filters.js';
+  import { activeTierStore } from '../stores/tier.js';
   import { clusterMaxZoom } from '../lib/config.js';
   import * as osmIdDedup from './osmIdDedup.js';
 
@@ -200,12 +202,22 @@
     // attachment has run.
     detachMapAttach = mapStore.subscribe(map => {
       if (!map || detachOrchestrator) return;
-      detachOrchestrator = attachHubOrchestrator({
+      let clusterFilterFingerprint = '';
+      const orchestrator = attachHubOrchestrator({
         map,
         backendsStore: backends,
         clusterSource,
         polygonSource,
+        getFilters: () => clusterFilterFingerprint ? JSON.parse(clusterFilterFingerprint) : null,
       });
+      let filterSubReady = false;
+      const unsubFilters = filterStore.subscribe(filters => {
+        const { standalonePitches: _sp, ...cf } = filters;
+        clusterFilterFingerprint = JSON.stringify(cf);
+        if (!filterSubReady) { filterSubReady = true; return; }
+        if (get(activeTierStore) === 'cluster') orchestrator.rerun();
+      });
+      detachOrchestrator = () => { orchestrator.detach(); unsubFilters(); };
       // Detach asynchronously so we're not unsubscribing while still inside
       // svelte's subscriber dispatch loop.
       queueMicrotask(() => { detachMapAttach?.(); detachMapAttach = null; });

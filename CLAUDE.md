@@ -52,6 +52,12 @@ make db-shell          # psql shell in the running DB container
 make down              # stop all containers
 ```
 
+**Docker build cache pitfall**: `make docker-build` uses Docker's layer cache. If source file changes aren't picked up (all steps say `---> Using cache`), force a full rebuild:
+```bash
+docker compose build --no-cache app && docker compose up -d app
+```
+This happens because Docker sometimes fails to detect that `app/` files changed. Symptom: code changes have no effect despite a successful `make docker-build`.
+
 **Local dev note**: When `apiBaseUrl` is empty in `app/public/config.js`, the frontend falls back to Overpass — no database required for basic frontend dev.
 
 ## Architecture
