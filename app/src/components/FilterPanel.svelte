@@ -7,7 +7,7 @@
   let wrap;
 
   function onWindowClick(e) {
-    if (open && wrap && !wrap.contains(e.target)) open = false;
+    if (open && wrap && !e.composedPath().includes(wrap)) open = false;
   }
 
   const FILTER_ICONS = {
