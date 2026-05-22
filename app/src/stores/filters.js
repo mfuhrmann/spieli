@@ -1,7 +1,9 @@
 import { writable } from 'svelte/store';
+import { playgroundCompleteness } from '../lib/completeness.js';
 
-// Each key maps to a boolean — true means the filter is active.
-export const filterStore = writable({
+// showComplete/showPartial/showMissing default true (show all).
+// Deactivating a state hides playgrounds of that completeness.
+export const defaultFilters = {
     private:          false,
     water:            false,
     baby:             false,
@@ -14,7 +16,12 @@ export const filterStore = writable({
     soccer:           false,
     basketball:       false,
     standalonePitches: false,  // layer toggle — show pitches outside playground areas
-});
+    showComplete:     true,
+    showPartial:      true,
+    showMissing:      true,
+};
+
+export const filterStore = writable({ ...defaultFilters });
 
 /**
  * Returns true if the feature properties satisfy all active filters.
@@ -34,10 +41,25 @@ export function matchesFilters(props, filters) {
     if (filters.tableTennis && !(props.table_tennis_count > 0)) return false;
     if (filters.soccer      && !props.has_soccer)      return false;
     if (filters.basketball  && !props.has_basketball)  return false;
+    if (!filters.showComplete || !filters.showPartial || !filters.showMissing) {
+        const c = playgroundCompleteness(props);
+        if (!filters.showComplete && c === 'complete') return false;
+        if (!filters.showPartial  && c === 'partial')  return false;
+        if (!filters.showMissing  && c === 'missing')  return false;
+    }
     return true;
 }
 
-/** Returns true if any filter is currently active. */
+/** Returns true if any filter (including deactivated completeness states) is active. */
 export function hasActiveFilters(filters) {
-    return Object.values(filters).some(Boolean);
+    const { showComplete, showPartial, showMissing, standalonePitches, ...boolFilters } = filters;
+    return Object.values(boolFilters).some(Boolean)
+        || !showComplete || !showPartial || !showMissing;
+}
+
+/** Count of active filters for the badge (deactivated completeness states count too). */
+export function activeFilterCount(filters) {
+    const { showComplete, showPartial, showMissing, standalonePitches, ...boolFilters } = filters;
+    return Object.values(boolFilters).filter(Boolean).length
+        + (showComplete ? 0 : 1) + (showPartial ? 0 : 1) + (showMissing ? 0 : 1);
 }
