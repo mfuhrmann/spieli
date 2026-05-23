@@ -24,14 +24,17 @@ cd /path/to/your/spieli-deployment
 # Pull the latest images
 docker compose pull
 
-# Restart app container (zero-database-downtime)
-docker compose --profile <mode> up -d app
+# Restart app and importer containers
+docker compose --profile <mode> up -d app importer
 
 # Re-apply api.sql — updates DB functions and the version reported by get_meta()
 docker compose --profile <mode> run --rm -e API_ONLY=1 importer
 ```
 
 Replace `<mode>` with your `DEPLOY_MODE` (`data-node`, `ui`, or `data-node-ui`).
+
+!!! warning "Always restart the importer, not just the app"
+    `docker compose up -d app` alone leaves the daemon importer running the old image. The daemon re-applies `api.sql` on its next scheduled reimport — using the old image, which reverts the version in `get_meta()` back to the previous release. Always include `importer` in the `up -d` call.
 
 !!! note
     The `API_ONLY=1` step is required on every upgrade, not just when the release notes mention SQL changes. The version number visible in the Hub regions panel comes from the database (written by the importer), not the app image — skipping this step leaves the reported version stale.
