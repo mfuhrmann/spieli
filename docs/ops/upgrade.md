@@ -18,6 +18,9 @@ Check [GitHub Releases](https://github.com/mfuhrmann/spieli/releases) for the la
 
 For patch and minor version upgrades with no breaking changes:
 
+!!! danger "Do not delete volumes during a standard upgrade"
+    A standard upgrade does **not** require deleting Docker volumes. Deleting `pgdata` erases all imported playground data and forces a full re-import (several hours for large states). If you already deleted `pgdata`, see [If you deleted the database volume](#if-you-deleted-the-database-volume) below.
+
 ```bash
 cd /path/to/your/spieli-deployment
 
@@ -42,6 +45,17 @@ Replace `<mode>` with your `DEPLOY_MODE` (`data-node`, `ui`, or `data-node-ui`).
 !!! warning "If API_ONLY fails mid-run"
     `API_ONLY=1` drops and recreates the `playground_stats` materialised view. If it crashes partway through, the view is gone and PostgREST will log errors like `relation "public.playground_stats" does not exist`. Recovery: run a **full re-import** (see below) — this recreates everything from scratch.
 
+### Verify the upgrade
+
+After the `API_ONLY=1` step, confirm the new version is live and playground data is intact:
+
+```bash
+curl -sf http://localhost:<port>/api/rpc/get_meta | \
+  python3 -c "import sys,json; d=json.load(sys.stdin); print('version:', d['version'], ' playgrounds:', d['playground_count'])"
+```
+
+Both `version` and `playground_count` should be non-zero. If `playground_count` is 0, a full re-import is needed (see below).
+
 ## When to run a full re-import
 
 A full re-import (without `API_ONLY`) is needed when:
@@ -54,6 +68,38 @@ docker compose --profile <mode> run --rm importer
 ```
 
 A full re-import also re-applies `api.sql`, so the separate `API_ONLY=1` step is not needed when you do a full re-import.
+
+## If you deleted the database volume
+
+If you deleted the `pgdata` volume (e.g. `docker compose down -v` or `docker volume rm <stack>_pgdata`), all imported data is gone and you need a full re-import. Before running it:
+
+1. **Check whether the PBF cache volume also survived.** The importer stores downloaded and pre-filtered PBF files in a separate named volume (`<stack>_pbf_cache`). This volume is not removed by `docker compose down -v` if it was created outside the current Compose project.
+
+    ```bash
+    docker volume ls | grep pbf_cache
+    ```
+
+2. **If the cache volume exists, clear it.** A previously interrupted import may have left a corrupt or empty filtered PBF in the cache. The importer checks file timestamps but not content — a corrupt cache causes a full re-import to process 0 objects and silently leave the database empty.
+
+    ```bash
+    # Replace <stack> with your stack name (e.g. spieli-hessen)
+    docker volume rm <stack>_pbf_cache
+    ```
+
+    Alternatively, force a cache bypass by deleting only the filtered files:
+
+    ```bash
+    docker run --rm -v <stack>_pbf_cache:/data alpine \
+      sh -c 'rm -f /data/*_<RELATION_ID>.pbf /data/*_<RELATION_ID>_tags.pbf'
+    ```
+
+3. **Run the full re-import** (downloads the PBF fresh if the cache was cleared):
+
+    ```bash
+    docker compose --profile <mode> run --rm importer
+    ```
+
+4. **Verify** with `get_meta` as shown in the standard upgrade section above.
 
 ## Upgrading the Compose file
 

@@ -195,9 +195,18 @@ run_import() (
     if [ "$SKIP_PREFILTER" -eq 0 ]; then
         BBOX_PBF="/data/${PBF_BASENAME}_${OSM_RELATION_ID}.pbf"
 
+        BBOX_CACHE_OK=0
         if [ -f "$BBOX_PBF" ] && [ "$BBOX_PBF" -nt "$PBF_FILE" ]; then
-            echo "[importer] Bbox cache hit: $BBOX_PBF is newer than source, skipping osmium extract"
-        else
+            BBOX_SIZE=$(wc -c < "$BBOX_PBF")
+            if [ "$BBOX_SIZE" -ge 10240 ]; then
+                BBOX_CACHE_OK=1
+                echo "[importer] Bbox cache hit: $BBOX_PBF is newer than source, skipping osmium extract"
+            else
+                echo "[importer] WARNING: bbox cache is suspiciously small (${BBOX_SIZE} bytes) — likely corrupt or empty. Invalidating and re-running osmium..."
+                rm -f "$BBOX_PBF"
+            fi
+        fi
+        if [ "$BBOX_CACHE_OK" -eq 0 ]; then
             echo "[importer] Running osmium extract (bbox=$RESOLVED_BBOX)..."
             BBOX_TMP=$(mktemp -p /data .bbox.XXXXXX.pbf)
             trap 'rm -f "$BBOX_TMP"' EXIT
@@ -219,9 +228,18 @@ run_import() (
     # --------------------------------------------------------------------------- #
     TAGS_PBF="/data/${PBF_BASENAME}_${OSM_RELATION_ID}_tags.pbf"
 
+    TAGS_CACHE_OK=0
     if [ -f "$TAGS_PBF" ] && [ "$TAGS_PBF" -nt "$IMPORT_PBF" ]; then
-        echo "[importer] Tag-filter cache hit: $TAGS_PBF is newer than source, skipping osmium tags-filter"
-    else
+        TAGS_SIZE=$(wc -c < "$TAGS_PBF")
+        if [ "$TAGS_SIZE" -ge 10240 ]; then
+            TAGS_CACHE_OK=1
+            echo "[importer] Tag-filter cache hit: $TAGS_PBF is newer than source, skipping osmium tags-filter"
+        else
+            echo "[importer] WARNING: tags cache is suspiciously small (${TAGS_SIZE} bytes) — likely corrupt or empty. Invalidating and re-running osmium..."
+            rm -f "$TAGS_PBF"
+        fi
+    fi
+    if [ "$TAGS_CACHE_OK" -eq 0 ]; then
         echo "[importer] Running osmium tags-filter..."
         TAGS_TMP=$(mktemp -p /data .tags.XXXXXX.pbf)
         trap 'rm -f "$TAGS_TMP"' EXIT
@@ -299,6 +317,18 @@ run_import() (
         "$IMPORT_PBF"
 
     echo "[importer] osm2pgsql finished."
+
+    # Sanity check: any legitimate Bundesland import produces at least some
+    # playground polygons. Zero means the PBF was empty or corrupt — the import
+    # succeeded structurally but the database is now effectively empty.
+    _PLAYGROUND_COUNT=$(psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" \
+        -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+        -t -c "SELECT count(*) FROM planet_osm_polygon WHERE leisure = 'playground'" \
+        2>/dev/null | tr -d ' \n')
+    if [ -z "$_PLAYGROUND_COUNT" ] || [ "$_PLAYGROUND_COUNT" -eq 0 ]; then
+        fail "osm2pgsql imported 0 playground polygons — the PBF is likely empty or corrupt. Delete the cached PBF files and re-run: docker run --rm -v <pbf_cache_volume>:/data alpine sh -c 'rm -f /data/*_${OSM_RELATION_ID}*.pbf'"
+    fi
+    echo "[importer] Verified: ${_PLAYGROUND_COUNT} playground polygons imported."
 
     # --------------------------------------------------------------------------- #
     # Create PostgREST API schema (views / functions)
