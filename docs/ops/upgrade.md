@@ -143,7 +143,7 @@ STACKS=(
 )
 ```
 
-Each entry is `directory:profiles:local-port`. The script pulls images, restarts the app container, runs `API_ONLY=1`, and verifies `get_meta` — then moves to the next stack.
+Each entry is `directory:profiles:local-port`. The script pulls images, restarts the app container, runs `API_ONLY=1`, verifies `get_meta`, then restarts the daemon importer on the new image — and moves to the next stack.
 
 To upgrade a single stack manually:
 
@@ -152,7 +152,13 @@ cd ~/spieli-<region>
 docker compose pull
 docker compose --profile data-node-ui up -d app
 docker compose --profile data-node-ui run --rm -e API_ONLY=1 importer
+# verify first, then restart the daemon:
+curl -sf http://localhost:<port>/api/rpc/get_meta | python3 -c "import sys,json; d=json.load(sys.stdin); print('version:', d['version'], ' playgrounds:', d['playground_count'])"
+docker compose --profile data-node-ui up -d importer
 ```
+
+!!! warning "Run API_ONLY=1 before restarting the daemon importer"
+    The daemon importer runs `api.sql` on every container startup. If you restart the daemon and then immediately run `API_ONLY=1`, both containers apply `api.sql` concurrently — they race on the `DROP`/`CREATE` of the `playground_stats` materialized view. On large datasets this reliably causes `ERROR: relation "public.playground_stats" does not exist`. Always run `API_ONLY=1` first, verify, then restart the daemon.
 
 For the hub stack (pure `DEPLOY_MODE=ui` — no importer, no `API_ONLY` step):
 
