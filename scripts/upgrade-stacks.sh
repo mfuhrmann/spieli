@@ -66,10 +66,17 @@ for entry in "${STACKS[@]}"; do
 
   echo "→ Verifying..."
   sleep 3
-  result=$(curl -sf "http://localhost:${port}/api/rpc/get_meta" | \
-    python3 -c "import sys,json; d=json.load(sys.stdin); print('version:', d.get('version','?'), ' playgrounds:', d.get('playground_count','?'))") \
-    || fail "get_meta unreachable for $name on port $port"
-  echo "  $result"
+  if [[ "$profiles" == *"data-node"* ]]; then
+    result=$(curl -sf "http://localhost:${port}/api/rpc/get_meta" | \
+      python3 -c "import sys,json; d=json.load(sys.stdin); print('version:', d.get('version','?'), ' playgrounds:', d.get('playground_count','?'))") \
+      || fail "get_meta unreachable for $name on port $port"
+    echo "  $result"
+  else
+    # Pure hub has no PostgREST — verify the app is serving HTTP instead.
+    curl -sf "http://localhost:${port}/" -o /dev/null \
+      || fail "App unreachable for $name on port $port"
+    echo "  app responding on port ${port}"
+  fi
 
   if [[ "$profiles" == *"data-node"* ]]; then
     echo "→ Restarting daemon importer on new image..."
