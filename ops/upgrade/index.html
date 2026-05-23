@@ -1835,13 +1835,20 @@
 <a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">  </span><span class="s2">&quot;</span><span class="nv">$HOME</span><span class="s2">/spieli:data-node-ui auto-update:8080&quot;</span>
 <a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="o">)</span>
 </code></pre></div>
-<p>Each entry is <code>directory:profiles:local-port</code>. The script pulls images, restarts the app container, runs <code>API_ONLY=1</code>, and verifies <code>get_meta</code> — then moves to the next stack.</p>
+<p>Each entry is <code>directory:profiles:local-port</code>. The script pulls images, restarts the app container, runs <code>API_ONLY=1</code>, verifies <code>get_meta</code>, then restarts the daemon importer on the new image — and moves to the next stack.</p>
 <p>To upgrade a single stack manually:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="nb">cd</span><span class="w"> </span>~/spieli-&lt;region&gt;
 <a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>pull
 <a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>data-node-ui<span class="w"> </span>up<span class="w"> </span>-d<span class="w"> </span>app
 <a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>data-node-ui<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>-e<span class="w"> </span><span class="nv">API_ONLY</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>importer
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="c1"># verify first, then restart the daemon:</span>
+<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>curl<span class="w"> </span>-sf<span class="w"> </span>http://localhost:&lt;port&gt;/api/rpc/get_meta<span class="w"> </span><span class="p">|</span><span class="w"> </span>python3<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;import sys,json; d=json.load(sys.stdin); print(&#39;version:&#39;, d[&#39;version&#39;], &#39; playgrounds:&#39;, d[&#39;playground_count&#39;])&quot;</span>
+<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>data-node-ui<span class="w"> </span>up<span class="w"> </span>-d<span class="w"> </span>importer
 </code></pre></div>
+<div class="admonition warning">
+<p class="admonition-title">Run API_ONLY=1 before restarting the daemon importer</p>
+<p>The daemon importer runs <code>api.sql</code> on every container startup. If you restart the daemon and then immediately run <code>API_ONLY=1</code>, both containers apply <code>api.sql</code> concurrently — they race on the <code>DROP</code>/<code>CREATE</code> of the <code>playground_stats</code> materialized view. On large datasets this reliably causes <code>ERROR: relation "public.playground_stats" does not exist</code>. Always run <code>API_ONLY=1</code> first, verify, then restart the daemon.</p>
+</div>
 <p>For the hub stack (pure <code>DEPLOY_MODE=ui</code> — no importer, no <code>API_ONLY</code> step):</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="nb">cd</span><span class="w"> </span>~/spieli
 <a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>pull
