@@ -199,12 +199,15 @@ run_import() (
             echo "[importer] Bbox cache hit: $BBOX_PBF is newer than source, skipping osmium extract"
         else
             echo "[importer] Running osmium extract (bbox=$RESOLVED_BBOX)..."
+            BBOX_TMP=$(mktemp -p /data .bbox.XXXXXX.pbf)
+            trap 'rm -f "$BBOX_TMP"' EXIT
             osmium extract \
                 --bbox="$RESOLVED_BBOX" \
                 --strategy=smart \
-                -o "$BBOX_PBF" \
-                "$PBF_FILE" \
-                --overwrite
+                -o "$BBOX_TMP" \
+                "$PBF_FILE"
+            mv "$BBOX_TMP" "$BBOX_PBF"
+            trap - EXIT
             echo "[importer] Bbox extract complete: $(du -sh "$BBOX_PBF" | cut -f1)"
         fi
 
@@ -220,10 +223,11 @@ run_import() (
         echo "[importer] Tag-filter cache hit: $TAGS_PBF is newer than source, skipping osmium tags-filter"
     else
         echo "[importer] Running osmium tags-filter..."
+        TAGS_TMP=$(mktemp -p /data .tags.XXXXXX.pbf)
+        trap 'rm -f "$TAGS_TMP"' EXIT
         osmium tags-filter \
-            -o "$TAGS_PBF" \
+            -o "$TAGS_TMP" \
             "$IMPORT_PBF" \
-            --overwrite \
             n/natural=tree \
             w/natural=tree_row \
             n/leisure=playground \
@@ -260,6 +264,8 @@ run_import() (
             r/leisure=pitch \
             r/type=multipolygon \
             r/boundary=administrative
+        mv "$TAGS_TMP" "$TAGS_PBF"
+        trap - EXIT
         echo "[importer] Tag-filter complete: $(du -sh "$TAGS_PBF" | cut -f1)"
     fi
 
