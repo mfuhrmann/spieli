@@ -49,11 +49,12 @@ for entry in "${STACKS[@]}"; do
   echo "→ Pulling images..."
   docker compose pull
 
-  echo "→ Restarting app and importer containers..."
+  echo "→ Restarting app container..."
   docker compose "${profile_flags[@]}" up -d app
 
   # Pure hub stacks (DEPLOY_MODE=ui) have no importer — skip importer steps.
   if [[ "$profiles" == *"data-node"* ]]; then
+    echo "→ Restarting daemon importer..."
     # Restart the daemon importer so it picks up the new image immediately.
     # Daemon mode runs api.sql on every startup, so the version in get_meta()
     # is updated without waiting for the next scheduled Watchtower restart.
