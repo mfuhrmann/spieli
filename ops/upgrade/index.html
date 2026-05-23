@@ -707,12 +707,36 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Standard upgrade (same minor version)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#verify-the-upgrade" class="md-nav__link">
+    <span class="md-ellipsis">
+      Verify the upgrade
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
   <a href="#when-to-run-a-full-re-import" class="md-nav__link">
     <span class="md-ellipsis">
       When to run a full re-import
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#if-you-deleted-the-database-volume" class="md-nav__link">
+    <span class="md-ellipsis">
+      If you deleted the database volume
     </span>
   </a>
   
@@ -1550,12 +1574,36 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Standard upgrade (same minor version)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#verify-the-upgrade" class="md-nav__link">
+    <span class="md-ellipsis">
+      Verify the upgrade
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
   <a href="#when-to-run-a-full-re-import" class="md-nav__link">
     <span class="md-ellipsis">
       When to run a full re-import
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#if-you-deleted-the-database-volume" class="md-nav__link">
+    <span class="md-ellipsis">
+      If you deleted the database volume
     </span>
   </a>
   
@@ -1641,6 +1689,10 @@
 <p>Check <a href="https://github.com/mfuhrmann/spieli/releases">GitHub Releases</a> for the latest version and any breaking changes.</p>
 <h2 id="standard-upgrade-same-minor-version">Standard upgrade (same minor version)<a class="headerlink" href="#standard-upgrade-same-minor-version" title="Permanent link">&para;</a></h2>
 <p>For patch and minor version upgrades with no breaking changes:</p>
+<div class="admonition danger">
+<p class="admonition-title">Do not delete volumes during a standard upgrade</p>
+<p>A standard upgrade does <strong>not</strong> require deleting Docker volumes. Deleting <code>pgdata</code> erases all imported playground data and forces a full re-import (several hours for large states). If you already deleted <code>pgdata</code>, see <a href="#if-you-deleted-the-database-volume">If you deleted the database volume</a> below.</p>
+</div>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nb">cd</span><span class="w"> </span>/path/to/your/spieli-deployment
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="c1"># Pull the latest images</span>
@@ -1665,23 +1717,56 @@
 <p class="admonition-title">If API_ONLY fails mid-run</p>
 <p><code>API_ONLY=1</code> drops and recreates the <code>playground_stats</code> materialised view. If it crashes partway through, the view is gone and PostgREST will log errors like <code>relation "public.playground_stats" does not exist</code>. Recovery: run a <strong>full re-import</strong> (see below) — this recreates everything from scratch.</p>
 </div>
+<h3 id="verify-the-upgrade">Verify the upgrade<a class="headerlink" href="#verify-the-upgrade" title="Permanent link">&para;</a></h3>
+<p>After the <code>API_ONLY=1</code> step, confirm the new version is live and playground data is intact:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>curl<span class="w"> </span>-sf<span class="w"> </span>http://localhost:&lt;port&gt;/api/rpc/get_meta<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span>python3<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;import sys,json; d=json.load(sys.stdin); print(&#39;version:&#39;, d[&#39;version&#39;], &#39; playgrounds:&#39;, d[&#39;playground_count&#39;])&quot;</span>
+</code></pre></div>
+<p>Both <code>version</code> and <code>playground_count</code> should be non-zero. If <code>playground_count</code> is 0, a full re-import is needed (see below).</p>
 <h2 id="when-to-run-a-full-re-import">When to run a full re-import<a class="headerlink" href="#when-to-run-a-full-re-import" title="Permanent link">&para;</a></h2>
 <p>A full re-import (without <code>API_ONLY</code>) is needed when:</p>
 <ul>
 <li>The release notes say "re-import after upgrading"</li>
 <li>A new OSM tag type was added to <code>processing/lua/osm_import.lua</code> — the new columns won't exist in existing data until a fresh import</li>
 </ul>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>importer
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>importer
 </code></pre></div>
 <p>A full re-import also re-applies <code>api.sql</code>, so the separate <code>API_ONLY=1</code> step is not needed when you do a full re-import.</p>
+<h2 id="if-you-deleted-the-database-volume">If you deleted the database volume<a class="headerlink" href="#if-you-deleted-the-database-volume" title="Permanent link">&para;</a></h2>
+<p>If you deleted the <code>pgdata</code> volume (e.g. <code>docker compose down -v</code> or <code>docker volume rm &lt;stack&gt;_pgdata</code>), all imported data is gone and you need a full re-import. Before running it:</p>
+<ol>
+<li>
+<p><strong>Check whether the PBF cache volume also survived.</strong> The importer stores downloaded and pre-filtered PBF files in a separate named volume (<code>&lt;stack&gt;_pbf_cache</code>). This volume is not removed by <code>docker compose down -v</code> if it was created outside the current Compose project.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>docker<span class="w"> </span>volume<span class="w"> </span>ls<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>pbf_cache
+</code></pre></div>
+</li>
+<li>
+<p><strong>If the cache volume exists, clear it.</strong> A previously interrupted import may have left a corrupt or empty filtered PBF in the cache. The importer checks file timestamps but not content — a corrupt cache causes a full re-import to process 0 objects and silently leave the database empty.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># Replace &lt;stack&gt; with your stack name (e.g. spieli-hessen)</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>docker<span class="w"> </span>volume<span class="w"> </span>rm<span class="w"> </span>&lt;stack&gt;_pbf_cache
+</code></pre></div>
+<p>Alternatively, force a cache bypass by deleting only the filtered files:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>docker<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>-v<span class="w"> </span>&lt;stack&gt;_pbf_cache:/data<span class="w"> </span>alpine<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span>sh<span class="w"> </span>-c<span class="w"> </span><span class="s1">&#39;rm -f /data/*_&lt;RELATION_ID&gt;.pbf /data/*_&lt;RELATION_ID&gt;_tags.pbf&#39;</span>
+</code></pre></div>
+</li>
+<li>
+<p><strong>Run the full re-import</strong> (downloads the PBF fresh if the cache was cleared):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>importer
+</code></pre></div>
+</li>
+<li>
+<p><strong>Verify</strong> with <code>get_meta</code> as shown in the standard upgrade section above.</p>
+</li>
+</ol>
 <h2 id="upgrading-the-compose-file">Upgrading the Compose file<a class="headerlink" href="#upgrading-the-compose-file" title="Permanent link">&para;</a></h2>
 <p>When <code>compose.yml</code> itself changes (new services, new volume mounts, etc.):</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># Download the updated file directly:</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>curl<span class="w"> </span>-O<span class="w"> </span>https://raw.githubusercontent.com/mfuhrmann/spieli/main/compose.yml
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1"># Then recreate:</span>
-<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>down
-<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>up<span class="w"> </span>-d
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># Download the updated file directly:</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>curl<span class="w"> </span>-O<span class="w"> </span>https://raw.githubusercontent.com/mfuhrmann/spieli/main/compose.yml
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="c1"># Then recreate:</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>down
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>up<span class="w"> </span>-d
 </code></pre></div>
 <h2 id="upgrading-with-watchtower-auto-update-profile">Upgrading with Watchtower (auto-update profile)<a class="headerlink" href="#upgrading-with-watchtower-auto-update-profile" title="Permanent link">&para;</a></h2>
 <p>When the <code>auto-update</code> profile is active, Watchtower pulls new images and restarts containers automatically — no manual <code>docker compose pull</code> needed.</p>
@@ -1690,10 +1775,10 @@
 <p>Upgrade each data-node first, verify it works, then upgrade the Hub UI. The Hub is backwards-compatible with older data-nodes (it falls back to the legacy <code>get_playgrounds</code> RPC if the tiered RPCs return 404), but an older Hub is not guaranteed to understand new data-node response fields.</p>
 <h2 id="downgrading">Downgrading<a class="headerlink" href="#downgrading" title="Permanent link">&para;</a></h2>
 <p>Downgrading is supported only within the same minor version. Images are tagged <code>:X.Y.Z</code> and <code>:X.Y</code>, so:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># Pin to a specific version by editing compose.yml:</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="c1"># Change ghcr.io/mfuhrmann/spieli:latest to ghcr.io/mfuhrmann/spieli:0.4.0</span>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>docker<span class="w"> </span>compose<span class="w"> </span>pull
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>up<span class="w"> </span>-d
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="c1"># Pin to a specific version by editing compose.yml:</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="c1"># Change ghcr.io/mfuhrmann/spieli:latest to ghcr.io/mfuhrmann/spieli:0.4.0</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>docker<span class="w"> </span>compose<span class="w"> </span>pull
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>up<span class="w"> </span>-d
 </code></pre></div>
 <p>The database schema is <strong>not</strong> automatically rolled back on a downgrade. If the new version added new columns or functions, the older app may ignore them safely, but this is not tested. When in doubt, re-import from scratch.</p>
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
