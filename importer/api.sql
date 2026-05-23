@@ -79,18 +79,7 @@ $playground_stats_unblock$;
 DROP MATERIALIZED VIEW IF EXISTS public.playground_stats CASCADE;
 
 CREATE MATERIALIZED VIEW public.playground_stats AS
-  WITH region AS (
-    -- osm2pgsql can emit multiple polygon rows per relation when the
-    -- relation is a multipolygon (states with exclaves / lakes / etc.) or
-    -- when member ways were clipped by a narrow PBF extract. ST_Union keeps
-    -- every fragment; LIMIT 1 picks one and silently drops the rest, which
-    -- on multipolygon relations like Baden-Württemberg (osm relation 62611,
-    -- 4 fragments) collapses the MV to a tiny subset of its true size.
-    -- Same pattern as get_playgrounds / get_meta below.
-    SELECT ST_Union(way) AS way FROM planet_osm_polygon
-    WHERE osm_id = -${OSM_RELATION_ID}
-  ),
-  all_playgrounds AS (
+  WITH all_playgrounds AS (
     -- osm2pgsql can emit multiple rows per relation for multipolygon
     -- playgrounds (one row per outer ring). Without dedup, the MV would
     -- have multiple rows per osm_id and the unique index below would
@@ -101,6 +90,16 @@ CREATE MATERIALIZED VIEW public.playground_stats AS
     -- multipolygon — `MAX()` for text and `(array_agg(...))[1]` for
     -- hstore both pick a (stable) value. The hstore case can't use
     -- MAX() because hstore lacks a < ordering operator.
+    --
+    -- No region filter: each stack imports exactly one Bundesland's PBF,
+    -- so every playground in the DB belongs to the configured region.
+    -- A ST_Within filter against the state boundary relation was removed
+    -- because some states (e.g. Brandenburg, which surrounds Berlin) are
+    -- stored by osm2pgsql as linestrings in planet_osm_line rather than
+    -- polygons in planet_osm_polygon — the boundary relation's member ways
+    -- can't always be assembled into a closed ring from the osmium-filtered
+    -- PBF. When the polygon is missing, the region CTE returns NULL and
+    -- ST_Within excludes all playgrounds, producing playground_count = 0.
     SELECT
       p.osm_id,
       CASE WHEN p.osm_id < 0 THEN 'R' ELSE 'W' END AS osm_type,
@@ -114,7 +113,6 @@ CREATE MATERIALIZED VIEW public.playground_stats AS
       -- osm2pgsql change ever introduced per-fragment tag variance.
       (array_agg(p.tags ORDER BY ST_Area(p.way) DESC))[1] AS tags
     FROM planet_osm_polygon p
-    JOIN region r ON ST_Within(p.way, r.way)
     WHERE p.leisure = 'playground'
     GROUP BY p.osm_id
     UNION ALL
@@ -133,7 +131,6 @@ CREATE MATERIALIZED VIEW public.playground_stats AS
       n.surface,
       n.tags
     FROM planet_osm_point n
-    JOIN region r ON ST_Within(n.way, r.way)
     WHERE n.leisure = 'playground'
   ),
   tree_counts AS (
@@ -1213,32 +1210,46 @@ LANGUAGE sql STABLE SECURITY DEFINER
 SET search_path = public, api
 AS $$
   WITH region AS (
-    -- ST_Extent gives the bounding box without materialising the full union
-    -- geometry. ST_Union is only needed when the way is used for spatial
-    -- filtering (ST_Within), which counts no longer requires: every row in
-    -- playground_stats was already filtered to this region when the MV was
-    -- built, so a redundant ST_Within here wastes 10+ seconds on large
-    -- regions (e.g. Bayern with 22 k playgrounds). Name is identical across
-    -- fragments of the same relation; max() picks any non-null.
-    SELECT max(name) AS name,
-           ST_Transform(ST_SetSRID(ST_Extent(way)::geometry, 3857), 4326) AS bbox_geom,
-           -- Simplified boundary polygon for hub overlap detection. ST_Union
-           -- merges multipolygon fragments (exclaves, islands). Simplification
-           -- at 0.05° (~5 km) keeps the payload small while preserving enough
-           -- shape for accurate polygon intersection checks in the browser.
-           ST_AsGeoJSON(
-               ST_SimplifyPreserveTopology(
-                   ST_Transform(ST_Union(way), 4326),
-                   0.05
-               )
-           )::jsonb AS region_geom
-    FROM planet_osm_polygon
-    WHERE osm_id = -relation_id
+    -- Prefer the polygon table (osm2pgsql assembles the state boundary relation
+    -- into a polygon when all member ways form a closed ring). Fall back to
+    -- planet_osm_line when the polygon is absent — this happens for states like
+    -- Brandenburg whose boundary sub-relations can't be fully assembled from the
+    -- osmium-filtered PBF (ring gaps), so osm2pgsql stores 33 open linestrings
+    -- instead. COALESCE picks the polygon values when available; the line fallback
+    -- gives a valid bbox (ST_Extent over linestring endpoints) and a convex-hull
+    -- approximation for region_geom (sufficient for hub overlap detection).
+    SELECT
+      COALESCE(
+        (SELECT max(name) FROM planet_osm_polygon WHERE osm_id = -relation_id),
+        (SELECT max(name) FROM planet_osm_line    WHERE osm_id = -relation_id)
+      ) AS name,
+      COALESCE(
+        ST_Transform(ST_SetSRID(
+          (SELECT ST_Extent(way)::geometry FROM planet_osm_polygon WHERE osm_id = -relation_id),
+          3857), 4326),
+        ST_Transform(ST_SetSRID(
+          (SELECT ST_Extent(way)::geometry FROM planet_osm_line WHERE osm_id = -relation_id),
+          3857), 4326)
+      ) AS bbox_geom,
+      -- Simplified boundary polygon for hub overlap detection. Prefer the true
+      -- polygon; fall back to a convex hull of the line segments (rough but
+      -- non-NULL, good enough for containment checks).
+      COALESCE(
+        (SELECT ST_AsGeoJSON(
+                    ST_SimplifyPreserveTopology(
+                        ST_Transform(ST_Union(way), 4326), 0.05))::jsonb
+         FROM planet_osm_polygon WHERE osm_id = -relation_id
+         HAVING count(*) > 0),
+        (SELECT ST_AsGeoJSON(
+                    ST_ConvexHull(ST_Collect(ST_Transform(way, 4326))))::jsonb
+         FROM planet_osm_line WHERE osm_id = -relation_id
+         HAVING count(*) > 0)
+      ) AS region_geom
   ),
   counts AS (
-    -- playground_stats is scoped to this instance's configured region at
-    -- materialised-view build time (WHERE ST_Within in its definition).
-    -- No spatial filter needed here: every row is already within the region.
+    -- playground_stats now includes all playgrounds in the DB without a region
+    -- spatial filter (see playground_stats definition for why). Every row is
+    -- within the configured region because each stack imports one region's PBF.
     SELECT
       COUNT(*)::int                                                        AS playground_count,
       SUM(CASE WHEN ps.completeness = 'complete' THEN 1 ELSE 0 END)::int   AS complete,
