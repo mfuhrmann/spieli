@@ -10,7 +10,7 @@ spieli is an interactive web map for exploring playgrounds based on OpenStreetMa
 ## Git workflow
 
 - **Never push directly to `main`.** All changes go through a feature branch and a pull request.
-- **Never create branches, PRs, or issues on `upstream`** (`SupaplexOSM/spieli`). Always work on `origin` (`mfuhrmann/spieli`).
+- **Never push directly to the canonical upstream.** Fork the repo, work on your fork, open a PR against `mfuhrmann/spieli`.
 - Branch naming: `<type>/<issue-number>-<short-description>` (e.g. `feat/130-equipment-map-layer`).
 - Use **Conventional Commits**: `<type>[optional scope]: <description>`. Types: `feat`, `fix`, `docs`, `refactor`, `perf`, `test`, `chore`, `ci`, `build`, `revert`.
 - Always create a GitHub issue first, then a branch, then make code changes.
