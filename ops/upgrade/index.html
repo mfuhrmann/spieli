@@ -604,6 +604,27 @@
   
   
     <li class="md-nav__item">
+      <a href="../single-host-federation/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Single-host Federation
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../add-data-node/" class="md-nav__link">
         
   
@@ -766,6 +787,21 @@
       Hub upgrades
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Hub upgrades">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#multiple-stacks-on-one-host" class="md-nav__link">
+    <span class="md-ellipsis">
+      Multiple stacks on one host
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1634,6 +1670,21 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Hub upgrades">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#multiple-stacks-on-one-host" class="md-nav__link">
+    <span class="md-ellipsis">
+      Multiple stacks on one host
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1773,12 +1824,47 @@
 <p>The importer applies <code>api.sql</code> on every daemon-mode startup, so schema changes from a new image take effect within seconds of a Watchtower-triggered restart — even when the full PBF re-import is deferred by the grace-period check. No manual intervention is needed for schema-only upgrades.</p>
 <h2 id="hub-upgrades">Hub upgrades<a class="headerlink" href="#hub-upgrades" title="Permanent link">&para;</a></h2>
 <p>Upgrade each data-node first, verify it works, then upgrade the Hub UI. The Hub is backwards-compatible with older data-nodes (it falls back to the legacy <code>get_playgrounds</code> RPC if the tiered RPCs return 404), but an older Hub is not guaranteed to understand new data-node response fields.</p>
+<h3 id="multiple-stacks-on-one-host">Multiple stacks on one host<a class="headerlink" href="#multiple-stacks-on-one-host" title="Permanent link">&para;</a></h3>
+<p>When the Hub and its data-nodes share a single VPS, each stack lives in its own directory with a unique <code>COMPOSE_PROJECT_NAME</code>. Upgrade in order: <strong>data-nodes first, hub last</strong>. Never upgrade stacks in parallel — concurrent API_ONLY runs plus the resident daemon importers can exhaust RAM.</p>
+<p>Use the provided helper script for a one-command upgrade:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>bash<span class="w"> </span>~/spieli/scripts/upgrade-stacks.sh
+</code></pre></div>
+<p>The script is in <code>scripts/upgrade-stacks.sh</code>. Edit the <code>STACKS</code> array at the top to match your deployment before the first run:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="nv">STACKS</span><span class="o">=(</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">  </span><span class="s2">&quot;</span><span class="nv">$HOME</span><span class="s2">/spieli-berlin:data-node-ui:8082&quot;</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">  </span><span class="s2">&quot;</span><span class="nv">$HOME</span><span class="s2">/spieli:data-node-ui auto-update:8080&quot;</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="o">)</span>
+</code></pre></div>
+<p>Each entry is <code>directory:profiles:local-port</code>. The script pulls images, restarts the app container, runs <code>API_ONLY=1</code>, and verifies <code>get_meta</code> — then moves to the next stack.</p>
+<p>To upgrade a single stack manually:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="nb">cd</span><span class="w"> </span>~/spieli-&lt;region&gt;
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>pull
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>data-node-ui<span class="w"> </span>up<span class="w"> </span>-d<span class="w"> </span>app
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>data-node-ui<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>-e<span class="w"> </span><span class="nv">API_ONLY</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>importer
+</code></pre></div>
+<p>For the hub stack (pure <code>DEPLOY_MODE=ui</code> — no importer, no <code>API_ONLY</code> step):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="nb">cd</span><span class="w"> </span>~/spieli
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>pull
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>ui<span class="w"> </span>--profile<span class="w"> </span>auto-update<span class="w"> </span>up<span class="w"> </span>-d<span class="w"> </span>app
+</code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">API_ONLY=1 bypasses daemon mode</p>
+<p><code>docker compose run --rm -e API_ONLY=1 importer</code> starts a fresh one-shot container. The importer entrypoint checks <code>API_ONLY</code> before any reimport logic, so <code>REIMPORT_INTERVAL_*</code> settings have no effect — the container applies <code>api.sql</code> and exits regardless of how recently data was imported.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">One Watchtower covers all containers</p>
+<p>Only the hub stack should run <code>--profile auto-update</code>. Adding a second Watchtower to any data-node stack causes both instances to fight over the same containers. Data-node stacks without <code>auto-update</code> are still restarted by the single Watchtower instance when it detects a new image.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Daemon importer and API_ONLY</p>
+<p>On stacks managed by Watchtower, the importer applies <code>api.sql</code> automatically on every daemon-mode restart — the explicit <code>API_ONLY=1</code> step is not strictly required. Running it during a manual upgrade just ensures <code>get_meta()</code> reports the correct version immediately, without waiting for the next scheduled daemon restart.</p>
+</div>
 <h2 id="downgrading">Downgrading<a class="headerlink" href="#downgrading" title="Permanent link">&para;</a></h2>
 <p>Downgrading is supported only within the same minor version. Images are tagged <code>:X.Y.Z</code> and <code>:X.Y</code>, so:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="c1"># Pin to a specific version by editing compose.yml:</span>
-<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="c1"># Change ghcr.io/mfuhrmann/spieli:latest to ghcr.io/mfuhrmann/spieli:0.4.0</span>
-<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>docker<span class="w"> </span>compose<span class="w"> </span>pull
-<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>up<span class="w"> </span>-d
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="c1"># Pin to a specific version by editing compose.yml:</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="c1"># Change ghcr.io/mfuhrmann/spieli:latest to ghcr.io/mfuhrmann/spieli:0.4.0</span>
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>docker<span class="w"> </span>compose<span class="w"> </span>pull
+<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>up<span class="w"> </span>-d
 </code></pre></div>
 <p>The database schema is <strong>not</strong> automatically rolled back on a downgrade. If the new version added new columns or functions, the older app may ignore them safely, but this is not tested. When in doubt, re-import from scratch.</p>
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
