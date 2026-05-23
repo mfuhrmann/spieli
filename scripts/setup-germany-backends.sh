@@ -110,6 +110,7 @@ REIMPORT_INTERVAL_MAX_DAYS=1
 EOF
 
   # 5. Create Traefik dynamic config
+  mkdir -p "${TRAEFIK_DYNAMIC_DIR}"
   cat > "${TRAEFIK_DYNAMIC_DIR}/${slug}.yml" << EOF
 http:
   routers:
