@@ -43,7 +43,7 @@ make dev          # Vite dev server at http://localhost:5173 (hot-reload, Overpa
 make build        # production build → app/dist/
 make serve        # preview production build locally
 make test         # unit tests + Playwright E2E tests
-make test-unit    # unit tests only (app/src/lib/*.test.js)
+make test-unit    # unit tests only (app/src/lib/*.test.js + app/src/stores/*.test.js)
 make lan-url      # print LAN IP for mobile testing
 ```
 
@@ -87,7 +87,7 @@ Browser ──► nginx ──► Vite-built static assets (app/dist/)
                   └──► /api/ ──► PostgREST ──► PostgreSQL/PostGIS
 ```
 
-- **Frontend**: Svelte 5 + Vite 6, OpenLayers for the map, Tailwind CSS + Bootstrap for UI
+- **Frontend**: Svelte 5 + Vite 6, OpenLayers for the map, Tailwind CSS + Bootstrap + shadcn-inspired primitives for UI
 - **PostgREST**: auto-generates REST API from the `api` schema. All DB functions are in `importer/api.sql`.
 - **nginx** (`oci/app/`): serves the build, proxies `/api/`, writes `app/public/config.js` at startup from env vars
 - **osm2pgsql**: imports OSM PBF data using rules in `processing/`; schema in `db/init.sql`
@@ -240,8 +240,8 @@ This catches ordering bugs (e.g. a function referencing a table defined later in
 
 | Script | Purpose |
 |---|---|
-| `upgrade-stacks.sh` | Sequential upgrade of all spieli stacks on a single VPS. Edit the `STACKS` array at the top. Runs `API_ONLY=1` first, verifies `get_meta`, then restarts the daemon importer. |
-| `setup-germany-backends.sh` | Bootstraps all 14 German Bundesland data-node stacks and wires them into a hub with Traefik. One-time setup script. |
+| `upgrade-stacks.sh` | Sequential upgrade of all spieli stacks on a single VPS. Edit the `STACKS` array at the top. For data-node stacks: runs `API_ONLY=1` first, verifies `get_meta`, then restarts the daemon importer. Pure hub stacks skip the `API_ONLY` step. |
+| `setup-germany-backends.sh` | Bootstraps all 15 non-Hessen German Bundesland data-node stacks and wires them into a hub with Traefik. One-time setup script. |
 
 ## Documentation
 
