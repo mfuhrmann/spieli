@@ -54,15 +54,11 @@ for entry in "${STACKS[@]}"; do
 
   # Pure hub stacks (DEPLOY_MODE=ui) have no importer — skip importer steps.
   if [[ "$profiles" == *"data-node"* ]]; then
-    echo "→ Restarting daemon importer..."
-    # Restart the daemon importer so it picks up the new image immediately.
-    # Daemon mode runs api.sql on every startup, so the version in get_meta()
-    # is updated without waiting for the next scheduled Watchtower restart.
-    docker compose "${profile_flags[@]}" up -d importer
-
     echo "→ Applying api.sql (one-shot, never triggers full reimport)..."
-    # API_ONLY=1 is evaluated before any reimport logic in the importer entrypoint,
-    # so REIMPORT_INTERVAL_* settings have no effect here.
+    # Run API_ONLY=1 before restarting the daemon. The daemon only runs api.sql
+    # on container startup; while it is idle between reimport cycles it won't
+    # touch playground_stats. Running both concurrently races on the DROP/CREATE
+    # of that materialized view and reliably fails on large datasets.
     docker compose --profile data-node-ui run --rm -e API_ONLY=1 importer
   else
     echo "→ Pure hub — no importer, skipping api.sql step."
@@ -74,6 +70,13 @@ for entry in "${STACKS[@]}"; do
     python3 -c "import sys,json; d=json.load(sys.stdin); print('version:', d.get('version','?'), ' playgrounds:', d.get('playground_count','?'))") \
     || fail "get_meta unreachable for $name on port $port"
   echo "  $result"
+
+  if [[ "$profiles" == *"data-node"* ]]; then
+    echo "→ Restarting daemon importer on new image..."
+    # Restart after verify so the daemon's api.sql startup run does not race
+    # with the API_ONLY=1 container above.
+    docker compose "${profile_flags[@]}" up -d importer
+  fi
 
   echo "✓ $name done"
 done
