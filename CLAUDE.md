@@ -1,15 +1,16 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Guidance for AI coding assistants working in this repository (Claude Code, Cursor, GitHub Copilot, etc.).
+For Copilot users: open this file manually — `.github/copilot-instructions.md` points here.
 
 ## What this project is
 
-spieli is an interactive web map for exploring playgrounds based on OpenStreetMap data. It is deployable per-region (e.g. Fulda) by setting environment variables. UI strings are currently hardcoded German — i18n re-integration with svelte-i18n is tracked in epic #157.
+spieli is an interactive web map for exploring playgrounds based on OpenStreetMap data. It is deployable per-region (e.g. Fulda) by setting environment variables. UI strings are in German; i18n via svelte-i18n is integrated but device names in `objPlaygroundEquipment.js` remain German-only — full i18n is tracked in epic #157.
 
 ## Git workflow
 
 - **Never push directly to `main`.** All changes go through a feature branch and a pull request.
-- **Never create branches, PRs, or issues on `upstream`** (`SupaplexOSM/spieli`). Always work on `origin` (`mfuhrmann/spieli`).
+- **Never push directly to the canonical upstream.** Fork the repo, work on your fork, open a PR against `mfuhrmann/spieli`.
 - Branch naming: `<type>/<issue-number>-<short-description>` (e.g. `feat/130-equipment-map-layer`).
 - Use **Conventional Commits**: `<type>[optional scope]: <description>`. Types: `feat`, `fix`, `docs`, `refactor`, `perf`, `test`, `chore`, `ci`, `build`, `revert`.
 - Always create a GitHub issue first, then a branch, then make code changes.
@@ -40,7 +41,9 @@ All common operations are via `make`. Run `make help` to list all targets.
 make install      # install all deps (root + app/)
 make dev          # Vite dev server at http://localhost:5173 (hot-reload, Overpass fallback)
 make build        # production build → app/dist/
-make test         # Playwright E2E tests
+make serve        # preview production build locally
+make test         # unit tests + Playwright E2E tests
+make test-unit    # unit tests only (app/src/lib/*.test.js + app/src/stores/*.test.js)
 make lan-url      # print LAN IP for mobile testing
 ```
 
@@ -55,8 +58,18 @@ make import            # download PBF and import OSM data (required once before 
 make docker-build      # rebuild and restart only the app container — required to see changes
 make db-apply          # apply importer/api.sql to running DB and reload PostgREST
 make seed-load         # load 4-playground fixture (Fulda) for dev without a full import
+make seed-extract      # regenerate dev/seed/seed.sql from running DB (maintainers only)
 make db-shell          # psql shell in the running DB container
+make installer         # run the interactive production installer
 make down              # stop all containers
+```
+
+Docs:
+```bash
+make docs-install  # set up Python venv + MkDocs dependencies
+make docs-serve    # MkDocs live-reload server at http://localhost:8000
+make docs-build    # build static docs → site/
+make docs-clean    # remove site/ and .venv
 ```
 
 **Docker build cache pitfall**: `make docker-build` uses Docker's layer cache. If source file changes aren't picked up (all steps say `---> Using cache`), force a full rebuild:
@@ -74,10 +87,11 @@ Browser ──► nginx ──► Vite-built static assets (app/dist/)
                   └──► /api/ ──► PostgREST ──► PostgreSQL/PostGIS
 ```
 
-- **Frontend**: Svelte 5 + Vite 6, OpenLayers for the map, Tailwind/shadcn for UI
+- **Frontend**: Svelte 5 + Vite 6, OpenLayers for the map, Tailwind CSS + Bootstrap + shadcn-inspired primitives for UI
 - **PostgREST**: auto-generates REST API from the `api` schema. All DB functions are in `importer/api.sql`.
 - **nginx** (`oci/app/`): serves the build, proxies `/api/`, writes `app/public/config.js` at startup from env vars
 - **osm2pgsql**: imports OSM PBF data using rules in `processing/`; schema in `db/init.sql`
+- **osmium-tool**: bbox clip + tag filter before osm2pgsql (reduces ~300 MB → ~5 MB per region)
 
 ## App modes
 
@@ -104,19 +118,55 @@ To test Hub mode locally: set `appMode: 'hub'` in `app/public/config.js`, run `m
 | `map.js` | OL map instance reference |
 | `playgroundSource.js` | Shared OL VectorSource for the polygon tier. Non-null while Map.svelte is mounted; reset to `null` on teardown. Widgets (NearbyPlaygrounds, AppShell deeplink restore) hydrate features into it on demand at any zoom — there is no separate "cluster source" store; the cluster `VectorSource` is owned by `StandaloneApp.svelte` and never published, since no widget consumes it externally. |
 | `tier.js` | Active zoom-tier — `null` \| `'cluster'` \| `'polygon'`. Written by the orchestrator, read by Map for layer visibility |
+| `hubLoading.js` | Hub fan-out load progress — `{ loaded, total, settling }`. Written by `hubOrchestrator`, read by the hub UI to show a progress indicator. |
 
-### Components (`app/src/components/`)
+### Components
+
+#### Shared (`app/src/components/`)
 
 | Component | Role |
 |---|---|
 | `Map.svelte` | OL map, all layers, click/hover handlers, standalone pitch layer (moveend) |
+| `AppShell.svelte` | Top-level shell used by both modes: mounts Map, manages deeplink restore, wires keyboard shortcuts |
 | `PlaygroundPanel.svelte` | Fetches and displays equipment/trees/POIs for selected playground; writes to `overlayFeaturesStore` |
-| `StandaloneApp.svelte` | Full app layout: search bar, filter controls, zoom/locate buttons, mobile bottom sheet, desktop side panel |
 | `EquipmentList.svelte` | Renders device/fitness/pitch/bench lists inside PlaygroundPanel |
+| `NearbyPlaygrounds.svelte` | Shows nearest playgrounds to the selected one; hydrates polygon source on demand |
+| `POIPanel.svelte` | Nearby POI list (cafés, toilets, etc.) shown inside PlaygroundPanel |
+| `ReviewsPanel.svelte` | Community reviews for a selected playground (fetch + submit) |
+| `PanoramaxViewer.svelte` | Embeds a Panoramax street-level photo viewer for a playground |
 | `HoverPreview.svelte` | Floating card on playground hover (desktop only) |
 | `EquipmentTooltip.svelte` | Tooltip on equipment/pitch hover |
 | `FilterPanel.svelte` | Filter dropdown; also contains "Ebenen" section for layer toggles |
+| `FilterChips.svelte` | Active-filter chip bar shown below the search bar |
 | `SearchBar.svelte` | Nominatim location search |
+| `BottomSheet.svelte` | Swipeable bottom sheet used on mobile to surface PlaygroundPanel |
+| `CompletenessLegend.svelte` | Map legend explaining complete/partial/missing colour coding |
+| `DataContributionModal.svelte` | Modal prompting users to contribute data via MapComplete |
+| `LegalContentModal.svelte` | Modal for imprint / legal content fetched from `get_legal()` |
+| `LocateButton.svelte` | Button that pans map to user's GPS position |
+| `MapCompleteLink.svelte` | Link to MapComplete for the selected playground; renders nothing when URL is falsy |
+| `AgeChip.svelte` | Badge rendering a playground's minimum age |
+| `ui/` | Primitive UI components (Badge, Button, Card, Input, Sheet) |
+
+#### Standalone mode (`app/src/standalone/`)
+
+| File | Role |
+|---|---|
+| `StandaloneApp.svelte` | Full standalone layout: search bar, filter controls, zoom/locate buttons, mobile bottom sheet, desktop side panel |
+
+#### Hub mode (`app/src/hub/`)
+
+| File | Role |
+|---|---|
+| `HubApp.svelte` | Hub layout: macro view, instance panel, fan-out loading indicator |
+| `InstancePanel.svelte` | Sidebar listing all registered backends with health status and region details |
+| `InstancePanelDrawer.svelte` | Slide-in drawer wrapping InstancePanel on mobile |
+| `MacroView.svelte` | Country-level OL layer — one point per backend at its bbox centroid with stacked-ring style |
+| `hubOrchestrator.js` | Hub-mode tiered orchestrator — fans every tier fetch out across backends via `fanOut`, filtered by viewport and health |
+| `registry.js` | Loads `registry.json`, polls `get_meta` every 5 min, exposes `backends` readable store, provides multi-backend nearest-playground fetcher |
+| `federationHealth.js` | Polls `/federation-status.json` and merges per-backend health into the registry store |
+| `fanOut.js` | Invokes a fetcher against every selected backend in parallel; surfaces results progressively via `onResult` callback |
+| `osmIdDedup.js` | Deduplicates polygon-tier features across backends by `osm_id` (keeps the feature with the largest area) |
 
 ### Layers in Map.svelte
 
@@ -167,6 +217,7 @@ All PostgREST-exposed functions live in the `api` schema. See [`docs/reference/a
 - `get_equipment(bbox)` — equipment within a bounding box (used per selected playground)
 - `get_standalone_equipment(bbox)` — pitches + equipment outside any playground polygon
 - `get_trees(bbox)`, `get_pois(lat, lon, radius_m)`, `get_nearest_playgrounds(lat, lon)`
+- `get_legal(type)` — imprint / legal text fetched from the `legal_content` table
 - `get_playgrounds(relation_id)` — **deprecated** region-scoped variant; SQL `COMMENT` flags it for removal
 
 The `playground_stats` materialised view is rebuilt with each `make db-apply` and carries the per-playground `completeness` (`'complete' | 'partial' | 'missing'`) — the rule mirrors `app/src/lib/completeness.js` exactly.
@@ -185,9 +236,16 @@ This catches ordering bugs (e.g. a function referencing a table defined later in
 - `equipmentLayerStyleFn` — equipment points/polygons (green for pitches, teal for fitness, grey for devices)
 - `treeStyle` — small green dot for trees
 
+## Ops scripts (`scripts/`)
+
+| Script | Purpose |
+|---|---|
+| `upgrade-stacks.sh` | Sequential upgrade of all spieli stacks on a single VPS. Edit the `STACKS` array at the top. For data-node stacks: runs `API_ONLY=1` first, verifies `get_meta`, then restarts the daemon importer. Pure hub stacks skip the `API_ONLY` step. |
+| `setup-germany-backends.sh` | Bootstraps all 15 non-Hessen German Bundesland data-node stacks and wires them into a hub with Traefik. One-time setup script. |
+
 ## Documentation
 
-When adding or changing something covered by the `docs/` structure, update the relevant page (or create a new one and add it to `mkdocs.yml`). Relevant mappings:
+When adding or changing something covered by the `docs/` structure, update the relevant page (or create a new one and add it to `mkdocs.yml`). Also update this file when adding stores, components, API functions, make targets, or ops scripts. Relevant mappings:
 
 - New API RPC → `docs/reference/api.md`
 - New config env var → `docs/ops/configuration.md`
