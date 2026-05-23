@@ -211,6 +211,7 @@ run_import() (
             BBOX_TMP=$(mktemp -p /data .bbox.XXXXXX.pbf)
             trap 'rm -f "$BBOX_TMP"' EXIT
             osmium extract \
+                --overwrite \
                 --bbox="$RESOLVED_BBOX" \
                 --strategy=smart \
                 -o "$BBOX_TMP" \
@@ -244,6 +245,7 @@ run_import() (
         TAGS_TMP=$(mktemp -p /data .tags.XXXXXX.pbf)
         trap 'rm -f "$TAGS_TMP"' EXIT
         osmium tags-filter \
+            --overwrite \
             -o "$TAGS_TMP" \
             "$IMPORT_PBF" \
             n/natural=tree \
