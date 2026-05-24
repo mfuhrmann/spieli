@@ -59,6 +59,10 @@ Prometheus text exposition format (version 0.0.4):
 # TYPE spielplatz_backend_up gauge
 spielplatz_backend_up{backend="fulda",url="https://fulda.example.com/api"} 1
 
+# HELP spielplatz_backend_importing 1 while osm2pgsql is actively running on this backend, 0 otherwise.
+# TYPE spielplatz_backend_importing gauge
+spielplatz_backend_importing{backend="fulda",url="https://fulda.example.com/api"} 0
+
 # HELP spielplatz_backend_latency_seconds Round-trip time for the last get_meta call.
 # TYPE spielplatz_backend_latency_seconds gauge
 spielplatz_backend_latency_seconds{backend="fulda",url="https://fulda.example.com/api"} 0.043
@@ -88,7 +92,7 @@ spielplatz_backend_playgrounds_missing{backend="fulda",url="https://fulda.exampl
 spielplatz_poll_generated_timestamp 1745668800
 ```
 
-`spielplatz_backend_data_age_seconds` and the four completeness gauges are omitted for a backend when the field is `null` (backend down, pre-P1 backend, or no import yet).
+`spielplatz_backend_data_age_seconds` and the four completeness gauges are omitted for a backend when the field is `null` (backend down, pre-P1 backend, or no import yet). `spielplatz_backend_importing` is always emitted when the backend is reachable; it defaults to `0` for older backends that predate the `importing` field in `get_meta`.
 
 ## Recipes
 
@@ -139,6 +143,14 @@ sum(spielplatz_backend_playgrounds_missing)
 
 # Alert if completeness ratio drops below 50 % for any backend
 spielplatz_backend_playgrounds_complete / spielplatz_backend_playgrounds_total < 0.5
+
+# Which backends are currently importing (data in flux)?
+spielplatz_backend_importing == 1
+
+# Backend online but no data and not importing (degraded ring state)
+spielplatz_backend_up == 1
+  and spielplatz_backend_importing == 0
+  and spielplatz_backend_playgrounds_total == 0
 ```
 
 ### Recipe 3 — Frontend error monitoring (Sentry)
