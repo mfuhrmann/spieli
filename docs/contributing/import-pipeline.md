@@ -7,20 +7,20 @@ This guide explains how OSM data flows from a Geofabrik PBF extract into the Pos
 ```
 Geofabrik PBF (~300 MB Bundesland extract)
         │
-        ▼  osmium extract (bbox clip)
+        ▼  osmium extract (bbox clip — Nominatim lookup or OSM_BBOX override)
 Bbox-clipped PBF (~50 MB)
         │
         ▼  osmium tags-filter
 Tag-filtered PBF (~4–8 MB)
         │
-        ▼  osm2pgsql --slim --hstore
-        │  (Lua rules: processing/lua/osm_import.lua)
+        ▼  osm2pgsql --slim --drop --hstore
+        │  (default pgsql output — no Lua script)
         │
         ▼  PostgreSQL tables (EPSG:3857)
-        │   planet_osm_point
-        │   planet_osm_polygon
-        │   planet_osm_roads
-        │   + Lua-defined tables: playgrounds, playground_equipment_*, trees, …
+        │   planet_osm_point    — OSM nodes
+        │   planet_osm_polygon  — closed ways and relations as polygons
+        │   planet_osm_line     — open ways
+        │   planet_osm_roads    — roads subset
         │
         ▼  api.sql applied by import.sh
         │   ALTER SYSTEM (pg tuning)
@@ -30,35 +30,34 @@ Tag-filtered PBF (~4–8 MB)
         ▼  PostgREST /api/rpc/* endpoints
 ```
 
-The pipeline is driven by `importer/import.sh`, which is the `ENTRYPOINT` of the importer Docker image.
+The pipeline is driven by `importer/import.sh`, which is the `CMD` of the importer Docker image (`importer/Dockerfile`).
 
-## osm2pgsql and the Lua rules
+## osm2pgsql and the hstore schema
 
-osm2pgsql reads the filtered PBF and calls the Lua transform script `processing/lua/osm_import.lua` for each OSM object. The Lua script defines:
+osm2pgsql runs in its default **pgsql output mode** — no Lua flex script is involved. It imports the filtered PBF into four standard tables (`planet_osm_point`, `planet_osm_polygon`, `planet_osm_line`, `planet_osm_roads`), all in EPSG:3857.
 
-- **Which OSM tags are imported** — each table (`playgrounds`, `playground_equipment_node`, `trees`, etc.) declares its column list. Only those columns are stored; everything else goes into the `other_tags` hstore column.
-- **Which OSM object types** map to which tables (nodes, ways, relations; points vs polygons)
-- **Custom processing** — e.g., merging playground node/polygon variants
+A fixed set of common OSM keys get their own columns (`name`, `operator`, `access`, `surface`, `leisure`, `amenity`, `sport`, `natural`, `highway`, …). Every other tag is stored as a key→value pair in the `tags` **hstore** column. The `--hstore` flag enables this.
 
-All tables use EPSG:3857 geometry (Web Mercator), which matches OpenLayers' default projection.
+All application logic (computing completeness, deriving filter flags, building cluster counts) lives in `importer/api.sql`, which queries these standard tables.
 
-### Adding a new OSM tag to an existing table
+### Adding a new OSM tag to an existing function
 
-1. Find the table in `processing/lua/osm_import.lua`
-2. Add the column to the table's attribute list:
-   ```lua
-   local attributes_playground = {
-       …
-       { column = 'my_new_tag' },
-   }
-   ```
-3. Run `make import` to reload the data with the new column.
+If the tag is one of the standard columns it is already in the table. If it is not, it lands in `tags` hstore and you read it with `tags->'my_tag'` in SQL.
+
+Steps:
+
+1. If the tag is not already in the `osmium tags-filter` list, add it to `importer/import.sh` (the `osmium tags-filter` invocation). Otherwise the importer will silently discard those objects.
+2. In `importer/api.sql`, add the tag to whichever function or view needs it. Use `tags->'my_tag'` to read a hstore value.
+3. Run `make import` to reload data with the new tag present.
+
+If you only changed `api.sql` (no new tag to filter), `make db-apply` is enough — no full re-import needed.
 
 ### Adding a new OSM object type
 
-1. In `osm_import.lua`, add a new table definition (see existing tables for the pattern).
-2. Register a handler for `node_tags_fn`, `way_tags_fn`, or `relation_tags_fn`.
-3. In `importer/api.sql`, add a PostgREST function to expose the data, then run `make db-apply` or `make import`.
+1. Add its tag to the `osmium tags-filter` list in `importer/import.sh`.
+2. In `importer/api.sql`, add a new PostgREST function that queries `planet_osm_point` or `planet_osm_polygon` (depending on geometry type). Follow the pattern of existing functions.
+3. Expose it: `GRANT EXECUTE ON FUNCTION api.your_function(...) TO web_anon;`
+4. Run `make import` to reload data, then `make db-apply` can be used for subsequent SQL-only iterations.
 
 ## The tag filter (`importer/import.sh`)
 
@@ -76,13 +75,19 @@ Before osm2pgsql runs, `osmium tags-filter` keeps only objects with tags the app
 
 The most important post-import step in `importer/api.sql` is building the `playground_stats` materialized view. It pre-computes per-playground statistics (tree count, bench count, sport types, completeness state) so `get_playgrounds_bbox` is a fast indexed lookup rather than an aggregation query.
 
+It is built entirely from the standard osm2pgsql tables:
+
+- Playground polygons and nodes come from `planet_osm_polygon` (`leisure = 'playground'`) and `planet_osm_point`.
+- Equipment and trees are joined from `planet_osm_point` and `planet_osm_polygon` using spatial containment (`ST_Intersects` / `ST_DWithin`).
+- Less common tags (e.g. `panoramax`, `opening_hours`) are read from the `tags` hstore column.
+
 The completeness logic in `api.sql` must stay in sync with `app/src/lib/completeness.js` in the frontend. Both implement the same rule:
 
 | Criterion | SQL column (api.sql) | JS property (completeness.js) |
 |---|---|---|
-| Has photo | `panoramax IS NOT NULL` or `other_tags ? 'panoramax'` | `Object.keys(props).some(k => k.startsWith('panoramax'))` |
+| Has photo | `tags ? 'panoramax'` or `tags` key starts with `'panoramax:'` | `Object.keys(props).some(k => k.startsWith('panoramax'))` |
 | Has name | `name IS NOT NULL` | `!!props.name` |
-| Has info | `operator \|\| opening_hours \|\| surface \|\| access != 'yes'` | `!!(props.operator \|\| …)` |
+| Has info | `surface` or `access != 'yes'` or `opening_hours` | `!!(props.surface \|\| …)` |
 
 - `complete` = all three present
 - `partial` = at least one present
@@ -92,35 +97,30 @@ The completeness logic in `api.sql` must stay in sync with `app/src/lib/complete
 
 ## Filter flags (`for_baby`, `for_toddler`, `is_water`, …)
 
-Several boolean columns are computed from equipment present within each playground polygon. They drive both the filter UI and the `filter_attrs` payload in the centroid RPC.
+Several boolean columns in `playground_stats` are computed from equipment found inside each playground polygon. They drive both the filter UI and the `filter_attrs` payload in the cluster RPC.
 
 | Flag | Triggers |
 |---|---|
-| `for_baby` | `baby=yes` on any equipment; `playground` ∈ `baby_swing`, `basketswing`, `sandpit`, `springy`; `capacity:baby` present on any equipment |
-| `for_toddler` | `provided_for:toddler=yes` on any equipment; `playground=basketswing` |
-| `is_water` | `playground` contains `water` or ∈ `splash_pad`, `pump` |
-| `for_wheelchair` | `wheelchair=yes` on any equipment |
-| `has_soccer` / `has_basketball` | `leisure=pitch` with matching `sport` value |
+| `for_baby` | `tags ? 'baby'` and `tags->'baby' = 'yes'`; `tags->'playground'` ∈ `baby_swing`, `basketswing`, `sandpit`, `springy`; `tags ? 'capacity:baby'` |
+| `for_toddler` | `tags->'provided_for:toddler' = 'yes'`; `tags->'playground' = 'basketswing'` |
+| `is_water` | `tags->'playground'` contains `'water'` or ∈ `splash_pad`, `pump` |
+| `for_wheelchair` | `wheelchair = 'yes'` on any equipment |
+| `has_soccer` / `has_basketball` | `leisure = 'pitch'` with matching `sport` value |
 
-The logic lives in two places that must stay in sync:
+All flag logic lives in `importer/api.sql` (the `equip_stats` CTE inside `playground_stats`).
 
-- **`importer/api.sql`** — `equip_stats` CTE, `BOOL_OR(…) AS for_baby` etc. Used by `get_playgrounds_bbox` and `get_playground_clusters`.
-- **`processing/sql/playground_processing.sql`** — `UPDATE playgrounds SET for_baby = …` etc. Used by the legacy materialised view path.
-
-**If you add a new trigger**, update both files and run `make db-apply`. A full `make import` is only needed if the new trigger depends on a tag not yet stored in `planet_osm_*` (check the tag filter in `importer/import.sh` first).
-
-> **Testing**: there are no SQL unit tests. Verify changes with a real import (`make import`) against a region that has playgrounds with the relevant equipment, then check the filter chip appears correctly in the UI.
+**If you add a new flag**, add it to `playground_stats` in `api.sql` and run `make db-apply`. A full `make import` is only needed if the new flag depends on a tag not yet in the tag filter.
 
 ## Applying schema changes without a full re-import
 
 `make db-apply` runs only the `api.sql` step (skips the osm2pgsql data load). Use it when:
 - You added or changed a PostgREST function
 - You changed the `playground_stats` view definition
+- You added a new filter flag
 
-Do a full `make import` when you changed the Lua rules or the tag filter (these affect which data is stored in `planet_osm_*` tables).
+Do a full `make import` when you changed the tag filter (new tags needed in the PBF) — these affect which data is stored in `planet_osm_*` tables.
 
 ## See also
 
 - [API Reference](../reference/api.md) — PostgREST function signatures
 - [Local Development](local-dev.md) — how to test changes quickly with seed data
-- [Source Tree Analysis](../source-tree-analysis.md) — where all the files live
