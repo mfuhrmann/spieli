@@ -28,8 +28,10 @@ A free, interactive web map for exploring playgrounds based on [OpenStreetMap](h
 The interactive installer downloads everything it needs and walks you through configuration:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/mfuhrmann/spieli/main/install.sh -o install.sh
-bash install.sh
+TAG=v0.5.1  # check https://github.com/mfuhrmann/spieli/releases for the latest tag
+curl -fsSL "https://github.com/mfuhrmann/spieli/releases/download/${TAG}/install.sh" -o install.sh
+curl -fsSL "https://github.com/mfuhrmann/spieli/releases/download/${TAG}/install.sh.sha256" -o install.sh.sha256
+sha256sum --check install.sh.sha256 && bash install.sh
 ```
 
 **Requirements:** Docker with the Compose plugin, `bash`, `openssl`
@@ -50,7 +52,7 @@ Includes deployment guides, configuration reference, contributing how-tos, and a
 
 ## Tech stack
 
-Svelte 5 · OpenLayers · PostgreSQL/PostGIS · PostgREST · nginx · Docker
+Svelte 5 · Vite 6 · OpenLayers · Tailwind CSS · PostgreSQL/PostGIS · PostgREST · osm2pgsql · osmium · nginx · Docker
 
 Full details: [Tech stack reference](https://mfuhrmann.github.io/spieli/reference/tech-stack/)
 
