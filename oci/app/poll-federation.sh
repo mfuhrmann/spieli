@@ -185,7 +185,9 @@ while IFS="	" read -r SLUG URL; do
         *\"*|*\\*) ;;  # skip — would break exposition format
         *)
             LABEL="backend=\"${SLUG}\",url=\"${URL}\""
+            IMPORTING_INT=$([ "$IMPORTING" = "true" ] && echo 1 || echo 0)
             METRICS_LINES="${METRICS_LINES}spielplatz_backend_up{${LABEL}} ${UP}\n"
+            METRICS_LINES="${METRICS_LINES}spielplatz_backend_importing{${LABEL}} ${IMPORTING_INT}\n"
             METRICS_LINES="${METRICS_LINES}spielplatz_backend_latency_seconds{${LABEL}} ${LATENCY}\n"
             if [ "$DATA_AGE_SECONDS" != "null" ] && [ -n "$DATA_AGE_SECONDS" ]; then
                 METRICS_LINES="${METRICS_LINES}spielplatz_backend_data_age_seconds{${LABEL}} ${DATA_AGE_SECONDS}\n"
@@ -217,6 +219,8 @@ printf '{"generated_at":"%s","poll_interval_seconds":%d,"backends":{%s}}\n' \
 {
     printf '# HELP spielplatz_backend_up 1 if the backend responded to get_meta, 0 otherwise.\n'
     printf '# TYPE spielplatz_backend_up gauge\n'
+    printf '# HELP spielplatz_backend_importing 1 while osm2pgsql is actively running on this backend, 0 otherwise.\n'
+    printf '# TYPE spielplatz_backend_importing gauge\n'
     printf '# HELP spielplatz_backend_latency_seconds Round-trip time for the last get_meta call.\n'
     printf '# TYPE spielplatz_backend_latency_seconds gauge\n'
     printf '# HELP spielplatz_backend_data_age_seconds Seconds since the backend last imported data.\n'
