@@ -1750,35 +1750,39 @@
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a># TYPE spielplatz_backend_up gauge
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>spielplatz_backend_up{backend=&quot;fulda&quot;,url=&quot;https://fulda.example.com/api&quot;} 1
 <a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a># HELP spielplatz_backend_latency_seconds Round-trip time for the last get_meta call.
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a># TYPE spielplatz_backend_latency_seconds gauge
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>spielplatz_backend_latency_seconds{backend=&quot;fulda&quot;,url=&quot;https://fulda.example.com/api&quot;} 0.043
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a># HELP spielplatz_backend_importing 1 while osm2pgsql is actively running on this backend, 0 otherwise.
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a># TYPE spielplatz_backend_importing gauge
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>spielplatz_backend_importing{backend=&quot;fulda&quot;,url=&quot;https://fulda.example.com/api&quot;} 0
 <a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a># HELP spielplatz_backend_data_age_seconds Seconds since the backend last imported data.
-<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a># TYPE spielplatz_backend_data_age_seconds gauge
-<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>spielplatz_backend_data_age_seconds{backend=&quot;fulda&quot;,url=&quot;https://fulda.example.com/api&quot;} 118080
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a># HELP spielplatz_backend_latency_seconds Round-trip time for the last get_meta call.
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a># TYPE spielplatz_backend_latency_seconds gauge
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>spielplatz_backend_latency_seconds{backend=&quot;fulda&quot;,url=&quot;https://fulda.example.com/api&quot;} 0.043
 <a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>
-<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a># HELP spielplatz_backend_playgrounds_total Total number of playgrounds in the region.
-<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a># TYPE spielplatz_backend_playgrounds_total gauge
-<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>spielplatz_backend_playgrounds_total{backend=&quot;fulda&quot;,url=&quot;https://fulda.example.com/api&quot;} 42
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a># HELP spielplatz_backend_data_age_seconds Seconds since the backend last imported data.
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a># TYPE spielplatz_backend_data_age_seconds gauge
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>spielplatz_backend_data_age_seconds{backend=&quot;fulda&quot;,url=&quot;https://fulda.example.com/api&quot;} 118080
 <a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>
-<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a># HELP spielplatz_backend_playgrounds_complete Playgrounds with complete equipment data.
-<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a># TYPE spielplatz_backend_playgrounds_complete gauge
-<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>spielplatz_backend_playgrounds_complete{backend=&quot;fulda&quot;,url=&quot;https://fulda.example.com/api&quot;} 28
+<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a># HELP spielplatz_backend_playgrounds_total Total number of playgrounds in the region.
+<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a># TYPE spielplatz_backend_playgrounds_total gauge
+<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>spielplatz_backend_playgrounds_total{backend=&quot;fulda&quot;,url=&quot;https://fulda.example.com/api&quot;} 42
 <a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>
-<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a># HELP spielplatz_backend_playgrounds_partial Playgrounds with partial equipment data.
-<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a># TYPE spielplatz_backend_playgrounds_partial gauge
-<a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a>spielplatz_backend_playgrounds_partial{backend=&quot;fulda&quot;,url=&quot;https://fulda.example.com/api&quot;} 10
+<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a># HELP spielplatz_backend_playgrounds_complete Playgrounds with complete equipment data.
+<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a># TYPE spielplatz_backend_playgrounds_complete gauge
+<a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a>spielplatz_backend_playgrounds_complete{backend=&quot;fulda&quot;,url=&quot;https://fulda.example.com/api&quot;} 28
 <a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a>
-<a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a># HELP spielplatz_backend_playgrounds_missing Playgrounds with no equipment data.
-<a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a># TYPE spielplatz_backend_playgrounds_missing gauge
-<a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a>spielplatz_backend_playgrounds_missing{backend=&quot;fulda&quot;,url=&quot;https://fulda.example.com/api&quot;} 4
+<a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a># HELP spielplatz_backend_playgrounds_partial Playgrounds with partial equipment data.
+<a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a># TYPE spielplatz_backend_playgrounds_partial gauge
+<a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a>spielplatz_backend_playgrounds_partial{backend=&quot;fulda&quot;,url=&quot;https://fulda.example.com/api&quot;} 10
 <a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a>
-<a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a># HELP spielplatz_poll_generated_timestamp Unix timestamp when this scrape was generated.
-<a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a># TYPE spielplatz_poll_generated_timestamp gauge
-<a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a>spielplatz_poll_generated_timestamp 1745668800
+<a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a># HELP spielplatz_backend_playgrounds_missing Playgrounds with no equipment data.
+<a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a># TYPE spielplatz_backend_playgrounds_missing gauge
+<a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a>spielplatz_backend_playgrounds_missing{backend=&quot;fulda&quot;,url=&quot;https://fulda.example.com/api&quot;} 4
+<a id="__codelineno-1-32" name="__codelineno-1-32" href="#__codelineno-1-32"></a>
+<a id="__codelineno-1-33" name="__codelineno-1-33" href="#__codelineno-1-33"></a># HELP spielplatz_poll_generated_timestamp Unix timestamp when this scrape was generated.
+<a id="__codelineno-1-34" name="__codelineno-1-34" href="#__codelineno-1-34"></a># TYPE spielplatz_poll_generated_timestamp gauge
+<a id="__codelineno-1-35" name="__codelineno-1-35" href="#__codelineno-1-35"></a>spielplatz_poll_generated_timestamp 1745668800
 </code></pre></div>
-<p><code>spielplatz_backend_data_age_seconds</code> and the four completeness gauges are omitted for a backend when the field is <code>null</code> (backend down, pre-P1 backend, or no import yet).</p>
+<p><code>spielplatz_backend_data_age_seconds</code> and the four completeness gauges are omitted for a backend when the field is <code>null</code> (backend down, pre-P1 backend, or no import yet). <code>spielplatz_backend_importing</code> is always emitted when the backend is reachable; it defaults to <code>0</code> for older backends that predate the <code>importing</code> field in <code>get_meta</code>.</p>
 <h2 id="recipes">Recipes<a class="headerlink" href="#recipes" title="Permanent link">&para;</a></h2>
 <h3 id="recipe-1-external-uptime-monitor">Recipe 1 — External uptime monitor<a class="headerlink" href="#recipe-1-external-uptime-monitor" title="Permanent link">&para;</a></h3>
 <p>Point any HTTP uptime tool (UptimeRobot, Better Stack, etc.) at:</p>
@@ -1817,6 +1821,14 @@
 <a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a>
 <a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="c1"># Alert if completeness ratio drops below 50 % for any backend</span>
 <a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="nv">spielplatz_backend_playgrounds_complete</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nv">spielplatz_backend_playgrounds_total</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mf">0.5</span>
+<a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a>
+<a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a><span class="c1"># Which backends are currently importing (data in flux)?</span>
+<a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a><span class="nv">spielplatz_backend_importing</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">1</span>
+<a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a>
+<a id="__codelineno-4-22" name="__codelineno-4-22" href="#__codelineno-4-22"></a><span class="c1"># Backend online but no data and not importing (degraded ring state)</span>
+<a id="__codelineno-4-23" name="__codelineno-4-23" href="#__codelineno-4-23"></a><span class="nv">spielplatz_backend_up</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">1</span>
+<a id="__codelineno-4-24" name="__codelineno-4-24" href="#__codelineno-4-24"></a><span class="w">  </span><span class="ow">and</span><span class="w"> </span><span class="nv">spielplatz_backend_importing</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span>
+<a id="__codelineno-4-25" name="__codelineno-4-25" href="#__codelineno-4-25"></a><span class="w">  </span><span class="ow">and</span><span class="w"> </span><span class="nv">spielplatz_backend_playgrounds_total</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span>
 </code></pre></div>
 <h3 id="recipe-3-frontend-error-monitoring-sentry">Recipe 3 — Frontend error monitoring (Sentry)<a class="headerlink" href="#recipe-3-frontend-error-monitoring-sentry" title="Permanent link">&para;</a></h3>
 <p>The hub frontend does not ship in-repo error reporting. For production deployments, sign up for <a href="https://sentry.io/pricing/">Sentry's free tier</a> and add the Sentry browser SDK to your <code>nginx</code> serving config or <code>config.js</code> generation step. The DSN stays out of this repository.</p>
