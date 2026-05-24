@@ -158,6 +158,34 @@ curl https://the-data-node.example.com/api/rpc/get_meta
 
 If `playground_count` is `0` and `bbox` is `[null,null,null,null]`, the database has no playground data. Pass the findings to the data-node operator.
 
+If `playground_count` is `> 0` and `bbox` contains real coordinates, the data-node is healthy. The hub has stale cached state — see **Hub operator** below.
+
+**Hub operator — stale cached state (`playground_count > 0`, valid `bbox`):**
+
+The hub polls each backend's `get_meta` at startup and every 5 minutes. If the last poll hit the backend while it was mid-import, restarting, or transiently unreachable, the hub cached `bbox: null` and `playgroundCount: 0`. With `bbox: null` the hub's viewport router silently excludes the backend from every map query.
+
+1. **Reload the hub page** in the browser. This triggers an immediate re-poll of every backend's `get_meta`. If playgrounds appear after reload, the cache was stale and self-healed.
+
+2. **Check whether the hub health poller marked the backend down.** The hub container runs a 60-second cron that writes `federation-status.json`; backends that exceed the 3-second curl timeout are marked `up: false` and the hub orchestrator skips them even when `get_meta` succeeds from the browser:
+
+   ```bash
+   curl https://your-hub.example.com/federation-status.json \
+     | jq '.backends | to_entries[] | select(.value.up == false) | .key'
+   ```
+
+   If the backend slug appears, it is being skipped by the orchestrator. Check whether the backend is slow to respond:
+
+   ```bash
+   curl -w '%{time_total}s\n' -o /dev/null -sf \
+     https://the-data-node.example.com/api/rpc/get_meta
+   ```
+
+   Response times consistently above 3 seconds will flip `up: false` on the next hub poll cycle. Investigate slow PostgREST response times on the data-node side (see [Map loads but shows no playgrounds](#map-loads-but-shows-no-playgrounds) for database health checks). If the latency is transient, the hub auto-recovers within 60 seconds once the backend is fast again. If the hub container is stuck showing a backend as down despite it being healthy, restart it:
+
+   ```bash
+   docker compose restart app   # run on the hub host
+   ```
+
 **Data-node operator — possible causes:**
 
 1. **Import not run** — The stack started but the importer was never triggered:
