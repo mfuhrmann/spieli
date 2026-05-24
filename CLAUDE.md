@@ -14,6 +14,7 @@ spieli is an interactive web map for exploring playgrounds based on OpenStreetMa
 - Branch naming: `<type>/<issue-number>-<short-description>` (e.g. `feat/130-equipment-map-layer`).
 - Use **Conventional Commits**: `<type>[optional scope]: <description>`. Types: `feat`, `fix`, `docs`, `refactor`, `perf`, `test`, `chore`, `ci`, `build`, `revert`.
 - Always create a GitHub issue first, then a branch, then make code changes.
+- **Always branch from `main`** unless explicitly building on another in-flight branch.
 - **`main` always carries an `-rc` version** in `package.json` (e.g. `0.1.7-rc`).
 
 ### Release procedure
