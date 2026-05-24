@@ -28,20 +28,15 @@
   import Point from 'ol/geom/Point.js';
   import { transform } from 'ol/proj.js';
   import { isBackendHealthy } from './federationHealth.js';
+  import { bboxCentroid } from './centroid.js';
 
   /** @type {import('svelte/store').Readable<Array>} */
   export let backends;
   /** @type {import('ol/source/Vector.js').default} */
   export let source;
 
-  function bboxCentroid(bbox) {
-    if (!bbox || bbox.length !== 4) return null;
-    const [minLon, minLat, maxLon, maxLat] = bbox;
-    return [(minLon + maxLon) / 2, (minLat + maxLat) / 2];
-  }
-
   function buildFeature(backend) {
-    const centroid = bboxCentroid(backend.bbox);
+    const centroid = bboxCentroid(backend.bbox) ?? backend.nominalCentroid ?? null;
     if (!centroid) return null;
     const offline   = !isBackendHealthy(backend);
     const importing = !offline && (backend.importing ?? false);
