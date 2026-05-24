@@ -71,15 +71,19 @@ for entry in "${STACKS[@]}"; do
   echo "→ Verifying..."
   sleep 3
   if [[ "$profiles" == *"data-node"* ]]; then
-    result=$(curl -sf "http://localhost:${port}/api/rpc/get_meta" | \
-      python3 -c "import sys,json; d=json.load(sys.stdin); print('version:', d.get('version','?'), ' playgrounds:', d.get('playground_count','?'))") \
+    meta=$(curl -sf "http://localhost:${port}/api/rpc/get_meta") \
       || fail "get_meta unreachable for $name on port $port"
+    result=$(printf '%s' "$meta" | \
+      python3 -c "import sys,json; d=json.load(sys.stdin); print('version:', d.get('version','?'), ' playgrounds:', d.get('playground_count','?'))")
+    playground_count=$(printf '%s' "$meta" | \
+      python3 -c "import sys,json; print(json.load(sys.stdin).get('playground_count', 0))")
     echo "  $result"
   else
     # Pure hub has no PostgREST — verify the app is serving HTTP instead.
     curl -sf "http://localhost:${port}/" -o /dev/null \
       || fail "App unreachable for $name on port $port"
     echo "  app responding on port ${port}"
+    playground_count=-1
   fi
 
   if [[ "$profiles" == *"data-node"* ]]; then
@@ -87,6 +91,18 @@ for entry in "${STACKS[@]}"; do
     # Restart after verify so the daemon's api.sql startup run does not race
     # with the API_ONLY=1 container above.
     docker compose "${profile_flags[@]}" up -d importer
+
+    if [[ "$playground_count" -eq 0 ]]; then
+      logfile="/tmp/${name}-reimport.log"
+      echo "→ No playgrounds found — triggering forced reimport in background (log: $logfile)"
+      (
+        docker compose --profile data-node-ui run --rm \
+          -e REIMPORT_INTERVAL_MIN_DAYS= \
+          -e REIMPORT_INTERVAL_MAX_DAYS= \
+          importer
+      ) > "$logfile" 2>&1 &
+      echo "  PID $! — check log when done: tail -f $logfile"
+    fi
   fi
 
   echo "✓ $name done"
