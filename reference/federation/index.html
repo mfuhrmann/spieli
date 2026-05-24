@@ -1893,9 +1893,41 @@
 <p>At the cluster tier, two backends covering adjacent regions both ship their own bucket grids. Without re-clustering, the seam at their shared border shows as two overlapping rings. The Hub feeds each backend's buckets into a per-fan-out <a href="https://github.com/mapbox/supercluster">Supercluster</a> instance as weighted points and re-emits merged clusters whose <code>{count, complete, partial, missing, restricted}</code> totals are the sum of the contributing buckets — a single seamless ring per cell.</p>
 <p>The polygon tier doesn't re-cluster — every backend's polygons render in a single vector source, each feature tagged with <code>_backendUrl</code> so selection routes back to the right backend.</p>
 <h3 id="country-level-macro-view">Country-level macro view<a class="headerlink" href="#country-level-macro-view" title="Permanent link">&para;</a></h3>
-<p>At <code>zoom ≤ macroMaxZoom</code> the Hub renders one stacked-ring per registered backend, sized by <code>playground_count</code> and segmented by the <code>{complete, partial, missing}</code> counts the P1 <code>get_meta</code> extension ships. No per-playground fetch is issued at this zoom — the rings come entirely from the cached registry metadata.</p>
-<p>Clicking a macro ring animates <code>view.fit</code> to the backend's bbox, which lands in the cluster or polygon tier and triggers a tier fetch scoped to that backend only.</p>
-<p>Backends marked as offline (via <code>federation-status.json</code> — see <a href="../../ops/monitoring/">Monitoring</a>) render as a dashed outline with their last-known count and an "offline" label, so the operator sees that the region exists but isn't currently reachable.</p>
+<p>At <code>zoom ≤ macroMaxZoom</code> the Hub renders one ring per registered backend, sized by <code>playground_count</code> and segmented by the <code>{complete, partial, missing}</code> counts the P1 <code>get_meta</code> extension ships. No per-playground fetch is issued at this zoom — the rings come entirely from the cached registry metadata.</p>
+<p>Clicking a ring animates <code>view.fit</code> to the backend's bbox, which lands in the cluster or polygon tier and triggers a tier fetch scoped to that backend only.</p>
+<p>Each ring has one of four visual states, driven by <code>federation-status.json</code> (see <a href="../../ops/monitoring/">Monitoring</a>) and the cached <code>get_meta</code> response:</p>
+<table>
+<thead>
+<tr>
+<th>State</th>
+<th>Visual</th>
+<th>Condition</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Healthy</strong></td>
+<td>Coloured segments (green / amber / red / gray) + count in centre</td>
+<td>Backend reachable, data present</td>
+</tr>
+<tr>
+<td><strong>Offline</strong></td>
+<td>Dashed gray ring + last-known count + "offline" label</td>
+<td><code>federation-status.json</code> reports <code>up: false</code></td>
+</tr>
+<tr>
+<td><strong>Importing</strong></td>
+<td>Solid blue ring + count + "updating" label</td>
+<td>Backend reachable, osm2pgsql actively running</td>
+</tr>
+<tr>
+<td><strong>Degraded</strong></td>
+<td>Solid amber ring + "no data" label</td>
+<td>Backend reachable, not importing, but playground count is zero</td>
+</tr>
+</tbody>
+</table>
+<p>Pre-P1 backends that omit the completeness fields from <code>get_meta</code> render as a flat gray ring (all count mapped into the "restricted / unknown" segment) so the operator sees "data quality unknown" rather than a misleading all-zero healthy ring.</p>
 <h3 id="architecture-flow">Architecture flow<a class="headerlink" href="#architecture-flow" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>flowchart LR
 <a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    user[User pans / zooms map] --&gt; moveend[Debounced moveend&lt;br/&gt;300 ms]
@@ -1916,7 +1948,7 @@
 <a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a>    sc --&gt; render[Repaint clusterSource&lt;br/&gt;incrementally per arrival]
 <a id="__codelineno-5-18" name="__codelineno-5-18" href="#__codelineno-5-18"></a>    concat --&gt; render2[Append to polygonSource&lt;br/&gt;incrementally per arrival]
 <a id="__codelineno-5-19" name="__codelineno-5-19" href="#__codelineno-5-19"></a>
-<a id="__codelineno-5-20" name="__codelineno-5-20" href="#__codelineno-5-20"></a>    macro --&gt; macroLayer[Render macroSource&lt;br/&gt;one ring per backend]
+<a id="__codelineno-5-20" name="__codelineno-5-20" href="#__codelineno-5-20"></a>    macro --&gt; macroLayer[Render macroSource&lt;br/&gt;one ring per backend&lt;br/&gt;healthy/offline/importing/degraded]
 </code></pre></div>
 <p>Each box in the cluster/polygon path runs once per moveend. Fan-out is the only step that produces network traffic; everything else is in-memory.</p>
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>

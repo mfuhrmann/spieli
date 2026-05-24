@@ -1964,7 +1964,7 @@
 <h3 id="standalone-mode-app_modestandalone">Standalone mode (<code>APP_MODE=standalone</code>)<a class="headerlink" href="#standalone-mode-app_modestandalone" title="Permanent link">&para;</a></h3>
 <p>The default. One region, one database. The tiered orchestrator fires on every <code>moveend</code>:</p>
 <ul>
-<li><strong>Zoom ≤ 13</strong> → <code>get_playground_clusters(z, bbox)</code> → cluster layer (stacked ring rings, sized by <code>complete/partial/missing/restricted</code> counts)</li>
+<li><strong>Zoom ≤ 13</strong> → <code>get_playground_clusters(z, bbox)</code> → cluster layer (rings, sized by <code>complete/partial/missing/restricted</code> counts)</li>
 <li><strong>Zoom &gt; 13</strong> → <code>get_playgrounds_bbox(bbox)</code> → polygon layer (full GeoJSON polygons, colour-coded by completeness)</li>
 </ul>
 <p>Clicking a playground writes <code>#W&lt;osm_id&gt;</code> (or <code>#&lt;slug&gt;/W&lt;osm_id&gt;</code> in hub mode) to the URL hash and opens <code>PlaygroundPanel</code>, which loads equipment, trees, POIs, and reviews.</p>
