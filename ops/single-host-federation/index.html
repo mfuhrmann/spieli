@@ -1961,19 +1961,16 @@
 <div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;REIMPORT_STARTUP_JITTER_MAX_HOURS=12&quot;</span><span class="w"> </span>&gt;&gt;<span class="w"> </span>~/spieli-&lt;slug&gt;/.env
 </code></pre></div>
 <h2 id="upgrading">Upgrading<a class="headerlink" href="#upgrading" title="Permanent link">&para;</a></h2>
-<p>Use <code>scripts/upgrade-stacks.sh</code>. It pulls the new image, restarts the app container, runs <code>API_ONLY=1</code> for data-nodes (updates DB functions and version), and verifies <code>get_meta</code> — sequentially, never in parallel. The hub entry uses <code>--profile ui</code> and skips the importer step.</p>
-<p>Copy the script to the VPS and edit the <code>STACKS</code> array to match your port layout:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>scp<span class="w"> </span>scripts/upgrade-stacks.sh<span class="w"> </span>horst@vps:~/upgrade_stacks.sh
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>bash<span class="w"> </span>~/upgrade_stacks.sh
-</code></pre></div>
+<p>See <a href="../upgrade/#single-host-federation-multiple-stacks-on-one-vps">Upgrading — Single-host federation</a> for the full procedure. The short version: use <code>scripts/upgrade-stacks.sh</code>, which upgrades all stacks sequentially (data-nodes first, hub last) and handles the <code>API_ONLY=1</code> ordering automatically.</p>
+<p>Standard releases with Watchtower active require no manual action — the daemon importer applies <code>api.sql</code> on every restart. Only <a href="../upgrade/#breaking-label-procedures">breaking-label releases</a> need manual steps.</p>
 <h2 id="watchtower">Watchtower<a class="headerlink" href="#watchtower" title="Permanent link">&para;</a></h2>
-<p>Only the hub stack runs <code>--profile auto-update</code>. A second Watchtower on any data-node stack causes both instances to fight over the same containers and kill each other on startup.</p>
-<p>The single Watchtower instance in the hub stack watches all containers on the Docker host automatically — data-node containers are updated and restarted even though their stacks don't run <code>auto-update</code>.</p>
+<p>Only the hub stack runs <code>--profile auto-update</code>. Adding a second Watchtower to any data-node stack causes both instances to fight over the same containers.</p>
+<p>The single Watchtower instance in the hub stack watches all containers on the Docker host automatically — data-node containers are restarted even though their stacks don't include <code>auto-update</code>.</p>
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="../federated-deployment/">Federated Deployment</a> — distributed (multi-host) topology</li>
 <li><a href="../add-data-node/">Add a Data-node</a> — adding one backend at a time</li>
-<li><a href="../upgrade/">Upgrading</a> — multi-stack upgrade procedure</li>
+<li><a href="../upgrade/">Upgrading</a> — full upgrade guide for all deployment types</li>
 <li><a href="../configuration/">Configuration reference</a> — all env vars</li>
 </ul>
 

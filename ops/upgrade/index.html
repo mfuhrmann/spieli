@@ -713,28 +713,46 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#check-the-current-version" class="md-nav__link">
+  <a href="#before-you-upgrade" class="md-nav__link">
     <span class="md-ellipsis">
-      Check the current version
+      Before you upgrade
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#standard-upgrade-same-minor-version" class="md-nav__link">
+  <a href="#automatic-upgrade-watchtower" class="md-nav__link">
     <span class="md-ellipsis">
-      Standard upgrade (same minor version)
+      Automatic upgrade (Watchtower)
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Standard upgrade (same minor version)">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#manual-upgrade" class="md-nav__link">
+    <span class="md-ellipsis">
+      Manual upgrade
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Manual upgrade">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#verify-the-upgrade" class="md-nav__link">
+  <a href="#hub-deploy_modeui" class="md-nav__link">
     <span class="md-ellipsis">
-      Verify the upgrade
+      Hub (DEPLOY_MODE=ui)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#standalone-or-data-node-deploy_modedata-node-ui-or-data-node" class="md-nav__link">
+    <span class="md-ellipsis">
+      Standalone or Data-node (DEPLOY_MODE=data-node-ui or data-node)
     </span>
   </a>
   
@@ -746,15 +764,76 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#when-to-run-a-full-re-import" class="md-nav__link">
+  <a href="#breaking-label-procedures" class="md-nav__link">
     <span class="md-ellipsis">
-      When to run a full re-import
+      Breaking label procedures
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Breaking label procedures">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#requires-env-update" class="md-nav__link">
+    <span class="md-ellipsis">
+      requires-env-update
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#requires-compose-update" class="md-nav__link">
+    <span class="md-ellipsis">
+      requires-compose-update
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#requires-reimport" class="md-nav__link">
+    <span class="md-ellipsis">
+      requires-reimport
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#single-host-federation-multiple-stacks-on-one-vps" class="md-nav__link">
+    <span class="md-ellipsis">
+      Single-host federation (multiple stacks on one VPS)
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
+  <a href="#special-cases" class="md-nav__link">
+    <span class="md-ellipsis">
+      Special cases
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Special cases">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#if-playground_count-is-zero-after-upgrade" class="md-nav__link">
+    <span class="md-ellipsis">
+      If playground_count is zero after upgrade
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#if-you-deleted-the-database-volume" class="md-nav__link">
     <span class="md-ellipsis">
       If you deleted the database volume
@@ -762,39 +841,11 @@
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#upgrading-the-compose-file" class="md-nav__link">
-    <span class="md-ellipsis">
-      Upgrading the Compose file
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#upgrading-with-watchtower-auto-update-profile" class="md-nav__link">
-    <span class="md-ellipsis">
-      Upgrading with Watchtower (auto-update profile)
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#hub-upgrades" class="md-nav__link">
-    <span class="md-ellipsis">
-      Hub upgrades
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Hub upgrades">
-      <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#multiple-stacks-on-one-host" class="md-nav__link">
+  <a href="#downgrading" class="md-nav__link">
     <span class="md-ellipsis">
-      Multiple stacks on one host
+      Downgrading
     </span>
   </a>
   
@@ -802,15 +853,6 @@
         
       </ul>
     </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#downgrading" class="md-nav__link">
-    <span class="md-ellipsis">
-      Downgrading
-    </span>
-  </a>
   
 </li>
       
@@ -1595,28 +1637,46 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#check-the-current-version" class="md-nav__link">
+  <a href="#before-you-upgrade" class="md-nav__link">
     <span class="md-ellipsis">
-      Check the current version
+      Before you upgrade
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#standard-upgrade-same-minor-version" class="md-nav__link">
+  <a href="#automatic-upgrade-watchtower" class="md-nav__link">
     <span class="md-ellipsis">
-      Standard upgrade (same minor version)
+      Automatic upgrade (Watchtower)
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Standard upgrade (same minor version)">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#manual-upgrade" class="md-nav__link">
+    <span class="md-ellipsis">
+      Manual upgrade
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Manual upgrade">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#verify-the-upgrade" class="md-nav__link">
+  <a href="#hub-deploy_modeui" class="md-nav__link">
     <span class="md-ellipsis">
-      Verify the upgrade
+      Hub (DEPLOY_MODE=ui)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#standalone-or-data-node-deploy_modedata-node-ui-or-data-node" class="md-nav__link">
+    <span class="md-ellipsis">
+      Standalone or Data-node (DEPLOY_MODE=data-node-ui or data-node)
     </span>
   </a>
   
@@ -1628,15 +1688,76 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#when-to-run-a-full-re-import" class="md-nav__link">
+  <a href="#breaking-label-procedures" class="md-nav__link">
     <span class="md-ellipsis">
-      When to run a full re-import
+      Breaking label procedures
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Breaking label procedures">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#requires-env-update" class="md-nav__link">
+    <span class="md-ellipsis">
+      requires-env-update
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#requires-compose-update" class="md-nav__link">
+    <span class="md-ellipsis">
+      requires-compose-update
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#requires-reimport" class="md-nav__link">
+    <span class="md-ellipsis">
+      requires-reimport
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#single-host-federation-multiple-stacks-on-one-vps" class="md-nav__link">
+    <span class="md-ellipsis">
+      Single-host federation (multiple stacks on one VPS)
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
+  <a href="#special-cases" class="md-nav__link">
+    <span class="md-ellipsis">
+      Special cases
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Special cases">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#if-playground_count-is-zero-after-upgrade" class="md-nav__link">
+    <span class="md-ellipsis">
+      If playground_count is zero after upgrade
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#if-you-deleted-the-database-volume" class="md-nav__link">
     <span class="md-ellipsis">
       If you deleted the database volume
@@ -1644,39 +1765,11 @@
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#upgrading-the-compose-file" class="md-nav__link">
-    <span class="md-ellipsis">
-      Upgrading the Compose file
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#upgrading-with-watchtower-auto-update-profile" class="md-nav__link">
-    <span class="md-ellipsis">
-      Upgrading with Watchtower (auto-update profile)
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#hub-upgrades" class="md-nav__link">
-    <span class="md-ellipsis">
-      Hub upgrades
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Hub upgrades">
-      <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#multiple-stacks-on-one-host" class="md-nav__link">
+  <a href="#downgrading" class="md-nav__link">
     <span class="md-ellipsis">
-      Multiple stacks on one host
+      Downgrading
     </span>
   </a>
   
@@ -1684,15 +1777,6 @@
         
       </ul>
     </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#downgrading" class="md-nav__link">
-    <span class="md-ellipsis">
-      Downgrading
-    </span>
-  </a>
   
 </li>
       
@@ -1729,155 +1813,189 @@
 
 
 <h1 id="upgrading-spieli">Upgrading spieli<a class="headerlink" href="#upgrading-spieli" title="Permanent link">&para;</a></h1>
-<p>This guide explains how to update a running spieli deployment to a newer release.</p>
-<h2 id="check-the-current-version">Check the current version<a class="headerlink" href="#check-the-current-version" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># Read the OCI version label baked into the running image:</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>docker<span class="w"> </span>inspect<span class="w"> </span>spieli-app-1<span class="w"> </span>--format<span class="w"> </span><span class="s1">&#39;{{index .Config.Labels &quot;org.opencontainers.image.version&quot;}}&#39;</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># Or list all running images and their tags:</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>docker<span class="w"> </span>compose<span class="w"> </span>images
+<h2 id="before-you-upgrade">Before you upgrade<a class="headerlink" href="#before-you-upgrade" title="Permanent link">&para;</a></h2>
+<p>Check <a href="https://github.com/mfuhrmann/spieli/releases">GitHub Releases</a> for the latest version and scan the release notes for <strong>breaking labels</strong>. Most releases carry none and require no manual action.</p>
+<table>
+<thead>
+<tr>
+<th>Label</th>
+<th>What it means</th>
+<th>What you must do</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>requires-env-update</code></td>
+<td>New or removed env var</td>
+<td>Update <code>.env</code> <strong>before</strong> pulling the new image</td>
+</tr>
+<tr>
+<td><code>requires-compose-update</code></td>
+<td><code>compose.yml</code> changed structurally</td>
+<td>Re-run <code>install.sh</code> or update <code>compose.yml</code> manually <strong>before</strong> restarting</td>
+</tr>
+<tr>
+<td><code>requires-reimport</code></td>
+<td>OSM data model changed</td>
+<td>Trigger a full re-import <strong>after</strong> the image update lands</td>
+</tr>
+<tr>
+<td><code>requires-schema-update</code></td>
+<td><code>api.sql</code> changed</td>
+<td>Covered automatically — no extra step needed</td>
+</tr>
+</tbody>
+</table>
+<p>To check what version is currently running:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>docker<span class="w"> </span>inspect<span class="w"> </span>spieli-app-1<span class="w"> </span>--format<span class="w"> </span><span class="s1">&#39;{{index .Config.Labels &quot;org.opencontainers.image.version&quot;}}&#39;</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="c1"># or</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>docker<span class="w"> </span>compose<span class="w"> </span>images
 </code></pre></div>
-<p>Check <a href="https://github.com/mfuhrmann/spieli/releases">GitHub Releases</a> for the latest version and any breaking changes.</p>
-<h2 id="standard-upgrade-same-minor-version">Standard upgrade (same minor version)<a class="headerlink" href="#standard-upgrade-same-minor-version" title="Permanent link">&para;</a></h2>
-<p>For patch and minor version upgrades with no breaking changes:</p>
-<div class="admonition danger">
-<p class="admonition-title">Do not delete volumes during a standard upgrade</p>
-<p>A standard upgrade does <strong>not</strong> require deleting Docker volumes. Deleting <code>pgdata</code> erases all imported playground data and forces a full re-import (several hours for large states). If you already deleted <code>pgdata</code>, see <a href="#if-you-deleted-the-database-volume">If you deleted the database volume</a> below.</p>
-</div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nb">cd</span><span class="w"> </span>/path/to/your/spieli-deployment
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="c1"># Pull the latest images</span>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>docker<span class="w"> </span>compose<span class="w"> </span>pull
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="c1"># Restart app and importer containers</span>
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>up<span class="w"> </span>-d<span class="w"> </span>app<span class="w"> </span>importer
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="c1"># Re-apply api.sql — updates DB functions and the version reported by get_meta()</span>
-<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>-e<span class="w"> </span><span class="nv">API_ONLY</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>importer
-</code></pre></div>
-<p>Replace <code>&lt;mode&gt;</code> with your <code>DEPLOY_MODE</code> (<code>data-node</code>, <code>ui</code>, or <code>data-node-ui</code>).</p>
-<div class="admonition warning">
-<p class="admonition-title">Always restart the importer, not just the app</p>
-<p><code>docker compose up -d app</code> alone leaves the daemon importer running the old image. The daemon re-applies <code>api.sql</code> on its next scheduled reimport — using the old image, which reverts the version in <code>get_meta()</code> back to the previous release. Always include <code>importer</code> in the <code>up -d</code> call.</p>
-</div>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>The <code>API_ONLY=1</code> step is required on every upgrade, not just when the release notes mention SQL changes. The version number visible in the Hub regions panel comes from the database (written by the importer), not the app image — skipping this step leaves the reported version stale.</p>
-</div>
-<div class="admonition warning">
-<p class="admonition-title">If API_ONLY fails mid-run</p>
-<p><code>API_ONLY=1</code> drops and recreates the <code>playground_stats</code> materialised view. If it crashes partway through, the view is gone and PostgREST will log errors like <code>relation "public.playground_stats" does not exist</code>. Recovery: run a <strong>full re-import</strong> (see below) — this recreates everything from scratch.</p>
-</div>
-<h3 id="verify-the-upgrade">Verify the upgrade<a class="headerlink" href="#verify-the-upgrade" title="Permanent link">&para;</a></h3>
-<p>After the <code>API_ONLY=1</code> step, confirm the new version is live and playground data is intact:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>curl<span class="w"> </span>-sf<span class="w"> </span>http://localhost:&lt;port&gt;/api/rpc/get_meta<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span>python3<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;import sys,json; d=json.load(sys.stdin); print(&#39;version:&#39;, d[&#39;version&#39;], &#39; playgrounds:&#39;, d[&#39;playground_count&#39;])&quot;</span>
-</code></pre></div>
-<p>Both <code>version</code> and <code>playground_count</code> should be non-zero. If <code>playground_count</code> is 0, a full re-import is needed (see below).</p>
-<h2 id="when-to-run-a-full-re-import">When to run a full re-import<a class="headerlink" href="#when-to-run-a-full-re-import" title="Permanent link">&para;</a></h2>
-<p>A full re-import (without <code>API_ONLY</code>) is needed when:</p>
+<hr />
+<h2 id="automatic-upgrade-watchtower">Automatic upgrade (Watchtower)<a class="headerlink" href="#automatic-upgrade-watchtower" title="Permanent link">&para;</a></h2>
+<p>If you installed with the <code>auto-update</code> profile active, Watchtower handles standard releases with no manual intervention:</p>
 <ul>
-<li>The release notes say "re-import after upgrading"</li>
-<li>A new OSM tag type was added to <code>processing/lua/osm_import.lua</code> — the new columns won't exist in existing data until a fresh import</li>
+<li>New image published → Watchtower pulls and restarts <code>app</code> and <code>importer</code>.</li>
+<li>The daemon importer applies <code>api.sql</code> on every container startup, so schema changes take effect immediately after the restart — no separate <code>API_ONLY=1</code> step needed.</li>
 </ul>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>importer
-</code></pre></div>
-<p>A full re-import also re-applies <code>api.sql</code>, so the separate <code>API_ONLY=1</code> step is not needed when you do a full re-import.</p>
-<h2 id="if-you-deleted-the-database-volume">If you deleted the database volume<a class="headerlink" href="#if-you-deleted-the-database-volume" title="Permanent link">&para;</a></h2>
-<p>If you deleted the <code>pgdata</code> volume (e.g. <code>docker compose down -v</code> or <code>docker volume rm &lt;stack&gt;_pgdata</code>), all imported data is gone and you need a full re-import. Before running it:</p>
-<ol>
-<li>
-<p><strong>Check whether the PBF cache volume also survived.</strong> The importer stores downloaded and pre-filtered PBF files in a separate named volume (<code>&lt;stack&gt;_pbf_cache</code>). This volume is not removed by <code>docker compose down -v</code> if it was created outside the current Compose project.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>docker<span class="w"> </span>volume<span class="w"> </span>ls<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>pbf_cache
-</code></pre></div>
-</li>
-<li>
-<p><strong>If the cache volume exists, clear it.</strong> A previously interrupted import may have left a corrupt or empty filtered PBF in the cache. The importer checks file timestamps but not content — a corrupt cache causes a full re-import to process 0 objects and silently leave the database empty.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># Replace &lt;stack&gt; with your stack name (e.g. spieli-hessen)</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>docker<span class="w"> </span>volume<span class="w"> </span>rm<span class="w"> </span>&lt;stack&gt;_pbf_cache
-</code></pre></div>
-<p>Alternatively, force a cache bypass by deleting only the filtered files:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>docker<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>-v<span class="w"> </span>&lt;stack&gt;_pbf_cache:/data<span class="w"> </span>alpine<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span>sh<span class="w"> </span>-c<span class="w"> </span><span class="s1">&#39;rm -f /data/*_&lt;RELATION_ID&gt;.pbf /data/*_&lt;RELATION_ID&gt;_tags.pbf&#39;</span>
-</code></pre></div>
-</li>
-<li>
-<p><strong>Run the full re-import</strong> (downloads the PBF fresh if the cache was cleared):</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>importer
-</code></pre></div>
-</li>
-<li>
-<p><strong>Verify</strong> with <code>get_meta</code> as shown in the standard upgrade section above.</p>
-</li>
-</ol>
-<h2 id="upgrading-the-compose-file">Upgrading the Compose file<a class="headerlink" href="#upgrading-the-compose-file" title="Permanent link">&para;</a></h2>
-<p>When <code>compose.yml</code> itself changes (new services, new volume mounts, etc.):</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># Download the updated file directly:</span>
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>curl<span class="w"> </span>-O<span class="w"> </span>https://raw.githubusercontent.com/mfuhrmann/spieli/main/compose.yml
-<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>
-<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="c1"># Then recreate:</span>
-<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>down
-<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>up<span class="w"> </span>-d
-</code></pre></div>
-<h2 id="upgrading-with-watchtower-auto-update-profile">Upgrading with Watchtower (auto-update profile)<a class="headerlink" href="#upgrading-with-watchtower-auto-update-profile" title="Permanent link">&para;</a></h2>
-<p>When the <code>auto-update</code> profile is active, Watchtower pulls new images and restarts containers automatically — no manual <code>docker compose pull</code> needed.</p>
-<p>The importer applies <code>api.sql</code> on every daemon-mode startup, so schema changes from a new image take effect within seconds of a Watchtower-triggered restart — even when the full PBF re-import is deferred by the grace-period check. No manual intervention is needed for schema-only upgrades.</p>
-<h2 id="hub-upgrades">Hub upgrades<a class="headerlink" href="#hub-upgrades" title="Permanent link">&para;</a></h2>
-<p>Upgrade each data-node first, verify it works, then upgrade the Hub UI. The Hub is backwards-compatible with older data-nodes (it falls back to the legacy <code>get_playgrounds</code> RPC if the tiered RPCs return 404), but an older Hub is not guaranteed to understand new data-node response fields.</p>
-<h3 id="multiple-stacks-on-one-host">Multiple stacks on one host<a class="headerlink" href="#multiple-stacks-on-one-host" title="Permanent link">&para;</a></h3>
-<p>When the Hub and its data-nodes share a single VPS, each stack lives in its own directory with a unique <code>COMPOSE_PROJECT_NAME</code>. Upgrade in order: <strong>data-nodes first, hub last</strong>. Never upgrade stacks in parallel — concurrent API_ONLY runs plus the resident daemon importers can exhaust RAM.</p>
-<p>Use the provided helper script for a one-command upgrade:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>bash<span class="w"> </span>~/spieli/scripts/upgrade-stacks.sh
-</code></pre></div>
-<p>The script is in <code>scripts/upgrade-stacks.sh</code>. Edit the <code>STACKS</code> array at the top to match your deployment before the first run:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="nv">STACKS</span><span class="o">=(</span>
-<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">  </span><span class="s2">&quot;</span><span class="nv">$HOME</span><span class="s2">/spieli-berlin:data-node-ui:8082&quot;</span>
-<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">  </span><span class="s2">&quot;</span><span class="nv">$HOME</span><span class="s2">/spieli:data-node-ui auto-update:8080&quot;</span>
-<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="o">)</span>
-</code></pre></div>
-<p>Each entry is <code>directory:profiles:local-port</code>. The script pulls images, restarts the app container, runs <code>API_ONLY=1</code>, verifies <code>get_meta</code>, then restarts the daemon importer on the new image — and moves to the next stack.</p>
-<p>To upgrade a single stack manually:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="nb">cd</span><span class="w"> </span>~/spieli-&lt;region&gt;
-<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>pull
-<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>data-node-ui<span class="w"> </span>up<span class="w"> </span>-d<span class="w"> </span>app
-<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>data-node-ui<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>-e<span class="w"> </span><span class="nv">API_ONLY</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>importer
-<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="c1"># verify first, then restart the daemon:</span>
-<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>curl<span class="w"> </span>-sf<span class="w"> </span>http://localhost:&lt;port&gt;/api/rpc/get_meta<span class="w"> </span><span class="p">|</span><span class="w"> </span>python3<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;import sys,json; d=json.load(sys.stdin); print(&#39;version:&#39;, d[&#39;version&#39;], &#39; playgrounds:&#39;, d[&#39;playground_count&#39;])&quot;</span>
-<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>data-node-ui<span class="w"> </span>up<span class="w"> </span>-d<span class="w"> </span>importer
-</code></pre></div>
-<div class="admonition warning">
-<p class="admonition-title">Run API_ONLY=1 before restarting the daemon importer</p>
-<p>The daemon importer runs <code>api.sql</code> on every container startup. If you restart the daemon and then immediately run <code>API_ONLY=1</code>, both containers apply <code>api.sql</code> concurrently — they race on the <code>DROP</code>/<code>CREATE</code> of the <code>playground_stats</code> materialized view. On large datasets this reliably causes <code>ERROR: relation "public.playground_stats" does not exist</code>. Always run <code>API_ONLY=1</code> first, verify, then restart the daemon.</p>
-</div>
-<p>For the hub stack (pure <code>DEPLOY_MODE=ui</code> — no importer, no <code>API_ONLY</code> step):</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="nb">cd</span><span class="w"> </span>~/spieli
-<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>pull
-<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>ui<span class="w"> </span>--profile<span class="w"> </span>auto-update<span class="w"> </span>up<span class="w"> </span>-d<span class="w"> </span>app
-</code></pre></div>
-<div class="admonition note">
-<p class="admonition-title">API_ONLY=1 bypasses daemon mode</p>
-<p><code>docker compose run --rm -e API_ONLY=1 importer</code> starts a fresh one-shot container. The importer entrypoint checks <code>API_ONLY</code> before any reimport logic, so <code>REIMPORT_INTERVAL_*</code> settings have no effect — the container applies <code>api.sql</code> and exits regardless of how recently data was imported.</p>
-</div>
+<p><strong>Standard releases (no breaking labels): nothing to do.</strong> Wait for Watchtower to pick up the new image (default poll interval: 5 minutes).</p>
+<p>For <strong>breaking-label releases</strong>, follow the <a href="#breaking-label-procedures">Breaking label procedures</a> below in addition to the Watchtower restart.</p>
 <div class="admonition note">
 <p class="admonition-title">One Watchtower covers all containers</p>
-<p>Only the hub stack should run <code>--profile auto-update</code>. Adding a second Watchtower to any data-node stack causes both instances to fight over the same containers. Data-node stacks without <code>auto-update</code> are still restarted by the single Watchtower instance when it detects a new image.</p>
+<p>Only the hub stack (or your single standalone stack) should run <code>--profile auto-update</code>. Adding a second Watchtower to any data-node stack causes both instances to fight over the same containers. The single Watchtower instance watches all containers on the Docker host automatically, including any data-node stacks that don't run <code>auto-update</code> themselves.</p>
 </div>
-<div class="admonition note">
-<p class="admonition-title">Daemon importer and API_ONLY</p>
-<p>On stacks managed by Watchtower, the importer applies <code>api.sql</code> automatically on every daemon-mode restart — the explicit <code>API_ONLY=1</code> step is not strictly required. Running it during a manual upgrade just ensures <code>get_meta()</code> reports the correct version immediately, without waiting for the next scheduled daemon restart.</p>
-</div>
-<h2 id="downgrading">Downgrading<a class="headerlink" href="#downgrading" title="Permanent link">&para;</a></h2>
-<p>Downgrading is supported only within the same minor version. Images are tagged <code>:X.Y.Z</code> and <code>:X.Y</code>, so:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="c1"># Pin to a specific version by editing compose.yml:</span>
-<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="c1"># Change ghcr.io/mfuhrmann/spieli:latest to ghcr.io/mfuhrmann/spieli:0.4.0</span>
-<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>docker<span class="w"> </span>compose<span class="w"> </span>pull
-<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>up<span class="w"> </span>-d
+<hr />
+<h2 id="manual-upgrade">Manual upgrade<a class="headerlink" href="#manual-upgrade" title="Permanent link">&para;</a></h2>
+<p>Use manual steps when you don't run Watchtower, or when a breaking label requires a specific action sequence.</p>
+<h3 id="hub-deploy_modeui">Hub (DEPLOY_MODE=ui)<a class="headerlink" href="#hub-deploy_modeui" title="Permanent link">&para;</a></h3>
+<p>The hub has no database and no importer — only the app container needs updating.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nb">cd</span><span class="w"> </span>/path/to/your/spieli-hub
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>docker<span class="w"> </span>compose<span class="w"> </span>pull
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>ui<span class="w"> </span>up<span class="w"> </span>-d<span class="w"> </span>app
 </code></pre></div>
-<p>The database schema is <strong>not</strong> automatically rolled back on a downgrade. If the new version added new columns or functions, the older app may ignore them safely, but this is not tested. When in doubt, re-import from scratch.</p>
+<p>Done. No <code>API_ONLY=1</code>, no importer, no verify step needed.</p>
+<h3 id="standalone-or-data-node-deploy_modedata-node-ui-or-data-node">Standalone or Data-node (DEPLOY_MODE=data-node-ui or data-node)<a class="headerlink" href="#standalone-or-data-node-deploy_modedata-node-ui-or-data-node" title="Permanent link">&para;</a></h3>
+<p>Replace <code>&lt;mode&gt;</code> with your <code>DEPLOY_MODE</code> and <code>&lt;port&gt;</code> with your <code>APP_PORT</code>.</p>
+<p><strong>Step 1 — Pull new images</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>pull
+</code></pre></div>
+<p><strong>Step 2 — Restart the app container</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>up<span class="w"> </span>-d<span class="w"> </span>app
+</code></pre></div>
+<p><strong>Step 3 — Apply schema changes (API_ONLY)</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>-e<span class="w"> </span><span class="nv">API_ONLY</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>importer
+</code></pre></div>
+<p>This updates all PostgREST functions and the version number reported by <code>get_meta</code>. It runs as a one-shot container — the daemon importer is not affected.</p>
+<div class="admonition warning">
+<p class="admonition-title">Run API_ONLY=1 before restarting the daemon</p>
+<p>The daemon importer also applies <code>api.sql</code> on container startup. If you restart the daemon and then immediately run <code>API_ONLY=1</code>, both processes race on the <code>DROP</code>/<code>CREATE</code> of the <code>playground_stats</code> materialized view. On large datasets this reliably causes <code>ERROR: relation "public.playground_stats" does not exist</code>. Always complete step 3 and verify (step 4) before starting the daemon (step 5).</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">If API_ONLY=1 fails mid-run</p>
+<p><code>API_ONLY=1</code> drops and recreates <code>playground_stats</code>. A crash partway through leaves the view gone and PostgREST will log <code>relation "public.playground_stats" does not exist</code>. Recovery: run a full re-import — it recreates everything from scratch.</p>
+</div>
+<p><strong>Step 4 — Verify</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>curl<span class="w"> </span>-sf<span class="w"> </span>http://localhost:&lt;port&gt;/api/rpc/get_meta<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span>python3<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;import sys,json; d=json.load(sys.stdin); print(&#39;version:&#39;, d[&#39;version&#39;], &#39; playgrounds:&#39;, d[&#39;playground_count&#39;])&quot;</span>
+</code></pre></div>
+<p>Both <code>version</code> and <code>playground_count</code> should be non-zero. If <code>playground_count</code> is 0, see <a href="#if-playground_count-is-zero-after-upgrade">If playground_count is zero after upgrade</a> below.</p>
+<p><strong>Step 5 — Restart the daemon importer on the new image</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>up<span class="w"> </span>-d<span class="w"> </span>importer
+</code></pre></div>
+<hr />
+<h2 id="breaking-label-procedures">Breaking label procedures<a class="headerlink" href="#breaking-label-procedures" title="Permanent link">&para;</a></h2>
+<h3 id="requires-env-update">requires-env-update<a class="headerlink" href="#requires-env-update" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Read the release notes to find the new or removed variable.</li>
+<li>Update <code>.env</code> accordingly.</li>
+<li>Then proceed with the normal upgrade steps for your deployment type.</li>
+</ol>
+<h3 id="requires-compose-update">requires-compose-update<a class="headerlink" href="#requires-compose-update" title="Permanent link">&para;</a></h3>
+<p><code>compose.yml</code> has structural changes (new service, renamed service, removed volume).</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># Download the updated file:</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>curl<span class="w"> </span>-O<span class="w"> </span>https://raw.githubusercontent.com/mfuhrmann/spieli/main/compose.yml
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="c1"># Recreate the stack:</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>down
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>up<span class="w"> </span>-d
+</code></pre></div>
+<p>Or re-run <code>install.sh</code> — it re-downloads and applies <code>compose.yml</code> automatically.</p>
+<h3 id="requires-reimport">requires-reimport<a class="headerlink" href="#requires-reimport" title="Permanent link">&para;</a></h3>
+<p>A new OSM tag type was added. Existing data doesn't have the new columns until a fresh import.</p>
+<p>After the image update (Watchtower or manual steps 1–2):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># Full re-import — also applies api.sql, so no separate API_ONLY step needed</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>importer
+</code></pre></div>
+<p>This takes several minutes for large regions. The separate <code>API_ONLY=1</code> step is not needed — a full re-import also updates all schema functions.</p>
+<hr />
+<h2 id="single-host-federation-multiple-stacks-on-one-vps">Single-host federation (multiple stacks on one VPS)<a class="headerlink" href="#single-host-federation-multiple-stacks-on-one-vps" title="Permanent link">&para;</a></h2>
+<p>When the hub and its data-nodes share a single VPS, use <code>scripts/upgrade-stacks.sh</code>. It handles the correct order (data-nodes first, hub last) and runs each stack sequentially to avoid OOM from concurrent importer runs.</p>
+<p>Copy the script to the VPS once, then edit the <code>STACKS</code> array to match your port layout:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>scp<span class="w"> </span>scripts/upgrade-stacks.sh<span class="w"> </span>user@vps:~/upgrade-stacks.sh
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="nv">STACKS</span><span class="o">=(</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">  </span><span class="s2">&quot;</span><span class="nv">$HOME</span><span class="s2">/spieli-hessen:data-node-ui:8081&quot;</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">  </span><span class="s2">&quot;</span><span class="nv">$HOME</span><span class="s2">/spieli-berlin:data-node-ui:8082&quot;</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="w">  </span><span class="s2">&quot;</span><span class="nv">$HOME</span><span class="s2">/spieli:ui auto-update:8080&quot;</span><span class="w">   </span><span class="c1"># hub last</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="o">)</span>
+</code></pre></div>
+<p>Run:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>bash<span class="w"> </span>~/upgrade-stacks.sh
+</code></pre></div>
+<p>The script pulls images, restarts each app container, runs <code>API_ONLY=1</code> for data-nodes, verifies <code>get_meta</code>, restarts the daemon importer, and moves to the next stack. The hub entry skips the importer steps automatically.</p>
+<div class="admonition note">
+<p class="admonition-title">Watchtower and the single-VPS setup</p>
+<p>On a single-VPS federation, only the hub stack runs <code>--profile auto-update</code>. The single Watchtower instance restarts all containers on the host, including data-node containers — their stacks don't need their own <code>auto-update</code> profile.</p>
+</div>
+<hr />
+<h2 id="special-cases">Special cases<a class="headerlink" href="#special-cases" title="Permanent link">&para;</a></h2>
+<h3 id="if-playground_count-is-zero-after-upgrade">If playground_count is zero after upgrade<a class="headerlink" href="#if-playground_count-is-zero-after-upgrade" title="Permanent link">&para;</a></h3>
+<p><code>get_meta</code> returns <code>playground_count: 0</code> after an upgrade when <code>playground_stats</code> was left in a broken state (see the API_ONLY race warning above), or when the database volume was wiped.</p>
+<p>Recovery: run a full re-import.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="w">  </span>-e<span class="w"> </span><span class="nv">REIMPORT_INTERVAL_MIN_DAYS</span><span class="o">=</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="w">  </span>-e<span class="w"> </span><span class="nv">REIMPORT_INTERVAL_MAX_DAYS</span><span class="o">=</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="w">  </span>importer
+</code></pre></div>
+<p>The empty <code>REIMPORT_INTERVAL_*</code> overrides force the importer to run immediately regardless of when data was last imported.</p>
+<h3 id="if-you-deleted-the-database-volume">If you deleted the database volume<a class="headerlink" href="#if-you-deleted-the-database-volume" title="Permanent link">&para;</a></h3>
+<p><code>docker compose down -v</code> or <code>docker volume rm &lt;stack&gt;_pgdata</code> wipes all imported data. Before re-importing:</p>
+<ol>
+<li>
+<p>Check whether the PBF cache volume survived:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>docker<span class="w"> </span>volume<span class="w"> </span>ls<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>pbf_cache
+</code></pre></div>
+</li>
+<li>
+<p>If it exists, clear it — a previously interrupted import may have left a corrupt filtered PBF. The importer checks timestamps but not content; a corrupt cache causes it to process 0 objects and leave the database silently empty.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>docker<span class="w"> </span>volume<span class="w"> </span>rm<span class="w"> </span>&lt;stack&gt;_pbf_cache
+</code></pre></div>
+</li>
+<li>
+<p>Run a full re-import:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>importer
+</code></pre></div>
+</li>
+<li>
+<p>Verify with <code>get_meta</code> as shown in the manual upgrade section.</p>
+</li>
+</ol>
+<h3 id="downgrading">Downgrading<a class="headerlink" href="#downgrading" title="Permanent link">&para;</a></h3>
+<p>Supported only within the same minor version. Pin a specific version by editing <code>compose.yml</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="c1"># Change :latest to the version you want:</span>
+<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ghcr.io/mfuhrmann/spieli:0.4.0</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>pull
+<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>up<span class="w"> </span>-d
+</code></pre></div>
+<p>The database schema is not automatically rolled back. If the new version added columns or functions, the older app typically ignores them — but this is not tested. When in doubt, re-import from scratch.</p>
+<hr />
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="../configuration/">Configuration reference</a> — check for new or changed variables before upgrading</li>
 <li><a href="../troubleshooting/">Troubleshooting</a> — common post-upgrade issues</li>
+<li><a href="../single-host-federation/">Single-host Federation</a> — multi-stack setup and the upgrade script</li>
 <li><a href="https://github.com/mfuhrmann/spieli/blob/main/RELEASING.md">RELEASING.md</a> — how releases are cut (maintainer reference)</li>
 </ul>
 
