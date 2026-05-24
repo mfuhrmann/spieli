@@ -27,7 +27,7 @@ spieli/                            ← Monorepo root
 │       │   ├── equipmentGrouping.js ← Groups devices inside playground=structure polygons
 │       │   ├── equipmentAttributes.js ← Renders per-device detail HTML from OSM tags
 │       │   ├── vectorStyles.js    ← OL style functions (playground fill, equipment points)
-│       │   ├── clusterStyle.js    ← Canvas renderer for cluster rings (stacked ring style)
+│       │   ├── clusterStyle.js    ← Canvas renderer for cluster rings
 │       │   ├── i18n.js            ← svelte-i18n setup and locale detection
 │       │   ├── panoramax.js       ← Panoramax photo integration helpers
 │       │   ├── playgroundHelpers.js ← Misc. feature property helpers

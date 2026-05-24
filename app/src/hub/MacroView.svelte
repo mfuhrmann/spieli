@@ -2,7 +2,7 @@
   // Country-level macro view (P2 §5).
   //
   // Subscribes to the backends store and rebuilds one Point feature per
-  // backend at the backend's bbox centroid, with stacked-ring properties
+  // backend at the backend's bbox centroid, with ring properties
   // (count + completeness) sourced from each backend's cached `get_meta`
   // response. The resulting features live in `source` and are styled by
   // `macroRingStyleFn` (registered on `macroLayer` in Map.svelte).
@@ -43,12 +43,13 @@
   function buildFeature(backend) {
     const centroid = bboxCentroid(backend.bbox);
     if (!centroid) return null;
-    const offline = !isBackendHealthy(backend);
+    const offline   = !isBackendHealthy(backend);
+    const importing = !offline && (backend.importing ?? false);
     // Pre-P1 backends → unknown completeness; map the count into the
     // restricted bucket so the renderer draws a flat gray ring.
     const c     = backend.completeness;
     const count = backend.playgroundCount ?? 0;
-    const degraded = !offline && count === 0;
+    const degraded = !offline && !importing && count === 0;
     const props = c
       ? {
           count,
@@ -71,6 +72,7 @@
       _backendSlug: backend.slug ?? null,
       _bbox:        backend.bbox,
       _offline:     offline,
+      _importing:   importing,
       _degraded:    degraded,
       _name:        backend.name ?? backend.region ?? backend.slug ?? backend.url,
       ...props,

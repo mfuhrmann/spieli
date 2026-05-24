@@ -130,11 +130,20 @@ The polygon tier doesn't re-cluster — every backend's polygons render in a sin
 
 ### Country-level macro view
 
-At `zoom ≤ macroMaxZoom` the Hub renders one stacked-ring per registered backend, sized by `playground_count` and segmented by the `{complete, partial, missing}` counts the P1 `get_meta` extension ships. No per-playground fetch is issued at this zoom — the rings come entirely from the cached registry metadata.
+At `zoom ≤ macroMaxZoom` the Hub renders one ring per registered backend, sized by `playground_count` and segmented by the `{complete, partial, missing}` counts the P1 `get_meta` extension ships. No per-playground fetch is issued at this zoom — the rings come entirely from the cached registry metadata.
 
-Clicking a macro ring animates `view.fit` to the backend's bbox, which lands in the cluster or polygon tier and triggers a tier fetch scoped to that backend only.
+Clicking a ring animates `view.fit` to the backend's bbox, which lands in the cluster or polygon tier and triggers a tier fetch scoped to that backend only.
 
-Backends marked as offline (via `federation-status.json` — see [Monitoring](../ops/monitoring.md)) render as a dashed outline with their last-known count and an "offline" label, so the operator sees that the region exists but isn't currently reachable.
+Each ring has one of four visual states, driven by `federation-status.json` (see [Monitoring](../ops/monitoring.md)) and the cached `get_meta` response:
+
+| State | Visual | Condition |
+|---|---|---|
+| **Healthy** | Coloured segments (green / amber / red / gray) + count in centre | Backend reachable, data present |
+| **Offline** | Dashed gray ring + last-known count + "offline" label | `federation-status.json` reports `up: false` |
+| **Importing** | Solid blue ring + count + "updating" label | Backend reachable, osm2pgsql actively running |
+| **Degraded** | Solid amber ring + "no data" label | Backend reachable, not importing, but playground count is zero |
+
+Pre-P1 backends that omit the completeness fields from `get_meta` render as a flat gray ring (all count mapped into the "restricted / unknown" segment) so the operator sees "data quality unknown" rather than a misleading all-zero healthy ring.
 
 ### Architecture flow
 
@@ -158,7 +167,7 @@ flowchart LR
     sc --> render[Repaint clusterSource<br/>incrementally per arrival]
     concat --> render2[Append to polygonSource<br/>incrementally per arrival]
 
-    macro --> macroLayer[Render macroSource<br/>one ring per backend]
+    macro --> macroLayer[Render macroSource<br/>one ring per backend<br/>healthy/offline/importing/degraded]
 ```
 
 Each box in the cluster/polygon path runs once per moveend. Fan-out is the only step that produces network traffic; everything else is in-memory.
