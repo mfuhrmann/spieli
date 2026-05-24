@@ -101,7 +101,7 @@ These are installed in the importer Docker image (`importer/Dockerfile`). To upg
 2. Run `make docker-build` (rebuilds the importer image)
 3. Run `make import` to test the new version
 
-osm2pgsql changes the Lua API occasionally between versions. Check `processing/lua/osm_import.lua` against the [osm2pgsql Lua API docs](https://osm2pgsql.org/doc/manual.html#lua-based-output) when upgrading.
+The importer uses osm2pgsql in default pgsql mode (`--slim --drop --hstore`) — no Lua script. Check the [osm2pgsql changelog](https://osm2pgsql.org/news/) for breaking changes to the pgsql output schema or CLI flags when upgrading.
 
 ---
 

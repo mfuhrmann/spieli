@@ -96,15 +96,6 @@ spieli/                            ← Monorepo root
 │   ├── api.sql                    ★ All PostgREST API functions + playground_stats matview
 │   └── Dockerfile                 ← Importer image (osm2pgsql, osmium-tool, psql)
 │
-├── processing/                    ← OSM data pipeline (used by import.sh / osm2pgsql)
-│   ├── lua/
-│   │   └── osm_import.lua         ★ osm2pgsql Lua rules — defines which OSM tags → which tables
-│   ├── sql/
-│   │   ├── playground_processing.sql ← Post-import SQL: merge playground fragments, etc.
-│   │   ├── completeness_processing.sql ← Completeness scoring SQL
-│   │   ├── shadow_preparation.sql ← Shadow layer prep (trees, buildings)
-│   │   └── shadow_processing.sql  ← Shadow computation
-│   └── osm_data_pipeline.sh       ← Pipeline orchestration script
 │
 ├── oci/                           ← Docker build contexts
 │   ├── app/
