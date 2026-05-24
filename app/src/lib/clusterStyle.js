@@ -1,4 +1,4 @@
-// Canvas renderer for the cluster-tier stacked-ring style.
+// Canvas renderer for the cluster-tier ring style.
 //
 // Server buckets ship `{count, complete, partial, missing}` per grid cell.
 // The ring is divided into three arcs proportional to those counts, with

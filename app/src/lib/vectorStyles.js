@@ -139,7 +139,7 @@ export function treeStyleFn(feature) {
 
 // ── Tiered-delivery styles (P1 §3 / §4) ───────────────────────────────────────
 
-// Cluster tier (zoom ≤ clusterMaxZoom) — canvas-rendered stacked ring with
+// Cluster tier (zoom ≤ clusterMaxZoom) — canvas-rendered ring with
 // complete/partial/missing segments and the count in the centre.
 // Single-child clusters (count === 1) render as a solid completeness dot.
 // See app/src/lib/clusterStyle.js for the renderer + bitmap cache.

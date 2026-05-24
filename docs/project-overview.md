@@ -138,7 +138,7 @@ Browser → tiered orchestrator → OL cluster layer / polygon layer
 
 The default. One region, one database. The tiered orchestrator fires on every `moveend`:
 
-- **Zoom ≤ 13** → `get_playground_clusters(z, bbox)` → cluster layer (stacked ring rings, sized by `complete/partial/missing/restricted` counts)
+- **Zoom ≤ 13** → `get_playground_clusters(z, bbox)` → cluster layer (rings, sized by `complete/partial/missing/restricted` counts)
 - **Zoom > 13** → `get_playgrounds_bbox(bbox)` → polygon layer (full GeoJSON polygons, colour-coded by completeness)
 
 Clicking a playground writes `#W<osm_id>` (or `#<slug>/W<osm_id>` in hub mode) to the URL hash and opens `PlaygroundPanel`, which loads equipment, trees, POIs, and reviews.

@@ -5,8 +5,9 @@
 //
 //   1. Always rendered as rings, never as the cluster-tier single-child dot
 //      (a backend with one playground is still a "region", not a singleton).
-//   2. Three visual variants — healthy (filled segments + count), offline
-//      (dashed outline, muted, "offline" label, last known count), and
+//   2. Four visual variants — healthy (filled segments + count), offline
+//      (dashed outline, muted, "offline" label, last known count), importing
+//      (solid blue ring, "updating" label — osm2pgsql actively running), and
 //      degraded (amber ring, "no data" label — backend reachable but empty).
 //
 // The bitmap cache from clusterStyle.js isn't reused here: macro features are
@@ -32,6 +33,9 @@ const OFFLINE_TEXT     = '#6b7280';
 const DEGRADED_STROKE  = '#d97706'; // amber-600
 const DEGRADED_FILL    = 'rgba(255, 251, 235, 0.92)'; // amber-50
 const DEGRADED_TEXT    = '#92400e'; // amber-800
+const IMPORTING_STROKE = '#3b82f6'; // blue-500
+const IMPORTING_FILL   = 'rgba(239, 246, 255, 0.92)'; // blue-50
+const IMPORTING_TEXT   = '#1e40af'; // blue-800
 const COUNT_FONT      = 'bold 22px ui-monospace, "SF Mono", Menlo, system-ui, -apple-system, sans-serif';
 const LABEL_FONT      = '600 11px system-ui, -apple-system, "Helvetica Neue", sans-serif';
 
@@ -155,6 +159,39 @@ function renderDegradedMacroRing(pixelCoords, state) {
   ctx.fillText('no data', x, y);
 }
 
+function renderImportingMacroRing(pixelCoords, state) {
+  const [x, y]   = pixelCoords;
+  const f        = state.feature;
+  const count    = f.get('count') ?? 0;
+  const ctx      = state.context;
+  const radius   = radiusForCount(count);
+
+  ctx.lineWidth   = RING_WIDTH;
+  ctx.lineCap     = 'butt';
+  ctx.strokeStyle = IMPORTING_STROKE;
+  ctx.beginPath();
+  ctx.arc(x, y, radius, 0, Math.PI * 2);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(x, y, radius - RING_WIDTH / 2 - 1, 0, Math.PI * 2);
+  ctx.fillStyle   = IMPORTING_FILL;
+  ctx.strokeStyle = IMPORTING_STROKE;
+  ctx.lineWidth   = 1;
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle    = IMPORTING_TEXT;
+  ctx.font         = COUNT_FONT;
+  if ('fontFeatureSettings' in ctx) ctx.fontFeatureSettings = '"tnum" 1';
+  ctx.textAlign    = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(formatCount(count), x, y - 7);
+
+  ctx.font = LABEL_FONT;
+  ctx.fillText('updating', x, y + 11);
+}
+
 // Compact display: 65000 → "65k", 1500 → "1.5k", <1000 unchanged. Spec
 // scenario uses 65000 directly but at radius 44 the digit string blows
 // outside the inner disc; the "k" suffix keeps it inside.
@@ -164,12 +201,14 @@ function formatCount(n) {
   return `${Math.round(n / 1000)}k`;
 }
 
-const healthyStyle  = new Style({ renderer: renderHealthyMacroRing });
-const offlineStyle  = new Style({ renderer: renderOfflineMacroRing });
-const degradedStyle = new Style({ renderer: renderDegradedMacroRing });
+const healthyStyle   = new Style({ renderer: renderHealthyMacroRing });
+const offlineStyle   = new Style({ renderer: renderOfflineMacroRing });
+const degradedStyle  = new Style({ renderer: renderDegradedMacroRing });
+const importingStyle = new Style({ renderer: renderImportingMacroRing });
 
 export function macroRingStyleFn(feature) {
-  if (feature.get('_offline'))  return offlineStyle;
-  if (feature.get('_degraded')) return degradedStyle;
+  if (feature.get('_offline'))   return offlineStyle;
+  if (feature.get('_importing')) return importingStyle;
+  if (feature.get('_degraded'))  return degradedStyle;
   return healthyStyle;
 }
