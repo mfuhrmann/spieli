@@ -47,6 +47,10 @@ for entry in "${STACKS[@]}"; do
   done
 
   echo "→ Pulling images..."
+  # Explicitly pull each image by name to bypass the Docker daemon's manifest
+  # cache, which can cause `docker compose pull` to skip a freshly-pushed tag
+  # it already has locally (observed with rapid CI push + immediate upgrade run).
+  docker compose config --images | sort -u | xargs -I{} docker pull {}
   docker compose pull
 
   echo "→ Restarting app container..."
