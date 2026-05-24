@@ -1,197 +1,237 @@
 # Upgrading spieli
 
-This guide explains how to update a running spieli deployment to a newer release.
+## Before you upgrade
 
-## Check the current version
+Check [GitHub Releases](https://github.com/mfuhrmann/spieli/releases) for the latest version and scan the release notes for **breaking labels**. Most releases carry none and require no manual action.
+
+| Label | What it means | What you must do |
+|---|---|---|
+| `requires-env-update` | New or removed env var | Update `.env` **before** pulling the new image |
+| `requires-compose-update` | `compose.yml` changed structurally | Re-run `install.sh` or update `compose.yml` manually **before** restarting |
+| `requires-reimport` | OSM data model changed | Trigger a full re-import **after** the image update lands |
+| `requires-schema-update` | `api.sql` changed | Covered automatically — no extra step needed |
+
+To check what version is currently running:
 
 ```bash
-# Read the OCI version label baked into the running image:
 docker inspect spieli-app-1 --format '{{index .Config.Labels "org.opencontainers.image.version"}}'
-
-# Or list all running images and their tags:
+# or
 docker compose images
 ```
 
-Check [GitHub Releases](https://github.com/mfuhrmann/spieli/releases) for the latest version and any breaking changes.
+---
 
-## Standard upgrade (same minor version)
+## Automatic upgrade (Watchtower)
 
-For patch and minor version upgrades with no breaking changes:
+If you installed with the `auto-update` profile active, Watchtower handles standard releases with no manual intervention:
 
-!!! danger "Do not delete volumes during a standard upgrade"
-    A standard upgrade does **not** require deleting Docker volumes. Deleting `pgdata` erases all imported playground data and forces a full re-import (several hours for large states). If you already deleted `pgdata`, see [If you deleted the database volume](#if-you-deleted-the-database-volume) below.
+- New image published → Watchtower pulls and restarts `app` and `importer`.
+- The daemon importer applies `api.sql` on every container startup, so schema changes take effect immediately after the restart — no separate `API_ONLY=1` step needed.
+
+**Standard releases (no breaking labels): nothing to do.** Wait for Watchtower to pick up the new image (default poll interval: 5 minutes).
+
+For **breaking-label releases**, follow the [Breaking label procedures](#breaking-label-procedures) below in addition to the Watchtower restart.
+
+!!! note "One Watchtower covers all containers"
+    Only the hub stack (or your single standalone stack) should run `--profile auto-update`. Adding a second Watchtower to any data-node stack causes both instances to fight over the same containers. The single Watchtower instance watches all containers on the Docker host automatically, including any data-node stacks that don't run `auto-update` themselves.
+
+---
+
+## Manual upgrade
+
+Use manual steps when you don't run Watchtower, or when a breaking label requires a specific action sequence.
+
+### Hub (DEPLOY_MODE=ui)
+
+The hub has no database and no importer — only the app container needs updating.
 
 ```bash
-cd /path/to/your/spieli-deployment
+cd /path/to/your/spieli-hub
 
-# Pull the latest images
 docker compose pull
+docker compose --profile ui up -d app
+```
 
-# Restart app and importer containers
-docker compose --profile <mode> up -d app importer
+Done. No `API_ONLY=1`, no importer, no verify step needed.
 
-# Re-apply api.sql — updates DB functions and the version reported by get_meta()
+### Standalone or Data-node (DEPLOY_MODE=data-node-ui or data-node)
+
+Replace `<mode>` with your `DEPLOY_MODE` and `<port>` with your `APP_PORT`.
+
+**Step 1 — Pull new images**
+
+```bash
+docker compose pull
+```
+
+**Step 2 — Restart the app container**
+
+```bash
+docker compose --profile <mode> up -d app
+```
+
+**Step 3 — Apply schema changes (API_ONLY)**
+
+```bash
 docker compose --profile <mode> run --rm -e API_ONLY=1 importer
 ```
 
-Replace `<mode>` with your `DEPLOY_MODE` (`data-node`, `ui`, or `data-node-ui`).
+This updates all PostgREST functions and the version number reported by `get_meta`. It runs as a one-shot container — the daemon importer is not affected.
 
-!!! warning "Always restart the importer, not just the app"
-    `docker compose up -d app` alone leaves the daemon importer running the old image. The daemon re-applies `api.sql` on its next scheduled reimport — using the old image, which reverts the version in `get_meta()` back to the previous release. Always include `importer` in the `up -d` call.
+!!! warning "Run API_ONLY=1 before restarting the daemon"
+    The daemon importer also applies `api.sql` on container startup. If you restart the daemon and then immediately run `API_ONLY=1`, both processes race on the `DROP`/`CREATE` of the `playground_stats` materialized view. On large datasets this reliably causes `ERROR: relation "public.playground_stats" does not exist`. Always complete step 3 and verify (step 4) before starting the daemon (step 5).
 
-!!! note
-    The `API_ONLY=1` step is required on every upgrade, not just when the release notes mention SQL changes. The version number visible in the Hub regions panel comes from the database (written by the importer), not the app image — skipping this step leaves the reported version stale.
+!!! warning "If API_ONLY=1 fails mid-run"
+    `API_ONLY=1` drops and recreates `playground_stats`. A crash partway through leaves the view gone and PostgREST will log `relation "public.playground_stats" does not exist`. Recovery: run a full re-import — it recreates everything from scratch.
 
-!!! warning "If API_ONLY fails mid-run"
-    `API_ONLY=1` drops and recreates the `playground_stats` materialised view. If it crashes partway through, the view is gone and PostgREST will log errors like `relation "public.playground_stats" does not exist`. Recovery: run a **full re-import** (see below) — this recreates everything from scratch.
-
-### Verify the upgrade
-
-After the `API_ONLY=1` step, confirm the new version is live and playground data is intact:
+**Step 4 — Verify**
 
 ```bash
 curl -sf http://localhost:<port>/api/rpc/get_meta | \
   python3 -c "import sys,json; d=json.load(sys.stdin); print('version:', d['version'], ' playgrounds:', d['playground_count'])"
 ```
 
-Both `version` and `playground_count` should be non-zero. If `playground_count` is 0, a full re-import is needed (see below).
+Both `version` and `playground_count` should be non-zero. If `playground_count` is 0, see [If playground_count is zero after upgrade](#if-playground_count-is-zero-after-upgrade) below.
 
-## When to run a full re-import
-
-A full re-import (without `API_ONLY`) is needed when:
-
-- The release notes say "re-import after upgrading"
-- A new OSM tag type was added to `processing/lua/osm_import.lua` — the new columns won't exist in existing data until a fresh import
+**Step 5 — Restart the daemon importer on the new image**
 
 ```bash
+docker compose --profile <mode> up -d importer
+```
+
+---
+
+## Breaking label procedures
+
+### requires-env-update
+
+1. Read the release notes to find the new or removed variable.
+2. Update `.env` accordingly.
+3. Then proceed with the normal upgrade steps for your deployment type.
+
+### requires-compose-update
+
+`compose.yml` has structural changes (new service, renamed service, removed volume).
+
+```bash
+# Download the updated file:
+curl -O https://raw.githubusercontent.com/mfuhrmann/spieli/main/compose.yml
+
+# Recreate the stack:
+docker compose --profile <mode> down
+docker compose --profile <mode> up -d
+```
+
+Or re-run `install.sh` — it re-downloads and applies `compose.yml` automatically.
+
+### requires-reimport
+
+A new OSM tag type was added. Existing data doesn't have the new columns until a fresh import.
+
+After the image update (Watchtower or manual steps 1–2):
+
+```bash
+# Full re-import — also applies api.sql, so no separate API_ONLY step needed
 docker compose --profile <mode> run --rm importer
 ```
 
-A full re-import also re-applies `api.sql`, so the separate `API_ONLY=1` step is not needed when you do a full re-import.
+This takes several minutes for large regions. The separate `API_ONLY=1` step is not needed — a full re-import also updates all schema functions.
 
-## If you deleted the database volume
+---
 
-If you deleted the `pgdata` volume (e.g. `docker compose down -v` or `docker volume rm <stack>_pgdata`), all imported data is gone and you need a full re-import. Before running it:
+## Single-host federation (multiple stacks on one VPS)
 
-1. **Check whether the PBF cache volume also survived.** The importer stores downloaded and pre-filtered PBF files in a separate named volume (`<stack>_pbf_cache`). This volume is not removed by `docker compose down -v` if it was created outside the current Compose project.
+When the hub and its data-nodes share a single VPS, use `scripts/upgrade-stacks.sh`. It handles the correct order (data-nodes first, hub last) and runs each stack sequentially to avoid OOM from concurrent importer runs.
+
+Copy the script to the VPS once, then edit the `STACKS` array to match your port layout:
+
+```bash
+scp scripts/upgrade-stacks.sh user@vps:~/upgrade-stacks.sh
+```
+
+```bash
+STACKS=(
+  "$HOME/spieli-hessen:data-node-ui:8081"
+  "$HOME/spieli-berlin:data-node-ui:8082"
+  "$HOME/spieli:ui auto-update:8080"   # hub last
+)
+```
+
+Run:
+
+```bash
+bash ~/upgrade-stacks.sh
+```
+
+The script pulls images, restarts each app container, runs `API_ONLY=1` for data-nodes, verifies `get_meta`, restarts the daemon importer, and moves to the next stack. The hub entry skips the importer steps automatically.
+
+!!! note "Watchtower and the single-VPS setup"
+    On a single-VPS federation, only the hub stack runs `--profile auto-update`. The single Watchtower instance restarts all containers on the host, including data-node containers — their stacks don't need their own `auto-update` profile.
+
+---
+
+## Special cases
+
+### If playground_count is zero after upgrade
+
+`get_meta` returns `playground_count: 0` after an upgrade when `playground_stats` was left in a broken state (see the API_ONLY race warning above), or when the database volume was wiped.
+
+Recovery: run a full re-import.
+
+```bash
+docker compose --profile <mode> run --rm \
+  -e REIMPORT_INTERVAL_MIN_DAYS= \
+  -e REIMPORT_INTERVAL_MAX_DAYS= \
+  importer
+```
+
+The empty `REIMPORT_INTERVAL_*` overrides force the importer to run immediately regardless of when data was last imported.
+
+### If you deleted the database volume
+
+`docker compose down -v` or `docker volume rm <stack>_pgdata` wipes all imported data. Before re-importing:
+
+1. Check whether the PBF cache volume survived:
 
     ```bash
     docker volume ls | grep pbf_cache
     ```
 
-2. **If the cache volume exists, clear it.** A previously interrupted import may have left a corrupt or empty filtered PBF in the cache. The importer checks file timestamps but not content — a corrupt cache causes a full re-import to process 0 objects and silently leave the database empty.
+2. If it exists, clear it — a previously interrupted import may have left a corrupt filtered PBF. The importer checks timestamps but not content; a corrupt cache causes it to process 0 objects and leave the database silently empty.
 
     ```bash
-    # Replace <stack> with your stack name (e.g. spieli-hessen)
     docker volume rm <stack>_pbf_cache
     ```
 
-    Alternatively, force a cache bypass by deleting only the filtered files:
-
-    ```bash
-    docker run --rm -v <stack>_pbf_cache:/data alpine \
-      sh -c 'rm -f /data/*_<RELATION_ID>.pbf /data/*_<RELATION_ID>_tags.pbf'
-    ```
-
-3. **Run the full re-import** (downloads the PBF fresh if the cache was cleared):
+3. Run a full re-import:
 
     ```bash
     docker compose --profile <mode> run --rm importer
     ```
 
-4. **Verify** with `get_meta` as shown in the standard upgrade section above.
+4. Verify with `get_meta` as shown in the manual upgrade section.
 
-## Upgrading the Compose file
+### Downgrading
 
-When `compose.yml` itself changes (new services, new volume mounts, etc.):
+Supported only within the same minor version. Pin a specific version by editing `compose.yml`:
 
-```bash
-# Download the updated file directly:
-curl -O https://raw.githubusercontent.com/mfuhrmann/spieli/main/compose.yml
-
-# Then recreate:
-docker compose --profile <mode> down
-docker compose --profile <mode> up -d
+```yaml
+# Change :latest to the version you want:
+image: ghcr.io/mfuhrmann/spieli:0.4.0
 ```
 
-## Upgrading with Watchtower (auto-update profile)
-
-When the `auto-update` profile is active, Watchtower pulls new images and restarts containers automatically — no manual `docker compose pull` needed.
-
-The importer applies `api.sql` on every daemon-mode startup, so schema changes from a new image take effect within seconds of a Watchtower-triggered restart — even when the full PBF re-import is deferred by the grace-period check. No manual intervention is needed for schema-only upgrades.
-
-## Hub upgrades
-
-Upgrade each data-node first, verify it works, then upgrade the Hub UI. The Hub is backwards-compatible with older data-nodes (it falls back to the legacy `get_playgrounds` RPC if the tiered RPCs return 404), but an older Hub is not guaranteed to understand new data-node response fields.
-
-### Multiple stacks on one host
-
-When the Hub and its data-nodes share a single VPS, each stack lives in its own directory with a unique `COMPOSE_PROJECT_NAME`. Upgrade in order: **data-nodes first, hub last**. Never upgrade stacks in parallel — concurrent API_ONLY runs plus the resident daemon importers can exhaust RAM.
-
-Use the provided helper script for a one-command upgrade:
-
 ```bash
-bash ~/spieli/scripts/upgrade-stacks.sh
-```
-
-The script is in `scripts/upgrade-stacks.sh`. Edit the `STACKS` array at the top to match your deployment before the first run:
-
-```bash
-STACKS=(
-  "$HOME/spieli-berlin:data-node-ui:8082"
-  "$HOME/spieli:data-node-ui auto-update:8080"
-)
-```
-
-Each entry is `directory:profiles:local-port`. The script pulls images, restarts the app container, runs `API_ONLY=1`, verifies `get_meta`, then restarts the daemon importer on the new image — and moves to the next stack.
-
-To upgrade a single stack manually:
-
-```bash
-cd ~/spieli-<region>
-docker compose pull
-docker compose --profile data-node-ui up -d app
-docker compose --profile data-node-ui run --rm -e API_ONLY=1 importer
-# verify first, then restart the daemon:
-curl -sf http://localhost:<port>/api/rpc/get_meta | python3 -c "import sys,json; d=json.load(sys.stdin); print('version:', d['version'], ' playgrounds:', d['playground_count'])"
-docker compose --profile data-node-ui up -d importer
-```
-
-!!! warning "Run API_ONLY=1 before restarting the daemon importer"
-    The daemon importer runs `api.sql` on every container startup. If you restart the daemon and then immediately run `API_ONLY=1`, both containers apply `api.sql` concurrently — they race on the `DROP`/`CREATE` of the `playground_stats` materialized view. On large datasets this reliably causes `ERROR: relation "public.playground_stats" does not exist`. Always run `API_ONLY=1` first, verify, then restart the daemon.
-
-For the hub stack (pure `DEPLOY_MODE=ui` — no importer, no `API_ONLY` step):
-
-```bash
-cd ~/spieli
-docker compose pull
-docker compose --profile ui --profile auto-update up -d app
-```
-
-!!! note "API_ONLY=1 bypasses daemon mode"
-    `docker compose run --rm -e API_ONLY=1 importer` starts a fresh one-shot container. The importer entrypoint checks `API_ONLY` before any reimport logic, so `REIMPORT_INTERVAL_*` settings have no effect — the container applies `api.sql` and exits regardless of how recently data was imported.
-
-!!! note "One Watchtower covers all containers"
-    Only the hub stack should run `--profile auto-update`. Adding a second Watchtower to any data-node stack causes both instances to fight over the same containers. Data-node stacks without `auto-update` are still restarted by the single Watchtower instance when it detects a new image.
-
-!!! note "Daemon importer and API_ONLY"
-    On stacks managed by Watchtower, the importer applies `api.sql` automatically on every daemon-mode restart — the explicit `API_ONLY=1` step is not strictly required. Running it during a manual upgrade just ensures `get_meta()` reports the correct version immediately, without waiting for the next scheduled daemon restart.
-
-## Downgrading
-
-Downgrading is supported only within the same minor version. Images are tagged `:X.Y.Z` and `:X.Y`, so:
-
-```bash
-# Pin to a specific version by editing compose.yml:
-# Change ghcr.io/mfuhrmann/spieli:latest to ghcr.io/mfuhrmann/spieli:0.4.0
 docker compose pull
 docker compose --profile <mode> up -d
 ```
 
-The database schema is **not** automatically rolled back on a downgrade. If the new version added new columns or functions, the older app may ignore them safely, but this is not tested. When in doubt, re-import from scratch.
+The database schema is not automatically rolled back. If the new version added columns or functions, the older app typically ignores them — but this is not tested. When in doubt, re-import from scratch.
+
+---
 
 ## See also
 
 - [Configuration reference](configuration.md) — check for new or changed variables before upgrading
 - [Troubleshooting](troubleshooting.md) — common post-upgrade issues
+- [Single-host Federation](single-host-federation.md) — multi-stack setup and the upgrade script
 - [RELEASING.md](https://github.com/mfuhrmann/spieli/blob/main/RELEASING.md) — how releases are cut (maintainer reference)

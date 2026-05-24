@@ -151,24 +151,19 @@ echo "REIMPORT_STARTUP_JITTER_MAX_HOURS=12" >> ~/spieli-<slug>/.env
 
 ## Upgrading
 
-Use `scripts/upgrade-stacks.sh`. It pulls the new image, restarts the app container, runs `API_ONLY=1` for data-nodes (updates DB functions and version), and verifies `get_meta` — sequentially, never in parallel. The hub entry uses `--profile ui` and skips the importer step.
+See [Upgrading — Single-host federation](upgrade.md#single-host-federation-multiple-stacks-on-one-vps) for the full procedure. The short version: use `scripts/upgrade-stacks.sh`, which upgrades all stacks sequentially (data-nodes first, hub last) and handles the `API_ONLY=1` ordering automatically.
 
-Copy the script to the VPS and edit the `STACKS` array to match your port layout:
-
-```bash
-scp scripts/upgrade-stacks.sh horst@vps:~/upgrade_stacks.sh
-bash ~/upgrade_stacks.sh
-```
+Standard releases with Watchtower active require no manual action — the daemon importer applies `api.sql` on every restart. Only [breaking-label releases](upgrade.md#breaking-label-procedures) need manual steps.
 
 ## Watchtower
 
-Only the hub stack runs `--profile auto-update`. A second Watchtower on any data-node stack causes both instances to fight over the same containers and kill each other on startup.
+Only the hub stack runs `--profile auto-update`. Adding a second Watchtower to any data-node stack causes both instances to fight over the same containers.
 
-The single Watchtower instance in the hub stack watches all containers on the Docker host automatically — data-node containers are updated and restarted even though their stacks don't run `auto-update`.
+The single Watchtower instance in the hub stack watches all containers on the Docker host automatically — data-node containers are restarted even though their stacks don't include `auto-update`.
 
 ## See also
 
 - [Federated Deployment](federated-deployment.md) — distributed (multi-host) topology
 - [Add a Data-node](add-data-node.md) — adding one backend at a time
-- [Upgrading](upgrade.md) — multi-stack upgrade procedure
+- [Upgrading](upgrade.md) — full upgrade guide for all deployment types
 - [Configuration reference](configuration.md) — all env vars
