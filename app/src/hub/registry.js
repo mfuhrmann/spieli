@@ -12,6 +12,7 @@ import { registryUrl, hubPollInterval } from '../lib/config.js';
 import { fetchMeta } from '../lib/api.js';
 import { isValidSlug } from '../lib/deeplink.js';
 import { startFederationHealthPoll, stopFederationHealthPoll } from './federationHealth.js';
+import { parseNominalCentroid } from './centroid.js';
 import booleanContains from '@turf/boolean-contains';
 
 // Per-backend timeout for multi-backend nearest fan-out. A slow or unreachable
@@ -144,6 +145,7 @@ export function createRegistry() {
           completeness:     null,  // populated after get_meta lands; see status-shape JSDoc
           lastImportAt:     null,  // from get_meta.last_import_at; used by polygon-tier dedup (#202)
           regionGeom:       null,  // GeoJSON Feature geometry from get_meta.region_geom; used for polygon overlap detection (#532)
+          nominalCentroid:       parseNominalCentroid(entry.centroid, entry.url),  // fallback position for null-bbox backends (#598)
           _lastImportAtOverride: entry.lastImportAt ?? null,  // registry.json static override; takes priority over meta on every poll
           // Populated from /federation-status.json (hub-side cron poll, this change)
           healthUp:         null,  // null = unknown, true/false = known
