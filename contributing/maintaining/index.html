@@ -1851,7 +1851,7 @@
 <li>Run <code>make docker-build</code> (rebuilds the importer image)</li>
 <li>Run <code>make import</code> to test the new version</li>
 </ol>
-<p>osm2pgsql changes the Lua API occasionally between versions. Check <code>processing/lua/osm_import.lua</code> against the <a href="https://osm2pgsql.org/doc/manual.html#lua-based-output">osm2pgsql Lua API docs</a> when upgrading.</p>
+<p>The importer uses osm2pgsql in default pgsql mode (<code>--slim --drop --hstore</code>) — no Lua script. Check the <a href="https://osm2pgsql.org/news/">osm2pgsql changelog</a> for breaking changes to the pgsql output schema or CLI flags when upgrading.</p>
 <hr />
 <h2 id="docker-base-images">Docker base images<a class="headerlink" href="#docker-base-images" title="Permanent link">&para;</a></h2>
 <p>The app image (<code>oci/app/Dockerfile</code>) uses an nginx base image. The importer image (<code>importer/Dockerfile</code>) uses an osm2pgsql base image or builds from a Debian/Ubuntu base.</p>

@@ -1000,19 +1000,19 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#osm2pgsql-and-the-lua-rules" class="md-nav__link">
+  <a href="#osm2pgsql-and-the-hstore-schema" class="md-nav__link">
     <span class="md-ellipsis">
-      osm2pgsql and the Lua rules
+      osm2pgsql and the hstore schema
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="osm2pgsql and the Lua rules">
+    <nav class="md-nav" aria-label="osm2pgsql and the hstore schema">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#adding-a-new-osm-tag-to-an-existing-table" class="md-nav__link">
+  <a href="#adding-a-new-attribute-to-an-existing-object-type" class="md-nav__link">
     <span class="md-ellipsis">
-      Adding a new OSM tag to an existing table
+      Adding a new attribute to an existing object type
     </span>
   </a>
   
@@ -1580,19 +1580,19 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#osm2pgsql-and-the-lua-rules" class="md-nav__link">
+  <a href="#osm2pgsql-and-the-hstore-schema" class="md-nav__link">
     <span class="md-ellipsis">
-      osm2pgsql and the Lua rules
+      osm2pgsql and the hstore schema
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="osm2pgsql and the Lua rules">
+    <nav class="md-nav" aria-label="osm2pgsql and the hstore schema">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#adding-a-new-osm-tag-to-an-existing-table" class="md-nav__link">
+  <a href="#adding-a-new-attribute-to-an-existing-object-type" class="md-nav__link">
     <span class="md-ellipsis">
-      Adding a new OSM tag to an existing table
+      Adding a new attribute to an existing object type
     </span>
   </a>
   
@@ -1685,56 +1685,56 @@
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>Geofabrik PBF (~300 MB Bundesland extract)
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>        │
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>        ▼  osmium extract (bbox clip)
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>Bbox-clipped PBF (~50 MB)
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>        ▼  osmium extract (bbox clip — Nominatim lookup or OSM_BBOX override)
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>Bbox-clipped PBF (~5–20 MB)
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>        │
 <a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>        ▼  osmium tags-filter
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>Tag-filtered PBF (~4–8 MB)
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>Tag-filtered PBF (~1–5 MB)
 <a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>        │
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>        ▼  osm2pgsql --slim --hstore
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>        │  (Lua rules: processing/lua/osm_import.lua)
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>        ▼  osm2pgsql --slim --drop --hstore
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>        │  (default pgsql output — no Lua script)
 <a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>        │
 <a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>        ▼  PostgreSQL tables (EPSG:3857)
-<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>        │   planet_osm_point
-<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>        │   planet_osm_polygon
-<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>        │   planet_osm_roads
-<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>        │   + Lua-defined tables: playgrounds, playground_equipment_*, trees, …
-<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>        │
-<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>        ▼  api.sql applied by import.sh
-<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>        │   ALTER SYSTEM (pg tuning)
-<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>        │   DROP + CREATE MATERIALIZED VIEW playground_stats
-<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>        │   CREATE/REPLACE api schema functions
-<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>        │
-<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>        ▼  PostgREST /api/rpc/* endpoints
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>        │   planet_osm_point    — OSM nodes
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>        │   planet_osm_polygon  — closed ways and relations as polygons
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>        │
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>        ▼  api.sql applied by import.sh
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>        │   ALTER SYSTEM (pg tuning)
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>        │   DROP + CREATE MATERIALIZED VIEW playground_stats
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>        │   CREATE/REPLACE api schema functions
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>        │
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>        ▼  PostgREST /api/rpc/* endpoints
 </code></pre></div>
-<p>The pipeline is driven by <code>importer/import.sh</code>, which is the <code>ENTRYPOINT</code> of the importer Docker image.</p>
-<h2 id="osm2pgsql-and-the-lua-rules">osm2pgsql and the Lua rules<a class="headerlink" href="#osm2pgsql-and-the-lua-rules" title="Permanent link">&para;</a></h2>
-<p>osm2pgsql reads the filtered PBF and calls the Lua transform script <code>processing/lua/osm_import.lua</code> for each OSM object. The Lua script defines:</p>
-<ul>
-<li><strong>Which OSM tags are imported</strong> — each table (<code>playgrounds</code>, <code>playground_equipment_node</code>, <code>trees</code>, etc.) declares its column list. Only those columns are stored; everything else goes into the <code>other_tags</code> hstore column.</li>
-<li><strong>Which OSM object types</strong> map to which tables (nodes, ways, relations; points vs polygons)</li>
-<li><strong>Custom processing</strong> — e.g., merging playground node/polygon variants</li>
-</ul>
-<p>All tables use EPSG:3857 geometry (Web Mercator), which matches OpenLayers' default projection.</p>
-<h3 id="adding-a-new-osm-tag-to-an-existing-table">Adding a new OSM tag to an existing table<a class="headerlink" href="#adding-a-new-osm-tag-to-an-existing-table" title="Permanent link">&para;</a></h3>
+<p>The pipeline is driven by <code>importer/import.sh</code>, which is the <code>CMD</code> of the importer Docker image (<code>importer/Dockerfile</code>).</p>
+<h2 id="osm2pgsql-and-the-hstore-schema">osm2pgsql and the hstore schema<a class="headerlink" href="#osm2pgsql-and-the-hstore-schema" title="Permanent link">&para;</a></h2>
+<p>osm2pgsql runs in its default <strong>pgsql output mode</strong> — no Lua flex script is involved. It imports the filtered PBF into standard tables (<code>planet_osm_point</code>, <code>planet_osm_polygon</code>), all in EPSG:3857.</p>
+<p>A fixed set of common OSM keys get their own columns (<code>name</code>, <code>operator</code>, <code>access</code>, <code>surface</code>, <code>leisure</code>, <code>amenity</code>, <code>sport</code>, <code>natural</code>, <code>highway</code>, …). Every other tag is stored as a key→value pair in the <code>tags</code> <strong>hstore</strong> column. The <code>--hstore</code> flag enables this.</p>
+<p>All application logic (computing completeness, deriving filter flags, building cluster counts) lives in <code>importer/api.sql</code>, which queries these standard tables.</p>
+<h3 id="adding-a-new-attribute-to-an-existing-object-type">Adding a new attribute to an existing object type<a class="headerlink" href="#adding-a-new-attribute-to-an-existing-object-type" title="Permanent link">&para;</a></h3>
+<p>Two distinct cases:</p>
+<p><strong>The object type is already imported</strong> (e.g. adding a new attribute to playground equipment nodes, which are already in the filter as <code>n/playground</code>):</p>
 <ol>
-<li>Find the table in <code>processing/lua/osm_import.lua</code></li>
-<li>Add the column to the table's attribute list:
-   <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kd">local</span><span class="w"> </span><span class="nv">attributes_playground</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">    </span><span class="err">…</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="nv">column</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;my_new_tag&#39;</span><span class="w"> </span><span class="p">},</span>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="p">}</span>
-</code></pre></div></li>
-<li>Run <code>make import</code> to reload the data with the new column.</li>
+<li>The tag value is already in the <code>tags</code> hstore — access it with <code>tags-&gt;'my_tag'</code> in <code>importer/api.sql</code>.</li>
+<li>Run <code>make db-apply</code> to apply the SQL change (no re-import needed).</li>
+</ol>
+<p><strong>The tag is used on a new object type not yet in the filter</strong> (e.g. <code>amenity=drinking_water</code>):</p>
+<ol>
+<li>Add the tag to the <code>osmium tags-filter</code> list in <code>importer/import.sh</code>. Otherwise the importer silently discards those objects.</li>
+<li>In <code>importer/api.sql</code>, add or extend a function to read the new data. Use <code>tags-&gt;'my_tag'</code> for hstore values or the named column for common keys.</li>
+<li>Run <code>make import</code> — the tag filter change requires a full re-import.</li>
 </ol>
 <h3 id="adding-a-new-osm-object-type">Adding a new OSM object type<a class="headerlink" href="#adding-a-new-osm-object-type" title="Permanent link">&para;</a></h3>
 <ol>
-<li>In <code>osm_import.lua</code>, add a new table definition (see existing tables for the pattern).</li>
-<li>Register a handler for <code>node_tags_fn</code>, <code>way_tags_fn</code>, or <code>relation_tags_fn</code>.</li>
-<li>In <code>importer/api.sql</code>, add a PostgREST function to expose the data, then run <code>make db-apply</code> or <code>make import</code>.</li>
+<li>Add its tag to the <code>osmium tags-filter</code> list in <code>importer/import.sh</code>.</li>
+<li>In <code>importer/api.sql</code>, add a new PostgREST function that queries <code>planet_osm_point</code> or <code>planet_osm_polygon</code> (depending on geometry type). Follow the pattern of existing functions.</li>
+<li>Expose it: <code>GRANT EXECUTE ON FUNCTION api.your_function(...) TO web_anon;</code></li>
+<li>Run <code>make import</code> to load the data. Use <code>make db-apply</code> for subsequent SQL-only iterations.</li>
 </ol>
+<blockquote>
+<p><strong>Testing</strong>: there are no SQL unit tests. Verify changes with a real import (<code>make import</code>) against a region that has the relevant data, then check the feature appears correctly in the UI.</p>
+</blockquote>
 <h2 id="the-tag-filter-importerimportsh">The tag filter (<code>importer/import.sh</code>)<a class="headerlink" href="#the-tag-filter-importerimportsh" title="Permanent link">&para;</a></h2>
-<p>Before osm2pgsql runs, <code>osmium tags-filter</code> keeps only objects with tags the app actually queries. This is a performance optimisation — a Bundesland PBF goes from ~300 MB to ~4–8 MB. The current filter passes:</p>
+<p>Before osm2pgsql runs, <code>osmium tags-filter</code> keeps only objects with tags the app actually queries. This is a performance optimisation — a Bundesland PBF goes from ~300 MB to ~1–5 MB. The current filter passes:</p>
 <ul>
 <li><code>leisure=playground</code>, <code>leisure=pitch</code>, <code>leisure=fitness_station</code>, <code>leisure=picnic_table</code></li>
 <li><code>amenity=bench</code>, <code>amenity=shelter</code>, <code>amenity=toilets</code>, <code>amenity=ice_cream</code>, <code>amenity=cafe</code>, <code>amenity=restaurant</code></li>
@@ -1742,36 +1742,43 @@
 <li><code>highway=bus_stop</code>, <code>shop=chemist/supermarket/convenience</code>, <code>emergency=*</code></li>
 <li><code>boundary=administrative</code>, <code>type=multipolygon</code></li>
 </ul>
-<p><strong>If you add a new OSM feature type</strong>, add its tag to the filter list in <code>import.sh</code> (the <code>osmium tags-filter</code> invocation) — otherwise the importer will silently discard those objects.</p>
+<p><strong>If you add a new OSM object type</strong>, add its tag to this filter — otherwise the importer will silently discard those objects.</p>
 <h2 id="the-playground_stats-materialised-view">The <code>playground_stats</code> materialised view<a class="headerlink" href="#the-playground_stats-materialised-view" title="Permanent link">&para;</a></h2>
 <p>The most important post-import step in <code>importer/api.sql</code> is building the <code>playground_stats</code> materialized view. It pre-computes per-playground statistics (tree count, bench count, sport types, completeness state) so <code>get_playgrounds_bbox</code> is a fast indexed lookup rather than an aggregation query.</p>
+<p>It is built entirely from the standard osm2pgsql tables:</p>
+<ul>
+<li>Playground polygons and nodes come from <code>planet_osm_polygon</code> (<code>leisure = 'playground'</code>) and <code>planet_osm_point</code>.</li>
+<li>Equipment and trees are joined from <code>planet_osm_point</code> and <code>planet_osm_polygon</code> using spatial containment (<code>ST_Intersects</code> / <code>ST_DWithin</code>).</li>
+<li>Less common tags (e.g. <code>panoramax</code>, <code>opening_hours</code>) are read from the <code>tags</code> hstore column.</li>
+</ul>
 <p>The completeness logic in <code>api.sql</code> must stay in sync with <code>app/src/lib/completeness.js</code> in the frontend. Both implement the same rule:</p>
 <table>
 <thead>
 <tr>
 <th>Criterion</th>
-<th>SQL column (api.sql)</th>
-<th>JS property (completeness.js)</th>
+<th>SQL (api.sql)</th>
+<th>JS (completeness.js)</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>Has photo</td>
-<td><code>panoramax IS NOT NULL</code> or <code>other_tags ? 'panoramax'</code></td>
+<td><code>tags</code> contains key <code>panoramax</code> or a key starting with <code>panoramax:</code></td>
 <td><code>Object.keys(props).some(k =&gt; k.startsWith('panoramax'))</code></td>
 </tr>
 <tr>
 <td>Has name</td>
-<td><code>name IS NOT NULL</code></td>
+<td><code>name IS NOT NULL</code> (<code>name</code> is a dedicated column)</td>
 <td><code>!!props.name</code></td>
 </tr>
 <tr>
 <td>Has info</td>
-<td><code>operator \|\| opening_hours \|\| surface \|\| access != 'yes'</code></td>
-<td><code>!!(props.operator \|\| …)</code></td>
+<td><code>surface</code> set, or <code>access</code> set and not <code>'yes'</code>, or <code>opening_hours</code> set</td>
+<td><code>!!(props.surface \|\| …)</code></td>
 </tr>
 </tbody>
 </table>
+<p>Note: <code>operator</code> is present in the JS completeness check but intentionally absent from the SQL criterion — the SQL view was narrowed to attributes that directly inform a parent's visit decision.</p>
 <ul>
 <li><code>complete</code> = all three present</li>
 <li><code>partial</code> = at least one present</li>
@@ -1779,7 +1786,7 @@
 </ul>
 <p><strong>If you change the completeness criteria</strong>, update both files and rebuild the materialised view with <code>make db-apply</code>.</p>
 <h2 id="filter-flags-for_baby-for_toddler-is_water">Filter flags (<code>for_baby</code>, <code>for_toddler</code>, <code>is_water</code>, …)<a class="headerlink" href="#filter-flags-for_baby-for_toddler-is_water" title="Permanent link">&para;</a></h2>
-<p>Several boolean columns are computed from equipment present within each playground polygon. They drive both the filter UI and the <code>filter_attrs</code> payload in the centroid RPC.</p>
+<p>Several boolean columns in <code>playground_stats</code> are computed from equipment found inside each playground polygon. They drive both the filter UI and the <code>filter_attrs</code> payload in the cluster RPC.</p>
 <table>
 <thead>
 <tr>
@@ -1790,7 +1797,7 @@
 <tbody>
 <tr>
 <td><code>for_baby</code></td>
-<td><code>baby=yes</code> on any equipment; <code>playground</code> ∈ <code>baby_swing</code>, <code>basketswing</code>, <code>sandpit</code>, <code>springy</code>; <code>capacity:baby</code> present on any equipment</td>
+<td><code>baby=yes</code> on any equipment; <code>playground</code> ∈ <code>baby_swing</code>, <code>basketswing</code>, <code>sandpit</code>, <code>springy</code>; <code>capacity:baby</code> present</td>
 </tr>
 <tr>
 <td><code>for_toddler</code></td>
@@ -1810,20 +1817,17 @@
 </tr>
 </tbody>
 </table>
-<p>The logic lives in two places that must stay in sync:</p>
-<ul>
-<li><strong><code>importer/api.sql</code></strong> — <code>equip_stats</code> CTE, <code>BOOL_OR(…) AS for_baby</code> etc. Used by <code>get_playgrounds_bbox</code> and <code>get_playground_clusters</code>.</li>
-<li><strong><code>processing/sql/playground_processing.sql</code></strong> — <code>UPDATE playgrounds SET for_baby = …</code> etc. Used by the legacy materialised view path.</li>
-</ul>
-<p><strong>If you add a new trigger</strong>, update both files and run <code>make db-apply</code>. A full <code>make import</code> is only needed if the new trigger depends on a tag not yet stored in <code>planet_osm_*</code> (check the tag filter in <code>importer/import.sh</code> first).</p>
+<p>All flag logic lives in <code>importer/api.sql</code> (the <code>equip_stats</code> CTE inside <code>playground_stats</code>).</p>
+<p><strong>If you add a new flag</strong>, add it to <code>playground_stats</code> in <code>api.sql</code> and run <code>make db-apply</code>. A full <code>make import</code> is only needed if the new flag depends on a tag not yet in the tag filter.</p>
 <blockquote>
-<p><strong>Testing</strong>: there are no SQL unit tests. Verify changes with a real import (<code>make import</code>) against a region that has playgrounds with the relevant equipment, then check the filter chip appears correctly in the UI.</p>
+<p><strong>Testing</strong>: verify with a real import against a region that has playgrounds with the relevant equipment, then check the filter chip appears correctly in the UI.</p>
 </blockquote>
 <h2 id="applying-schema-changes-without-a-full-re-import">Applying schema changes without a full re-import<a class="headerlink" href="#applying-schema-changes-without-a-full-re-import" title="Permanent link">&para;</a></h2>
 <p><code>make db-apply</code> runs only the <code>api.sql</code> step (skips the osm2pgsql data load). Use it when:
 - You added or changed a PostgREST function
-- You changed the <code>playground_stats</code> view definition</p>
-<p>Do a full <code>make import</code> when you changed the Lua rules or the tag filter (these affect which data is stored in <code>planet_osm_*</code> tables).</p>
+- You changed the <code>playground_stats</code> view definition
+- You added a new filter flag</p>
+<p>Do a full <code>make import</code> when you changed the tag filter (new object types needed in the PBF) — these affect which objects are stored in <code>planet_osm_*</code> tables.</p>
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="../../reference/api/">API Reference</a> — PostgREST function signatures</li>
