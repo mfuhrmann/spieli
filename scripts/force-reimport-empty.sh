@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # force-reimport-empty.sh — triggers forced reimport for every data-node stack
-# that currently reports 0 playgrounds. Runs imports in the background so all
-# stacks start in parallel. Logs to /tmp/<name>-reimport.log.
+# that currently reports 0 playgrounds. Runs imports sequentially to avoid OOM
+# on a single VPS (each import can use several GB of RAM).
 #
 # Usage: bash scripts/force-reimport-empty.sh
 set -euo pipefail
@@ -23,7 +23,7 @@ STACKS=(
   "$HOME/spieli-thueringen:data-node-ui:8094"
 )
 
-pids=()
+failed=()
 
 for entry in "${STACKS[@]}"; do
   IFS=: read -r dir profiles port <<< "$entry"
@@ -38,32 +38,16 @@ for entry in "${STACKS[@]}"; do
     continue
   fi
 
-  logfile="/tmp/${name}-reimport.log"
-  echo "→ $name — 0 playgrounds, triggering forced reimport (log: $logfile)"
-  (
-    cd "$dir"
-    docker compose --profile data-node-ui run --rm \
+  echo ""
+  echo "━━━ $name — 0 playgrounds, running forced reimport ━━━"
+  cd "$dir"
+  if docker compose --profile data-node-ui run --rm \
       -e REIMPORT_INTERVAL_MIN_DAYS= \
       -e REIMPORT_INTERVAL_MAX_DAYS= \
-      importer
-  ) > "$logfile" 2>&1 &
-  pids+=("$!:$name:$logfile")
-done
-
-if [[ ${#pids[@]} -eq 0 ]]; then
-  echo "All stacks have data — nothing to do."
-  exit 0
-fi
-
-echo ""
-echo "Waiting for ${#pids[@]} reimport(s) to complete..."
-failed=()
-for entry in "${pids[@]}"; do
-  IFS=: read -r pid name logfile <<< "$entry"
-  if wait "$pid"; then
+      importer; then
     echo "✓ $name done"
   else
-    echo "✗ $name FAILED — see $logfile"
+    echo "✗ $name FAILED"
     failed+=("$name")
   fi
 done
