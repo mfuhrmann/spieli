@@ -96,7 +96,6 @@ spieli/                            ← Monorepo root
 │   ├── api.sql                    ★ All PostgREST API functions + playground_stats matview
 │   └── Dockerfile                 ← Importer image (osm2pgsql, osmium-tool, psql)
 │
-├── processing/                    ← (directory removed — was legacy pre-Docker pipeline)
 │
 ├── oci/                           ← Docker build contexts
 │   ├── app/

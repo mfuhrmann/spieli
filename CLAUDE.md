@@ -91,7 +91,7 @@ Browser ──► nginx ──► Vite-built static assets (app/dist/)
 - **Frontend**: Svelte 5 + Vite 6, OpenLayers for the map, Tailwind CSS + Bootstrap + shadcn-inspired primitives for UI
 - **PostgREST**: auto-generates REST API from the `api` schema. All DB functions are in `importer/api.sql`.
 - **nginx** (`oci/app/`): serves the build, proxies `/api/`, writes `app/public/config.js` at startup from env vars
-- **osm2pgsql**: imports OSM PBF data using rules in `processing/`; schema in `db/init.sql`
+- **osm2pgsql**: imports OSM PBF data in default pgsql mode (`--slim --drop --hstore`); creates `planet_osm_*` tables; schema bootstrap in `db/init.sql`
 - **osmium-tool**: bbox clip + tag filter before osm2pgsql (reduces ~300 MB → ~5 MB per region)
 
 ## App modes
