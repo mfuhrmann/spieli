@@ -1216,8 +1216,9 @@ AS $$
     -- Brandenburg whose boundary sub-relations can't be fully assembled from the
     -- osmium-filtered PBF (ring gaps), so osm2pgsql stores 33 open linestrings
     -- instead. COALESCE picks the polygon values when available; the line fallback
-    -- gives a valid bbox (ST_Extent over linestring endpoints) and a convex-hull
-    -- approximation for region_geom (sufficient for hub overlap detection).
+    -- gives a valid bbox (ST_Extent over linestring endpoints). region_geom is
+    -- NULL when no true polygon exists — the hub skips overlap detection for those
+    -- backends rather than using a convex hull that can falsely contain neighbours.
     SELECT
       COALESCE(
         (SELECT max(name) FROM planet_osm_polygon WHERE osm_id = -relation_id),
@@ -1231,20 +1232,16 @@ AS $$
           (SELECT ST_Extent(way)::geometry FROM planet_osm_line WHERE osm_id = -relation_id),
           3857), 4326)
       ) AS bbox_geom,
-      -- Simplified boundary polygon for hub overlap detection. Prefer the true
-      -- polygon; fall back to a convex hull of the line segments (rough but
-      -- non-NULL, good enough for containment checks).
-      COALESCE(
-        (SELECT ST_AsGeoJSON(
-                    ST_SimplifyPreserveTopology(
-                        ST_Transform(ST_Union(way), 4326), 0.05))::jsonb
-         FROM planet_osm_polygon WHERE osm_id = -relation_id
-         HAVING count(*) > 0),
-        (SELECT ST_AsGeoJSON(
-                    ST_ConvexHull(ST_Collect(ST_Transform(way, 4326))))::jsonb
-         FROM planet_osm_line WHERE osm_id = -relation_id
-         HAVING count(*) > 0)
-      ) AS region_geom
+      -- Simplified boundary polygon for hub overlap detection. Only the true
+      -- polygon is used; NULL when no polygon row exists (e.g. Brandenburg whose
+      -- PBF ring gaps leave only line segments). A convex hull of those lines
+      -- falsely contains enclosed neighbours (Berlin inside Brandenburg's hull)
+      -- and must not be used for containment checks.
+      (SELECT ST_AsGeoJSON(
+                  ST_SimplifyPreserveTopology(
+                      ST_Transform(ST_Union(way), 4326), 0.05))::jsonb
+       FROM planet_osm_polygon WHERE osm_id = -relation_id
+       HAVING count(*) > 0) AS region_geom
   ),
   counts AS (
     -- playground_stats now includes all playgrounds in the DB without a region
