@@ -1,4 +1,4 @@
-# spieli <img src="images/spieli_logo.png" height="100" align="right">
+# spieli <img src="app/src/images/spieli_logo.png" height="100" align="right">
 
 ## Linguistically
 
