@@ -37,12 +37,15 @@
         <button type="button" class="close-btn" onclick={close} aria-label={$_('info.closeBtn')}>✕</button>
       </div>
       <div class="modal-body">
-        <p class="intro">
-          {@html $_('modal.addData.introText', { values: {
-            osmLink: '<a href="https://www.openstreetmap.org/" target="_blank" rel="noopener">OpenStreetMap</a>',
-            mapcompleteLink: '<a href="https://mapcomplete.org/playgrounds.html" target="_blank" rel="noopener">MapComplete</a>'
-          } })}
-        </p>
+        <div class="intro-container">
+          <p class="intro">
+            {@html $_('modal.addData.introText', { values: {
+              osmLink: '<a href="https://www.openstreetmap.org/" target="_blank" rel="noopener">OpenStreetMap</a>',
+              mapcompleteLink: '<a href="https://mapcomplete.org/playgrounds.html" target="_blank" rel="noopener">MapComplete</a>'
+            } })}
+          </p>
+          <img src="src/images/spieli_logo.png" alt="spieli logo" class="logo" />
+        </div>
 
         <div class="link-grid">
           <a class="link-card" href={osmWikiUrl} target="_blank" rel="noopener">
@@ -126,11 +129,25 @@
 
   .modal-body { padding: 1rem 1.125rem; }
 
+  .intro-container {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 1.125rem;
+  }
+
   .intro {
     font-size: 0.875rem;
     color: #374151;
-    margin: 0 0 1.125rem;
+    margin: 0;
     line-height: 1.55;
+    flex: 1;
+  }
+
+  .logo {
+    width: 60px;
+    height: auto;
+    object-fit: contain;
   }
 
   .link-grid {
@@ -188,3 +205,4 @@
   }
   .ok-btn:hover { background: #d16212; }
 </style>
+
