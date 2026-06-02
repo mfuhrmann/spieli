@@ -1,4 +1,4 @@
-# spieli
+# spieli <img src="images/spieli_logo.png" height="100" align="right">
 
 ## Linguistically
 
@@ -10,8 +10,6 @@ A German word, that usually marks an area for children, often equipped with vari
 <u>Article/Gender:</u>
 In German, the grammatical gender is masculine: „der Spieli".
 In English, it is used as a neuter noun: "the spieli".
-
----
 
 ## Technically
 
