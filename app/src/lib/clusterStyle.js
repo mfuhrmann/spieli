@@ -25,7 +25,7 @@ const HATCH_LINE     = '#6b7280';     // tailwind gray-500
 const CENTER_FILL   = 'rgba(255, 255, 255, 0.94)';
 const CENTER_STROKE = '#1f2937';
 const CENTER_TEXT   = '#1f2937';
-const RING_WIDTH    = 12;
+const RING_WIDTH    = 8;
 
 const bitmapCache = new Map();
 
@@ -37,10 +37,10 @@ const bitmapCache = new Map();
 // "Macro ring position and sizing" requires that backend rings use the same
 // size scale as cluster rings.
 export function radiusForCount(count) {
-  if (count <   10) return 26;
-  if (count <  100) return 32;
-  if (count < 1000) return 38;
-  return 44;
+  if (count <   10) return 18;
+  if (count <  100) return 22;
+  if (count < 1000) return 28;
+  return 34;
 }
 
 // Buckets count into a small set of representative values so visual size
@@ -128,7 +128,7 @@ function drawStackedRing(canvas, count, c10, p10, m10, r10, pixelRatio) {
   // (Canvas2D fontFeatureSettings, Chrome/Firefox recent) as a belt-and-
   // braces fallback for proportional fonts further down the stack.
   ctx.fillStyle    = CENTER_TEXT;
-  ctx.font         = 'bold 22px ui-monospace, "SF Mono", Menlo, system-ui, -apple-system, sans-serif';
+  ctx.font         = '16px ui-monospace, "SF Mono", Menlo, system-ui, -apple-system, sans-serif';
   if ('fontFeatureSettings' in ctx) ctx.fontFeatureSettings = '"tnum" 1';
   ctx.textAlign    = 'center';
   ctx.textBaseline = 'middle';
