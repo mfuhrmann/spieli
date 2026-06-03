@@ -2021,12 +2021,11 @@
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">    </span><span class="nt">&quot;count&quot;</span><span class="p">:</span><span class="w">       </span><span class="mi">2</span><span class="p">,</span>
 <a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">    </span><span class="nt">&quot;complete&quot;</span><span class="p">:</span><span class="w">    </span><span class="mi">1</span><span class="p">,</span>
 <a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">    </span><span class="nt">&quot;partial&quot;</span><span class="p">:</span><span class="w">     </span><span class="mi">0</span><span class="p">,</span>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">    </span><span class="nt">&quot;missing&quot;</span><span class="p">:</span><span class="w">     </span><span class="mi">1</span><span class="p">,</span>
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">    </span><span class="nt">&quot;restricted&quot;</span><span class="p">:</span><span class="w">  </span><span class="mi">0</span>
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">  </span><span class="p">}</span>
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="p">]</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">    </span><span class="nt">&quot;missing&quot;</span><span class="p">:</span><span class="w">     </span><span class="mi">1</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="p">]</span>
 </code></pre></div>
-<p><strong>Invariant</strong>: <code>count = complete + partial + missing + restricted</code> for every bucket. The three completeness counts include only public playgrounds; access-restricted playgrounds are pulled out into <code>restricted</code> so the client can render them as a hatched gray segment.</p>
+<p><strong>Invariant</strong>: <code>count = complete + partial + missing</code> for every bucket. Every playground — including access-restricted ones — is counted into its completeness bucket; there is no separate <code>restricted</code> field. The <code>filter_private</code> parameter still excludes access-restricted playgrounds from the result when set.</p>
 <p><strong>Bucket centre</strong>: emitted <code>lon</code> / <code>lat</code> is the <strong>unweighted spatial mean of the bucket's member centroids</strong> (<code>ST_Centroid(ST_Collect(centroid_3857))</code>, reprojected to WGS84) — not the grid anchor. The grid still defines <em>which</em> playgrounds share a bucket (the grouping key), but the dot is drawn at the geographic mean of those members so it tracks settlements rather than a lattice. Output is deterministic for a given <code>(z, bbox)</code> and dataset: identical inputs produce identical positions. See <a href="../architecture/#tiered-playground-delivery">Architecture — Tiered playground delivery</a> for the grouping-vs-position split.</p>
 <p><strong>Example</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>curl<span class="w"> </span><span class="s1">&#39;https://example.com/api/rpc/get_playground_clusters?z=12&amp;min_lon=9&amp;min_lat=50&amp;max_lon=10&amp;max_lat=51&#39;</span>
@@ -2135,7 +2134,7 @@
 <a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">  </span><span class="nt">&quot;bbox&quot;</span><span class="p">:</span><span class="w">             </span><span class="p">[</span><span class="mf">9.43</span><span class="p">,</span><span class="w"> </span><span class="mf">50.36</span><span class="p">,</span><span class="w"> </span><span class="mf">10.08</span><span class="p">,</span><span class="w"> </span><span class="mf">50.81</span><span class="p">]</span>
 <a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="p">}</span>
 </code></pre></div>
-<p><strong>Invariant</strong>: <code>playground_count = complete + partial + missing</code> (<code>get_meta</code> does <em>not</em> split out access-restricted; they're rolled into the completeness counts here, unlike <code>get_playground_clusters</code>). Hub uses the three counts to render a country-level macro view — see <code>add-federated-playground-clustering</code>.</p>
+<p><strong>Invariant</strong>: <code>playground_count = complete + partial + missing</code>. Access-restricted playgrounds are rolled into the completeness counts (same as <code>get_playground_clusters</code>). Hub uses the three counts to render a country-level macro view — see <code>add-federated-playground-clustering</code>.</p>
 <p>Additional fields:</p>
 <table>
 <thead>
@@ -2365,7 +2364,7 @@
 </tr>
 <tr>
 <td><code>complete</code>, <code>partial</code>, <code>missing</code></td>
-<td>Completeness breakdown (access-restricted playgrounds roll into these counts, unlike <code>get_playground_clusters</code>).</td>
+<td>Completeness breakdown (access-restricted playgrounds roll into these counts, same as <code>get_playground_clusters</code>).</td>
 </tr>
 <tr>
 <td><code>bbox</code></td>
