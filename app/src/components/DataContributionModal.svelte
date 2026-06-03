@@ -1,6 +1,7 @@
 <script>
   import { _ , locale } from 'svelte-i18n';
   import { version } from '../../package.json';
+  import logoUrl from '../images/spieli_logo.png';
 
   export let open = false;
   /** Community chat URL; hidden when null/falsy. */
@@ -44,7 +45,7 @@
               mapcompleteLink: '<a href="https://mapcomplete.org/playgrounds.html" target="_blank" rel="noopener">MapComplete</a>'
             } })}
           </p>
-          <img src="src/images/spieli_logo.png" alt="spieli logo" class="logo" />
+          <img src={logoUrl} alt="spieli logo" class="logo" />
         </div>
 
         <div class="link-grid">
