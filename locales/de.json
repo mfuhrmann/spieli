@@ -28,9 +28,9 @@
     },
     "completeness": {
       "title": "Datenqualität",
-      "showComplete": "Vollständig",
-      "showPartial": "Teilweise",
-      "showMissing": "Fehlend"
+      "showComplete": "hoch",
+      "showPartial": "mittel",
+      "showMissing": "schlecht"
     }
   },
   "hover": {
