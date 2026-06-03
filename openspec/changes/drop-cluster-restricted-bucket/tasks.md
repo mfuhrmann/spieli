@@ -29,7 +29,7 @@
 
 ## 5. Tests & verification
 
-- [x] 5.1 No unit tests reference `restricted` cluster fields / hatch rendering — nothing to update (cluster-style has no test; orchestrator tests don't touch restricted).
+- [x] 5.1 Updated tests referencing the removed `restricted` field (found in Playwright E2E specs, not unit tests): `tests/cluster-position.spec.js` invariant assertion dropped `+ bucket.restricted` (was producing `NaN` against the live API); stale `restricted: 0` removed from the `tests/helpers.js` and `tests/hub-multi-backend.spec.js` cluster-bucket stubs.
 - [ ] 5.2 Fresh-volume import test (`make down && docker volume rm spieli_pgdata spieli_pgdata2 && make up`) — DESTRUCTIVE (wipes data + full re-import); left for the operator to run. Note: the single-transaction `db-apply` already validated api.sql ordering end-to-end.
 - [x] 5.3 `make docker-build` done; live `:8080` API verified (`/api/rpc/get_playground_clusters` returns no `restricted` field, 0 invariant violations). Visual eyeball of the map (grey rings gone) left for the user.
 - [~] 5.4 `make build` green. `make test`: Playwright E2E not run in this session; `make test-unit` has a PRE-EXISTING `completeness.test.js` failure (local Node 24 vs CI Node 20, reproduces on pristine `main`) — unrelated to this change. CI gate is Playwright-only and will run on the PR.

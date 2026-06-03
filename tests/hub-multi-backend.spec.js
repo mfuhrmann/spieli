@@ -107,7 +107,6 @@ test.describe('Hub multi-backend orchestration (P2 §9)', () => {
       complete: 20,
       partial: 25,
       missing: 5,
-      restricted: 0,
       ...extra,
     }];
 

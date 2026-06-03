@@ -50,14 +50,23 @@ function countBucket(count) {
 // Quantise a cluster's (count, complete, partial, missing) to the tuple the
 // bitmap cache is keyed on. Both the cache key AND the subsequent draw use the
 // same quantised fractions so the cached bitmap is always consistent with its
-// key. The missing arc absorbs any rounding residual so the three arcs always
-// sum to a full circle.
+// key. Each segment is rounded independently, then the residual (so the three
+// arcs sum to exactly a full circle) is applied to the *largest* segment — so
+// a small but nonzero segment is never squeezed out by the other two rounding
+// up, and the arcs never overflow the ring.
 function quantise(count, complete, partial, missing) {
   const total = complete + partial + missing || 1;
-  const c10 = Math.round((complete / total) * 10);
-  const p10 = Math.round((partial  / total) * 10);
-  const m10 = Math.max(0, 10 - c10 - p10);
-  return { bucket: countBucket(count), c10, p10, m10 };
+  const seg = {
+    c10: Math.round((complete / total) * 10),
+    p10: Math.round((partial  / total) * 10),
+    m10: Math.round((missing  / total) * 10),
+  };
+  const residual = 10 - (seg.c10 + seg.p10 + seg.m10);
+  if (residual !== 0) {
+    const largest = ['c10', 'p10', 'm10'].reduce((a, b) => (seg[b] > seg[a] ? b : a));
+    seg[largest] = Math.max(0, seg[largest] + residual);
+  }
+  return { bucket: countBucket(count), ...seg };
 }
 
 function drawStackedRing(canvas, count, c10, p10, m10, pixelRatio) {
