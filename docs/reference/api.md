@@ -70,13 +70,12 @@ Pre-aggregated cluster buckets for the cluster tier. Each bucket counts playgrou
     "count":       2,
     "complete":    1,
     "partial":     0,
-    "missing":     1,
-    "restricted":  0
+    "missing":     1
   }
 ]
 ```
 
-**Invariant**: `count = complete + partial + missing + restricted` for every bucket. The three completeness counts include only public playgrounds; access-restricted playgrounds are pulled out into `restricted` so the client can render them as a hatched gray segment.
+**Invariant**: `count = complete + partial + missing` for every bucket. Every playground — including access-restricted ones — is counted into its completeness bucket; there is no separate `restricted` field. The `filter_private` parameter still excludes access-restricted playgrounds from the result when set.
 
 **Bucket centre**: emitted `lon` / `lat` is the **unweighted spatial mean of the bucket's member centroids** (`ST_Centroid(ST_Collect(centroid_3857))`, reprojected to WGS84) — not the grid anchor. The grid still defines *which* playgrounds share a bucket (the grouping key), but the dot is drawn at the geographic mean of those members so it tracks settlements rather than a lattice. Output is deterministic for a given `(z, bbox)` and dataset: identical inputs produce identical positions. See [Architecture — Tiered playground delivery](architecture.md#tiered-playground-delivery) for the grouping-vs-position split.
 
@@ -187,7 +186,7 @@ Existing federation-discovery RPC, extended with completeness counts.
 }
 ```
 
-**Invariant**: `playground_count = complete + partial + missing` (`get_meta` does *not* split out access-restricted; they're rolled into the completeness counts here, unlike `get_playground_clusters`). Hub uses the three counts to render a country-level macro view — see `add-federated-playground-clustering`.
+**Invariant**: `playground_count = complete + partial + missing`. Access-restricted playgrounds are rolled into the completeness counts (same as `get_playground_clusters`). Hub uses the three counts to render a country-level macro view — see `add-federated-playground-clustering`.
 
 Additional fields:
 
@@ -363,7 +362,7 @@ Returns instance metadata used by the Hub for federation discovery. Required for
 | Field | Notes |
 |---|---|
 | `playground_count` | Total playgrounds in the region. Equals `complete + partial + missing`. |
-| `complete`, `partial`, `missing` | Completeness breakdown (access-restricted playgrounds roll into these counts, unlike `get_playground_clusters`). |
+| `complete`, `partial`, `missing` | Completeness breakdown (access-restricted playgrounds roll into these counts, same as `get_playground_clusters`). |
 | `bbox` | `[west, south, east, north]` in WGS84. `null` when the relation is not found. |
 | `last_import_at` | When `import.sh` last ran successfully. `null` before any import. |
 | `data_age_seconds` | Seconds since `last_import_at`. `null` when `last_import_at` is null. |

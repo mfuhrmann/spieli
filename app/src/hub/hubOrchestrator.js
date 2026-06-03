@@ -189,14 +189,12 @@ export function attachHubOrchestrator({
           complete:   p.complete,
           partial:    p.partial,
           missing:    p.missing,
-          restricted: p.restricted,
         }),
         reduce: (acc, p) => {
           acc.count      += p.count;
           acc.complete   += p.complete;
           acc.partial    += p.partial;
           acc.missing    += p.missing;
-          acc.restricted += p.restricted;
         },
       });
       await fanOut({
@@ -350,7 +348,6 @@ function bucketToSuperclusterPoint(b, backendUrl) {
       complete:    b.complete   ?? 0,
       partial:     b.partial    ?? 0,
       missing:     b.missing    ?? 0,
-      restricted:  b.restricted ?? 0,
       _backendUrl: backendUrl,
     },
   };
@@ -375,7 +372,6 @@ function superclusterFeatureToOl(c) {
       complete:    c.properties.complete,
       partial:     c.properties.partial,
       missing:     c.properties.missing,
-      restricted:  c.properties.restricted,
     });
   } else {
     // Singleton — original bucket properties pass through.
@@ -386,7 +382,6 @@ function superclusterFeatureToOl(c) {
       complete:    c.properties.complete,
       partial:     c.properties.partial,
       missing:     c.properties.missing,
-      restricted:  c.properties.restricted,
     });
   }
   return f;

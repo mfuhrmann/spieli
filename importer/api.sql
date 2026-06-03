@@ -239,7 +239,10 @@ CREATE MATERIALIZED VIEW public.playground_stats AS
     COALESCE(es.for_wheelchair, false) AS for_wheelchair,
     -- Tiered-delivery (P1): persisted centroid + per-playground completeness
     ST_Centroid(pl.way)                           AS centroid_3857,
-    (pl.access IN ('private', 'customers'))       AS access_restricted,
+    -- NULL-safe: untagged playgrounds (access IS NULL) are public, not NULL.
+    -- Retained only to drive filter_private; never excludes a playground from
+    -- the cluster completeness aggregation.
+    (COALESCE(pl.access, '') IN ('private', 'customers')) AS access_restricted,
     CASE
       WHEN ca.has_photo AND ca.has_equipment AND ca.has_info THEN 'complete'
       WHEN ca.has_photo OR  ca.has_equipment OR  ca.has_info THEN 'partial'
@@ -355,7 +358,7 @@ COMMENT ON FUNCTION api.get_playgrounds(bigint) IS
 --     Pre-aggregated cluster buckets for the cluster tier (zoom ≤
 --     clusterMaxZoom, default 13). Snaps each playground centroid to a
 --     zoom-appropriate grid as the *grouping key* and counts playgrounds per
---     cell, broken down by completeness plus a separate restricted count.
+--     cell, broken down by completeness (count = complete + partial + missing).
 --     The emitted `lon` / `lat` is the unweighted spatial mean of the
 --     bucket's member centroids (`ST_Centroid(ST_Collect(centroid_3857))`),
 --     not the grid anchor — so the dot tracks the geographic distribution
@@ -446,21 +449,20 @@ AS $$
       )
   ),
   aggregated AS (
-    -- Restricted playgrounds are counted separately from the three
-    -- completeness buckets so the ring renderer can paint them as a
-    -- hatched "not public" segment. Invariant:
-    --   count = complete + partial + missing + restricted
+    -- Every playground is counted into exactly one completeness bucket by its
+    -- completeness classification (never NULL; defaults to 'missing'), so the
+    -- invariant holds by construction:
+    --   count = complete + partial + missing
     -- The ST_Collect() ORDER BY guarantees bit-stable centroid output
     -- across plan changes (parallel scans, etc.) — the spec contract
     -- "each bucket's lon/lat is identical between calls" depends on it.
     SELECT
       cell,
-      ST_Centroid(ST_Collect(centroid_3857 ORDER BY osm_id))                                        AS bucket_centroid_3857,
-      COUNT(*)::int                                                                                 AS count,
-      SUM(CASE WHEN NOT access_restricted AND completeness = 'complete' THEN 1 ELSE 0 END)::int     AS complete,
-      SUM(CASE WHEN NOT access_restricted AND completeness = 'partial'  THEN 1 ELSE 0 END)::int     AS partial,
-      SUM(CASE WHEN NOT access_restricted AND completeness = 'missing'  THEN 1 ELSE 0 END)::int     AS missing,
-      SUM(CASE WHEN access_restricted                                   THEN 1 ELSE 0 END)::int     AS restricted
+      ST_Centroid(ST_Collect(centroid_3857 ORDER BY osm_id))                  AS bucket_centroid_3857,
+      COUNT(*)::int                                                           AS count,
+      SUM(CASE WHEN completeness = 'complete' THEN 1 ELSE 0 END)::int         AS complete,
+      SUM(CASE WHEN completeness = 'partial'  THEN 1 ELSE 0 END)::int         AS partial,
+      SUM(CASE WHEN completeness = 'missing'  THEN 1 ELSE 0 END)::int         AS missing
     FROM buckets
     GROUP BY cell
   )
@@ -472,8 +474,7 @@ AS $$
         'count',      count,
         'complete',   complete,
         'partial',    partial,
-        'missing',    missing,
-        'restricted', restricted
+        'missing',    missing
       )
     ),
     '[]'::json

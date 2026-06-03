@@ -85,7 +85,7 @@ test.describe('Cluster position semantics (live API)', () => {
     ).toBeGreaterThan(0);
     const bucket = multi[0];
 
-    expect(bucket.count).toBe(bucket.complete + bucket.partial + bucket.missing + bucket.restricted);
+    expect(bucket.count).toBe(bucket.complete + bucket.partial + bucket.missing);
 
     const centroidsRes = await request.get(centroidsUrl(BBOX));
     expect(centroidsRes.ok(), `centroids RPC failed: ${centroidsRes.status()}`).toBeTruthy();

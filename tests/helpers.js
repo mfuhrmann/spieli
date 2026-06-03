@@ -55,7 +55,6 @@ export async function stubApiRoutes(page, playgrounds = fixture, clusters = null
         complete: 0,
         partial: 0,
         missing: totalCount,
-        restricted: 0,
       }]);
 
   await page.route('**/rpc/get_playgrounds**', route => {

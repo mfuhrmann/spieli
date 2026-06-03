@@ -133,7 +133,6 @@ function fillClusterSource(source, buckets) {
       complete:   b.complete,
       partial:    b.partial,
       missing:    b.missing,
-      restricted: b.restricted ?? 0,
     });
     return f;
   });

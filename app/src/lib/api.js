@@ -43,9 +43,9 @@ export async function fetchPlaygrounds(baseUrl = defaultApiBaseUrl, signal) {
 
 /**
  * Cluster-tier buckets for zoom ≤ `clusterMaxZoom` (default 13). Returns an
- * array of `{ lon, lat, count, complete, partial, missing, restricted }`
- * bucket objects, grid-aligned to a zoom-dependent cell size on the server.
- * Invariant: `count = complete + partial + missing + restricted`.
+ * array of `{ lon, lat, count, complete, partial, missing }` bucket objects,
+ * grid-aligned to a zoom-dependent cell size on the server.
+ * Invariant: `count = complete + partial + missing`.
  */
 const clusterFilterMap = {
     private:      'filter_private',
