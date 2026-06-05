@@ -5,7 +5,7 @@ For Copilot users: open this file manually — `.github/copilot-instructions.md`
 
 ## What this project is
 
-spieli is an interactive web map for exploring playgrounds based on OpenStreetMap data. It is deployable per-region (e.g. Fulda) by setting environment variables. UI strings are in German; i18n via svelte-i18n is integrated but device names in `objPlaygroundEquipment.js` remain German-only — full i18n is tracked in epic #157.
+spieli is an interactive web map for exploring playgrounds based on OpenStreetMap data. It is deployable per-region (e.g. Fulda) by setting environment variables. The UI is fully internationalised via svelte-i18n; de, en, fr, and es include complete device name translations. `name_de` in `objPlaygroundEquipment.js` is a fallback for locales that do not yet have translations.
 
 ## Git workflow
 
