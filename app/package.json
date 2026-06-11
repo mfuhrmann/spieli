@@ -10,6 +10,7 @@
     "test:unit": "node src/lib/equipmentGrouping.test.js && node src/lib/completeness.test.js && node src/lib/deeplink.test.js && node --conditions=node src/stores/filters.test.js && node src/hub/centroid.test.js"
   },
   "dependencies": {
+    "@rapideditor/temaki": "^5.13.0",
     "@turf/boolean-contains": "^7.3.5",
     "bootstrap": "^5.3.8",
     "bootstrap-icons": "^1.13.1",

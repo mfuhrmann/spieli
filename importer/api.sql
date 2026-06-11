@@ -953,12 +953,70 @@ AS $$
       p.amenity IN ('bench', 'shelter')
       OR p.leisure IN ('picnic_table', 'fitness_station')
   ),
+  -- Standalone line ways (zipwires, shelter ways, bench ways, etc.) not within any playground
+  equip_lines AS (
+    SELECT
+      l.osm_id,
+      'W'::text AS osm_type,
+      l.name,
+      l.amenity,
+      l.leisure,
+      l.sport,
+      l.tags,
+      CASE
+        WHEN l.tags->'playground' = 'structure'
+             AND ST_IsClosed(l.way)
+             AND ST_NPoints(l.way) >= 4
+        THEN ST_Transform(ST_MakePolygon(l.way), 4326)
+        ELSE ST_Transform(l.way, 4326)
+      END AS geom
+    FROM planet_osm_line l, bbox b
+    WHERE l.way && b.geom
+      AND (
+        l.tags ? 'playground'
+        OR l.amenity IN ('bench', 'shelter')
+        OR l.leisure IN ('picnic_table', 'pitch', 'fitness_station')
+      )
+      AND NOT EXISTS (
+        SELECT 1 FROM planet_osm_polygon pg
+        WHERE pg.leisure = 'playground'
+          AND ST_Intersects(l.way, pg.way)
+      )
+  ),
+  -- Standalone polygon ways (shelters, benches, etc.) not within any playground
+  equip_ways AS (
+    SELECT
+      p.osm_id,
+      'W'::text AS osm_type,
+      p.name,
+      p.amenity,
+      p.leisure,
+      p.sport,
+      p.tags,
+      ST_Transform(p.way, 4326) AS geom
+    FROM planet_osm_polygon p, bbox b
+    WHERE p.way && b.geom
+      AND (
+        p.tags ? 'playground'
+        OR p.amenity IN ('bench', 'shelter')
+        OR p.leisure IN ('picnic_table', 'pitch', 'fitness_station')
+      )
+      AND NOT EXISTS (
+        SELECT 1 FROM planet_osm_polygon pg
+        WHERE pg.leisure = 'playground'
+          AND ST_Intersects(p.way, pg.way)
+      )
+  ),
   all_features AS (
     SELECT * FROM pitch_ways
     UNION ALL
     SELECT * FROM pitch_nodes
     UNION ALL
     SELECT * FROM equip_nodes
+    UNION ALL
+    SELECT * FROM equip_lines
+    UNION ALL
+    SELECT * FROM equip_ways
   )
   SELECT json_build_object(
     'type', 'FeatureCollection',
