@@ -25,7 +25,7 @@
 // 2. Add a new key to objDevices using the OSM tag value as the key name:
 //
 //    mydevice: {
-//        name_de:     "German name",        // REQUIRED — shown in the detail panel
+//        name_de:     "German name",        // REQUIRED — fallback if locale key is absent
 //        image:       "File:Example.jpg",   // OPTIONAL — Wikimedia Commons filename
 //        category:    "stationary",         // OPTIONAL — groups the device in filters
 //        filterable:  true,                 // OPTIONAL — show in sidebar filter?
@@ -35,9 +35,10 @@
 // Field details:
 //
 //   name_de      (string, required)
-//                German display name shown in the collapsible device row.
-//                There is currently no i18n for device names — German is the
-//                primary language of the project.
+//                Fallback label used when the svelte-i18n key
+//                `equipment.devices.<key>` is missing for the active locale.
+//                Primary display names come from locales/ — add a matching
+//                key there when adding a new device.
 //
 //   image        (string, optional)
 //                A Wikimedia Commons filename in the format "File:Example.jpg".
