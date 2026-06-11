@@ -285,7 +285,7 @@ AS $$
       MAX(p.operator)                                      AS operator,
       MAX(p.access)                                        AS access,
       MAX(p.surface)                                       AS surface,
-      SUM(p.way_area)::int                                 AS area,
+      SUM(ST_Area(ST_Transform(p.way, 4326)::geography))::int AS area,
       (array_agg(p.tags ORDER BY ST_Area(p.way) DESC))[1] AS tags,
       ST_Transform(ST_Union(p.way), 4326)                  AS geom
     FROM planet_osm_polygon p
@@ -580,7 +580,7 @@ AS $$
       MAX(p.operator)                                      AS operator,
       MAX(p.access)                                        AS access,
       MAX(p.surface)                                       AS surface,
-      SUM(p.way_area)::int                                 AS area,
+      SUM(ST_Area(ST_Transform(p.way, 4326)::geography))::int AS area,
       (array_agg(p.tags ORDER BY ST_Area(p.way) DESC))[1] AS tags,
       ST_Transform(ST_Union(p.way), 4326)                  AS geom
     FROM planet_osm_polygon p
@@ -670,7 +670,7 @@ AS $$
       x.operator,
       x.access,
       x.surface,
-      x.way_area::int AS area,
+      ST_Area(ST_Transform(x.way, 4326)::geography)::int AS area,
       x.tags,
       ST_Transform(x.way, 4326) AS geom,
       1 AS priority
