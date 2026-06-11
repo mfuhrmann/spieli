@@ -5,21 +5,25 @@
   import VectorSource from 'ol/source/Vector.js';
   import XYZ from 'ol/source/XYZ.js';
   import GeoJSON from 'ol/format/GeoJSON.js';
-  import { transform, transformExtent } from 'ol/proj';
+  import Feature from 'ol/Feature.js';
+  import Point from 'ol/geom/Point.js';
+  import { transform, transformExtent, fromLonLat } from 'ol/proj';
   import { ScaleLine, defaults as defaultControls } from 'ol/control.js';
   import { defaults as defaultInteractions } from 'ol/interaction/defaults';
 
-  import { mapZoom, mapMinZoom, apiBaseUrl } from '../lib/config.js';
+  import { mapZoom, mapMinZoom, mapMaxZoom, apiBaseUrl } from '../lib/config.js';
   import {
     playgroundStyleFn,
     selectionStyle,
     equipmentLayerStyleFn,
     treeStyleFn,
     clusterTierStyleFn,
+    locationStyleFn,
   } from '../lib/vectorStyles.js';
   import { macroRingStyleFn } from '../hub/macroRingStyle.js';
   import { selection } from '../stores/selection.js';
   import { mapStore } from '../stores/map.js';
+  import { location } from '../stores/location.js';
   import { playgroundSourceStore } from '../stores/playgroundSource.js';
   import { activeTierStore } from '../stores/tier.js';
   import { filterStore, matchesFilters } from '../stores/filters.js';
@@ -99,6 +103,7 @@
       center: transform([10.5, 51.2], 'EPSG:4326', 'EPSG:3857'), // Germany fallback
       zoom: mapZoom,
       minZoom: mapMinZoom,
+      maxZoom: mapMaxZoom,
     });
 
     olMap = new Map({
@@ -150,11 +155,36 @@
       }
     });
 
+    // Location marker layer — shows user's current GPS position
+    let locationLayer = null;
+    let locationFeature = null;
+    let locationUnsubscribe = location.subscribe(loc => {
+      if (locationLayer) {
+        olMap.removeLayer(locationLayer);
+        locationLayer = null;
+      }
+      
+      if (loc && Number.isFinite(loc.lat) && Number.isFinite(loc.lon)) {
+        const src = new VectorSource();
+        locationFeature = new Feature({
+          geometry: new Point(fromLonLat([loc.lon, loc.lat])),
+        });
+        src.addFeature(locationFeature);
+        
+        locationLayer = new VectorLayer({
+          source: src,
+          zIndex: 30, // Above all other layers
+          style: locationStyleFn,
+        });
+        olMap.addLayer(locationLayer);
+      }
+    });
+
     // Zoom level at which the current playground was selected; null when nothing selected.
     // Used to auto-clear selection when the user zooms out 2+ levels.
     let selectionZoom = null;
     olMap.on('moveend', () => {
-      if (selectionZoom !== null && view.getZoom() <= selectionZoom - 4) {
+      if (selectionZoom !== null && view.getZoom() <= selectionZoom - 2) {
         selection.clear();
         selectionZoom = null;
       }
@@ -183,7 +213,6 @@
         selectionZoom = null;
         view.fit(polygonHit.getGeometry().getExtent(), {
           padding: [40, 40, 40, 420], // right/top/bottom clear; 420 = sidebar width + margin
-          maxZoom: 19,
           duration: 400,
           callback: () => { selectionZoom = view.getZoom(); },
         });
@@ -196,7 +225,7 @@
         const center = clusterHit.getGeometry().getCoordinates();
         view.animate({
           center,
-          zoom: Math.min((view.getZoom() ?? 0) + 2, view.getMaxZoom?.() ?? 19),
+          zoom: Math.min((view.getZoom() ?? 0) + 2, view.getMaxZoom?.() ?? 21),
           duration: 400,
         });
         return;
@@ -311,6 +340,8 @@
         playgroundLayer.setVisible(false);
         clusterLayer.setVisible(false);
         macroLayer.setVisible(false);
+        if (equipmentLayer) equipmentLayer.setVisible(false);
+        if (treeLayer) treeLayer.setVisible(false);
         return;
       }
       // P2: dismiss the popup whenever we leave macro tier.
@@ -318,12 +349,16 @@
       playgroundLayer.setVisible(tier === 'polygon');
       clusterLayer.setVisible(tier === 'cluster');
       macroLayer.setVisible(tier === 'macro');
+      // Equipment and tree overlays only visible in polygon tier
+      if (equipmentLayer) equipmentLayer.setVisible(tier === 'polygon');
+      if (treeLayer) treeLayer.setVisible(tier === 'polygon');
     });
   });
 
   onDestroy(() => {
     if (overlayUnsubscribe) overlayUnsubscribe();
     if (tierUnsubscribe) tierUnsubscribe();
+    if (locationUnsubscribe) locationUnsubscribe();
     if (olMap) {
       olMap.setTarget(undefined);
       mapStore.set(null);
