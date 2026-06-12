@@ -73,6 +73,7 @@ Click any playground to open its detail panel. The panel shows:
 - Street-level photos (from Panoramax, when available)
 - Community reviews (from Mangrove.reviews, when available)
 - Nearby POIs — toilets, cafés, bus stops, and pharmacies within 500 m
+- A "Take me there" button that opens navigation to the playground (geo: URL on mobile, OSM directions on desktop)
 - A "Contribute data" link to add or improve information in OpenStreetMap via MapComplete
 
 ## Standalone pitches layer
