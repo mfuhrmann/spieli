@@ -165,12 +165,12 @@ Cluster features SHALL be rendered on the map as a ring divided into up to four 
 - **AND** the centre displays `50` in bold tabular numerals
 - **AND** the invariant `count = complete + partial + missing + restricted` holds by construction (enforced in the `get_playground_clusters` RPC)
 
-#### Scenario: Single-feature cluster collapses to a dot
+#### Scenario: Single-feature cluster renders as a ring
 
 - **WHEN** a cluster has `count = 1`
-- **THEN** no ring is drawn
-- **AND** a solid dot is rendered in the single feature's completeness colour (or solid light gray if the feature is access-restricted)
-- **AND** the dot size is 5 CSS px
+- **THEN** a ring is drawn with the full circumference in the single feature's completeness colour
+- **AND** the ring centre displays `1`
+- **AND** the ring radius matches the radiusForCount(1) scale
 
 #### Scenario: Ring renders scale with count
 

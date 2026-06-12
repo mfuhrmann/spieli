@@ -1,5 +1,5 @@
 <script>
-  import { onMount, onDestroy } from 'svelte';
+  import { onMount, onDestroy, get } from 'svelte';
   import { Map, View } from 'ol';
   import { Tile as TileLayer, Vector as VectorLayer } from 'ol/layer.js';
   import VectorSource from 'ol/source/Vector.js';
@@ -124,6 +124,10 @@
       if (equipmentLayer) { olMap.removeLayer(equipmentLayer); equipmentLayer = null; }
       if (treeLayer)      { olMap.removeLayer(treeLayer);      treeLayer      = null; }
 
+      // Capture current tier to properly gate overlay visibility
+      const currentTier = get(activeTierStore);
+      const isPolygonTier = currentTier === 'polygon';
+
       if (equipment.length > 0) {
         const src = new VectorSource();
         const olFeatures = new GeoJSON().readFeatures(
@@ -135,6 +139,7 @@
           source: src,
           zIndex: 20,
           style: equipmentLayerStyleFn,
+          visible: isPolygonTier,
           properties: { kind: 'overlay' },
         });
         olMap.addLayer(equipmentLayer);
@@ -146,7 +151,12 @@
           { type: 'FeatureCollection', features: trees },
           { dataProjection: 'EPSG:4326', featureProjection: 'EPSG:3857' }
         ));
-        treeLayer = new VectorLayer({ source: src, zIndex: 15, style: treeStyleFn });
+        treeLayer = new VectorLayer({ 
+          source: src, 
+          zIndex: 15, 
+          style: treeStyleFn,
+          visible: isPolygonTier
+        });
         olMap.addLayer(treeLayer);
       }
     });
@@ -185,6 +195,7 @@
         view.fit(polygonHit.getGeometry().getExtent(), {
           padding: [40, 40, 40, 420], // right/top/bottom clear; 420 = sidebar width + margin
           duration: 400,
+          maxZoom: mapMaxZoom,
           callback: () => { selectionZoom = view.getZoom(); },
         });
         return;
@@ -223,6 +234,7 @@
           view.fit(transformExtent(bbox4326, 'EPSG:4326', 'EPSG:3857'), {
             padding: [40, 40, 40, 420],
             duration: 400,
+            maxZoom: mapMaxZoom,
           });
         }
         return;

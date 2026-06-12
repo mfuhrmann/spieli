@@ -156,6 +156,7 @@
         map.getView().fit(feat.getGeometry().getExtent(), {
           padding: [40, 40, 40, 420],
           duration: 400,
+          maxZoom: mapMaxZoom,
         });
       }
       hashRestored = true;
@@ -364,6 +365,7 @@
         $mapStore.getView().fit(feat.getGeometry().getExtent(), {
           padding: [60, 20, 60, 20],
           duration: 400,
+          maxZoom: mapMaxZoom,
         });
       }
     } else if (isMobile && !$hasSelection && lastMobileFeature && $mapStore) {
@@ -372,6 +374,7 @@
       $mapStore.getView().fit(feat.getGeometry().getExtent(), {
         padding: [80, 40, 80, 40],
         duration: 300,
+        maxZoom: mapMaxZoom,
       });
     }
   }

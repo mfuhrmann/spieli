@@ -112,6 +112,71 @@ export const objColors = {
     fallback:         '#40474a',
 };
 
+// Hoisted icon mapping tables to avoid duplication
+const PNG_TO_TEMAKI = {
+    bench_backrest_yes: 'bench',
+    bench_backrest_no: 'bench',
+    waste_basket: 'waste',
+    tree_needleleaved: 'tree_needleleaved',
+    tree_broadleaved: 'tree_broadleaved',
+    gate: 'gate',
+    shelter: 'shelter',
+    shrub: 'shrub',
+    picnic_table: 'table_soccer',
+    artwork: 'play_structure',
+    bicycle_parking: 'play_structure',
+};
+
+// Device-specific Temaki icon mapping (takes precedence over category)
+const DEVICE_ICON_MAP = {
+    slide: 'slide',
+    seesaw: 'seesaw',
+    swing: 'swing',
+    baby_swing: 'swing',
+    basketswing: 'swing',
+    tire_swing: 'swing',
+    rope_swing: 'swing',
+    climbingframe: 'climbing_frame',
+    climbingwall: 'climbing_frame',
+    balancebeam: 'balance_beam',
+    trampoline: 'trampoline',
+    playhouse: 'playhouse',
+    zipwire: 'zip_wire',
+    sandbox: 'sandbox',
+    sandpit: 'sandbox',
+    springy: 'spring_rider',
+    water_wheel: 'water_device',
+    pump: 'water_device',
+    splash_pad: 'water',
+    water_channel: 'water_device',
+    water_stream: 'water_device',
+    water_seesaw: 'water_device',
+    water_basin: 'water_device',
+    water_barrier: 'water_device',
+    archimedes_screw: 'water_device',
+    water_cannon: 'water_device',
+    water_sprayer: 'water_device',
+    marble_run: 'play_structure',
+    table: 'table_soccer',
+    hammock: 'play_structure',
+};
+
+// Category to Temaki icon mapping (fallback for devices without specific mapping)
+const ICON_MAP = {
+    swing: 'swing',
+    climbing: 'climbing_frame',
+    balance: 'balance_beam',
+    sand: 'sandbox',
+    water: 'water',
+    motion: 'zip_wire',
+    rotating: 'play_structure',
+    activity: 'gym',
+    structure_parts: 'play_structure',
+    stationary: 'play_structure',
+    other: 'play_structure',
+    topographical: 'play_structure',
+};
+
 const objOpacity = { sandpit: 0.3 };
 
 function hexToRgb(hex) {
@@ -151,38 +216,11 @@ const treeRowStyle = new Style({
 export function treeStyleFn(feature) {
     const type = feature.getGeometry()?.getType();
     const leafType = feature.get('leaf_type');
-    const isNeedle = leafType === 'needleleaved' || leafType === 'evergreen';
+    const isNeedle = leafType === 'needleleaved';
     const icon = isNeedle ? treeNeedleStyle : treeStyle;
     
     if (type === 'LineString' || type === 'MultiLineString') {
-        // For tree rows (lines), show tree icons at each vertex
-        const geometry = feature.getGeometry();
-        const iconStyle = icon.clone();
-        
-        // Create points at each vertex of the line
-        const coords = geometry.getCoordinates();
-        if (coords.length > 0) {
-            // For LineString, coords is an array of points
-            // For MultiLineString, coords is an array of LineString coordinates
-            const points = [];
-            
-            if (type === 'LineString') {
-                points.push(...coords);
-            } else {
-                // MultiLineString: flatten all line strings
-                for (const lineCoords of coords) {
-                    points.push(...lineCoords);
-                }
-            }
-            
-            if (points.length > 0) {
-                // Return a multi-geometry style with points
-                const multiGeom = new MultiPoint(points);
-                iconStyle.setGeometry(multiGeom);
-                return iconStyle;
-            }
-        }
-        // Fallback to line style if we can't create points
+        // For tree rows (lines), keep the line rendering
         return treeRowStyle;
     }
     
@@ -200,8 +238,10 @@ export { clusterRingStyleFn as clusterTierStyleFn } from './clusterStyle.js';
 /** Style function for the equipment overlay layer. Uses Temaki icons for points (SPEC-636). */
 export function equipmentLayerStyleFn(feature) {
     const geomType = feature.getGeometry()?.getType();
-    // Suppress all child devices of grouped structures (they're shown as one device)
-    if (feature.get('_groupId')) return null;
+    // Suppress child Point devices of grouped structures (they're shown as one device)
+    // but keep polygon children visible for hit detection
+    if (feature.get('_groupId') && geomType === 'Point') return null;
+    
     const playground = feature.get('playground');
     const leisure    = feature.get('leisure');
 
@@ -221,71 +261,14 @@ export function equipmentLayerStyleFn(feature) {
     const fillColor   = `rgba(${r},${g},${b},0.5)`;
     const strokeColor = `rgba(${r},${g},${b},1)`;
 
-    // Device-specific Temaki icon mapping (takes precedence over category)
-    const deviceIconMap = {
-        slide: 'slide',
-        seesaw: 'seesaw',
-        swing: 'swing',
-        baby_swing: 'swing',
-        basketswing: 'swing',
-        tire_swing: 'swing',
-        rope_swing: 'swing',
-        climbingframe: 'climbing_frame',
-        climbingwall: 'climbing_frame',
-        balancebeam: 'balance_beam',
-        trampoline: 'trampoline',
-        playhouse: 'playhouse',
-        zipwire: 'zip_wire',
-        sandbox: 'sandbox',
-        sandpit: 'sandbox',
-        springy: 'spring_rider',
-        water_wheel: 'water_device',
-        pump: 'water_device',
-        splash_pad: 'water',
-        water_channel: 'water_device',
-        water_stream: 'water_device',
-        water_seesaw: 'water_device',
-        water_basin: 'water_device',
-        water_barrier: 'water_device',
-        archimedes_screw: 'water_device',
-        water_cannon: 'water_device',
-        water_sprayer: 'water_device',
-        marble_run: 'play_structure',
-        table: 'table_soccer',
-        hammock: 'play_structure',
-    };
-
-    // Category to Temaki icon mapping (fallback for devices without specific mapping)
-    const iconMap = {
-        swing: 'swing',
-        climbing: 'climbing_frame',
-        balance: 'balance_beam',
-        sand: 'sandbox',
-        water: 'water',
-        motion: 'zip_wire',
-        rotating: 'play_structure',
-        activity: 'gym',
-        structure_parts: 'play_structure',
-        stationary: 'play_structure',
-        other: 'play_structure',
-        topographical: 'play_structure',
-    };
-
-    // For Point geometries, use Temaki icons instead of circles (SPEC-636)
-    const radius = (leisure === 'pitch') ? 8 : (leisure === 'fitness_station') ? 7 : 5;
-    if (geomType === 'Point' || geomType === 'MultiPoint') {
-        // First, check if feature matches any objFeatures entry (benches, waste, etc.)
-        let iconName = null;
-        let iconSizePx = 40; // Default size for Temaki icons
-        
-        // Check objFeatures for specific OSM tag matches (benches, waste, etc.)
-        outer: for (const featKey in objFeatures) {
+    // Helper to resolve icon name from objFeatures match
+    function getIconFromObjFeatures(feature) {
+        for (const featKey in objFeatures) {
             const feat = objFeatures[featKey];
             if (feat.icon) {
                 const tags = feat.tags;
                 let matches = true;
                 for (const key in tags) {
-                    // Try both direct property and nested tags property
                     const value = feature.get(key) ?? feature.get('tags')?.[key];
                     if (value !== tags[key]) {
                         matches = false;
@@ -293,53 +276,42 @@ export function equipmentLayerStyleFn(feature) {
                     }
                 }
                 if (matches) {
-                    // Map objFeatures PNG icons to Temaki SVG icons
-                    const pngToTemaki = {
-                        bench_backrest_yes: 'bench',
-                        bench_backrest_no: 'bench',
-                        waste_basket: 'waste',
-                        tree_needleleaved: 'tree_needleleaved',
-                        tree_broadleaved: 'tree_broadleaved',
-                        gate: 'gate',
-                        shelter: 'shelter',
-                        shelter_building: 'shelter',
-                        picnic_shelter: 'shelter',
-                        shrub: 'shrub',
-                        picnic_table: 'table_soccer',
-                        pitch: 'table_soccer',
-                        soccer: 'table_soccer',
-                        basketball: 'table_soccer',
-                        table_tennis: 'table_soccer',
-                        artwork: 'play_structure',
-                        bicycle_parking: 'play_structure',
-                    };
-                    iconName = pngToTemaki[feat.icon] ?? feat.icon.replace('.png', '');
-                    iconSizePx = (feat.size || 12) * 3.33; // ~40px for size 12
-                    break;
+                    const iconName = PNG_TO_TEMAKI[feat.icon] ?? feat.icon.replace('.png', '');
+                    const iconSizePx = (feat.size || 12) * 3.33;
+                    return { iconName, iconSizePx };
                 }
             }
         }
-        
-        // If no objFeatures match, use device-specific or category-based mapping for playground equipment
-        if (!iconName && playground && playground !== 'yes' && playground in objDevices) {
-            iconName = deviceIconMap[playground] ?? iconMap[objDevices[playground].category] ?? 'play_structure';
-            iconSizePx = 40; // Match cluster single playground icon size
-        } else if (!iconName && leisure === 'fitness_station') {
-            iconName = 'gym';
-            iconSizePx = 40; // Standard size
-        } else if (!iconName && leisure === 'pitch') {
-            iconName = 'table_soccer';
-            iconSizePx = 40; // Standard size
+        return null;
+    }
+
+    // Helper to resolve icon name from playground equipment
+    function getIconFromPlaygroundEquip(playground, leisure) {
+        if (playground && playground !== 'yes' && playground in objDevices) {
+            const iconName = DEVICE_ICON_MAP[playground] ?? ICON_MAP[objDevices[playground].category] ?? 'play_structure';
+            return { iconName, iconSizePx: 40 };
         }
+        if (leisure === 'fitness_station') {
+            return { iconName: 'gym', iconSizePx: 40 };
+        }
+        if (leisure === 'pitch') {
+            return { iconName: 'table_soccer', iconSizePx: 40 };
+        }
+        return null;
+    }
+
+    // For Point geometries, use Temaki icons instead of circles (SPEC-636)
+    if (geomType === 'Point' || geomType === 'MultiPoint') {
+        let result = getIconFromObjFeatures(feature);
+        if (!result) result = getIconFromPlaygroundEquip(playground, leisure);
         
-        if (iconName) {
-            // Check if we have this Temaki icon, otherwise use play_structure
-            const iconPath = `/img/icons/temaki/${iconName}.svg`;
+        if (result && result.iconName) {
+            const iconPath = `/img/icons/temaki/${result.iconName}.svg`;
             return new Style({
                 image: new Icon({
                     src: iconPath,
-                    width: iconSizePx,
-                    height: iconSizePx,
+                    width: result.iconSizePx,
+                    height: result.iconSizePx,
                     anchor: [0.5, 0.5],
                     color: strokeColor,
                     displacement: [0, 0]
@@ -348,6 +320,7 @@ export function equipmentLayerStyleFn(feature) {
         }
         
         // Fallback to circle if no icon found
+        const radius = (leisure === 'pitch') ? 8 : (leisure === 'fitness_station') ? 7 : 5;
         return new Style({
             image: new Circle({
                 radius,
@@ -356,74 +329,20 @@ export function equipmentLayerStyleFn(feature) {
             })
         });
     }
+
     if (geomType === 'LineString' || geomType === 'MultiLineString') {
         // For way objects (zipwire, benches, etc.), show icon at midpoint
-        let iconName = null;
-        let iconSizePx = 40;
+        let result = getIconFromObjFeatures(feature);
+        if (!result) result = getIconFromPlaygroundEquip(playground, leisure);
         
-        // First check objFeatures for LineString features (benches, shelters, etc. that are ways)
-        outer: for (const featKey in objFeatures) {
-            const feat = objFeatures[featKey];
-            if (feat.icon) {
-                const tags = feat.tags;
-                let matches = true;
-                for (const key in tags) {
-                    // Try both direct property and nested tags property
-                    const value = feature.get(key) ?? feature.get('tags')?.[key];
-                    if (value !== tags[key]) {
-                        matches = false;
-                        break;
-                    }
-                }
-                if (matches) {
-                    const pngToTemaki = {
-                        bench_backrest_yes: 'bench',
-                        bench_backrest_no: 'bench',
-                        waste_basket: 'waste',
-                        tree_needleleaved: 'tree_needleleaved',
-                        tree_broadleaved: 'tree_broadleaved',
-                        gate: 'gate',
-                        shelter: 'shelter',
-                        shelter_building: 'shelter',
-                        picnic_shelter: 'shelter',
-                        shrub: 'shrub',
-                        picnic_table: 'table_soccer',
-                        pitch: 'table_soccer',
-                        soccer: 'table_soccer',
-                        basketball: 'table_soccer',
-                        table_tennis: 'table_soccer',
-                        artwork: 'play_structure',
-                        bicycle_parking: 'play_structure',
-                    };
-                    iconName = pngToTemaki[feat.icon] ?? feat.icon.replace('.png', '');
-                    iconSizePx = (feat.size || 12) * 3.33;
-                    break;
-                }
-            }
-        }
-        
-        // If no objFeatures match, check playground equipment (zipwire, etc.)
-        if (!iconName && playground && playground !== 'yes' && playground in objDevices) {
-            iconName = deviceIconMap[playground] ?? iconMap[objDevices[playground].category] ?? 'play_structure';
-            iconSizePx = 40;
-        } else if (!iconName && leisure === 'fitness_station') {
-            iconName = 'gym';
-            iconSizePx = 40;
-        } else if (!iconName && leisure === 'pitch') {
-            iconName = 'table_soccer';
-            iconSizePx = 40;
-        }
-        
-        if (iconName) {
+        if (result && result.iconName) {
             const geometry = feature.getGeometry();
-            // Create a point at the midpoint of the line
             let pointGeom;
             if (geomType === 'LineString') {
                 const coords = geometry.getCoordinates();
                 const midIndex = Math.floor(coords.length / 2);
                 pointGeom = new Point(coords[midIndex]);
             } else {
-                // MultiLineString - use first line's midpoint
                 const lines = geometry.getLineStrings();
                 if (lines.length > 0) {
                     const coords = lines[0].getCoordinates();
@@ -434,9 +353,9 @@ export function equipmentLayerStyleFn(feature) {
             if (pointGeom) {
                 return new Style({
                     image: new Icon({
-                        src: `/img/icons/temaki/${iconName}.svg`,
-                        width: iconSizePx,
-                        height: iconSizePx,
+                        src: `/img/icons/temaki/${result.iconName}.svg`,
+                        width: result.iconSizePx,
+                        height: result.iconSizePx,
                         anchor: [0.5, 0.5],
                         color: strokeColor,
                         displacement: [0, 0]
@@ -447,134 +366,30 @@ export function equipmentLayerStyleFn(feature) {
         }
         return new Style({ stroke: new Stroke({ color: strokeColor, width: 3 }) });
     }
-    // For structure polygons, show icon at centroid instead of filled polygon
-    if (playground === 'structure' && (geomType === 'Polygon' || geomType === 'MultiPolygon')) {
-        const geometry = feature.getGeometry();
-        const extent = geometry.getExtent();
-        // Calculate center from extent [minX, minY, maxX, maxY]
-        const center = [
-            (extent[0] + extent[2]) / 2,
-            (extent[1] + extent[3]) / 2
-        ];
-        const pointGeom = new Point(center);
-        return new Style({
-            image: new Icon({
-                src: '/img/icons/temaki/play_structure.svg',
-                width: 40,
-                height: 40,
-                anchor: [0.5, 0.5],
-                color: strokeColor,
-                displacement: [0, 0]
-            }),
-            geometry: pointGeom
-        });
-    }
-    
-    // For fitness station polygons, show icon at centroid
-    if (leisure === 'fitness_station' && (geomType === 'Polygon' || geomType === 'MultiPolygon')) {
-        const geometry = feature.getGeometry();
-        const extent = geometry.getExtent();
-        const center = [
-            (extent[0] + extent[2]) / 2,
-            (extent[1] + extent[3]) / 2
-        ];
-        const pointGeom = new Point(center);
-        return new Style({
-            image: new Icon({
-                src: '/img/icons/temaki/gym.svg',
-                width: 40,
-                height: 40,
-                anchor: [0.5, 0.5],
-                color: objColors.activity,
-                displacement: [0, 0]
-            }),
-            geometry: pointGeom
-        });
-    }
-    
-    // For playground device polygons (sandpits, structures, water devices as areas), show icon at centroid
-    if (playground && playground !== 'yes' && playground in objDevices && (geomType === 'Polygon' || geomType === 'MultiPolygon')) {
-        let iconName = deviceIconMap[playground] ?? iconMap[objDevices[playground].category] ?? 'play_structure';
-        let iconSizePx = 40;
-        const geometry = feature.getGeometry();
-        const extent = geometry.getExtent();
-        const center = [
-            (extent[0] + extent[2]) / 2,
-            (extent[1] + extent[3]) / 2
-        ];
-        const pointGeom = new Point(center);
-        return new Style({
-            image: new Icon({
-                src: `/img/icons/temaki/${iconName}.svg`,
-                width: iconSizePx,
-                height: iconSizePx,
-                anchor: [0.5, 0.5],
-                color: strokeColor,
-                displacement: [0, 0]
-            }),
-            geometry: pointGeom
-        });
-    }
-    
-    // For objFeatures polygons (shelters, benches, etc. mapped as areas), show icon at centroid
+
+    // For polygon geometries - render as filled polygons with icons on top for specific types
+    // Pitch polygons should keep their polygon rendering
     if (geomType === 'Polygon' || geomType === 'MultiPolygon') {
-        let iconName = null;
-        let iconSizePx = 40;
-        
-        // Check objFeatures for polygon features
-        outer: for (const featKey in objFeatures) {
-            const feat = objFeatures[featKey];
-            if (feat.icon) {
-                const tags = feat.tags;
-                let matches = true;
-                for (const key in tags) {
-                    // Try both direct property and nested tags property
-                    const value = feature.get(key) ?? feature.get('tags')?.[key];
-                    if (value !== tags[key]) {
-                        matches = false;
-                        break;
-                    }
-                }
-                if (matches) {
-                    const pngToTemaki = {
-                        bench_backrest_yes: 'bench',
-                        bench_backrest_no: 'bench',
-                        waste_basket: 'waste',
-                        tree_needleleaved: 'tree_needleleaved',
-                        tree_broadleaved: 'tree_broadleaved',
-                        gate: 'gate',
-                        shelter: 'shelter',
-                        shelter_building: 'shelter',
-                        picnic_shelter: 'shelter',
-                        shrub: 'shrub',
-                        picnic_table: 'table_soccer',
-                        pitch: 'table_soccer',
-                        soccer: 'table_soccer',
-                        basketball: 'table_soccer',
-                        table_tennis: 'table_soccer',
-                        artwork: 'play_structure',
-                        bicycle_parking: 'play_structure',
-                    };
-                    iconName = pngToTemaki[feat.icon] ?? feat.icon.replace('.png', '');
-                    iconSizePx = (feat.size || 12) * 3.33;
-                    break;
-                }
-            }
+        // Special case: pitch polygons keep their polygon fill/stroke
+        if (leisure === 'pitch') {
+            return new Style({
+                fill: new Fill({ color: fillColor }),
+                stroke: new Stroke({ color: strokeColor, width: 2 })
+            });
         }
         
-        if (iconName) {
+        // For structure polygons, show icon at centroid
+        if (playground === 'structure') {
             const geometry = feature.getGeometry();
-            const extent = geometry.getExtent();
-            const center = [
-                (extent[0] + extent[2]) / 2,
-                (extent[1] + extent[3]) / 2
-            ];
+            const center = geometry.getExtent();
+            center[0] = (center[0] + center[2]) / 2;
+            center[1] = (center[1] + center[3]) / 2;
             const pointGeom = new Point(center);
             return new Style({
                 image: new Icon({
-                    src: `/img/icons/temaki/${iconName}.svg`,
-                    width: iconSizePx,
-                    height: iconSizePx,
+                    src: '/img/icons/temaki/play_structure.svg',
+                    width: 40,
+                    height: 40,
                     anchor: [0.5, 0.5],
                     color: strokeColor,
                     displacement: [0, 0]
@@ -582,6 +397,74 @@ export function equipmentLayerStyleFn(feature) {
                 geometry: pointGeom
             });
         }
+        
+        // For fitness station polygons, show icon at centroid
+        if (leisure === 'fitness_station') {
+            const geometry = feature.getGeometry();
+            const center = geometry.getExtent();
+            center[0] = (center[0] + center[2]) / 2;
+            center[1] = (center[1] + center[3]) / 2;
+            const pointGeom = new Point(center);
+            return new Style({
+                image: new Icon({
+                    src: '/img/icons/temaki/gym.svg',
+                    width: 40,
+                    height: 40,
+                    anchor: [0.5, 0.5],
+                    color: objColors.activity,
+                    displacement: [0, 0]
+                }),
+                geometry: pointGeom
+            });
+        }
+        
+        // For playground device polygons (sandpits, structures, water devices as areas), show icon at centroid
+        if (playground && playground !== 'yes' && playground in objDevices) {
+            const iconName = DEVICE_ICON_MAP[playground] ?? ICON_MAP[objDevices[playground].category] ?? 'play_structure';
+            const geometry = feature.getGeometry();
+            const center = geometry.getExtent();
+            center[0] = (center[0] + center[2]) / 2;
+            center[1] = (center[1] + center[3]) / 2;
+            const pointGeom = new Point(center);
+            return new Style({
+                image: new Icon({
+                    src: `/img/icons/temaki/${iconName}.svg`,
+                    width: 40,
+                    height: 40,
+                    anchor: [0.5, 0.5],
+                    color: strokeColor,
+                    displacement: [0, 0]
+                }),
+                geometry: pointGeom
+            });
+        }
+        
+        // For objFeatures polygons (shelters, benches, etc. mapped as areas), show icon at centroid
+        const result = getIconFromObjFeatures(feature);
+        if (result && result.iconName) {
+            const geometry = feature.getGeometry();
+            const center = geometry.getExtent();
+            center[0] = (center[0] + center[2]) / 2;
+            center[1] = (center[1] + center[3]) / 2;
+            const pointGeom = new Point(center);
+            return new Style({
+                image: new Icon({
+                    src: `/img/icons/temaki/${result.iconName}.svg`,
+                    width: result.iconSizePx,
+                    height: result.iconSizePx,
+                    anchor: [0.5, 0.5],
+                    color: strokeColor,
+                    displacement: [0, 0]
+                }),
+                geometry: pointGeom
+            });
+        }
+        
+        // Default polygon style for features without specific icon handling
+        return new Style({
+            fill: new Fill({ color: fillColor }),
+            stroke: new Stroke({ color: strokeColor, width: 2 })
+        });
     }
     
     return new Style({

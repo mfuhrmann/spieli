@@ -975,7 +975,7 @@ AS $$
       AND (
         l.tags ? 'playground'
         OR l.amenity IN ('bench', 'shelter')
-        OR l.leisure IN ('picnic_table', 'pitch', 'fitness_station')
+        OR l.leisure IN ('picnic_table', 'fitness_station')
       )
       AND NOT EXISTS (
         SELECT 1 FROM planet_osm_polygon pg
@@ -999,7 +999,7 @@ AS $$
       AND (
         p.tags ? 'playground'
         OR p.amenity IN ('bench', 'shelter')
-        OR p.leisure IN ('picnic_table', 'pitch', 'fitness_station')
+        OR p.leisure IN ('picnic_table', 'fitness_station')
       )
       AND NOT EXISTS (
         SELECT 1 FROM planet_osm_polygon pg

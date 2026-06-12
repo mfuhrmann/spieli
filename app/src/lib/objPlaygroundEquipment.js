@@ -581,14 +581,6 @@ export const objFeatures = {
         icon: "gate",
         size: 12,
     },
-    picnic_shelter: {
-        tags: {
-            tourism: "picnic_shelter",
-        },
-        name_de: "Unterstand",
-        icon: "shelter",
-        size: 12,
-    },
     shelter_building: {
         tags: {
             building: "shelter",

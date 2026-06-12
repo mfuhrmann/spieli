@@ -17,6 +17,7 @@ All variables are set in `.env` (copy from `.env.example`). The installer genera
 | `REGION_CHAT_URL` | *(hidden)* | ui, data-node-ui | Community chat link; leave empty to hide the button |
 | `MAP_ZOOM` | `12` | ui, data-node-ui | Initial map zoom level |
 | `MAP_MIN_ZOOM` | `10` | ui, data-node-ui | Minimum zoom level |
+| `MAP_MAX_ZOOM` | `21` | ui, data-node-ui | Maximum zoom level. Caps all `view.fit()` operations and the OpenLayers view. Carto raster tiles are available up to zoom 20; values above 20 show a blank basemap at the highest zooms.
 | `PARENT_ORIGIN` | *(own origin)* | data-node-ui | Allowed origin for `postMessage` events — set to the Hub's full origin when embedding in a Hub |
 | `APP_PORT` | `8080` | ui, data-node-ui | Host port the app is exposed on |
 | `POSTGRES_PASSWORD` | `change-me` | data-node, data-node-ui | Database password — **change in production** |
