@@ -59,6 +59,7 @@
   let treeLayer = null;       // overlay: tree dots
   let overlayUnsubscribe = null;
   let tierUnsubscribe = null;
+  let locationUnsubscribe = null;
 
   onMount(async () => {
     // The shell owns the sources; fall back to empty ones so the map still
@@ -125,6 +126,8 @@
 
     // Subscribe to overlay features store — rebuild equipment/tree layers on each change
     overlayUnsubscribe = overlayFeaturesStore.subscribe(({ equipment, trees }) => {
+      const shouldBeVisible = $activeTierStore === 'polygon';
+      
       if (equipmentLayer) { olMap.removeLayer(equipmentLayer); equipmentLayer = null; }
       if (treeLayer)      { olMap.removeLayer(treeLayer);      treeLayer      = null; }
 
@@ -140,6 +143,7 @@
           zIndex: 20,
           style: equipmentLayerStyleFn,
           properties: { kind: 'overlay' },
+          visible: shouldBeVisible,
         });
         olMap.addLayer(equipmentLayer);
       }
@@ -150,7 +154,12 @@
           { type: 'FeatureCollection', features: trees },
           { dataProjection: 'EPSG:4326', featureProjection: 'EPSG:3857' }
         ));
-        treeLayer = new VectorLayer({ source: src, zIndex: 15, style: treeStyleFn });
+        treeLayer = new VectorLayer({ 
+          source: src, 
+          zIndex: 15, 
+          style: treeStyleFn,
+          visible: shouldBeVisible
+        });
         olMap.addLayer(treeLayer);
       }
     });
@@ -158,25 +167,30 @@
     // Location marker layer — shows user's current GPS position
     let locationLayer = null;
     let locationFeature = null;
-    let locationUnsubscribe = location.subscribe(loc => {
-      if (locationLayer) {
-        olMap.removeLayer(locationLayer);
-        locationLayer = null;
-      }
-      
-      if (loc && Number.isFinite(loc.lat) && Number.isFinite(loc.lon)) {
-        const src = new VectorSource();
-        locationFeature = new Feature({
-          geometry: new Point(fromLonLat([loc.lon, loc.lat])),
-        });
-        src.addFeature(locationFeature);
-        
-        locationLayer = new VectorLayer({
-          source: src,
-          zIndex: 30, // Above all other layers
-          style: locationStyleFn,
-        });
-        olMap.addLayer(locationLayer);
+    let locationSource = null;
+    locationUnsubscribe = location.subscribe(loc => {
+      if (!locationLayer) {
+        if (loc && Number.isFinite(loc.lat) && Number.isFinite(loc.lon)) {
+          locationSource = new VectorSource();
+          locationFeature = new Feature({
+            geometry: new Point(fromLonLat([loc.lon, loc.lat])),
+          });
+          locationSource.addFeature(locationFeature);
+          locationLayer = new VectorLayer({
+            source: locationSource,
+            zIndex: 30, // Above all other layers
+            style: locationStyleFn,
+          });
+          olMap.addLayer(locationLayer);
+        }
+      } else {
+        if (loc && Number.isFinite(loc.lat) && Number.isFinite(loc.lon)) {
+          locationLayer.setVisible(true);
+          locationFeature.getGeometry().setCoordinates(fromLonLat([loc.lon, loc.lat]));
+        } else {
+          // Hide location layer when location is cleared
+          locationLayer.setVisible(false);
+        }
       }
     });
 
@@ -184,7 +198,7 @@
     // Used to auto-clear selection when the user zooms out 2+ levels.
     let selectionZoom = null;
     olMap.on('moveend', () => {
-      if (selectionZoom !== null && view.getZoom() <= selectionZoom - 2) {
+      if (selectionZoom !== null && view.getZoom() <= selectionZoom - 4) {
         selection.clear();
         selectionZoom = null;
       }
@@ -214,6 +228,7 @@
         view.fit(polygonHit.getGeometry().getExtent(), {
           padding: [40, 40, 40, 420], // right/top/bottom clear; 420 = sidebar width + margin
           duration: 400,
+          maxZoom: mapMaxZoom,
           callback: () => { selectionZoom = view.getZoom(); },
         });
         return;
@@ -252,6 +267,7 @@
           view.fit(transformExtent(bbox4326, 'EPSG:4326', 'EPSG:3857'), {
             padding: [40, 40, 40, 420],
             duration: 400,
+            maxZoom: mapMaxZoom,
           });
         }
         return;

@@ -106,6 +106,7 @@
         map.getView().fit(feature.getGeometry().getExtent(), {
           padding: [40, 40, 40, 420],
           duration: 400,
+          maxZoom: mapMaxZoom,
         });
       }
     }

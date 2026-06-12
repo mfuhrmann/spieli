@@ -151,38 +151,12 @@ const treeRowStyle = new Style({
 export function treeStyleFn(feature) {
     const type = feature.getGeometry()?.getType();
     const leafType = feature.get('leaf_type');
-    const isNeedle = leafType === 'needleleaved' || leafType === 'evergreen';
+    const isNeedle = leafType === 'needleleaved';
     const icon = isNeedle ? treeNeedleStyle : treeStyle;
     
     if (type === 'LineString' || type === 'MultiLineString') {
-        // For tree rows (lines), show tree icons at each vertex
-        const geometry = feature.getGeometry();
-        const iconStyle = icon.clone();
-        
-        // Create points at each vertex of the line
-        const coords = geometry.getCoordinates();
-        if (coords.length > 0) {
-            // For LineString, coords is an array of points
-            // For MultiLineString, coords is an array of LineString coordinates
-            const points = [];
-            
-            if (type === 'LineString') {
-                points.push(...coords);
-            } else {
-                // MultiLineString: flatten all line strings
-                for (const lineCoords of coords) {
-                    points.push(...lineCoords);
-                }
-            }
-            
-            if (points.length > 0) {
-                // Return a multi-geometry style with points
-                const multiGeom = new MultiPoint(points);
-                iconStyle.setGeometry(multiGeom);
-                return iconStyle;
-            }
-        }
-        // Fallback to line style if we can't create points
+        // For tree rows (lines), use line rendering, not icons at vertices
+        // Tree row way nodes are shape points, not tree positions
         return treeRowStyle;
     }
     
@@ -200,8 +174,9 @@ export { clusterRingStyleFn as clusterTierStyleFn } from './clusterStyle.js';
 /** Style function for the equipment overlay layer. Uses Temaki icons for points (SPEC-636). */
 export function equipmentLayerStyleFn(feature) {
     const geomType = feature.getGeometry()?.getType();
-    // Suppress all child devices of grouped structures (they're shown as one device)
-    if (feature.get('_groupId')) return null;
+    // Suppress child Point devices of grouped structures (they're shown as one device)
+    // but keep polygon/line children (e.g., sandpit polygon inside a structure) visible
+    if (feature.get('_groupId') && geomType === 'Point') return null;
     const playground = feature.get('playground');
     const leisure    = feature.get('leisure');
 
@@ -279,7 +254,7 @@ export function equipmentLayerStyleFn(feature) {
         let iconSizePx = 40; // Default size for Temaki icons
         
         // Check objFeatures for specific OSM tag matches (benches, waste, etc.)
-        outer: for (const featKey in objFeatures) {
+        for (const featKey in objFeatures) {
             const feat = objFeatures[featKey];
             if (feat.icon) {
                 const tags = feat.tags;
@@ -306,7 +281,6 @@ export function equipmentLayerStyleFn(feature) {
                         picnic_shelter: 'shelter',
                         shrub: 'shrub',
                         picnic_table: 'table_soccer',
-                        pitch: 'table_soccer',
                         soccer: 'table_soccer',
                         basketball: 'table_soccer',
                         table_tennis: 'table_soccer',
@@ -362,7 +336,7 @@ export function equipmentLayerStyleFn(feature) {
         let iconSizePx = 40;
         
         // First check objFeatures for LineString features (benches, shelters, etc. that are ways)
-        outer: for (const featKey in objFeatures) {
+        for (const featKey in objFeatures) {
             const feat = objFeatures[featKey];
             if (feat.icon) {
                 const tags = feat.tags;
@@ -388,7 +362,6 @@ export function equipmentLayerStyleFn(feature) {
                         picnic_shelter: 'shelter',
                         shrub: 'shrub',
                         picnic_table: 'table_soccer',
-                        pitch: 'table_soccer',
                         soccer: 'table_soccer',
                         basketball: 'table_soccer',
                         table_tennis: 'table_soccer',
@@ -492,6 +465,15 @@ export function equipmentLayerStyleFn(feature) {
         });
     }
     
+    // For pitch polygons, keep polygon rendering (don't convert to icon)
+    // Pitch polygons (leisure=pitch) should show as filled polygons, not icons
+    if (leisure === 'pitch' && (geomType === 'Polygon' || geomType === 'MultiPolygon')) {
+        return new Style({
+            fill: new Fill({ color: fillColor }),
+            stroke: new Stroke({ color: strokeColor, width: 2 })
+        });
+    }
+    
     // For playground device polygons (sandpits, structures, water devices as areas), show icon at centroid
     if (playground && playground !== 'yes' && playground in objDevices && (geomType === 'Polygon' || geomType === 'MultiPolygon')) {
         let iconName = deviceIconMap[playground] ?? iconMap[objDevices[playground].category] ?? 'play_structure';
@@ -517,12 +499,13 @@ export function equipmentLayerStyleFn(feature) {
     }
     
     // For objFeatures polygons (shelters, benches, etc. mapped as areas), show icon at centroid
-    if (geomType === 'Polygon' || geomType === 'MultiPolygon') {
+    // but exclude pitch polygons (already handled above) and grouped polygon children
+    if ((geomType === 'Polygon' || geomType === 'MultiPolygon') && !feature.get('_groupId')) {
         let iconName = null;
         let iconSizePx = 40;
         
         // Check objFeatures for polygon features
-        outer: for (const featKey in objFeatures) {
+        for (const featKey in objFeatures) {
             const feat = objFeatures[featKey];
             if (feat.icon) {
                 const tags = feat.tags;
@@ -548,7 +531,6 @@ export function equipmentLayerStyleFn(feature) {
                         picnic_shelter: 'shelter',
                         shrub: 'shrub',
                         picnic_table: 'table_soccer',
-                        pitch: 'table_soccer',
                         soccer: 'table_soccer',
                         basketball: 'table_soccer',
                         table_tennis: 'table_soccer',
@@ -646,14 +628,18 @@ export function styleFunction(feature, mode, isPoint) {
 }
 
 // ── Location marker style (user's GPS position) ────────────────────────────
+// arrow_down.svg has viewBox="0 0 24 24" with tip at y=19
+// Anchor at [0.5, 19/24] to position the tip at the GPS coordinate
+export const locationStyle = new Style({
+  image: new Icon({
+    src: '/img/icons/temaki/arrow_down.svg',
+    width: 60,
+    height: 60,
+    anchor: [0.5, 19/24],
+    displacement: [0, 0]
+  })
+});
+
 export function locationStyleFn() {
-  return new Style({
-    image: new Icon({
-      src: '/img/icons/temaki/arrow_down.svg',
-      width: 60,
-      height: 60,
-      anchor: [0.5, 0.5],
-      displacement: [0, 0]
-    })
-  });
+  return locationStyle;
 }
