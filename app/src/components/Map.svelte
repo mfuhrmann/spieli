@@ -1,5 +1,6 @@
 <script>
-  import { onMount, onDestroy, get } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
+  import { get } from 'svelte/store';
   import { Map, View } from 'ol';
   import { Tile as TileLayer, Vector as VectorLayer } from 'ol/layer.js';
   import VectorSource from 'ol/source/Vector.js';
