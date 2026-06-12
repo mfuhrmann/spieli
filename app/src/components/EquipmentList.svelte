@@ -489,6 +489,17 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    margin: auto;
+    max-width: 1100px;
+  }
+  @media (max-width: 768px) {
+    .photo-modal {
+      border-radius: 0;
+      width: 100vw;
+      height: 100vh;
+      margin: 0;
+      max-width: none;
+    }
   }
   .photo-modal-header {
     display: flex;

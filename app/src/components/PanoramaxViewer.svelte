@@ -19,6 +19,7 @@
 
   function openModal(i) {
     modalIndex = i;
+    selectedIndex = i;
     fullscreen = true;
   }
   function closeModal() { fullscreen = false; }
@@ -182,6 +183,17 @@
     flex-direction: column;
     overflow: hidden;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    margin: auto;
+    max-width: 1100px;
+  }
+  @media (max-width: 768px) {
+    .panoramax-modal {
+      border-radius: 0;
+      width: 100vw;
+      height: 100vh;
+      margin: 0;
+      max-width: none;
+    }
   }
 
   .panoramax-modal-header {
