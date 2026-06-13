@@ -14,7 +14,7 @@
     "bootstrap": "^5.3.8",
     "bootstrap-icons": "^1.13.1",
     "clsx": "^2.1.1",
-    "esbuild": "^0.28.0",
+    "esbuild": "^0.28.1",
     "fetch-jsonp": "1.4.0",
     "lucide-svelte": "^1.0.1",
     "ol": "10.9.0",
