@@ -582,6 +582,14 @@ export const objFeatures = {
         icon: "gate",
         size: 12,
     },
+    shelter_building: {
+        tags: {
+            building: "shelter",
+        },
+        name_de: "Unterstand",
+        icon: "shelter",
+        size: 12,
+    },
     shelter: {
         tags: {
             amenity: "shelter",

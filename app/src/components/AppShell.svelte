@@ -20,7 +20,7 @@
   import { playgroundSourceStore } from '../stores/playgroundSource.js';
   import { parseHash } from '../lib/deeplink.js';
   import { fetchPlaygroundByOsmId } from '../lib/api.js';
-  import { impressumUrl, privacyUrl } from '../lib/config.js';
+  import { impressumUrl, privacyUrl, mapMaxZoom } from '../lib/config.js';
 
   /**
    * The OL VectorSource that renders the polygon tier (zoom ≥ 14). The shell
@@ -155,8 +155,8 @@
       if (map) {
         map.getView().fit(feat.getGeometry().getExtent(), {
           padding: [40, 40, 40, 420],
-          maxZoom: 19,
           duration: 400,
+          maxZoom: mapMaxZoom,
         });
       }
       hashRestored = true;
@@ -364,8 +364,8 @@
         lastMobileFeature = feat;
         $mapStore.getView().fit(feat.getGeometry().getExtent(), {
           padding: [60, 20, 60, 20],
-          maxZoom: 19,
           duration: 400,
+          maxZoom: mapMaxZoom,
         });
       }
     } else if (isMobile && !$hasSelection && lastMobileFeature && $mapStore) {
@@ -373,8 +373,8 @@
       lastMobileFeature = null;
       $mapStore.getView().fit(feat.getGeometry().getExtent(), {
         padding: [80, 40, 80, 40],
-        maxZoom: 19,
         duration: 300,
+        maxZoom: mapMaxZoom,
       });
     }
   }

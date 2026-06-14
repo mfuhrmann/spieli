@@ -9,7 +9,7 @@
 | Build tool | [Vite](https://vitejs.dev/) | 6.x | Dev server, production bundler |
 | Styling | [Bootstrap](https://getbootstrap.com/) | 5.x | Component classes (buttons, cards, modals) |
 | Styling | [Tailwind CSS](https://tailwindcss.com/) | 4.x | Utility classes, layout |
-| Icons | [lucide-svelte](https://lucide.dev/) | 0.4x | SVG icon set |
+| Icons | [Temaki](https://github.com/rapideditor/temaki) + [lucide-svelte](https://lucide.dev/) | 5.x + 0.4x | Map device icons (SVG) + UI icons |
 | Cluster merging | [Supercluster](https://github.com/mapbox/supercluster) | 8.x | Hub mode: client-side kd-tree merge of per-backend clusters |
 | Translations | [svelte-i18n](https://github.com/kaisermann/svelte-i18n) | 4.x | ICU message format, runtime locale switching |
 | Database | [PostgreSQL](https://www.postgresql.org/) | 16 | Relational store for playground data |

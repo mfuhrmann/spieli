@@ -18,6 +18,7 @@ export const regionChatUrl = c.regionChatUrl || null;
 
 export const mapZoom = c.mapZoom ?? 12;
 export const mapMinZoom = c.mapMinZoom ?? 10;
+export const mapMaxZoom = c.mapMaxZoom ?? 21;
 
 // Search radius in metres for nearby POIs.
 export const poiRadiusM = c.poiRadiusM ?? 5000;
