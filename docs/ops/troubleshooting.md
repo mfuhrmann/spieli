@@ -211,6 +211,33 @@ The hub polls each backend's `get_meta` at startup and every 5 minutes. If the l
 
 ---
 
+## Backend shows "No position set" in instance drawer
+
+**Symptom:** The Hub instance drawer auto-opens and a backend shows a warning: "No position set" with a link to troubleshooting docs.
+
+**Cause:** The backend entry in `registry.json` has neither a `centroid` field nor a valid `bbox` from its `get_meta` response. Without position data, the backend cannot be placed on the macro view map.
+
+**Fix:** Add a `centroid` field to the backend's entry in `registry.json`:
+
+```json
+{
+  "instances": [
+    {
+      "slug": "your-region",
+      "url": "https://your-backend.example.com/api",
+      "name": "Your Region",
+      "centroid": [10.5, 51.2]
+    }
+  ]
+}
+```
+
+The `centroid` should be the approximate geographic center of the region in WGS84 coordinates `[lon, lat]`. Once the first import completes, the `bbox` from `get_meta` takes over and the `centroid` is only used as a fallback.
+
+**See also:** [registry.json Reference](../reference/registry-json.md) for the full schema.
+
+---
+
 ## Hub backend returns "function not found" errors
 
 **Symptom:** The hub operator checks the data-node API and gets:

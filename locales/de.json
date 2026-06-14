@@ -415,7 +415,9 @@
     "neverReachable": "noch nie erreichbar",
     "observationStale": "Verbindungsstatus veraltet",
     "importing": "Aktualisierung",
-    "bboxOverlap": "Überschneidung mit {name}"
+    "bboxOverlap": "Überschneidung mit {name}",
+    "noPosition": "Keine Position festgelegt",
+    "troubleshootingLink": "Fehlerbehebung"
   },
   "details": {
     "sizeLabel": "Größe",

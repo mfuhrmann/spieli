@@ -415,7 +415,9 @@
     "neverReachable": "never reachable",
     "observationStale": "Observation status outdated",
     "importing": "updating",
-    "bboxOverlap": "overlaps with {name}"
+    "bboxOverlap": "overlaps with {name}",
+    "noPosition": "No position set",
+    "troubleshootingLink": "Troubleshooting"
   },
   "details": {
     "sizeLabel": "Size",
