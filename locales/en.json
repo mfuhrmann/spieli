@@ -24,7 +24,10 @@
       "shelter": "With shelter",
       "tableTennis": "Table tennis table",
       "soccer": "With football pitch",
-      "basketball": "Basketball court"
+      "basketball": "Basketball court",
+      "fence": "Fenced",
+      "hasDogs": "Dogs allowed",
+      "shade": "With shade"
     },
     "completeness": {
       "title": "Data quality",

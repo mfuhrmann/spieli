@@ -24,7 +24,10 @@
       "shelter": "Avec abri",
       "tableTennis": "Table de ping-pong",
       "soccer": "Avec terrain de football",
-      "basketball": "Terrain de basketball"
+      "basketball": "Terrain de basketball",
+      "fence": "Clôturé",
+      "hasDogs": "Chiens autorisés",
+      "shade": "Avec ombre"
     },
     "completeness": {
       "title": "Qualité des données",

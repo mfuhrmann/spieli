@@ -24,7 +24,10 @@
       "shelter": "Mit Unterstand",
       "tableTennis": "Tischtennisplatte",
       "soccer": "Mit Bolzplatz",
-      "basketball": "Basketballfeld"
+      "basketball": "Basketballfeld",
+      "fence": "Eingezäunt",
+      "hasDogs": "Hunde erlaubt",
+      "shade": "Mit Schatten"
     },
     "completeness": {
       "title": "Datenqualität",

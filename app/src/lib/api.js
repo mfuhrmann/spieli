@@ -59,6 +59,9 @@ const clusterFilterMap = {
     tableTennis:  'filter_table_tennis',
     soccer:       'filter_soccer',
     basketball:   'filter_basketball',
+    fence:        'filter_fence',
+    hasDogs:      'filter_has_dogs',
+    shade:        'filter_shade',
 };
 
 export async function fetchPlaygroundClusters(zoom, extentEPSG3857, baseUrl = defaultApiBaseUrl, signal, filters = null) {
