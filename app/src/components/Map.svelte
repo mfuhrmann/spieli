@@ -1,5 +1,6 @@
 <script>
   import { onMount, onDestroy } from 'svelte';
+  import { get } from 'svelte/store';
   import { Map, View } from 'ol';
   import { Tile as TileLayer, Vector as VectorLayer } from 'ol/layer.js';
   import VectorSource from 'ol/source/Vector.js';
@@ -9,7 +10,7 @@
   import { ScaleLine, defaults as defaultControls } from 'ol/control.js';
   import { defaults as defaultInteractions } from 'ol/interaction/defaults';
 
-  import { mapZoom, mapMinZoom, apiBaseUrl } from '../lib/config.js';
+  import { mapZoom, mapMinZoom, mapMaxZoom, apiBaseUrl } from '../lib/config.js';
   import {
     playgroundStyleFn,
     selectionStyle,
@@ -99,6 +100,7 @@
       center: transform([10.5, 51.2], 'EPSG:4326', 'EPSG:3857'), // Germany fallback
       zoom: mapZoom,
       minZoom: mapMinZoom,
+      maxZoom: mapMaxZoom,
     });
 
     olMap = new Map({
@@ -123,6 +125,10 @@
       if (equipmentLayer) { olMap.removeLayer(equipmentLayer); equipmentLayer = null; }
       if (treeLayer)      { olMap.removeLayer(treeLayer);      treeLayer      = null; }
 
+      // Capture current tier to properly gate overlay visibility
+      const currentTier = get(activeTierStore);
+      const isPolygonTier = currentTier === 'polygon';
+
       if (equipment.length > 0) {
         const src = new VectorSource();
         const olFeatures = new GeoJSON().readFeatures(
@@ -134,6 +140,7 @@
           source: src,
           zIndex: 20,
           style: equipmentLayerStyleFn,
+          visible: isPolygonTier,
           properties: { kind: 'overlay' },
         });
         olMap.addLayer(equipmentLayer);
@@ -145,7 +152,12 @@
           { type: 'FeatureCollection', features: trees },
           { dataProjection: 'EPSG:4326', featureProjection: 'EPSG:3857' }
         ));
-        treeLayer = new VectorLayer({ source: src, zIndex: 15, style: treeStyleFn });
+        treeLayer = new VectorLayer({ 
+          source: src, 
+          zIndex: 15, 
+          style: treeStyleFn,
+          visible: isPolygonTier
+        });
         olMap.addLayer(treeLayer);
       }
     });
@@ -154,7 +166,7 @@
     // Used to auto-clear selection when the user zooms out 2+ levels.
     let selectionZoom = null;
     olMap.on('moveend', () => {
-      if (selectionZoom !== null && view.getZoom() <= selectionZoom - 4) {
+      if (selectionZoom !== null && view.getZoom() <= selectionZoom - 2) {
         selection.clear();
         selectionZoom = null;
       }
@@ -183,8 +195,8 @@
         selectionZoom = null;
         view.fit(polygonHit.getGeometry().getExtent(), {
           padding: [40, 40, 40, 420], // right/top/bottom clear; 420 = sidebar width + margin
-          maxZoom: 19,
           duration: 400,
+          maxZoom: mapMaxZoom,
           callback: () => { selectionZoom = view.getZoom(); },
         });
         return;
@@ -196,7 +208,7 @@
         const center = clusterHit.getGeometry().getCoordinates();
         view.animate({
           center,
-          zoom: Math.min((view.getZoom() ?? 0) + 2, view.getMaxZoom?.() ?? 19),
+          zoom: Math.min((view.getZoom() ?? 0) + 2, view.getMaxZoom?.() ?? 21),
           duration: 400,
         });
         return;
@@ -223,6 +235,7 @@
           view.fit(transformExtent(bbox4326, 'EPSG:4326', 'EPSG:3857'), {
             padding: [40, 40, 40, 420],
             duration: 400,
+            maxZoom: mapMaxZoom,
           });
         }
         return;
@@ -311,6 +324,8 @@
         playgroundLayer.setVisible(false);
         clusterLayer.setVisible(false);
         macroLayer.setVisible(false);
+        if (equipmentLayer) equipmentLayer.setVisible(false);
+        if (treeLayer) treeLayer.setVisible(false);
         return;
       }
       // P2: dismiss the popup whenever we leave macro tier.
@@ -318,6 +333,9 @@
       playgroundLayer.setVisible(tier === 'polygon');
       clusterLayer.setVisible(tier === 'cluster');
       macroLayer.setVisible(tier === 'macro');
+      // Equipment and tree overlays only visible in polygon tier
+      if (equipmentLayer) equipmentLayer.setVisible(tier === 'polygon');
+      if (treeLayer) treeLayer.setVisible(tier === 'polygon');
     });
   });
 

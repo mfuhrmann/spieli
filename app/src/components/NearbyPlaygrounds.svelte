@@ -7,6 +7,7 @@
   import { playgroundCompleteness } from '../lib/completeness.js';
   import { fetchPlaygroundByOsmId } from '../lib/api.js';
   import { _ } from 'svelte-i18n';
+  import { mapMaxZoom } from '../lib/config.js';
 
   export let lat;
   export let lon;
@@ -104,8 +105,8 @@
       if (map) {
         map.getView().fit(feature.getGeometry().getExtent(), {
           padding: [40, 40, 40, 420],
-          maxZoom: 19,
           duration: 400,
+          maxZoom: mapMaxZoom,
         });
       }
     }
