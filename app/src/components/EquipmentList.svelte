@@ -496,7 +496,7 @@
     .photo-modal {
       border-radius: 0;
       width: 100vw;
-      height: 100vh;
+      height: 100dvh;
       margin: 0;
       max-width: none;
     }
