@@ -17,9 +17,12 @@
     equipmentLayerStyleFn,
     treeStyleFn,
     clusterTierStyleFn,
+    hoverHighlightStyle,
+    hoverHighlightPolygonStyle,
   } from '../lib/vectorStyles.js';
   import { macroRingStyleFn } from '../hub/macroRingStyle.js';
   import { selection } from '../stores/selection.js';
+  import { equipmentHover } from '../stores/equipmentHover.js';
   import { mapStore } from '../stores/map.js';
   import { playgroundSourceStore } from '../stores/playgroundSource.js';
   import { activeTierStore } from '../stores/tier.js';
@@ -120,6 +123,21 @@
 
     mapStore.set(olMap);
 
+    // Track the currently hovered equipment OSM ID
+    let hoveredOsmId = null;
+    let equipmentSource = null;
+    
+    // Subscribe to equipment hover store
+    const hoverUnsubscribe = equipmentHover.subscribe(id => {
+      hoveredOsmId = id;
+      if (equipmentLayer && equipmentSource) {
+        // Force the layer to re-render with the new hover state
+        equipmentLayer.setStyle(equipmentLayerStyleFn);
+        // Also trigger a change to force re-evaluation
+        equipmentLayer.changed();
+      }
+    });
+
     // Subscribe to overlay features store — rebuild equipment/tree layers on each change
     overlayUnsubscribe = overlayFeaturesStore.subscribe(({ equipment, trees }) => {
       if (equipmentLayer) { olMap.removeLayer(equipmentLayer); equipmentLayer = null; }
@@ -136,10 +154,30 @@
           { dataProjection: 'EPSG:4326', featureProjection: 'EPSG:3857' }
         );
         src.addFeatures(olFeatures);
+        equipmentSource = src;
+        
+        // Custom style function that applies hover highlight
+        const styleFnWithHover = (feature) => {
+          const baseStyle = equipmentLayerStyleFn(feature);
+          const props = feature.getProperties();
+          const osmId = props.osm_id;
+          
+          // If this feature is being hovered, add highlight
+          if (hoveredOsmId === osmId) {
+            const geomType = feature.getGeometry()?.getType();
+            const highlightStyle = (geomType === 'Point' || geomType === 'MultiPoint') 
+              ? hoverHighlightStyle 
+              : hoverHighlightPolygonStyle;
+            return [baseStyle, highlightStyle];
+          }
+          
+          return baseStyle;
+        };
+        
         equipmentLayer = new VectorLayer({
           source: src,
           zIndex: 20,
-          style: equipmentLayerStyleFn,
+          style: styleFnWithHover,
           visible: isPolygonTier,
           properties: { kind: 'overlay' },
         });
@@ -342,6 +380,7 @@
   onDestroy(() => {
     if (overlayUnsubscribe) overlayUnsubscribe();
     if (tierUnsubscribe) tierUnsubscribe();
+    if (hoverUnsubscribe) hoverUnsubscribe();
     if (olMap) {
       olMap.setTarget(undefined);
       mapStore.set(null);
