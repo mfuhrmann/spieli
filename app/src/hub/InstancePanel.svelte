@@ -30,7 +30,9 @@
   // Auto-open panel when there are backends without valid position (bbox + centroid)
   // This addresses issue #598: backends with no data should have some presence
   $: backendsWithoutPosition = $backends.filter(b => !b.loading && !b.error && !b.bbox && !b.nominalCentroid);
-  $: if (backendsWithoutPosition.length > 0 && !open) {
+  let autoOpened = false;
+  $: if (backendsWithoutPosition.length > 0 && !autoOpened) {
+    autoOpened = true;
     open = true;
   }
 
