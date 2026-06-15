@@ -214,9 +214,6 @@ CREATE MATERIALIZED VIEW public.playground_stats AS
         OR COALESCE(es.for_baby,       false)
         OR COALESCE(es.for_toddler,    false)
         OR COALESCE(es.for_wheelchair, false)
-        OR COALESCE(es.has_fence,       false)
-        OR COALESCE(es.has_dogs,       false)
-        OR COALESCE(es.has_shade,      false)
       ) AS has_equipment,
       -- NULLIF('', '') IS NULL — matches JS truthy semantics on empty-string tags.
       -- operator excluded: it's administrative data, not useful to parents.
