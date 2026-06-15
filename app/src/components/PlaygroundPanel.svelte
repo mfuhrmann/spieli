@@ -414,7 +414,7 @@
 
   // ── Navigation button ────────────────────────────────────────────────────
   function navigateToPlayground() {
-    if (!attr || !centerLat || !centerLon) return;
+    if (!attr || !Number.isFinite(centerLat) || !Number.isFinite(centerLon)) return;
     const title = getPlaygroundTitle(attr, $_);
     // Mobile: use geo: URL to open navigation app
     // Desktop: use OSM directions URL (empty first part = use current location as source)
