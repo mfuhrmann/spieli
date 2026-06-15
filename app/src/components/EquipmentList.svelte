@@ -2,7 +2,6 @@
   import { objDevices, objFitnessStation } from '../lib/objPlaygroundEquipment.js';
   import { getEquipmentAttributesFromProps } from '../lib/equipmentAttributes.js';
   import { _ } from 'svelte-i18n';
-  import { equipmentHover } from '../stores/equipmentHover.js';
   import MapCompleteLink from './MapCompleteLink.svelte';
   import PanoramaxViewer from './PanoramaxViewer.svelte';
 
@@ -56,14 +55,6 @@
   }
   function uid(f) {
     return `dev-${f.properties.osm_id ?? Math.random().toString(36).slice(2)}`;
-  }
-  
-  // Hover highlighting for equipment on the map
-  function handleItemMouseEnter(osmId) {
-    equipmentHover.hover(osmId);
-  }
-  function handleItemMouseLeave() {
-    equipmentHover.clear();
   }
 
   // Group features by type key; flag groups with > 2 items for collapsed rendering.
@@ -177,10 +168,8 @@
             onclick={() => toggleItem(groupId)}
             aria-expanded={openItems.has(groupId)}
             aria-controls={detailId}
-            onmouseenter={() => handleItemMouseEnter(group.structure.properties.osm_id)}
-            onmouseleave={handleItemMouseLeave}
           >
-            {structName}
+            <span class="dot">●</span> {structName}
             <span class="group-badge">{$_('equipment.groupParts', { values: { count: group.children.length } })}</span>
             <span class="bi {openItems.has(groupId) ? 'bi-chevron-up' : 'bi-chevron-down'} device-chevron" aria-hidden="true"></span>
           </button>
@@ -196,10 +185,7 @@
                   {@const childName = childKey
                     ? $_('equipment.devices.' + childKey, { default: childKey })
                     : '?'}
-                  <li
-                    onmouseenter={() => handleItemMouseEnter(child.properties.osm_id)}
-                    onmouseleave={handleItemMouseLeave}
-                  >{childName}</li>
+                  <li><span class="dot">◦</span> {childName}</li>
                 {/each}
               </ul>
             </div>
@@ -221,10 +207,8 @@
           {@const firstDetail = getEquipmentAttributesFromProps(items[0].properties, $_)}
           <li>
             <button type="button" class="device-toggle" onclick={() => toggleItem(groupId)}
-              aria-expanded={openItems.has(groupId)}
-              onmouseenter={() => handleItemMouseEnter(items[0].properties.osm_id)}
-              onmouseleave={handleItemMouseLeave}>
-              <span class="item-count">{items.length}×</span> {name}
+              aria-expanded={openItems.has(groupId)}>
+              <span class="dot">●</span> <span class="item-count">{items.length}×</span> {name}
               <span class="bi {openItems.has(groupId) ? 'bi-chevron-up' : 'bi-chevron-down'} device-chevron"></span>
             </button>
             {#if openItems.has(groupId)}
@@ -245,13 +229,10 @@
           {#each items as f (f.properties.osm_id)}
             {@const detail = getEquipmentAttributesFromProps(f.properties, $_)}
             {@const id = uid(f)}
-            <li
-              onmouseenter={() => handleItemMouseEnter(f.properties.osm_id)}
-              onmouseleave={handleItemMouseLeave}
-            >
+            <li>
               {#if detail.html || detail.panoramaxUuid}
                 <button type="button" class="device-toggle" onclick={() => toggleItem(id)}>
-                  {name}
+                  <span class="dot">●</span> {name}
                   <span class="bi {openItems.has(id) ? 'bi-chevron-up' : 'bi-chevron-down'} device-chevron"></span>
                 </button>
                 {#if openItems.has(id)}
@@ -268,7 +249,7 @@
                   </div>
                 {/if}
               {:else}
-                {name}
+                <span class="dot">●</span> {name}
               {/if}
             </li>
           {/each}
@@ -281,10 +262,8 @@
           {@const firstDetail = getEquipmentAttributesFromProps(items[0].properties, $_)}
           <li>
             <button type="button" class="device-toggle" onclick={() => toggleItem('fit-group')}
-              aria-expanded={openItems.has('fit-group')}
-              onmouseenter={() => handleItemMouseEnter(items[0].properties.osm_id)}
-              onmouseleave={handleItemMouseLeave}>
-              <span class="item-count">{items.length}×</span> {$_('equipment.fitnessDefault')}
+              aria-expanded={openItems.has('fit-group')}>
+              <span class="dot">●</span> <span class="item-count">{items.length}×</span> {$_('equipment.fitnessDefault')}
               <span class="bi {openItems.has('fit-group') ? 'bi-chevron-up' : 'bi-chevron-down'} device-chevron"></span>
             </button>
             {#if openItems.has('fit-group')}
@@ -309,13 +288,10 @@
               : $_('equipment.fitnessDefault')}
             {@const detail = getEquipmentAttributesFromProps(f.properties, $_)}
             {@const id = uid(f)}
-            <li
-              onmouseenter={() => handleItemMouseEnter(f.properties.osm_id)}
-              onmouseleave={handleItemMouseLeave}
-            >
+            <li>
               {#if detail.html || detail.panoramaxUuid}
                 <button type="button" class="device-toggle" onclick={() => toggleItem(id)}>
-                  {name}
+                  <span class="dot">●</span> {name}
                   <span class="bi {openItems.has(id) ? 'bi-chevron-up' : 'bi-chevron-down'} device-chevron"></span>
                 </button>
                 {#if openItems.has(id)}
@@ -332,7 +308,7 @@
                   </div>
                 {/if}
               {:else}
-                {name}
+                <span class="dot">●</span> {name}
               {/if}
             </li>
           {/each}
@@ -342,10 +318,8 @@
       {#if pitchFeatures.length}
         <li>
           <button type="button" class="device-toggle" onclick={() => toggleItem('pitches')}
-            aria-expanded={openItems.has('pitches')}
-            onmouseenter={() => handleItemMouseEnter(pitchFeatures[0].properties.osm_id)}
-            onmouseleave={handleItemMouseLeave}>
-            <span class="item-count">{pitchFeatures.length}×</span>
+            aria-expanded={openItems.has('pitches')}>
+            <span class="dot">●</span> <span class="item-count">{pitchFeatures.length}×</span>
             {$_('equipment.pitchDefault')}
             <span class="bi {openItems.has('pitches') ? 'bi-chevron-up' : 'bi-chevron-down'} device-chevron"></span>
           </button>
@@ -357,11 +331,9 @@
                   ? sports.map(s => $_('equipment.pitches.' + s, { default: s })).join(' / ')
                   : $_('equipment.pitchDefault')}
                 {@const detail = getEquipmentAttributesFromProps(f.properties, $_)}
-                <li class="pitch-sub"
-                    onmouseenter={() => handleItemMouseEnter(f.properties.osm_id)}
-                    onmouseleave={handleItemMouseLeave}>
+                <li class="pitch-sub">
                   <span class="pitch-sub-row">
-                    {label}
+                    <span class="dot">◦</span> {label}
                     <MapCompleteLink href={detail.mcUrl} label="" />
                   </span>
                   {#if detail.panoramaxUuid}
@@ -383,7 +355,7 @@
       {#each Object.entries(fallbackCounts) as [key, count]}
         {@const name = $_('equipment.devices.' + key, { default: objDevices[key]?.name_de ?? key })}
         <li>
-          {#if count > 1}<span class="item-count">{count}×</span> {/if}{name}
+          <span class="dot">●</span> {#if count > 1}<span class="item-count">{count}×</span> {/if}{name}
         </li>
       {/each}
     </ul>
@@ -456,6 +428,7 @@
   .device-toggle { cursor: pointer; user-select: none; }
   .device-toggle:hover { text-decoration: underline; }
   .device-chevron { font-size: 0.7rem; margin-left: 0.25rem; }
+  .dot { color: #000; margin-right: 0.4rem; }
   .device-detail {
     margin: 0.25rem 0 0.5rem 1rem;
     font-size: smaller;

@@ -133,23 +133,6 @@ export const selectionStyle = new Style({
     stroke: new Stroke({ color: '#ff0000', width: 3 })
 });
 
-// ── Hover highlight style for equipment (when hovering list items) ────────────
-// Uses a yellow-orange highlight to distinguish from red selection
-
-export const hoverHighlightStyle = new Style({
-    image: new Circle({
-        radius: 8,
-        fill: new Fill({ color: 'rgba(255, 193, 7, 0.4)' }),
-        stroke: new Stroke({ color: '#ffc107', width: 4 })
-    })
-});
-
-// For polygon features, use a filled style with border
-export const hoverHighlightPolygonStyle = new Style({
-    fill: new Fill({ color: 'rgba(255, 193, 7, 0.2)' }),
-    stroke: new Stroke({ color: '#ffc107', width: 3, lineDash: [5, 2] })
-});
-
 // ── Equipment point / polygon styles ─────────────────────────────────────────
 
 const circleRadius = 3.5;
