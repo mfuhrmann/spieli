@@ -405,7 +405,10 @@
     "lastReachableHours": "dernière connexion : il y a {h} h",
     "neverReachable": "jamais accessible",
     "observationStale": "Statut d'observation obsolète",
-    "importing": "mise à jour"
+    "importing": "mise à jour",
+    "bboxOverlap": "chevauche avec {name}",
+    "noPosition": "Aucune position définie",
+    "troubleshootingLink": "Dépannage"
   },
   "details": {
     "sizeLabel": "Taille",

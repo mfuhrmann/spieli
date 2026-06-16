@@ -27,6 +27,15 @@
   $: isLoading = !$registryError && $backends.length === 0;
   $: hasRegistryError = !!$registryError;
 
+  // Auto-open panel when there are backends without valid position (bbox + centroid)
+  // This addresses issue #598: backends with no data should have some presence
+  $: backendsWithoutPosition = $backends.filter(b => !b.loading && !b.error && !b.bbox && !b.nominalCentroid);
+  let autoOpened = false;
+  $: if (backendsWithoutPosition.length > 0 && !autoOpened) {
+    autoOpened = true;
+    open = true;
+  }
+
   // Fractional progress while the first load is still in flight. `completed`
   // counts every backend that has settled (success or error) so the fraction
   // grows monotonically; errors still surface per-row in the drawer.
@@ -99,6 +108,7 @@
     class="pill"
     class:pill--error={hasRegistryError}
     class:pill--loading={isLoading || showProgress}
+    class:pill--has-issues={backendsWithoutPosition.length > 0}
     type="button"
     onclick={toggle}
     aria-expanded={open}
@@ -118,7 +128,11 @@
         {$_('hub.regionProgress', { values: { completed: completedCount, total: totalCount } })}
       </span>
     {:else}
-      <Globe class="pill__icon" aria-hidden="true" />
+      {#if backendsWithoutPosition.length > 0}
+        <AlertTriangle class="pill__icon pill__icon--warning" aria-hidden="true" />
+      {:else}
+        <Globe class="pill__icon" aria-hidden="true" />
+      {/if}
       <!-- Full label on desktop, count-only on mobile to save space -->
       <span class="pill__text pill__text--full">
         {$_('hub.regionCount', { values: { count: regionCount } })}
@@ -179,10 +193,18 @@
     color: #6b7280;
   }
 
+  .pill--has-issues {
+    color: #d97706;
+  }
+
   :global(.pill__icon) {
     width: 16px;
     height: 16px;
     flex-shrink: 0;
+  }
+
+  :global(.pill__icon--warning) {
+    color: #d97706;
   }
 
   .pill__text {

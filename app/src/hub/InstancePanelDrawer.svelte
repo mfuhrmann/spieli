@@ -190,6 +190,14 @@
                 </span>
               {/if}
             </div>
+          {:else if !b.bbox && !b.nominalCentroid}
+            <div class="instance-status text-warning">
+              <i class="bi bi-exclamation-triangle-fill me-1"></i>
+              {$_('hub.noPosition')}
+              <span class="instance-freshness text-muted">
+                · <a href="https://mfuhrmann.github.io/spieli/ops/troubleshooting/" target="_blank" rel="noopener">{$_('hub.troubleshootingLink')}</a>
+              </span>
+            </div>
           {:else}
             <div class="instance-status text-muted">
               <i class="bi bi-geo-alt-fill me-1"></i>

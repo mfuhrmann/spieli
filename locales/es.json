@@ -405,7 +405,10 @@
     "lastReachableHours": "último contacto: hace {h} h",
     "neverReachable": "nunca accesible",
     "observationStale": "Estado de observación desactualizado",
-    "importing": "actualizando"
+    "importing": "actualizando",
+    "bboxOverlap": "se superpone con {name}",
+    "noPosition": "No se ha establecido ninguna posición",
+    "troubleshootingLink": "Solución de problemas"
   },
   "details": {
     "sizeLabel": "Tamaño",
