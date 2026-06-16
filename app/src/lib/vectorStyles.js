@@ -133,6 +133,21 @@ export const selectionStyle = new Style({
     stroke: new Stroke({ color: '#ff0000', width: 3 })
 });
 
+// ── Hover highlight style for equipment (when hovering list items) ────────────
+// Using light gray to avoid clashing with equipment colors and playground quality colors
+export const hoverHighlightStyle = new Style({
+    image: new Circle({
+        radius: 8,
+        fill: new Fill({ color: 'rgba(200, 200, 200, 0.4)' }),
+        stroke: new Stroke({ color: '#c8c8c8', width: 4 })
+    })
+});
+
+export const hoverHighlightPolygonStyle = new Style({
+    fill: new Fill({ color: 'rgba(200, 200, 200, 0.2)' }),
+    stroke: new Stroke({ color: '#c8c8c8', width: 3, lineDash: [5, 2] })
+});
+
 // ── Equipment point / polygon styles ─────────────────────────────────────────
 
 const circleRadius = 3.5;
@@ -348,7 +363,9 @@ export function equipmentLayerStyleFn(feature) {
         if (!result) result = getIconFromPlaygroundEquip(playground, leisure);
         
         if (result && result.iconName) {
-            const iconUrl = getColoredIconUrl(result.iconName, strokeColor);
+            // Use white for pitch icons so they're visible on the green polygon
+            const iconColor = (leisure === 'pitch') ? '#ffffff' : strokeColor;
+            const iconUrl = getColoredIconUrl(result.iconName, iconColor);
             return new Style({
                 image: new Icon({
                     src: iconUrl,
@@ -372,38 +389,31 @@ export function equipmentLayerStyleFn(feature) {
     }
 
     if (geomType === 'LineString' || geomType === 'MultiLineString') {
-        // For way objects (zipwire, benches, etc.), show icon at midpoint
+        // For way objects (zipwire, benches, etc.), show icon at center
         let result = getIconFromObjFeatures(feature);
         if (!result) result = getIconFromPlaygroundEquip(playground, leisure);
         
         if (result && result.iconName) {
             const geometry = feature.getGeometry();
-            let pointGeom;
-            if (geomType === 'LineString') {
-                const coords = geometry.getCoordinates();
-                const midIndex = Math.floor(coords.length / 2);
-                pointGeom = new Point(coords[midIndex]);
-            } else {
-                const lines = geometry.getLineStrings();
-                if (lines.length > 0) {
-                    const coords = lines[0].getCoordinates();
-                    const midIndex = Math.floor(coords.length / 2);
-                    pointGeom = new Point(coords[midIndex]);
-                }
-            }
-            if (pointGeom) {
-                const iconUrl = getColoredIconUrl(result.iconName, strokeColor);
-                return new Style({
-                    image: new Icon({
-                        src: iconUrl,
-                        width: result.iconSizePx,
-                        height: result.iconSizePx,
-                        anchor: [0.5, 0.5],
-                        displacement: [0, 0]
-                    }),
-                    geometry: pointGeom
-                });
-            }
+            // Use extent to get the center, which works for both LineString and MultiLineString
+            const extent = geometry.getExtent();
+            const centerX = (extent[0] + extent[2]) / 2;
+            const centerY = (extent[1] + extent[3]) / 2;
+            const pointGeom = new Point([centerX, centerY]);
+            
+            // Use white for pitch icons so they're visible on the green polygon
+            const iconColor = (leisure === 'pitch') ? '#ffffff' : strokeColor;
+            const iconUrl = getColoredIconUrl(result.iconName, iconColor);
+            return new Style({
+                image: new Icon({
+                    src: iconUrl,
+                    width: result.iconSizePx,
+                    height: result.iconSizePx,
+                    anchor: [0.5, 0.5],
+                    displacement: [0, 0]
+                }),
+                geometry: pointGeom
+            });
         }
         return new Style({ stroke: new Stroke({ color: strokeColor, width: 3 }) });
     }
@@ -411,21 +421,42 @@ export function equipmentLayerStyleFn(feature) {
     // For polygon geometries - render as filled polygons with icons on top for specific types
     // Pitch polygons should keep their polygon rendering
     if (geomType === 'Polygon' || geomType === 'MultiPolygon') {
-        // Special case: pitch polygons keep their polygon fill/stroke
+        // Special case: pitch polygons - show polygon fill + table_soccer icon on top
         if (leisure === 'pitch') {
-            return new Style({
-                fill: new Fill({ color: fillColor }),
-                stroke: new Stroke({ color: strokeColor, width: 2 })
-            });
+            const geometry = feature.getGeometry();
+            const extent = geometry.getExtent();
+            const centerX = (extent[0] + extent[2]) / 2;
+            const centerY = (extent[1] + extent[3]) / 2;
+            const pointGeom = new Point([centerX, centerY]);
+            // Use white for the icon so it's visible on the green polygon
+            const iconUrl = getColoredIconUrl('table_soccer', '#ffffff');
+            return [
+                // Polygon fill/stroke
+                new Style({
+                    fill: new Fill({ color: fillColor }),
+                    stroke: new Stroke({ color: strokeColor, width: 2 })
+                }),
+                // Icon on top
+                new Style({
+                    image: new Icon({
+                        src: iconUrl,
+                        width: 40,
+                        height: 40,
+                        anchor: [0.5, 0.5],
+                        displacement: [0, 0]
+                    }),
+                    geometry: pointGeom
+                })
+            ];
         }
         
         // For structure polygons, show icon at centroid
         if (playground === 'structure') {
             const geometry = feature.getGeometry();
-            const center = geometry.getExtent();
-            center[0] = (center[0] + center[2]) / 2;
-            center[1] = (center[1] + center[3]) / 2;
-            const pointGeom = new Point(center);
+            const extent = geometry.getExtent();
+            const centerX = (extent[0] + extent[2]) / 2;
+            const centerY = (extent[1] + extent[3]) / 2;
+            const pointGeom = new Point([centerX, centerY]);
             const iconUrl = getColoredIconUrl('play_structure', strokeColor);
             return new Style({
                 image: new Icon({
@@ -442,10 +473,10 @@ export function equipmentLayerStyleFn(feature) {
         // For fitness station polygons, show icon at centroid
         if (leisure === 'fitness_station') {
             const geometry = feature.getGeometry();
-            const center = geometry.getExtent();
-            center[0] = (center[0] + center[2]) / 2;
-            center[1] = (center[1] + center[3]) / 2;
-            const pointGeom = new Point(center);
+            const extent = geometry.getExtent();
+            const centerX = (extent[0] + extent[2]) / 2;
+            const centerY = (extent[1] + extent[3]) / 2;
+            const pointGeom = new Point([centerX, centerY]);
             const iconUrl = getColoredIconUrl('gym', objColors.activity);
             return new Style({
                 image: new Icon({
@@ -463,10 +494,10 @@ export function equipmentLayerStyleFn(feature) {
         if (playground && playground !== 'yes' && playground in objDevices) {
             const iconName = DEVICE_ICON_MAP[playground] ?? ICON_MAP[objDevices[playground].category] ?? 'play_structure';
             const geometry = feature.getGeometry();
-            const center = geometry.getExtent();
-            center[0] = (center[0] + center[2]) / 2;
-            center[1] = (center[1] + center[3]) / 2;
-            const pointGeom = new Point(center);
+            const extent = geometry.getExtent();
+            const centerX = (extent[0] + extent[2]) / 2;
+            const centerY = (extent[1] + extent[3]) / 2;
+            const pointGeom = new Point([centerX, centerY]);
             const iconUrl = getColoredIconUrl(iconName, strokeColor);
             return new Style({
                 image: new Icon({
@@ -484,10 +515,10 @@ export function equipmentLayerStyleFn(feature) {
         const result = getIconFromObjFeatures(feature);
         if (result && result.iconName) {
             const geometry = feature.getGeometry();
-            const center = geometry.getExtent();
-            center[0] = (center[0] + center[2]) / 2;
-            center[1] = (center[1] + center[3]) / 2;
-            const pointGeom = new Point(center);
+            const extent = geometry.getExtent();
+            const centerX = (extent[0] + extent[2]) / 2;
+            const centerY = (extent[1] + extent[3]) / 2;
+            const pointGeom = new Point([centerX, centerY]);
             const iconUrl = getColoredIconUrl(result.iconName, strokeColor);
             return new Style({
                 image: new Icon({
