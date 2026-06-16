@@ -12,7 +12,7 @@ The easiest way to deploy spieli is with the interactive installer. It downloads
 ## Install
 
 ```bash
-TAG=v0.6.1  # check https://github.com/mfuhrmann/spieli/releases for the latest tag
+TAG=v0.6.2  # check https://github.com/mfuhrmann/spieli/releases for the latest tag
 curl -fsSL "https://github.com/mfuhrmann/spieli/releases/download/${TAG}/install.sh" -o install.sh
 curl -fsSL "https://github.com/mfuhrmann/spieli/releases/download/${TAG}/install.sh.sha256" -o install.sh.sha256
 sha256sum --check install.sh.sha256 && bash install.sh
@@ -93,7 +93,7 @@ If someone is running a spieli Hub and you want your region to appear on it, sta
 **1. Run the installer**
 
 ```bash
-TAG=v0.6.1  # check https://github.com/mfuhrmann/spieli/releases for the latest tag
+TAG=v0.6.2  # check https://github.com/mfuhrmann/spieli/releases for the latest tag
 curl -fsSL "https://github.com/mfuhrmann/spieli/releases/download/${TAG}/install.sh" -o install.sh
 curl -fsSL "https://github.com/mfuhrmann/spieli/releases/download/${TAG}/install.sh.sha256" -o install.sh.sha256
 sha256sum --check install.sh.sha256 && bash install.sh
