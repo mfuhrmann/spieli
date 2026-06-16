@@ -56,6 +56,9 @@ Pre-aggregated cluster buckets for the cluster tier. Each bucket counts playgrou
 | `filter_table_tennis` | `boolean` | `false` | When `true`, include only playgrounds with a table tennis table |
 | `filter_soccer` | `boolean` | `false` | When `true`, include only playgrounds with a football pitch |
 | `filter_basketball` | `boolean` | `false` | When `true`, include only playgrounds with a basketball court |
+| `filter_fence` | `boolean` | `false` | When `true`, include only playgrounds with a fence |
+| `filter_has_dogs` | `boolean` | `false` | When `true`, include only playgrounds where dogs are allowed |
+| `filter_shade` | `boolean` | `false` | When `true`, include only playgrounds with shade |
 | `filter_complete` | `boolean` | `true` | When `false`, exclude complete playgrounds |
 | `filter_partial` | `boolean` | `true` | When `false`, exclude partial playgrounds |
 | `filter_missing` | `boolean` | `true` | When `false`, exclude missing playgrounds |
@@ -95,7 +98,7 @@ Polygon-tier RPC. Returns the same `FeatureCollection` shape as the legacy regio
 |---|---|---|
 | `min_lon`, `min_lat`, `max_lon`, `max_lat` | `float8` | WGS84 bounding box |
 
-**Response** — GeoJSON `FeatureCollection`. Each feature's `properties` include `osm_id`, `osm_type` (`R`, `W`, or `N`), `name`, `leisure`, `operator`, `access`, `surface`, `area`, the playground-stats counts (`tree_count`, `bench_count`, etc.), and the per-equipment booleans (`is_water`, `for_baby`, `for_toddler`, `for_wheelchair`, `has_soccer`, `has_basketball`). The original tag hstore is spread on top so any OSM tag is reachable. Node playgrounds (`osm_type = 'N'`) are returned as small circular polygons (5 m radius buffer around the node point).
+**Response** — GeoJSON `FeatureCollection`. Each feature's `properties` include `osm_id`, `osm_type` (`R`, `W`, or `N`), `name`, `leisure`, `operator`, `access`, `surface`, `area`, the playground-stats counts (`tree_count`, `bench_count`, etc.), and the per-equipment booleans (`is_water`, `for_baby`, `for_toddler`, `for_wheelchair`, `has_soccer`, `has_basketball`, `has_fence`, `has_dogs`, `has_shade`). The original tag hstore is spread on top so any OSM tag is reachable. Node playgrounds (`osm_type = 'N'`) are returned as small circular polygons (5 m radius buffer around the node point).
 
 The equipment booleans are aggregated across all equipment within the playground polygon. `for_baby` is `true` when any equipment has `baby=yes`, `capacity:baby` set, or `playground` ∈ `baby_swing`, `basketswing`, `sandpit`, `springy`. See [Import Pipeline — filter flags](../contributing/import-pipeline.md#filter-flags-for_baby-for_toddler-is_water) for the full trigger list.
 
@@ -120,6 +123,9 @@ The equipment booleans are aggregated across all equipment within the playground
         "tree_count":         12,
         "bench_count":        4,
         "has_soccer":         true,
+        "has_fence":          true,
+        "has_dogs":           false,
+        "has_shade":          true,
         "is_water":           true,
         "for_wheelchair":     false
       }
@@ -160,6 +166,9 @@ Returns lightweight per-playground rows for a bbox — `osm_id`, lon/lat, comple
       "for_wheelchair":    false,
       "has_soccer":        true,
       "has_basketball":    false,
+      "has_fence":         true,
+      "has_dogs":          false,
+      "has_shade":         true,
       "access_restricted": false
     }
   }
@@ -167,6 +176,8 @@ Returns lightweight per-playground rows for a bbox — `osm_id`, lon/lat, comple
 ```
 
 The standalone client doesn't consume this RPC in P1 — the server-bucketed cluster tier covers zoom ≤ 13 directly. The RPC ships now so federated hub clustering (`add-federated-playground-clustering`) and any future "centroid + Supercluster" tier can use it without a schema change.
+
+> Note: the `filter_attrs` object includes `has_fence`, `has_dogs`, and `has_shade` for the new playground filters.
 
 ## `get_meta()` — extended
 

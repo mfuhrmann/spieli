@@ -4,7 +4,8 @@ import { matchesFilters, hasActiveFilters, activeFilterCount } from './filters.j
 const noFilters = {
   private: false, water: false, baby: false, toddler: false,
   wheelchair: false, bench: false, picnic: false, shelter: false,
-  tableTennis: false, soccer: false, basketball: false, standalonePitches: false,
+  tableTennis: false, soccer: false, basketball: false, fence: false,
+  hasDogs: false, shade: false, standalonePitches: false,
   showComplete: true, showPartial: true, showMissing: true,
 };
 
@@ -98,7 +99,31 @@ const noFilters = {
   assert.equal(matchesFilters({}, f), false);
 }
 
-// 13. Multiple active filters — ALL must match
+// 13. fence filter
+{
+  const f = { ...noFilters, fence: true };
+  assert.equal(matchesFilters({ has_fence: true }, f), true);
+  assert.equal(matchesFilters({ has_fence: false }, f), false);
+  assert.equal(matchesFilters({}, f), false);
+}
+
+// 14. hasDogs filter
+{
+  const f = { ...noFilters, hasDogs: true };
+  assert.equal(matchesFilters({ has_dogs: true }, f), true);
+  assert.equal(matchesFilters({ has_dogs: false }, f), false);
+  assert.equal(matchesFilters({}, f), false);
+}
+
+// 15. shade filter
+{
+  const f = { ...noFilters, shade: true };
+  assert.equal(matchesFilters({ has_shade: true }, f), true);
+  assert.equal(matchesFilters({ has_shade: false }, f), false);
+  assert.equal(matchesFilters({}, f), false);
+}
+
+// 16. Multiple active filters — ALL must match
 {
   const f = { ...noFilters, water: true, bench: true };
   assert.equal(matchesFilters({ is_water: true, bench_count: 1 }, f), true);
@@ -106,7 +131,7 @@ const noFilters = {
   assert.equal(matchesFilters({ is_water: false, bench_count: 1 }, f), false);
 }
 
-// 13b. completeness filter — hide by state
+// 17. completeness filter — hide by state
 {
   const completeProps     = { device_count: 1, bench_count: 1, surface: 'rubber', panoramax: '123' };
   const partialProps      = { device_count: 1 };
@@ -136,19 +161,22 @@ const noFilters = {
 
 // --- hasActiveFilters ---
 
-// 14. All false / all true (completeness) → false
+// 18. All false / all true (completeness) → false
 {
   assert.equal(hasActiveFilters(noFilters), false);
 }
 
-// 15. Any regular filter true → true
+// 19. Any regular filter true → true
 {
   assert.equal(hasActiveFilters({ ...noFilters, water: true }), true);
   assert.equal(hasActiveFilters({ ...noFilters, standalonePitches: true }), true);
   assert.equal(hasActiveFilters({ ...noFilters, basketball: true }), true);
+  assert.equal(hasActiveFilters({ ...noFilters, fence: true }), true);
+  assert.equal(hasActiveFilters({ ...noFilters, hasDogs: true }), true);
+  assert.equal(hasActiveFilters({ ...noFilters, shade: true }), true);
 }
 
-// 16. Any completeness state false → true
+// 20. Any completeness state false → true
 {
   assert.equal(hasActiveFilters({ ...noFilters, showComplete: false }), true);
   assert.equal(hasActiveFilters({ ...noFilters, showPartial: false }),  true);
@@ -157,29 +185,29 @@ const noFilters = {
 
 // --- activeFilterCount ---
 
-// 17. No active filters → 0
+// 21. No active filters → 0
 {
   assert.equal(activeFilterCount(noFilters), 0);
 }
 
-// 18. Regular filters count positively
+// 22. Regular filters count positively
 {
   assert.equal(activeFilterCount({ ...noFilters, water: true }), 1);
   assert.equal(activeFilterCount({ ...noFilters, water: true, bench: true }), 2);
 }
 
-// 19. Deactivated completeness states count positively
+// 23. Deactivated completeness states count positively
 {
   assert.equal(activeFilterCount({ ...noFilters, showComplete: false }), 1);
   assert.equal(activeFilterCount({ ...noFilters, showComplete: false, showPartial: false }), 2);
 }
 
-// 20. standalonePitches not counted
+// 24. standalonePitches not counted
 {
   assert.equal(activeFilterCount({ ...noFilters, standalonePitches: true }), 0);
 }
 
-// 21. Mixed: regular + completeness
+// 25. Mixed: regular + completeness
 {
   assert.equal(activeFilterCount({ ...noFilters, water: true, showMissing: false }), 2);
 }

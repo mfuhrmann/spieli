@@ -1,7 +1,7 @@
 <script>
   import { filterStore, hasActiveFilters, activeFilterCount, defaultFilters } from '../stores/filters.js';
   import { _ } from 'svelte-i18n';
-  import { Filter, Droplets, Baby, Accessibility, Armchair, UtensilsCrossed, Home, RectangleHorizontal, Goal, CircleDot, Lock, Layers, BarChart3 } from 'lucide-svelte';
+  import { Filter, Droplets, Baby, Accessibility, Armchair, UtensilsCrossed, Home, RectangleHorizontal, Goal, CircleDot, Lock, Layers, BarChart3, ShieldCheck, Dog, Sun } from 'lucide-svelte';
 
   let open = false;
   let wrap;
@@ -22,6 +22,9 @@
     tableTennis: RectangleHorizontal,
     soccer:      Goal,
     basketball:  CircleDot,
+    fence:       ShieldCheck,
+    hasDogs:     Dog,
+    shade:       Sun,
   };
 
   $: FILTERS = Object.entries(FILTER_ICONS).map(([key, icon]) => ({

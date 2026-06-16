@@ -24,7 +24,10 @@
       "shelter": "Con refugio",
       "tableTennis": "Mesa de ping-pong",
       "soccer": "Con campo de fútbol",
-      "basketball": "Cancha de baloncesto"
+      "basketball": "Cancha de baloncesto",
+      "fence": "Vallado",
+      "hasDogs": "Perros permitidos",
+      "shade": "Con sombra"
     },
     "completeness": {
       "title": "Calidad de datos",

@@ -111,6 +111,9 @@ Several boolean columns in `playground_stats` are computed from equipment found 
 | `is_water` | `playground` contains `water` or ∈ `splash_pad`, `pump` |
 | `for_wheelchair` | `wheelchair=yes` on any equipment |
 | `has_soccer` / `has_basketball` | `leisure=pitch` with matching `sport` value |
+| `has_fence` | `barrier=fence` on playground |
+| `has_dogs` | `dog=yes` on playground |
+| `has_shade` | `shade=yes` on playground |
 
 All flag logic lives in `importer/api.sql` (the `equip_stats` CTE inside `playground_stats`).
 

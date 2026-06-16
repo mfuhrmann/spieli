@@ -182,7 +182,10 @@ CREATE MATERIALIZED VIEW public.playground_stats AS
               OR (e.tags->'playground' = 'basketswing'))                        AS for_toddler,
       BOOL_OR(e.tags->'wheelchair' = 'yes'
               AND (NOT (e.tags ? 'playground')
-                   OR e.tags->'playground' != 'sandpit'))                       AS for_wheelchair
+                   OR e.tags->'playground' != 'sandpit'))                       AS for_wheelchair,
+      BOOL_OR(pl.tags->'barrier' = 'fence')                                   AS has_fence,
+      BOOL_OR(pl.tags->'dog' = 'yes')                                        AS has_dogs,
+      BOOL_OR(pl.tags->'shade' = 'yes')                                       AS has_shade
     FROM all_playgrounds pl
     LEFT JOIN all_equip e ON ST_Intersects(pl.way, e.way)
     GROUP BY pl.osm_id, pl.osm_type
@@ -237,6 +240,9 @@ CREATE MATERIALIZED VIEW public.playground_stats AS
     COALESCE(es.for_baby,       false) AS for_baby,
     COALESCE(es.for_toddler,    false) AS for_toddler,
     COALESCE(es.for_wheelchair, false) AS for_wheelchair,
+    COALESCE(es.has_fence,       false) AS has_fence,
+    COALESCE(es.has_dogs,       false) AS has_dogs,
+    COALESCE(es.has_shade,      false) AS has_shade,
     -- Tiered-delivery (P1): persisted centroid + per-playground completeness
     ST_Centroid(pl.way)                           AS centroid_3857,
     -- NULL-safe: untagged playgrounds (access IS NULL) are public, not NULL.
@@ -336,7 +342,10 @@ AS $$
               'is_water',           COALESCE(s.is_water, false),
               'for_baby',           COALESCE(s.for_baby, false),
               'for_toddler',        COALESCE(s.for_toddler, false),
-              'for_wheelchair',     COALESCE(s.for_wheelchair, false)
+              'for_wheelchair',     COALESCE(s.for_wheelchair, false),
+              'has_fence',          COALESCE(s.has_fence, false),
+              'has_dogs',           COALESCE(s.has_dogs, false),
+              'has_shade',          COALESCE(s.has_shade, false)
             ) || COALESCE(hstore_to_jsonb(pl.tags), '{}'::jsonb)
           )
         )
@@ -369,6 +378,7 @@ COMMENT ON FUNCTION api.get_playgrounds(bigint) IS
 DROP FUNCTION IF EXISTS api.get_playground_clusters(int, float8, float8, float8, float8);
 DROP FUNCTION IF EXISTS api.get_playground_clusters(int, float8, float8, float8, float8, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean);
 DROP FUNCTION IF EXISTS api.get_playground_clusters(int, float8, float8, float8, float8, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean);
+DROP FUNCTION IF EXISTS api.get_playground_clusters(int, float8, float8, float8, float8, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean);
 
 CREATE OR REPLACE FUNCTION api.get_playground_clusters(
   z                   int,
@@ -387,6 +397,9 @@ CREATE OR REPLACE FUNCTION api.get_playground_clusters(
   filter_table_tennis boolean DEFAULT false,
   filter_soccer       boolean DEFAULT false,
   filter_basketball   boolean DEFAULT false,
+  filter_fence        boolean DEFAULT false,
+  filter_has_dogs     boolean DEFAULT false,
+  filter_shade       boolean DEFAULT false,
   filter_complete     boolean DEFAULT true,
   filter_partial      boolean DEFAULT true,
   filter_missing      boolean DEFAULT true
@@ -431,17 +444,20 @@ AS $$
       ps.access_restricted
     FROM public.playground_stats ps, bbox b, cell_size cs
     WHERE ST_Intersects(ps.centroid_3857, b.geom)
-      AND (NOT filter_private     OR NOT ps.access_restricted)
-      AND (NOT filter_water       OR ps.is_water)
-      AND (NOT filter_baby        OR ps.for_baby)
-      AND (NOT filter_toddler     OR ps.for_toddler)
-      AND (NOT filter_wheelchair  OR ps.for_wheelchair)
-      AND (NOT filter_bench       OR ps.bench_count > 0)
-      AND (NOT filter_picnic      OR ps.picnic_count > 0)
-      AND (NOT filter_shelter     OR ps.shelter_count > 0)
-      AND (NOT filter_table_tennis OR ps.table_tennis_count > 0)
-      AND (NOT filter_soccer      OR ps.has_soccer)
-      AND (NOT filter_basketball  OR ps.has_basketball)
+      AND (NOT filter_private        OR NOT ps.access_restricted)
+      AND (NOT filter_water          OR ps.is_water)
+      AND (NOT filter_baby           OR ps.for_baby)
+      AND (NOT filter_toddler        OR ps.for_toddler)
+      AND (NOT filter_wheelchair     OR ps.for_wheelchair)
+      AND (NOT filter_bench          OR ps.bench_count > 0)
+      AND (NOT filter_picnic         OR ps.picnic_count > 0)
+      AND (NOT filter_shelter        OR ps.shelter_count > 0)
+      AND (NOT filter_table_tennis   OR ps.table_tennis_count > 0)
+      AND (NOT filter_soccer         OR ps.has_soccer)
+      AND (NOT filter_basketball     OR ps.has_basketball)
+      AND (NOT filter_fence          OR ps.has_fence)
+      AND (NOT filter_has_dogs       OR ps.has_dogs)
+      AND (NOT filter_shade          OR ps.has_shade)
       AND (
         (ps.completeness = 'complete' AND filter_complete)
         OR (ps.completeness = 'partial'  AND filter_partial)
@@ -482,7 +498,7 @@ AS $$
   FROM aggregated;
 $$;
 
-GRANT EXECUTE ON FUNCTION api.get_playground_clusters(int, float8, float8, float8, float8, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean) TO web_anon;
+GRANT EXECUTE ON FUNCTION api.get_playground_clusters(int, float8, float8, float8, float8, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean) TO web_anon;
 
 -- =========================================================================
 -- 1b. get_playground_centroids(bbox)
@@ -524,6 +540,9 @@ AS $$
           'for_wheelchair',    ps.for_wheelchair,
           'has_soccer',        ps.has_soccer,
           'has_basketball',    ps.has_basketball,
+          'has_fence',         ps.has_fence,
+          'has_dogs',          ps.has_dogs,
+          'has_shade',         ps.has_shade,
           'access_restricted', ps.access_restricted
         )
       )
@@ -631,7 +650,10 @@ AS $$
               'is_water',           COALESCE(s.is_water, false),
               'for_baby',           COALESCE(s.for_baby, false),
               'for_toddler',        COALESCE(s.for_toddler, false),
-              'for_wheelchair',     COALESCE(s.for_wheelchair, false)
+              'for_wheelchair',     COALESCE(s.for_wheelchair, false),
+              'has_fence',          COALESCE(s.has_fence, false),
+              'has_dogs',           COALESCE(s.has_dogs, false),
+              'has_shade',          COALESCE(s.has_shade, false)
             ) || COALESCE(hstore_to_jsonb(pl.tags), '{}'::jsonb)
           )
         )

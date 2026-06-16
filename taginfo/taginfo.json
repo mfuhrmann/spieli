@@ -12,6 +12,7 @@
     },
     "tags": [
         { "key": "access", "object_types": ["node","way","area","relation"], "description": "Differentiation of playgrounds according to their accessibility" },
+        { "key": "barrier", "value": "fence", "object_types": ["node","way","area","relation"], "description": "Displaying features on playgrounds" },
         { "key": "alt_name", "object_types": ["node","way","area","relation"], "description": "Displaying the name of playgrounds" },
         { "key": "amenity", "value": "bench", "object_types": ["node","way","area","relation"], "description": "Displaying features on playgrounds" },
         { "key": "amenity", "value": "bicycle_parking", "object_types": ["node","way","area","relation"], "description": "Displaying features on playgrounds" },
@@ -19,6 +20,7 @@
         { "key": "amenity", "value": "waste_basket", "object_types": ["node","way","area","relation"], "description": "Displaying features on playgrounds" },
         { "key": "artwork_type", "object_types": ["node","way","area","relation"], "description": "Displaying features on playgrounds" },
         { "key": "baby", "object_types": ["node","way","area","relation"], "description": "Information on the target group for playgrounds and playground equipment" },
+        { "key": "dog", "value": "yes", "object_types": ["node","way","area","relation"], "description": "Information on the target group for playgrounds" },
         { "key": "backrest", "object_types": ["node","way","area","relation"], "description": "Displaying details of features on playgrounds" },
         { "key": "barrier", "value": "gate", "object_types": ["node","way","area","relation"], "description": "Displaying features on playgrounds" },
         { "key": "bicycle_parking", "object_types": ["node","way","area","relation"], "description": "Displaying details of features on playgrounds" },
@@ -65,6 +67,7 @@
         { "key": "provided_for:toddler", "object_types": ["node","way","area","relation"], "description": "Information on the target group for playgrounds and playground equipment" },
         { "key": "pump:status", "object_types": ["node","way","area","relation"], "description": "Displaying playground equipment details" },
         { "key": "shelter_type", "object_types": ["node","way","area","relation"], "description": "Displaying details of features on playgrounds" },
+        { "key": "shade", "value": "yes", "object_types": ["node","way","area","relation"], "description": "Displaying features on playgrounds" },
         { "key": "short_name", "object_types": ["node","way","area","relation"], "description": "Displaying the name of playgrounds" },
         { "key": "sport", "object_types": ["node","way","area","relation"], "description": "Displaying details of features on playgrounds" },
         { "key": "step_count", "object_types": ["node","way","area","relation"], "description": "Displaying playground equipment details" },
