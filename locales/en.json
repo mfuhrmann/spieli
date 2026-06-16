@@ -67,7 +67,8 @@
     "osmBtn": "View on OpenStreetMap",
     "closeBtn": "Close",
     "copyLink": "Copy link",
-    "backToMap": "Back to map"
+    "backToMap": "Back to map",
+    "navigateHere": "Take me there"
   },
   "completeness": {
     "legendTitle": "Data Quality",

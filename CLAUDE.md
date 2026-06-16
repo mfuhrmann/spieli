@@ -129,7 +129,7 @@ To test Hub mode locally: set `appMode: 'hub'` in `app/public/config.js`, run `m
 |---|---|
 | `Map.svelte` | OL map, all layers, click/hover handlers, standalone pitch layer (moveend) |
 | `AppShell.svelte` | Top-level shell used by both modes: mounts Map, manages deeplink restore, wires keyboard shortcuts |
-| `PlaygroundPanel.svelte` | Fetches and displays equipment/trees/POIs for selected playground; writes to `overlayFeaturesStore` |
+| `PlaygroundPanel.svelte` | Fetches and displays equipment/trees/POIs for selected playground; writes to `overlayFeaturesStore`; includes "Take me there" navigation button (geo: URL on mobile, OSM directions on desktop) |
 | `EquipmentList.svelte` | Renders device/fitness/pitch/bench lists inside PlaygroundPanel |
 | `NearbyPlaygrounds.svelte` | Shows nearest playgrounds to the selected one; hydrates polygon source on demand |
 | `POIPanel.svelte` | Nearby POI list (cafés, toilets, etc.) shown inside PlaygroundPanel |

@@ -411,6 +411,23 @@
       if (err.name !== 'AbortError') console.warn('Share failed:', err);
     }
   }
+
+  // ── Navigation button ────────────────────────────────────────────────────
+  function navigateToPlayground() {
+    if (!attr || !Number.isFinite(centerLat) || !Number.isFinite(centerLon)) return;
+    const title = getPlaygroundTitle(attr, $_);
+    // Mobile: use geo: URL to open navigation app
+    // Desktop: use OSM directions URL (empty first part = use current location as source)
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(navigator.userAgent);
+    const url = isMobile
+      ? `geo:${centerLat},${centerLon}?q=${centerLat},${centerLon}(${encodeURIComponent(title)})`
+      : `https://www.openstreetmap.org/directions?engine=fossgis_osrm_foot&route=;${centerLat},${centerLon}`;
+    
+    const win = window.open(url, '_blank');
+    if (!win) {
+      console.warn('Navigation popup was blocked');
+    }
+  }
 </script>
 
 {#if feature && attr}
@@ -457,6 +474,7 @@
           {/if}
         </div>
         <div class="flex items-center gap-1 shrink-0">
+          <button class="navigate-btn" onclick={navigateToPlayground} aria-label={$_('info.navigateHere')}>{$_('info.navigateHere')}</button>
           <button class="panel-icon-btn" onclick={() => selection.clear()} aria-label={$_('info.closeBtn')}>
             <X class="h-5 w-5" />
           </button>
@@ -500,13 +518,16 @@
             </div>
           {/if}
         </div>
-        <button class="panel-icon-btn shrink-0" onclick={sharePlayground} aria-label={$_('info.copyLink')}>
-          {#if shareConfirmed}
-            <Check class="h-5 w-5 text-green-600" />
-          {:else}
-            <Share2 class="h-5 w-5" />
-          {/if}
-        </button>
+        <div class="flex items-center gap-1">
+          <button class="navigate-btn" onclick={navigateToPlayground} aria-label={$_('info.navigateHere')}>{$_('info.navigateHere')}</button>
+          <button class="panel-icon-btn shrink-0" onclick={sharePlayground} aria-label={$_('info.copyLink')}>
+            {#if shareConfirmed}
+              <Check class="h-5 w-5 text-green-600" />
+            {:else}
+              <Share2 class="h-5 w-5" />
+            {/if}
+          </button>
+        </div>
       </div>
     {/if}
 
@@ -1050,5 +1071,22 @@
     color: #6b7280;
     line-height: 1.5;
     margin: 0;
+  }
+
+  /* ── Navigation button ────────────────────────────────────────────────── */
+  .navigate-btn {
+    padding: 6px 12px;
+    background: #10b981;
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s;
+  }
+  .navigate-btn:hover {
+    background: #059669;
   }
 </style>

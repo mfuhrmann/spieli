@@ -67,7 +67,8 @@
     "osmBtn": "Voir sur OpenStreetMap",
     "closeBtn": "Fermer",
     "copyLink": "Copier le lien",
-    "backToMap": "Retour à la carte"
+    "backToMap": "Retour à la carte",
+    "navigateHere": "Emmenez-moi ici"
   },
   "completeness": {
     "legendTitle": "Qualité des données",
