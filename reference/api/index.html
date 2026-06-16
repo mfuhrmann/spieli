@@ -1994,6 +1994,24 @@
 <td>When <code>true</code>, include only playgrounds with a basketball court</td>
 </tr>
 <tr>
+<td><code>filter_fence</code></td>
+<td><code>boolean</code></td>
+<td><code>false</code></td>
+<td>When <code>true</code>, include only playgrounds with a fence</td>
+</tr>
+<tr>
+<td><code>filter_has_dogs</code></td>
+<td><code>boolean</code></td>
+<td><code>false</code></td>
+<td>When <code>true</code>, include only playgrounds where dogs are allowed</td>
+</tr>
+<tr>
+<td><code>filter_shade</code></td>
+<td><code>boolean</code></td>
+<td><code>false</code></td>
+<td>When <code>true</code>, include only playgrounds with shade</td>
+</tr>
+<tr>
 <td><code>filter_complete</code></td>
 <td><code>boolean</code></td>
 <td><code>true</code></td>
@@ -2049,7 +2067,7 @@
 </tr>
 </tbody>
 </table>
-<p><strong>Response</strong> — GeoJSON <code>FeatureCollection</code>. Each feature's <code>properties</code> include <code>osm_id</code>, <code>osm_type</code> (<code>R</code>, <code>W</code>, or <code>N</code>), <code>name</code>, <code>leisure</code>, <code>operator</code>, <code>access</code>, <code>surface</code>, <code>area</code>, the playground-stats counts (<code>tree_count</code>, <code>bench_count</code>, etc.), and the per-equipment booleans (<code>is_water</code>, <code>for_baby</code>, <code>for_toddler</code>, <code>for_wheelchair</code>, <code>has_soccer</code>, <code>has_basketball</code>). The original tag hstore is spread on top so any OSM tag is reachable. Node playgrounds (<code>osm_type = 'N'</code>) are returned as small circular polygons (5 m radius buffer around the node point).</p>
+<p><strong>Response</strong> — GeoJSON <code>FeatureCollection</code>. Each feature's <code>properties</code> include <code>osm_id</code>, <code>osm_type</code> (<code>R</code>, <code>W</code>, or <code>N</code>), <code>name</code>, <code>leisure</code>, <code>operator</code>, <code>access</code>, <code>surface</code>, <code>area</code>, the playground-stats counts (<code>tree_count</code>, <code>bench_count</code>, etc.), and the per-equipment booleans (<code>is_water</code>, <code>for_baby</code>, <code>for_toddler</code>, <code>for_wheelchair</code>, <code>has_soccer</code>, <code>has_basketball</code>, <code>has_fence</code>, <code>has_dogs</code>, <code>has_shade</code>). The original tag hstore is spread on top so any OSM tag is reachable. Node playgrounds (<code>osm_type = 'N'</code>) are returned as small circular polygons (5 m radius buffer around the node point).</p>
 <p>The equipment booleans are aggregated across all equipment within the playground polygon. <code>for_baby</code> is <code>true</code> when any equipment has <code>baby=yes</code>, <code>capacity:baby</code> set, or <code>playground</code> ∈ <code>baby_swing</code>, <code>basketswing</code>, <code>sandpit</code>, <code>springy</code>. See <a href="../../contributing/import-pipeline/#filter-flags-for_baby-for_toddler-is_water">Import Pipeline — filter flags</a> for the full trigger list.</p>
 <blockquote>
 <p>Note: the polygon RPC names the water flag <code>is_water</code> (legacy from the materialised-view column). The centroid RPC's <code>filter_attrs</code> payload (below) renames it to <code>has_water</code> for consistency with the other client-side filter keys (<code>for_baby</code>, <code>has_soccer</code>, …). Same boolean, different key.</p>
@@ -2072,12 +2090,15 @@
 <a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="w">        </span><span class="nt">&quot;tree_count&quot;</span><span class="p">:</span><span class="w">         </span><span class="mi">12</span><span class="p">,</span>
 <a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a><span class="w">        </span><span class="nt">&quot;bench_count&quot;</span><span class="p">:</span><span class="w">        </span><span class="mi">4</span><span class="p">,</span>
 <a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a><span class="w">        </span><span class="nt">&quot;has_soccer&quot;</span><span class="p">:</span><span class="w">         </span><span class="kc">true</span><span class="p">,</span>
-<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a><span class="w">        </span><span class="nt">&quot;is_water&quot;</span><span class="p">:</span><span class="w">           </span><span class="kc">true</span><span class="p">,</span>
-<a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a><span class="w">        </span><span class="nt">&quot;for_wheelchair&quot;</span><span class="p">:</span><span class="w">     </span><span class="kc">false</span>
-<a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a><span class="w">      </span><span class="p">}</span>
-<a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a><span class="w">    </span><span class="p">}</span>
-<a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a><span class="w">  </span><span class="p">]</span>
-<a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a><span class="p">}</span>
+<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a><span class="w">        </span><span class="nt">&quot;has_fence&quot;</span><span class="p">:</span><span class="w">          </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a><span class="w">        </span><span class="nt">&quot;has_dogs&quot;</span><span class="p">:</span><span class="w">           </span><span class="kc">false</span><span class="p">,</span>
+<a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a><span class="w">        </span><span class="nt">&quot;has_shade&quot;</span><span class="p">:</span><span class="w">          </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a><span class="w">        </span><span class="nt">&quot;is_water&quot;</span><span class="p">:</span><span class="w">           </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a><span class="w">        </span><span class="nt">&quot;for_wheelchair&quot;</span><span class="p">:</span><span class="w">     </span><span class="kc">false</span>
+<a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a><span class="w">      </span><span class="p">}</span>
+<a id="__codelineno-2-25" name="__codelineno-2-25" href="#__codelineno-2-25"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-2-26" name="__codelineno-2-26" href="#__codelineno-2-26"></a><span class="w">  </span><span class="p">]</span>
+<a id="__codelineno-2-27" name="__codelineno-2-27" href="#__codelineno-2-27"></a><span class="p">}</span>
 </code></pre></div>
 <h2 id="get_playgroundosm_id"><code>get_playground(osm_id)</code><a class="headerlink" href="#get_playgroundosm_id" title="Permanent link">&para;</a></h2>
 <p>Single-feature lookup used by the deeplink-hydration and nearby-list fallback paths when the polygon source isn't populated for the current viewport (cluster tier on first load).</p>
@@ -2115,12 +2136,18 @@
 <a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="w">      </span><span class="nt">&quot;for_wheelchair&quot;</span><span class="p">:</span><span class="w">    </span><span class="kc">false</span><span class="p">,</span>
 <a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="w">      </span><span class="nt">&quot;has_soccer&quot;</span><span class="p">:</span><span class="w">        </span><span class="kc">true</span><span class="p">,</span>
 <a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="w">      </span><span class="nt">&quot;has_basketball&quot;</span><span class="p">:</span><span class="w">    </span><span class="kc">false</span><span class="p">,</span>
-<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="w">      </span><span class="nt">&quot;access_restricted&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span>
-<a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a><span class="w">    </span><span class="p">}</span>
-<a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a><span class="w">  </span><span class="p">}</span>
-<a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a><span class="p">]</span>
+<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="w">      </span><span class="nt">&quot;has_fence&quot;</span><span class="p">:</span><span class="w">         </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a><span class="w">      </span><span class="nt">&quot;has_dogs&quot;</span><span class="p">:</span><span class="w">          </span><span class="kc">false</span><span class="p">,</span>
+<a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a><span class="w">      </span><span class="nt">&quot;has_shade&quot;</span><span class="p">:</span><span class="w">         </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a><span class="w">      </span><span class="nt">&quot;access_restricted&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span>
+<a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a><span class="p">]</span>
 </code></pre></div>
 <p>The standalone client doesn't consume this RPC in P1 — the server-bucketed cluster tier covers zoom ≤ 13 directly. The RPC ships now so federated hub clustering (<code>add-federated-playground-clustering</code>) and any future "centroid + Supercluster" tier can use it without a schema change.</p>
+<blockquote>
+<p>Note: the <code>filter_attrs</code> object includes <code>has_fence</code>, <code>has_dogs</code>, and <code>has_shade</code> for the new playground filters.</p>
+</blockquote>
 <h2 id="get_meta-extended"><code>get_meta()</code> — extended<a class="headerlink" href="#get_meta-extended" title="Permanent link">&para;</a></h2>
 <p>Existing federation-discovery RPC, extended with completeness counts.</p>
 <p><strong>Response shape</strong> (changed in this release):</p>
