@@ -1760,7 +1760,7 @@
 <tr>
 <td><code>centroid</code></td>
 <td>no</td>
-<td><code>[lon, lat]</code> in WGS84 (e.g. <code>[9.93, 51.54]</code>). Sets a fallback position for the macro view ring when the backend has no bbox yet (first import not completed, or import failed). Without this field, a backend with no data is invisible on the macro view map. Once the first import completes, the bbox-derived centroid takes over automatically — no manual update needed.</td>
+<td><code>[lon, lat]</code> in WGS84 (e.g. <code>[9.93, 51.54]</code>). Sets a fallback position for the macro view ring when the backend has no bbox yet (first import not completed, or import failed). Without this field, a backend with no data is invisible on the macro view map. Once the first import completes, the bbox-derived centroid takes over automatically — no manual update needed. <strong>Note:</strong> When a backend has neither <code>bbox</code> nor <code>centroid</code>, the instance panel auto-opens to alert operators, showing a "No position set" warning with a link to troubleshooting docs.</td>
 </tr>
 </tbody>
 </table>
