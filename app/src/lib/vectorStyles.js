@@ -160,18 +160,21 @@ const strokeAlpha  = 1;
 const featureColor = '#394240';
 
 // Colours by equipment category
+// Using 12 distinct colors for all categories to avoid confusion
 export const objColors = {
-    stationary:       '#825c46',
-    structure_parts:  '#825c46',
-    sand:             '#d6a52c',
-    water:            '#0fa1fb',
-    swing:            '#ee4b9e',
-    motion:           '#ee4b9e',
-    balance:          '#5ab2ae',
-    climbing:         '#5ab2ae',
-    rotating:         '#5ab2ae',
-    activity:         '#5ab2ae',
-    fallback:         '#40474a',
+    stationary:       '#825c46',      // Brown - play structures, benches, etc.
+    structure_parts:  '#6b4c3a',      // Darker brown - structural elements
+    sand:             '#d6a52c',      // Gold/sand - sand play
+    water:            '#0fa1fb',      // Blue - water play
+    swing:            '#ee4b9e',      // Pink - swings
+    motion:           '#f06595',      // Lighter pink - motion devices
+    balance:          '#5ab2ae',      // Teal - balance
+    climbing:         '#348981',      // Darker teal - climbing
+    rotating:         '#48cae4',      // Cyan - rotating
+    activity:         '#2980b9',      // Dark blue - fitness/activity
+    other:            '#95a5a6',      // Gray - other/misc
+    topographical:    '#7f8c8d',      // Darker gray - terrain features
+    fallback:         '#40474a',      // Dark gray - fallback/unknown
 };
 
 // Hoisted icon mapping tables to avoid duplication
