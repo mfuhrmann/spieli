@@ -308,9 +308,10 @@ export { clusterRingStyleFn as clusterTierStyleFn } from './clusterStyle.js';
 /** Style function for the equipment overlay layer. Uses Temaki icons for points (SPEC-636). */
 export function equipmentLayerStyleFn(feature) {
     const geomType = feature.getGeometry()?.getType();
-    // Suppress child Point devices of grouped structures (they're shown as one device)
-    // but keep polygon children visible for hit detection
-    if (feature.get('_groupId') && geomType === 'Point') return null;
+    const isGroupedChild = feature.get('_groupId');
+    
+    // Suppress child devices of grouped structures - only the structure icon should be shown
+    if (isGroupedChild) return null;
     
     const playground = feature.get('playground');
     const leisure    = feature.get('leisure');
