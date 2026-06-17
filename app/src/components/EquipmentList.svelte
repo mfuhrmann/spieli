@@ -255,7 +255,7 @@
                 {/if}
                 {#each items as f (f.properties.osm_id)}
                   {@const detail = getEquipmentAttributesFromProps(f.properties, $_)}
-                  <div onmouseenter={() => handleItemMouseEnter(f.properties.osm_id)}
+                  <div role="region" onmouseenter={() => handleItemMouseEnter(f.properties.osm_id)}
                        onmouseleave={handleItemMouseLeave}>
                     {#if !detail.panoramaxUuid}
                       <MapCompleteLink href={detail.mcUrl} label={$_('popup.addPhoto')} />
@@ -278,7 +278,7 @@
                   <span class="bi {openItems.has(id) ? 'bi-chevron-up' : 'bi-chevron-down'} device-chevron"></span>
                 </button>
                 {#if openItems.has(id)}
-                  <div class="device-detail" onmouseenter={() => handleItemMouseEnter(f.properties.osm_id)}
+                  <div class="device-detail" role="region" onmouseenter={() => handleItemMouseEnter(f.properties.osm_id)}
                        onmouseleave={handleItemMouseLeave}>
                     {#if detail.panoramaxUuid}
                       <button type="button" class="photo-thumb-btn" onclick={() => modalUuid = detail.panoramaxUuid} title={$_('popup.devicePhoto')}>
@@ -319,7 +319,7 @@
                 {/if}
                 {#each items as f (f.properties.osm_id)}
                   {@const detail = getEquipmentAttributesFromProps(f.properties, $_)}
-                  <div onmouseenter={() => handleItemMouseEnter(f.properties.osm_id)}
+                  <div role="region" onmouseenter={() => handleItemMouseEnter(f.properties.osm_id)}
                        onmouseleave={handleItemMouseLeave}>
                     {#if !detail.panoramaxUuid}
                       <MapCompleteLink href={detail.mcUrl} label={$_('popup.addPhoto')} />
@@ -346,7 +346,7 @@
                   <span class="bi {openItems.has(id) ? 'bi-chevron-up' : 'bi-chevron-down'} device-chevron"></span>
                 </button>
                 {#if openItems.has(id)}
-                  <div class="device-detail" onmouseenter={() => handleItemMouseEnter(f.properties.osm_id)}
+                  <div class="device-detail" role="region" onmouseenter={() => handleItemMouseEnter(f.properties.osm_id)}
                        onmouseleave={handleItemMouseLeave}>
                     {#if detail.panoramaxUuid}
                       <button type="button" class="photo-thumb-btn" onclick={() => modalUuid = detail.panoramaxUuid} title={$_('popup.devicePhoto')}>
