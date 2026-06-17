@@ -190,6 +190,7 @@ const PNG_TO_TEMAKI = {
     // Pitch icons
     // Note: table_soccer is a foosball table, not table tennis
     table_tennis: 'pitch',
+    table_soccer: 'table_soccer',
     soccer: 'pitch',
     football: 'pitch',
     basketball: 'basketball',
@@ -228,6 +229,7 @@ const DEVICE_ICON_MAP = {
     water_sprayer: 'water_device',
     marble_run: 'play_structure',
     table: 'play_structure',
+    table_soccer: 'table_soccer',
     hammock: 'play_structure',
 };
 
@@ -370,6 +372,8 @@ export function equipmentLayerStyleFn(feature) {
                 iconName = 'basketball';
             } else if (sport === 'volleyball') {
                 iconName = 'volleyball';
+            } else if (sport === 'table_soccer') {
+                iconName = 'table_soccer';
             } else if (!sport) {
                 iconName = 'pitch'; // Generic pitch icon when no sport is specified
             } else {
@@ -449,7 +453,7 @@ export function equipmentLayerStyleFn(feature) {
     // For polygon geometries - render as filled polygons with icons on top for specific types
     // Pitch polygons should keep their polygon rendering
     if (geomType === 'Polygon' || geomType === 'MultiPolygon') {
-        // Special case: pitch polygons - show polygon fill + table_soccer icon on top
+        // Special case: pitch polygons - show polygon fill + sport-specific icon on top
         if (leisure === 'pitch') {
             const geometry = feature.getGeometry();
             const extent = geometry.getExtent();
@@ -463,6 +467,8 @@ export function equipmentLayerStyleFn(feature) {
                 iconName = 'basketball';
             } else if (sport === 'volleyball') {
                 iconName = 'volleyball';
+            } else if (sport === 'table_soccer') {
+                iconName = 'table_soccer';
             } else {
                 // For soccer, football, table_tennis, and any other sport, use generic pitch icon
                 iconName = 'pitch';

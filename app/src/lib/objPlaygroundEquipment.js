@@ -453,6 +453,11 @@ export const objDevices = {
         image: "File:Playground table Herrfurthstraße Berlin Neukölln.jpg",
         category: "sand",
     },
+    table_soccer: {
+        name_de: "Kickertisch",
+        image: "File:Table football 01.jpg",
+        category: "stationary",
+    },
     seat: {
         name_de: "Sitz",
         image: "File:Playground seat Hattenheimer Straße Berlin Tempelhof.jpg",
@@ -614,6 +619,15 @@ export const objFeatures = {
         icon: "table_tennis",
         size: 12,
         image: "File:Outdoor table tennis - geograph.org.uk - 7959772.jpg",
+    },
+    table_soccer: {
+        tags: {
+            leisure: "pitch",
+            sport: "table_soccer",
+        },
+        name_de: "Kicker",
+        icon: "table_soccer",
+        size: 12,
     },
     soccer: {
         tags: {
