@@ -389,8 +389,9 @@ export function equipmentLayerStyleFn(feature) {
         if (!result) result = getIconFromPlaygroundEquip(playground, leisure);
         
         if (result && result.iconName) {
-            // Use white for pitch icons so they're visible on the green polygon
-            const iconColor = (leisure === 'pitch') ? '#ffffff' : strokeColor;
+            // Use the category/stroke color for all point icons (including pitches)
+            // White icons on green polygons are handled separately in the Polygon section
+            const iconColor = strokeColor;
             const iconUrl = getColoredIconUrl(result.iconName, iconColor);
             return new Style({
                 image: new Icon({
@@ -427,8 +428,9 @@ export function equipmentLayerStyleFn(feature) {
             const centerY = (extent[1] + extent[3]) / 2;
             const pointGeom = new Point([centerX, centerY]);
             
-            // Use white for pitch icons so they're visible on the green polygon
-            const iconColor = (leisure === 'pitch') ? '#ffffff' : strokeColor;
+            // Use the category/stroke color for all line icons (including pitches)
+            // White icons on green polygons are handled separately in the Polygon section
+            const iconColor = strokeColor;
             const iconUrl = getColoredIconUrl(result.iconName, iconColor);
             return new Style({
                 image: new Icon({
