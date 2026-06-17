@@ -188,9 +188,11 @@ const PNG_TO_TEMAKI = {
     artwork: 'play_structure',
     bicycle_parking: 'play_structure',
     // Pitch icons
-    table_tennis: 'table_soccer', // Use table_soccer as fallback for table_tennis
-    soccer: 'table_soccer',
-    football: 'table_soccer',
+    // Note: table_soccer is a foosball table, not suitable for soccer fields or tennis tables
+    // Use 'pitch' (generic sport field) for most pitch types
+    table_tennis: 'pitch',
+    soccer: 'pitch',
+    football: 'pitch',
     basketball: 'basketball',
     volleyball: 'volleyball',
     pitch: 'pitch',
@@ -365,18 +367,16 @@ export function equipmentLayerStyleFn(feature) {
             // Use specific icon based on sport tag for pitches
             const sport = feature.get('sport');
             let iconName;
-            if (sport === 'table_tennis') {
-                iconName = 'table_soccer'; // Use table_soccer for table_tennis as fallback
-            } else if (sport === 'soccer' || sport === 'football') {
-                iconName = 'table_soccer'; // Use table_soccer for soccer/football
-            } else if (sport === 'basketball') {
+            if (sport === 'basketball') {
                 iconName = 'basketball';
             } else if (sport === 'volleyball') {
                 iconName = 'volleyball';
             } else if (!sport) {
                 iconName = 'pitch'; // Generic pitch icon when no sport is specified
             } else {
-                iconName = 'pitch'; // Default fallback for any other sport
+                // For soccer, table_tennis, and any other sport, use generic pitch icon
+                // table_soccer is a foosball table, not suitable for soccer fields or tennis
+                iconName = 'pitch';
             }
             return { iconName, iconSizePx: 40 };
         }
@@ -459,15 +459,12 @@ export function equipmentLayerStyleFn(feature) {
             // Use sport-specific icon for pitch polygons
             const sport = feature.get('sport');
             let iconName;
-            if (sport === 'table_tennis') {
-                iconName = 'table_soccer';
-            } else if (sport === 'soccer' || sport === 'football') {
-                iconName = 'table_soccer';
-            } else if (sport === 'basketball') {
+            if (sport === 'basketball') {
                 iconName = 'basketball';
             } else if (sport === 'volleyball') {
                 iconName = 'volleyball';
             } else {
+                // For soccer, table_tennis, and any other sport, use generic pitch icon
                 iconName = 'pitch';
             }
             // Use white for the icon so it's visible on the green polygon
