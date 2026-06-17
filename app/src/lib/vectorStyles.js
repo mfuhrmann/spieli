@@ -188,9 +188,8 @@ const PNG_TO_TEMAKI = {
     artwork: 'play_structure',
     bicycle_parking: 'play_structure',
     // Pitch icons
-    // Note: table_soccer is a foosball table, not suitable for soccer fields or tennis tables
-    // Use 'pitch' (generic sport field) for most pitch types
-    table_tennis: 'pitch',
+    // Use specific icons for each sport type
+    table_tennis: 'table_soccer',  // Use table_soccer (foosball) as closest match for table tennis
     soccer: 'pitch',
     football: 'pitch',
     basketball: 'basketball',
@@ -371,11 +370,12 @@ export function equipmentLayerStyleFn(feature) {
                 iconName = 'basketball';
             } else if (sport === 'volleyball') {
                 iconName = 'volleyball';
+            } else if (sport === 'table_tennis') {
+                iconName = 'table_soccer'; // Use table_soccer (foosball) as closest match for table tennis
             } else if (!sport) {
                 iconName = 'pitch'; // Generic pitch icon when no sport is specified
             } else {
-                // For soccer, table_tennis, and any other sport, use generic pitch icon
-                // table_soccer is a foosball table, not suitable for soccer fields or tennis
+                // For soccer, football, and any other sport, use generic pitch icon
                 iconName = 'pitch';
             }
             // Use 40px to match standard equipment icon size
@@ -465,8 +465,10 @@ export function equipmentLayerStyleFn(feature) {
                 iconName = 'basketball';
             } else if (sport === 'volleyball') {
                 iconName = 'volleyball';
+            } else if (sport === 'table_tennis') {
+                iconName = 'table_soccer'; // Use table_soccer (foosball) as closest match for table tennis
             } else {
-                // For soccer, table_tennis, and any other sport, use generic pitch icon
+                // For soccer, football, and any other sport, use generic pitch icon
                 iconName = 'pitch';
             }
             // Use green color for pitch icons to match equipment list
