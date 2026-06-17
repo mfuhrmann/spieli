@@ -14,7 +14,7 @@ import { playgroundCompleteness } from './completeness.js';
 // ── Colored SVG Icon Data URLs ──────────────────────────────────────────────
 // Pre-encoded SVG templates with __COLOR__ placeholder for runtime color replacement.
 // This is necessary because OL's color property doesn't work with external SVG files.
-// Templates are extracted from actual SVG files in /app/public/img/icons/temaki/
+// Templates are extracted from actual SVG files in /app/public/img/icons/equipment/
 const SVG_TEMPLATES = {
   balance_beam: '<svg viewBox="0 0 15 15" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><path fill="__COLOR__" d="M14.5 11C14.78 11 15 11.22 15 11.5L15 12.5C15 12.78 14.78 13 14.5 13L14 13L14 15L13 15L13 13L2 13L2 15L1 15L1 13L0.5 13C0.22 13 0 12.78 0 12.5L0 11.5C0 11.22 0.22 11 0.5 11L14.5 11ZM12.25 3.5C12.66 3.5 13 3.84 13 4.25C13 4.66 12.66 5 12.25 5L9 5L9 6.63L9.59 8.41L10.74 8.79C11.1 8.91 11.31 9.28 11.24 9.64L11.21 9.74C11.09 10.1 10.72 10.31 10.36 10.24L10.26 10.21L8.76 9.71C8.57 9.65 8.41 9.51 8.33 9.33L8.29 9.24L7.85 7.91L6.75 8.46L6.75 10C6.75 10.38 6.47 10.69 6.1 10.74L6 10.75C5.62 10.75 5.31 10.47 5.26 10.1L5.25 10L5.25 8C5.25 7.75 5.37 7.52 5.57 7.38L5.66 7.33L7 6.66L7 5L3.75 5C3.34 5 3 4.66 3 4.25C3 3.84 3.34 3.5 3.75 3.5L12.25 3.5ZM8 0C8.83 0 9.5 0.67 9.5 1.5C9.5 2.33 8.83 3 8 3C7.17 3 6.5 2.33 6.5 1.5C6.5 0.67 7.17 0 8 0Z"/></svg>',
   bench: '<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 15 15"><path fill="__COLOR__" d="M13.5 3L13.5 6L14.5 6L14.5 8.75L15 8.75L15 10.25L14.5 10.25L14.5 13L13.5 13L13.5 10.25L12.5 10.25L12.5 11.5L11.5 11.5L11.5 10.25L3.5 10.25L3.5 11.5L2.5 11.5L2.5 10.25L1.5 10.25L1.5 13L0.5 13L0.5 10.25L0 10.25L0 8.75L0.5 8.75L0.5 6L1.5 6L1.5 3L13.5 3zM13.5 7L13.5 7L13.5 8L12.5 8L12.5 8.75L13.5 8.75L13.5 7zM11.5 8L3.5 8L3.5 8.75L11.5 8.75L11.5 8zM1.5 7L1.5 7L1.5 8.75L2.5 8.75L2.5 8L1.5 8L1.5 7z"/></svg>',
@@ -53,7 +53,7 @@ function getColoredIconUrl(iconName, color) {
   if (!template) {
     // Fallback to file path for icons not in the template
     console.warn(`No SVG template for icon: ${iconName}`);
-    return `/img/icons/temaki/${iconName}.svg`;
+    return `/img/icons/equipment/${iconName}.svg`;
   }
   return `data:image/svg+xml;utf8,${encodeURIComponent(template.replace(/__COLOR__/g, color))}`;
 }
@@ -178,7 +178,7 @@ export const objColors = {
 };
 
 // Hoisted icon mapping tables to avoid duplication
-const PNG_TO_TEMAKI = {
+const PNG_TO_ICON = {
     bench_backrest_yes: 'bench',
     bench_backrest_no: 'bench',
     waste_basket: 'waste',
@@ -201,7 +201,7 @@ const PNG_TO_TEMAKI = {
     pitch: 'pitch',
 };
 
-// Device-specific Temaki icon mapping (takes precedence over category)
+// Device-specific icon mapping (takes precedence over category)
 const DEVICE_ICON_MAP = {
     slide: 'slide',
     seesaw: 'seesaw',
@@ -236,7 +236,7 @@ const DEVICE_ICON_MAP = {
     hammock: 'play_structure',
 };
 
-// Category to Temaki icon mapping (fallback for devices without specific mapping)
+// Category to icon mapping (fallback for devices without specific mapping)
 const ICON_MAP = {
     swing: 'swing',
     climbing: 'climbing_frame',
@@ -308,7 +308,7 @@ export function treeStyleFn(feature) {
 // See app/src/lib/clusterStyle.js for the renderer + bitmap cache.
 export { clusterRingStyleFn as clusterTierStyleFn } from './clusterStyle.js';
 
-/** Style function for the equipment overlay layer. Uses Temaki icons for points (SPEC-636). */
+/** Style function for the equipment overlay layer. Uses SVG icons for points (SPEC-636). */
 export function equipmentLayerStyleFn(feature) {
     const geomType = feature.getGeometry()?.getType();
     const isGroupedChild = feature.get('_groupId');
@@ -350,7 +350,7 @@ export function equipmentLayerStyleFn(feature) {
                     }
                 }
                 if (matches) {
-                    const iconName = PNG_TO_TEMAKI[feat.icon] ?? feat.icon.replace('.png', '');
+                    const iconName = PNG_TO_ICON[feat.icon] ?? feat.icon.replace('.png', '');
                     const iconSizePx = (feat.size || 12) * 3.33;
                     return { iconName, iconSizePx };
                 }
@@ -391,7 +391,7 @@ export function equipmentLayerStyleFn(feature) {
         return null;
     }
 
-    // For Point geometries, use Temaki icons instead of circles (SPEC-636)
+    // For Point geometries, use SVG icons instead of circles (SPEC-636)
     if (geomType === 'Point' || geomType === 'MultiPoint') {
         let result = getIconFromObjFeatures(feature);
         if (!result) result = getIconFromPlaygroundEquip(playground, leisure);
