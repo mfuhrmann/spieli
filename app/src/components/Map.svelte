@@ -164,7 +164,9 @@
             const highlightStyle = (geomType === 'Point' || geomType === 'MultiPoint') 
               ? hoverHighlightStyle 
               : hoverHighlightPolygonStyle;
-            return [baseStyle, highlightStyle];
+            // Flatten baseStyle if it's an array (e.g., pitch polygons return [polygonStyle, iconStyle])
+            const baseStyles = Array.isArray(baseStyle) ? baseStyle : [baseStyle];
+            return [...baseStyles, highlightStyle];
           }
           
           return baseStyle;
