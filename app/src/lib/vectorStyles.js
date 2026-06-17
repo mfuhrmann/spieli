@@ -378,6 +378,8 @@ export function equipmentLayerStyleFn(feature) {
                 // table_soccer is a foosball table, not suitable for soccer fields or tennis
                 iconName = 'pitch';
             }
+            // Use 40px to match standard equipment icon size
+            // All pitch types in objFeatures now use size 12, which gives 40px
             return { iconName, iconSizePx: 40 };
         }
         return null;

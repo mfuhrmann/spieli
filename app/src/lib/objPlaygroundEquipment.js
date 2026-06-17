@@ -641,7 +641,7 @@ export const objFeatures = {
         },
         name_de: "Sportfeld",
         icon: "pitch",
-        size: 20,
+        size: 12,
     },
     shrub: {
         tags: {
