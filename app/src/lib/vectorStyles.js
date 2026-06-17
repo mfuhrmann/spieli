@@ -469,8 +469,9 @@ export function equipmentLayerStyleFn(feature) {
                 // For soccer, table_tennis, and any other sport, use generic pitch icon
                 iconName = 'pitch';
             }
-            // Use white for the icon so it's visible on the green polygon
-            const iconUrl = getColoredIconUrl(iconName, '#ffffff');
+            // Use green color for pitch icons to match equipment list
+            // Note: This may reduce visibility on the green polygon, but matches user request
+            const iconUrl = getColoredIconUrl(iconName, strokeColor);
             return [
                 // Polygon fill/stroke
                 new Style({
