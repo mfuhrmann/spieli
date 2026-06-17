@@ -137,18 +137,18 @@ export const selectionStyle = new Style({
 });
 
 // ── Hover highlight style for equipment (when hovering list items) ────────────
-// Using light gray to avoid clashing with equipment colors and playground quality colors
+// Using neutral gray to avoid clashing with equipment colors and playground quality colors
 export const hoverHighlightStyle = new Style({
     image: new Circle({
         radius: 8,
-        fill: new Fill({ color: 'rgba(200, 200, 200, 0.4)' }),
-        stroke: new Stroke({ color: '#c8c8c8', width: 4 })
+        fill: new Fill({ color: 'rgba(150, 150, 150, 0.4)' }),
+        stroke: new Stroke({ color: '#969696', width: 4 })
     })
 });
 
 export const hoverHighlightPolygonStyle = new Style({
-    fill: new Fill({ color: 'rgba(200, 200, 200, 0.2)' }),
-    stroke: new Stroke({ color: '#c8c8c8', width: 3, lineDash: [5, 2] })
+    fill: new Fill({ color: 'rgba(150, 150, 150, 0.2)' }),
+    stroke: new Stroke({ color: '#969696', width: 3, lineDash: [5, 2] })
 });
 
 // ── Equipment point / polygon styles ─────────────────────────────────────────
