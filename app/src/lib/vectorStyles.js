@@ -184,7 +184,7 @@ const PNG_TO_TEMAKI = {
     gate: 'gate',
     shelter: 'shelter',
     shrub: 'shrub',
-    picnic_table: 'table_soccer',
+    picnic_table: 'play_structure',
     artwork: 'play_structure',
     bicycle_parking: 'play_structure',
     // Pitch icons
@@ -227,7 +227,7 @@ const DEVICE_ICON_MAP = {
     water_cannon: 'water_device',
     water_sprayer: 'water_device',
     marble_run: 'play_structure',
-    table: 'table_soccer',
+    table: 'play_structure',
     hammock: 'play_structure',
 };
 
