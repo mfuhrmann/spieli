@@ -72,7 +72,7 @@ export function getEquipmentAttributesFromProps(props, t) {
 
     const material = g('material');
     if (material) {
-        const label = tl(t, `equipAttr.materials.${material}`, escapeHtml(material));
+        const label = material.split(';').map(m => tl(t, `equipAttr.materials.${m.trim()}`, escapeHtml(m.trim()))).join(' / ');
         content.push(`${t('equipAttr.material')}: ${label}`);
     }
 

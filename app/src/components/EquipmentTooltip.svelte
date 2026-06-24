@@ -36,7 +36,7 @@
       items.push(`${$_('equipAttr.surface')}: ${label}`);
     }
     if (props.material) {
-      const label = $_('equipAttr.materials.' + props.material, { default: props.material });
+      const label = props.material.split(';').map(m => $_('equipAttr.materials.' + m.trim(), { default: m.trim() })).join(' / ');
       items.push(`${$_('equipAttr.material')}: ${label}`);
     }
     if (props.capacity) items.push(`${$_('equipAttr.capacity')}: ${props.capacity}`);
