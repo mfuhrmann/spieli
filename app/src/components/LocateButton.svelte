@@ -4,7 +4,7 @@
   import { location } from '../stores/location.js';
   import { Navigation2, Loader2 } from 'lucide-svelte';
   import { _ } from 'svelte-i18n';
-  import { onDestroy } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
 
   /** Called with (lat, lon) after a GPS fix is obtained. */
   export let onlocation = null;
@@ -56,6 +56,15 @@
       { timeout: 10000, maximumAge: 60000, enableHighAccuracy: true }
     );
   }
+
+  onMount(async () => {
+    try {
+      const perm = await navigator.permissions.query({ name: 'geolocation' });
+      if (perm.state === 'granted') locate();
+    } catch {
+      // permissions API not supported — skip auto-locate
+    }
+  });
 
   onDestroy(() => {
     if (watchId) {

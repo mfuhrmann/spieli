@@ -7,6 +7,7 @@
   import GeoJSON from 'ol/format/GeoJSON.js';
   import Feature from 'ol/Feature.js';
   import Point from 'ol/geom/Point.js';
+  import { circular } from 'ol/geom/Polygon.js';
   import { transform, transformExtent, fromLonLat } from 'ol/proj';
   import { ScaleLine, defaults as defaultControls } from 'ol/control.js';
   import { defaults as defaultInteractions } from 'ol/interaction/defaults';
@@ -18,7 +19,8 @@
     equipmentLayerStyleFn,
     treeStyleFn,
     clusterTierStyleFn,
-    locationStyleFn,
+    locationDotStyleFn,
+    locationAccuracyStyle,
   } from '../lib/vectorStyles.js';
   import { macroRingStyleFn } from '../hub/macroRingStyle.js';
   import { selection } from '../stores/selection.js';
@@ -166,30 +168,79 @@
 
     // Location marker layer — shows user's current GPS position
     let locationLayer = null;
-    let locationFeature = null;
+    let locationDotFeature = null;
+    let locationAccuracyFeature = null;
     let locationSource = null;
+    let locationAnimFrame = null;
+
+    const locationDotMinZoom = mapMaxZoom - 3;
+
+    function animateLocationDot() {
+      if (locationDotFeature?.getGeometry()) {
+        locationDotFeature.changed();
+        locationAnimFrame = requestAnimationFrame(animateLocationDot);
+      } else {
+        locationAnimFrame = null;
+      }
+    }
+
+    function syncLocationDotVisibility() {
+      if (!locationDotFeature) return;
+      const show = view.getZoom() < locationDotMinZoom;
+      locationDotFeature.setStyle(show ? locationDotStyleFn : () => null);
+      if (show) startLocationAnimation();
+      else stopLocationAnimation();
+    }
+
+    function startLocationAnimation() {
+      if (!locationAnimFrame) locationAnimFrame = requestAnimationFrame(animateLocationDot);
+    }
+
+    function stopLocationAnimation() {
+      if (locationAnimFrame) {
+        cancelAnimationFrame(locationAnimFrame);
+        locationAnimFrame = null;
+      }
+    }
+
     locationUnsubscribe = location.subscribe(loc => {
       if (!locationLayer) {
         if (loc && Number.isFinite(loc.lat) && Number.isFinite(loc.lon)) {
           locationSource = new VectorSource();
-          locationFeature = new Feature({
+          locationAccuracyFeature = new Feature();
+          locationAccuracyFeature.setStyle(locationAccuracyStyle);
+          locationDotFeature = new Feature({
             geometry: new Point(fromLonLat([loc.lon, loc.lat])),
           });
-          locationSource.addFeature(locationFeature);
+          locationDotFeature.setStyle(locationDotStyleFn);
+          if (loc.accuracy > 5) {
+            locationAccuracyFeature.setGeometry(
+              circular([loc.lon, loc.lat], loc.accuracy).transform('EPSG:4326', 'EPSG:3857')
+            );
+          }
+          locationSource.addFeatures([locationAccuracyFeature, locationDotFeature]);
           locationLayer = new VectorLayer({
             source: locationSource,
-            zIndex: 30, // Above all other layers
-            style: locationStyleFn,
+            zIndex: 30,
           });
           olMap.addLayer(locationLayer);
+          syncLocationDotVisibility();
         }
       } else {
         if (loc && Number.isFinite(loc.lat) && Number.isFinite(loc.lon)) {
           locationLayer.setVisible(true);
-          locationFeature.getGeometry().setCoordinates(fromLonLat([loc.lon, loc.lat]));
+          locationDotFeature.getGeometry().setCoordinates(fromLonLat([loc.lon, loc.lat]));
+          if (loc.accuracy > 5) {
+            locationAccuracyFeature.setGeometry(
+              circular([loc.lon, loc.lat], loc.accuracy).transform('EPSG:4326', 'EPSG:3857')
+            );
+          } else {
+            locationAccuracyFeature.setGeometry(null);
+          }
+          syncLocationDotVisibility();
         } else {
-          // Hide location layer when location is cleared
           locationLayer.setVisible(false);
+          stopLocationAnimation();
         }
       }
     });
@@ -205,6 +256,7 @@
       // P1: popup is anchored to a click pixel; dismiss it on any pan/zoom so it
       // doesn't drift away from its ring.
       backendPopup = null;
+      syncLocationDotVisibility();
     });
 
     // Click handler: tier-aware.
@@ -375,6 +427,7 @@
     if (overlayUnsubscribe) overlayUnsubscribe();
     if (tierUnsubscribe) tierUnsubscribe();
     if (locationUnsubscribe) locationUnsubscribe();
+    stopLocationAnimation();
     if (olMap) {
       olMap.setTarget(undefined);
       mapStore.set(null);
