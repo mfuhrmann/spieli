@@ -30,7 +30,7 @@ test.describe('Tiered delivery', () => {
   });
 
   test('polygon tier RPC fires when zoom > clusterMaxZoom', async ({ page }) => {
-    await injectApiConfig(page, { clusterMaxZoom: 10, mapZoom: 14 });
+    await injectApiConfig(page, { clusterMaxZoom: 5, mapZoom: 14 });
     await stubApiRoutes(page);
 
     const bboxReq = page.waitForRequest(/\/rpc\/get_playgrounds_bbox/);
