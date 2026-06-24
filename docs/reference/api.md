@@ -293,7 +293,7 @@ Returns nearby points of interest within `radius_m` metres of the given WGS84 po
 | Emergency | `emergency=yes` + hospital/clinic, or `healthcare:speciality=emergency` |
 | Bus stop | `highway=bus_stop` |
 | Pharmacy | `shop=chemist` |
-| Supermarket / convenience | `shop=supermarket`, `shop=convenience` |
+| Supermarket / convenience / bakery | `shop=supermarket`, `shop=convenience`, `shop=bakery` |
 
 **Response** — JSON array:
 
