@@ -119,6 +119,7 @@ To test Hub mode locally: set `appMode: 'hub'` in `app/public/config.js`, run `m
 | `map.js` | OL map instance reference |
 | `playgroundSource.js` | Shared OL VectorSource for the polygon tier. Non-null while Map.svelte is mounted; reset to `null` on teardown. Widgets (NearbyPlaygrounds, AppShell deeplink restore) hydrate features into it on demand at any zoom — there is no separate "cluster source" store; the cluster `VectorSource` is owned by `StandaloneApp.svelte` and never published, since no widget consumes it externally. |
 | `tier.js` | Active zoom-tier — `null` \| `'cluster'` \| `'polygon'`. Written by the orchestrator, read by Map for layer visibility |
+| `location.js` | User's current GPS position — `{ lat, lon, accuracy } \| null`. Written by LocateButton (manual + auto-locate), read by Map (location marker) and PlaygroundPanel (navigation origin). |
 | `hubLoading.js` | Hub fan-out load progress — `{ loaded, total, settling }`. Written by `hubOrchestrator`, read by the hub UI to show a progress indicator. |
 
 ### Components
@@ -144,7 +145,7 @@ To test Hub mode locally: set `appMode: 'hub'` in `app/public/config.js`, run `m
 | `CompletenessLegend.svelte` | Map legend explaining complete/partial/missing colour coding |
 | `DataContributionModal.svelte` | Modal prompting users to contribute data via MapComplete |
 | `LegalContentModal.svelte` | Modal for imprint / legal content fetched from `get_legal()` |
-| `LocateButton.svelte` | Button that pans map to user's GPS position |
+| `LocateButton.svelte` | Button that pans map to user's GPS position; auto-locates on page load when geolocation permission is already granted |
 | `MapCompleteLink.svelte` | Link to MapComplete for the selected playground; renders nothing when URL is falsy |
 | `AgeChip.svelte` | Badge rendering a playground's minimum age |
 | `ui/` | Primitive UI components (Badge, Button, Card, Input, Sheet) |
@@ -178,6 +179,7 @@ The map manages five OL layers beyond the basemap. Tiered playground delivery us
 3. **treeLayer** (zIndex 15) — natural=tree dots, shown when a playground is selected.
 4. **equipmentLayer** (zIndex 20) — playground devices/pitches/benches, shown when a playground is selected.
 5. **pitchLayer** (zIndex 9) — standalone pitches outside any playground, loaded on `moveend` at zoom ≥ 12, visibility controlled by `filterStore.standalonePitches`.
+6. **locationLayer** (zIndex 30) — user's GPS position. Pulsing blue dot (`#007aff`) inside a white ring at lower zoom levels; translucent accuracy circle at high zoom (top 3 levels). Driven by `location` store.
 
 Equipment and tree layers are driven by `overlayFeaturesStore` (written by PlaygroundPanel, read by Map). Cluster vs polygon visibility is driven by `activeTierStore` (written by the orchestrator).
 
@@ -236,6 +238,8 @@ This catches ordering bugs (e.g. a function referencing a table defined later in
 - `playgroundStyleFn` — playground polygon fill/stroke, colour-coded by completeness
 - `equipmentLayerStyleFn` — equipment points/polygons (green for pitches, teal for fitness, grey for devices)
 - `treeStyle` — small green dot for trees
+- `locationDotStyleFn` — pulsing blue dot for user's GPS position (60 pre-computed styles, 2s cycle)
+- `locationAccuracyStyle` — translucent blue circle showing GPS accuracy in real meters
 
 ## Ops scripts (`scripts/`)
 
