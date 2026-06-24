@@ -172,12 +172,19 @@
     let locationAccuracyFeature = null;
     let locationSource = null;
     let locationAnimFrame = null;
+    let lastPulseStep = -1;
 
     const locationDotMinZoom = mapMaxZoom - 3;
+    const hiddenStyleFn = () => null;
+    const maxAccuracyRadius = 500;
 
     function animateLocationDot() {
       if (locationDotFeature?.getGeometry()) {
-        locationDotFeature.changed();
+        const step = Math.floor((Date.now() % 2000) / (2000 / 60));
+        if (step !== lastPulseStep) {
+          lastPulseStep = step;
+          locationDotFeature.changed();
+        }
         locationAnimFrame = requestAnimationFrame(animateLocationDot);
       } else {
         locationAnimFrame = null;
@@ -187,7 +194,7 @@
     function syncLocationDotVisibility() {
       if (!locationDotFeature) return;
       const show = view.getZoom() < locationDotMinZoom;
-      locationDotFeature.setStyle(show ? locationDotStyleFn : () => null);
+      locationDotFeature.setStyle(show ? locationDotStyleFn : hiddenStyleFn);
       if (show) startLocationAnimation();
       else stopLocationAnimation();
     }
@@ -213,7 +220,7 @@
             geometry: new Point(fromLonLat([loc.lon, loc.lat])),
           });
           locationDotFeature.setStyle(locationDotStyleFn);
-          if (loc.accuracy > 5) {
+          if (loc.accuracy > 5 && loc.accuracy <= maxAccuracyRadius) {
             locationAccuracyFeature.setGeometry(
               circular([loc.lon, loc.lat], loc.accuracy).transform('EPSG:4326', 'EPSG:3857')
             );
@@ -230,7 +237,7 @@
         if (loc && Number.isFinite(loc.lat) && Number.isFinite(loc.lon)) {
           locationLayer.setVisible(true);
           locationDotFeature.getGeometry().setCoordinates(fromLonLat([loc.lon, loc.lat]));
-          if (loc.accuracy > 5) {
+          if (loc.accuracy > 5 && loc.accuracy <= maxAccuracyRadius) {
             locationAccuracyFeature.setGeometry(
               circular([loc.lon, loc.lat], loc.accuracy).transform('EPSG:4326', 'EPSG:3857')
             );
