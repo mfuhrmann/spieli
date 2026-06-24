@@ -15,6 +15,7 @@
   import { _ } from 'svelte-i18n';
 
   import { selection } from '../stores/selection.js';
+  import { location } from '../stores/location.js';
   import { fetchPlaygroundEquipment, fetchNearbyPOIs, fetchTrees, fetchMeta } from '../lib/api.js';
   import { overlayFeaturesStore } from '../stores/overlayLayer.js';
   import { groupEquipment } from '../lib/equipmentGrouping.js';
@@ -419,9 +420,11 @@
     // Mobile: use geo: URL to open navigation app
     // Desktop: use OSM directions URL (empty first part = use current location as source)
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(navigator.userAgent);
+    const loc = $location;
+    const origin = loc ? `${loc.lat},${loc.lon}` : '';
     const url = isMobile
       ? `geo:${centerLat},${centerLon}?q=${centerLat},${centerLon}(${encodeURIComponent(title)})`
-      : `https://www.openstreetmap.org/directions?engine=fossgis_osrm_foot&route=;${centerLat},${centerLon}`;
+      : `https://www.openstreetmap.org/directions?engine=fossgis_osrm_foot&route=${origin};${centerLat},${centerLon}`;
     
     const win = window.open(url, '_blank');
     if (!win) {
