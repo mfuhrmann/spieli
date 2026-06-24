@@ -147,7 +147,7 @@ To test Hub mode locally: set `appMode: 'hub'` in `app/public/config.js`, run `m
 | `LegalContentModal.svelte` | Modal for imprint / legal content fetched from `get_legal()` |
 | `LocateButton.svelte` | Button that pans map to user's GPS position; auto-locates on page load when geolocation permission is already granted |
 | `MapCompleteLink.svelte` | Link to MapComplete for the selected playground; renders nothing when URL is falsy |
-| `AgeChip.svelte` | Badge rendering a playground's minimum age |
+| `AgeChip.svelte` | Age range badge (unused — replaced by baby/toddler pills in PlaygroundPanel) |
 | `ui/` | Primitive UI components (Badge, Button, Card, Input, Sheet) |
 
 #### Standalone mode (`app/src/standalone/`)

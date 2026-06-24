@@ -125,7 +125,7 @@ The equipment booleans are aggregated across all equipment within the playground
         "has_soccer":         true,
         "has_fence":          true,
         "has_dogs":           false,
-        "has_shade":          true,
+        "has_shade":          true,  // true | false | null (untagged)
         "is_water":           true,
         "for_wheelchair":     false
       }
@@ -168,7 +168,7 @@ Returns lightweight per-playground rows for a bbox — `osm_id`, lon/lat, comple
       "has_basketball":    false,
       "has_fence":         true,
       "has_dogs":          false,
-      "has_shade":         true,
+      "has_shade":         true,  // true | false | null (untagged)
       "access_restricted": false
     }
   }
@@ -177,7 +177,7 @@ Returns lightweight per-playground rows for a bbox — `osm_id`, lon/lat, comple
 
 The standalone client doesn't consume this RPC in P1 — the server-bucketed cluster tier covers zoom ≤ 13 directly. The RPC ships now so federated hub clustering (`add-federated-playground-clustering`) and any future "centroid + Supercluster" tier can use it without a schema change.
 
-> Note: the `filter_attrs` object includes `has_fence`, `has_dogs`, and `has_shade` for the new playground filters.
+> Note: the `filter_attrs` object includes `has_fence`, `has_dogs`, and `has_shade` for the new playground filters. `has_shade` is nullable — `true` when `shade=yes`, `false` when `shade=no`, `null` when untagged.
 
 ## `get_meta()` — extended
 

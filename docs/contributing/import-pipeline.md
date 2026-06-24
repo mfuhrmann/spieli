@@ -113,7 +113,7 @@ Several boolean columns in `playground_stats` are computed from equipment found 
 | `has_soccer` / `has_basketball` | `leisure=pitch` with matching `sport` value |
 | `has_fence` | `barrier=fence` on playground |
 | `has_dogs` | `dog=yes` on playground |
-| `has_shade` | `shade=yes` on playground |
+| `has_shade` | `shade` tag on playground — `true` when `shade=yes`, `false` when `shade=no`, `null` when untagged |
 
 All flag logic lives in `importer/api.sql` (the `equip_stats` CTE inside `playground_stats`).
 

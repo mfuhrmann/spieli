@@ -11,7 +11,7 @@
   import { onMount, onDestroy } from 'svelte';
   import OpeningHours from 'opening_hours';
   import { transform } from 'ol/proj';
-  import { X, Share2, Check, ChevronDown, ChevronUp, ChevronRight, Clock, Image, Package, Navigation, Star, Info, Phone, Mail } from 'lucide-svelte';
+  import { X, Share2, Check, ChevronDown, ChevronUp, ChevronRight, Image, Package, Navigation, Star, Info, Phone, Mail } from 'lucide-svelte';
   import { _ } from 'svelte-i18n';
 
   import { selection } from '../stores/selection.js';
@@ -30,7 +30,6 @@
   import ReviewsPanel from './ReviewsPanel.svelte';
   import Badge from './ui/Badge.svelte';
   import Button from './ui/Button.svelte';
-  import AgeChip from './AgeChip.svelte';
 
   /** When true, renders without the fixed sidebar wrapper (for bottom sheet embedding) */
   export let embedded = false;
@@ -298,7 +297,7 @@
 
   // ── Opening hours ─────────────────────────────────────────────────────────
   function openingHoursState(ohStr, t) {
-    const fmt = d => d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+    const fmt = d => d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: false });
     const dayLabel = (d, now) => {
       if (d.toDateString() === now.toDateString()) return t('poi.today');
       const tomorrow = new Date(now); tomorrow.setDate(now.getDate() + 1);
@@ -321,7 +320,7 @@
       }
       if (next) return {
         open: false,
-        text: `${t('poi.closed')} · ${t('poi.opensAt', { values: { day: dayLabel(next, now), time: fmt(next) } })}`,
+        text: t('poi.opensAt', { values: { day: dayLabel(next, now), time: fmt(next) } }),
       };
       return { open: false, text: t('poi.closed') };
     } catch {
@@ -451,32 +450,6 @@
           {#if backendName}
             <p class="backend-name">{backendName}</p>
           {/if}
-          {#if completeness || dataAgeFormatted}
-            <div class="flex items-center gap-2 flex-wrap mt-2">
-              {#if completeness}
-                <Badge variant={completeness.variant}>{$_(completeness.key)}</Badge>
-              {/if}
-              {#if dataAgeFormatted}
-                <button
-                  bind:this={chipEl}
-                  class="data-age-chip"
-                  onclick={toggleDataAgePopover}
-                  title={$_('details.osmDataAgeTitle')}
-                  aria-haspopup="dialog"
-                  aria-controls="data-age-popover"
-                  aria-expanded={dataAgePopoverOpen}
-                >
-                  <Info class="h-3 w-3" />
-                  {$_('details.osmDataAgeChip', { values: { age: dataAgeFormatted } })}
-                  {#if dataAgePopoverOpen}
-                    <ChevronUp class="h-3 w-3" />
-                  {:else}
-                    <ChevronDown class="h-3 w-3" />
-                  {/if}
-                </button>
-              {/if}
-            </div>
-          {/if}
         </div>
         <div class="flex items-center gap-1 shrink-0">
           <button class="navigate-btn" onclick={navigateToPlayground} aria-label={$_('info.navigateHere')}>{$_('info.navigateHere')}</button>
@@ -495,32 +468,6 @@
           {/if}
           {#if backendName}
             <p class="backend-name">{backendName}</p>
-          {/if}
-          {#if completeness || dataAgeFormatted}
-            <div class="flex items-center gap-2 flex-wrap mt-2">
-              {#if completeness}
-                <Badge variant={completeness.variant}>{$_(completeness.key)}</Badge>
-              {/if}
-              {#if dataAgeFormatted}
-                <button
-                  bind:this={chipEl}
-                  class="data-age-chip"
-                  onclick={toggleDataAgePopover}
-                  title={$_('details.osmDataAgeTitle')}
-                  aria-haspopup="dialog"
-                  aria-controls="data-age-popover"
-                  aria-expanded={dataAgePopoverOpen}
-                >
-                  <Info class="h-3 w-3" />
-                  {$_('details.osmDataAgeChip', { values: { age: dataAgeFormatted } })}
-                  {#if dataAgePopoverOpen}
-                    <ChevronUp class="h-3 w-3" />
-                  {:else}
-                    <ChevronDown class="h-3 w-3" />
-                  {/if}
-                </button>
-              {/if}
-            </div>
           {/if}
         </div>
         <div class="flex items-center gap-1">
@@ -542,18 +489,53 @@
         <p class="text-sm text-muted-foreground italic mb-3">{part}</p>
       {/each}
 
-      <!-- Opening Hours + Age -->
-      {#if openingHoursInfo || attr.min_age || attr.max_age}
+      <!-- Data Quality + Data Age -->
+      {#if completeness || dataAgeFormatted}
+        <div class="status-row mb-4">
+          {#if completeness}
+            <Badge variant={completeness.variant}>{$_(completeness.key)}</Badge>
+          {/if}
+          {#if dataAgeFormatted}
+            <button
+              bind:this={chipEl}
+              class="data-age-chip"
+              onclick={toggleDataAgePopover}
+              title={$_('details.osmDataAgeTitle')}
+              aria-haspopup="dialog"
+              aria-controls="data-age-popover"
+              aria-expanded={dataAgePopoverOpen}
+            >
+              <Info class="h-3 w-3" />
+              {$_('details.osmDataAgeChip', { values: { age: dataAgeFormatted } })}
+              {#if dataAgePopoverOpen}
+                <ChevronUp class="h-3 w-3" />
+              {:else}
+                <ChevronDown class="h-3 w-3" />
+              {/if}
+            </button>
+          {/if}
+        </div>
+      {/if}
+
+      <!-- Status pills: opening hours, baby/toddler, shade -->
+      {#if openingHoursInfo || attr.for_baby || attr.for_toddler || attr.has_shade != null}
         <div class="status-row mb-4">
           {#if openingHoursInfo}
-            <div class="status-pill" class:status-pill--open={openingHoursInfo.open} class:status-pill--closed={!openingHoursInfo.open}>
+            <span class="status-pill" class:status-pill--open={openingHoursInfo.open} class:status-pill--closed={!openingHoursInfo.open}>
               <span class="status-dot" class:status-dot--open={openingHoursInfo.open} class:status-dot--closed={!openingHoursInfo.open}></span>
-              <Clock class="h-3.5 w-3.5 shrink-0" />
               <span>{openingHoursInfo.text}</span>
-            </div>
+            </span>
           {/if}
-          {#if attr.min_age || attr.max_age}
-            <AgeChip minAge={attr.min_age ? Number(attr.min_age) : null} maxAge={attr.max_age ? Number(attr.max_age) : null} />
+          {#if attr.for_baby}
+            <span class="status-pill status-pill--info">{$_('details.forBaby')}</span>
+          {/if}
+          {#if attr.for_toddler}
+            <span class="status-pill status-pill--info">{$_('details.forToddler')}</span>
+          {/if}
+          {#if attr.has_shade === true}
+            <span class="status-pill status-pill--open">{$_('details.shaded')}</span>
+          {:else if attr.has_shade === false}
+            <span class="status-pill status-pill--closed">{$_('details.notShaded')}</span>
           {/if}
         </div>
       {/if}
@@ -978,12 +960,14 @@
   }
   .status-pill--open   { background: #ecfdf5; border: 1px solid rgba(16, 185, 129, 0.4); color: #065f46; }
   .status-pill--closed { background: #fef2f2; border: 1px solid rgba(239, 68, 68, 0.4);  color: #b91c1c; }
+  .status-pill--info   { background: #eff6ff; border: 1px solid rgba(59, 130, 246, 0.3); color: #1e40af; cursor: default; }
 
   .status-dot {
     width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
   }
   .status-dot--open   { background: #10b981; }
   .status-dot--closed { background: #ef4444; }
+
 
 
   /* ── Stat cards grid ─────────────────────────────── */

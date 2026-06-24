@@ -696,7 +696,7 @@
     flex: 1;
     overflow-y: auto;
     overscroll-behavior: contain;
-    padding: 0 1rem 1rem;
+    padding: 0.75rem 1rem 1rem;
   }
 
   .side-panel {
