@@ -44,6 +44,9 @@ jobs:
         if: steps.playwright-cache.outputs.cache-hit == 'true'
         run: npx playwright install-deps chromium
 
+      - name: Run unit tests
+        run: make test-unit
+
       - name: Run E2E tests
         run: npm test
 

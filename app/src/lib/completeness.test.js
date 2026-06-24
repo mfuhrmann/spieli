@@ -1,67 +1,110 @@
 import assert from 'node:assert/strict';
 import { playgroundCompleteness } from './completeness.js';
 
-// 1. All three signals present → complete
+// completeness = f(hasPhoto, hasEquipment, hasInfo):
+//   complete = all three present
+//   partial  = at least one present
+//   missing  = none present
+// `name` and `operator` are intentionally NOT signals (see completeness.js).
+
+// --- complete: all three signals ---
+
+// 1. photo + equipment + info → complete
 {
-  const props = { name: 'Playground', panoramax: 'abc123', surface: 'sand' };
-  assert.equal(playgroundCompleteness(props), 'complete');
+  assert.equal(
+    playgroundCompleteness({ panoramax: 'abc123', device_count: 2, surface: 'sand' }),
+    'complete',
+  );
 }
 
-// 2. panoramax: prefix counts as photo → complete
+// 2. panoramax:* prefix counts as photo → complete
 {
-  const props = { name: 'Playground', 'panoramax:sequence': 'abc', operator: 'City' };
-  assert.equal(playgroundCompleteness(props), 'complete');
+  assert.equal(
+    playgroundCompleteness({ 'panoramax:sequence': 'abc', has_soccer: true, opening_hours: 'Mo-Su 08:00-20:00' }),
+    'complete',
+  );
 }
 
-// 3. photo + name, no info → partial
+// --- partial: exactly one or two signals ---
+
+// 3. photo + equipment, no info → partial
 {
-  const props = { name: 'Park', panoramax: 'abc' };
-  assert.equal(playgroundCompleteness(props), 'partial');
+  assert.equal(playgroundCompleteness({ panoramax: 'abc', device_count: 1 }), 'partial');
 }
 
-// 4. name + info, no photo → partial
+// 4. photo + info, no equipment → partial
 {
-  assert.equal(playgroundCompleteness({ name: 'Park', surface: 'grass' }), 'partial');
+  assert.equal(playgroundCompleteness({ panoramax: 'abc', surface: 'grass' }), 'partial');
 }
 
-// 5. photo only → partial
+// 5. equipment + info, no photo → partial
+{
+  assert.equal(playgroundCompleteness({ bench_count: 2, opening_hours: 'x' }), 'partial');
+}
+
+// 6. photo only → partial
 {
   assert.equal(playgroundCompleteness({ panoramax: 'abc' }), 'partial');
 }
 
-// 6. name only → partial
+// 7. equipment only → partial
 {
-  assert.equal(playgroundCompleteness({ name: 'Park' }), 'partial');
+  assert.equal(playgroundCompleteness({ device_count: 1 }), 'partial');
 }
 
-// 7. operator counts as info → partial
-{
-  assert.equal(playgroundCompleteness({ operator: 'City Parks' }), 'partial');
-}
-
-// 8. opening_hours counts as info → partial
+// 8. info only (opening_hours / surface) → partial
 {
   assert.equal(playgroundCompleteness({ opening_hours: 'Mo-Su 08:00-20:00' }), 'partial');
-}
-
-// 9. surface counts as info → partial
-{
   assert.equal(playgroundCompleteness({ surface: 'sand' }), 'partial');
 }
 
-// 10. non-trivial access counts as info → partial
+// 9. non-trivial access counts as info → partial
 {
   assert.equal(playgroundCompleteness({ access: 'private' }), 'partial');
   assert.equal(playgroundCompleteness({ access: 'no' }), 'partial');
   assert.equal(playgroundCompleteness({ access: 'permissive' }), 'partial');
 }
 
+// 10. each equipment flag individually counts as equipment → partial
+{
+  const equipmentProps = [
+    { device_count: 1 },
+    { bench_count: 1 },
+    { shelter_count: 1 },
+    { picnic_count: 1 },
+    { table_tennis_count: 1 },
+    { has_soccer: true },
+    { has_basketball: true },
+    { is_water: true },
+    { for_baby: true },
+    { for_toddler: true },
+    { for_wheelchair: true },
+  ];
+  for (const props of equipmentProps) {
+    assert.equal(playgroundCompleteness(props), 'partial', `expected partial for ${JSON.stringify(props)}`);
+  }
+}
+
+// --- missing: no signals ---
+
 // 11. access: 'yes' does NOT count as info → missing
 {
   assert.equal(playgroundCompleteness({ access: 'yes' }), 'missing');
 }
 
-// 12. none present → missing
+// 12. name and operator are NOT signals → missing
+{
+  assert.equal(playgroundCompleteness({ name: 'Park' }), 'missing');
+  assert.equal(playgroundCompleteness({ operator: 'City Parks' }), 'missing');
+  assert.equal(playgroundCompleteness({ name: 'Park', operator: 'City Parks' }), 'missing');
+}
+
+// 13. zero counts do NOT count as equipment → missing
+{
+  assert.equal(playgroundCompleteness({ device_count: 0, bench_count: 0 }), 'missing');
+}
+
+// 14. nothing relevant → missing
 {
   assert.equal(playgroundCompleteness({}), 'missing');
   assert.equal(playgroundCompleteness({ nearest_highway: 'residential' }), 'missing');
