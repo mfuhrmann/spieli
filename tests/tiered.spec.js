@@ -30,7 +30,11 @@ test.describe('Tiered delivery', () => {
   });
 
   test('polygon tier RPC fires when zoom > clusterMaxZoom', async ({ page }) => {
-    await injectApiConfig(page, { clusterMaxZoom: 10, mapZoom: 14 });
+    // On load StandaloneApp fits the view to the region bbox, which lands at
+    // zoom ~10 regardless of mapZoom. Since `constrainResolution: true` snaps
+    // that fit to integer zoom 10, clusterMaxZoom must be < 10 for the view to
+    // resolve to the polygon tier (zoom > clusterMaxZoom).
+    await injectApiConfig(page, { clusterMaxZoom: 9, mapZoom: 14 });
     await stubApiRoutes(page);
 
     const bboxReq = page.waitForRequest(/\/rpc\/get_playgrounds_bbox/);

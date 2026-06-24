@@ -12,7 +12,7 @@
   import { ScaleLine, defaults as defaultControls } from 'ol/control.js';
   import { defaults as defaultInteractions } from 'ol/interaction/defaults';
 
-  import { mapZoom, mapMinZoom, mapMaxZoom, apiBaseUrl } from '../lib/config.js';
+  import { mapZoom, mapMinZoom, mapMaxZoom, clusterMaxZoom, apiBaseUrl } from '../lib/config.js';
   import {
     playgroundStyleFn,
     selectionStyle,
@@ -141,6 +141,7 @@
       zoom: mapZoom,
       minZoom: mapMinZoom,
       maxZoom: mapMaxZoom,
+      constrainResolution: true,
     });
 
     olMap = new Map({
@@ -279,6 +280,7 @@
           padding: [40, 40, 40, 420], // right/top/bottom clear; 420 = sidebar width + margin
           duration: 400,
           maxZoom: mapMaxZoom,
+          minResolution: view.getResolutionForZoom(clusterMaxZoom + 1),
           callback: () => { selectionZoom = view.getZoom(); },
         });
         return;
