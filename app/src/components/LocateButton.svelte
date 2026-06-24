@@ -2,6 +2,7 @@
   import { fromLonLat } from 'ol/proj';
   import { mapStore } from '../stores/map.js';
   import { location } from '../stores/location.js';
+  import { parseHash } from '../lib/deeplink.js';
   import { Navigation2, Loader2 } from 'lucide-svelte';
   import { _ } from 'svelte-i18n';
   import { onMount, onDestroy } from 'svelte';
@@ -13,39 +14,37 @@
   let error = '';
   let watchId = null;
 
-  function locate() {
+  function locate({ centerMap = true } = {}) {
     if (!navigator.geolocation) {
       error = $_('locate.notSupported');
       return;
     }
-    
-    // Clear any existing watch
+
     if (watchId) {
       navigator.geolocation.clearWatch(watchId);
       watchId = null;
     }
-    
+
     locating = true;
     error = '';
-    
+
     navigator.geolocation.getCurrentPosition(
       pos => {
         locating = false;
         const { latitude, longitude, accuracy } = pos.coords;
-        const coord = fromLonLat([longitude, latitude]);
-        $mapStore?.getView().animate({ center: coord, zoom: 16 });
         location.set({ lat: latitude, lon: longitude, accuracy });
+        if (centerMap) {
+          const coord = fromLonLat([longitude, latitude]);
+          $mapStore?.getView().animate({ center: coord, zoom: 16 });
+        }
         if (onlocation) onlocation(latitude, longitude);
-        
-        // Start watching for continuous updates
+
         watchId = navigator.geolocation.watchPosition(
           pos => {
             const { latitude, longitude, accuracy } = pos.coords;
             location.set({ lat: latitude, lon: longitude, accuracy });
           },
-          err => {
-            // Silently ignore watch errors after initial success
-          },
+          err => {},
           { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
         );
       },
@@ -60,7 +59,9 @@
   onMount(async () => {
     try {
       const perm = await navigator.permissions.query({ name: 'geolocation' });
-      if (perm.state === 'granted') locate();
+      if (perm.state !== 'granted') return;
+      const hasDeeplink = !!parseHash(window.location.hash);
+      locate({ centerMap: !hasDeeplink });
     } catch {
       // permissions API not supported — skip auto-locate
     }
@@ -76,7 +77,7 @@
 <button
   class="control-btn"
   class:error={!!error}
-  onclick={locate}
+  onclick={() => locate()}
   disabled={locating}
   title={error || $_('locate.title')}
   aria-label={$_('locate.title')}

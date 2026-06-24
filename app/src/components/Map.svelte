@@ -63,6 +63,40 @@
   let tierUnsubscribe = null;
   let locationUnsubscribe = null;
 
+  // Location marker state — hoisted to component scope so onDestroy can reach them.
+  let locationLayer = null;
+  let locationDotFeature = null;
+  let locationAccuracyFeature = null;
+  let locationSource = null;
+  let locationAnimFrame = null;
+  let lastPulseStep = -1;
+
+  const maxAccuracyRadius = 500;
+
+  function animateLocationDot() {
+    if (locationDotFeature?.getGeometry()) {
+      const step = Math.floor((Date.now() % 2000) / (2000 / 60));
+      if (step !== lastPulseStep) {
+        lastPulseStep = step;
+        locationDotFeature.changed();
+      }
+      locationAnimFrame = requestAnimationFrame(animateLocationDot);
+    } else {
+      locationAnimFrame = null;
+    }
+  }
+
+  function startLocationAnimation() {
+    if (!locationAnimFrame) locationAnimFrame = requestAnimationFrame(animateLocationDot);
+  }
+
+  function stopLocationAnimation() {
+    if (locationAnimFrame) {
+      cancelAnimationFrame(locationAnimFrame);
+      locationAnimFrame = null;
+    }
+  }
+
   onMount(async () => {
     // The shell owns the sources; fall back to empty ones so the map still
     // renders in degraded paths (e.g. tests that mount Map without a parent).
@@ -166,50 +200,6 @@
       }
     });
 
-    // Location marker layer — shows user's current GPS position
-    let locationLayer = null;
-    let locationDotFeature = null;
-    let locationAccuracyFeature = null;
-    let locationSource = null;
-    let locationAnimFrame = null;
-    let lastPulseStep = -1;
-
-    const locationDotMinZoom = mapMaxZoom - 3;
-    const hiddenStyleFn = () => null;
-    const maxAccuracyRadius = 500;
-
-    function animateLocationDot() {
-      if (locationDotFeature?.getGeometry()) {
-        const step = Math.floor((Date.now() % 2000) / (2000 / 60));
-        if (step !== lastPulseStep) {
-          lastPulseStep = step;
-          locationDotFeature.changed();
-        }
-        locationAnimFrame = requestAnimationFrame(animateLocationDot);
-      } else {
-        locationAnimFrame = null;
-      }
-    }
-
-    function syncLocationDotVisibility() {
-      if (!locationDotFeature) return;
-      const show = view.getZoom() < locationDotMinZoom;
-      locationDotFeature.setStyle(show ? locationDotStyleFn : hiddenStyleFn);
-      if (show) startLocationAnimation();
-      else stopLocationAnimation();
-    }
-
-    function startLocationAnimation() {
-      if (!locationAnimFrame) locationAnimFrame = requestAnimationFrame(animateLocationDot);
-    }
-
-    function stopLocationAnimation() {
-      if (locationAnimFrame) {
-        cancelAnimationFrame(locationAnimFrame);
-        locationAnimFrame = null;
-      }
-    }
-
     locationUnsubscribe = location.subscribe(loc => {
       if (!locationLayer) {
         if (loc && Number.isFinite(loc.lat) && Number.isFinite(loc.lon)) {
@@ -220,9 +210,10 @@
             geometry: new Point(fromLonLat([loc.lon, loc.lat])),
           });
           locationDotFeature.setStyle(locationDotStyleFn);
-          if (loc.accuracy > 5 && loc.accuracy <= maxAccuracyRadius) {
+          const clampedAccuracy = Math.min(loc.accuracy ?? 0, maxAccuracyRadius);
+          if (clampedAccuracy > 0) {
             locationAccuracyFeature.setGeometry(
-              circular([loc.lon, loc.lat], loc.accuracy).transform('EPSG:4326', 'EPSG:3857')
+              circular([loc.lon, loc.lat], clampedAccuracy).transform('EPSG:4326', 'EPSG:3857')
             );
           }
           locationSource.addFeatures([locationAccuracyFeature, locationDotFeature]);
@@ -231,20 +222,21 @@
             zIndex: 30,
           });
           olMap.addLayer(locationLayer);
-          syncLocationDotVisibility();
+          startLocationAnimation();
         }
       } else {
         if (loc && Number.isFinite(loc.lat) && Number.isFinite(loc.lon)) {
           locationLayer.setVisible(true);
           locationDotFeature.getGeometry().setCoordinates(fromLonLat([loc.lon, loc.lat]));
-          if (loc.accuracy > 5 && loc.accuracy <= maxAccuracyRadius) {
+          const clampedAccuracy = Math.min(loc.accuracy ?? 0, maxAccuracyRadius);
+          if (clampedAccuracy > 0) {
             locationAccuracyFeature.setGeometry(
-              circular([loc.lon, loc.lat], loc.accuracy).transform('EPSG:4326', 'EPSG:3857')
+              circular([loc.lon, loc.lat], clampedAccuracy).transform('EPSG:4326', 'EPSG:3857')
             );
           } else {
             locationAccuracyFeature.setGeometry(null);
           }
-          syncLocationDotVisibility();
+          startLocationAnimation();
         } else {
           locationLayer.setVisible(false);
           stopLocationAnimation();
@@ -263,7 +255,6 @@
       // P1: popup is anchored to a click pixel; dismiss it on any pan/zoom so it
       // doesn't drift away from its ring.
       backendPopup = null;
-      syncLocationDotVisibility();
     });
 
     // Click handler: tier-aware.
