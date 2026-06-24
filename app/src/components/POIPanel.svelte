@@ -62,7 +62,7 @@
         seen.add(key);
         return true;
       })
-      .slice(0, 2);
+      .slice(0, 3);
     return { ...cat, matches };
   }).filter(s => s.matches.length);
 </script>
