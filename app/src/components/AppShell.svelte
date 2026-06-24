@@ -744,6 +744,7 @@
     .controls-top-right {
       top: 0.75rem;
       right: 0.75rem;
+      z-index: 300;
     }
 
     .controls-row {
