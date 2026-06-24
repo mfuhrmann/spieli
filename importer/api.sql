@@ -1108,7 +1108,7 @@ AS $$
         OR (p.tags->'emergency' = 'yes'         AND p.amenity IN ('hospital', 'clinic', 'doctors'))
         OR p.tags->'healthcare:speciality' = 'emergency'
         OR p.highway = 'bus_stop'
-        OR p.shop IN ('chemist', 'supermarket', 'convenience')
+        OR p.shop IN ('chemist', 'supermarket', 'convenience', 'bakery')
       )
   ),
   -- Shops/amenities mapped as polygons (e.g. supermarket buildings) — use centroid
@@ -1127,7 +1127,7 @@ AS $$
       AND (
         p.amenity IN ('toilets', 'ice_cream')
         OR (p.amenity IN ('cafe', 'restaurant') AND p.tags->'cuisine' ~* 'ice_cream')
-        OR p.shop IN ('chemist', 'supermarket', 'convenience')
+        OR p.shop IN ('chemist', 'supermarket', 'convenience', 'bakery')
         OR p.tags->'healthcare:speciality' = 'emergency'
       )
   ),

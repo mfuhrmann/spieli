@@ -31,7 +31,7 @@
     },
     {
       icon: '🛒', label: $_('poi.categories.shopping'),
-      match: f => f.shop === 'supermarket' || f.shop === 'convenience',
+      match: f => f.shop === 'supermarket' || f.shop === 'convenience' || f.shop === 'bakery',
       fallback: $_('poi.fallbacks.shopping'),
     },
     {
