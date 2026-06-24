@@ -8,6 +8,7 @@
   import InstancePanel from './InstancePanel.svelte';
   import MacroView from './MacroView.svelte';
 
+  import { resolveRegionFromPath } from '../lib/regionUrl.js';
   import { createRegistry } from './registry.js';
   import { attachHubOrchestrator } from './hubOrchestrator.js';
   import { mapStore } from '../stores/map.js';
@@ -118,15 +119,23 @@
   // immediately jump to the user's location. Resolves within 3 s or falls back.
   let geolocDone = false;
   let geolocCoord = null; // [lon, lat] in EPSG:4326, or null if unavailable
+  let regionUrlDone = false;
+  let regionUrlExtent = null; // [minLon, minLat, maxLon, maxLat] from URL path, or null
+  let regionUrlOsmId = null;
 
   // Fallback extent when no backend bbox is available (e.g. all backends
   // are currently importing). Covers Germany so the map is usable.
   const FALLBACK_BBOX = [5.87, 47.27, 15.04, 55.06];
 
   function tryFit() {
-    if (fitDone || !latestMap || !backendsSettled || !geolocDone) return;
-    if (!geolocCoord && !latestBbox) return;
-    if (geolocCoord) {
+    if (fitDone || !latestMap || !backendsSettled || !geolocDone || !regionUrlDone) return;
+    if (!regionUrlExtent && !geolocCoord && !latestBbox) return;
+    if (regionUrlExtent) {
+      latestMap.getView().fit(
+        transformExtent(regionUrlExtent, 'EPSG:4326', 'EPSG:3857'),
+        { padding: [20, 20, 20, 380], duration: 0 },
+      );
+    } else if (geolocCoord) {
       latestMap.getView().animate({
         center: fromLonLat(geolocCoord),
         zoom: clusterMaxZoom + 1,
@@ -159,6 +168,17 @@
   }
 
   onMount(() => {
+    // Resolve region URL path (e.g. /fulda) in parallel with geolocation.
+    // Region URL takes precedence over geolocation when both resolve.
+    resolveRegionFromPath(window.location.pathname).then(result => {
+      if (result) {
+        regionUrlExtent = result.extent;
+        regionUrlOsmId = result.osmId;
+      }
+      regionUrlDone = true;
+      tryFit();
+    });
+
     // Request geolocation early so the result is likely in hand before
     // backends settle. Uses a 3 s timeout and a 5-min cache so a repeat
     // page-load doesn't trigger another GPS fix. On error or timeout,

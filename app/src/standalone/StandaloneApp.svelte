@@ -17,6 +17,7 @@
     fetchStandaloneEquipment,
   } from '../lib/api.js';
   import { fetchRegionInfo } from '../lib/region.js';
+  import { resolveRegionFromPath } from '../lib/regionUrl.js';
   import { parseHash } from '../lib/deeplink.js';
   import { attachTieredOrchestrator } from '../lib/tieredOrchestrator.js';
   import { equipmentLayerStyleFn } from '../lib/vectorStyles.js';
@@ -96,7 +97,8 @@
       // that mutates window.location.hash while we're waiting on Nominatim.
       const hadDeeplink = parseHash(window.location.hash);
       try {
-        const region = await fetchRegionInfo(osmRelationId);
+        const regionOverride = await resolveRegionFromPath(window.location.pathname);
+        const region = regionOverride || await fetchRegionInfo(osmRelationId);
         document.title = `spieli ${region.name}`;
         const regionExtent = transformExtent(region.extent, 'EPSG:4326', 'EPSG:3857');
         const fitToRegion = () => {
