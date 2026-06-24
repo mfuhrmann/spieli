@@ -6,8 +6,6 @@
 // `(count_bucket, c_frac, p_frac, m_frac)` so pans and zooms don't redraw.
 // The cache has bounded size because count is bucketed and fractions are
 // rounded to tenths → ~400 distinct shapes at the upper bound.
-//
-// All clusters (including single playgrounds) render as rings with count in center.
 
 import Style from 'ol/style/Style.js';
 
@@ -142,7 +140,22 @@ function renderStackedRing(pixelCoords, state) {
   const partial    = feature.get('partial')    ?? 0;
   const missing    = feature.get('missing')    ?? 0;
 
-  // Always show cluster rings (including single playgrounds) with count in center
+  // §4.4 — a cluster of one renders as a solid dot in its completeness colour.
+  if (count <= 1) {
+    const color = complete > 0 ? COLOR.complete
+                : partial  > 0 ? COLOR.partial
+                :                COLOR.missing;
+    const ctx = state.context;
+    ctx.beginPath();
+    ctx.arc(x, y, 5, 0, Math.PI * 2);
+    ctx.fillStyle   = color;
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth   = 1;
+    ctx.fill();
+    ctx.stroke();
+    return;
+  }
+
   const pixelRatio = state.pixelRatio || 1;
   const bitmap = getOrCreateBitmap(count, complete, partial, missing, pixelRatio);
   const w = bitmap.width  / pixelRatio;
@@ -155,7 +168,6 @@ function renderStackedRing(pixelCoords, state) {
 const clusterStyle = new Style({ renderer: renderStackedRing });
 
 export function clusterRingStyleFn(_feature) {
-  // All clusters (single or multiple) render via renderStackedRing as rings with count
   return clusterStyle;
 }
 
