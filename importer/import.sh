@@ -261,6 +261,7 @@ run_import() (
             n/amenity=cafe \
             n/amenity=restaurant \
             n/highway=bus_stop \
+            n/shop=bakery \
             n/shop=chemist \
             n/shop=supermarket \
             n/shop=convenience \
@@ -276,6 +277,7 @@ run_import() (
             w/amenity=ice_cream \
             w/amenity=cafe \
             w/amenity=restaurant \
+            w/shop=bakery \
             w/shop=chemist \
             w/shop=supermarket \
             w/shop=convenience \
