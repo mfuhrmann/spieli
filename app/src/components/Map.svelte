@@ -105,6 +105,7 @@
       zoom: mapZoom,
       minZoom: mapMinZoom,
       maxZoom: mapMaxZoom,
+      constrainResolution: true,
     });
 
     olMap = new Map({
