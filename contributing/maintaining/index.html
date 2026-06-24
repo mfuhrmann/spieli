@@ -1246,6 +1246,57 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#adding-or-removing-a-poi-category" class="md-nav__link">
+    <span class="md-ellipsis">
+      Adding or removing a POI category
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Adding or removing a POI category">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-importer-importerimportsh-osmium-tags-filter" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Importer: importer/import.sh → osmium tags-filter
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-database-importerapisql-get_pois" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Database: importer/api.sql → get_pois()
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-frontend-appsrccomponentspoipanelsvelte-categories" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. Frontend: app/src/components/POIPanel.svelte → CATEGORIES
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-translations-if-adding-a-new-category" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. Translations (if adding a new category)
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#see-also" class="md-nav__link">
     <span class="md-ellipsis">
       See also
@@ -1751,6 +1802,57 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#adding-or-removing-a-poi-category" class="md-nav__link">
+    <span class="md-ellipsis">
+      Adding or removing a POI category
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Adding or removing a POI category">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-importer-importerimportsh-osmium-tags-filter" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Importer: importer/import.sh → osmium tags-filter
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-database-importerapisql-get_pois" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Database: importer/api.sql → get_pois()
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-frontend-appsrccomponentspoipanelsvelte-categories" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. Frontend: app/src/components/POIPanel.svelte → CATEGORIES
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-translations-if-adding-a-new-category" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. Translations (if adding a new category)
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#see-also" class="md-nav__link">
     <span class="md-ellipsis">
       See also
@@ -1904,6 +2006,35 @@
 <a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>npm<span class="w"> </span>audit<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>npm<span class="w"> </span>outdated
 </code></pre></div>
 <p>GitHub Dependabot is configured in <code>.github/dependabot.yml</code> and will open PRs for dependency updates automatically.</p>
+<h2 id="adding-or-removing-a-poi-category">Adding or removing a POI category<a class="headerlink" href="#adding-or-removing-a-poi-category" title="Permanent link">&para;</a></h2>
+<p>Nearby POIs (toilets, shops, bus stops, etc.) are shown in the playground detail panel. To add or remove a category, edit three files:</p>
+<h3 id="1-importer-importerimportsh-osmium-tags-filter">1. Importer: <code>importer/import.sh</code> → osmium tags-filter<a class="headerlink" href="#1-importer-importerimportsh-osmium-tags-filter" title="Permanent link">&para;</a></h3>
+<p>The osmium <code>tags-filter</code> allowlist controls which OSM tags survive the pre-import clip. If a tag is not listed here, nodes/ways carrying it are dropped before osm2pgsql loads them and the database never sees them.</p>
+<p>Add or remove entries for both nodes (<code>n/</code>) and ways (<code>w/</code>):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># Node tags (line ~264)</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>n/shop<span class="o">=</span>bakery<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="c1"># Way tags (line ~280)</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>w/shop<span class="o">=</span>bakery<span class="w"> </span><span class="se">\</span>
+</code></pre></div>
+<p>After editing, a full re-import is required (<code>make import</code>). Tag the PR with <code>requires-reimport</code>.</p>
+<h3 id="2-database-importerapisql-get_pois">2. Database: <code>importer/api.sql</code> → <code>get_pois()</code><a class="headerlink" href="#2-database-importerapisql-get_pois" title="Permanent link">&para;</a></h3>
+<p>The <code>pois_point</code> and <code>pois_polygon</code> CTEs filter OSM nodes and polygons by tag. Add or remove entries from the <code>WHERE</code> clause in both CTEs:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="c1">-- pois_point (line ~1106) and pois_polygon (line ~1128)</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="k">OR</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">shop</span><span class="w"> </span><span class="k">IN</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;chemist&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;supermarket&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;convenience&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;bakery&#39;</span><span class="p">)</span>
+</code></pre></div>
+<p>After editing, run <code>make db-apply</code> to reload the function. Tag the PR with <code>requires-schema-update</code>.</p>
+<h3 id="3-frontend-appsrccomponentspoipanelsvelte-categories">3. Frontend: <code>app/src/components/POIPanel.svelte</code> → <code>CATEGORIES</code><a class="headerlink" href="#3-frontend-appsrccomponentspoipanelsvelte-categories" title="Permanent link">&para;</a></h3>
+<p>Each category in the <code>CATEGORIES</code> array has:</p>
+<ul>
+<li><code>icon</code> — emoji displayed next to the category</li>
+<li><code>label</code> — i18n key for the category name</li>
+<li><code>match</code> — function that tests a POI's tags (must match the SQL filter)</li>
+<li><code>fallback</code> — i18n key shown when no POIs are found</li>
+</ul>
+<p>To add a new category, add an entry to the array. To add an OSM tag to an existing category, extend its <code>match</code> function.</p>
+<h3 id="3-translations-if-adding-a-new-category">3. Translations (if adding a new category)<a class="headerlink" href="#3-translations-if-adding-a-new-category" title="Permanent link">&para;</a></h3>
+<p>Add <code>poi.categories.&lt;name&gt;</code> and <code>poi.fallbacks.&lt;name&gt;</code> keys to all locale files in <code>app/src/i18n/</code>.</p>
+<hr />
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="https://github.com/mfuhrmann/spieli/blob/main/RELEASING.md">RELEASING.md</a> — full release checklist</li>
