@@ -10,6 +10,8 @@
   export let registryError;
   /** @type {import('svelte/store').Readable<Map<string,string[]>>} */
   export let overlapWarnings;
+  /** @type {string|null} URL of the backend matched by region URL resolution */
+  export let highlightedBackendUrl = null;
 
   let open = false;
   let pillEl;
@@ -31,7 +33,7 @@
   // This addresses issue #598: backends with no data should have some presence
   $: backendsWithoutPosition = $backends.filter(b => !b.loading && !b.error && !b.bbox && !b.nominalCentroid);
   let autoOpened = false;
-  $: if (backendsWithoutPosition.length > 0 && !autoOpened) {
+  $: if ((backendsWithoutPosition.length > 0 || highlightedBackendUrl) && !autoOpened) {
     autoOpened = true;
     open = true;
   }
@@ -99,6 +101,7 @@
         backends={$backends}
         registryError={$registryError}
         overlapWarnings={$overlapWarnings}
+        {highlightedBackendUrl}
         onclose={close}
       />
     </div>

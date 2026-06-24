@@ -1,6 +1,7 @@
 <script>
   import { fromLonLat } from 'ol/proj';
   import { mapStore } from '../stores/map.js';
+  import { nominatimFetch } from '../lib/nominatim.js';
   import { Search, Loader2, X } from 'lucide-svelte';
   import { cn } from '../lib/utils.js';
   import { _ } from 'svelte-i18n';
@@ -25,32 +26,21 @@
     }
     searching = true;
     try {
-      const base = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&addressdetails=1&limit=10`;
+      const baseParams = { q, addressdetails: 1, limit: 10 };
       let viewCenterLon = null;
       let viewCenterLat = null;
       let hits;
       if (regionExtent) {
         const [minLon, minLat, maxLon, maxLat] = regionExtent;
-        const viewboxParam = `&viewbox=${minLon},${minLat},${maxLon},${maxLat}`;
+        const viewbox = `${minLon},${minLat},${maxLon},${maxLat}`;
         viewCenterLon = (minLon + maxLon) / 2;
         viewCenterLat = (minLat + maxLat) / 2;
-        // Phase 1: bounded=1 — only results within the current viewport.
-        // Handles common street names that would otherwise be drowned out by
-        // same-named streets in larger cities.
-        const res1 = await fetch(base + viewboxParam + '&bounded=1');
-        if (!res1.ok) throw new Error(`Nominatim error: ${res1.status}`);
-        hits = await res1.json();
-        // Phase 2: fall back to unbounded if the viewport returned nothing —
-        // preserves the ability to search for a city name to navigate there.
+        hits = await nominatimFetch('/search', { ...baseParams, viewbox, bounded: 1 }, { timeout: 0 });
         if (!hits.length) {
-          const res2 = await fetch(base + viewboxParam + '&bounded=0');
-          if (!res2.ok) throw new Error(`Nominatim error: ${res2.status}`);
-          hits = await res2.json();
+          hits = await nominatimFetch('/search', { ...baseParams, viewbox, bounded: 0 }, { timeout: 0 });
         }
       } else {
-        const res = await fetch(base);
-        if (!res.ok) throw new Error(`Nominatim error: ${res.status}`);
-        hits = await res.json();
+        hits = await nominatimFetch('/search', baseParams, { timeout: 0 });
       }
       if (viewCenterLon !== null) {
         hits = hits.slice().sort((a, b) => {

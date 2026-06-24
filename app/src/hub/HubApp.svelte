@@ -121,6 +121,8 @@
   let geolocCoord = null; // [lon, lat] in EPSG:4326, or null if unavailable
   let regionUrlDone = false;
   let regionUrlExtent = null; // [minLon, minLat, maxLon, maxLat] from URL path, or null
+  let regionUrlOsmId = null;  // Nominatim osm_id for backend matching
+  let highlightedBackendUrl = null;
 
   // Fallback extent when no backend bbox is available (e.g. all backends
   // are currently importing). Covers Germany so the map is usable.
@@ -172,6 +174,7 @@
     resolveRegionFromPath(window.location.pathname).then(result => {
       if (result) {
         regionUrlExtent = result.extent;
+        regionUrlOsmId = result.osmId;
       }
       regionUrlDone = true;
       tryFit();
@@ -203,6 +206,10 @@
       // aggregatedBbox already excludes; the only thing the settle-gate
       // changes is the *clamp decision* in tryFit.
       backendsSettled = bs.length > 0 && bs.every(b => !b.loading);
+      if (backendsSettled && regionUrlOsmId && !highlightedBackendUrl) {
+        const match = bs.find(b => b.relationId === regionUrlOsmId);
+        if (match) highlightedBackendUrl = match.url;
+      }
       tryFit();
     });
 
@@ -265,6 +272,6 @@
   {dataContribLinks}
 >
   {#snippet instancePanel()}
-    <InstancePanel {backends} {registryError} {overlapWarnings} />
+    <InstancePanel {backends} {registryError} {overlapWarnings} {highlightedBackendUrl} />
   {/snippet}
 </AppShell>

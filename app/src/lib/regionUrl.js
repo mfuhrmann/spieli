@@ -1,5 +1,6 @@
-const RESERVED_PREFIXES = ['api', 'legal', 'metrics'];
-const NOMINATIM_TIMEOUT_MS = 3000;
+import { nominatimFetch } from './nominatim.js';
+
+const RESERVED_PREFIXES = ['api', 'api2', 'legal', 'metrics'];
 
 export async function resolveRegionFromPath(pathname) {
   if (!pathname || pathname === '/') return null;
@@ -7,21 +8,16 @@ export async function resolveRegionFromPath(pathname) {
   const segments = pathname.replace(/^\/+|\/+$/g, '').split('/');
   if (segments.length !== 1 || !segments[0]) return null;
 
-  const candidate = decodeURIComponent(segments[0]).toLowerCase();
-  if (RESERVED_PREFIXES.includes(candidate)) return null;
-
-  const query = decodeURIComponent(segments[0]);
-  const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5&featureType=settlement`;
-
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), NOMINATIM_TIMEOUT_MS);
+  const candidate = decodeURIComponent(segments[0]);
+  if (candidate.includes('.')) return null;
+  if (RESERVED_PREFIXES.includes(candidate.toLowerCase())) return null;
 
   try {
-    const res = await fetch(url, { signal: controller.signal });
-    clearTimeout(timer);
-    if (!res.ok) return null;
-
-    const results = await res.json();
+    const results = await nominatimFetch('/search', {
+      q: candidate,
+      limit: 5,
+      featuretype: 'settlement',
+    });
     if (!results.length) return null;
 
     const best =
@@ -30,16 +26,18 @@ export async function resolveRegionFromPath(pathname) {
       results.find(r => r.boundingbox) ||
       results[0];
 
-    if (!best.boundingbox) return null;
+    if (!best.boundingbox || best.boundingbox.length !== 4) return null;
 
-    const [minLat, maxLat, minLon, maxLon] = best.boundingbox.map(Number);
+    const bbox = best.boundingbox.map(Number);
+    if (!bbox.every(Number.isFinite)) return null;
+
+    const [minLat, maxLat, minLon, maxLon] = bbox;
     return {
       name: best.display_name.split(',')[0].trim(),
       extent: [minLon, minLat, maxLon, maxLat],
       osmId: Number(best.osm_id),
     };
   } catch {
-    clearTimeout(timer);
     return null;
   }
 }
