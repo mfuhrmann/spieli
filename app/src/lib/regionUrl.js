@@ -11,7 +11,7 @@ export async function resolveRegionFromPath(pathname) {
   if (RESERVED_PREFIXES.includes(candidate)) return null;
 
   const query = decodeURIComponent(segments[0]);
-  const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5&featuretype=settlement`;
+  const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5&featureType=settlement`;
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), NOMINATIM_TIMEOUT_MS);

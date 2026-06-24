@@ -121,7 +121,6 @@
   let geolocCoord = null; // [lon, lat] in EPSG:4326, or null if unavailable
   let regionUrlDone = false;
   let regionUrlExtent = null; // [minLon, minLat, maxLon, maxLat] from URL path, or null
-  let regionUrlOsmId = null;
 
   // Fallback extent when no backend bbox is available (e.g. all backends
   // are currently importing). Covers Germany so the map is usable.
@@ -173,7 +172,6 @@
     resolveRegionFromPath(window.location.pathname).then(result => {
       if (result) {
         regionUrlExtent = result.extent;
-        regionUrlOsmId = result.osmId;
       }
       regionUrlDone = true;
       tryFit();
