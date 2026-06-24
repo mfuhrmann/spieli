@@ -18,21 +18,21 @@ SAFE_CHAT_URL=$(printf '%s'        "${REGION_CHAT_URL:-}" | tr -cd 'A-Za-z0-9:/.
 
 # Legal URLs — IMPRESSUM_URL / PRIVACY_URL override env vars take priority.
 # If unset, construct from SITE_URL + path (assuming nginx serves the
-# generated files at /impressum and /datenschutz).
+# generated files at /legal/impressum and /legal/datenschutz).
 SAFE_SITE_URL=$(printf '%s' "${SITE_URL:-}" | tr -cd 'A-Za-z0-9:/.+_%~-')
 if [ -n "${IMPRESSUM_URL:-}" ]; then
     SAFE_IMPRESSUM_URL=$(printf '%s' "${IMPRESSUM_URL}" | tr -cd 'A-Za-z0-9:/.+_%~-')
 elif [ -n "$SAFE_SITE_URL" ]; then
-    SAFE_IMPRESSUM_URL="${SAFE_SITE_URL}/impressum"
+    SAFE_IMPRESSUM_URL="${SAFE_SITE_URL}/legal/impressum"
 else
-    SAFE_IMPRESSUM_URL="/impressum"
+    SAFE_IMPRESSUM_URL="/legal/impressum"
 fi
 if [ -n "${PRIVACY_URL:-}" ]; then
     SAFE_PRIVACY_URL=$(printf '%s' "${PRIVACY_URL}" | tr -cd 'A-Za-z0-9:/.+_%~-')
 elif [ -n "$SAFE_SITE_URL" ]; then
-    SAFE_PRIVACY_URL="${SAFE_SITE_URL}/datenschutz"
+    SAFE_PRIVACY_URL="${SAFE_SITE_URL}/legal/datenschutz"
 else
-    SAFE_PRIVACY_URL="/datenschutz"
+    SAFE_PRIVACY_URL="/legal/datenschutz"
 fi
 
 # js_or_null <value> — emits a JS string literal or null.

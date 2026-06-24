@@ -9,6 +9,8 @@
   export let registryError;
   /** @type {Map<string, string[]>} */
   export let overlapWarnings = new Map();
+  /** @type {string|null} */
+  export let highlightedBackendUrl = null;
   /** @type {() => void} */
   export let onclose;
 
@@ -147,7 +149,7 @@
     {/if}
     <ul class="instance-list">
       {#each sortedBackends as b (b.url)}
-        <li class="instance-item">
+        <li class="instance-item" class:instance-item--highlighted={b.url === highlightedBackendUrl}>
           <div class="instance-row">
             <span class="instance-name">{b.name}</span>
             <div class="instance-row-end">
@@ -335,6 +337,12 @@
     padding: 0.45rem 0.75rem;
     border-bottom: 1px solid #f1f3f5;
     font-size: 0.8rem;
+  }
+
+  .instance-item--highlighted {
+    background: #eff6ff;
+    border-left: 3px solid #3b82f6;
+    padding-left: calc(0.75rem - 3px);
   }
 
   .instance-item:last-child {

@@ -112,6 +112,7 @@ export function createRegistry() {
           // the polygon-tier dedup to pick the fresher copy when two backends
           // return the same osm_id.
           patch.lastImportAt = backend._lastImportAtOverride ?? meta.last_import_at ?? null;
+          patch.relationId   = meta.relation_id ?? null;
           patch.regionGeom   = meta.region_geom ?? null;
           if (!backend.name && patch.region) patch.name = patch.region;
         }
@@ -144,6 +145,7 @@ export function createRegistry() {
           playgroundCount:  0,
           completeness:     null,  // populated after get_meta lands; see status-shape JSDoc
           lastImportAt:     null,  // from get_meta.last_import_at; used by polygon-tier dedup (#202)
+          relationId:       null,  // from get_meta.relation_id; used for region-URL → backend matching (#661)
           regionGeom:       null,  // GeoJSON Feature geometry from get_meta.region_geom; used for polygon overlap detection (#532)
           nominalCentroid:       parseNominalCentroid(entry.centroid, entry.url),  // fallback position for null-bbox backends (#598)
           _lastImportAtOverride: entry.lastImportAt ?? null,  // registry.json static override; takes priority over meta on every poll
