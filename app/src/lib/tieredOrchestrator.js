@@ -57,6 +57,7 @@ export function attachTieredOrchestrator({
   async function orchestrate() {
     const view = map.getView();
     const zoom = view.getZoom();
+    if (!Number.isFinite(zoom)) return;
     const tier = useLegacy ? 'polygon' : tierForZoom(zoom);
     activeTierStore.set(tier);
 
