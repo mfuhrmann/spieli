@@ -628,18 +628,34 @@ export function styleFunction(feature, mode, isPoint) {
 }
 
 // ── Location marker style (user's GPS position) ────────────────────────────
-// arrow_down.svg has viewBox="0 0 24 24" with tip at y=19
-// Anchor at [0.5, 19/24] to position the tip at the GPS coordinate
-export const locationStyle = new Style({
-  image: new Icon({
-    src: '/img/icons/temaki/arrow_down.svg',
-    width: 60,
-    height: 60,
-    anchor: [0.5, 19/24],
-    displacement: [0, 0]
-  })
+
+const locationWhiteRing = new Style({
+  image: new Circle({
+    radius: 9,
+    fill: new Fill({ color: '#ffffff' }),
+  }),
 });
 
-export function locationStyleFn() {
-  return locationStyle;
+const PULSE_STEPS = 60;
+const pulseStyles = Array.from({ length: PULSE_STEPS }, (_, i) => {
+  const phase = Math.sin((i / PULSE_STEPS) * Math.PI * 2) * 0.5 + 0.5;
+  return [
+    locationWhiteRing,
+    new Style({
+      image: new Circle({
+        radius: 4 + phase * 4,
+        fill: new Fill({ color: '#007aff' }),
+      }),
+    }),
+  ];
+});
+
+export function locationDotStyleFn() {
+  const step = Math.floor((Date.now() % 2000) / (2000 / PULSE_STEPS));
+  return pulseStyles[step];
 }
+
+export const locationAccuracyStyle = new Style({
+  fill: new Fill({ color: 'rgba(0, 122, 255, 0.15)' }),
+  stroke: new Stroke({ color: '#ffffff', width: 2 }),
+});
