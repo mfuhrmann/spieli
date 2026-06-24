@@ -193,6 +193,10 @@ Standalone's data path is no longer a one-shot `fetchPlaygrounds` on mount. Inst
 
 Deeplinks at low zoom use the new `fetchPlaygroundByOsmId` (RPC `get_playground(osm_id)`) to hydrate the polygon source on demand without waiting for a polygon-tier moveend.
 
+### Region URL resolution (`app/src/lib/regionUrl.js`)
+
+`resolveRegionFromPath(pathname)` parses a single-segment URL path (e.g. `/fulda`), geocodes it via Nominatim (`featureType=settlement`), and returns `{ name, extent, osmId }` or `null`. Skips reserved prefixes (`api`, `legal`, `metrics`). Used by both StandaloneApp and HubApp on page load to support shareable region URLs like `spieli.eu/fulda`.
+
 ### API (`app/src/lib/api.js`)
 
 All PostgREST calls. Key functions:
