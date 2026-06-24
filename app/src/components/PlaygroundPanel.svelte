@@ -968,8 +968,6 @@
   .status-dot--open   { background: #10b981; }
   .status-dot--closed { background: #ef4444; }
 
-
-
   /* ── Stat cards grid ─────────────────────────────── */
   .stat-grid {
     display: grid;

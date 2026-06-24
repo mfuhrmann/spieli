@@ -746,7 +746,10 @@ AS $$
         'is_water',           COALESCE(s.is_water, false),
         'for_baby',           COALESCE(s.for_baby, false),
         'for_toddler',        COALESCE(s.for_toddler, false),
-        'for_wheelchair',     COALESCE(s.for_wheelchair, false)
+        'for_wheelchair',     COALESCE(s.for_wheelchair, false),
+        'has_fence',          COALESCE(s.has_fence, false),
+        'has_dogs',           COALESCE(s.has_dogs, false),
+        'has_shade',          s.has_shade
       ) || COALESCE(hstore_to_jsonb(p.tags), '{}'::jsonb)
     )
   )
