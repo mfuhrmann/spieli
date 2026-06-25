@@ -64,3 +64,15 @@ export function bearingDeg(lat1, lon1, lat2, lon2) {
 export function bearingToDir(deg) {
     return ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'][Math.round(deg / 45) % 8];
 }
+
+/**
+ * Padding for `view.fit()` when framing a selected playground.
+ * Desktop reserves the left side-panel width (420 px); mobile shows a
+ * full-screen overlay instead, so balanced padding centres the polygon behind
+ * it — a 420 px reserve on a ~390 px phone mis-frames the fit (see #684).
+ * Order is OL's `[top, right, bottom, left]`.
+ */
+export function selectionFitPadding() {
+    const narrow = typeof window !== 'undefined' && window.innerWidth < 1024;
+    return narrow ? [60, 40, 60, 40] : [40, 40, 40, 420];
+}

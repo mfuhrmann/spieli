@@ -20,6 +20,7 @@
   import { playgroundSourceStore } from '../stores/playgroundSource.js';
   import { parseHash } from '../lib/deeplink.js';
   import { fetchPlaygroundByOsmId } from '../lib/api.js';
+  import { selectionFitPadding } from '../lib/playgroundHelpers.js';
   import { impressumUrl, privacyUrl, mapMaxZoom, mapMinZoom } from '../lib/config.js';
 
   /**
@@ -154,7 +155,7 @@
       const map = $mapStore;
       if (map) {
         map.getView().fit(feat.getGeometry().getExtent(), {
-          padding: [40, 40, 40, 420],
+          padding: selectionFitPadding(),
           duration: 400,
           maxZoom: mapMaxZoom,
         });

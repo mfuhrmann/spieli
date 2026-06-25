@@ -282,6 +282,11 @@
 
   // ── ESC to close ──────────────────────────────────────────────────────────
   function handleKeydown(e) {
+    // The data-age popover has its own Escape handler. Both listeners sit on
+    // `window`; stopPropagation there can't stop this sibling, and we're
+    // registered first — so bail while the popover is open or Escape would
+    // close the whole panel (and zoom the map out) instead of just the popover.
+    if (dataAgePopoverOpen) return;
     if (e.key === 'Escape' && feature && !embedded) closePanel();
   }
 

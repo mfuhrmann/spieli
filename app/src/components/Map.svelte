@@ -31,6 +31,7 @@
   import { filterStore, matchesFilters } from '../stores/filters.js';
   import { overlayFeaturesStore } from '../stores/overlayLayer.js';
   import { debounce } from '../lib/utils.js';
+  import { selectionFitPadding } from '../lib/playgroundHelpers.js';
 
   // Props: the sources are injected by the shell; Map itself never loads data.
   /** @type {VectorSource | null} - polygon-tier source (zoom > clusterMaxZoom) */
@@ -276,18 +277,16 @@
         const backendUrl = polygonHit.get('_backendUrl') ?? defaultBackendUrl;
         selection.select(polygonHit, backendUrl);
         selectionZoom = null;
-        // Desktop reserves the left side-panel width (420); mobile shows a
-        // full-screen overlay instead, so balanced padding frames the polygon
-        // centred behind it. (A 420px reserve on a ~390px phone mis-frames the
-        // fit and reads as an extra zoom-out — see #684.)
-        const fitPadding = window.innerWidth < 1024
-          ? [60, 40, 60, 40]
-          : [40, 40, 40, 420];
         view.fit(polygonHit.getGeometry().getExtent(), {
-          padding: fitPadding,
+          padding: selectionFitPadding(),
           duration: 400,
           maxZoom: mapMaxZoom,
-          callback: () => {
+          callback: (complete) => {
+            // OL calls the callback with `complete === false` when this fit is
+            // cancelled by a newer animation (rapid re-click / select-then-close).
+            // Ignore those so we don't snap-zoom or stamp a stale selectionZoom
+            // onto the replacement animation.
+            if (!complete) return;
             // `constrainResolution: true` snaps the fit to an integer zoom. For a
             // playground large enough to fit at zoom <= clusterMaxZoom that snap
             // can land in the cluster tier and hide the selected polygon — floor

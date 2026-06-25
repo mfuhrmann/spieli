@@ -8,6 +8,7 @@
   import { fetchPlaygroundByOsmId } from '../lib/api.js';
   import { _ } from 'svelte-i18n';
   import { mapMaxZoom } from '../lib/config.js';
+  import { selectionFitPadding } from '../lib/playgroundHelpers.js';
 
   export let lat;
   export let lon;
@@ -104,7 +105,7 @@
       const map = get(mapStore);
       if (map) {
         map.getView().fit(feature.getGeometry().getExtent(), {
-          padding: [40, 40, 40, 420],
+          padding: selectionFitPadding(),
           duration: 400,
           maxZoom: mapMaxZoom,
         });
