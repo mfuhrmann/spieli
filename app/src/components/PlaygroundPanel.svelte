@@ -297,7 +297,7 @@
 
   // ── Opening hours ─────────────────────────────────────────────────────────
   function openingHoursState(ohStr, t) {
-    const fmt = d => d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: false });
+    const fmt = d => d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
     const dayLabel = (d, now) => {
       if (d.toDateString() === now.toDateString()) return t('poi.today');
       const tomorrow = new Date(now); tomorrow.setDate(now.getDate() + 1);
@@ -521,8 +521,15 @@
       {#if openingHoursInfo || attr.for_baby || attr.for_toddler || attr.has_shade != null}
         <div class="status-row mb-4">
           {#if openingHoursInfo}
-            <span class="status-pill" class:status-pill--open={openingHoursInfo.open} class:status-pill--closed={!openingHoursInfo.open}>
-              <span class="status-dot" class:status-dot--open={openingHoursInfo.open} class:status-dot--closed={!openingHoursInfo.open}></span>
+            <span
+              class="status-pill"
+              class:status-pill--open={openingHoursInfo.open}
+              class:status-pill--closed={!openingHoursInfo.open}
+              aria-label={openingHoursInfo.open === null
+                ? openingHoursInfo.text
+                : `${openingHoursInfo.open ? $_('poi.open') : $_('poi.closed')}: ${openingHoursInfo.text}`}
+            >
+              <span class="status-dot" class:status-dot--open={openingHoursInfo.open} class:status-dot--closed={!openingHoursInfo.open} aria-hidden="true"></span>
               <span>{openingHoursInfo.text}</span>
             </span>
           {/if}
