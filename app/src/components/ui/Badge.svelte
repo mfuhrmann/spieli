@@ -16,7 +16,7 @@
     success: 'border-transparent bg-success/15 text-success',
     warning: 'border-transparent bg-warning/15 text-warning',
     // Soft chip variants (status pills): tinted bg + dark text + 3px vertical pad, matching legacy .status-pill design.
-    info: 'py-[3px] border-[rgba(59,130,246,0.3)] bg-[#eff6ff] text-[#1e40af]',
+    info: 'py-[3px] cursor-default border-[rgba(59,130,246,0.3)] bg-[#eff6ff] text-[#1e40af]',
     successSoft: 'py-[3px] border-[rgba(16,185,129,0.4)] bg-[#ecfdf5] text-[#065f46]',
     dangerSoft: 'py-[3px] border-[rgba(239,68,68,0.4)] bg-[#fef2f2] text-[#b91c1c]',
   };

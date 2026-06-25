@@ -533,13 +533,13 @@
             </Badge>
           {/if}
           {#if attr.for_baby}
-            <Badge variant="info">{$_('details.forBaby')}</Badge>
+            <Badge variant="info" class="whitespace-nowrap">{$_('details.forBaby')}</Badge>
           {/if}
           {#if attr.for_toddler}
-            <Badge variant="info">{$_('details.forToddler')}</Badge>
+            <Badge variant="info" class="whitespace-nowrap">{$_('details.forToddler')}</Badge>
           {/if}
           {#if attr.has_shade != null}
-            <Badge variant={attr.has_shade ? 'successSoft' : 'dangerSoft'}>
+            <Badge variant={attr.has_shade ? 'successSoft' : 'dangerSoft'} class="whitespace-nowrap">
               {$_(attr.has_shade ? 'details.shaded' : 'details.notShaded')}
             </Badge>
           {/if}
