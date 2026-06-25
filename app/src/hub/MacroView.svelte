@@ -27,8 +27,8 @@
   import Feature from 'ol/Feature.js';
   import Point from 'ol/geom/Point.js';
   import { transform } from 'ol/proj.js';
-  import { isBackendHealthy } from './federationHealth.js';
   import { bboxCentroid } from './centroid.js';
+  import { deriveMacroRing } from './macroAggregate.js';
 
   /** @type {import('svelte/store').Readable<Array>} */
   export let backends;
@@ -50,56 +50,29 @@
   function buildFeature(backend) {
     const centroid = bboxCentroid(backend.bbox) ?? backend.nominalCentroid ?? null;
     if (!centroid) return null;
-    const offline   = !isBackendHealthy(backend);
-    const importing = !offline && (backend.importing ?? false);
-    // Pre-P1 backends → unknown completeness; map the count into the
-    // restricted bucket so the renderer draws a flat gray ring.
-    const c     = backend.completeness;
     // When a filter is active and this backend has settled a filtered total,
     // it overrides the cached-meta count + completeness so the ring reflects
     // the filtered subset. No entry (not yet settled, or a pre-tier peer that
-    // 404s on the cluster RPC) falls back to cached meta unchanged.
+    // 404s on the cluster RPC) falls back to cached meta unchanged. The count,
+    // completeness segments, and state flags are derived in `macroAggregate.js`.
     const filtered = filteredValue ? filteredValue.get(backend.url) : null;
-    const count = filtered ? filtered.count : (backend.playgroundCount ?? 0);
-    // Degraded ("no data") is a backend-empty state from cached meta; a
-    // filtered total of 0 is a distinct "no match" state (see filteredEmpty).
-    const degraded = !offline && !importing && !filtered && count === 0;
-    const filteredEmpty = !offline && !importing && !!filtered && count === 0;
-    const props = filtered
-      ? {
-          count,
-          complete:   filtered.complete,
-          partial:    filtered.partial,
-          missing:    filtered.missing,
-          restricted: 0,
-        }
-      : c
-      ? {
-          count,
-          complete:   c.complete,
-          partial:    c.partial,
-          missing:    c.missing,
-          restricted: 0,
-        }
-      : {
-          count,
-          complete:   0,
-          partial:    0,
-          missing:    0,
-          restricted: count,
-        };
+    const r = deriveMacroRing(backend, filtered);
     return new Feature({
       geometry: new Point(transform(centroid, 'EPSG:4326', 'EPSG:3857')),
       _tier:          'macro',
       _backendUrl:    backend.url,
       _backendSlug:   backend.slug ?? null,
       _bbox:          backend.bbox,
-      _offline:       offline,
-      _importing:     importing,
-      _degraded:      degraded,
-      _filteredEmpty: filteredEmpty,
+      _offline:       r.offline,
+      _importing:     r.importing,
+      _degraded:      r.degraded,
+      _filteredEmpty: r.filteredEmpty,
       _name:          backend.name ?? backend.region ?? backend.slug ?? backend.url,
-      ...props,
+      count:          r.count,
+      complete:       r.complete,
+      partial:        r.partial,
+      missing:        r.missing,
+      restricted:     r.restricted,
     });
   }
 
