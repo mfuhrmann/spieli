@@ -789,6 +789,7 @@ AS $$
       p.amenity,
       p.leisure,
       p.sport,
+      p.surface,
       p.tags,
       ST_Transform(p.way, 4326) AS geom
     FROM planet_osm_point p, bbox b
@@ -808,6 +809,7 @@ AS $$
       p.amenity,
       p.leisure,
       p.sport,
+      p.surface,
       p.tags,
       ST_Transform(p.way, 4326) AS geom
     FROM planet_osm_polygon p, bbox b
@@ -830,6 +832,7 @@ AS $$
       p.amenity,
       p.leisure,
       p.sport,
+      p.surface,
       p.tags,
       CASE
         WHEN p.tags->'playground' = 'structure'
@@ -867,7 +870,8 @@ AS $$
               'name',     name,
               'amenity',  amenity,
               'leisure',  leisure,
-              'sport',    sport
+              'sport',    sport,
+              'surface',  surface
             ) || COALESCE(hstore_to_jsonb(tags), '{}'::jsonb)
           )
         )
@@ -927,6 +931,7 @@ AS $$
       p.amenity,
       p.leisure,
       p.sport,
+      p.surface,
       p.tags,
       ST_Transform(p.way, 4326) AS geom
     FROM planet_osm_polygon p, bbox b
@@ -947,6 +952,7 @@ AS $$
       p.amenity,
       p.leisure,
       p.sport,
+      p.surface,
       p.tags,
       ST_Transform(p.way, 4326) AS geom
     FROM planet_osm_point p, bbox b
@@ -967,6 +973,7 @@ AS $$
       p.amenity,
       p.leisure,
       p.sport,
+      p.surface,
       p.tags,
       ST_Transform(p.way, 4326) AS geom
     FROM planet_osm_point p
@@ -996,7 +1003,8 @@ AS $$
               'name',     name,
               'amenity',  amenity,
               'leisure',  leisure,
-              'sport',    sport
+              'sport',    sport,
+              'surface',  surface
             ) || COALESCE(hstore_to_jsonb(tags), '{}'::jsonb)
           )
         )

@@ -28,6 +28,25 @@
     return props.playground || $_('equipment.fitnessDefault');
   })();
 
+  $: details = (() => {
+    if (!props) return [];
+    const items = [];
+    if (props.surface) {
+      const label = props.surface.split(';').map(s => $_('details.surfaceValues.' + s.trim(), { default: s.trim() })).join(' / ');
+      items.push(`${$_('equipAttr.surface')}: ${label}`);
+    }
+    if (props.material) {
+      const label = props.material.split(';').map(m => $_('equipAttr.materials.' + m.trim(), { default: m.trim() })).join(' / ');
+      items.push(`${$_('equipAttr.material')}: ${label}`);
+    }
+    if (props.capacity) items.push(`${$_('equipAttr.capacity')}: ${props.capacity}`);
+    const wc = props.wheelchair;
+    if (wc === 'yes') items.push($_('equipAttr.wheelchairYes'));
+    else if (wc === 'limited') items.push($_('equipAttr.wheelchairLimited'));
+    else if (wc === 'no') items.push($_('equipAttr.wheelchairNo'));
+    return items;
+  })();
+
   $: panoramaxUuid = (() => {
     if (!props) return null;
     if (props.panoramax) return props.panoramax;
@@ -62,7 +81,12 @@
           {#if thumbUrl}
             <img src={thumbUrl} alt={label} class="thumb" />
           {/if}
-          <div class="px-2.5 py-1.5 text-sm font-medium">{label}</div>
+          <div class="px-2.5 py-1.5">
+            <div class="text-sm font-medium">{label}</div>
+            {#if details.length}
+              <div class="text-xs text-gray-500 mt-0.5">{details.join(' · ')}</div>
+            {/if}
+          </div>
         </div>
       </div>
     {:else}
@@ -71,7 +95,12 @@
           {#if thumbUrl}
             <img src={thumbUrl} alt={label} class="thumb" />
           {/if}
-          <div class="px-2.5 py-1.5 text-sm font-medium">{label}</div>
+          <div class="px-2.5 py-1.5">
+            <div class="text-sm font-medium">{label}</div>
+            {#if details.length}
+              <div class="text-xs text-gray-500 mt-0.5">{details.join(' · ')}</div>
+            {/if}
+          </div>
         </div>
         <div class="absolute left-1/2 -translate-x-1/2 -bottom-2">
           <div
