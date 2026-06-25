@@ -265,9 +265,11 @@
   }
 
   // Close the desktop side panel: clear the selection and zoom out a few steps
-  // (keeping the playground centred) so the user lands back on a browsable view,
-  // mirroring the mobile "back to map" gesture. On mobile the panel is embedded
-  // and AppShell owns the back gesture, so we only zoom out when !embedded.
+  // (keeping the playground centred) so the user lands back on a browsable view.
+  // Similar in spirit to the mobile "back to map" gesture, which zooms out a
+  // touch further (MOBILE_BACK_ZOOM_OUT) since the phone overview needs more
+  // context. On mobile the panel is embedded and AppShell owns the back gesture,
+  // so we only zoom out when !embedded.
   const DESKTOP_CLOSE_ZOOM_OUT = 4;
   function closePanel() {
     const view = embedded ? null : $mapStore?.getView();

@@ -7,8 +7,7 @@
   import { playgroundCompleteness } from '../lib/completeness.js';
   import { fetchPlaygroundByOsmId } from '../lib/api.js';
   import { _ } from 'svelte-i18n';
-  import { mapMaxZoom } from '../lib/config.js';
-  import { selectionFitPadding } from '../lib/playgroundHelpers.js';
+  import { fitViewToSelection } from '../lib/playgroundHelpers.js';
 
   export let lat;
   export let lon;
@@ -104,11 +103,7 @@
       selection.select(feature, feature.get('_backendUrl') ?? backendUrl);
       const map = get(mapStore);
       if (map) {
-        map.getView().fit(feature.getGeometry().getExtent(), {
-          padding: selectionFitPadding(),
-          duration: 400,
-          maxZoom: mapMaxZoom,
-        });
+        fitViewToSelection(map.getView(), feature.getGeometry().getExtent());
       }
     }
     if (ondismiss) ondismiss();

@@ -20,8 +20,8 @@
   import { playgroundSourceStore } from '../stores/playgroundSource.js';
   import { parseHash } from '../lib/deeplink.js';
   import { fetchPlaygroundByOsmId } from '../lib/api.js';
-  import { selectionFitPadding } from '../lib/playgroundHelpers.js';
-  import { impressumUrl, privacyUrl, mapMaxZoom, mapMinZoom } from '../lib/config.js';
+  import { fitViewToSelection } from '../lib/playgroundHelpers.js';
+  import { impressumUrl, privacyUrl, mapMinZoom } from '../lib/config.js';
 
   /**
    * The OL VectorSource that renders the polygon tier (zoom ≥ 14). The shell
@@ -154,11 +154,7 @@
       // they landed at a low zoom that doesn't render polygons.
       const map = $mapStore;
       if (map) {
-        map.getView().fit(feat.getGeometry().getExtent(), {
-          padding: selectionFitPadding(),
-          duration: 400,
-          maxZoom: mapMaxZoom,
-        });
+        fitViewToSelection(map.getView(), feat.getGeometry().getExtent());
       }
       hashRestored = true;
       return;

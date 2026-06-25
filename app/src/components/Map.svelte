@@ -12,7 +12,7 @@
   import { ScaleLine, defaults as defaultControls } from 'ol/control.js';
   import { defaults as defaultInteractions } from 'ol/interaction/defaults';
 
-  import { mapZoom, mapMinZoom, mapMaxZoom, clusterMaxZoom, apiBaseUrl } from '../lib/config.js';
+  import { mapZoom, mapMinZoom, mapMaxZoom, apiBaseUrl } from '../lib/config.js';
   import {
     playgroundStyleFn,
     selectionStyle,
@@ -31,7 +31,7 @@
   import { filterStore, matchesFilters } from '../stores/filters.js';
   import { overlayFeaturesStore } from '../stores/overlayLayer.js';
   import { debounce } from '../lib/utils.js';
-  import { selectionFitPadding } from '../lib/playgroundHelpers.js';
+  import { fitViewToSelection } from '../lib/playgroundHelpers.js';
 
   // Props: the sources are injected by the shell; Map itself never loads data.
   /** @type {VectorSource | null} - polygon-tier source (zoom > clusterMaxZoom) */
@@ -254,14 +254,18 @@
     // button, ESC, and mobile "back to map" all clear the selection from
     // outside Map.svelte; without this, selectionZoom would stay stale and a
     // later empty-map click could zoom out with nothing selected.
-    selectionUnsubscribe = selection.subscribe(($sel) => {
-      if (!$sel?.feature) selectionZoom = null;
+    selectionUnsubscribe = selection.subscribe(() => {
+      // Reset on every selection change. The map-click fit re-stamps
+      // selectionZoom once its own fit settles; Nearby/deeplink selections leave
+      // it null so their programmatic fit can't be mistaken for a user zoom-out
+      // and auto-clear the just-made selection (#684).
+      selectionZoom = null;
     });
     // Steps to zoom out when deselecting via empty-map click — matches the
     // desktop panel-close gesture (PlaygroundPanel DESKTOP_CLOSE_ZOOM_OUT).
     const DESELECT_ZOOM_OUT = 4;
     olMap.on('moveend', () => {
-      if (selectionZoom !== null && view.getZoom() <= selectionZoom - 4) {
+      if (selectionZoom !== null && view.getZoom() <= selectionZoom - DESELECT_ZOOM_OUT) {
         selection.clear();
         selectionZoom = null;
       }
@@ -288,25 +292,10 @@
         const backendUrl = polygonHit.get('_backendUrl') ?? defaultBackendUrl;
         selection.select(polygonHit, backendUrl);
         selectionZoom = null;
-        view.fit(polygonHit.getGeometry().getExtent(), {
-          padding: selectionFitPadding(),
-          duration: 400,
-          maxZoom: mapMaxZoom,
-          callback: (complete) => {
-            // OL calls the callback with `complete === false` when this fit is
-            // cancelled by a newer animation (rapid re-click / select-then-close).
-            // Ignore those so we don't snap-zoom or stamp a stale selectionZoom
-            // onto the replacement animation.
-            if (!complete) return;
-            // `constrainResolution: true` snaps the fit to an integer zoom. For a
-            // playground large enough to fit at zoom <= clusterMaxZoom that snap
-            // can land in the cluster tier and hide the selected polygon — floor
-            // the zoom back into the polygon tier in that rare case. (A plain
-            // `minResolution` on fit() does the inverse: it caps every fit at
-            // clusterMaxZoom+1, defeating zoom-to-fit entirely — see #684.)
-            if ((view.getZoom() ?? 0) <= clusterMaxZoom) view.setZoom(clusterMaxZoom + 1);
-            selectionZoom = view.getZoom();
-          },
+        // Shared fit (responsive padding + polygon-tier floor); stamp the
+        // settled zoom so an empty-map click later zooms out to deselect.
+        fitViewToSelection(view, polygonHit.getGeometry().getExtent(), (v) => {
+          selectionZoom = v.getZoom();
         });
         return;
       }

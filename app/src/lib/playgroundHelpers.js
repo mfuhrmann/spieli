@@ -1,6 +1,8 @@
 // Pure helper functions for playground display logic.
 // Ported from js/selectPlayground.js.
 
+import { clusterMaxZoom, mapMaxZoom } from './config.js';
+
 /**
  * Build a display title from OSM name tags.
  * @param {Object} attr - feature properties
@@ -75,4 +77,32 @@ export function bearingToDir(deg) {
 export function selectionFitPadding() {
     const narrow = typeof window !== 'undefined' && window.innerWidth < 1024;
     return narrow ? [60, 40, 60, 40] : [40, 40, 40, 420];
+}
+
+/**
+ * Fit the view to a selected playground's extent, then floor the zoom back into
+ * the polygon tier. `constrainResolution` (set on the View) snaps the fit to an
+ * integer zoom; for a playground large enough to fit at zoom <= clusterMaxZoom
+ * that snap can land in the cluster tier and hide the selected polygon, so bump
+ * it to clusterMaxZoom + 1 in that case. Shared by every select origin (map
+ * click, Nearby list, deeplink restore) so framing is identical (see #684).
+ *
+ * @param {import('ol/View.js').default} view
+ * @param {import('ol/extent.js').Extent} extent  EPSG:3857
+ * @param {(view: import('ol/View.js').default) => void} [onComplete]  Runs once
+ *   the fit settles; skipped when a newer animation cancels the fit.
+ */
+export function fitViewToSelection(view, extent, onComplete) {
+    view.fit(extent, {
+        padding: selectionFitPadding(),
+        duration: 400,
+        maxZoom: mapMaxZoom,
+        callback: (complete) => {
+            // OL passes complete === false when a newer animation cancels this
+            // fit (rapid re-click / select-then-close) — don't snap or stamp then.
+            if (!complete) return;
+            if ((view.getZoom() ?? 0) <= clusterMaxZoom) view.setZoom(clusterMaxZoom + 1);
+            onComplete?.(view);
+        },
+    });
 }
