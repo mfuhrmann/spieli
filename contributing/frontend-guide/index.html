@@ -1006,6 +1006,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#macro-tier-hub-filter-path" class="md-nav__link">
+    <span class="md-ellipsis">
+      Macro tier (hub) filter path
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1658,6 +1667,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#macro-tier-hub-filter-path" class="md-nav__link">
+    <span class="md-ellipsis">
+      Macro tier (hub) filter path
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1848,6 +1866,12 @@
 <td>hubOrchestrator</td>
 <td>InstancePanel</td>
 </tr>
+<tr>
+<td><code>macroFilteredStore</code></td>
+<td><code>Map&lt;backendUrl, {count, complete, partial, missing}&gt; \| null</code></td>
+<td>hubOrchestrator (macro tier, filter active)</td>
+<td>MacroView</td>
+</tr>
 </tbody>
 </table>
 <h3 id="selection-flow">Selection flow<a class="headerlink" href="#selection-flow" title="Permanent link">&para;</a></h3>
@@ -1879,6 +1903,33 @@
 <a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>        └──► tieredOrchestrator.rerun()
 <a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>             → re-fetches cluster tier with active filters as query params
 </code></pre></div>
+<p>Each zoom tier applies filters through a different path:</p>
+<table>
+<thead>
+<tr>
+<th>Tier</th>
+<th>Filter path</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>polygon</td>
+<td>client-side — <code>matchesFilters()</code> hides non-matching polygons in Map.svelte</td>
+</tr>
+<tr>
+<td>cluster</td>
+<td>server-side — active filters become <code>filter_*</code> query params on <code>get_playground_clusters</code></td>
+</tr>
+<tr>
+<td>macro (hub)</td>
+<td>derived — see below</td>
+</tr>
+</tbody>
+</table>
+<h3 id="macro-tier-hub-filter-path">Macro tier (hub) filter path<a class="headerlink" href="#macro-tier-hub-filter-path" title="Permanent link">&para;</a></h3>
+<p>The macro tier is normally <strong>zero-fetch</strong>: <code>MacroView.svelte</code> renders one ring per backend straight from the cached <code>get_meta</code> totals, and panning at min zoom dispatches no requests. <code>get_meta</code> has no filter dimension, so when a filter is active those totals would ignore it.</p>
+<p>When a filter is active, <code>hubOrchestrator</code> instead fans out the filter-aware <code>get_playground_clusters</code> RPC once per backend (scoped to each backend's own bbox), sums the returned buckets into a per-backend <code>{count, complete, partial, missing}</code>, and publishes it progressively on <code>macroFilteredStore</code>. <code>MacroView</code> overrides each ring's props from that store as entries settle; a backend with no entry yet (or a pre-tier peer that 404s) keeps its cached-meta ring. Clearing all filters sets the store back to <code>null</code> and restores the zero-fetch path.</p>
+<p>Macro ring variants (<code>hub/macroRingStyle.js</code>), in <code>macroRingStyleFn</code> priority order: <strong>offline</strong> (dashed grey) → <strong>importing</strong> (blue "updating") → <strong>filtered-empty</strong> (grey "no match" — healthy backend, but the filter excludes every playground) → <strong>degraded</strong> (amber "no data" — backend reachable but empty) → <strong>healthy</strong> (filled segments + count). Backend-health states outrank the filter outcome; "no match" is distinct from the amber "no data" degraded ring.</p>
 <h2 id="runtime-configuration">Runtime configuration<a class="headerlink" href="#runtime-configuration" title="Permanent link">&para;</a></h2>
 <p><code>lib/config.js</code> reads <code>window.APP_CONFIG</code> (written by <code>oci/app/docker-entrypoint.sh</code> at container startup) and exports named constants. In dev (no container), the constants use hardcoded defaults.</p>
 <p>Config constants used across the codebase:</p>
@@ -1994,7 +2045,8 @@
 </code></pre></div>
 <p><strong>3. <code>importer/api.sql</code></strong> — add a parameter to <code>get_playground_clusters()</code> (default <code>false</code>) and a WHERE clause. Also drop the old function signature and update the GRANT. Run <code>make db-apply</code> to apply.</p>
 <p><strong>4. <code>app/src/components/FilterPanel.svelte</code></strong> — add the icon to <code>FILTER_ICONS</code> and a translation key to <code>locales/*.json</code>.</p>
-<p><strong>5. Unit tests</strong> — add cases to <code>app/src/stores/filters.test.js</code>.</p>
+<p><strong>5. <code>app/src/components/FilterChips.svelte</code></strong> — add the key to <code>FILTER_KEYS</code>. <strong>Don't skip this.</strong> The chip bar is the only way to clear an active filter from outside the panel; a filter missing from <code>FILTER_KEYS</code> can be set but shows no removable chip. <code>FILTER_KEYS</code> must stay in sync with the boolean filters in <code>defaultFilters</code> (excluding the <code>standalonePitches</code> layer toggle and the <code>show*</code> completeness states, which are not chip-rendered).</p>
+<p><strong>6. Unit tests</strong> — add cases to <code>app/src/stores/filters.test.js</code>.</p>
 <h3 id="visibility-filter-default-on">Visibility filter (default on)<a class="headerlink" href="#visibility-filter-default-on" title="Permanent link">&para;</a></h3>
 <p>Use this pattern when users toggle which <em>categories</em> to show rather than requiring a feature. Example: the completeness filter (<code>showComplete/showPartial/showMissing</code>).</p>
 <p>Key differences from the standard pattern:</p>
