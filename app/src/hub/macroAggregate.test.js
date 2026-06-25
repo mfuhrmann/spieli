@@ -113,4 +113,27 @@ import { sumClusterBuckets, deriveMacroRing } from './macroAggregate.js';
   assert.equal(r.degraded, false, '#689: degraded is suppressed once a filter settles');
 }
 
+// 12. Filtered aggregate with an undefined `count` (malformed/partial settle) →
+//     neither "no match" nor degraded fire (undefined === 0 is false); count is
+//     passed through as undefined. Characterises the non-obvious branch.
+{
+  const r = deriveMacroRing(
+    { url: 'i', playgroundCount: 20, completeness: { complete: 12, partial: 6, missing: 2 } },
+    { complete: 5, partial: 2, missing: 1 },
+  );
+  assert.equal(r.count, undefined, 'undefined filtered.count passes through');
+  assert.equal(r.degraded, false);
+  assert.equal(r.filteredEmpty, false, 'undefined count is not treated as a 0 "no match"');
+}
+
+// 13. Filtered aggregate missing a segment field → that segment passes through
+//     as undefined (the renderer coalesces with ?? 0). Faithful to prior code.
+{
+  const r = deriveMacroRing(
+    { url: 'j', playgroundCount: 9 },
+    { count: 4, complete: 4 },
+  );
+  assert.deepEqual([r.count, r.complete, r.partial, r.missing, r.restricted], [4, 4, undefined, undefined, 0]);
+}
+
 console.log('macroAggregate.test.js OK');
