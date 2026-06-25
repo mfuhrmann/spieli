@@ -63,6 +63,7 @@
   let overlayUnsubscribe = null;
   let tierUnsubscribe = null;
   let locationUnsubscribe = null;
+  let selectionUnsubscribe = null;
 
   // Location marker state — hoisted to component scope so onDestroy can reach them.
   let locationLayer = null;
@@ -249,6 +250,16 @@
     // Zoom level at which the current playground was selected; null when nothing selected.
     // Used to auto-clear selection when the user zooms out 2+ levels.
     let selectionZoom = null;
+    // Keep selectionZoom in sync with the selection store. The panel close
+    // button, ESC, and mobile "back to map" all clear the selection from
+    // outside Map.svelte; without this, selectionZoom would stay stale and a
+    // later empty-map click could zoom out with nothing selected.
+    selectionUnsubscribe = selection.subscribe(($sel) => {
+      if (!$sel?.feature) selectionZoom = null;
+    });
+    // Steps to zoom out when deselecting via empty-map click — matches the
+    // desktop panel-close gesture (PlaygroundPanel DESKTOP_CLOSE_ZOOM_OUT).
+    const DESELECT_ZOOM_OUT = 4;
     olMap.on('moveend', () => {
       if (selectionZoom !== null && view.getZoom() <= selectionZoom - 4) {
         selection.clear();
@@ -339,6 +350,18 @@
         return;
       }
       backendPopup = null;
+      // Align deselect-by-empty-click with the panel-close gesture: if a
+      // playground is selected, zoom out a few steps too. selectionZoom is
+      // kept non-null only while selected (see the selection.subscribe above),
+      // so this guard also prevents a bare click on the open map from moving
+      // the view when nothing is selected.
+      if (selectionZoom !== null) {
+        const z = view.getZoom();
+        if (Number.isFinite(z)) {
+          view.animate({ zoom: Math.max(z - DESELECT_ZOOM_OUT, mapMinZoom), duration: 400 });
+        }
+        selectionZoom = null;
+      }
       selection.clear();
     });
 
@@ -441,6 +464,7 @@
     if (overlayUnsubscribe) overlayUnsubscribe();
     if (tierUnsubscribe) tierUnsubscribe();
     if (locationUnsubscribe) locationUnsubscribe();
+    if (selectionUnsubscribe) selectionUnsubscribe();
     stopLocationAnimation();
     if (olMap) {
       olMap.setTarget(undefined);
