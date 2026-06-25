@@ -101,16 +101,17 @@ import { sumClusterBuckets, deriveMacroRing } from './macroAggregate.js';
   assert.equal(r.count, 0);
 }
 
-// 11. CURRENT behavior (#689): a genuinely EMPTY backend under an active filter
-//     is mislabeled "no match" instead of "no data". Characterized here so the
-//     #689 fix (gate filteredEmpty on playgroundCount > 0) shows as a test diff.
+// 11. #689 FIXED: a genuinely EMPTY backend (no unfiltered data) under an active
+//     filter reads as "no data" (degraded), NOT "no match" (filteredEmpty) — a
+//     filter cannot exclude data that was never there. Contrast with test 10,
+//     where a *populated* backend filtered to 0 correctly reads as "no match".
 {
   const r = deriveMacroRing(
     { url: 'h', playgroundCount: 0 },
     { count: 0, complete: 0, partial: 0, missing: 0 },
   );
-  assert.equal(r.filteredEmpty, true, '#689: empty backend currently reads as no-match (to be fixed)');
-  assert.equal(r.degraded, false, '#689: degraded is suppressed once a filter settles');
+  assert.equal(r.filteredEmpty, false, '#689: empty backend is not "no match"');
+  assert.equal(r.degraded, true, '#689: empty backend reads as "no data" even under a filter');
 }
 
 // 12. Filtered aggregate with an undefined `count` (malformed/partial settle) →
