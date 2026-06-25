@@ -335,8 +335,12 @@ export function attachHubOrchestrator({
           acc.set(entry.backendUrl, sumClusterBuckets(entry.value));
           // Fresh Map reference per publish so Svelte subscribers re-render.
           macroFilteredStore.set(new Map(acc));
-        } else if (!entry.ok && isNotFound(entry.error)) {
-          markBackendLegacy(entry.backendUrl);
+        } else {
+          // Any failure (404, 500, network, timeout) means this backend
+          // couldn't apply the filter → flag it can't-filter so its ring is
+          // marked "unfiltered" rather than silently shown as a normal filtered
+          // ring. Only a 404 makes the legacy fallback sticky for the session.
+          if (!entry.ok && isNotFound(entry.error)) markBackendLegacy(entry.backendUrl);
           cantFilter.add(entry.backendUrl);
         }
         publishCoverage();
