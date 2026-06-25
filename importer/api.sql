@@ -185,7 +185,7 @@ CREATE MATERIALIZED VIEW public.playground_stats AS
                    OR e.tags->'playground' != 'sandpit'))                       AS for_wheelchair,
       BOOL_OR(pl.tags->'barrier' = 'fence')                                   AS has_fence,
       BOOL_OR(pl.tags->'dog' = 'yes')                                        AS has_dogs,
-      BOOL_OR(pl.tags->'shade' = 'yes')                                       AS has_shade
+      CASE WHEN BOOL_OR(pl.tags ? 'shade') THEN BOOL_OR(pl.tags->'shade' = 'yes') END AS has_shade
     FROM all_playgrounds pl
     LEFT JOIN all_equip e ON ST_Intersects(pl.way, e.way)
     GROUP BY pl.osm_id, pl.osm_type
@@ -242,7 +242,7 @@ CREATE MATERIALIZED VIEW public.playground_stats AS
     COALESCE(es.for_wheelchair, false) AS for_wheelchair,
     COALESCE(es.has_fence,       false) AS has_fence,
     COALESCE(es.has_dogs,       false) AS has_dogs,
-    COALESCE(es.has_shade,      false) AS has_shade,
+    es.has_shade,
     -- Tiered-delivery (P1): persisted centroid + per-playground completeness
     ST_Centroid(pl.way)                           AS centroid_3857,
     -- NULL-safe: untagged playgrounds (access IS NULL) are public, not NULL.
@@ -345,7 +345,7 @@ AS $$
               'for_wheelchair',     COALESCE(s.for_wheelchair, false),
               'has_fence',          COALESCE(s.has_fence, false),
               'has_dogs',           COALESCE(s.has_dogs, false),
-              'has_shade',          COALESCE(s.has_shade, false)
+              'has_shade',          s.has_shade
             ) || COALESCE(hstore_to_jsonb(pl.tags), '{}'::jsonb)
           )
         )
@@ -653,7 +653,7 @@ AS $$
               'for_wheelchair',     COALESCE(s.for_wheelchair, false),
               'has_fence',          COALESCE(s.has_fence, false),
               'has_dogs',           COALESCE(s.has_dogs, false),
-              'has_shade',          COALESCE(s.has_shade, false)
+              'has_shade',          s.has_shade
             ) || COALESCE(hstore_to_jsonb(pl.tags), '{}'::jsonb)
           )
         )
@@ -746,7 +746,10 @@ AS $$
         'is_water',           COALESCE(s.is_water, false),
         'for_baby',           COALESCE(s.for_baby, false),
         'for_toddler',        COALESCE(s.for_toddler, false),
-        'for_wheelchair',     COALESCE(s.for_wheelchair, false)
+        'for_wheelchair',     COALESCE(s.for_wheelchair, false),
+        'has_fence',          COALESCE(s.has_fence, false),
+        'has_dogs',           COALESCE(s.has_dogs, false),
+        'has_shade',          s.has_shade
       ) || COALESCE(hstore_to_jsonb(p.tags), '{}'::jsonb)
     )
   )

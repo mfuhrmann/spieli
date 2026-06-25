@@ -59,7 +59,6 @@ spieli/                            ← Monorepo root
 │       │   ├── BottomSheet.svelte ← Mobile bottom sheet
 │       │   ├── CompletenessLegend.svelte ← Colour legend
 │       │   ├── FilterChips.svelte ← Active filter chip row
-│       │   ├── AgeChip.svelte     ← Age range badge
 │       │   ├── DataContributionModal.svelte ← "Daten ergänzen" OSM link modal
 │       │   ├── MapCompleteLink.svelte ← MapComplete contribution link
 │       │   ├── PanoramaxViewer.svelte ← Panoramax photo iframe
