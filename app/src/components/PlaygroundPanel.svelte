@@ -539,10 +539,10 @@
           {#if attr.for_toddler}
             <span class="status-pill status-pill--info">{$_('details.forToddler')}</span>
           {/if}
-          {#if attr.has_shade === true}
-            <span class="status-pill status-pill--open">{$_('details.shaded')}</span>
-          {:else if attr.has_shade === false}
-            <span class="status-pill status-pill--closed">{$_('details.notShaded')}</span>
+          {#if attr.has_shade != null}
+            <span class="status-pill" class:status-pill--open={attr.has_shade} class:status-pill--closed={!attr.has_shade}>
+              {$_(attr.has_shade ? 'details.shaded' : 'details.notShaded')}
+            </span>
           {/if}
         </div>
       {/if}
