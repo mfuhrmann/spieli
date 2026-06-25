@@ -29,6 +29,7 @@ The app uses Svelte writable stores (`src/stores/`). Components import stores di
 | `playgroundSourceStore` | OL VectorSource \| null | Map.svelte | NearbyPlaygrounds, AppShell |
 | `mapStore` | OL Map \| null | Map.svelte | LocateButton, other map-interacting components |
 | `hubLoadingStore` | `{ loaded, total, settling }` | hubOrchestrator | InstancePanel |
+| `macroFilteredStore` | `Map<backendUrl, {count, complete, partial, missing}> \| null` | hubOrchestrator (macro tier, filter active) | MacroView |
 
 ### Selection flow
 
@@ -64,6 +65,22 @@ filterStore updated
         └──► tieredOrchestrator.rerun()
              → re-fetches cluster tier with active filters as query params
 ```
+
+Each zoom tier applies filters through a different path:
+
+| Tier | Filter path |
+|---|---|
+| polygon | client-side — `matchesFilters()` hides non-matching polygons in Map.svelte |
+| cluster | server-side — active filters become `filter_*` query params on `get_playground_clusters` |
+| macro (hub) | derived — see below |
+
+### Macro tier (hub) filter path
+
+The macro tier is normally **zero-fetch**: `MacroView.svelte` renders one ring per backend straight from the cached `get_meta` totals, and panning at min zoom dispatches no requests. `get_meta` has no filter dimension, so when a filter is active those totals would ignore it.
+
+When a filter is active, `hubOrchestrator` instead fans out the filter-aware `get_playground_clusters` RPC once per backend (scoped to each backend's own bbox), sums the returned buckets into a per-backend `{count, complete, partial, missing}`, and publishes it progressively on `macroFilteredStore`. `MacroView` overrides each ring's props from that store as entries settle; a backend with no entry yet (or a pre-tier peer that 404s) keeps its cached-meta ring. Clearing all filters sets the store back to `null` and restores the zero-fetch path.
+
+Macro ring variants (`hub/macroRingStyle.js`), in `macroRingStyleFn` priority order: **offline** (dashed grey) → **importing** (blue "updating") → **filtered-empty** (grey "no match" — healthy backend, but the filter excludes every playground) → **degraded** (amber "no data" — backend reachable but empty) → **healthy** (filled segments + count). Backend-health states outrank the filter outcome; "no match" is distinct from the amber "no data" degraded ring.
 
 ## Runtime configuration
 
@@ -145,7 +162,9 @@ const clusterFilterMap = {
 
 **4. `app/src/components/FilterPanel.svelte`** — add the icon to `FILTER_ICONS` and a translation key to `locales/*.json`.
 
-**5. Unit tests** — add cases to `app/src/stores/filters.test.js`.
+**5. `app/src/components/FilterChips.svelte`** — add the key to `FILTER_KEYS`. **Don't skip this.** The chip bar is the only way to clear an active filter from outside the panel; a filter missing from `FILTER_KEYS` can be set but shows no removable chip. `FILTER_KEYS` must stay in sync with the boolean filters in `defaultFilters` (excluding the `standalonePitches` layer toggle and the `show*` completeness states, which are not chip-rendered).
+
+**6. Unit tests** — add cases to `app/src/stores/filters.test.js`.
 
 ### Visibility filter (default on)
 

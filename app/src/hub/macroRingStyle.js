@@ -5,10 +5,12 @@
 //
 //   1. Always rendered as rings, never as the cluster-tier single-child dot
 //      (a backend with one playground is still a "region", not a singleton).
-//   2. Four visual variants — healthy (filled segments + count), offline
+//   2. Five visual variants — healthy (filled segments + count), offline
 //      (dashed outline, muted, "offline" label, last known count), importing
-//      (solid blue ring, "updating" label — osm2pgsql actively running), and
-//      degraded (amber ring, "no data" label — backend reachable but empty).
+//      (solid blue ring, "updating" label — osm2pgsql actively running),
+//      degraded (amber ring, "no data" label — backend reachable but empty),
+//      and filtered-empty (grey ring, "no match" label — backend healthy but
+//      the active filter excludes all of its playgrounds).
 //
 // The bitmap cache from clusterStyle.js isn't reused here: macro features are
 // at most one per registered backend (typically <20), so per-frame redraws
@@ -36,6 +38,9 @@ const DEGRADED_TEXT    = '#92400e'; // amber-800
 const IMPORTING_STROKE = '#3b82f6'; // blue-500
 const IMPORTING_FILL   = 'rgba(239, 246, 255, 0.92)'; // blue-50
 const IMPORTING_TEXT   = '#1e40af'; // blue-800
+const NOMATCH_STROKE   = '#9ca3af'; // gray-400 — filter excluded all playgrounds
+const NOMATCH_FILL     = 'rgba(249, 250, 251, 0.92)'; // gray-50
+const NOMATCH_TEXT     = '#6b7280'; // gray-500
 const COUNT_FONT      = 'bold 22px ui-monospace, "SF Mono", Menlo, system-ui, -apple-system, sans-serif';
 const LABEL_FONT      = '600 11px system-ui, -apple-system, "Helvetica Neue", sans-serif';
 
@@ -159,6 +164,37 @@ function renderDegradedMacroRing(pixelCoords, state) {
   ctx.fillText('no data', x, y);
 }
 
+// Filtered-empty: backend is healthy but the active filter matched zero of
+// its playgrounds. Grey ring, "no match" label — distinct from the amber
+// "no data" degraded ring (which means the backend itself is empty) and
+// only ever shown while a filter is active.
+function renderFilteredEmptyMacroRing(pixelCoords, state) {
+  const [x, y] = pixelCoords;
+  const ctx    = state.context;
+  const radius = 26; // minimum — filtered count is 0
+
+  ctx.lineWidth   = RING_WIDTH;
+  ctx.lineCap     = 'butt';
+  ctx.strokeStyle = NOMATCH_STROKE;
+  ctx.beginPath();
+  ctx.arc(x, y, radius, 0, Math.PI * 2);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(x, y, radius - RING_WIDTH / 2 - 1, 0, Math.PI * 2);
+  ctx.fillStyle   = NOMATCH_FILL;
+  ctx.strokeStyle = NOMATCH_STROKE;
+  ctx.lineWidth   = 1;
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle    = NOMATCH_TEXT;
+  ctx.font         = LABEL_FONT;
+  ctx.textAlign    = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('no match', x, y);
+}
+
 function renderImportingMacroRing(pixelCoords, state) {
   const [x, y]   = pixelCoords;
   const f        = state.feature;
@@ -201,14 +237,19 @@ function formatCount(n) {
   return `${Math.round(n / 1000)}k`;
 }
 
-const healthyStyle   = new Style({ renderer: renderHealthyMacroRing });
-const offlineStyle   = new Style({ renderer: renderOfflineMacroRing });
-const degradedStyle  = new Style({ renderer: renderDegradedMacroRing });
-const importingStyle = new Style({ renderer: renderImportingMacroRing });
+const healthyStyle       = new Style({ renderer: renderHealthyMacroRing });
+const offlineStyle       = new Style({ renderer: renderOfflineMacroRing });
+const degradedStyle      = new Style({ renderer: renderDegradedMacroRing });
+const importingStyle     = new Style({ renderer: renderImportingMacroRing });
+const filteredEmptyStyle = new Style({ renderer: renderFilteredEmptyMacroRing });
 
 export function macroRingStyleFn(feature) {
-  if (feature.get('_offline'))   return offlineStyle;
-  if (feature.get('_importing')) return importingStyle;
-  if (feature.get('_degraded'))  return degradedStyle;
+  // Backend-health states take precedence over a filter outcome; "no match"
+  // sits just above degraded — both signal an empty ring, but "no match" is
+  // a filter result on a healthy backend, not missing data.
+  if (feature.get('_offline'))       return offlineStyle;
+  if (feature.get('_importing'))     return importingStyle;
+  if (feature.get('_filteredEmpty')) return filteredEmptyStyle;
+  if (feature.get('_degraded'))      return degradedStyle;
   return healthyStyle;
 }

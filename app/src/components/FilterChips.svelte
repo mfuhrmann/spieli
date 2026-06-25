@@ -1,11 +1,16 @@
 <script>
-  import { filterStore, hasActiveFilters } from '../stores/filters.js';
+  import { filterStore, hasActiveFilters, defaultFilters } from '../stores/filters.js';
   import { _ } from 'svelte-i18n';
   import { X } from 'lucide-svelte';
 
+  // Must list every boolean playground filter in defaultFilters (minus the
+  // standalonePitches layer toggle and the completeness states, which are not
+  // chip-rendered). Omitting a key means that filter can be set but shows no
+  // removable chip — keep in sync when adding filters.
   const FILTER_KEYS = new Set([
     'private', 'water', 'baby', 'toddler', 'wheelchair',
     'bench', 'picnic', 'shelter', 'tableTennis', 'soccer', 'basketball',
+    'fence', 'hasDogs', 'shade',
   ]);
 
   $: activeFilters = Object.entries($filterStore)
@@ -19,7 +24,11 @@
   }
 
   function clearAll() {
-    filterStore.update(f => Object.fromEntries(Object.keys(f).map(k => [k, false])));
+    // Reset to defaults rather than setting every key false: the completeness
+    // toggles (showComplete/showPartial/showMissing) default true, and forcing
+    // them false would hide *all* playgrounds at every tier (and render a grey
+    // "no match" macro ring) instead of clearing the active filters.
+    filterStore.set({ ...defaultFilters });
   }
 </script>
 
