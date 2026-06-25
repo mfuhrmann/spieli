@@ -2092,7 +2092,7 @@
 <a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a><span class="w">        </span><span class="nt">&quot;has_soccer&quot;</span><span class="p">:</span><span class="w">         </span><span class="kc">true</span><span class="p">,</span>
 <a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a><span class="w">        </span><span class="nt">&quot;has_fence&quot;</span><span class="p">:</span><span class="w">          </span><span class="kc">true</span><span class="p">,</span>
 <a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a><span class="w">        </span><span class="nt">&quot;has_dogs&quot;</span><span class="p">:</span><span class="w">           </span><span class="kc">false</span><span class="p">,</span>
-<a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a><span class="w">        </span><span class="nt">&quot;has_shade&quot;</span><span class="p">:</span><span class="w">          </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a><span class="w">        </span><span class="nt">&quot;has_shade&quot;</span><span class="p">:</span><span class="w">          </span><span class="kc">true</span><span class="p">,</span><span class="w">  </span><span class="c1">// true | false | null (untagged)</span>
 <a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a><span class="w">        </span><span class="nt">&quot;is_water&quot;</span><span class="p">:</span><span class="w">           </span><span class="kc">true</span><span class="p">,</span>
 <a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a><span class="w">        </span><span class="nt">&quot;for_wheelchair&quot;</span><span class="p">:</span><span class="w">     </span><span class="kc">false</span>
 <a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a><span class="w">      </span><span class="p">}</span>
@@ -2138,7 +2138,7 @@
 <a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="w">      </span><span class="nt">&quot;has_basketball&quot;</span><span class="p">:</span><span class="w">    </span><span class="kc">false</span><span class="p">,</span>
 <a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="w">      </span><span class="nt">&quot;has_fence&quot;</span><span class="p">:</span><span class="w">         </span><span class="kc">true</span><span class="p">,</span>
 <a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a><span class="w">      </span><span class="nt">&quot;has_dogs&quot;</span><span class="p">:</span><span class="w">          </span><span class="kc">false</span><span class="p">,</span>
-<a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a><span class="w">      </span><span class="nt">&quot;has_shade&quot;</span><span class="p">:</span><span class="w">         </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a><span class="w">      </span><span class="nt">&quot;has_shade&quot;</span><span class="p">:</span><span class="w">         </span><span class="kc">true</span><span class="p">,</span><span class="w">  </span><span class="c1">// true | false | null (untagged)</span>
 <a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a><span class="w">      </span><span class="nt">&quot;access_restricted&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span>
 <a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a><span class="w">    </span><span class="p">}</span>
 <a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a><span class="w">  </span><span class="p">}</span>
@@ -2146,7 +2146,7 @@
 </code></pre></div>
 <p>The standalone client doesn't consume this RPC in P1 — the server-bucketed cluster tier covers zoom ≤ 13 directly. The RPC ships now so federated hub clustering (<code>add-federated-playground-clustering</code>) and any future "centroid + Supercluster" tier can use it without a schema change.</p>
 <blockquote>
-<p>Note: the <code>filter_attrs</code> object includes <code>has_fence</code>, <code>has_dogs</code>, and <code>has_shade</code> for the new playground filters.</p>
+<p>Note: the <code>filter_attrs</code> object includes <code>has_fence</code>, <code>has_dogs</code>, and <code>has_shade</code> for the new playground filters. <code>has_shade</code> is nullable — <code>true</code> when <code>shade=yes</code>, <code>false</code> when <code>shade=no</code>, <code>null</code> when untagged.</p>
 </blockquote>
 <h2 id="get_meta-extended"><code>get_meta()</code> — extended<a class="headerlink" href="#get_meta-extended" title="Permanent link">&para;</a></h2>
 <p>Existing federation-discovery RPC, extended with completeness counts.</p>

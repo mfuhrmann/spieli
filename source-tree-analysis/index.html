@@ -1600,95 +1600,94 @@
 <a id="__codelineno-0-54" name="__codelineno-0-54" href="#__codelineno-0-54"></a>│       │   ├── BottomSheet.svelte ← Mobile bottom sheet
 <a id="__codelineno-0-55" name="__codelineno-0-55" href="#__codelineno-0-55"></a>│       │   ├── CompletenessLegend.svelte ← Colour legend
 <a id="__codelineno-0-56" name="__codelineno-0-56" href="#__codelineno-0-56"></a>│       │   ├── FilterChips.svelte ← Active filter chip row
-<a id="__codelineno-0-57" name="__codelineno-0-57" href="#__codelineno-0-57"></a>│       │   ├── AgeChip.svelte     ← Age range badge
-<a id="__codelineno-0-58" name="__codelineno-0-58" href="#__codelineno-0-58"></a>│       │   ├── DataContributionModal.svelte ← &quot;Daten ergänzen&quot; OSM link modal
-<a id="__codelineno-0-59" name="__codelineno-0-59" href="#__codelineno-0-59"></a>│       │   ├── MapCompleteLink.svelte ← MapComplete contribution link
-<a id="__codelineno-0-60" name="__codelineno-0-60" href="#__codelineno-0-60"></a>│       │   ├── PanoramaxViewer.svelte ← Panoramax photo iframe
-<a id="__codelineno-0-61" name="__codelineno-0-61" href="#__codelineno-0-61"></a>│       │   ├── POIPanel.svelte    ← Nearby POIs panel
-<a id="__codelineno-0-62" name="__codelineno-0-62" href="#__codelineno-0-62"></a>│       │   ├── ReviewsPanel.svelte ← Mangrove reviews panel
-<a id="__codelineno-0-63" name="__codelineno-0-63" href="#__codelineno-0-63"></a>│       │   └── ui/                ← Low-level design system primitives
-<a id="__codelineno-0-64" name="__codelineno-0-64" href="#__codelineno-0-64"></a>│       │       ├── Badge.svelte
-<a id="__codelineno-0-65" name="__codelineno-0-65" href="#__codelineno-0-65"></a>│       │       ├── Button.svelte
-<a id="__codelineno-0-66" name="__codelineno-0-66" href="#__codelineno-0-66"></a>│       │       ├── Card.svelte
-<a id="__codelineno-0-67" name="__codelineno-0-67" href="#__codelineno-0-67"></a>│       │       ├── Input.svelte
-<a id="__codelineno-0-68" name="__codelineno-0-68" href="#__codelineno-0-68"></a>│       │       └── Sheet.svelte
-<a id="__codelineno-0-69" name="__codelineno-0-69" href="#__codelineno-0-69"></a>│       │
-<a id="__codelineno-0-70" name="__codelineno-0-70" href="#__codelineno-0-70"></a>│       ├── standalone/            ← Standalone mode root
-<a id="__codelineno-0-71" name="__codelineno-0-71" href="#__codelineno-0-71"></a>│       │   └── StandaloneApp.svelte ★ Full standalone layout (sidebar, bottom sheet, etc.)
-<a id="__codelineno-0-72" name="__codelineno-0-72" href="#__codelineno-0-72"></a>│       │
-<a id="__codelineno-0-73" name="__codelineno-0-73" href="#__codelineno-0-73"></a>│       └── hub/                   ← Hub mode (APP_MODE=hub)
-<a id="__codelineno-0-74" name="__codelineno-0-74" href="#__codelineno-0-74"></a>│           ├── HubApp.svelte      ★ Hub layout root
-<a id="__codelineno-0-75" name="__codelineno-0-75" href="#__codelineno-0-75"></a>│           ├── hubOrchestrator.js ★ Hub fan-out to all backends, Supercluster merge
-<a id="__codelineno-0-76" name="__codelineno-0-76" href="#__codelineno-0-76"></a>│           ├── InstancePanel.svelte ← Backend list drawer
-<a id="__codelineno-0-77" name="__codelineno-0-77" href="#__codelineno-0-77"></a>│           ├── InstancePanelDrawer.svelte ← Drawer wrapper
-<a id="__codelineno-0-78" name="__codelineno-0-78" href="#__codelineno-0-78"></a>│           ├── MacroView.svelte   ← Country-level macro ring view (zoom ≤ macroMaxZoom)
-<a id="__codelineno-0-79" name="__codelineno-0-79" href="#__codelineno-0-79"></a>│           ├── bboxRouter.js      ← Filters backends by viewport bbox
-<a id="__codelineno-0-80" name="__codelineno-0-80" href="#__codelineno-0-80"></a>│           ├── fanOut.js          ← Parallel fetch to all matching backends
-<a id="__codelineno-0-81" name="__codelineno-0-81" href="#__codelineno-0-81"></a>│           ├── federationHealth.js ← /federation-status.json polling
-<a id="__codelineno-0-82" name="__codelineno-0-82" href="#__codelineno-0-82"></a>│           ├── macroRingStyle.js  ← OL style for macro rings
-<a id="__codelineno-0-83" name="__codelineno-0-83" href="#__codelineno-0-83"></a>│           ├── osmIdDedup.js      ← Deduplicates features with the same osm_id across backends
-<a id="__codelineno-0-84" name="__codelineno-0-84" href="#__codelineno-0-84"></a>│           └── registry.js        ← Fetches and parses registry.json
-<a id="__codelineno-0-85" name="__codelineno-0-85" href="#__codelineno-0-85"></a>│
-<a id="__codelineno-0-86" name="__codelineno-0-86" href="#__codelineno-0-86"></a>├── db/
-<a id="__codelineno-0-87" name="__codelineno-0-87" href="#__codelineno-0-87"></a>│   └── init.sql                   ← One-time DB init: PostGIS, hstore, api schema, web_anon role
-<a id="__codelineno-0-88" name="__codelineno-0-88" href="#__codelineno-0-88"></a>│
-<a id="__codelineno-0-89" name="__codelineno-0-89" href="#__codelineno-0-89"></a>├── importer/
-<a id="__codelineno-0-90" name="__codelineno-0-90" href="#__codelineno-0-90"></a>│   ├── import.sh                  ★ Full import script: download → osmium clip → osm2pgsql → api.sql
-<a id="__codelineno-0-91" name="__codelineno-0-91" href="#__codelineno-0-91"></a>│   ├── api.sql                    ★ All PostgREST API functions + playground_stats matview
-<a id="__codelineno-0-92" name="__codelineno-0-92" href="#__codelineno-0-92"></a>│   └── Dockerfile                 ← Importer image (osm2pgsql, osmium-tool, psql)
+<a id="__codelineno-0-57" name="__codelineno-0-57" href="#__codelineno-0-57"></a>│       │   ├── DataContributionModal.svelte ← &quot;Daten ergänzen&quot; OSM link modal
+<a id="__codelineno-0-58" name="__codelineno-0-58" href="#__codelineno-0-58"></a>│       │   ├── MapCompleteLink.svelte ← MapComplete contribution link
+<a id="__codelineno-0-59" name="__codelineno-0-59" href="#__codelineno-0-59"></a>│       │   ├── PanoramaxViewer.svelte ← Panoramax photo iframe
+<a id="__codelineno-0-60" name="__codelineno-0-60" href="#__codelineno-0-60"></a>│       │   ├── POIPanel.svelte    ← Nearby POIs panel
+<a id="__codelineno-0-61" name="__codelineno-0-61" href="#__codelineno-0-61"></a>│       │   ├── ReviewsPanel.svelte ← Mangrove reviews panel
+<a id="__codelineno-0-62" name="__codelineno-0-62" href="#__codelineno-0-62"></a>│       │   └── ui/                ← Low-level design system primitives
+<a id="__codelineno-0-63" name="__codelineno-0-63" href="#__codelineno-0-63"></a>│       │       ├── Badge.svelte
+<a id="__codelineno-0-64" name="__codelineno-0-64" href="#__codelineno-0-64"></a>│       │       ├── Button.svelte
+<a id="__codelineno-0-65" name="__codelineno-0-65" href="#__codelineno-0-65"></a>│       │       ├── Card.svelte
+<a id="__codelineno-0-66" name="__codelineno-0-66" href="#__codelineno-0-66"></a>│       │       ├── Input.svelte
+<a id="__codelineno-0-67" name="__codelineno-0-67" href="#__codelineno-0-67"></a>│       │       └── Sheet.svelte
+<a id="__codelineno-0-68" name="__codelineno-0-68" href="#__codelineno-0-68"></a>│       │
+<a id="__codelineno-0-69" name="__codelineno-0-69" href="#__codelineno-0-69"></a>│       ├── standalone/            ← Standalone mode root
+<a id="__codelineno-0-70" name="__codelineno-0-70" href="#__codelineno-0-70"></a>│       │   └── StandaloneApp.svelte ★ Full standalone layout (sidebar, bottom sheet, etc.)
+<a id="__codelineno-0-71" name="__codelineno-0-71" href="#__codelineno-0-71"></a>│       │
+<a id="__codelineno-0-72" name="__codelineno-0-72" href="#__codelineno-0-72"></a>│       └── hub/                   ← Hub mode (APP_MODE=hub)
+<a id="__codelineno-0-73" name="__codelineno-0-73" href="#__codelineno-0-73"></a>│           ├── HubApp.svelte      ★ Hub layout root
+<a id="__codelineno-0-74" name="__codelineno-0-74" href="#__codelineno-0-74"></a>│           ├── hubOrchestrator.js ★ Hub fan-out to all backends, Supercluster merge
+<a id="__codelineno-0-75" name="__codelineno-0-75" href="#__codelineno-0-75"></a>│           ├── InstancePanel.svelte ← Backend list drawer
+<a id="__codelineno-0-76" name="__codelineno-0-76" href="#__codelineno-0-76"></a>│           ├── InstancePanelDrawer.svelte ← Drawer wrapper
+<a id="__codelineno-0-77" name="__codelineno-0-77" href="#__codelineno-0-77"></a>│           ├── MacroView.svelte   ← Country-level macro ring view (zoom ≤ macroMaxZoom)
+<a id="__codelineno-0-78" name="__codelineno-0-78" href="#__codelineno-0-78"></a>│           ├── bboxRouter.js      ← Filters backends by viewport bbox
+<a id="__codelineno-0-79" name="__codelineno-0-79" href="#__codelineno-0-79"></a>│           ├── fanOut.js          ← Parallel fetch to all matching backends
+<a id="__codelineno-0-80" name="__codelineno-0-80" href="#__codelineno-0-80"></a>│           ├── federationHealth.js ← /federation-status.json polling
+<a id="__codelineno-0-81" name="__codelineno-0-81" href="#__codelineno-0-81"></a>│           ├── macroRingStyle.js  ← OL style for macro rings
+<a id="__codelineno-0-82" name="__codelineno-0-82" href="#__codelineno-0-82"></a>│           ├── osmIdDedup.js      ← Deduplicates features with the same osm_id across backends
+<a id="__codelineno-0-83" name="__codelineno-0-83" href="#__codelineno-0-83"></a>│           └── registry.js        ← Fetches and parses registry.json
+<a id="__codelineno-0-84" name="__codelineno-0-84" href="#__codelineno-0-84"></a>│
+<a id="__codelineno-0-85" name="__codelineno-0-85" href="#__codelineno-0-85"></a>├── db/
+<a id="__codelineno-0-86" name="__codelineno-0-86" href="#__codelineno-0-86"></a>│   └── init.sql                   ← One-time DB init: PostGIS, hstore, api schema, web_anon role
+<a id="__codelineno-0-87" name="__codelineno-0-87" href="#__codelineno-0-87"></a>│
+<a id="__codelineno-0-88" name="__codelineno-0-88" href="#__codelineno-0-88"></a>├── importer/
+<a id="__codelineno-0-89" name="__codelineno-0-89" href="#__codelineno-0-89"></a>│   ├── import.sh                  ★ Full import script: download → osmium clip → osm2pgsql → api.sql
+<a id="__codelineno-0-90" name="__codelineno-0-90" href="#__codelineno-0-90"></a>│   ├── api.sql                    ★ All PostgREST API functions + playground_stats matview
+<a id="__codelineno-0-91" name="__codelineno-0-91" href="#__codelineno-0-91"></a>│   └── Dockerfile                 ← Importer image (osm2pgsql, osmium-tool, psql)
+<a id="__codelineno-0-92" name="__codelineno-0-92" href="#__codelineno-0-92"></a>│
 <a id="__codelineno-0-93" name="__codelineno-0-93" href="#__codelineno-0-93"></a>│
-<a id="__codelineno-0-94" name="__codelineno-0-94" href="#__codelineno-0-94"></a>│
-<a id="__codelineno-0-95" name="__codelineno-0-95" href="#__codelineno-0-95"></a>├── oci/                           ← Docker build contexts
-<a id="__codelineno-0-96" name="__codelineno-0-96" href="#__codelineno-0-96"></a>│   ├── app/
-<a id="__codelineno-0-97" name="__codelineno-0-97" href="#__codelineno-0-97"></a>│   │   ├── Dockerfile             ← App image (nginx + Svelte build)
-<a id="__codelineno-0-98" name="__codelineno-0-98" href="#__codelineno-0-98"></a>│   │   ├── nginx.conf             ← nginx: static serving, /api/ proxy, security headers, CORS
-<a id="__codelineno-0-99" name="__codelineno-0-99" href="#__codelineno-0-99"></a>│   │   ├── docker-entrypoint.sh   ★ Startup: writes config.js from env, starts nginx
-<a id="__codelineno-0-100" name="__codelineno-0-100" href="#__codelineno-0-100"></a>│   │   └── poll-federation.sh     ← Cron script: polls backends, writes federation-status.json + /metrics
-<a id="__codelineno-0-101" name="__codelineno-0-101" href="#__codelineno-0-101"></a>│   └── docker-entrypoint.sh       ← Top-level entrypoint (hub cron setup)
-<a id="__codelineno-0-102" name="__codelineno-0-102" href="#__codelineno-0-102"></a>│
-<a id="__codelineno-0-103" name="__codelineno-0-103" href="#__codelineno-0-103"></a>├── locales/                       ← Translation files (svelte-i18n format)
-<a id="__codelineno-0-104" name="__codelineno-0-104" href="#__codelineno-0-104"></a>│   ├── de.json                    ← German (primary)
-<a id="__codelineno-0-105" name="__codelineno-0-105" href="#__codelineno-0-105"></a>│   ├── en.json                    ← English
-<a id="__codelineno-0-106" name="__codelineno-0-106" href="#__codelineno-0-106"></a>│   └── cs.json fr.json …         ← Other languages
-<a id="__codelineno-0-107" name="__codelineno-0-107" href="#__codelineno-0-107"></a>│
-<a id="__codelineno-0-108" name="__codelineno-0-108" href="#__codelineno-0-108"></a>├── deploy/                        ← Systemd units for automated import on Linux hosts
-<a id="__codelineno-0-109" name="__codelineno-0-109" href="#__codelineno-0-109"></a>│   ├── spieli-import.service      ← Runs `docker compose run --rm importer`
-<a id="__codelineno-0-110" name="__codelineno-0-110" href="#__codelineno-0-110"></a>│   └── spieli-import.timer        ← Weekly trigger (adjust OnCalendar= for your schedule)
-<a id="__codelineno-0-111" name="__codelineno-0-111" href="#__codelineno-0-111"></a>│
-<a id="__codelineno-0-112" name="__codelineno-0-112" href="#__codelineno-0-112"></a>├── tests/                         ← Playwright E2E tests (run via `make test`)
-<a id="__codelineno-0-113" name="__codelineno-0-113" href="#__codelineno-0-113"></a>│   ├── helpers.js                 ★ Shared helpers: injectApiConfig(), stubApiRoutes()
-<a id="__codelineno-0-114" name="__codelineno-0-114" href="#__codelineno-0-114"></a>│   ├── smoke.spec.js              ← Basic page load + canvas visibility
-<a id="__codelineno-0-115" name="__codelineno-0-115" href="#__codelineno-0-115"></a>│   ├── tiered.spec.js             ← Cluster/polygon tier RPC selection
-<a id="__codelineno-0-116" name="__codelineno-0-116" href="#__codelineno-0-116"></a>│   ├── selection.spec.js          ← Playground selection + panel open
-<a id="__codelineno-0-117" name="__codelineno-0-117" href="#__codelineno-0-117"></a>│   ├── hash-restore.spec.js       ← Deeplink URL hash restore
-<a id="__codelineno-0-118" name="__codelineno-0-118" href="#__codelineno-0-118"></a>│   ├── hub-smoke.spec.js          ← Hub mode basic load
-<a id="__codelineno-0-119" name="__codelineno-0-119" href="#__codelineno-0-119"></a>│   ├── hub-multi-backend.spec.js  ← Hub fan-out + Supercluster merge
-<a id="__codelineno-0-120" name="__codelineno-0-120" href="#__codelineno-0-120"></a>│   ├── hub-deeplink.spec.js       ← Hub deeplink with backend slug
-<a id="__codelineno-0-121" name="__codelineno-0-121" href="#__codelineno-0-121"></a>│   ├── hub-pill.spec.js           ← Instance pill count display
-<a id="__codelineno-0-122" name="__codelineno-0-122" href="#__codelineno-0-122"></a>│   ├── hub-federation-health.spec.js ← Federation status polling
-<a id="__codelineno-0-123" name="__codelineno-0-123" href="#__codelineno-0-123"></a>│   ├── hub-osm-id-dedup.spec.js   ← Cross-backend osm_id deduplication
-<a id="__codelineno-0-124" name="__codelineno-0-124" href="#__codelineno-0-124"></a>│   ├── cluster-position.spec.js   ← Cluster position from member centroids
-<a id="__codelineno-0-125" name="__codelineno-0-125" href="#__codelineno-0-125"></a>│   ├── osmIdDedup.spec.js         ← osmIdDedup unit-style test
-<a id="__codelineno-0-126" name="__codelineno-0-126" href="#__codelineno-0-126"></a>│   ├── xss.spec.js                ← XSS / injection safety checks
-<a id="__codelineno-0-127" name="__codelineno-0-127" href="#__codelineno-0-127"></a>│   └── fixtures/                  ← JSON fixtures for stubbed API responses
-<a id="__codelineno-0-128" name="__codelineno-0-128" href="#__codelineno-0-128"></a>│
-<a id="__codelineno-0-129" name="__codelineno-0-129" href="#__codelineno-0-129"></a>├── openspec/                      ← Capability specs + archived change decisions
-<a id="__codelineno-0-130" name="__codelineno-0-130" href="#__codelineno-0-130"></a>│   ├── specs/                     ← Durable per-capability requirements
-<a id="__codelineno-0-131" name="__codelineno-0-131" href="#__codelineno-0-131"></a>│   └── changes/archive/           ← Frozen records of shipped changes (tracked in git)
-<a id="__codelineno-0-132" name="__codelineno-0-132" href="#__codelineno-0-132"></a>│
-<a id="__codelineno-0-133" name="__codelineno-0-133" href="#__codelineno-0-133"></a>├── .github/workflows/
-<a id="__codelineno-0-134" name="__codelineno-0-134" href="#__codelineno-0-134"></a>│   ├── build.yml                  ← Builds app + Docker images; publishes to GHCR on main/tags
-<a id="__codelineno-0-135" name="__codelineno-0-135" href="#__codelineno-0-135"></a>│   ├── e2e.yml                    ← Playwright E2E on pull_request + main
-<a id="__codelineno-0-136" name="__codelineno-0-136" href="#__codelineno-0-136"></a>│   └── docs.yml                   ← MkDocs build + GitHub Pages deploy
-<a id="__codelineno-0-137" name="__codelineno-0-137" href="#__codelineno-0-137"></a>│
-<a id="__codelineno-0-138" name="__codelineno-0-138" href="#__codelineno-0-138"></a>├── compose.yml                    ← Dev Docker Compose stack (db, postgrest, app, db2, postgrest2)
-<a id="__codelineno-0-139" name="__codelineno-0-139" href="#__codelineno-0-139"></a>├── compose.prod.yml               ← Production Docker Compose (uses :latest images)
-<a id="__codelineno-0-140" name="__codelineno-0-140" href="#__codelineno-0-140"></a>├── Makefile                       ← All common operations (make help for full list)
-<a id="__codelineno-0-141" name="__codelineno-0-141" href="#__codelineno-0-141"></a>├── playwright.config.js           ← Playwright config (baseURL: localhost:8080)
-<a id="__codelineno-0-142" name="__codelineno-0-142" href="#__codelineno-0-142"></a>├── mkdocs.yml                     ← MkDocs config
-<a id="__codelineno-0-143" name="__codelineno-0-143" href="#__codelineno-0-143"></a>├── README.md                      ← Brief overview + deploy link
-<a id="__codelineno-0-144" name="__codelineno-0-144" href="#__codelineno-0-144"></a>├── CONTRIBUTING.md                ← Contribution workflow (branch → commit → PR)
-<a id="__codelineno-0-145" name="__codelineno-0-145" href="#__codelineno-0-145"></a>└── RELEASING.md                   ← Release checklist (version bump → tag → GHCR publish)
+<a id="__codelineno-0-94" name="__codelineno-0-94" href="#__codelineno-0-94"></a>├── oci/                           ← Docker build contexts
+<a id="__codelineno-0-95" name="__codelineno-0-95" href="#__codelineno-0-95"></a>│   ├── app/
+<a id="__codelineno-0-96" name="__codelineno-0-96" href="#__codelineno-0-96"></a>│   │   ├── Dockerfile             ← App image (nginx + Svelte build)
+<a id="__codelineno-0-97" name="__codelineno-0-97" href="#__codelineno-0-97"></a>│   │   ├── nginx.conf             ← nginx: static serving, /api/ proxy, security headers, CORS
+<a id="__codelineno-0-98" name="__codelineno-0-98" href="#__codelineno-0-98"></a>│   │   ├── docker-entrypoint.sh   ★ Startup: writes config.js from env, starts nginx
+<a id="__codelineno-0-99" name="__codelineno-0-99" href="#__codelineno-0-99"></a>│   │   └── poll-federation.sh     ← Cron script: polls backends, writes federation-status.json + /metrics
+<a id="__codelineno-0-100" name="__codelineno-0-100" href="#__codelineno-0-100"></a>│   └── docker-entrypoint.sh       ← Top-level entrypoint (hub cron setup)
+<a id="__codelineno-0-101" name="__codelineno-0-101" href="#__codelineno-0-101"></a>│
+<a id="__codelineno-0-102" name="__codelineno-0-102" href="#__codelineno-0-102"></a>├── locales/                       ← Translation files (svelte-i18n format)
+<a id="__codelineno-0-103" name="__codelineno-0-103" href="#__codelineno-0-103"></a>│   ├── de.json                    ← German (primary)
+<a id="__codelineno-0-104" name="__codelineno-0-104" href="#__codelineno-0-104"></a>│   ├── en.json                    ← English
+<a id="__codelineno-0-105" name="__codelineno-0-105" href="#__codelineno-0-105"></a>│   └── cs.json fr.json …         ← Other languages
+<a id="__codelineno-0-106" name="__codelineno-0-106" href="#__codelineno-0-106"></a>│
+<a id="__codelineno-0-107" name="__codelineno-0-107" href="#__codelineno-0-107"></a>├── deploy/                        ← Systemd units for automated import on Linux hosts
+<a id="__codelineno-0-108" name="__codelineno-0-108" href="#__codelineno-0-108"></a>│   ├── spieli-import.service      ← Runs `docker compose run --rm importer`
+<a id="__codelineno-0-109" name="__codelineno-0-109" href="#__codelineno-0-109"></a>│   └── spieli-import.timer        ← Weekly trigger (adjust OnCalendar= for your schedule)
+<a id="__codelineno-0-110" name="__codelineno-0-110" href="#__codelineno-0-110"></a>│
+<a id="__codelineno-0-111" name="__codelineno-0-111" href="#__codelineno-0-111"></a>├── tests/                         ← Playwright E2E tests (run via `make test`)
+<a id="__codelineno-0-112" name="__codelineno-0-112" href="#__codelineno-0-112"></a>│   ├── helpers.js                 ★ Shared helpers: injectApiConfig(), stubApiRoutes()
+<a id="__codelineno-0-113" name="__codelineno-0-113" href="#__codelineno-0-113"></a>│   ├── smoke.spec.js              ← Basic page load + canvas visibility
+<a id="__codelineno-0-114" name="__codelineno-0-114" href="#__codelineno-0-114"></a>│   ├── tiered.spec.js             ← Cluster/polygon tier RPC selection
+<a id="__codelineno-0-115" name="__codelineno-0-115" href="#__codelineno-0-115"></a>│   ├── selection.spec.js          ← Playground selection + panel open
+<a id="__codelineno-0-116" name="__codelineno-0-116" href="#__codelineno-0-116"></a>│   ├── hash-restore.spec.js       ← Deeplink URL hash restore
+<a id="__codelineno-0-117" name="__codelineno-0-117" href="#__codelineno-0-117"></a>│   ├── hub-smoke.spec.js          ← Hub mode basic load
+<a id="__codelineno-0-118" name="__codelineno-0-118" href="#__codelineno-0-118"></a>│   ├── hub-multi-backend.spec.js  ← Hub fan-out + Supercluster merge
+<a id="__codelineno-0-119" name="__codelineno-0-119" href="#__codelineno-0-119"></a>│   ├── hub-deeplink.spec.js       ← Hub deeplink with backend slug
+<a id="__codelineno-0-120" name="__codelineno-0-120" href="#__codelineno-0-120"></a>│   ├── hub-pill.spec.js           ← Instance pill count display
+<a id="__codelineno-0-121" name="__codelineno-0-121" href="#__codelineno-0-121"></a>│   ├── hub-federation-health.spec.js ← Federation status polling
+<a id="__codelineno-0-122" name="__codelineno-0-122" href="#__codelineno-0-122"></a>│   ├── hub-osm-id-dedup.spec.js   ← Cross-backend osm_id deduplication
+<a id="__codelineno-0-123" name="__codelineno-0-123" href="#__codelineno-0-123"></a>│   ├── cluster-position.spec.js   ← Cluster position from member centroids
+<a id="__codelineno-0-124" name="__codelineno-0-124" href="#__codelineno-0-124"></a>│   ├── osmIdDedup.spec.js         ← osmIdDedup unit-style test
+<a id="__codelineno-0-125" name="__codelineno-0-125" href="#__codelineno-0-125"></a>│   ├── xss.spec.js                ← XSS / injection safety checks
+<a id="__codelineno-0-126" name="__codelineno-0-126" href="#__codelineno-0-126"></a>│   └── fixtures/                  ← JSON fixtures for stubbed API responses
+<a id="__codelineno-0-127" name="__codelineno-0-127" href="#__codelineno-0-127"></a>│
+<a id="__codelineno-0-128" name="__codelineno-0-128" href="#__codelineno-0-128"></a>├── openspec/                      ← Capability specs + archived change decisions
+<a id="__codelineno-0-129" name="__codelineno-0-129" href="#__codelineno-0-129"></a>│   ├── specs/                     ← Durable per-capability requirements
+<a id="__codelineno-0-130" name="__codelineno-0-130" href="#__codelineno-0-130"></a>│   └── changes/archive/           ← Frozen records of shipped changes (tracked in git)
+<a id="__codelineno-0-131" name="__codelineno-0-131" href="#__codelineno-0-131"></a>│
+<a id="__codelineno-0-132" name="__codelineno-0-132" href="#__codelineno-0-132"></a>├── .github/workflows/
+<a id="__codelineno-0-133" name="__codelineno-0-133" href="#__codelineno-0-133"></a>│   ├── build.yml                  ← Builds app + Docker images; publishes to GHCR on main/tags
+<a id="__codelineno-0-134" name="__codelineno-0-134" href="#__codelineno-0-134"></a>│   ├── e2e.yml                    ← Playwright E2E on pull_request + main
+<a id="__codelineno-0-135" name="__codelineno-0-135" href="#__codelineno-0-135"></a>│   └── docs.yml                   ← MkDocs build + GitHub Pages deploy
+<a id="__codelineno-0-136" name="__codelineno-0-136" href="#__codelineno-0-136"></a>│
+<a id="__codelineno-0-137" name="__codelineno-0-137" href="#__codelineno-0-137"></a>├── compose.yml                    ← Dev Docker Compose stack (db, postgrest, app, db2, postgrest2)
+<a id="__codelineno-0-138" name="__codelineno-0-138" href="#__codelineno-0-138"></a>├── compose.prod.yml               ← Production Docker Compose (uses :latest images)
+<a id="__codelineno-0-139" name="__codelineno-0-139" href="#__codelineno-0-139"></a>├── Makefile                       ← All common operations (make help for full list)
+<a id="__codelineno-0-140" name="__codelineno-0-140" href="#__codelineno-0-140"></a>├── playwright.config.js           ← Playwright config (baseURL: localhost:8080)
+<a id="__codelineno-0-141" name="__codelineno-0-141" href="#__codelineno-0-141"></a>├── mkdocs.yml                     ← MkDocs config
+<a id="__codelineno-0-142" name="__codelineno-0-142" href="#__codelineno-0-142"></a>├── README.md                      ← Brief overview + deploy link
+<a id="__codelineno-0-143" name="__codelineno-0-143" href="#__codelineno-0-143"></a>├── CONTRIBUTING.md                ← Contribution workflow (branch → commit → PR)
+<a id="__codelineno-0-144" name="__codelineno-0-144" href="#__codelineno-0-144"></a>└── RELEASING.md                   ← Release checklist (version bump → tag → GHCR publish)
 </code></pre></div>
 <hr />
 <h2 id="entry-points">Entry points<a class="headerlink" href="#entry-points" title="Permanent link">&para;</a></h2>
