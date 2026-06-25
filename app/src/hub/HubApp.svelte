@@ -7,6 +7,7 @@
   import AppShell from '../components/AppShell.svelte';
   import InstancePanel from './InstancePanel.svelte';
   import MacroView from './MacroView.svelte';
+  import MacroCoverageBanner from './MacroCoverageBanner.svelte';
 
   import { resolveRegionFromPath } from '../lib/regionUrl.js';
   import { createRegistry } from './registry.js';
@@ -14,6 +15,7 @@
   import { mapStore } from '../stores/map.js';
   import { filterStore } from '../stores/filters.js';
   import { macroFilteredStore } from '../stores/macroFiltered.js';
+  import { macroCoverageStore } from '../stores/macroCoverage.js';
   import { activeTierStore } from '../stores/tier.js';
   import { clusterMaxZoom } from '../lib/config.js';
   import * as osmIdDedup from './osmIdDedup.js';
@@ -262,7 +264,8 @@
   });
 </script>
 
-<MacroView {backends} source={macroSource} macroFiltered={macroFilteredStore} />
+<MacroView {backends} source={macroSource} macroFiltered={macroFilteredStore} macroCoverage={macroCoverageStore} />
+<MacroCoverageBanner coverage={macroCoverageStore} />
 
 <AppShell
   playgroundSource={polygonSource}

@@ -122,6 +122,7 @@ To test Hub mode locally: set `appMode: 'hub'` in `app/public/config.js`, run `m
 | `location.js` | User's current GPS position — `{ lat, lon, accuracy } \| null`. Written by LocateButton (manual + auto-locate), read by Map (location marker) and PlaygroundPanel (navigation origin). |
 | `hubLoading.js` | Hub fan-out load progress — `{ loaded, total, settling }`. Written by `hubOrchestrator`, read by the hub UI to show a progress indicator. |
 | `macroFiltered.js` | Per-backend filtered aggregate for the hub macro tier — `Map<backendUrl, {count, complete, partial, missing}> \| null`. `null` = no filter active (macro stays zero-fetch, rings use cached `get_meta`). Written by `hubOrchestrator` when a filter is active (sums each backend's filtered `get_playground_clusters` buckets), read by `MacroView` to override ring props. |
+| `macroCoverage.js` | Macro-tier filter coverage — `{ answered, total, cantFilter[] } \| null`. `null` = no filter active. Written by `hubOrchestrator` (tracks how many in-scope backends actually applied the active filter; `cantFilter` lists those that couldn't — no bbox or 404). Read by `MacroView` (per-backend `_cantFilter` ring flag) and `MacroCoverageBanner` ("filter covers N of M regions" disclosure). |
 
 ### Components
 
@@ -164,6 +165,7 @@ To test Hub mode locally: set `appMode: 'hub'` in `app/public/config.js`, run `m
 | `InstancePanel.svelte` | Sidebar listing all registered backends with health status and region details |
 | `InstancePanelDrawer.svelte` | Slide-in drawer wrapping InstancePanel on mobile |
 | `MacroView.svelte` | Country-level OL layer — one point per backend at its bbox centroid with stacked-ring style |
+| `MacroCoverageBanner.svelte` | Non-alarming "filter covers N of M regions" banner shown at the macro tier when a filter applied to only some backends (reads `macroCoverage`) |
 | `hubOrchestrator.js` | Hub-mode tiered orchestrator — fans every tier fetch out across backends via `fanOut`, filtered by viewport and health |
 | `registry.js` | Loads `registry.json`, polls `get_meta` every 5 min, exposes `backends` readable store, provides multi-backend nearest-playground fetcher |
 | `federationHealth.js` | Polls `/federation-status.json` and merges per-backend health into the registry store |

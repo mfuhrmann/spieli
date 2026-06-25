@@ -41,11 +41,19 @@
    * @type {import('svelte/store').Readable<Map|null>}
    */
   export let macroFiltered;
+  /**
+   * Macro filter coverage store (hubOrchestrator → macroCoverage.js). `null`
+   * when no filter is active; otherwise `{ answered, total, cantFilter[] }`.
+   * Used to flag backends that couldn't apply the filter (#688).
+   * @type {import('svelte/store').Readable<{answered:number,total:number,cantFilter:string[]}|null>}
+   */
+  export let macroCoverage;
 
   // Latest value of each store, mirrored so buildFeature (called from the
-  // rebuild below) reads both without a closure-captured snapshot.
+  // rebuild below) reads them all without a closure-captured snapshot.
   let backendsValue = [];
   let filteredValue = null;
+  let coverageValue = null;
 
   function buildFeature(backend) {
     const centroid = bboxCentroid(backend.bbox) ?? backend.nominalCentroid ?? null;
@@ -57,6 +65,9 @@
     // completeness segments, and state flags are derived in `macroAggregate.js`.
     const filtered = filteredValue ? filteredValue.get(backend.url) : null;
     const r = deriveMacroRing(backend, filtered);
+    // A backend the orchestrator couldn't filter (no bbox / 404) keeps its
+    // unfiltered ring but is flagged so the renderer marks it "unfiltered".
+    const cantFilter = coverageValue ? coverageValue.cantFilter.includes(backend.url) : false;
     return new Feature({
       geometry: new Point(transform(centroid, 'EPSG:4326', 'EPSG:3857')),
       _tier:          'macro',
@@ -67,6 +78,7 @@
       _importing:     r.importing,
       _degraded:      r.degraded,
       _filteredEmpty: r.filteredEmpty,
+      _cantFilter:    cantFilter,
       _name:          backend.name ?? backend.region ?? backend.slug ?? backend.url,
       count:          r.count,
       complete:       r.complete,
@@ -97,10 +109,15 @@
     filteredValue = $filtered;
     rebuild();
   });
+  const detachCoverage = macroCoverage.subscribe(($coverage) => {
+    coverageValue = $coverage;
+    rebuild();
+  });
 
   onDestroy(() => {
     detachBackends();
     detachFiltered();
+    detachCoverage();
     if (source) source.clear();
   });
 </script>

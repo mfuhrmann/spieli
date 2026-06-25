@@ -401,6 +401,7 @@
     "playgroundCount": "{count, plural, one {# Spielplatz} other {# Spielplätze}}",
     "regionCount": "{count, plural, one {# Region} other {# Regionen}}",
     "regionProgress": "{completed}/{total, plural, one {# Region} other {# Regionen}}",
+    "macroCoverage": "Filter erfasst {answered} von {total, plural, one {# Region} other {# Regionen}}",
     "pillExpand": "Instanz-Liste öffnen",
     "pillCollapse": "Instanz-Liste schließen",
     "drawerTitle": "Verfügbare Instanzen",
