@@ -523,7 +523,7 @@
           {#if openingHoursInfo}
             <Badge
               variant={openingHoursInfo.open ? 'successSoft' : 'dangerSoft'}
-              class="gap-[5px] max-w-full overflow-hidden whitespace-nowrap"
+              class="gap-[5px] min-w-0 max-w-full overflow-hidden whitespace-nowrap"
               aria-label={openingHoursInfo.open === null
                 ? openingHoursInfo.text
                 : `${openingHoursInfo.open ? $_('poi.open') : $_('poi.closed')}: ${openingHoursInfo.text}`}
