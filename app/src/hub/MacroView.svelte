@@ -34,6 +34,18 @@
   export let backends;
   /** @type {import('ol/source/Vector.js').default} */
   export let source;
+  /**
+   * Per-backend filtered aggregate store (hubOrchestrator → macroFiltered.js).
+   * `null` when no filter is active (use cached meta); otherwise a
+   * `Map<backendUrl, {count, complete, partial, missing}>`.
+   * @type {import('svelte/store').Readable<Map|null>}
+   */
+  export let macroFiltered;
+
+  // Latest value of each store, mirrored so buildFeature (called from the
+  // rebuild below) reads both without a closure-captured snapshot.
+  let backendsValue = [];
+  let filteredValue = null;
 
   function buildFeature(backend) {
     const centroid = bboxCentroid(backend.bbox) ?? backend.nominalCentroid ?? null;
@@ -43,9 +55,25 @@
     // Pre-P1 backends → unknown completeness; map the count into the
     // restricted bucket so the renderer draws a flat gray ring.
     const c     = backend.completeness;
-    const count = backend.playgroundCount ?? 0;
-    const degraded = !offline && !importing && count === 0;
-    const props = c
+    // When a filter is active and this backend has settled a filtered total,
+    // it overrides the cached-meta count + completeness so the ring reflects
+    // the filtered subset. No entry (not yet settled, or a pre-tier peer that
+    // 404s on the cluster RPC) falls back to cached meta unchanged.
+    const filtered = filteredValue ? filteredValue.get(backend.url) : null;
+    const count = filtered ? filtered.count : (backend.playgroundCount ?? 0);
+    // Degraded ("no data") is a backend-empty state from cached meta; a
+    // filtered total of 0 is a distinct "no match" state (see filteredEmpty).
+    const degraded = !offline && !importing && !filtered && count === 0;
+    const filteredEmpty = !offline && !importing && !!filtered && count === 0;
+    const props = filtered
+      ? {
+          count,
+          complete:   filtered.complete,
+          partial:    filtered.partial,
+          missing:    filtered.missing,
+          restricted: 0,
+        }
+      : c
       ? {
           count,
           complete:   c.complete,
@@ -62,32 +90,44 @@
         };
     return new Feature({
       geometry: new Point(transform(centroid, 'EPSG:4326', 'EPSG:3857')),
-      _tier:        'macro',
-      _backendUrl:  backend.url,
-      _backendSlug: backend.slug ?? null,
-      _bbox:        backend.bbox,
-      _offline:     offline,
-      _importing:   importing,
-      _degraded:    degraded,
-      _name:        backend.name ?? backend.region ?? backend.slug ?? backend.url,
+      _tier:          'macro',
+      _backendUrl:    backend.url,
+      _backendSlug:   backend.slug ?? null,
+      _bbox:          backend.bbox,
+      _offline:       offline,
+      _importing:     importing,
+      _degraded:      degraded,
+      _filteredEmpty: filteredEmpty,
+      _name:          backend.name ?? backend.region ?? backend.slug ?? backend.url,
       ...props,
     });
   }
 
   // Rebuild on every store update. Backends typically change shape twice
   // per session (initial load + 5-min poll) and number <20, so a full
-  // clear+addFeatures is well below any perceptible cost.
-  const detach = backends.subscribe(($backends) => {
+  // clear+addFeatures is well below any perceptible cost. The filtered store
+  // additionally fires once per backend as filtered totals settle.
+  function rebuild() {
     if (!source) return;
-    const features = $backends
+    const features = backendsValue
       .map(buildFeature)
       .filter(Boolean);
     source.clear();
     source.addFeatures(features);
+  }
+
+  const detachBackends = backends.subscribe(($backends) => {
+    backendsValue = $backends;
+    rebuild();
+  });
+  const detachFiltered = macroFiltered.subscribe(($filtered) => {
+    filteredValue = $filtered;
+    rebuild();
   });
 
   onDestroy(() => {
-    detach();
+    detachBackends();
+    detachFiltered();
     if (source) source.clear();
   });
 </script>

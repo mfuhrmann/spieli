@@ -39,6 +39,8 @@ import {
 import { clusterMaxZoom, macroMaxZoom } from '../lib/config.js';
 import { activeTierStore } from '../stores/tier.js';
 import { hubLoadingStore } from '../stores/hubLoading.js';
+import { macroFilteredStore } from '../stores/macroFiltered.js';
+import { hasActiveFilters } from '../stores/filters.js';
 import { selectBackends } from './bboxRouter.js';
 import { filterHealthy } from './federationHealth.js';
 import { applyDedup } from './osmIdDedup.js';
@@ -136,6 +138,7 @@ export function attachHubOrchestrator({
       // backendsStore. Clear feature sources so old cluster / polygon
       // features from a previous higher zoom don't bleed through.
       clearSourcesAndProgress();
+      await orchestrateMacroFilter(signal);
       return;
     }
 
@@ -273,6 +276,65 @@ export function attachHubOrchestrator({
         hubLoadingStore.update(s => ({ ...s, settling: false }));
       }
     }
+  }
+
+  // Macro-tier filter aggregation. The macro tier is normally zero-fetch —
+  // MacroView renders one ring per backend straight from the cached
+  // `get_meta` totals. When a filter is active those cached totals are
+  // wrong (they ignore the filter), so we derive a filtered total per
+  // backend from the filter-aware cluster RPC: fetch each backend's buckets
+  // over its own bbox and sum them. Bucket totals partition a backend's
+  // region at any zoom, so the sum is zoom-invariant — we query at
+  // `macroMaxZoom` (the coarsest tier) to minimise bucket payload, since the
+  // per-cell detail is discarded by the sum. Results are published progressively
+  // on `macroFilteredStore`; MacroView overrides each ring as its entry
+  // settles. A pre-tier peer that 404s keeps its cached-meta ring.
+  async function orchestrateMacroFilter(signal) {
+    const filters = getFilters();
+    if (!filters || !hasActiveFilters(filters)) {
+      macroFilteredStore.set(null);
+      return;
+    }
+
+    // Macro viewport is global, so every healthy backend with a bbox is in
+    // scope. Legacy peers (a tier RPC has 404'd) are excluded: their cluster
+    // stub returns [] which would sum to a misleading filtered-0 ("no match")
+    // ring — instead they keep their cached-meta ring (no entry written).
+    const selected = filterHealthy(allBackends)
+      .filter(b => Array.isArray(b.bbox) && !backendUseLegacy.has(b.url));
+    if (selected.length === 0) {
+      macroFilteredStore.set(new Map());
+      return;
+    }
+
+    const acc = new Map();
+    macroFilteredStore.set(new Map());
+    await fanOut({
+      fetcher: (url, sig) => {
+        const backend = selected.find(b => b.url === url);
+        const extent3857 = transformExtent(backend.bbox, 'EPSG:4326', 'EPSG:3857');
+        return fetchPlaygroundClusters(macroMaxZoom, extent3857, url, sig, filters);
+      },
+      backends: selected,
+      signal,
+      onResult: (entry) => {
+        if (signal.aborted) return;
+        if (entry.ok && Array.isArray(entry.value)) {
+          let count = 0, complete = 0, partial = 0, missing = 0;
+          for (const b of entry.value) {
+            count    += b.count    ?? 0;
+            complete += b.complete ?? 0;
+            partial  += b.partial  ?? 0;
+            missing  += b.missing  ?? 0;
+          }
+          acc.set(entry.backendUrl, { count, complete, partial, missing });
+          // Fresh Map reference per publish so Svelte subscribers re-render.
+          macroFilteredStore.set(new Map(acc));
+        } else if (!entry.ok && isNotFound(entry.error)) {
+          markBackendLegacy(entry.backendUrl);
+        }
+      },
+    });
   }
 
   // Pick the per-backend cluster fetcher. If we've previously seen a 404
