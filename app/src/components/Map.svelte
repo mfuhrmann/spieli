@@ -276,12 +276,27 @@
         const backendUrl = polygonHit.get('_backendUrl') ?? defaultBackendUrl;
         selection.select(polygonHit, backendUrl);
         selectionZoom = null;
+        // Desktop reserves the left side-panel width (420); mobile shows a
+        // full-screen overlay instead, so balanced padding frames the polygon
+        // centred behind it. (A 420px reserve on a ~390px phone mis-frames the
+        // fit and reads as an extra zoom-out — see #684.)
+        const fitPadding = window.innerWidth < 1024
+          ? [60, 40, 60, 40]
+          : [40, 40, 40, 420];
         view.fit(polygonHit.getGeometry().getExtent(), {
-          padding: [40, 40, 40, 420], // right/top/bottom clear; 420 = sidebar width + margin
+          padding: fitPadding,
           duration: 400,
           maxZoom: mapMaxZoom,
-          minResolution: view.getResolutionForZoom(clusterMaxZoom + 1),
-          callback: () => { selectionZoom = view.getZoom(); },
+          callback: () => {
+            // `constrainResolution: true` snaps the fit to an integer zoom. For a
+            // playground large enough to fit at zoom <= clusterMaxZoom that snap
+            // can land in the cluster tier and hide the selected polygon — floor
+            // the zoom back into the polygon tier in that rare case. (A plain
+            // `minResolution` on fit() does the inverse: it caps every fit at
+            // clusterMaxZoom+1, defeating zoom-to-fit entirely — see #684.)
+            if ((view.getZoom() ?? 0) <= clusterMaxZoom) view.setZoom(clusterMaxZoom + 1);
+            selectionZoom = view.getZoom();
+          },
         });
         return;
       }

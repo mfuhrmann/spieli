@@ -15,12 +15,13 @@
   import { _ } from 'svelte-i18n';
 
   import { selection } from '../stores/selection.js';
+  import { mapStore } from '../stores/map.js';
   import { location } from '../stores/location.js';
   import { fetchPlaygroundEquipment, fetchNearbyPOIs, fetchTrees, fetchMeta } from '../lib/api.js';
   import { overlayFeaturesStore } from '../stores/overlayLayer.js';
   import { groupEquipment } from '../lib/equipmentGrouping.js';
   import { playgroundCompleteness } from '../lib/completeness.js';
-  import { poiRadiusM, appMode } from '../lib/config.js';
+  import { poiRadiusM, appMode, mapMinZoom } from '../lib/config.js';
   import { getPlaygroundTitle, getPlaygroundLocation } from '../lib/playgroundHelpers.js';
   import { cn } from '../lib/utils.js';
   import EquipmentList from './EquipmentList.svelte';
@@ -263,9 +264,25 @@
     }
   }
 
+  // Close the desktop side panel: clear the selection and zoom out a few steps
+  // (keeping the playground centred) so the user lands back on a browsable view,
+  // mirroring the mobile "back to map" gesture. On mobile the panel is embedded
+  // and AppShell owns the back gesture, so we only zoom out when !embedded.
+  const DESKTOP_CLOSE_ZOOM_OUT = 4;
+  function closePanel() {
+    const view = embedded ? null : $mapStore?.getView();
+    selection.clear();
+    if (view) {
+      const z = view.getZoom();
+      if (Number.isFinite(z)) {
+        view.animate({ zoom: Math.max(z - DESKTOP_CLOSE_ZOOM_OUT, mapMinZoom), duration: 400 });
+      }
+    }
+  }
+
   // ── ESC to close ──────────────────────────────────────────────────────────
   function handleKeydown(e) {
-    if (e.key === 'Escape' && feature && !embedded) selection.clear();
+    if (e.key === 'Escape' && feature && !embedded) closePanel();
   }
 
   onMount(() => {
@@ -453,7 +470,7 @@
         </div>
         <div class="flex items-center gap-1 shrink-0">
           <button class="navigate-btn" onclick={navigateToPlayground} aria-label={$_('info.navigateHere')}>{$_('info.navigateHere')}</button>
-          <button class="panel-icon-btn" onclick={() => selection.clear()} aria-label={$_('info.closeBtn')}>
+          <button class="panel-icon-btn" onclick={closePanel} aria-label={$_('info.closeBtn')}>
             <X class="h-5 w-5" />
           </button>
         </div>

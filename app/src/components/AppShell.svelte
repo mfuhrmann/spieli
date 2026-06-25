@@ -20,7 +20,7 @@
   import { playgroundSourceStore } from '../stores/playgroundSource.js';
   import { parseHash } from '../lib/deeplink.js';
   import { fetchPlaygroundByOsmId } from '../lib/api.js';
-  import { impressumUrl, privacyUrl, mapMaxZoom } from '../lib/config.js';
+  import { impressumUrl, privacyUrl, mapMaxZoom, mapMinZoom } from '../lib/config.js';
 
   /**
    * The OL VectorSource that renders the polygon tier (zoom ≥ 14). The shell
@@ -353,29 +353,29 @@
   }
 
   // Center the map on the selected playground when the mobile full-screen panel
-  // opens, and re-center when it closes so the full area is visible on return.
-  // Uses balanced padding — the full-screen panel covers the map entirely while
-  // open, so there is no bottom-sheet offset to account for.
-  let lastMobileFeature = null;
-  $: {
-    if (isMobile && $hasSelection) {
-      const feat = $selection.feature;
-      if (feat && $mapStore) {
-        lastMobileFeature = feat;
-        $mapStore.getView().fit(feat.getGeometry().getExtent(), {
-          padding: [60, 20, 60, 20],
+  // opens (the panel covers the map entirely, so balanced padding is fine). On
+  // "back to map" we zoom back out a few steps — keeping the playground centred —
+  // so the user lands on a browsable overview rather than re-framing the same
+  // polygon (which produced a jarring zoom-in/zoom-out flash — see #684).
+  const MOBILE_BACK_ZOOM_OUT = 5;
+  // NOTE: framing the selected playground (on both desktop and mobile) is owned
+  // by Map.svelte's click-fit, which uses responsive padding. We deliberately do
+  // NOT re-fit here on selection — a second reactive fit raced the click-fit and
+  // produced a double zoom (#684). Only the "back to map" zoom-out lives here.
+
+  // "Back to map" (mobile): clear the selection, then zoom out a few steps —
+  // keeping the playground centred — for a single, predictable animation.
+  function mobileBackToMap() {
+    const view = $mapStore?.getView();
+    selection.clear();
+    if (view) {
+      const z = view.getZoom();
+      if (Number.isFinite(z)) {
+        view.animate({
+          zoom: Math.max(z - MOBILE_BACK_ZOOM_OUT, mapMinZoom),
           duration: 400,
-          maxZoom: mapMaxZoom,
         });
       }
-    } else if (isMobile && !$hasSelection && lastMobileFeature && $mapStore) {
-      const feat = lastMobileFeature;
-      lastMobileFeature = null;
-      $mapStore.getView().fit(feat.getGeometry().getExtent(), {
-        padding: [80, 40, 80, 40],
-        duration: 300,
-        maxZoom: mapMaxZoom,
-      });
     }
   }
 
@@ -517,7 +517,7 @@
       <div class="mobile-detail-header">
         <button
           class="mobile-back-btn"
-          onclick={() => selection.clear()}
+          onclick={mobileBackToMap}
           aria-label={$_('info.closeBtn')}
         >
           <ArrowLeft class="h-5 w-5" />
