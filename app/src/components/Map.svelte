@@ -12,7 +12,7 @@
   import { ScaleLine, defaults as defaultControls } from 'ol/control.js';
   import { defaults as defaultInteractions } from 'ol/interaction/defaults';
 
-  import { mapZoom, mapMinZoom, mapMaxZoom, clusterMaxZoom, apiBaseUrl } from '../lib/config.js';
+  import { mapZoom, mapMinZoom, mapMaxZoom, apiBaseUrl } from '../lib/config.js';
   import {
     playgroundStyleFn,
     selectionStyle,
@@ -31,6 +31,7 @@
   import { filterStore, matchesFilters } from '../stores/filters.js';
   import { overlayFeaturesStore } from '../stores/overlayLayer.js';
   import { debounce } from '../lib/utils.js';
+  import { fitViewToSelection } from '../lib/playgroundHelpers.js';
 
   // Props: the sources are injected by the shell; Map itself never loads data.
   /** @type {VectorSource | null} - polygon-tier source (zoom > clusterMaxZoom) */
@@ -62,6 +63,7 @@
   let overlayUnsubscribe = null;
   let tierUnsubscribe = null;
   let locationUnsubscribe = null;
+  let selectionUnsubscribe = null;
 
   // Location marker state — hoisted to component scope so onDestroy can reach them.
   let locationLayer = null;
@@ -248,8 +250,22 @@
     // Zoom level at which the current playground was selected; null when nothing selected.
     // Used to auto-clear selection when the user zooms out 2+ levels.
     let selectionZoom = null;
+    // Keep selectionZoom in sync with the selection store. The panel close
+    // button, ESC, and mobile "back to map" all clear the selection from
+    // outside Map.svelte; without this, selectionZoom would stay stale and a
+    // later empty-map click could zoom out with nothing selected.
+    selectionUnsubscribe = selection.subscribe(() => {
+      // Reset on every selection change. The map-click fit re-stamps
+      // selectionZoom once its own fit settles; Nearby/deeplink selections leave
+      // it null so their programmatic fit can't be mistaken for a user zoom-out
+      // and auto-clear the just-made selection (#684).
+      selectionZoom = null;
+    });
+    // Steps to zoom out when deselecting via empty-map click — matches the
+    // desktop panel-close gesture (PlaygroundPanel DESKTOP_CLOSE_ZOOM_OUT).
+    const DESELECT_ZOOM_OUT = 4;
     olMap.on('moveend', () => {
-      if (selectionZoom !== null && view.getZoom() <= selectionZoom - 4) {
+      if (selectionZoom !== null && view.getZoom() <= selectionZoom - DESELECT_ZOOM_OUT) {
         selection.clear();
         selectionZoom = null;
       }
@@ -276,12 +292,10 @@
         const backendUrl = polygonHit.get('_backendUrl') ?? defaultBackendUrl;
         selection.select(polygonHit, backendUrl);
         selectionZoom = null;
-        view.fit(polygonHit.getGeometry().getExtent(), {
-          padding: [40, 40, 40, 420], // right/top/bottom clear; 420 = sidebar width + margin
-          duration: 400,
-          maxZoom: mapMaxZoom,
-          minResolution: view.getResolutionForZoom(clusterMaxZoom + 1),
-          callback: () => { selectionZoom = view.getZoom(); },
+        // Shared fit (responsive padding + polygon-tier floor); stamp the
+        // settled zoom so an empty-map click later zooms out to deselect.
+        fitViewToSelection(view, polygonHit.getGeometry().getExtent(), (v) => {
+          selectionZoom = v.getZoom();
         });
         return;
       }
@@ -325,6 +339,18 @@
         return;
       }
       backendPopup = null;
+      // Align deselect-by-empty-click with the panel-close gesture: if a
+      // playground is selected, zoom out a few steps too. selectionZoom is
+      // kept non-null only while selected (see the selection.subscribe above),
+      // so this guard also prevents a bare click on the open map from moving
+      // the view when nothing is selected.
+      if (selectionZoom !== null) {
+        const z = view.getZoom();
+        if (Number.isFinite(z)) {
+          view.animate({ zoom: Math.max(z - DESELECT_ZOOM_OUT, mapMinZoom), duration: 400 });
+        }
+        selectionZoom = null;
+      }
       selection.clear();
     });
 
@@ -427,6 +453,7 @@
     if (overlayUnsubscribe) overlayUnsubscribe();
     if (tierUnsubscribe) tierUnsubscribe();
     if (locationUnsubscribe) locationUnsubscribe();
+    if (selectionUnsubscribe) selectionUnsubscribe();
     stopLocationAnimation();
     if (olMap) {
       olMap.setTarget(undefined);
