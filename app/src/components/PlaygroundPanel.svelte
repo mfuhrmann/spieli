@@ -521,28 +521,27 @@
       {#if openingHoursInfo || attr.for_baby || attr.for_toddler || attr.has_shade != null}
         <div class="status-row mb-4">
           {#if openingHoursInfo}
-            <span
-              class="status-pill"
-              class:status-pill--open={openingHoursInfo.open}
-              class:status-pill--closed={!openingHoursInfo.open}
+            <Badge
+              variant={openingHoursInfo.open ? 'successSoft' : 'dangerSoft'}
+              class="gap-[5px] min-w-0 max-w-full overflow-hidden whitespace-nowrap"
               aria-label={openingHoursInfo.open === null
                 ? openingHoursInfo.text
                 : `${openingHoursInfo.open ? $_('poi.open') : $_('poi.closed')}: ${openingHoursInfo.text}`}
             >
               <span class="status-dot" class:status-dot--open={openingHoursInfo.open} class:status-dot--closed={!openingHoursInfo.open} aria-hidden="true"></span>
-              <span>{openingHoursInfo.text}</span>
-            </span>
+              <span class="truncate">{openingHoursInfo.text}</span>
+            </Badge>
           {/if}
           {#if attr.for_baby}
-            <span class="status-pill status-pill--info">{$_('details.forBaby')}</span>
+            <Badge variant="info" class="whitespace-nowrap">{$_('details.forBaby')}</Badge>
           {/if}
           {#if attr.for_toddler}
-            <span class="status-pill status-pill--info">{$_('details.forToddler')}</span>
+            <Badge variant="info" class="whitespace-nowrap">{$_('details.forToddler')}</Badge>
           {/if}
           {#if attr.has_shade != null}
-            <span class="status-pill" class:status-pill--open={attr.has_shade} class:status-pill--closed={!attr.has_shade}>
+            <Badge variant={attr.has_shade ? 'successSoft' : 'dangerSoft'} class="whitespace-nowrap">
               {$_(attr.has_shade ? 'details.shaded' : 'details.notShaded')}
-            </span>
+            </Badge>
           {/if}
         </div>
       {/if}
@@ -948,26 +947,6 @@
     align-items: center;
     gap: 8px;
   }
-
-  .status-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 3px 10px;
-    border-radius: 9999px;
-    font-size: 12px;
-    font-weight: 600;
-    white-space: nowrap;
-    min-width: 0;
-    overflow: hidden;
-  }
-  .status-pill span:last-child {
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .status-pill--open   { background: #ecfdf5; border: 1px solid rgba(16, 185, 129, 0.4); color: #065f46; }
-  .status-pill--closed { background: #fef2f2; border: 1px solid rgba(239, 68, 68, 0.4);  color: #b91c1c; }
-  .status-pill--info   { background: #eff6ff; border: 1px solid rgba(59, 130, 246, 0.3); color: #1e40af; cursor: default; }
 
   .status-dot {
     width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
