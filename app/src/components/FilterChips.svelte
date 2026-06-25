@@ -1,5 +1,5 @@
 <script>
-  import { filterStore, hasActiveFilters } from '../stores/filters.js';
+  import { filterStore, hasActiveFilters, defaultFilters } from '../stores/filters.js';
   import { _ } from 'svelte-i18n';
   import { X } from 'lucide-svelte';
 
@@ -24,7 +24,11 @@
   }
 
   function clearAll() {
-    filterStore.update(f => Object.fromEntries(Object.keys(f).map(k => [k, false])));
+    // Reset to defaults rather than setting every key false: the completeness
+    // toggles (showComplete/showPartial/showMissing) default true, and forcing
+    // them false would hide *all* playgrounds at every tier (and render a grey
+    // "no match" macro ring) instead of clearing the active filters.
+    filterStore.set({ ...defaultFilters });
   }
 </script>
 

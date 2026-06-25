@@ -285,7 +285,8 @@ export function attachHubOrchestrator({
   // backend from the filter-aware cluster RPC: fetch each backend's buckets
   // over its own bbox and sum them. Bucket totals partition a backend's
   // region at any zoom, so the sum is zoom-invariant — we query at
-  // `clusterMaxZoom` for maximum detail. Results are published progressively
+  // `macroMaxZoom` (the coarsest tier) to minimise bucket payload, since the
+  // per-cell detail is discarded by the sum. Results are published progressively
   // on `macroFilteredStore`; MacroView overrides each ring as its entry
   // settles. A pre-tier peer that 404s keeps its cached-meta ring.
   async function orchestrateMacroFilter(signal) {
@@ -312,7 +313,7 @@ export function attachHubOrchestrator({
       fetcher: (url, sig) => {
         const backend = selected.find(b => b.url === url);
         const extent3857 = transformExtent(backend.bbox, 'EPSG:4326', 'EPSG:3857');
-        return fetchPlaygroundClusters(clusterMaxZoom, extent3857, url, sig, filters);
+        return fetchPlaygroundClusters(macroMaxZoom, extent3857, url, sig, filters);
       },
       backends: selected,
       signal,
