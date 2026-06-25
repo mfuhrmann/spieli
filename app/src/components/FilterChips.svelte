@@ -3,9 +3,14 @@
   import { _ } from 'svelte-i18n';
   import { X } from 'lucide-svelte';
 
+  // Must list every boolean playground filter in defaultFilters (minus the
+  // standalonePitches layer toggle and the completeness states, which are not
+  // chip-rendered). Omitting a key means that filter can be set but shows no
+  // removable chip — keep in sync when adding filters.
   const FILTER_KEYS = new Set([
     'private', 'water', 'baby', 'toddler', 'wheelchair',
     'bench', 'picnic', 'shelter', 'tableTennis', 'soccer', 'basketball',
+    'fence', 'hasDogs', 'shade',
   ]);
 
   $: activeFilters = Object.entries($filterStore)

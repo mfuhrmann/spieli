@@ -13,6 +13,7 @@
   import { attachHubOrchestrator } from './hubOrchestrator.js';
   import { mapStore } from '../stores/map.js';
   import { filterStore } from '../stores/filters.js';
+  import { macroFilteredStore } from '../stores/macroFiltered.js';
   import { activeTierStore } from '../stores/tier.js';
   import { clusterMaxZoom } from '../lib/config.js';
   import * as osmIdDedup from './osmIdDedup.js';
@@ -240,7 +241,10 @@
         const { standalonePitches: _sp, ...cf } = filters;
         clusterFilterFingerprint = JSON.stringify(cf);
         if (!filterSubReady) { filterSubReady = true; return; }
-        if (get(activeTierStore) === 'cluster') orchestrator.rerun();
+        // Both the cluster and macro tiers re-derive against the active
+        // filter — the polygon tier filters client-side and needs no rerun.
+        const tier = get(activeTierStore);
+        if (tier === 'cluster' || tier === 'macro') orchestrator.rerun();
       });
       detachOrchestrator = () => { orchestrator.detach(); unsubFilters(); };
       // Detach asynchronously so we're not unsubscribing while still inside
@@ -258,7 +262,7 @@
   });
 </script>
 
-<MacroView {backends} source={macroSource} />
+<MacroView {backends} source={macroSource} macroFiltered={macroFilteredStore} />
 
 <AppShell
   playgroundSource={polygonSource}

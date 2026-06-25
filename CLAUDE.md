@@ -121,6 +121,7 @@ To test Hub mode locally: set `appMode: 'hub'` in `app/public/config.js`, run `m
 | `tier.js` | Active zoom-tier — `null` \| `'cluster'` \| `'polygon'`. Written by the orchestrator, read by Map for layer visibility |
 | `location.js` | User's current GPS position — `{ lat, lon, accuracy } \| null`. Written by LocateButton (manual + auto-locate), read by Map (location marker) and PlaygroundPanel (navigation origin). |
 | `hubLoading.js` | Hub fan-out load progress — `{ loaded, total, settling }`. Written by `hubOrchestrator`, read by the hub UI to show a progress indicator. |
+| `macroFiltered.js` | Per-backend filtered aggregate for the hub macro tier — `Map<backendUrl, {count, complete, partial, missing}> \| null`. `null` = no filter active (macro stays zero-fetch, rings use cached `get_meta`). Written by `hubOrchestrator` when a filter is active (sums each backend's filtered `get_playground_clusters` buckets), read by `MacroView` to override ring props. |
 
 ### Components
 
