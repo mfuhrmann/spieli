@@ -44,6 +44,7 @@ import { hasActiveFilters } from '../stores/filters.js';
 import { selectBackends } from './bboxRouter.js';
 import { filterHealthy } from './federationHealth.js';
 import { applyDedup } from './osmIdDedup.js';
+import { sumClusterBuckets } from './macroAggregate.js';
 import { fanOut } from './fanOut.js';
 import { debounce } from '../lib/utils.js';
 
@@ -320,14 +321,7 @@ export function attachHubOrchestrator({
       onResult: (entry) => {
         if (signal.aborted) return;
         if (entry.ok && Array.isArray(entry.value)) {
-          let count = 0, complete = 0, partial = 0, missing = 0;
-          for (const b of entry.value) {
-            count    += b.count    ?? 0;
-            complete += b.complete ?? 0;
-            partial  += b.partial  ?? 0;
-            missing  += b.missing  ?? 0;
-          }
-          acc.set(entry.backendUrl, { count, complete, partial, missing });
+          acc.set(entry.backendUrl, sumClusterBuckets(entry.value));
           // Fresh Map reference per publish so Svelte subscribers re-render.
           macroFilteredStore.set(new Map(acc));
         } else if (!entry.ok && isNotFound(entry.error)) {
