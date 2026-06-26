@@ -43,9 +43,9 @@
   export let macroFiltered;
   /**
    * Macro filter coverage store (hubOrchestrator → macroCoverage.js). `null`
-   * when no filter is active; otherwise `{ answered, total, cantFilter[] }`.
+   * when no filter is active; otherwise `{ answered, total, cantFilter[], settling }`.
    * Used to flag backends that couldn't apply the filter (#688).
-   * @type {import('svelte/store').Readable<{answered:number,total:number,cantFilter:string[]}|null>}
+   * @type {import('svelte/store').Readable<{answered:number,total:number,cantFilter:string[],settling:boolean}|null>}
    */
   export let macroCoverage;
 

@@ -8,14 +8,19 @@
   // non-alarming "filter covers N of M regions" banner — so the country view
   // never silently presents partial coverage as complete. Hidden when coverage
   // is full (answered === total), no filter is active, or not at macro tier.
+  // Also hidden while the fan-out is still settling (`settling`), so it doesn't
+  // flash "covers 0 of N" mid-load before every backend has answered.
   import { _ } from 'svelte-i18n';
   import { activeTierStore } from '../stores/tier.js';
 
-  /** @type {import('svelte/store').Readable<{answered:number,total:number,cantFilter:string[]}|null>} */
+  /** @type {import('svelte/store').Readable<{answered:number,total:number,cantFilter:string[],settling:boolean}|null>} */
   export let coverage;
 
   $: partial =
-    $activeTierStore === 'macro' && $coverage && $coverage.answered < $coverage.total;
+    $activeTierStore === 'macro' &&
+    $coverage &&
+    !$coverage.settling &&
+    $coverage.answered < $coverage.total;
 </script>
 
 {#if partial}

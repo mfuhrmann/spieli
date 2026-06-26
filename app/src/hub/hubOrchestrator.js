@@ -314,12 +314,20 @@ export function attachHubOrchestrator({
     const cantFilter = new Set(inScope.filter(b => !selectedUrls.has(b.url)).map(b => b.url));
 
     const acc = new Map();
-    const publishCoverage = () =>
-      macroCoverageStore.set({ answered: acc.size, total, cantFilter: [...cantFilter] });
+    // `settling` is true while the fan-out is still in flight. The coverage
+    // banner waits for `settling === false` before disclosing partial coverage
+    // so it doesn't flash "covers 0 of N" during a normal load (where every
+    // backend eventually answers); the per-ring `cantFilter` flag and the
+    // progressive `macroFilteredStore` updates do not wait on it.
+    const publishCoverage = (settling) =>
+      macroCoverageStore.set({ answered: acc.size, total, cantFilter: [...cantFilter], settling });
 
     macroFilteredStore.set(new Map());
-    publishCoverage();
-    if (selected.length === 0) return; // every in-scope backend can't filter
+    if (selected.length === 0) {
+      publishCoverage(false); // terminal: every in-scope backend can't filter
+      return;
+    }
+    publishCoverage(true);
 
     await fanOut({
       fetcher: (url, sig) => {
@@ -343,9 +351,14 @@ export function attachHubOrchestrator({
           if (!entry.ok && isNotFound(entry.error)) markBackendLegacy(entry.backendUrl);
           cantFilter.add(entry.backendUrl);
         }
-        publishCoverage();
+        publishCoverage(true);
       },
     });
+
+    // Fan-out done: republish settled so the banner can disclose any genuine
+    // partial coverage. Skip if a newer orchestrate() aborted us — its own
+    // run owns the store now.
+    if (!signal.aborted) publishCoverage(false);
   }
 
   // Pick the per-backend cluster fetcher. If we've previously seen a 404
