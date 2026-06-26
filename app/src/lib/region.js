@@ -1,10 +1,10 @@
 import { nominatimFetch } from './nominatim.js';
 
-export async function fetchRegionInfo(relationId) {
+export async function fetchRegionInfo(relationId, { timeout = 5000 } = {}) {
     const results = await nominatimFetch('/lookup', {
         osm_ids: `R${relationId}`,
         'accept-language': 'de',
-    }, { timeout: 0 });
+    }, { timeout });
     const [result] = results;
     const [minLat, maxLat, minLon, maxLon] = result.boundingbox.map(Number);
     return {
