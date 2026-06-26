@@ -36,6 +36,23 @@ export function isRegionPath(pathname) {
  * `/Lauterbach` on Lauterbach (Hessen) rather than the higher-importance
  * Lauterbach in Czechia.
  */
+/**
+ * Policy for whether auto-locate may pan the map to the GPS fix on page load.
+ * A deeplink hash always wins (explicit user intent). For a region path we only
+ * suppress centering when the region framing actually took effect — if it was
+ * present but failed to resolve (`framingApplied === false`), GPS centering is
+ * allowed so the user is not silently stranded on the fallback region. When
+ * there is no region path, centering is allowed.
+ *
+ * @param {{ hasDeeplink: boolean, regionPath: boolean, framingApplied: (boolean|null) }} state
+ * @returns {boolean} true → center on the GPS fix
+ */
+export function shouldAutoCenterOnLocate({ hasDeeplink, regionPath, framingApplied }) {
+  if (hasDeeplink) return false;
+  if (!regionPath) return true;
+  return framingApplied === false;
+}
+
 export async function resolveRegionFromPath(pathname, { near } = {}) {
   if (!isRegionPath(pathname)) return null;
 

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { resolveRegionFromPath, isRegionPath } from './regionUrl.js';
+import { resolveRegionFromPath, isRegionPath, shouldAutoCenterOnLocate } from './regionUrl.js';
 
 // resolveRegionFromPath drives the shared Nominatim client, which calls the
 // global fetch. We stub fetch per case so parsing/ranking/bbox logic is tested
@@ -193,6 +193,51 @@ const RELATION_FULDA = {
 // 15. Malformed percent-encoding does not throw → false
 {
   assert.equal(isRegionPath('/%E0%A4%A'), false);
+}
+
+// --- shouldAutoCenterOnLocate: auto-locate centering policy ---
+
+// 16. A deeplink hash always suppresses auto-centering, regardless of the rest.
+{
+  for (const regionPath of [true, false]) {
+    for (const framingApplied of [true, false, null]) {
+      assert.equal(
+        shouldAutoCenterOnLocate({ hasDeeplink: true, regionPath, framingApplied }),
+        false,
+        `deeplink should suppress centering (regionPath=${regionPath}, framingApplied=${framingApplied})`
+      );
+    }
+  }
+}
+
+// 17. No deeplink and no region path → center on GPS.
+{
+  for (const framingApplied of [true, false, null]) {
+    assert.equal(
+      shouldAutoCenterOnLocate({ hasDeeplink: false, regionPath: false, framingApplied }),
+      true
+    );
+  }
+}
+
+// 18. Region path: suppress only when framing actually applied (true). A failed
+//     (false) or still-undecided (null) framing allows GPS centering / pending.
+{
+  assert.equal(
+    shouldAutoCenterOnLocate({ hasDeeplink: false, regionPath: true, framingApplied: true }),
+    false,
+    'resolved region framing suppresses centering'
+  );
+  assert.equal(
+    shouldAutoCenterOnLocate({ hasDeeplink: false, regionPath: true, framingApplied: false }),
+    true,
+    'failed region framing (typo) allows GPS centering'
+  );
+  assert.equal(
+    shouldAutoCenterOnLocate({ hasDeeplink: false, regionPath: true, framingApplied: null }),
+    false,
+    'undecided framing assumes pending and does not pan over it'
+  );
 }
 
 console.log('All regionUrl tests passed.');

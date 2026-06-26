@@ -3,7 +3,9 @@
   import { mapStore } from '../stores/map.js';
   import { location } from '../stores/location.js';
   import { parseHash } from '../lib/deeplink.js';
-  import { isRegionPath } from '../lib/regionUrl.js';
+  import { isRegionPath, shouldAutoCenterOnLocate } from '../lib/regionUrl.js';
+  import { regionFramingApplied } from '../stores/urlFraming.js';
+  import { get } from 'svelte/store';
   import { Navigation2, Loader2 } from 'lucide-svelte';
   import { _ } from 'svelte-i18n';
   import { onMount, onDestroy } from 'svelte';
@@ -57,16 +59,39 @@
     );
   }
 
+  /**
+   * Resolve once region framing settles to a definite value (or after a
+   * timeout). The store starts `null` and StandaloneApp flips it to `true`/
+   * `false` once Nominatim resolution completes — which can land after the GPS
+   * fix, so we wait rather than read opportunistically.
+   */
+  function waitForFraming(timeoutMs = 6000) {
+    if (get(regionFramingApplied) !== null) return Promise.resolve(get(regionFramingApplied));
+    return new Promise(resolve => {
+      let unsub;
+      const timer = setTimeout(() => { unsub?.(); resolve(get(regionFramingApplied)); }, timeoutMs);
+      unsub = regionFramingApplied.subscribe(v => {
+        if (v !== null) { clearTimeout(timer); unsub?.(); resolve(v); }
+      });
+    });
+  }
+
   onMount(async () => {
     try {
       const perm = await navigator.permissions.query({ name: 'geolocation' });
       if (perm.state !== 'granted') return;
-      // Explicit URL framing — a deeplink hash or a region path (e.g. /Frankfurt)
-      // — expresses where the user wants the map. Still show the location dot,
-      // but don't pan over that intent with the GPS fix.
-      const hasFraming =
-        !!parseHash(window.location.hash) || isRegionPath(window.location.pathname);
-      locate({ centerMap: !hasFraming });
+      // Explicit URL framing — a deeplink hash or a *resolved* region path
+      // (e.g. /Frankfurt) — expresses where the user wants the map, so don't
+      // pan over it with the GPS fix. The location dot still shows. A region
+      // path that fails to resolve (typo) does NOT suppress centering, so the
+      // user is not silently stranded on the fallback region. For a region
+      // path we wait for the framing outcome before deciding.
+      const hasDeeplink = !!parseHash(window.location.hash);
+      const regionPath = isRegionPath(window.location.pathname);
+      const framingApplied = regionPath && !hasDeeplink ? await waitForFraming() : null;
+      locate({
+        centerMap: shouldAutoCenterOnLocate({ hasDeeplink, regionPath, framingApplied }),
+      });
     } catch {
       // permissions API not supported — skip auto-locate
     }

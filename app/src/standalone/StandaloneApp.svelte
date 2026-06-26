@@ -17,7 +17,8 @@
     fetchStandaloneEquipment,
   } from '../lib/api.js';
   import { fetchRegionInfo } from '../lib/region.js';
-  import { resolveRegionFromPath } from '../lib/regionUrl.js';
+  import { resolveRegionFromPath, isRegionPath } from '../lib/regionUrl.js';
+  import { regionFramingApplied } from '../stores/urlFraming.js';
   import { parseHash } from '../lib/deeplink.js';
   import { attachTieredOrchestrator } from '../lib/tieredOrchestrator.js';
   import { equipmentLayerStyleFn } from '../lib/vectorStyles.js';
@@ -96,6 +97,7 @@
       // BEFORE the await so the decision can't be invalidated by anything
       // that mutates window.location.hash while we're waiting on Nominatim.
       const hadDeeplink = parseHash(window.location.hash);
+      const regionPath = isRegionPath(window.location.pathname);
       try {
         // Fetch the configured region first so its centre can disambiguate
         // same-named places in a region URL (e.g. /Lauterbach → Hessen, not
@@ -105,6 +107,10 @@
         const regionOverride = await resolveRegionFromPath(window.location.pathname, {
           near: regionInfo?.center,
         });
+        // Tell LocateButton whether an explicit region URL actually framed the
+        // map: true when the override resolved, false when a region path was
+        // present but fell back to the configured region.
+        if (regionPath) regionFramingApplied.set(!!regionOverride);
         const region = regionOverride || regionInfo;
         if (!region) throw new Error('no region info available');
         document.title = `spieli ${region.name}`;
@@ -137,6 +143,9 @@
           }, 1500);
         }
       } catch (err) {
+        // Region framing failed entirely — a region path, if present, did not
+        // take effect, so let auto-locate center on the GPS fix.
+        if (regionPath) regionFramingApplied.set(false);
         console.warn('Nominatim region fetch failed, using default extent:', err);
       }
 
