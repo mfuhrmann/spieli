@@ -389,6 +389,7 @@
     "playgroundCount": "{count, plural, one {# parque infantil} other {# parques infantiles}}",
     "regionCount": "{count, plural, one {# región} other {# regiones}}",
     "regionProgress": "{completed}/{total, plural, one {# región} other {# regiones}}",
+    "macroCoverage": "El filtro cubre {answered} de {total, plural, one {# región} other {# regiones}}",
     "pillExpand": "Mostrar lista de instancias",
     "pillCollapse": "Ocultar lista de instancias",
     "drawerTitle": "Instancias disponibles",

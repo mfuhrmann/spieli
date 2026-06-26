@@ -40,6 +40,7 @@ import { clusterMaxZoom, macroMaxZoom } from '../lib/config.js';
 import { activeTierStore } from '../stores/tier.js';
 import { hubLoadingStore } from '../stores/hubLoading.js';
 import { macroFilteredStore } from '../stores/macroFiltered.js';
+import { macroCoverageStore } from '../stores/macroCoverage.js';
 import { hasActiveFilters } from '../stores/filters.js';
 import { selectBackends } from './bboxRouter.js';
 import { filterHealthy } from './federationHealth.js';
@@ -294,22 +295,40 @@ export function attachHubOrchestrator({
     const filters = getFilters();
     if (!filters || !hasActiveFilters(filters)) {
       macroFilteredStore.set(null);
+      macroCoverageStore.set(null);
       return;
     }
 
-    // Macro viewport is global, so every healthy backend with a bbox is in
-    // scope. Legacy peers (a tier RPC has 404'd) are excluded: their cluster
-    // stub returns [] which would sum to a misleading filtered-0 ("no match")
-    // ring — instead they keep their cached-meta ring (no entry written).
-    const selected = filterHealthy(allBackends)
-      .filter(b => Array.isArray(b.bbox) && !backendUseLegacy.has(b.url));
-    if (selected.length === 0) {
-      macroFilteredStore.set(new Map());
-      return;
-    }
+    // Macro viewport is global, so every healthy backend is in scope (offline
+    // peers carry their own offline ring and are excluded from coverage). A
+    // backend can only be filtered if it has a bbox and hasn't 404'd the
+    // cluster RPC; the rest are "can't filter" — they keep a distinct ring and
+    // count against coverage, so the country view never reads as fully filtered
+    // when it isn't (#688).
+    const inScope = filterHealthy(allBackends);
+    const total = inScope.length;
+    const selectedUrls = new Set(
+      inScope.filter(b => Array.isArray(b.bbox) && !backendUseLegacy.has(b.url)).map(b => b.url),
+    );
+    const selected   = inScope.filter(b => selectedUrls.has(b.url));
+    const cantFilter = new Set(inScope.filter(b => !selectedUrls.has(b.url)).map(b => b.url));
 
     const acc = new Map();
+    // `settling` is true while the fan-out is still in flight. The coverage
+    // banner waits for `settling === false` before disclosing partial coverage
+    // so it doesn't flash "covers 0 of N" during a normal load (where every
+    // backend eventually answers); the per-ring `cantFilter` flag and the
+    // progressive `macroFilteredStore` updates do not wait on it.
+    const publishCoverage = (settling) =>
+      macroCoverageStore.set({ answered: acc.size, total, cantFilter: [...cantFilter], settling });
+
     macroFilteredStore.set(new Map());
+    if (selected.length === 0) {
+      publishCoverage(false); // terminal: every in-scope backend can't filter
+      return;
+    }
+    publishCoverage(true);
+
     await fanOut({
       fetcher: (url, sig) => {
         const backend = selected.find(b => b.url === url);
@@ -324,11 +343,22 @@ export function attachHubOrchestrator({
           acc.set(entry.backendUrl, sumClusterBuckets(entry.value));
           // Fresh Map reference per publish so Svelte subscribers re-render.
           macroFilteredStore.set(new Map(acc));
-        } else if (!entry.ok && isNotFound(entry.error)) {
-          markBackendLegacy(entry.backendUrl);
+        } else {
+          // Any failure (404, 500, network, timeout) means this backend
+          // couldn't apply the filter → flag it can't-filter so its ring is
+          // marked "unfiltered" rather than silently shown as a normal filtered
+          // ring. Only a 404 makes the legacy fallback sticky for the session.
+          if (!entry.ok && isNotFound(entry.error)) markBackendLegacy(entry.backendUrl);
+          cantFilter.add(entry.backendUrl);
         }
+        publishCoverage(true);
       },
     });
+
+    // Fan-out done: republish settled so the banner can disclose any genuine
+    // partial coverage. Skip if a newer orchestrate() aborted us — its own
+    // run owns the store now.
+    if (!signal.aborted) publishCoverage(false);
   }
 
   // Pick the per-backend cluster fetcher. If we've previously seen a 404

@@ -5,12 +5,15 @@
 //
 //   1. Always rendered as rings, never as the cluster-tier single-child dot
 //      (a backend with one playground is still a "region", not a singleton).
-//   2. Five visual variants — healthy (filled segments + count), offline
+//   2. Six visual variants — healthy (filled segments + count), offline
 //      (dashed outline, muted, "offline" label, last known count), importing
 //      (solid blue ring, "updating" label — osm2pgsql actively running),
 //      degraded (amber ring, "no data" label — backend reachable but empty),
-//      and filtered-empty (grey ring, "no match" label — backend healthy but
-//      the active filter excludes all of its playgrounds).
+//      filtered-empty (grey ring, "no match" label — backend healthy but the
+//      active filter excludes all of its playgrounds), and can't-filter
+//      (full segments + dashed grey halo + "unfiltered" label — backend
+//      couldn't apply the filter, so its whole catalogue is shown, marked as
+//      such; #688).
 //
 // The bitmap cache from clusterStyle.js isn't reused here: macro features are
 // at most one per registered backend (typically <20), so per-frame redraws
@@ -41,6 +44,8 @@ const IMPORTING_TEXT   = '#1e40af'; // blue-800
 const NOMATCH_STROKE   = '#9ca3af'; // gray-400 — filter excluded all playgrounds
 const NOMATCH_FILL     = 'rgba(249, 250, 251, 0.92)'; // gray-50
 const NOMATCH_TEXT     = '#6b7280'; // gray-500
+const CANTFILTER_HALO  = '#6b7280'; // gray-500 — dashed "filter not applied" halo
+const CANTFILTER_TEXT  = '#6b7280'; // gray-500
 const COUNT_FONT      = 'bold 22px ui-monospace, "SF Mono", Menlo, system-ui, -apple-system, sans-serif';
 const LABEL_FONT      = '600 11px system-ui, -apple-system, "Helvetica Neue", sans-serif';
 
@@ -195,6 +200,68 @@ function renderFilteredEmptyMacroRing(pixelCoords, state) {
   ctx.fillText('no match', x, y);
 }
 
+// Can't-filter: backend couldn't apply the active filter (no bbox, or it 404s
+// the cluster RPC). We still show its full unfiltered catalogue (segments +
+// count, like healthy) but mark it with a dashed grey halo + "unfiltered" label
+// so the user knows this ring is NOT a filtered subset (#688).
+function renderCantFilterMacroRing(pixelCoords, state) {
+  const [x, y]     = pixelCoords;
+  const f          = state.feature;
+  const count      = f.get('count')      ?? 0;
+  const complete   = f.get('complete')   ?? 0;
+  const partial    = f.get('partial')    ?? 0;
+  const missing    = f.get('missing')    ?? 0;
+  const restricted = f.get('restricted') ?? 0;
+  const ctx        = state.context;
+  const radius     = radiusForCount(count);
+
+  const tenths = quantiseSegments(complete, partial, missing, restricted);
+  const colors = [COLOR.complete, COLOR.partial, COLOR.missing, COLOR.restricted];
+  ctx.lineWidth = RING_WIDTH;
+  ctx.lineCap   = 'butt';
+  let start = -Math.PI / 2;
+  for (let i = 0; i < 4; i++) {
+    if (tenths[i] === 0) continue;
+    const end = start + (tenths[i] / 10) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.arc(x, y, radius, start, end);
+    ctx.strokeStyle = colors[i];
+    ctx.stroke();
+    start = end;
+  }
+
+  // Dashed grey halo just outside the ring — the orthogonal "filter not applied
+  // here" marker (a colour-independent channel, distinct from offline's dashed
+  // ring at the ring radius itself).
+  ctx.lineWidth   = 2;
+  ctx.strokeStyle = CANTFILTER_HALO;
+  ctx.setLineDash([6, 4]);
+  ctx.beginPath();
+  ctx.arc(x, y, radius + RING_WIDTH / 2 + 4, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Inner disc + count (shifted up) + "unfiltered" label.
+  ctx.beginPath();
+  ctx.arc(x, y, radius - RING_WIDTH / 2 - 1, 0, Math.PI * 2);
+  ctx.fillStyle   = CENTER_FILL;
+  ctx.strokeStyle = CENTER_STROKE;
+  ctx.lineWidth   = 1;
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle    = CENTER_TEXT;
+  ctx.font         = COUNT_FONT;
+  if ('fontFeatureSettings' in ctx) ctx.fontFeatureSettings = '"tnum" 1';
+  ctx.textAlign    = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(formatCount(count), x, y - 7);
+
+  ctx.fillStyle = CANTFILTER_TEXT;
+  ctx.font      = LABEL_FONT;
+  ctx.fillText('unfiltered', x, y + 11);
+}
+
 function renderImportingMacroRing(pixelCoords, state) {
   const [x, y]   = pixelCoords;
   const f        = state.feature;
@@ -242,13 +309,18 @@ const offlineStyle       = new Style({ renderer: renderOfflineMacroRing });
 const degradedStyle      = new Style({ renderer: renderDegradedMacroRing });
 const importingStyle     = new Style({ renderer: renderImportingMacroRing });
 const filteredEmptyStyle = new Style({ renderer: renderFilteredEmptyMacroRing });
+const cantFilterStyle    = new Style({ renderer: renderCantFilterMacroRing });
 
 export function macroRingStyleFn(feature) {
-  // Backend-health states take precedence over a filter outcome; "no match"
-  // sits just above degraded — both signal an empty ring, but "no match" is
-  // a filter result on a healthy backend, not missing data.
+  // Priority mirrors "most severe / least filtered dominates": backend-health
+  // states first (offline, importing), then "can't filter" — a partial-coverage
+  // condition that must outrank a normal/filtered ring so the user sees the
+  // filter wasn't applied here (#688) — then the filter outcomes ("no match"
+  // sits just above degraded; both signal an empty ring, but "no match" is a
+  // filter result on a healthy backend, not missing data).
   if (feature.get('_offline'))       return offlineStyle;
   if (feature.get('_importing'))     return importingStyle;
+  if (feature.get('_cantFilter'))    return cantFilterStyle;
   if (feature.get('_filteredEmpty')) return filteredEmptyStyle;
   if (feature.get('_degraded'))      return degradedStyle;
   return healthyStyle;
