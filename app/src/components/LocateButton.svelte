@@ -61,11 +61,17 @@
 
   /**
    * Resolve once region framing settles to a definite value (or after a
-   * timeout). The store starts `null` and StandaloneApp flips it to `true`/
-   * `false` once Nominatim resolution completes — which can land after the GPS
-   * fix, so we wait rather than read opportunistically.
+   * timeout). The store starts `null` and StandaloneApp/HubApp flips it to
+   * `true`/`false` once Nominatim resolution completes — which can land after
+   * the GPS fix, so we wait rather than read opportunistically.
+   *
+   * The timeout is only a safety net for the (unexpected) case where the
+   * producer never sets the store. It MUST outlast the producer's worst case:
+   * StandaloneApp resolves `fetchRegionInfo` (5 s) then `resolveRegionFromPath`
+   * (Nominatim, 3 s) sequentially before it writes the store (~8 s). A shorter
+   * timeout would give up early, read `null`, and wrongly suppress centering.
    */
-  function waitForFraming(timeoutMs = 6000) {
+  function waitForFraming(timeoutMs = 9000) {
     if (get(regionFramingApplied) !== null) return Promise.resolve(get(regionFramingApplied));
     return new Promise(resolve => {
       let unsub;

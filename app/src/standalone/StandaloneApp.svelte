@@ -121,7 +121,6 @@
             duration: 0,
           });
         };
-        const regionPathFailed = regionPath && !regionOverride;
         if (hadDeeplink) {
           // Deeplink hash present — the deeplink expresses explicit user
           // intent that takes precedence over the default region framing,
@@ -140,12 +139,13 @@
             detachRegionFitWatcher = null;
             if (!restored) fitToRegion();
           }, 1500);
-        } else if (regionPathFailed) {
-          // A region URL was given but didn't resolve (e.g. a typo). Don't
-          // frame the configured region — leave the default extent so
-          // auto-locate can take over with the user's current location. If
-          // geolocation is unavailable the map simply stays at its default.
         } else {
+          // No deeplink: frame the resolved region, or fall back to the
+          // configured region when a region path didn't resolve (e.g. a typo).
+          // In the fallback case framingApplied is false, so auto-locate still
+          // centers on the GPS fix when available — GPS wins for a typo, but a
+          // user without geolocation sees the configured region rather than the
+          // bare default extent (#698 review).
           fitToRegion();
         }
       } catch (err) {

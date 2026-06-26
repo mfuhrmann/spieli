@@ -26,17 +26,6 @@ export function isRegionPath(pathname) {
 }
 
 /**
- * Resolve a region URL path (e.g. `/Lauterbach`) to `{ name, extent, osmId }`
- * via Nominatim, or `null` if it does not look like a region or nothing matches.
- *
- * `opts.near` — `[lon, lat]` of the deployment's configured region centre. When
- * provided, ambiguous names (several settlements share a name) are disambiguated
- * by picking the candidate whose bbox centroid is nearest to it. Without it, the
- * highest-importance boundary/place relation wins. This keeps a Fulda instance's
- * `/Lauterbach` on Lauterbach (Hessen) rather than the higher-importance
- * Lauterbach in Czechia.
- */
-/**
  * Policy for whether auto-locate may pan the map to the GPS fix on page load.
  * A deeplink hash always wins (explicit user intent). For a region path we only
  * suppress centering when the region framing actually took effect — if it was
@@ -53,6 +42,17 @@ export function shouldAutoCenterOnLocate({ hasDeeplink, regionPath, framingAppli
   return framingApplied === false;
 }
 
+/**
+ * Resolve a region URL path (e.g. `/Lauterbach`) to `{ name, extent, osmId }`
+ * via Nominatim, or `null` if it does not look like a region or nothing matches.
+ *
+ * `opts.near` — `[lon, lat]` of the deployment's configured region centre. When
+ * provided, ambiguous names (several settlements share a name) are disambiguated
+ * by picking the candidate whose bbox centroid is nearest to it. Without it, the
+ * highest-importance boundary/place relation wins. This keeps a Fulda instance's
+ * `/Lauterbach` on Lauterbach (Hessen) rather than the higher-importance
+ * Lauterbach in Czechia.
+ */
 export async function resolveRegionFromPath(pathname, { near } = {}) {
   if (!isRegionPath(pathname)) return null;
 
