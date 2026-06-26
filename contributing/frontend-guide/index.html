@@ -1872,6 +1872,12 @@
 <td>hubOrchestrator (macro tier, filter active)</td>
 <td>MacroView</td>
 </tr>
+<tr>
+<td><code>macroCoverageStore</code></td>
+<td><code>{ answered, total, cantFilter[], settling } \| null</code></td>
+<td>hubOrchestrator (macro tier, filter active)</td>
+<td>MacroView, MacroCoverageBanner</td>
+</tr>
 </tbody>
 </table>
 <h3 id="selection-flow">Selection flow<a class="headerlink" href="#selection-flow" title="Permanent link">&para;</a></h3>
@@ -1929,7 +1935,8 @@
 <h3 id="macro-tier-hub-filter-path">Macro tier (hub) filter path<a class="headerlink" href="#macro-tier-hub-filter-path" title="Permanent link">&para;</a></h3>
 <p>The macro tier is normally <strong>zero-fetch</strong>: <code>MacroView.svelte</code> renders one ring per backend straight from the cached <code>get_meta</code> totals, and panning at min zoom dispatches no requests. <code>get_meta</code> has no filter dimension, so when a filter is active those totals would ignore it.</p>
 <p>When a filter is active, <code>hubOrchestrator</code> instead fans out the filter-aware <code>get_playground_clusters</code> RPC once per backend (scoped to each backend's own bbox), sums the returned buckets into a per-backend <code>{count, complete, partial, missing}</code>, and publishes it progressively on <code>macroFilteredStore</code>. <code>MacroView</code> overrides each ring's props from that store as entries settle; a backend with no entry yet (or a pre-tier peer that 404s) keeps its cached-meta ring. Clearing all filters sets the store back to <code>null</code> and restores the zero-fetch path.</p>
-<p>Macro ring variants (<code>hub/macroRingStyle.js</code>), in <code>macroRingStyleFn</code> priority order: <strong>offline</strong> (dashed grey) → <strong>importing</strong> (blue "updating") → <strong>filtered-empty</strong> (grey "no match" — healthy backend, but the filter excludes every playground) → <strong>degraded</strong> (amber "no data" — backend reachable but empty) → <strong>healthy</strong> (filled segments + count). Backend-health states outrank the filter outcome; "no match" is distinct from the amber "no data" degraded ring.</p>
+<p>Alongside the filtered aggregate, <code>hubOrchestrator</code> publishes <strong>coverage</strong> on <code>macroCoverageStore</code> — <code>{ answered, total, cantFilter[], settling }</code> where <code>total</code> is the in-scope healthy backends, <code>answered</code> is those that returned a filtered total, <code>cantFilter</code> lists backends that couldn't apply the filter (no bbox, or a 404 on the cluster RPC), and <code>settling</code> is true while the fan-out is still in flight. Those backends keep their unfiltered ring but are flagged <code>_cantFilter</code> so they render the distinct "unfiltered" variant instead of silently reading as a filtered subset, and <code>MacroCoverageBanner</code> shows "filter covers N of M regions" whenever <code>answered &lt; total</code> once the fan-out has <strong>settled</strong> (<code>settling === false</code>) — so a normal load doesn't flash "covers 0 of N" mid-fetch, while an all-legacy hub still never silently presents partial coverage as complete (#688).</p>
+<p>Macro ring variants (<code>hub/macroRingStyle.js</code>), in <code>macroRingStyleFn</code> priority order: <strong>offline</strong> (dashed grey) → <strong>importing</strong> (blue "updating") → <strong>cantFilter</strong> (full segments + dashed grey halo + "unfiltered" — backend couldn't apply the filter, so its whole catalogue is shown, marked as such) → <strong>filtered-empty</strong> (grey "no match" — healthy backend, but the filter excludes every playground) → <strong>degraded</strong> (amber "no data" — backend reachable but empty) → <strong>healthy</strong> (filled segments + count). Backend-health states outrank the filter outcome; "cant-filter" is a partial-coverage condition that outranks the filter results so it's never mistaken for a filtered ring; "no match" is distinct from the amber "no data" degraded ring.</p>
 <h2 id="runtime-configuration">Runtime configuration<a class="headerlink" href="#runtime-configuration" title="Permanent link">&para;</a></h2>
 <p><code>lib/config.js</code> reads <code>window.APP_CONFIG</code> (written by <code>oci/app/docker-entrypoint.sh</code> at container startup) and exports named constants. In dev (no container), the constants use hardcoded defaults.</p>
 <p>Config constants used across the codebase:</p>
