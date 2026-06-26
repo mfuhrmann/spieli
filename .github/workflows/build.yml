@@ -41,6 +41,13 @@ jobs:
         run: make build
 
   # ── Docker image ─────────────────────────────────────────────────────────────
+  # NOTE: this job builds (and pushes) the images only on push to main / tags —
+  # it does NOT run on pull requests, and `ubuntu-latest` is linux/amd64 only.
+  # So an arm64-specific breakage in the image build (e.g. #696: vite 8.1.0's
+  # rolldown arm64-musl binding) is invisible to PR CI and only surfaces when an
+  # Apple-Silicon contributor runs `make docker-build`. A follow-up to catch this
+  # class of bug pre-merge: add a build-only (no push) PR leg with QEMU +
+  # `platforms: linux/amd64,linux/arm64`.
   docker:
     name: Docker (${{ matrix.name }})
     runs-on: ubuntu-latest

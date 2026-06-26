@@ -11,6 +11,12 @@ updates:
     directory: "/app"
     schedule:
       interval: "weekly"
+    ignore:
+      # vite 8.1.x pulls rolldown 1.1.3, whose linux/arm64-musl binding breaks
+      # the Docker app build on Apple Silicon (`vite-wasm-fallback` enum error).
+      # Hold on 8.0.x until that's resolved upstream — see #696.
+      - dependency-name: "vite"
+        versions: ["8.1.x"]
 
   # Root package.json (Playwright / legacy tooling)
   - package-ecosystem: "npm"
