@@ -43,8 +43,9 @@ export function sumClusterBuckets(buckets) {
  * State flags (consumed by `macroRingStyleFn`):
  *  - `offline`       — backend explicitly `healthUp: false`
  *  - `importing`     — backend is mid-import (and not offline)
- *  - `degraded`      — "no data": cached-meta count is 0, no filter settled
- *  - `filteredEmpty` — "no match": a filter settled to a total of 0
+ *  - `degraded`      — "no data": count is 0 and the backend has no unfiltered
+ *                       data (genuinely empty), with or without an active filter
+ *  - `filteredEmpty` — "no match": a filter excluded all of a *populated* backend
  *
  * @param {object} backend  registry entry ({ healthUp?, importing?, completeness?, playgroundCount? })
  * @param {{count:number, complete:number, partial:number, missing:number}|null} [filtered]
@@ -58,10 +59,14 @@ export function deriveMacroRing(backend, filtered = null) {
   // maps into the `restricted` bucket so the renderer draws a flat gray ring.
   const c     = backend.completeness;
   const count = filtered ? filtered.count : (backend.playgroundCount ?? 0);
-  // Degraded ("no data") is a backend-empty state from cached meta; a filtered
-  // total of 0 is a distinct "no match" state (see filteredEmpty).
-  const degraded      = !offline && !importing && !filtered && count === 0;
-  const filteredEmpty = !offline && !importing && !!filtered && count === 0;
+  // "No match" (filteredEmpty) only applies when the backend actually HAS
+  // playgrounds that the filter excluded — a filter can't exclude data that
+  // was never there. A genuinely empty backend (no unfiltered data) stays
+  // "no data" (degraded) even under an active filter (#689). Health states
+  // (offline/importing) still take precedence.
+  const hasUnfiltered = (backend.playgroundCount ?? 0) > 0;
+  const filteredEmpty = !offline && !importing && !!filtered && count === 0 && hasUnfiltered;
+  const degraded      = !offline && !importing && count === 0 && !filteredEmpty;
   const segments = filtered
     ? { complete: filtered.complete, partial: filtered.partial, missing: filtered.missing, restricted: 0 }
     : c
