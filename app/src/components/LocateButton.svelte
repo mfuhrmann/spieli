@@ -3,6 +3,7 @@
   import { mapStore } from '../stores/map.js';
   import { location } from '../stores/location.js';
   import { parseHash } from '../lib/deeplink.js';
+  import { isRegionPath } from '../lib/regionUrl.js';
   import { Navigation2, Loader2 } from 'lucide-svelte';
   import { _ } from 'svelte-i18n';
   import { onMount, onDestroy } from 'svelte';
@@ -60,8 +61,12 @@
     try {
       const perm = await navigator.permissions.query({ name: 'geolocation' });
       if (perm.state !== 'granted') return;
-      const hasDeeplink = !!parseHash(window.location.hash);
-      locate({ centerMap: !hasDeeplink });
+      // Explicit URL framing — a deeplink hash or a region path (e.g. /Frankfurt)
+      // — expresses where the user wants the map. Still show the location dot,
+      // but don't pan over that intent with the GPS fix.
+      const hasFraming =
+        !!parseHash(window.location.hash) || isRegionPath(window.location.pathname);
+      locate({ centerMap: !hasFraming });
     } catch {
       // permissions API not supported — skip auto-locate
     }

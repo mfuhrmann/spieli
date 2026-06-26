@@ -97,8 +97,16 @@
       // that mutates window.location.hash while we're waiting on Nominatim.
       const hadDeeplink = parseHash(window.location.hash);
       try {
-        const regionOverride = await resolveRegionFromPath(window.location.pathname);
-        const region = regionOverride || await fetchRegionInfo(osmRelationId);
+        // Fetch the configured region first so its centre can disambiguate
+        // same-named places in a region URL (e.g. /Lauterbach → Hessen, not
+        // the higher-importance Lauterbach in Czechia). Also serves as the
+        // fallback framing when there is no region override.
+        const regionInfo = await fetchRegionInfo(osmRelationId).catch(() => null);
+        const regionOverride = await resolveRegionFromPath(window.location.pathname, {
+          near: regionInfo?.center,
+        });
+        const region = regionOverride || regionInfo;
+        if (!region) throw new Error('no region info available');
         document.title = `spieli ${region.name}`;
         const regionExtent = transformExtent(region.extent, 'EPSG:4326', 'EPSG:3857');
         const fitToRegion = () => {

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { resolveRegionFromPath } from './regionUrl.js';
+import { resolveRegionFromPath, isRegionPath } from './regionUrl.js';
 
 // resolveRegionFromPath drives the shared Nominatim client, which calls the
 // global fetch. We stub fetch per case so parsing/ranking/bbox logic is tested
@@ -136,6 +136,63 @@ const RELATION_FULDA = {
 {
   globalThis.fetch = async () => { throw new Error('network down'); };
   assert.equal(await resolveRegionFromPath('/fulda'), null);
+}
+
+// --- proximity disambiguation via opts.near ---
+
+// 12b. Same-named relations are disambiguated by nearest bbox centroid to `near`.
+//      Mirrors /Lauterbach on a Fulda instance: the Czech hit has the highest
+//      importance and comes first, but Hessen is nearer and must win.
+{
+  const lauterbachCzech = {
+    osm_type: 'relation', osm_id: 436702, class: 'boundary',
+    display_name: 'Lauterbach, Bezirk Zwittau, Tschechien',
+    boundingbox: ['49.65', '49.72', '16.55', '16.65'], // centroid ~ (16.6, 49.69)
+  };
+  const lauterbachHessen = {
+    osm_type: 'relation', osm_id: 418333, class: 'boundary',
+    display_name: 'Lauterbach (Hessen), Vogelsbergkreis, Hessen',
+    boundingbox: ['50.60', '50.68', '9.34', '9.45'], // centroid ~ (9.40, 50.64)
+  };
+  // Czech first (higher importance) — without `near` it would win.
+  stubResults([lauterbachCzech, lauterbachHessen]);
+  const noNear = await resolveRegionFromPath('/lauterbach');
+  assert.equal(noNear.osmId, 436702, 'without near, importance order wins');
+
+  // Fulda centre ~ (9.65, 50.55) — Hessen is far nearer than Czechia.
+  stubResults([lauterbachCzech, lauterbachHessen]);
+  const nearFulda = await resolveRegionFromPath('/lauterbach', { near: [9.65, 50.55] });
+  assert.equal(nearFulda.osmId, 418333, 'with near, nearest centroid wins');
+  assert.equal(nearFulda.name, 'Lauterbach (Hessen)');
+}
+
+// 12c. A malformed `near` is ignored — falls back to importance ordering.
+{
+  stubResults([RELATION_FULDA]);
+  const r = await resolveRegionFromPath('/fulda', { near: [NaN, 50] });
+  assert.equal(r.osmId, 62700);
+}
+
+// --- isRegionPath: synchronous predicate used to gate auto-locate centering ---
+
+// 13. Single non-reserved segment looks like a region path
+{
+  for (const p of ['/fulda', '/Frankfurt', '/m%C3%BCnchen', '/new-york']) {
+    assert.equal(isRegionPath(p), true, `expected true for ${p}`);
+  }
+}
+
+// 14. Root, empty, nullish, multi-segment, reserved, and dotted paths are not
+{
+  for (const p of ['/', '', null, undefined, '/legal/impressum', '/api/rpc/x',
+                   '/api', '/API', '/metrics', '/config.js', '/version.json']) {
+    assert.equal(isRegionPath(p), false, `expected false for ${p}`);
+  }
+}
+
+// 15. Malformed percent-encoding does not throw → false
+{
+  assert.equal(isRegionPath('/%E0%A4%A'), false);
 }
 
 console.log('All regionUrl tests passed.');
