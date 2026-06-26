@@ -121,9 +121,8 @@
             duration: 0,
           });
         };
-        if (!hadDeeplink) {
-          fitToRegion();
-        } else {
+        const regionPathFailed = regionPath && !regionOverride;
+        if (hadDeeplink) {
           // Deeplink hash present — the deeplink expresses explicit user
           // intent that takes precedence over the default region framing,
           // so we don't fit eagerly. But if AppShell.tryRestoreFromHash
@@ -141,6 +140,13 @@
             detachRegionFitWatcher = null;
             if (!restored) fitToRegion();
           }, 1500);
+        } else if (regionPathFailed) {
+          // A region URL was given but didn't resolve (e.g. a typo). Don't
+          // frame the configured region — leave the default extent so
+          // auto-locate can take over with the user's current location. If
+          // geolocation is unavailable the map simply stays at its default.
+        } else {
+          fitToRegion();
         }
       } catch (err) {
         // Region framing failed entirely — a region path, if present, did not
