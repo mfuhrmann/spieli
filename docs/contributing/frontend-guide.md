@@ -28,6 +28,7 @@ The app uses Svelte writable stores (`src/stores/`). Components import stores di
 | `overlayFeaturesStore` | `{ equipment: [], trees: [] }` | PlaygroundPanel | Map.svelte (equipment/tree layers) |
 | `playgroundSourceStore` | OL VectorSource \| null | Map.svelte | NearbyPlaygrounds, AppShell |
 | `mapStore` | OL Map \| null | Map.svelte | LocateButton, other map-interacting components |
+| `regionFramingApplied` | `null \| true \| false` (region-URL framing outcome; `false` → unresolved, map left at default extent) | StandaloneApp | LocateButton (auto-locate centering decision) |
 | `hubLoadingStore` | `{ loaded, total, settling }` | hubOrchestrator | InstancePanel |
 | `macroFilteredStore` | `Map<backendUrl, {count, complete, partial, missing}> \| null` | hubOrchestrator (macro tier, filter active) | MacroView |
 | `macroCoverageStore` | `{ answered, total, cantFilter[], settling } \| null` | hubOrchestrator (macro tier, filter active) | MacroView, MacroCoverageBanner |

@@ -9,7 +9,8 @@
   import MacroView from './MacroView.svelte';
   import MacroCoverageBanner from './MacroCoverageBanner.svelte';
 
-  import { resolveRegionFromPath } from '../lib/regionUrl.js';
+  import { resolveRegionFromPath, isRegionPath } from '../lib/regionUrl.js';
+  import { regionFramingApplied } from '../stores/urlFraming.js';
   import { createRegistry } from './registry.js';
   import { attachHubOrchestrator } from './hubOrchestrator.js';
   import { mapStore } from '../stores/map.js';
@@ -174,11 +175,17 @@
   onMount(() => {
     // Resolve region URL path (e.g. /fulda) in parallel with geolocation.
     // Region URL takes precedence over geolocation when both resolve.
+    const regionPath = isRegionPath(window.location.pathname);
     resolveRegionFromPath(window.location.pathname).then(result => {
       if (result) {
         regionUrlExtent = result.extent;
         regionUrlOsmId = result.osmId;
       }
+      // Tell the shared LocateButton whether a region URL framed the map, so
+      // its auto-locate doesn't pan over an explicit /region request (#698).
+      // Without this the store stays null and LocateButton waits the full
+      // safety timeout before locating.
+      if (regionPath) regionFramingApplied.set(!!result);
       regionUrlDone = true;
       tryFit();
     });

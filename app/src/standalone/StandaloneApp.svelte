@@ -17,7 +17,8 @@
     fetchStandaloneEquipment,
   } from '../lib/api.js';
   import { fetchRegionInfo } from '../lib/region.js';
-  import { resolveRegionFromPath } from '../lib/regionUrl.js';
+  import { resolveRegionFromPath, isRegionPath } from '../lib/regionUrl.js';
+  import { regionFramingApplied } from '../stores/urlFraming.js';
   import { parseHash } from '../lib/deeplink.js';
   import { attachTieredOrchestrator } from '../lib/tieredOrchestrator.js';
   import { equipmentLayerStyleFn } from '../lib/vectorStyles.js';
@@ -96,9 +97,22 @@
       // BEFORE the await so the decision can't be invalidated by anything
       // that mutates window.location.hash while we're waiting on Nominatim.
       const hadDeeplink = parseHash(window.location.hash);
+      const regionPath = isRegionPath(window.location.pathname);
       try {
-        const regionOverride = await resolveRegionFromPath(window.location.pathname);
-        const region = regionOverride || await fetchRegionInfo(osmRelationId);
+        // Fetch the configured region first so its centre can disambiguate
+        // same-named places in a region URL (e.g. /Lauterbach → Hessen, not
+        // the higher-importance Lauterbach in Czechia). Also serves as the
+        // fallback framing when there is no region override.
+        const regionInfo = await fetchRegionInfo(osmRelationId).catch(() => null);
+        const regionOverride = await resolveRegionFromPath(window.location.pathname, {
+          near: regionInfo?.center,
+        });
+        // Tell LocateButton whether an explicit region URL actually framed the
+        // map: true when the override resolved, false when a region path was
+        // present but fell back to the configured region.
+        if (regionPath) regionFramingApplied.set(!!regionOverride);
+        const region = regionOverride || regionInfo;
+        if (!region) throw new Error('no region info available');
         document.title = `spieli ${region.name}`;
         const regionExtent = transformExtent(region.extent, 'EPSG:4326', 'EPSG:3857');
         const fitToRegion = () => {
@@ -107,9 +121,7 @@
             duration: 0,
           });
         };
-        if (!hadDeeplink) {
-          fitToRegion();
-        } else {
+        if (hadDeeplink) {
           // Deeplink hash present — the deeplink expresses explicit user
           // intent that takes precedence over the default region framing,
           // so we don't fit eagerly. But if AppShell.tryRestoreFromHash
@@ -127,8 +139,19 @@
             detachRegionFitWatcher = null;
             if (!restored) fitToRegion();
           }, 1500);
+        } else {
+          // No deeplink: frame the resolved region, or fall back to the
+          // configured region when a region path didn't resolve (e.g. a typo).
+          // In the fallback case framingApplied is false, so auto-locate still
+          // centers on the GPS fix when available — GPS wins for a typo, but a
+          // user without geolocation sees the configured region rather than the
+          // bare default extent (#698 review).
+          fitToRegion();
         }
       } catch (err) {
+        // Region framing failed entirely — a region path, if present, did not
+        // take effect, so let auto-locate center on the GPS fix.
+        if (regionPath) regionFramingApplied.set(false);
         console.warn('Nominatim region fetch failed, using default extent:', err);
       }
 
