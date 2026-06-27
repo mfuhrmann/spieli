@@ -116,8 +116,12 @@
         document.title = `spieli ${region.name}`;
         const regionExtent = transformExtent(region.extent, 'EPSG:4326', 'EPSG:3857');
         const fitToRegion = () => {
+          // Desktop has a 360px left side panel; mobile uses a bottom sheet
+          // (no left panel), so a 380px left padding would exceed the viewport
+          // width and make OL compute a broken extent — the region never shows.
+          const narrow = typeof window !== 'undefined' && window.innerWidth < 1024;
           map.getView().fit(regionExtent, {
-            padding: [20, 20, 20, 380], // leave room for the side panel on desktop
+            padding: narrow ? [20, 20, 20, 20] : [20, 20, 20, 380],
             duration: 0,
           });
         };

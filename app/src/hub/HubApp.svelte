@@ -135,10 +135,15 @@
   function tryFit() {
     if (fitDone || !latestMap || !backendsSettled || !geolocDone || !regionUrlDone) return;
     if (!regionUrlExtent && !geolocCoord && !latestBbox) return;
+    // Desktop has a 380px left panel; mobile has none, so a 380px left padding
+    // would exceed the viewport width and make OL compute a broken extent — the
+    // region would never show.
+    const narrow = typeof window !== 'undefined' && window.innerWidth < 1024;
+    const fitPadding = narrow ? [20, 20, 20, 20] : [20, 20, 20, 380];
     if (regionUrlExtent) {
       latestMap.getView().fit(
         transformExtent(regionUrlExtent, 'EPSG:4326', 'EPSG:3857'),
-        { padding: [20, 20, 20, 380], duration: 0 },
+        { padding: fitPadding, duration: 0 },
       );
     } else if (geolocCoord) {
       latestMap.getView().animate({
@@ -158,7 +163,7 @@
       // — a Germany+France union legitimately wants the macro continent
       // overview now that §5 ships and macro rings render properly.
       const backendCount = get(backends).length;
-      const fitOpts = { padding: [20, 20, 20, 380], duration: 0 };
+      const fitOpts = { padding: fitPadding, duration: 0 };
       if (backendCount <= 1) fitOpts.maxZoom = clusterMaxZoom + 1;
       latestMap.getView().fit(
         transformExtent(latestBbox ?? FALLBACK_BBOX, 'EPSG:4326', 'EPSG:3857'),
