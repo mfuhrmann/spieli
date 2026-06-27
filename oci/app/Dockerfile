@@ -24,9 +24,10 @@ RUN apk add --no-cache busybox-suid jq
 COPY --from=builder /build/dist      /usr/share/nginx/html
 COPY oci/app/nginx.conf              /etc/nginx/conf.d/default.conf
 COPY oci/app/docker-entrypoint.sh       /docker-entrypoint.sh
+COPY oci/app/gen-runtime.sh             /usr/local/bin/gen-runtime.sh
 COPY oci/app/poll-federation.sh         /usr/local/bin/poll-federation.sh
 COPY oci/app/datenschutz.template.html  /datenschutz.template.html
-RUN chmod +x /docker-entrypoint.sh /usr/local/bin/poll-federation.sh
+RUN chmod +x /docker-entrypoint.sh /usr/local/bin/gen-runtime.sh /usr/local/bin/poll-federation.sh
 
 # Run poll script every minute as root
 RUN printf '* * * * * /usr/local/bin/poll-federation.sh >/dev/null 2>&1\n' \
