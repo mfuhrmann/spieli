@@ -19,6 +19,7 @@
   import { macroCoverageStore } from '../stores/macroCoverage.js';
   import { activeTierStore } from '../stores/tier.js';
   import { clusterMaxZoom } from '../lib/config.js';
+  import { regionFitPadding } from '../lib/playgroundHelpers.js';
   import * as osmIdDedup from './osmIdDedup.js';
 
   // Three sources owned by the hub — the orchestrator populates cluster /
@@ -135,10 +136,11 @@
   function tryFit() {
     if (fitDone || !latestMap || !backendsSettled || !geolocDone || !regionUrlDone) return;
     if (!regionUrlExtent && !geolocCoord && !latestBbox) return;
+    const fitPadding = regionFitPadding();
     if (regionUrlExtent) {
       latestMap.getView().fit(
         transformExtent(regionUrlExtent, 'EPSG:4326', 'EPSG:3857'),
-        { padding: [20, 20, 20, 380], duration: 0 },
+        { padding: fitPadding, duration: 0 },
       );
     } else if (geolocCoord) {
       latestMap.getView().animate({
@@ -158,7 +160,7 @@
       // — a Germany+France union legitimately wants the macro continent
       // overview now that §5 ships and macro rings render properly.
       const backendCount = get(backends).length;
-      const fitOpts = { padding: [20, 20, 20, 380], duration: 0 };
+      const fitOpts = { padding: fitPadding, duration: 0 };
       if (backendCount <= 1) fitOpts.maxZoom = clusterMaxZoom + 1;
       latestMap.getView().fit(
         transformExtent(latestBbox ?? FALLBACK_BBOX, 'EPSG:4326', 'EPSG:3857'),

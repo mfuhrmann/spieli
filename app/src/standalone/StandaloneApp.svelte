@@ -21,6 +21,7 @@
   import { regionFramingApplied } from '../stores/urlFraming.js';
   import { parseHash } from '../lib/deeplink.js';
   import { attachTieredOrchestrator } from '../lib/tieredOrchestrator.js';
+  import { regionFitPadding } from '../lib/playgroundHelpers.js';
   import { equipmentLayerStyleFn } from '../lib/vectorStyles.js';
   import { debounce } from '../lib/utils.js';
   import { mapStore } from '../stores/map.js';
@@ -117,7 +118,7 @@
         const regionExtent = transformExtent(region.extent, 'EPSG:4326', 'EPSG:3857');
         const fitToRegion = () => {
           map.getView().fit(regionExtent, {
-            padding: [20, 20, 20, 380], // leave room for the side panel on desktop
+            padding: regionFitPadding(),
             duration: 0,
           });
         };
