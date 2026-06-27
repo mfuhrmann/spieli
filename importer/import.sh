@@ -1,4 +1,7 @@
 #!/bin/sh
+# Copyright 2026 Ronny Trommer <ronny@no42.org>
+# SPDX-License-Identifier: GPL-3.0-only
+#
 # Full re-import of OSM data into PostGIS.
 # Run via: docker compose run --rm importer
 #
@@ -35,8 +38,15 @@
 # update timestamp" without depending on `pipefail`.
 set -e
 
+# Working-data directory (PBF cache + intermediate filtered PBFs) and the
+# API-schema file. Both default to the importer image's container paths so
+# Docker behaviour is unchanged; native deployments (e.g. NixOS) override them
+# to point at a state directory and the nix-store api.sql respectively.
+DATA_DIR="${DATA_DIR:-/data}"
+API_SQL="${API_SQL:-/api.sql}"
+
 PBF_URL="${PBF_URL:-https://download.geofabrik.de/europe/germany/hessen-latest.osm.pbf}"
-PBF_FILE="/data/$(basename "$PBF_URL")"
+PBF_FILE="$DATA_DIR/$(basename "$PBF_URL")"
 PBF_BASENAME=$(basename "$PBF_FILE" .pbf)
 
 OSM_BBOX="${OSM_BBOX:-}"
@@ -142,7 +152,7 @@ run_import() (
             wget --progress=dot:giga -O "$PBF_FILE" "$PBF_URL"
         else
             echo "[importer] Checking for updated PBF at $PBF_URL ..."
-            wget --progress=dot:giga -N -P /data/ "$PBF_URL"
+            wget --progress=dot:giga -N -P "$DATA_DIR/" "$PBF_URL"
         fi
     else
         echo "[importer] Downloading $PBF_URL ..."
@@ -193,7 +203,7 @@ run_import() (
     fi
 
     if [ "$SKIP_PREFILTER" -eq 0 ]; then
-        BBOX_PBF="/data/${PBF_BASENAME}_${OSM_RELATION_ID}.pbf"
+        BBOX_PBF="$DATA_DIR/${PBF_BASENAME}_${OSM_RELATION_ID}.pbf"
 
         BBOX_CACHE_OK=0
         if [ -f "$BBOX_PBF" ] && [ "$BBOX_PBF" -nt "$PBF_FILE" ]; then
@@ -208,7 +218,7 @@ run_import() (
         fi
         if [ "$BBOX_CACHE_OK" -eq 0 ]; then
             echo "[importer] Running osmium extract (bbox=$RESOLVED_BBOX)..."
-            BBOX_TMP=$(mktemp -p /data .bbox.XXXXXX.pbf)
+            BBOX_TMP=$(mktemp -p "$DATA_DIR" .bbox.XXXXXX.pbf)
             trap 'rm -f "$BBOX_TMP"' EXIT
             osmium extract \
                 --overwrite \
@@ -227,7 +237,7 @@ run_import() (
     # --------------------------------------------------------------------------- #
     # Step 2 — Tag filter: keep only objects the app actually queries
     # --------------------------------------------------------------------------- #
-    TAGS_PBF="/data/${PBF_BASENAME}_${OSM_RELATION_ID}_tags.pbf"
+    TAGS_PBF="$DATA_DIR/${PBF_BASENAME}_${OSM_RELATION_ID}_tags.pbf"
 
     TAGS_CACHE_OK=0
     if [ -f "$TAGS_PBF" ] && [ "$TAGS_PBF" -nt "$IMPORT_PBF" ]; then
@@ -242,7 +252,7 @@ run_import() (
     fi
     if [ "$TAGS_CACHE_OK" -eq 0 ]; then
         echo "[importer] Running osmium tags-filter..."
-        TAGS_TMP=$(mktemp -p /data .tags.XXXXXX.pbf)
+        TAGS_TMP=$(mktemp -p "$DATA_DIR" .tags.XXXXXX.pbf)
         trap 'rm -f "$TAGS_TMP"' EXIT
         osmium tags-filter \
             --overwrite \
@@ -348,7 +358,7 @@ run_import() (
     # timestamp").
     TMP_API_SQL=$(mktemp)
     trap 'rm -f "$TMP_API_SQL"; _clear_importing' EXIT
-    envsubst '$OSM_RELATION_ID $PG_MAX_PARALLEL_WORKERS $PG_MAX_PARALLEL_WORKERS_PER_GATHER $PG_MAX_PARALLEL_MAINTENANCE_WORKERS $PG_MAINTENANCE_WORK_MEM $PG_WORK_MEM $SPIELI_VERSION $IMPRESSUM_URL $PRIVACY_URL $SITE_URL' < /api.sql > "$TMP_API_SQL"
+    envsubst '$OSM_RELATION_ID $PG_MAX_PARALLEL_WORKERS $PG_MAX_PARALLEL_WORKERS_PER_GATHER $PG_MAX_PARALLEL_MAINTENANCE_WORKERS $PG_MAINTENANCE_WORK_MEM $PG_WORK_MEM $SPIELI_VERSION $IMPRESSUM_URL $PRIVACY_URL $SITE_URL' < "$API_SQL" > "$TMP_API_SQL"
     psql -v ON_ERROR_STOP=1 \
         -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
         -f "$TMP_API_SQL"
@@ -481,7 +491,7 @@ run_api_apply() (
     echo "[importer] Applying API schema..."
     TMP_API_SQL=$(mktemp)
     trap 'rm -f "$TMP_API_SQL"' EXIT
-    envsubst '$OSM_RELATION_ID $PG_MAX_PARALLEL_WORKERS $PG_MAX_PARALLEL_WORKERS_PER_GATHER $PG_MAX_PARALLEL_MAINTENANCE_WORKERS $PG_MAINTENANCE_WORK_MEM $PG_WORK_MEM $SPIELI_VERSION $IMPRESSUM_URL $PRIVACY_URL $SITE_URL' < /api.sql > "$TMP_API_SQL"
+    envsubst '$OSM_RELATION_ID $PG_MAX_PARALLEL_WORKERS $PG_MAX_PARALLEL_WORKERS_PER_GATHER $PG_MAX_PARALLEL_MAINTENANCE_WORKERS $PG_MAINTENANCE_WORK_MEM $PG_WORK_MEM $SPIELI_VERSION $IMPRESSUM_URL $PRIVACY_URL $SITE_URL' < "$API_SQL" > "$TMP_API_SQL"
     psql -v ON_ERROR_STOP=1 \
         -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
         -f "$TMP_API_SQL"
