@@ -19,6 +19,7 @@
   import { macroCoverageStore } from '../stores/macroCoverage.js';
   import { activeTierStore } from '../stores/tier.js';
   import { clusterMaxZoom } from '../lib/config.js';
+  import { regionFitPadding } from '../lib/playgroundHelpers.js';
   import * as osmIdDedup from './osmIdDedup.js';
 
   // Three sources owned by the hub — the orchestrator populates cluster /
@@ -135,11 +136,7 @@
   function tryFit() {
     if (fitDone || !latestMap || !backendsSettled || !geolocDone || !regionUrlDone) return;
     if (!regionUrlExtent && !geolocCoord && !latestBbox) return;
-    // Desktop has a 380px left panel; mobile has none, so a 380px left padding
-    // would exceed the viewport width and make OL compute a broken extent — the
-    // region would never show.
-    const narrow = typeof window !== 'undefined' && window.innerWidth < 1024;
-    const fitPadding = narrow ? [20, 20, 20, 20] : [20, 20, 20, 380];
+    const fitPadding = regionFitPadding();
     if (regionUrlExtent) {
       latestMap.getView().fit(
         transformExtent(regionUrlExtent, 'EPSG:4326', 'EPSG:3857'),

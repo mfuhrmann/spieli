@@ -80,6 +80,19 @@ export function selectionFitPadding() {
 }
 
 /**
+ * Padding for `view.fit()` when framing a region (region URL or aggregated
+ * bbox). Desktop reserves the left side-panel width (380 px); mobile has no
+ * left panel (bottom sheet instead), so a 380 px left reserve would exceed a
+ * narrow viewport and make OL compute a broken extent — the region never shows
+ * (see #702). The mobile top reserve (60 px) clears the floating search bar,
+ * matching {@link selectionFitPadding}. Order is OL's `[top, right, bottom, left]`.
+ */
+export function regionFitPadding() {
+    const narrow = typeof window !== 'undefined' && window.innerWidth < 1024;
+    return narrow ? [60, 20, 20, 20] : [20, 20, 20, 380];
+}
+
+/**
  * Fit the view to a selected playground's extent, then floor the zoom back into
  * the polygon tier. `constrainResolution` (set on the View) snaps the fit to an
  * integer zoom; for a playground large enough to fit at zoom <= clusterMaxZoom
