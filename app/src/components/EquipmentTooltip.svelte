@@ -1,5 +1,6 @@
 <script>
   import { objDevices, objFitnessStation } from '../lib/objPlaygroundEquipment.js';
+  import { themeOf, themeIcon, themeName } from '../lib/playgroundThemes.js';
   import { _ } from 'svelte-i18n';
 
   /** @type {{ x: number, y: number } | null} */
@@ -31,6 +32,8 @@
   $: details = (() => {
     if (!props) return [];
     const items = [];
+    const themeVal = themeOf(props);
+    if (themeVal) items.push(`${themeIcon(themeVal)} ${themeName(themeVal, $_)}`);
     if (props.surface) {
       const label = props.surface.split(';').map(s => $_('details.surfaceValues.' + s.trim(), { default: s.trim() })).join(' / ');
       items.push(`${$_('equipAttr.surface')}: ${label}`);

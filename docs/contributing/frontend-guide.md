@@ -211,6 +211,19 @@ Translations live in `locales/*.json` and are loaded by `lib/i18n.js` using svel
 
 Add new keys to `locales/en.json` and `locales/de.json`. Translation to other languages happens via [Weblate](translation-guide.md).
 
+## Playground themes
+
+`playground:theme=*` (OSM) describes a playground's — or a single device's — thematic flavour (ship, castle, horse, …). The tag reaches the frontend on both the playground polygon and equipment features via the `hstore_to_jsonb(tags)` merge in `api.sql` (it is not an osm2pgsql column, so it is not stripped).
+
+`lib/playgroundThemes.js` owns the presentation:
+
+- `themeIcon(value)` — curated emoji per theme value, generic `FALLBACK_ICON` (✨) for the open long-tail vocabulary.
+- `themeName(value, t)` — localised label from `equipAttr.themes.*`, falling back to the raw value.
+- `themeOf(props)` — the first clean theme on a single feature (noise values like `playground`/`yes` filtered out), used for the inline device symbol.
+- `aggregatePlaygroundThemes(areaProps, deviceProps)` — deduped, ordered theme list for a playground (area theme first, then device themes by frequency). `PlaygroundPanel` renders this as a capped symbol row near the title; `EquipmentList`/`EquipmentTooltip` render the per-device symbol inline.
+
+Themes are panel-only — no map symbols (discovery is deferred).
+
 ## Style system
 
 The app uses Bootstrap 5 (component classes) and Tailwind CSS 4 (utility classes) side by side. The design system primitives in `src/components/ui/` (`Badge`, `Button`, `Card`, etc.) wrap Bootstrap with Tailwind utilities. Prefer these over raw Bootstrap classes in new components.
