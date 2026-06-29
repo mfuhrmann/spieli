@@ -704,5 +704,8 @@
       "whale": "Wal",
       "windmill": "Windmühle"
     }
+  },
+  "commons": {
+    "viewSource": "Auf Wikimedia Commons ansehen"
   }
 }

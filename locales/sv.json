@@ -134,5 +134,8 @@
   },
   "hub": {
     "importing": "uppdaterar"
+  },
+  "commons": {
+    "viewSource": "Visa på Wikimedia Commons"
   }
 }
