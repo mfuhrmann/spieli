@@ -52,9 +52,21 @@ import { playgroundCompleteness } from './completeness.js';
   assert.equal(playgroundCompleteness({ wikimedia_commons: 'Category:Foo' }), 'partial');
 }
 
-// 6b. image tag counts as a photo (issue #650) → partial
+// 6b. Wikimedia-hosted image tag counts as a photo (issue #650) → partial
 {
   assert.equal(playgroundCompleteness({ image: 'https://upload.wikimedia.org/x.jpg' }), 'partial');
+  assert.equal(playgroundCompleteness({ image: 'https://commons.wikimedia.org/wiki/File:X.jpg' }), 'partial');
+}
+
+// 6d. Off-Wikimedia image link does NOT count — the gallery can't render it,
+// so it must not raise completeness (issue #650) → missing
+{
+  assert.equal(playgroundCompleteness({ image: 'https://www.mapillary.com/app/?pKey=123' }), 'missing');
+  assert.equal(playgroundCompleteness({ image: 'https://example.com/x.jpg' }), 'missing');
+  // host-suffix spoof must not slip through
+  assert.equal(playgroundCompleteness({ image: 'https://wikimedia.org.evil.com/x.jpg' }), 'missing');
+  // plain http (mixed content) does not count
+  assert.equal(playgroundCompleteness({ image: 'http://upload.wikimedia.org/x.jpg' }), 'missing');
 }
 
 // 6c. wikimedia_commons + equipment + info → complete

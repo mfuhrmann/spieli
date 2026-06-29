@@ -134,5 +134,8 @@
   },
   "hub": {
     "importing": "aktualizace"
+  },
+  "commons": {
+    "viewSource": "Zobrazit na Wikimedia Commons"
   }
 }

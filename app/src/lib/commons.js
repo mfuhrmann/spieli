@@ -7,7 +7,6 @@
 // devices. See issue #650.
 
 const API = 'https://commons.wikimedia.org/w/api.php';
-const COMMONS_PAGE = 'https://commons.wikimedia.org/wiki/';
 
 function parseUrl(url) {
     if (!url || typeof url !== 'string') return null;
@@ -49,6 +48,17 @@ export function commonsFileFromUrl(url) {
     return null;
 }
 
+// Whether an OSM `image` tag value is one the gallery can actually render: an
+// https URL on a Wikimedia/Wikipedia host (a direct upload, an image path, or a
+// File: page we resolve via the imageinfo API). Off-Wikimedia links (Mapillary,
+// Flickr, example.com, …) yield nothing in the gallery, so completeness scoring
+// uses this to avoid crediting a photo that never appears. Host-based on
+// purpose: cheap and mirrorable in SQL (see importer/api.sql has_photo).
+export function isWikimediaImageTag(value) {
+    const u = parseUrl(value);
+    return !!u && isWikimediaHost(u.hostname);
+}
+
 // Parse a `wikimedia_commons` tag value into { kind, title }.
 // Accepts "Category:Foo", "File:Bar.jpg", or a bare value (assumed a File).
 export function parseCommonsTag(value) {
@@ -58,13 +68,6 @@ export function parseCommonsTag(value) {
     if (/^category:/i.test(v)) return { kind: 'category', title: v };
     if (/^file:/i.test(v)) return { kind: 'file', title: v };
     return { kind: 'file', title: `File:${v}` };
-}
-
-// Public Commons page URL for a `wikimedia_commons` tag value.
-export function commonsPageUrl(value) {
-    const parsed = parseCommonsTag(value);
-    if (!parsed) return null;
-    return COMMONS_PAGE + encodeURIComponent(parsed.title.replace(/ /g, '_'));
 }
 
 // Strip the HTML that Commons wraps around Artist / license metadata so we
@@ -107,57 +110,79 @@ async function fetchImageInfo(titles, thumbWidth, signal) {
             iiprop: 'url|extmetadata',
             iiurlwidth: String(thumbWidth),
         }, signal);
+        // `pages` is a pageid-keyed object whose iteration order does NOT track
+        // the requested order, so build a title→photo map and re-emit in the
+        // `batch` order. `normalized` maps each requested title to the canonical
+        // title MediaWiki actually keyed the page under.
         const pages = data?.query?.pages ?? {};
+        const canonical = {};
+        for (const n of data?.query?.normalized ?? []) canonical[n.from] = n.to;
+        const byTitle = {};
         for (const page of Object.values(pages)) {
             const ii = page.imageinfo?.[0];
             if (!ii) continue;
             const meta = ii.extmetadata ?? {};
-            out.push({
+            byTitle[page.title] = {
                 title: page.title,
                 thumb: ii.thumburl || ii.url,
                 full: ii.url,
                 descUrl: ii.descriptionurl || null,
                 artist: stripHtml(meta.Artist?.value),
                 license: stripHtml(meta.LicenseShortName?.value || meta.License?.value),
-            });
+            };
+        }
+        for (const t of batch) {
+            const photo = byTitle[canonical[t] ?? t];
+            if (photo) out.push(photo);
         }
     }
     return out;
 }
 
 // Fetch the full photo set for a playground: the safe direct `image` URL
-// (if any) plus all files from the `wikimedia_commons` tag, deduped by title.
-// Returns [] on any failure so the caller can degrade gracefully.
+// (if any) plus all files from the `wikimedia_commons` tag, deduped by title
+// and by resolved file URL. Returns [] on any network/API failure so the caller
+// can degrade gracefully; an aborted request rethrows (AbortError) so the caller
+// can distinguish a superseded fetch from an empty result.
 export async function fetchPlaygroundPhotos(commonsTag, imageUrl, opts = {}) {
     const { signal, max = 24, thumbWidth = 320 } = opts;
     const photos = [];
     const seen = new Set();
     const titles = [];
 
-    // `image` may be a direct image, a Commons File-page reference, or junk.
-    const imageFile = commonsFileFromUrl(imageUrl);
-    if (imageFile) {
-        titles.push(imageFile);
-    } else if (isSafeImageUrl(imageUrl)) {
-        photos.push({ title: imageUrl, thumb: imageUrl, full: imageUrl, descUrl: imageUrl, artist: null, license: null });
-    }
-
-    const parsed = parseCommonsTag(commonsTag);
-    if (parsed) {
-        if (parsed.kind === 'category') {
-            titles.push(...await fetchCategoryFiles(parsed.title, max, signal));
-        } else {
-            titles.push(parsed.title);
+    try {
+        // `image` may be a direct image, a Commons File-page reference, or junk.
+        const imageFile = commonsFileFromUrl(imageUrl);
+        if (imageFile) {
+            titles.push(imageFile);
+        } else if (isSafeImageUrl(imageUrl)) {
+            photos.push({ title: imageUrl, thumb: imageUrl, full: imageUrl, descUrl: imageUrl, artist: null, license: null });
+            // Seed dedup with the direct image's URL so the same file arriving
+            // via the category (resolved to the same ii.url) isn't shown twice.
+            seen.add(imageUrl);
         }
-    }
 
-    if (titles.length > 0) {
-        const infos = await fetchImageInfo([...new Set(titles)], thumbWidth, signal);
-        for (const p of infos) {
-            if (seen.has(p.title)) continue;
-            seen.add(p.title);
-            photos.push(p);
+        const parsed = parseCommonsTag(commonsTag);
+        if (parsed) {
+            if (parsed.kind === 'category') {
+                titles.push(...await fetchCategoryFiles(parsed.title, max, signal));
+            } else {
+                titles.push(parsed.title);
+            }
         }
+
+        if (titles.length > 0) {
+            const infos = await fetchImageInfo([...new Set(titles)], thumbWidth, signal);
+            for (const p of infos) {
+                if (seen.has(p.title) || seen.has(p.full)) continue;
+                seen.add(p.title);
+                seen.add(p.full);
+                photos.push(p);
+            }
+        }
+        return photos;
+    } catch (err) {
+        if (err?.name === 'AbortError') throw err;
+        return [];
     }
-    return photos;
 }

@@ -196,13 +196,16 @@ CREATE MATERIALIZED VIEW public.playground_stats AS
     SELECT
       pl.osm_id,
       pl.osm_type,
-      -- Additive: a wikimedia_commons / image link counts as a photo too, so
-      -- mapper-contributed Commons photos raise completeness. A playground
-      -- without any photo link is never downgraded by this.
+      -- Additive: a wikimedia_commons tag or a Wikimedia/Wikipedia-hosted image
+      -- link counts as a photo too, so mapper-contributed Commons photos raise
+      -- completeness. An off-Wikimedia image URL (Mapillary, Flickr, …) does NOT
+      -- count — the gallery can't render it (mirrors isWikimediaImageTag in
+      -- app/src/lib/commons.js). A playground without any photo link is never
+      -- downgraded by this.
       (pl.tags ? 'panoramax'
         OR EXISTS (SELECT 1 FROM skeys(pl.tags) k WHERE k LIKE 'panoramax:%')
         OR pl.tags ? 'wikimedia_commons'
-        OR pl.tags ? 'image'
+        OR COALESCE(pl.tags->'image' ~* '^https://([^/]+\.)?(wikimedia|wikipedia)\.org(/|$)', false)
       ) AS has_photo,
       -- Any mapped equipment inside the playground area (devices, benches,
       -- pitches, etc.). device_count covers playground=* nodes/polygons;

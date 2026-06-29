@@ -3,8 +3,8 @@
   import { _ } from 'svelte-i18n';
   import { fetchPlaygroundPhotos } from '../lib/commons.js';
 
-  /** @type {{ commons?: string, image?: string }} */
-  let { commons = '', image = '' } = $props();
+  /** @type {{ commons?: string, image?: string, count?: number }} */
+  let { commons = '', image = '', count = $bindable(0) } = $props();
 
   // How many thumbnails to show before collapsing into a "+N" tile.
   // Five fits the panel width on one row; the 5th becomes the "+N" tile.
@@ -21,12 +21,12 @@
   // photos. Failures degrade silently to an empty gallery (renders nothing).
   $effect(() => {
     const c = commons, i = image;
-    if (!c && !i) { photos = []; return; }
+    if (!c && !i) { photos = []; count = 0; return; }
     const ctrl = new AbortController();
     loading = true;
     fetchPlaygroundPhotos(c, i, { signal: ctrl.signal })
-      .then(p => { photos = p; selectedIndex = 0; })
-      .catch(() => { photos = []; })
+      .then(p => { photos = p; count = p.length; selectedIndex = 0; })
+      .catch(() => { photos = []; count = 0; })
       .finally(() => { loading = false; });
     return () => ctrl.abort();
   });
@@ -59,6 +59,12 @@
     return { destroy() { node.parentNode?.removeChild(node); } };
   }
 </script>
+
+{#if loading && photos.length === 0}
+  <!-- First load: a skeleton placeholder at hero height so the panel doesn't
+       jump when the photos arrive. Reloads keep the old photos visible. -->
+  <div class="commons-skeleton" aria-label={$_('accordion.photos')}></div>
+{/if}
 
 {#if photos.length > 0}
   <!-- Big preview of the selected photo (mirrors the Panoramax viewer layout). -->
@@ -126,6 +132,21 @@
 {/if}
 
 <style>
+  .commons-skeleton {
+    height: 200px;
+    border-radius: 4px;
+    background: linear-gradient(100deg, #e9ecef 30%, #f3f5f7 50%, #e9ecef 70%);
+    background-size: 200% 100%;
+    animation: commons-shimmer 1.2s ease-in-out infinite;
+  }
+  @keyframes commons-shimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .commons-skeleton { animation: none; }
+  }
+
   .commons-hero {
     position: relative;
     cursor: pointer;

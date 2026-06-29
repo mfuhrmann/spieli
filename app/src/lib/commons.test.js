@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { isSafeImageUrl, commonsFileFromUrl, parseCommonsTag, commonsPageUrl, stripHtml } from './commons.js';
+import { isSafeImageUrl, commonsFileFromUrl, parseCommonsTag, isWikimediaImageTag, stripHtml } from './commons.js';
 
 // --- isSafeImageUrl: only https Wikimedia URLs pointing at an actual image ---
 {
@@ -50,13 +50,17 @@ import { isSafeImageUrl, commonsFileFromUrl, parseCommonsTag, commonsPageUrl, st
     assert.equal(parseCommonsTag(null), null);
 }
 
-// --- commonsPageUrl: builds a public Commons link ---
+// --- isWikimediaImageTag: only https Wikimedia/Wikipedia hosts count ---
 {
-    assert.equal(
-        commonsPageUrl('Category:Spielplatz Donauspiel, Deichgärten'),
-        'https://commons.wikimedia.org/wiki/Category%3ASpielplatz_Donauspiel%2C_Deichg%C3%A4rten',
-    );
-    assert.equal(commonsPageUrl(''), null);
+    assert.equal(isWikimediaImageTag('https://upload.wikimedia.org/x.jpg'), true);
+    assert.equal(isWikimediaImageTag('https://commons.wikimedia.org/wiki/File:X.jpg'), true);
+    assert.equal(isWikimediaImageTag('https://de.wikipedia.org/wiki/File:X.jpg'), true);
+    assert.equal(isWikimediaImageTag('https://www.mapillary.com/x'), false);
+    assert.equal(isWikimediaImageTag('https://example.com/x.jpg'), false);
+    assert.equal(isWikimediaImageTag('https://wikimedia.org.evil.com/x.jpg'), false);
+    assert.equal(isWikimediaImageTag('http://upload.wikimedia.org/x.jpg'), false);
+    assert.equal(isWikimediaImageTag(''), false);
+    assert.equal(isWikimediaImageTag(null), false);
 }
 
 // --- stripHtml: plain-text credit from Commons HTML ---

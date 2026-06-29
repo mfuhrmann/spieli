@@ -408,6 +408,15 @@
   // ── Wikimedia Commons photos from OSM tags (issue #650) ────────────────────
   $: commonsTag = attr?.['wikimedia_commons'] || '';
   $: imageTag = attr?.['image'] || '';
+  // How many photos the Commons gallery actually resolved (a tag can be present
+  // but yield nothing: unsafe/non-Wikimedia image URL, empty category, or a
+  // failed fetch). Bound from CommonsGallery so the Panoramax fallback below
+  // reflects what is really on screen, not just tag presence.
+  let commonsPhotoCount = 0;
+  // True only when a tag is present AND the gallery actually rendered photos.
+  // Tag-only-but-empty (or no tag at all) leaves this false so the Panoramax
+  // "add a photo" prompt is never orphaned behind a blank gallery.
+  $: commonsHasPhotos = (commonsTag || imageTag) && commonsPhotoCount > 0;
 
   // ── Share button ──────────────────────────────────────────────────────────
   let shareConfirmed = false;
@@ -679,12 +688,14 @@
           {#if openSections.has('photos')}
             <div class="pb-3">
               {#if commonsTag || imageTag}
-                <CommonsGallery commons={commonsTag} image={imageTag} />
+                <CommonsGallery commons={commonsTag} image={imageTag} bind:count={commonsPhotoCount} />
               {/if}
               <!-- Show Panoramax when it has its own photos, or as the sole
-                   "add a photo" prompt when no Commons photos exist — avoids a
-                   stray "No photos yet" under a populated Commons gallery. -->
-              {#if panoramaxUuids.length > 0 || (!commonsTag && !imageTag)}
+                   "add a photo" prompt when no Commons photos are on screen —
+                   avoids both a stray "No photos yet" under a populated Commons
+                   gallery and a fully blank section when a photo tag is present
+                   but the gallery resolved nothing (unsafe URL / fetch fail). -->
+              {#if panoramaxUuids.length > 0 || !commonsHasPhotos}
                 <PanoramaxViewer uuids={panoramaxUuids} {mcUrl} />
               {/if}
             </div>
