@@ -47,6 +47,24 @@ import { playgroundCompleteness } from './completeness.js';
   assert.equal(playgroundCompleteness({ panoramax: 'abc' }), 'partial');
 }
 
+// 6a. wikimedia_commons counts as a photo (issue #650) → partial
+{
+  assert.equal(playgroundCompleteness({ wikimedia_commons: 'Category:Foo' }), 'partial');
+}
+
+// 6b. image tag counts as a photo (issue #650) → partial
+{
+  assert.equal(playgroundCompleteness({ image: 'https://upload.wikimedia.org/x.jpg' }), 'partial');
+}
+
+// 6c. wikimedia_commons + equipment + info → complete
+{
+  assert.equal(
+    playgroundCompleteness({ wikimedia_commons: 'Category:Foo', device_count: 1, surface: 'sand' }),
+    'complete',
+  );
+}
+
 // 7. equipment only → partial
 {
   assert.equal(playgroundCompleteness({ device_count: 1 }), 'partial');

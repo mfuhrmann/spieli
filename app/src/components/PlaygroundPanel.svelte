@@ -28,6 +28,7 @@
   import MapCompleteLink from './MapCompleteLink.svelte';
   import POIPanel from './POIPanel.svelte';
   import PanoramaxViewer from './PanoramaxViewer.svelte';
+  import CommonsGallery from './CommonsGallery.svelte';
   import ReviewsPanel from './ReviewsPanel.svelte';
   import Badge from './ui/Badge.svelte';
   import Button from './ui/Button.svelte';
@@ -404,6 +405,10 @@
     return uuids;
   })();
 
+  // ── Wikimedia Commons photos from OSM tags (issue #650) ────────────────────
+  $: commonsTag = attr?.['wikimedia_commons'] || '';
+  $: imageTag = attr?.['image'] || '';
+
   // ── Share button ──────────────────────────────────────────────────────────
   let shareConfirmed = false;
   let shareTimeout;
@@ -673,7 +678,15 @@
           </button>
           {#if openSections.has('photos')}
             <div class="pb-3">
-              <PanoramaxViewer uuids={panoramaxUuids} {mcUrl} />
+              {#if commonsTag || imageTag}
+                <CommonsGallery commons={commonsTag} image={imageTag} />
+              {/if}
+              <!-- Show Panoramax when it has its own photos, or as the sole
+                   "add a photo" prompt when no Commons photos exist — avoids a
+                   stray "No photos yet" under a populated Commons gallery. -->
+              {#if panoramaxUuids.length > 0 || (!commonsTag && !imageTag)}
+                <PanoramaxViewer uuids={panoramaxUuids} {mcUrl} />
+              {/if}
             </div>
           {/if}
         </div>

@@ -2,7 +2,9 @@
 // Returns 'complete' | 'partial' | 'missing'
 //
 // Criteria:
-//   hasPhoto     — at least one panoramax / panoramax:* tag
+//   hasPhoto     — at least one panoramax / panoramax:* tag, or a
+//                  wikimedia_commons / image link (additive — a missing photo
+//                  link never lowers completeness)
 //   hasEquipment — any mapped equipment inside the playground
 //                  (playground=* devices, benches, pitches, etc.)
 //   hasInfo      — opening_hours, surface, or a non-trivial access value
@@ -15,7 +17,9 @@
 // not useful to parents choosing a playground.
 
 export function playgroundCompleteness(props) {
-    const hasPhoto = Object.keys(props).some(k => k === 'panoramax' || k.startsWith('panoramax:'));
+    const hasPhoto = Object.keys(props).some(k =>
+        k === 'panoramax' || k.startsWith('panoramax:') ||
+        k === 'wikimedia_commons' || k === 'image');
     const hasEquipment = (props.device_count > 0)
         || (props.bench_count > 0)
         || (props.shelter_count > 0)

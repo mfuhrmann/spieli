@@ -8,6 +8,7 @@ spieli integrates with the following free external services at runtime:
 | [Nominatim](https://nominatim.openstreetmap.org) | Location search and region bounding box |
 | [CartoDB Voyager](https://carto.com/basemaps) | Background map tiles |
 | [Panoramax](https://panoramax.xyz) | Street-level photos |
+| [Wikimedia Commons](https://commons.wikimedia.org) | Playground photos from `wikimedia_commons` / `image` tags |
 | [Mangrove.reviews](https://mangrove.reviews) | Pseudonymous community reviews |
 | [MapComplete](https://mapcomplete.org) | Contribute photos and equipment |
 | [Wikidata](https://wikidata.org) | Operator entity linking |

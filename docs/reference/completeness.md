@@ -10,7 +10,7 @@ Three independent criteria are evaluated per playground:
 
 | Criterion | Satisfied when |
 |---|---|
-| **hasPhoto** | At least one `panoramax` or `panoramax:*` tag is present |
+| **hasPhoto** | At least one `panoramax` / `panoramax:*` tag, or a `wikimedia_commons` / `image` link, is present |
 | **hasEquipment** | At least one mapped piece of equipment exists inside the playground (devices, benches, pitches, fitness stations, etc.) |
 | **hasInfo** | Any one of `opening_hours`, `surface`, or `access` (with a value other than `yes`) is present |
 
