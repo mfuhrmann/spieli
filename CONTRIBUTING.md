@@ -11,7 +11,7 @@ All contributions are welcome — code, translations, bug reports, or documentat
 | `db/` | PostgreSQL initialisation SQL |
 | `oci/` | Docker build contexts — `oci/app/` (Svelte app + nginx) |
 | `processing/` | OSM data pipeline scripts (Lua rules, SQL, shell) used during import |
-| `taginfo/` | [taginfo](https://taginfo.openstreetmap.org) metadata describing the OSM tags this project uses |
+| `taginfo/` | [taginfo](https://taginfo.openstreetmap.org) metadata describing the OSM tags this project uses. Keep `taginfo/taginfo.json` in sync when you change the `osmium tags-filter` in `importer/import.sh`, the tags read in `importer/api.sql`, or the tags rendered by the frontend (e.g. `app/src/lib/equipmentAttributes.js`). |
 | `locales/` | Translation files (`*.json`, one per language) — not yet active in the Svelte rewrite |
 | `deploy/` | Systemd unit files for automated weekly import on Linux servers |
 
