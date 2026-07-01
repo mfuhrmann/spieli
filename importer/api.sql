@@ -55,8 +55,13 @@ GRANT USAGE ON SCHEMA api TO web_anon;
 -- equipment" predicate is defined exactly once. Previously the predicate was
 -- copied into both, and the stats copy omitted planet_osm_line — so a
 -- playground whose equipment is mapped only as closed ways read as "no
--- equipment" and was wrongly classified partial (#711). Geometry is kept in
--- EPSG:3857 (the osm2pgsql native SRID); consumers transform to 4326 as needed.
+-- equipment" and was wrongly classified partial (#711).
+--
+-- `way` is the *native* osm2pgsql geometry (EPSG:3857), passed through
+-- unchanged so `way && bbox` predicates on consumers keep hitting the GiST
+-- `way` indexes. Consumers reproject to 4326 and (in get_equipment) promote
+-- playground=structure closed lines to polygons themselves — doing that here
+-- would wrap `way` in an expression and defeat the spatial index.
 -- =========================================================================
 CREATE OR REPLACE VIEW public.playground_equipment_src AS
   SELECT osm_id, 'N'::text AS osm_type, name, amenity, leisure, sport, surface, tags, way
@@ -71,16 +76,11 @@ CREATE OR REPLACE VIEW public.playground_equipment_src AS
      OR amenity IN ('bench', 'shelter')
      OR leisure IN ('picnic_table', 'pitch', 'fitness_station')
   UNION ALL
-  SELECT osm_id, 'W'::text AS osm_type, name, amenity, leisure, sport, surface, tags,
-    -- playground=structure closed ways become polygons so equipmentGrouping.js
-    -- can use them as containers; everything else keeps its native geometry.
-    CASE
-      WHEN tags->'playground' = 'structure'
-           AND ST_IsClosed(way)
-           AND ST_NPoints(way) >= 4
-      THEN ST_MakePolygon(way)
-      ELSE way
-    END AS way
+  -- planet_osm_line: playground=* closed ways land here (not planet_osm_polygon)
+  -- because osm2pgsql's classic schema does not treat the `playground` key as an
+  -- area. Native geometry passed through as-is; get_equipment re-forms
+  -- playground=structure closed lines into container polygons.
+  SELECT osm_id, 'W'::text AS osm_type, name, amenity, leisure, sport, surface, tags, way
   FROM planet_osm_line
   WHERE tags ? 'playground'
      OR amenity IN ('bench', 'shelter')
@@ -827,9 +827,12 @@ AS $$
     ) AS geom
   ),
   -- Equipment across nodes, polygon ways and line ways (playground=* closed
-  -- ways, incl. structure→polygon). Shared with playground_stats via
-  -- public.playground_equipment_src; here we clip to the bbox (the GiST way
+  -- ways). Shared with playground_stats via public.playground_equipment_src;
+  -- here we clip to the bbox (`s.way` is the native geometry, so the GiST way
   -- index prunes each branch) and reproject to WGS84 for GeoJSON output.
+  -- playground=structure closed *lines* are re-formed into polygons so
+  -- equipmentGrouping.js can use them as containers; the GeometryType guard
+  -- keeps ST_MakePolygon off already-polygonal and non-closed geometries.
   all_equip AS (
     SELECT
       s.osm_id,
@@ -840,7 +843,14 @@ AS $$
       s.sport,
       s.surface,
       s.tags,
-      ST_Transform(s.way, 4326) AS geom
+      CASE
+        WHEN s.tags->'playground' = 'structure'
+             AND GeometryType(s.way) = 'LINESTRING'
+             AND ST_IsClosed(s.way)
+             AND ST_NPoints(s.way) >= 4
+        THEN ST_Transform(ST_MakePolygon(s.way), 4326)
+        ELSE ST_Transform(s.way, 4326)
+      END AS geom
     FROM public.playground_equipment_src s, bbox b
     WHERE s.way && b.geom
   )
