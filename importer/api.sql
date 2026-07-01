@@ -156,6 +156,18 @@ CREATE MATERIALIZED VIEW public.playground_stats AS
     WHERE amenity IN ('bench', 'shelter')
        OR leisure IN ('picnic_table', 'pitch', 'fitness_station')
        OR tags ? 'playground'
+    UNION ALL
+    -- playground=* closed ways (slide, swing, structure, …) land in
+    -- planet_osm_line, not planet_osm_polygon, because osm2pgsql's classic
+    -- schema does not treat the `playground` key as an area. Mirror equip_lines
+    -- in get_equipment so completeness counts them (else a fully-equipped
+    -- playground reads as "no equipment" → wrongly partial). ST_Intersects with
+    -- the playground polygon works on the raw line geometry — no MakePolygon.
+    SELECT osm_id, amenity, leisure, sport, tags, way
+    FROM planet_osm_line
+    WHERE amenity IN ('bench', 'shelter')
+       OR leisure IN ('picnic_table', 'pitch', 'fitness_station')
+       OR tags ? 'playground'
   ),
   equip_stats AS (
     SELECT
