@@ -54,11 +54,13 @@
     ...equipmentGroups.flatMap(g => [g.structure.properties, ...g.children.map(c => c.properties)]),
   ];
   $: themes = attr ? aggregatePlaygroundThemes(attr, deviceProps) : [];
-  // Area-tag theme(s) get a prominent banner ("this is an octopus playground");
-  // device-derived themes become the Equipment-section chip row.
+  // The first area-tag theme gets a prominent banner ("this is an octopus
+  // playground"); every other theme — remaining area themes plus device-derived
+  // ones — becomes a chip. Only the banner theme is excluded from the chip row,
+  // so a multi-value area tag (`ship;castle`) never drops its extra themes.
   $: areaThemes = attr ? areaThemesOf(attr) : [];
   $: areaTheme = areaThemes[0] ?? null;
-  $: deviceThemes = themes.filter(v => !areaThemes.includes(v));
+  $: deviceThemes = themes.filter(v => v !== areaTheme);
   $: visibleThemes = deviceThemes.slice(0, THEME_CAP);
   $: themeOverflow = Math.max(0, deviceThemes.length - THEME_CAP);
 
@@ -1089,9 +1091,6 @@
     flex-wrap: wrap;
     gap: 6px;
   }
-  .theme-chip--icon {
-    padding: 3px 6px;
-  }
   .theme-chip {
     display: inline-flex;
     align-items: center;
@@ -1103,6 +1102,11 @@
     font-size: 0.78rem;
     color: #374151;
     line-height: 1.3;
+  }
+  /* Icon-only chip: tighter, symmetric padding. Declared after `.theme-chip`
+     so it wins on source order (equal specificity). */
+  .theme-chip--icon {
+    padding: 3px 6px;
   }
   .theme-icon { font-size: 1rem; }
   .theme-chip--more {
