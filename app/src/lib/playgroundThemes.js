@@ -1,49 +1,34 @@
 // Playground theme symbols and aggregation.
 //
-// `playground:theme=*` (OSM) describes a playground's — or a single device's —
-// thematic flavour (ship, castle, horse, …). Per taginfo the key splits ~50/50
-// between the whole playground (`leisure=playground`) and an individual
-// equipment node (`playground=*`, e.g. a horse-shaped spring rocker), so a
-// single playground often carries several themes at once.
+// `playground:theme=*` (OSM) describes a playground's thematic motto — an
+// octopus playground, a ship playground, … — per the wiki
+// (wiki.openstreetmap.org/wiki/DE:Key:playground:theme). The tag also appears on
+// individual equipment nodes; the majority of that device usage is spring-rider
+// shapes (`playground:theme=horse`/`duck` on `playground=springy`), which are
+// device motifs, not playground themes. We therefore honour only an explicit
+// allowlist of documented theme values (SUPPORTED_THEMES); anything else — a
+// duck spring rider, tagging noise, a long-tail one-off — is dropped everywhere
+// (banner, chips, inline device symbol) so the highlight stays meaningful.
 //
-// This module maps theme values to curated symbols and aggregates the themes of
-// a playground (its area tag + every themed device) into a deduped, ordered set
-// for the details panel. The display name is localised via `equipAttr.themes.*`
-// (svelte-i18n); this module only owns the symbols + aggregation.
+// This module owns the symbols + aggregation; display names are localised via
+// `equipAttr.themes.*` (svelte-i18n). Extend the allowlist by adding an entry to
+// THEME_ICONS — the icon and the supported set are one and the same.
 
-// Curated symbols for the common theme values. Anything not listed falls back
-// to FALLBACK_ICON — the open OSM vocabulary means we never assume a wrong icon.
+// Curated symbols for the wiki-documented theme values. The key set *is* the
+// allowlist: a value with no entry here is not treated as a theme.
 const THEME_ICONS = {
-  // top taginfo values
-  ship: '🚢', castle: '🏰', spiderweb: '🕸️', water: '💧', adventure: '🧭',
-  horse: '🐴', swing: '🛝', house: '🏠', train: '🚆', car: '🚗',
-  elephant: '🐘', motorcycle: '🏍️', dog: '🐕', rocket: '🚀', octopus: '🐙',
-  // remaining curated set
-  animal: '🐾', bicycle: '🚲', boat: '⛵', camel: '🐪', carrot: '🥕',
-  construction: '🚧', dragon: '🐉', duck: '🦆', farm: '🚜', fish: '🐟',
-  flower: '🌸', helicopter: '🚁', ice_cream: '🍦', jungle: '🌴', lama: '🦙',
-  locomotive: '🚂', luggage: '🧳', mammoth: '🦣', mushroom: '🍄', nature: '🌳',
-  ocean: '🌊', palace: '🏛️', pirate: '🏴‍☠️', plane: '✈️', rainbow: '🌈',
-  rock: '🪨', seal: '🦭', sheep: '🐑', snake: '🐍', space: '🪐',
-  sport: '⚽', tent: '⛺', tower: '🗼', wagon: '🚃', western: '🤠',
-  whale: '🐋', dinosaur: '🦕',
-  // long-tail values that actually appear in OSM (taginfo, count ≥ 15)
-  panda: '🐼', bee: '🐝', frog: '🐸', insect: '🐛', dolphin: '🐬',
-  tractor: '🚜', bird: '🐦', turtle: '🐢', cow: '🐄', ladybug: '🐞',
-  forest: '🌲', barrel: '🛢️', snail: '🐌', bridge: '🌉', climbing: '🧗',
-  rabbit: '🐰', truck: '🚚', lion: '🦁', giraffe: '🦒', crocodile: '🐊',
-  koala: '🐨', bear: '🐻', treehouse: '🌳', caterpillar: '🐛', pig: '🐷',
-  music: '🎵', squirrel: '🐿️', tree: '🌳', chicken: '🐔', beetle: '🪲',
-  slide: '🛝', bible: '📖',
-  // spelling/synonym aliases of the above
-  airplane: '✈️', motorbike: '🏍️', animals: '🐾', pirate_ship: '🏴‍☠️',
+  ship: '🚢', octopus: '🐙', castle: '🏰', rocket: '🚀',
+  spiderweb: '🕸️', circus: '🎪', dragon: '🐉',
+  water: '💧', adventure: '🧭',
 };
 
-// Generic "themed" glyph for unknown long-tail values.
-export const FALLBACK_ICON = '✨';
+// The allowlist of recognised theme values, derived from the curated icon set.
+export const SUPPORTED_THEMES = new Set(Object.keys(THEME_ICONS));
 
-// Values that are tagging noise, not real themes.
-const NOISE = new Set(['playground', 'play', 'playlot', 'yes', 'no', 'none']);
+// Fallback glyph. With an allowlist every supported value has a curated icon, so
+// this is only a defensive backstop (e.g. a newly allowlisted value missing an
+// icon) and never renders for non-allowlisted values, which are dropped upstream.
+export const FALLBACK_ICON = '✨';
 
 /** Symbol for a theme value (curated icon, or generic fallback). */
 export function themeIcon(value) {
@@ -77,13 +62,18 @@ export function areaThemesOf(props) {
   return splitThemes(props?.['playground:theme']);
 }
 
-/** Split a `playground:theme` tag value (may be `;`-separated) into clean tokens. */
+/**
+ * Split a `playground:theme` tag value (may be `;`-separated) into clean tokens,
+ * keeping only allowlisted theme values (SUPPORTED_THEMES). This is the single
+ * choke point that keeps device-shape noise (horse/duck spring riders) and
+ * long-tail one-offs out of every consumer.
+ */
 function splitThemes(raw) {
   if (!raw) return [];
   return String(raw)
     .split(';')
     .map(v => v.trim().toLowerCase())
-    .filter(v => v && !NOISE.has(v));
+    .filter(v => SUPPORTED_THEMES.has(v));
 }
 
 /**

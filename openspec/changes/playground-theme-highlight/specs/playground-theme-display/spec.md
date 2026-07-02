@@ -14,14 +14,18 @@ When the playground's own area tag (`leisure=playground`) carries a `playground:
 
 ### Requirement: Device-level theme chips
 
-The Equipment section SHALL show a deduped, ordered row of theme symbols aggregated from the playground's themed equipment, ordered by descending frequency, capped at 4 with a `+N` overflow indicator. Area-level themes (shown in the banner) SHALL be excluded from this chip row. Noise values `playground`, `play`, and `playlot` SHALL be excluded. No chip row SHALL be shown when no device themes are present.
+The panel overview SHALL show a deduped, ordered row of theme symbols aggregated from the playground's themed equipment, folded onto the Equipment header row as icon-only chips beside the "Equipment" label, ordered by descending frequency, capped at 4 with a `+N` overflow indicator. Area-level themes (shown in the banner) SHALL be excluded from this chip row. Only allowlisted theme values (see "Allowlisted theme vocabulary") SHALL appear; all non-allowlisted values — tagging noise and device-shape values — SHALL be excluded. No chip row SHALL be shown when no allowlisted device themes are present.
 
-#### Scenario: Device themes become chips, area theme excluded
-- **WHEN** a playground's area tag is `playground:theme=ship` and its devices carry `horse` (×3) and `duck`
-- **THEN** the Equipment section chip row shows one horse symbol and one duck symbol, and does not repeat the ship symbol (which is in the banner)
+#### Scenario: Allowlisted device themes become chips, area theme excluded
+- **WHEN** a playground's area tag is `playground:theme=octopus` and its devices carry `ship` (×2) and `castle`
+- **THEN** the chip row shows one ship symbol and one castle symbol, and does not repeat the octopus symbol (which is in the banner)
+
+#### Scenario: Device-shape values are excluded
+- **WHEN** a playground's only themed devices carry `horse` and `duck` (spring-rider shapes, not allowlisted)
+- **THEN** no chip row is shown
 
 #### Scenario: Overflow capped
-- **WHEN** the playground has 6 distinct device themes
+- **WHEN** the playground has 6 distinct allowlisted device themes
 - **THEN** the chip row shows the first 4 symbols followed by a `+2` overflow indicator
 
 ### Requirement: Inline device theme symbol
@@ -29,8 +33,8 @@ The Equipment section SHALL show a deduped, ordered row of theme symbols aggrega
 Each themed equipment item SHALL show its theme symbol inline alongside its other attributes, using the same curated icon as the chips/banner for a given value. The existing plain-text theme line in equipment detail SHALL be retained. Unthemed devices SHALL show no symbol.
 
 #### Scenario: Themed device shows matching symbol
-- **WHEN** an equipment item has `playground:theme=horse`
-- **THEN** the item shows the horse symbol used elsewhere, plus the existing plain-text theme line
+- **WHEN** an equipment item has `playground:theme=ship` (an allowlisted value)
+- **THEN** the item shows the ship symbol used elsewhere, plus the existing plain-text theme line
 
 ### Requirement: Only explicit tags, never inferred
 
@@ -40,17 +44,17 @@ A theme symbol SHALL be derived only from an explicit `playground:theme` tag —
 - **WHEN** a device is `playground=springy` with no `playground:theme`
 - **THEN** no theme symbol is shown for it and it does not contribute to the chip row
 
-### Requirement: Curated symbols with generic fallback
+### Requirement: Allowlisted theme vocabulary
 
-Common theme values (the taginfo set with count ≥ 15 that have a sensible glyph, e.g. `ship`, `castle`, `spiderweb`, `water`, `horse`, `octopus`, `dolphin`, `dinosaur`, `airplane`, …) SHALL map to dedicated symbols, including spelling/synonym aliases (`airplane`→plane glyph, `motorbike`→motorcycle, `animals`→animal, `pirate_ship`→pirate). An unknown or long-tail value SHALL render a generic fallback symbol and SHALL never be dropped silently nor assigned a misleading icon.
+Theme symbols SHALL be drawn only from an allowlist of documented whole-playground theme values — `ship`, `castle`, `spiderweb`, `water`, `adventure`, `rocket`, `dragon`, `octopus`, `circus` — each mapping to a dedicated curated symbol. Any value not on the allowlist SHALL be excluded from the banner, the chip row, and the inline device symbol alike: this covers tagging noise (`playground`, `play`), **device-shape values** (`horse`, `duck`, `elephant`, … typically on `playground=springy` rockers, describing one device's shape rather than a playground theme), and long-tail one-offs. The allowlist SHALL be applied at a single choke point so every surface stays consistent. The allowlist is extended by adding a value+icon pair plus its localised labels, not by widening a fallback.
 
-#### Scenario: Known value maps to dedicated symbol
+#### Scenario: Allowlisted value maps to dedicated symbol
 - **WHEN** a theme value is `castle`
 - **THEN** the dedicated castle symbol is rendered
 
-#### Scenario: Unknown value uses fallback
-- **WHEN** a theme value is `bible` (not in the curated set)
-- **THEN** the generic fallback symbol is rendered with `bible` as its accessible label / banner text
+#### Scenario: Non-allowlisted value is dropped
+- **WHEN** a value is `horse` (a spring-rider shape) or `bible` (a long-tail one-off)
+- **THEN** it is not rendered as a theme anywhere — no fallback glyph, no chip, no inline symbol
 
 ### Requirement: Localised theme labels and accessibility
 

@@ -69,12 +69,24 @@ Click any playground to open its detail panel. The panel shows:
 
 - Name, operator, opening hours (when mapped)
 - Surface type and size
+- Theme highlight — a symbol for playgrounds with a theme, such as a ship or castle (see [Playground themes](#playground-themes))
 - Equipment list — devices, pitches, benches, and their sub-attributes
 - Street-level photos (from Panoramax, when available)
 - Community reviews (from Mangrove.reviews, when available)
 - Nearby POIs — toilets, cafés, bus stops, and pharmacies within 500 m
 - A "Take me there" button that opens navigation to the playground (geo: URL on mobile, OSM directions on desktop)
 - A "Contribute data" link to add or improve information in OpenStreetMap via MapComplete
+
+## Playground themes
+
+Some playgrounds have a theme — they are built around a motif like a ship, castle, or octopus. When OpenStreetMap records a theme for a playground, spieli highlights it in the detail panel:
+
+- A **banner** near the top ("Ship-themed playground") when the whole playground is themed.
+- A **symbol** next to the "Equipment" heading, and beside individual pieces of equipment, for themed devices.
+
+To keep the highlight meaningful, spieli only shows a curated set of recognised whole-playground themes: ship, castle, spider web, water, adventure, rocket, dragon, octopus, and circus. Common animal spring-rider shapes (a horse or duck rocker) are *not* treated as playground themes, since almost any spring rider can take one of those shapes.
+
+Themes come straight from the `playground:theme` tag in OpenStreetMap — you can add or correct one via the "Contribute data" link. Themes are shown only in the detail panel, not on the map.
 
 ## Standalone pitches layer
 

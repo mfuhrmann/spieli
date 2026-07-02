@@ -5,10 +5,13 @@ const dev = theme => ({ 'playground:theme': theme });
 
 // --- themeOf: clean per-device value ---
 
-// known value passes through, lowercased
+// allowlisted value passes through, lowercased
 assert.equal(themeOf(dev('Ship')), 'ship');
-// multi-value keeps the first
+// multi-value keeps the first allowlisted one
 assert.equal(themeOf(dev('ship;castle')), 'ship');
+// non-allowlisted device shape (spring-rider motif) → null
+assert.equal(themeOf(dev('horse')), null);
+assert.equal(themeOf(dev('duck')), null);
 // noise → null
 assert.equal(themeOf(dev('playground')), null);
 assert.equal(themeOf(dev('yes')), null);
@@ -19,7 +22,7 @@ assert.equal(themeOf(undefined), null);
 // --- themeIcon: curated + fallback ---
 
 assert.equal(themeIcon('castle'), '🏰');
-assert.equal(themeIcon('unicorn'), FALLBACK_ICON); // unknown long-tail
+assert.equal(themeIcon('unicorn'), FALLBACK_ICON); // non-allowlisted → defensive fallback
 
 // --- themeName: i18n with raw fallback ---
 
@@ -29,23 +32,23 @@ assert.equal(themeName('unicorn', t), 'unicorn'); // missing translation → raw
 
 // --- aggregatePlaygroundThemes ---
 
-// area theme + device themes, area first
+// area theme + allowlisted device theme, area first; non-allowlisted dropped
 {
   const area = { 'playground:theme': 'castle' };
   const out = aggregatePlaygroundThemes(area, [dev('ship'), dev('horse')]);
-  assert.deepEqual(out, ['castle', 'ship', 'horse']);
+  assert.deepEqual(out, ['castle', 'ship']); // horse dropped (not allowlisted)
 }
 
 // dedupe identical device themes to one entry
 {
-  const out = aggregatePlaygroundThemes({}, [dev('horse'), dev('horse'), dev('horse')]);
-  assert.deepEqual(out, ['horse']);
+  const out = aggregatePlaygroundThemes({}, [dev('ship'), dev('ship'), dev('ship')]);
+  assert.deepEqual(out, ['ship']);
 }
 
 // device themes ordered by frequency desc, then first appearance
 {
-  const out = aggregatePlaygroundThemes({}, [dev('ship'), dev('horse'), dev('horse')]);
-  assert.deepEqual(out, ['horse', 'ship']);
+  const out = aggregatePlaygroundThemes({}, [dev('rocket'), dev('ship'), dev('ship')]);
+  assert.deepEqual(out, ['ship', 'rocket']);
 }
 
 // area theme not duplicated when a device repeats it
@@ -54,9 +57,9 @@ assert.equal(themeName('unicorn', t), 'unicorn'); // missing translation → raw
   assert.deepEqual(out, ['ship', 'castle']);
 }
 
-// noise values excluded everywhere
+// non-allowlisted values (noise + device shapes) excluded everywhere
 {
-  const out = aggregatePlaygroundThemes({ 'playground:theme': 'play' }, [dev('playground'), dev('castle')]);
+  const out = aggregatePlaygroundThemes({ 'playground:theme': 'play' }, [dev('horse'), dev('duck'), dev('castle')]);
   assert.deepEqual(out, ['castle']);
 }
 

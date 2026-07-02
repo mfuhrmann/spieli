@@ -6,51 +6,45 @@
 
 - Theme reads as a playful, kid-facing **highlight** at the playground level — a row of symbols — distinct from the utilitarian completeness colour language.
 - Honest attribution: device-level themes stay attached to the device; the playground row is an *aggregate*, never an over-claim that the whole area is one theme.
-- Robust to OSM's open, long-tailed theme vocabulary.
+- Restricted to an **allowlist** of documented whole-playground themes; OSM's device-shape values (spring-rider shapes) and tagging noise are dropped, so the highlight stays meaningful.
 
 ## Two visual tiers, one icon set
 
 ```
  ┌─ Spielplatz Sonnenwiese ─────────────────────────┐
  │  Spielplatz Sonnenwiese            ● complete     │
- │  🚢  🐴  🏰                                       │  ◄── playground theme row
+ │  ...                                              │
+ │  Equipment   🚢  🏰                               │  ◄── theme chips folded onto
+ │  8 pieces of equipment   1 bench                  │      the Equipment header
  │  ─────────────────────────────────────────────── │      (aggregated + deduped)
- │  Equipment                                        │
  │   ├─ 🚢  Climbing ship                            │  ◄── inline device symbol
- │   ├─ 🐴  Spring rider                             │      (same icon, smaller)
+ │   ├─ ◦   Spring rider (theme=horse → dropped)     │      (same icon, smaller)
  │   ├─ ◦   Swing                                    │
  │   └─ ◦   Sandpit                                  │
  └───────────────────────────────────────────────────┘
 ```
 
-The same symbol appears at both tiers on purpose: big/aggregated at the playground level (the highlight), small/inline at the device level (the fact). One curated icon map drives both.
+The same symbol appears at both tiers on purpose: aggregated icon-only chips on the Equipment header (the highlight), small/inline at the device level (the fact). One allowlisted icon map drives both. A `playground=springy` shaped like a horse carries `playground:theme=horse`, which is **not** allowlisted, so it contributes no chip and no inline symbol.
 
 ## Decisions
 
 ### Aggregation (playground row)
 
 - Source = area-tag theme(s) ∪ device themes within the playground.
-- Filter out `playground`, `play` (mistags/noise).
+- Keep only allowlisted values (this drops mistags like `playground`/`play` and device-shape values like `horse`/`duck` in one step).
 - Dedupe by theme value.
 - Sort: area themes first, then device themes by frequency.
 - Cap 4, overflow `+N`.
 
 Rationale: a playground commonly has multiple themed devices; a single label would be misleading. Capping keeps the header calm.
 
-### Icon set: custom SVG (recommended) vs emoji
+### Icon set: emoji
 
-| | Emoji | Custom SVG line-icons |
-|---|---|---|
-| Cost | free | ~15 icons to draw |
-| Consistency | varies per OS | uniform |
-| On-brand | clashes with clean UI | matches `bi bi-*` language |
-| A11y | needs aria-label anyway | needs aria-label anyway |
+Shipped with **emoji**, one per allowlisted value. The allowlist (9 values) is small and stable, so per-OS emoji variance is a non-issue and no custom assets are needed; the icon map *is* the allowlist, so adding a theme is a one-line change (value → emoji, plus localised labels). Every symbol still carries an accessible label (the localised theme name). Custom SVG line-icons remain a possible future polish, not a blocker.
 
-Recommendation: **custom SVG** for the shipped highlight; emoji acceptable as a prototype to validate the layout first. Either way every symbol carries an accessible label (localised theme name, or raw value for the fallback glyph).
+### Non-allowlisted values
 
-### Unknown values
-
-Open vocabulary → a single generic "themed" glyph (e.g. a sparkle / star) plus the raw escaped value as the `title`/`aria-label`. Never drop an unknown theme silently; never invent a wrong icon for it.
+Dropped — no chip, no inline symbol, no banner. There is **no** generic fallback glyph: with a curated allowlist an unrecognised value is far more likely device-shape noise (a horse rocker) than a real theme we lack an icon for, so rendering a sparkle would add noise, not signal. `FALLBACK_ICON` stays in code only as a defensive backstop for a newly allowlisted value that is temporarily missing an icon.
 
 ### i18n
 

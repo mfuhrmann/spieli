@@ -642,14 +642,36 @@
 
       </div>
 
-      <!-- Equipment count summary (moved up from the Equipment section) -->
-      {#if equipSummaryItems.length}
-        <h3 class="section-label">{$_('details.equipmentSection')}</h3>
-        <ul class="equip-summary mb-4">
-          {#each equipSummaryItems as [key, count]}
-            <li>{$_('equipment.' + key, { values: { count } })}</li>
-          {/each}
-        </ul>
+      <!-- Equipment overview: count summary with device theme chips folded onto the
+           header row. Themes are device-derived, so they belong with equipment;
+           inline icon-only chips (name via title/aria) keep the section compact. -->
+      {#if equipSummaryItems.length || visibleThemes.length}
+        <div class="equip-header" class:mb-1.5={equipSummaryItems.length} class:mb-4={!equipSummaryItems.length}>
+          <h3 class="section-label mb-0">{$_('details.equipmentSection')}</h3>
+          {#if visibleThemes.length}
+            <div class="theme-row" aria-label={$_('details.themes')}>
+              {#each visibleThemes as value (value)}
+                <span
+                  class="theme-chip theme-chip--icon"
+                  title={themeName(value, $_)}
+                  aria-label={themeName(value, $_)}
+                >
+                  <span class="theme-icon" aria-hidden="true">{themeIcon(value)}</span>
+                </span>
+              {/each}
+              {#if themeOverflow}
+                <span class="theme-chip theme-chip--more">+{themeOverflow}</span>
+              {/if}
+            </div>
+          {/if}
+        </div>
+        {#if equipSummaryItems.length}
+          <ul class="equip-summary mb-4">
+            {#each equipSummaryItems as [key, count]}
+              <li>{$_('equipment.' + key, { values: { count } })}</li>
+            {/each}
+          </ul>
+        {/if}
       {/if}
 
       <!-- Contact Info -->
@@ -742,20 +764,6 @@
           </button>
           {#if openSections.has('equipment')}
             <div class="pb-3">
-              <!-- Theme highlight: aggregated symbols from the area tag + themed devices -->
-              {#if visibleThemes.length}
-                <div class="theme-row mb-3" aria-label={$_('details.themes')}>
-                  {#each visibleThemes as value (value)}
-                    <span class="theme-chip" title={themeName(value, $_)}>
-                      <span class="theme-icon" aria-hidden="true">{themeIcon(value)}</span>
-                      <span class="theme-name">{themeName(value, $_)}</span>
-                    </span>
-                  {/each}
-                  {#if themeOverflow}
-                    <span class="theme-chip theme-chip--more">+{themeOverflow}</span>
-                  {/if}
-                </div>
-              {/if}
               {#if equipmentLoading}
                 <p class="text-sm text-muted-foreground italic py-2">{$_('details.loading')}</p>
               {:else}
@@ -1070,10 +1078,19 @@
     color: #374151;
   }
 
+  .equip-header {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px 10px;
+  }
   .theme-row {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
+  }
+  .theme-chip--icon {
+    padding: 3px 6px;
   }
   .theme-chip {
     display: inline-flex;
