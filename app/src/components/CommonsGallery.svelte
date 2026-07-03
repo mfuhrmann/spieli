@@ -21,7 +21,11 @@
   // photos. Failures degrade silently to an empty gallery (renders nothing).
   $effect(() => {
     const c = commons, i = image;
-    if (!c && !i) { photos = []; count = 0; return; }
+    // Reset on every tag change: switching to another playground must not show
+    // the previous one's photos (and keep commonsHasPhotos true) while the new
+    // fetch is in flight. The loading skeleton covers the gap.
+    photos = []; count = 0; selectedIndex = 0;
+    if (!c && !i) return;
     const ctrl = new AbortController();
     loading = true;
     fetchPlaygroundPhotos(c, i, { signal: ctrl.signal })

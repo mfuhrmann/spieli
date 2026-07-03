@@ -50,15 +50,20 @@ import { isSafeImageUrl, commonsFileFromUrl, parseCommonsTag, isWikimediaImageTa
     assert.equal(parseCommonsTag(null), null);
 }
 
-// --- isWikimediaImageTag: only https Wikimedia/Wikipedia hosts count ---
+// --- isWikimediaImageTag: only what the gallery can actually render ---
 {
     assert.equal(isWikimediaImageTag('https://upload.wikimedia.org/x.jpg'), true);
     assert.equal(isWikimediaImageTag('https://commons.wikimedia.org/wiki/File:X.jpg'), true);
+    assert.equal(isWikimediaImageTag('https://commons.wikimedia.org/wiki/Special:FilePath/X.jpg'), true);
     assert.equal(isWikimediaImageTag('https://de.wikipedia.org/wiki/File:X.jpg'), true);
     assert.equal(isWikimediaImageTag('https://www.mapillary.com/x'), false);
     assert.equal(isWikimediaImageTag('https://example.com/x.jpg'), false);
     assert.equal(isWikimediaImageTag('https://wikimedia.org.evil.com/x.jpg'), false);
     assert.equal(isWikimediaImageTag('http://upload.wikimedia.org/x.jpg'), false);
+    // /wiki/ HTML pages that resolve to no file render nothing → must not score.
+    assert.equal(isWikimediaImageTag('https://commons.wikimedia.org/wiki/Category:Foo'), false);
+    assert.equal(isWikimediaImageTag('https://de.wikipedia.org/wiki/Some_Article'), false);
+    assert.equal(isWikimediaImageTag('https://commons.wikimedia.org/something'), false);
     assert.equal(isWikimediaImageTag(''), false);
     assert.equal(isWikimediaImageTag(null), false);
 }

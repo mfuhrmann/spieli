@@ -198,14 +198,30 @@ CREATE MATERIALIZED VIEW public.playground_stats AS
       pl.osm_type,
       -- Additive: a wikimedia_commons tag or a Wikimedia/Wikipedia-hosted image
       -- link counts as a photo too, so mapper-contributed Commons photos raise
-      -- completeness. An off-Wikimedia image URL (Mapillary, Flickr, …) does NOT
-      -- count — the gallery can't render it (mirrors isWikimediaImageTag in
+      -- completeness. An image URL only counts when the gallery can actually
+      -- render it — a direct image file, or a File:/Special:FilePath page we
+      -- resolve via the imageinfo API. An off-Wikimedia URL (Mapillary, Flickr,
+      -- …), a plain wikipedia article, or a /wiki/Category: page does NOT count
+      -- (mirrors isWikimediaImageTag = isSafeImageUrl || commonsFileFromUrl in
       -- app/src/lib/commons.js). A playground without any photo link is never
       -- downgraded by this.
       (pl.tags ? 'panoramax'
         OR EXISTS (SELECT 1 FROM skeys(pl.tags) k WHERE k LIKE 'panoramax:%')
         OR pl.tags ? 'wikimedia_commons'
-        OR COALESCE(pl.tags->'image' ~* '^https://([^/]+\.)?(wikimedia|wikipedia)\.org(/|$)', false)
+        OR COALESCE(
+          -- File:/Special:FilePath page (resolved via the imageinfo API)
+          pl.tags->'image' ~* '^https://([a-z0-9.-]+\.)?(wikimedia|wikipedia)\.org(:[0-9]+)?/wiki/(file:|special:filepath/)'
+          -- direct renderable image: Wikimedia/Wikipedia host, not a /wiki/ HTML
+          -- page, and either the upload host or a path ending in an image ext
+          OR (
+            pl.tags->'image' ~* '^https://([a-z0-9.-]+\.)?(wikimedia|wikipedia)\.org(:[0-9]+)?/'
+            AND pl.tags->'image' !~* '^https://[^/]+/wiki/'
+            AND (
+              pl.tags->'image' ~* '^https://upload\.'
+              OR pl.tags->'image' ~* '\.(jpe?g|png|gif|webp|svg)($|[?#])'
+            )
+          ),
+          false)
       ) AS has_photo,
       -- Any mapped equipment inside the playground area (devices, benches,
       -- pitches, etc.). device_count covers playground=* nodes/polygons;

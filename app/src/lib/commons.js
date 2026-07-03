@@ -48,15 +48,15 @@ export function commonsFileFromUrl(url) {
     return null;
 }
 
-// Whether an OSM `image` tag value is one the gallery can actually render: an
-// https URL on a Wikimedia/Wikipedia host (a direct upload, an image path, or a
-// File: page we resolve via the imageinfo API). Off-Wikimedia links (Mapillary,
-// Flickr, example.com, …) yield nothing in the gallery, so completeness scoring
-// uses this to avoid crediting a photo that never appears. Host-based on
-// purpose: cheap and mirrorable in SQL (see importer/api.sql has_photo).
+// Whether an OSM `image` tag value is one the gallery can actually render:
+// either a direct renderable image (isSafeImageUrl) or a Commons File:/FilePath
+// page we resolve via the imageinfo API (commonsFileFromUrl). This is exactly
+// what fetchPlaygroundPhotos does with the `image` value, so completeness
+// scoring never credits a photo that never appears — a `/wiki/Category:…` or a
+// plain wikipedia article URL passes the host but renders nothing, so both are
+// rejected here. Mirrored in SQL (see importer/api.sql has_photo).
 export function isWikimediaImageTag(value) {
-    const u = parseUrl(value);
-    return !!u && isWikimediaHost(u.hostname);
+    return isSafeImageUrl(value) || commonsFileFromUrl(value) !== null;
 }
 
 // Parse a `wikimedia_commons` tag value into { kind, title }.
