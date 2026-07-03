@@ -212,6 +212,22 @@ Translations live in `locales/*.json` and are loaded by `lib/i18n.js` using svel
 
 Add new keys to `locales/en.json` and `locales/de.json`. Translation to other languages happens via [Weblate](translation-guide.md).
 
+## Playground themes
+
+`playground:theme=*` (OSM) is meant to describe a whole playground's motto — a ship, castle, or octopus playground. The tag reaches the frontend on both the playground polygon and equipment features via the `hstore_to_jsonb(tags)` merge in `api.sql` (it is not an osm2pgsql column, so it is not stripped).
+
+In practice the key is dominated by two kinds of non-theme usage: tagging noise (`playground`/`play` are ~53% of all uses) and **device-shape values** — `horse`, `duck`, `elephant`, … tagged on a single `playground=springy` rider to describe its shape, not a playground theme. A springy can be shaped as anything, so those values are noise for our purposes. We therefore honour only an **allowlist** of documented whole-playground themes (`SUPPORTED_THEMES` in `lib/playgroundThemes.js`: ship, castle, spiderweb, water, adventure, rocket, dragon, octopus, circus). Everything else is dropped at the single `splitThemes` choke point, so it never reaches any consumer. Extend the allowlist by adding an entry to `THEME_ICONS` (the icon map *is* the allowlist) plus an `equipAttr.themes.*` label in each locale.
+
+`lib/playgroundThemes.js` owns the presentation:
+
+- `themeIcon(value)` — curated emoji per allowlisted theme value. `FALLBACK_ICON` (✨) is a defensive backstop only; it never renders for non-allowlisted values, which are filtered out upstream.
+- `themeName(value, t)` — localised label from `equipAttr.themes.*`, falling back to the raw value.
+- `themeOf(props)` — the first allowlisted theme on a single feature, used for the inline device symbol.
+- `areaThemesOf(props)` — allowlisted themes on the playground's own area tag; drives the prominent banner near the title.
+- `aggregatePlaygroundThemes(areaProps, deviceProps)` — deduped, ordered theme list for a playground (area theme first, then device themes by frequency). `PlaygroundPanel` renders this as an icon-only chip row folded onto the **Equipment** header in the overview; `EquipmentList`/`EquipmentTooltip` render the per-device symbol inline.
+
+Themes are panel-only — no map symbols (discovery is deferred).
+
 ## Style system
 
 The app uses Bootstrap 5 (component classes) and Tailwind CSS 4 (utility classes) side by side. The design system primitives in `src/components/ui/` (`Badge`, `Button`, `Card`, etc.) wrap Bootstrap with Tailwind utilities. Prefer these over raw Bootstrap classes in new components.

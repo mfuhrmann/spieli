@@ -2,7 +2,7 @@
 // Ported from js/popup.js → getEquipmentAttributes / getEquipmentAttributesFromProps.
 
 import { objDevices } from './objPlaygroundEquipment.js';
-import { escapeHtml } from './utils.js';
+import { escapeHtml, tl } from './utils.js';
 
 const pitchImages = {
     soccer:'File:Association football pitch imperial.svg',
@@ -23,11 +23,6 @@ const pitchImages = {
     beachvolleyball:'File:BeachvolleyballAthens04.jpg',
     climbing:'File:Outdoor bouldering wall.jpg',
 };
-
-function tl(t, key, fallback) {
-    const v = t(key, { default: fallback ?? key });
-    return v ?? fallback ?? key;
-}
 
 /**
  * Returns detail attributes for a single equipment item.

@@ -32,6 +32,40 @@ export function escapeHtml(str) {
 }
 
 /**
+ * Deduplicate GeoJSON features by `osm_id`, keeping first appearance.
+ *
+ * osm2pgsql emits one row per outer ring for multipolygons, so a feature's
+ * `osm_id` can repeat in an API response. Uses a Map (O(n)) rather than a
+ * quadratic `findIndex` scan.
+ *
+ * @param {Array} features - features with `properties.osm_id`
+ * @returns {Array} deduped features in original order
+ */
+export function dedupeByOsmId(features = []) {
+    const seen = new Map();
+    for (const f of features) {
+        const id = f.properties?.osm_id;
+        if (!seen.has(id)) seen.set(id, f);
+    }
+    return [...seen.values()];
+}
+
+/**
+ * Translate with a raw-value fallback: returns the svelte-i18n translation for
+ * `key`, or `fallback` (defaulting to `key`) when no translation exists. Keeps
+ * null-handling for missing keys in one place.
+ *
+ * @param {Function} t - svelte-i18n translate function
+ * @param {string} key - translation key
+ * @param {*} [fallback] - value shown when the key is untranslated
+ * @returns {string}
+ */
+export function tl(t, key, fallback) {
+    const v = t(key, { default: fallback ?? key });
+    return v ?? fallback ?? key;
+}
+
+/**
  * Debounce function execution.
  * @param {Function} fn - Function to debounce
  * @param {number} ms - Delay in milliseconds

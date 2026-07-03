@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "serve": "vite preview",
-    "test:unit": "node src/lib/equipmentGrouping.test.js && node src/lib/completeness.test.js && node src/lib/commons.test.js && node src/lib/deeplink.test.js && node src/lib/regionUrl.test.js && node --conditions=node src/stores/filters.test.js && node --conditions=node src/stores/macroFiltered.test.js && node src/hub/centroid.test.js && node --conditions=node src/hub/macroRingStyle.test.js && node --conditions=node src/hub/macroAggregate.test.js"
+    "test:unit": "node src/lib/equipmentGrouping.test.js && node src/lib/completeness.test.js && node src/lib/commons.test.js && node src/lib/deeplink.test.js && node src/lib/regionUrl.test.js && node src/lib/playgroundThemes.test.js && node --conditions=node src/stores/filters.test.js && node --conditions=node src/stores/macroFiltered.test.js && node src/hub/centroid.test.js && node --conditions=node src/hub/macroRingStyle.test.js && node --conditions=node src/hub/macroAggregate.test.js"
   },
   "dependencies": {
     "@turf/boolean-contains": "^7.3.5",

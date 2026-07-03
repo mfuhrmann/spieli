@@ -23,6 +23,8 @@
   import { playgroundCompleteness } from '../lib/completeness.js';
   import { poiRadiusM, appMode, mapMinZoom } from '../lib/config.js';
   import { getPlaygroundTitle, getPlaygroundLocation } from '../lib/playgroundHelpers.js';
+  import { aggregatePlaygroundThemes, areaThemesOf, themeIcon, themeName } from '../lib/playgroundThemes.js';
+  import { summarizeEquipment } from '../lib/equipmentSummary.js';
   import { cn } from '../lib/utils.js';
   import EquipmentList from './EquipmentList.svelte';
   import MapCompleteLink from './MapCompleteLink.svelte';
@@ -45,6 +47,33 @@
   // ── Async data ────────────────────────────────────────────────────────────
   let equipmentFeatures = [];
   let equipmentGroups = [];
+
+  // ── Playground themes (area tag + themed devices), deduped + ordered ───────
+  const THEME_CAP = 4;
+  $: deviceProps = [
+    ...equipmentFeatures.map(f => f.properties),
+    ...equipmentGroups.flatMap(g => [g.structure.properties, ...g.children.map(c => c.properties)]),
+  ];
+  $: themes = attr ? aggregatePlaygroundThemes(attr, deviceProps) : [];
+  // The first area-tag theme gets a prominent banner ("this is an octopus
+  // playground"); every other theme — remaining area themes plus device-derived
+  // ones — becomes a chip. Only the banner theme is excluded from the chip row,
+  // so a multi-value area tag (`ship;castle`) never drops its extra themes.
+  $: areaThemes = attr ? areaThemesOf(attr) : [];
+  $: areaTheme = areaThemes[0] ?? null;
+  $: deviceThemes = themes.filter(v => v !== areaTheme);
+  $: visibleThemes = deviceThemes.slice(0, THEME_CAP);
+  $: themeOverflow = Math.max(0, deviceThemes.length - THEME_CAP);
+
+  // Equipment count summary, surfaced in the overview (not buried in the section).
+  $: equipSummary = summarizeEquipment(equipmentFeatures, equipmentGroups);
+  $: equipSummaryItems = [
+    ['deviceCount', equipSummary.devices],
+    ['fitnessCount', equipSummary.fitness],
+    ['benches', equipSummary.benches],
+    ['shelters', equipSummary.shelters],
+    ['picnic', equipSummary.picnic],
+  ].filter(([, n]) => n > 0);
   let pois = [];
   let treeRows = [];
   let equipmentLoading = false;
@@ -522,6 +551,14 @@
     {/if}
 
     <div class={cn(embedded ? '' : 'info-panel__body')}>
+      <!-- Area-level theme banner: the whole playground is themed -->
+      {#if areaTheme}
+        <div class="theme-banner mb-3">
+          <span class="theme-banner__icon" aria-hidden="true">{themeIcon(areaTheme)}</span>
+          <span class="theme-banner__label">{$_('details.themedPlayground', { values: { theme: themeName(areaTheme, $_) } })}</span>
+        </div>
+      {/if}
+
       <!-- Description -->
       {#each descriptionParts as part}
         <p class="text-sm text-muted-foreground italic mb-3">{part}</p>
@@ -584,6 +621,8 @@
         </div>
       {/if}
 
+      <!-- At a glance -->
+      <h3 class="section-label">{$_('details.atGlance')}</h3>
       <!-- Quick Facts Grid -->
       <div class="grid grid-cols-2 gap-x-4 gap-y-2 mb-4">
         {#if attr.area > 0}
@@ -619,8 +658,41 @@
 
       </div>
 
+      <!-- Equipment overview: count summary with device theme chips folded onto the
+           header row. Themes are device-derived, so they belong with equipment;
+           inline icon-only chips (name via title/aria) keep the section compact. -->
+      {#if equipSummaryItems.length || visibleThemes.length}
+        <div class="equip-header" class:mb-1.5={equipSummaryItems.length} class:mb-4={!equipSummaryItems.length}>
+          <h3 class="section-label mb-0">{$_('details.equipmentSection')}</h3>
+          {#if visibleThemes.length}
+            <div class="theme-row" aria-label={$_('details.themes')}>
+              {#each visibleThemes as value (value)}
+                <span
+                  class="theme-chip theme-chip--icon"
+                  title={themeName(value, $_)}
+                  aria-label={themeName(value, $_)}
+                >
+                  <span class="theme-icon" aria-hidden="true">{themeIcon(value)}</span>
+                </span>
+              {/each}
+              {#if themeOverflow}
+                <span class="theme-chip theme-chip--more">+{themeOverflow}</span>
+              {/if}
+            </div>
+          {/if}
+        </div>
+        {#if equipSummaryItems.length}
+          <ul class="equip-summary mb-4">
+            {#each equipSummaryItems as [key, count]}
+              <li>{$_('equipment.' + key, { values: { count } })}</li>
+            {/each}
+          </ul>
+        {/if}
+      {/if}
+
       <!-- Contact Info -->
       {#if attr['contact:email'] || attr.email || attr['contact:phone'] || attr.phone || attr.operator}
+        <h3 class="section-label">{$_('details.contactSection')}</h3>
         <div class="mb-4">
           {#if attr.operator}
             <div class="fact-item mb-1" data-testid="operator-value">
@@ -994,6 +1066,76 @@
     display: flex;
     align-items: center;
     gap: 8px;
+  }
+
+  .theme-banner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #eef2ff, #faf5ff);
+    border: 1px solid #e0e7ff;
+  }
+  .theme-banner__icon { font-size: 1.5rem; line-height: 1; }
+  .theme-banner__label {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #3730a3;
+  }
+
+  .section-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: #9ca3af;
+    margin: 0 0 6px;
+  }
+
+  .equip-summary {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 14px;
+    font-size: 13px;
+    color: #374151;
+  }
+
+  .equip-header {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px 10px;
+  }
+  .theme-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .theme-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 9px 3px 7px;
+    border-radius: 999px;
+    background: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    font-size: 0.78rem;
+    color: #374151;
+    line-height: 1.3;
+  }
+  /* Icon-only chip: tighter, symmetric padding. Declared after `.theme-chip`
+     so it wins on source order (equal specificity). */
+  .theme-chip--icon {
+    padding: 3px 6px;
+  }
+  .theme-icon { font-size: 1rem; }
+  .theme-chip--more {
+    color: #6b7280;
+    font-variant-numeric: tabular-nums;
   }
 
   .status-dot {

@@ -2,6 +2,8 @@
   import { objDevices, objFitnessStation } from '../lib/objPlaygroundEquipment.js';
   import { objColors } from '../lib/vectorStyles.js';
   import { getEquipmentAttributesFromProps } from '../lib/equipmentAttributes.js';
+  import { themeOf, themeIcon, themeName } from '../lib/playgroundThemes.js';
+  import { dedupeByOsmId } from '../lib/utils.js';
   import { _ } from 'svelte-i18n';
   import MapCompleteLink from './MapCompleteLink.svelte';
   import PanoramaxViewer from './PanoramaxViewer.svelte';
@@ -16,23 +18,14 @@
   // osm2pgsql emits one row per outer ring for multipolygon features, so the
   // same osm_id can appear multiple times in the API response.  Deduplicate
   // before filtering to prevent the same pitch/device from rendering twice.
-  $: uniqueFeatures = features.filter(
-    (f, idx, arr) => arr.findIndex(g => g.properties.osm_id === f.properties.osm_id) === idx
-  );
+  $: uniqueFeatures = dedupeByOsmId(features);
 
-  // Summary counts include grouped children — a structure with 3 swings is
-  // still 3 swings as far as the user is concerned. The detail rendering
-  // continues to show standalone-only `uniqueFeatures` so groups don't double-list.
-  $: countSource = [...uniqueFeatures, ...groups.flatMap(g => g.children)];
+  // The detail rendering shows standalone-only `uniqueFeatures` so groups don't
+  // double-list. The count summary now lives in the panel overview
+  // (see summarizeEquipment in PlaygroundPanel).
   $: deviceFeatures  = uniqueFeatures.filter(f => f.properties.playground && f.properties.playground !== 'yes');
   $: fitnessFeatures = uniqueFeatures.filter(f => f.properties.leisure === 'fitness_station');
   $: pitchFeatures   = uniqueFeatures.filter(f => f.properties.leisure === 'pitch');
-  $: deviceCount  = countSource.filter(f => f.properties.playground && f.properties.playground !== 'yes' && f.properties.playground !== 'structure').length;
-  $: fitnessCount = countSource.filter(f => f.properties.leisure === 'fitness_station').length;
-  $: pitchCount   = countSource.filter(f => f.properties.leisure === 'pitch').length;
-  $: benchCount   = countSource.filter(f => f.properties.amenity === 'bench').length;
-  $: shelterCount = countSource.filter(f => f.properties.amenity === 'shelter').length;
-  $: picnicCount  = countSource.filter(f => f.properties.leisure === 'picnic_table').length;
 
   // Fallback: playground:<key>=<count|yes> on the polygon itself
   $: fallbackCounts = (() => {
@@ -120,26 +113,7 @@
     {@html $_('equipment.mapcompleteHint', { values: { link: '<a href="https://mapcomplete.org/playgrounds.html" target="_blank" rel="noopener">MapComplete</a>' } })}
   </p>
 {:else}
-  <!-- Summary counts (count includes grouped children, so a structure with
-       3 swings shows "3 swings" rather than "0 swings + 1 structure group"). -->
-  <ul class="summary-list">
-    {#if deviceCount}
-      <li>{$_('equipment.deviceCount', { values: { count: deviceCount } })}</li>
-    {/if}
-    {#if fitnessCount}
-      <li>{$_('equipment.fitnessCount', { values: { count: fitnessCount } })}</li>
-    {/if}
-    {#if benchCount}
-      <li>{$_('equipment.benches', { values: { count: benchCount } })}</li>
-    {/if}
-    {#if shelterCount}
-      <li>{$_('equipment.shelters', { values: { count: shelterCount } })}</li>
-    {/if}
-    {#if picnicCount}
-      <li>{$_('equipment.picnic', { values: { count: picnicCount } })}</li>
-    {/if}
-  </ul>
-
+  <!-- Detail list only; the count summary now lives in the panel overview. -->
   <!-- Structure groups (playground=structure polygon containers) -->
   {#if groups.length}
     <ul class="mb-0 device-list">
@@ -189,7 +163,8 @@
                     : '?'}
                   {@const childCat = childKey ? (objDevices[childKey]?.category ?? 'fallback') : 'fallback'}
                   {@const childColor = objColors[childCat] ?? objColors['fallback']}
-                  <li><span style="color:{childColor}">◦</span> {childName}</li>
+                  {@const childTheme = themeOf(child.properties)}
+                  <li><span style="color:{childColor}">◦</span> {childName}{#if childTheme}<span class="dev-theme" title={themeName(childTheme, $_)} aria-label={themeName(childTheme, $_)}>{themeIcon(childTheme)}</span>{/if}</li>
                 {/each}
               </ul>
             </div>
@@ -235,10 +210,12 @@
           {#each items as f (f.properties.osm_id)}
             {@const detail = getEquipmentAttributesFromProps(f.properties, $_)}
             {@const id = uid(f)}
+            {@const themeVal = themeOf(f.properties)}
             <li>
               {#if detail.html || detail.panoramaxUuid}
                 <button type="button" class="device-toggle" onclick={() => toggleItem(id)}>
                   <span style="color:{color}">●</span> {name}
+                  {#if themeVal}<span class="dev-theme" title={themeName(themeVal, $_)} aria-label={themeName(themeVal, $_)}>{themeIcon(themeVal)}</span>{/if}
                   <span class="bi {openItems.has(id) ? 'bi-chevron-up' : 'bi-chevron-down'} device-chevron"></span>
                 </button>
                 {#if openItems.has(id)}
@@ -256,6 +233,7 @@
                 {/if}
               {:else}
                 <span style="color:{color}">●</span> {name}
+                {#if themeVal}<span class="dev-theme" title={themeName(themeVal, $_)} aria-label={themeName(themeVal, $_)}>{themeIcon(themeVal)}</span>{/if}
               {/if}
             </li>
           {/each}
@@ -295,10 +273,12 @@
               : $_('equipment.fitnessDefault')}
             {@const detail = getEquipmentAttributesFromProps(f.properties, $_)}
             {@const id = uid(f)}
+            {@const themeVal = themeOf(f.properties)}
             <li>
               {#if detail.html || detail.panoramaxUuid}
                 <button type="button" class="device-toggle" onclick={() => toggleItem(id)}>
                   <span style="color:{color}">●</span> {name}
+                  {#if themeVal}<span class="dev-theme" title={themeName(themeVal, $_)} aria-label={themeName(themeVal, $_)}>{themeIcon(themeVal)}</span>{/if}
                   <span class="bi {openItems.has(id) ? 'bi-chevron-up' : 'bi-chevron-down'} device-chevron"></span>
                 </button>
                 {#if openItems.has(id)}
@@ -316,6 +296,7 @@
                 {/if}
               {:else}
                 <span style="color:{color}">●</span> {name}
+                {#if themeVal}<span class="dev-theme" title={themeName(themeVal, $_)} aria-label={themeName(themeVal, $_)}>{themeIcon(themeVal)}</span>{/if}
               {/if}
             </li>
           {/each}
@@ -339,10 +320,12 @@
                   ? sports.map(s => $_('equipment.pitches.' + s, { default: s })).join(' / ')
                   : $_('equipment.pitchDefault')}
                 {@const detail = getEquipmentAttributesFromProps(f.properties, $_)}
+                {@const themeVal = themeOf(f.properties)}
                 <li class="pitch-sub">
                   <span class="pitch-sub-row">
                     <span style="color:{objColors['fallback']}">◦</span>
                     {label}
+                    {#if themeVal}<span class="dev-theme" title={themeName(themeVal, $_)} aria-label={themeName(themeVal, $_)}>{themeIcon(themeVal)}</span>{/if}
                     <MapCompleteLink href={detail.mcUrl} label="" />
                   </span>
                   {#if detail.panoramaxUuid}
@@ -434,9 +417,13 @@
     border-radius: 4px;
     display: block;
   }
-  .summary-list { font-size: 13px; color: #1f2937; }
   .device-list { padding-left: 0; list-style: none; font-size: 13px; color: #1f2937; }
   .device-list li { margin-bottom: 0.25rem; }
+  .dev-theme {
+    font-size: 0.95em;
+    margin-left: 0.15rem;
+    vertical-align: -0.05em;
+  }
   .device-toggle { cursor: pointer; user-select: none; }
   .device-toggle:hover { text-decoration: underline; }
   .device-chevron { font-size: 0.7rem; margin-left: 0.25rem; }
