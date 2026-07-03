@@ -14,6 +14,8 @@
 // `equipAttr.themes.*` (svelte-i18n). Extend the allowlist by adding an entry to
 // THEME_ICONS — the icon and the supported set are one and the same.
 
+import { tl } from './utils.js';
+
 // Curated symbols for the wiki-documented theme values. The key set *is* the
 // allowlist: a value with no entry here is not treated as a theme.
 const THEME_ICONS = {
@@ -42,7 +44,7 @@ export function themeIcon(value) {
  * @param {Function} t - svelte-i18n translate function
  */
 export function themeName(value, t) {
-  return t(`equipAttr.themes.${value}`, { default: value });
+  return tl(t, `equipAttr.themes.${value}`, value);
 }
 
 /**

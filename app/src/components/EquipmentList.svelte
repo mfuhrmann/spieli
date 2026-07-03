@@ -3,6 +3,7 @@
   import { objColors } from '../lib/vectorStyles.js';
   import { getEquipmentAttributesFromProps } from '../lib/equipmentAttributes.js';
   import { themeOf, themeIcon, themeName } from '../lib/playgroundThemes.js';
+  import { dedupeByOsmId } from '../lib/utils.js';
   import { _ } from 'svelte-i18n';
   import MapCompleteLink from './MapCompleteLink.svelte';
   import PanoramaxViewer from './PanoramaxViewer.svelte';
@@ -17,9 +18,7 @@
   // osm2pgsql emits one row per outer ring for multipolygon features, so the
   // same osm_id can appear multiple times in the API response.  Deduplicate
   // before filtering to prevent the same pitch/device from rendering twice.
-  $: uniqueFeatures = features.filter(
-    (f, idx, arr) => arr.findIndex(g => g.properties.osm_id === f.properties.osm_id) === idx
-  );
+  $: uniqueFeatures = dedupeByOsmId(features);
 
   // The detail rendering shows standalone-only `uniqueFeatures` so groups don't
   // double-list. The count summary now lives in the panel overview

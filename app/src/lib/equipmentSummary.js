@@ -3,16 +3,15 @@
 // feature's osm_id can repeat — dedupe before counting. Grouped structure
 // children count individually (a structure with 3 swings is still 3 swings).
 
+import { dedupeByOsmId } from './utils.js';
+
 /**
  * @param {Array} features - standalone equipment GeoJSON features
  * @param {Array<{structure: Object, children: Object[]}>} groups - grouped structures
  * @returns {{devices:number, fitness:number, pitches:number, benches:number, shelters:number, picnic:number}}
  */
 export function summarizeEquipment(features = [], groups = []) {
-  const unique = features.filter(
-    (f, i, a) => a.findIndex(g => g.properties.osm_id === f.properties.osm_id) === i
-  );
-  const src = [...unique, ...groups.flatMap(g => g.children)];
+  const src = [...dedupeByOsmId(features), ...groups.flatMap(g => g.children)];
   const count = pred => src.filter(f => pred(f.properties)).length;
 
   return {
