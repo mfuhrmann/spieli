@@ -1099,6 +1099,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#playground-themes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Playground themes
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#style-system" class="md-nav__link">
     <span class="md-ellipsis">
       Style system
@@ -1760,6 +1769,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#playground-themes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Playground themes
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#style-system" class="md-nav__link">
     <span class="md-ellipsis">
       Style system
@@ -2097,6 +2115,18 @@
 <a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>&lt;p&gt;{$t(&#39;myKey&#39;)}&lt;/p&gt;
 </code></pre></div>
 <p>Add new keys to <code>locales/en.json</code> and <code>locales/de.json</code>. Translation to other languages happens via <a href="../translation-guide/">Weblate</a>.</p>
+<h2 id="playground-themes">Playground themes<a class="headerlink" href="#playground-themes" title="Permanent link">&para;</a></h2>
+<p><code>playground:theme=*</code> (OSM) is meant to describe a whole playground's motto — a ship, castle, or octopus playground. The tag reaches the frontend on both the playground polygon and equipment features via the <code>hstore_to_jsonb(tags)</code> merge in <code>api.sql</code> (it is not an osm2pgsql column, so it is not stripped).</p>
+<p>In practice the key is dominated by two kinds of non-theme usage: tagging noise (<code>playground</code>/<code>play</code> are ~53% of all uses) and <strong>device-shape values</strong> — <code>horse</code>, <code>duck</code>, <code>elephant</code>, … tagged on a single <code>playground=springy</code> rider to describe its shape, not a playground theme. A springy can be shaped as anything, so those values are noise for our purposes. We therefore honour only an <strong>allowlist</strong> of documented whole-playground themes (<code>SUPPORTED_THEMES</code> in <code>lib/playgroundThemes.js</code>: ship, castle, spiderweb, water, adventure, rocket, dragon, octopus, circus). Everything else is dropped at the single <code>splitThemes</code> choke point, so it never reaches any consumer. Extend the allowlist by adding an entry to <code>THEME_ICONS</code> (the icon map <em>is</em> the allowlist) plus an <code>equipAttr.themes.*</code> label in each locale.</p>
+<p><code>lib/playgroundThemes.js</code> owns the presentation:</p>
+<ul>
+<li><code>themeIcon(value)</code> — curated emoji per allowlisted theme value. <code>FALLBACK_ICON</code> (✨) is a defensive backstop only; it never renders for non-allowlisted values, which are filtered out upstream.</li>
+<li><code>themeName(value, t)</code> — localised label from <code>equipAttr.themes.*</code>, falling back to the raw value.</li>
+<li><code>themeOf(props)</code> — the first allowlisted theme on a single feature, used for the inline device symbol.</li>
+<li><code>areaThemesOf(props)</code> — allowlisted themes on the playground's own area tag; drives the prominent banner near the title.</li>
+<li><code>aggregatePlaygroundThemes(areaProps, deviceProps)</code> — deduped, ordered theme list for a playground (area theme first, then device themes by frequency). <code>PlaygroundPanel</code> renders this as an icon-only chip row folded onto the <strong>Equipment</strong> header in the overview; <code>EquipmentList</code>/<code>EquipmentTooltip</code> render the per-device symbol inline.</li>
+</ul>
+<p>Themes are panel-only — no map symbols (discovery is deferred).</p>
 <h2 id="style-system">Style system<a class="headerlink" href="#style-system" title="Permanent link">&para;</a></h2>
 <p>The app uses Bootstrap 5 (component classes) and Tailwind CSS 4 (utility classes) side by side. The design system primitives in <code>src/components/ui/</code> (<code>Badge</code>, <code>Button</code>, <code>Card</code>, etc.) wrap Bootstrap with Tailwind utilities. Prefer these over raw Bootstrap classes in new components.</p>
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
