@@ -63,6 +63,17 @@
         { "key": "shop", "value": "bakery", "object_types": ["node","way","area","relation"], "description": "Nearby points of interest around a playground" },
         { "key": "shop", "value": "chemist", "object_types": ["node","way","area","relation"], "description": "Nearby points of interest around a playground" },
         { "key": "shop", "value": "supermarket", "object_types": ["node","way","area","relation"], "description": "Nearby points of interest around a playground" },
-        { "key": "shop", "value": "convenience", "object_types": ["node","way","area","relation"], "description": "Nearby points of interest around a playground" }
+        { "key": "shop", "value": "convenience", "object_types": ["node","way","area","relation"], "description": "Nearby points of interest around a playground" },
+        { "key": "alt_name", "object_types": ["node","way","area","relation"], "description": "Alternative playground name shown in the panel title" },
+        { "key": "loc_name", "object_types": ["node","way","area","relation"], "description": "Local playground name shown in the panel title" },
+        { "key": "official_name", "object_types": ["node","way","area","relation"], "description": "Official playground name shown in the panel title" },
+        { "key": "old_name", "object_types": ["node","way","area","relation"], "description": "Former playground name shown in the panel title" },
+        { "key": "short_name", "object_types": ["node","way","area","relation"], "description": "Short playground name shown in the panel title" },
+        { "key": "description", "object_types": ["node","way","area","relation"], "description": "Free-text description shown in the playground panel" },
+        { "key": "description:de", "object_types": ["node","way","area","relation"], "description": "German free-text description shown in the playground panel" },
+        { "key": "note", "object_types": ["node","way","area","relation"], "description": "Mapper note shown in the playground panel" },
+        { "key": "fixme", "object_types": ["node","way","area","relation"], "description": "Fixme note shown in the playground panel" },
+        { "key": "image", "object_types": ["node","way","area","relation"], "description": "Playground photo shown in the photo gallery; contributes to completeness scoring" },
+        { "key": "wikimedia_commons", "object_types": ["node","way","area","relation"], "description": "Wikimedia Commons category/file shown in the photo gallery; contributes to completeness scoring" }
     ]
 }
