@@ -1,8 +1,14 @@
+import { isWikimediaImageTag } from './commons.js';
+
 // Shared data-completeness logic for playground features.
 // Returns 'complete' | 'partial' | 'missing'
 //
 // Criteria:
-//   hasPhoto     — at least one panoramax / panoramax:* tag
+//   hasPhoto     — at least one panoramax / panoramax:* tag, a wikimedia_commons
+//                  tag, or an image link on a Wikimedia/Wikipedia host (additive
+//                  — a missing photo link never lowers completeness). An
+//                  off-Wikimedia image URL does not count: the gallery can't
+//                  render it, so it must not raise completeness.
 //   hasEquipment — any mapped equipment inside the playground
 //                  (playground=* devices, benches, pitches, etc.)
 //   hasInfo      — opening_hours, surface, or a non-trivial access value
@@ -15,7 +21,10 @@
 // not useful to parents choosing a playground.
 
 export function playgroundCompleteness(props) {
-    const hasPhoto = Object.keys(props).some(k => k === 'panoramax' || k.startsWith('panoramax:'));
+    const hasPhoto = Object.keys(props).some(k =>
+        k === 'panoramax' || k.startsWith('panoramax:') ||
+        k === 'wikimedia_commons')
+        || isWikimediaImageTag(props.image);
     const hasEquipment = (props.device_count > 0)
         || (props.bench_count > 0)
         || (props.shelter_count > 0)

@@ -134,5 +134,8 @@
   },
   "hub": {
     "importing": "更新中"
+  },
+  "commons": {
+    "viewSource": "Wikimedia Commons で見る"
   }
 }
