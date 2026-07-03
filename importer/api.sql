@@ -232,7 +232,7 @@ CREATE MATERIALIZED VIEW public.playground_stats AS
       BOOL_OR(e.tags->'wheelchair' = 'yes'
               AND (NOT (e.tags ? 'playground')
                    OR e.tags->'playground' != 'sandpit'))                       AS for_wheelchair,
-      BOOL_OR(pl.tags->'barrier' = 'fence')                                   AS has_fence,
+      BOOL_OR(pl.tags->'enclosed' = 'yes' OR pl.tags->'barrier' = 'fence')    AS has_fence,
       BOOL_OR(pl.tags->'dog' = 'yes')                                        AS has_dogs,
       CASE WHEN BOOL_OR(pl.tags ? 'shade') THEN BOOL_OR(pl.tags->'shade' = 'yes') END AS has_shade
     FROM all_playgrounds pl
