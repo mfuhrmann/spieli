@@ -197,19 +197,25 @@ CREATE MATERIALIZED VIEW public.playground_stats AS
   -- public.playground_equipment_src so the "what is equipment" predicate lives
   -- in exactly one place — see the view definition near the top of this file.
   all_equip AS (
-    SELECT osm_id, amenity, leisure, sport, tags, way
+    SELECT osm_id, osm_type, amenity, leisure, sport, tags, way
     FROM public.playground_equipment_src
   ),
   equip_stats AS (
+    -- COUNT(DISTINCT (osm_id, osm_type)): osm2pgsql emits a closed way to *both*
+    -- planet_osm_polygon and planet_osm_line when it carries an area tag and a
+    -- linear tag (e.g. leisure=pitch + barrier=fence), so the shared view can
+    -- yield two rows for one feature. Dedupe by identity here so the counts
+    -- don't double. (Deduping in the view itself would defeat the GiST way-index
+    -- pushdown that get_equipment relies on.)
     SELECT
       pl.osm_id,
       pl.osm_type,
-      COUNT(CASE WHEN e.tags ? 'playground'      THEN 1 END)::int AS device_count,
-      COUNT(CASE WHEN e.amenity = 'bench'        THEN 1 END)::int AS bench_count,
-      COUNT(CASE WHEN e.amenity = 'shelter'      THEN 1 END)::int AS shelter_count,
-      COUNT(CASE WHEN e.leisure = 'picnic_table' THEN 1 END)::int AS picnic_count,
-      COUNT(CASE WHEN e.leisure = 'pitch'
-                  AND (e.sport = 'table_tennis' OR e.tags->'sport' = 'table_tennis') THEN 1 END)::int AS table_tennis_count,
+      COUNT(DISTINCT CASE WHEN e.tags ? 'playground'      THEN (e.osm_id, e.osm_type) END)::int AS device_count,
+      COUNT(DISTINCT CASE WHEN e.amenity = 'bench'        THEN (e.osm_id, e.osm_type) END)::int AS bench_count,
+      COUNT(DISTINCT CASE WHEN e.amenity = 'shelter'      THEN (e.osm_id, e.osm_type) END)::int AS shelter_count,
+      COUNT(DISTINCT CASE WHEN e.leisure = 'picnic_table' THEN (e.osm_id, e.osm_type) END)::int AS picnic_count,
+      COUNT(DISTINCT CASE WHEN e.leisure = 'pitch'
+                  AND (e.sport = 'table_tennis' OR e.tags->'sport' = 'table_tennis') THEN (e.osm_id, e.osm_type) END)::int AS table_tennis_count,
       BOOL_OR(e.leisure = 'pitch'
               AND (e.sport = 'soccer' OR e.tags->'sport' = 'soccer'))          AS has_soccer,
       BOOL_OR(e.leisure = 'pitch'
