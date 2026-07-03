@@ -1747,10 +1747,11 @@
 <p>The colours reflect the OSM data, not the real-world quality of the playground.</p>
 <h2 id="finding-playgrounds">Finding playgrounds<a class="headerlink" href="#finding-playgrounds" title="Permanent link">&para;</a></h2>
 <p><strong>Search:</strong> Type a place name, street, or city into the search box (top bar). The map moves to the matching location.</p>
-<p><strong>My location:</strong> Tap the location button to centre the map on your current position.</p>
+<p><strong>My location:</strong> Tap the location button to centre the map on your current position. Your position is shown as a pulsing blue dot; at high zoom a translucent circle indicates the GPS accuracy. If your browser already granted location permission, spieli auto-locates on page load (unless you opened a deeplink or region link).</p>
 <blockquote>
 <p><strong>Note:</strong> Geolocation requires HTTPS and your browser's permission. If the button does nothing, check your browser's location settings.</p>
 </blockquote>
+<p><strong>Region links:</strong> Visit a region by name in the URL — e.g. <code>spieli.eu/fulda</code> frames the map on Fulda. spieli geocodes the single path segment via Nominatim and pans to its bounding box (works in both standalone and hub mode). Share these links like any other URL.</p>
 <h2 id="filters">Filters<a class="headerlink" href="#filters" title="Permanent link">&para;</a></h2>
 <p>Open the filter panel to show only playgrounds that match your needs:</p>
 <table>
@@ -1802,6 +1803,18 @@
 <td>A basketball court</td>
 </tr>
 <tr>
+<td>Fenced</td>
+<td>A fence around the playground (<code>barrier=fence</code>)</td>
+</tr>
+<tr>
+<td>Dogs allowed</td>
+<td>Dogs are permitted (<code>dog=yes</code>)</td>
+</tr>
+<tr>
+<td>With shade</td>
+<td>Shaded areas (<code>shade=yes</code>)</td>
+</tr>
+<tr>
 <td>Exclude private</td>
 <td>Hide access-restricted playgrounds</td>
 </tr>
@@ -1838,7 +1851,8 @@
 <ul>
 <li>Name, operator, opening hours (when mapped)</li>
 <li>Surface type and size</li>
-<li>Equipment list — devices, pitches, benches, and their sub-attributes</li>
+<li>Status pills — completeness, data age, and (when tagged) a shade pill (Shaded / No shade) plus baby / toddler suitability</li>
+<li>Equipment list — devices, pitches, benches, and their sub-attributes, including each item's surface when tagged</li>
 <li>Street-level photos (from Panoramax, when available)</li>
 <li>Community reviews (from Mangrove.reviews, when available)</li>
 <li>Nearby POIs — toilets, cafés, bus stops, and pharmacies within 500 m</li>
