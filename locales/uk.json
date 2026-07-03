@@ -134,5 +134,8 @@
   },
   "hub": {
     "importing": "оновлення"
+  },
+  "commons": {
+    "viewSource": "Переглянути на Wikimedia Commons"
   }
 }

@@ -134,5 +134,8 @@
   },
   "hub": {
     "importing": "bijwerken"
+  },
+  "commons": {
+    "viewSource": "Bekijken op Wikimedia Commons"
   }
 }

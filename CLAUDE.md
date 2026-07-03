@@ -139,6 +139,7 @@ To test Hub mode locally: set `appMode: 'hub'` in `app/public/config.js`, run `m
 | `POIPanel.svelte` | Nearby POI list (cafés, toilets, etc.) shown inside PlaygroundPanel |
 | `ReviewsPanel.svelte` | Community reviews for a selected playground (fetch + submit) |
 | `PanoramaxViewer.svelte` | Embeds a Panoramax street-level photo viewer for a playground |
+| `CommonsGallery.svelte` | Inline Wikimedia Commons photo gallery for a playground (from `wikimedia_commons` / `image` tags); thumbnails → fullscreen lightbox with CC attribution. Fetch + URL-safety logic in `app/src/lib/commons.js` |
 | `HoverPreview.svelte` | Floating card on playground hover (desktop only) |
 | `EquipmentTooltip.svelte` | Tooltip on equipment/pitch hover |
 | `FilterPanel.svelte` | Filter dropdown; also contains "Ebenen" section for layer toggles |

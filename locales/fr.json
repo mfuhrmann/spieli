@@ -737,5 +737,8 @@
       "whale": "Baleine",
       "windmill": "Moulin à vent"
     }
+  },
+  "commons": {
+    "viewSource": "Voir sur Wikimedia Commons"
   }
 }

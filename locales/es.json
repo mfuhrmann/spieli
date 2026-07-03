@@ -737,5 +737,8 @@
       "whale": "Ballena",
       "windmill": "Molino de viento"
     }
+  },
+  "commons": {
+    "viewSource": "Ver en Wikimedia Commons"
   }
 }

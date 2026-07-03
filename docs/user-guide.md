@@ -27,9 +27,11 @@ The colours reflect the OSM data, not the real-world quality of the playground.
 
 **Search:** Type a place name, street, or city into the search box (top bar). The map moves to the matching location.
 
-**My location:** Tap the location button to centre the map on your current position.
+**My location:** Tap the location button to centre the map on your current position. Your position is shown as a pulsing blue dot; at high zoom a translucent circle indicates the GPS accuracy. If your browser already granted location permission, spieli auto-locates on page load (unless you opened a deeplink or region link).
 
 > **Note:** Geolocation requires HTTPS and your browser's permission. If the button does nothing, check your browser's location settings.
+
+**Region links:** Visit a region by name in the URL — e.g. `spieli.eu/fulda` frames the map on Fulda. spieli geocodes the single path segment via Nominatim and pans to its bounding box (works in both standalone and hub mode). Share these links like any other URL.
 
 ## Filters
 
@@ -47,6 +49,9 @@ Open the filter panel to show only playgrounds that match your needs:
 | Table tennis | A table tennis table |
 | Football | A football pitch |
 | Basketball | A basketball court |
+| Fenced | A fence around the playground (`barrier=fence`) |
+| Dogs allowed | Dogs are permitted (`dog=yes`) |
+| With shade | Shaded areas (`shade=yes`) |
 | Exclude private | Hide access-restricted playgrounds |
 
 Active filters appear as chips below the search bar. Click a chip to remove that filter.
@@ -69,8 +74,9 @@ Click any playground to open its detail panel. The panel shows:
 
 - Name, operator, opening hours (when mapped)
 - Surface type and size
+- Status pills — completeness, data age, and (when tagged) a shade pill (Shaded / No shade) plus baby / toddler suitability
 - Theme highlight — a symbol for playgrounds with a theme, such as a ship or castle (see [Playground themes](#playground-themes))
-- Equipment list — devices, pitches, benches, and their sub-attributes
+- Equipment list — devices, pitches, benches, and their sub-attributes, including each item's surface when tagged
 - Street-level photos (from Panoramax, when available)
 - Community reviews (from Mangrove.reviews, when available)
 - Nearby POIs — toilets, cafés, bus stops, and pharmacies within 500 m
