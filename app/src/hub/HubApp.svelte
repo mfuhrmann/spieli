@@ -10,6 +10,7 @@
   import MacroCoverageBanner from './MacroCoverageBanner.svelte';
 
   import { resolveRegionFromPath, isRegionPath } from '../lib/regionUrl.js';
+  import { parseHash } from '../lib/deeplink.js';
   import { regionFramingApplied } from '../stores/urlFraming.js';
   import { createRegistry } from './registry.js';
   import { attachHubOrchestrator } from './hubOrchestrator.js';
@@ -119,6 +120,16 @@
   let detachBackends = null;
   let detachMapAttach = null;
 
+  // A deeplink hash (e.g. #bayern/W123) expresses an explicit target that takes
+  // precedence over the geolocation / bbox initial fit. While it's pending we
+  // suppress tryFit entirely and let AppShell.tryRestoreFromHash frame the
+  // selected playground. A moveend-watch + timeout fallback re-enables the
+  // normal fit only if the restore never delivers (404, unknown slug, hydration
+  // error) — mirrors StandaloneApp's deeplink guard.
+  let deeplinkPending = false;
+  let deeplinkFitTimer = null;
+  let detachDeeplinkWatcher = null;
+
   // Geolocation for initial view: prefer the user's current location over the
   // aggregated bbox. geolocDone gates tryFit so we don't bbox-fit and then
   // immediately jump to the user's location. Resolves within 3 s or falls back.
@@ -134,6 +145,7 @@
   const FALLBACK_BBOX = [5.87, 47.27, 15.04, 55.06];
 
   function tryFit() {
+    if (deeplinkPending) return;
     if (fitDone || !latestMap || !backendsSettled || !geolocDone || !regionUrlDone) return;
     if (!regionUrlExtent && !geolocCoord && !latestBbox) return;
     const fitPadding = regionFitPadding();
@@ -175,6 +187,11 @@
   }
 
   onMount(() => {
+    // Read the deeplink hash BEFORE anything can mutate it. When present it
+    // owns the initial framing (via AppShell.tryRestoreFromHash), so tryFit
+    // stays suppressed until the fallback timer disarms it below.
+    deeplinkPending = !!parseHash(window.location.hash);
+
     // Resolve region URL path (e.g. /fulda) in parallel with geolocation.
     // Region URL takes precedence over geolocation when both resolve.
     const regionPath = isRegionPath(window.location.pathname);
@@ -210,7 +227,32 @@
       geolocDone = true;
     }
 
-    detachMap = mapStore.subscribe(m => { latestMap = m; tryFit(); });
+    detachMap = mapStore.subscribe(m => {
+      latestMap = m;
+      // Test hook: expose the OL map so the E2E suite can assert the initial
+      // view (e.g. a deeplink frames the linked playground, not the GPS fix).
+      if (typeof window !== 'undefined' && m) window.__spieli.map = m;
+      tryFit();
+    });
+
+    // Arm the deeplink fallback once the map is published (Map.svelte mounts
+    // before HubApp, so latestMap is already set). If AppShell's deeplink
+    // restore succeeds it fires a moveend (fitViewToSelection) and we leave the
+    // map on the linked playground. If no moveend arrives within the timeout the
+    // restore failed — disarm and run the normal geoloc/bbox fit.
+    if (deeplinkPending && latestMap) {
+      let restored = false;
+      const onMove = () => { restored = true; };
+      latestMap.once('moveend', onMove);
+      detachDeeplinkWatcher = () => latestMap.un('moveend', onMove);
+      deeplinkFitTimer = setTimeout(() => {
+        deeplinkFitTimer = null;
+        detachDeeplinkWatcher?.();
+        detachDeeplinkWatcher = null;
+        if (!restored) { deeplinkPending = false; tryFit(); }
+      }, 1500);
+    }
+
     detachBbox = aggregatedBbox.subscribe(b => { latestBbox = b; tryFit(); });
     detachBackends = backends.subscribe(bs => {
       // Settled = registry loaded AND every backend's get_meta has resolved
@@ -270,6 +312,8 @@
     detachBackends?.();
     detachMapAttach?.();
     detachOrchestrator?.();
+    detachDeeplinkWatcher?.();
+    if (deeplinkFitTimer) clearTimeout(deeplinkFitTimer);
   });
 </script>
 

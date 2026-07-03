@@ -77,4 +77,45 @@ test.describe('Hub deep-link', () => {
     await expect(panel).toBeVisible({ timeout: 8000 });
     await expect(panel.locator('.backend-name')).toContainText('Instanz A');
   });
+
+  // Regression: a deeplink must frame the linked playground even when the
+  // browser has a granted geolocation permission far from it. Previously
+  // HubApp's initial `tryFit` ran its own getCurrentPosition and centred on the
+  // GPS fix, clobbering AppShell's deeplink fit (the fix's moveend loses the
+  // race against the later all-backends-settled GPS fit). W111 sits near
+  // (9.675, 50.551); the GPS fix is in Berlin (~13.40, 52.52).
+  test('deeplink frames the playground, not the granted GPS position', async ({ page, context }) => {
+    await context.grantPermissions(['geolocation']);
+    await context.setGeolocation({ latitude: 52.520, longitude: 13.404 });
+
+    // Delay get_meta so "all backends settled" (which gates HubApp's GPS/bbox
+    // fit) lands AFTER the deeplink restore fires its fit — reproducing the
+    // production ordering (~16 backends settle slowly) where the GPS fit ran
+    // last and clobbered the deeplink. Without this the 2-backend registry
+    // settles so fast the deeplink fit wins the race even with the bug present.
+    await page.route('**/rpc/get_meta**', async route => {
+      await new Promise(r => setTimeout(r, 800));
+      await route.fallback();
+    });
+
+    await page.goto(`/#slug-a/W111`);
+    const panel = page.locator('aside.info-panel');
+    await expect(panel).toBeVisible({ timeout: 8000 });
+
+    // Wait past the delayed-get_meta window (800 ms) plus fit animations so the
+    // view has fully settled. The bug produces a transient frame on the
+    // playground (deeplink fit) that is then clobbered by the later GPS fit, so
+    // asserting the FINAL centre — not "ever near" — is what catches it.
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(1200);
+
+    const center = await page.evaluate(() => window.__spieli?.map?.getView().getCenter() ?? null);
+    expect(center).not.toBeNull();
+    const R = 6378137;
+    const lon = (center[0] / R) * (180 / Math.PI);
+    const lat = (2 * Math.atan(Math.exp(center[1] / R)) - Math.PI / 2) * (180 / Math.PI);
+    // Centred on the playground (~9.675, 50.551), not the Berlin GPS fix.
+    expect(Math.abs(lon - 9.675), `lon ${lon} should be near playground, not GPS`).toBeLessThan(0.1);
+    expect(Math.abs(lat - 50.551), `lat ${lat} should be near playground, not GPS`).toBeLessThan(0.1);
+  });
 });
