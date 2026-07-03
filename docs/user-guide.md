@@ -51,6 +51,7 @@ Open the filter panel to show only playgrounds that match your needs:
 | Basketball | A basketball court |
 | Fenced | A fence around the playground (`barrier=fence`) |
 | Dogs allowed | Dogs are permitted (`dog=yes`) |
+| Themed | Has a recognised theme — ship, octopus, castle, … (`playground:theme`) |
 | With shade | Shaded areas (`shade=yes`) |
 | Exclude private | Hide access-restricted playgrounds |
 

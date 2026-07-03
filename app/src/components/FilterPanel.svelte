@@ -1,7 +1,7 @@
 <script>
   import { filterStore, hasActiveFilters, activeFilterCount, defaultFilters } from '../stores/filters.js';
   import { _ } from 'svelte-i18n';
-  import { Filter, Droplets, Baby, Accessibility, Armchair, UtensilsCrossed, Home, RectangleHorizontal, Goal, CircleDot, Lock, Layers, BarChart3, ShieldCheck, Dog, Sun } from 'lucide-svelte';
+  import { Filter, Droplets, Baby, Accessibility, Armchair, UtensilsCrossed, Home, RectangleHorizontal, Goal, CircleDot, Lock, Layers, BarChart3, ShieldCheck, Dog, Sun, Sparkles } from 'lucide-svelte';
 
   let open = false;
   let wrap;
@@ -24,6 +24,7 @@
     basketball:  CircleDot,
     fence:       ShieldCheck,
     hasDogs:     Dog,
+    theme:       Sparkles,
     shade:       Sun,
   };
 
