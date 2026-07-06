@@ -234,9 +234,17 @@ CREATE MATERIALIZED VIEW public.playground_stats AS
               OR (e.tags ? 'playground' AND e.tags->'capacity:baby' IS NOT NULL)) AS for_baby,
       BOOL_OR((e.tags->'provided_for:toddler' = 'yes')
               OR (e.tags->'playground' = 'basketswing'))                        AS for_toddler,
-      BOOL_OR(e.tags->'wheelchair' = 'yes'
-              AND (NOT (e.tags ? 'playground')
-                   OR e.tags->'playground' != 'sandpit'))                       AS for_wheelchair,
+      BOOL_OR(
+              -- Playground area's own accessibility tag (issue #727: "on a
+              -- playground and/or on a device"). No sandpit guard: a bare
+              -- wheelchair tag on the whole area is a genuine access claim.
+              pl.tags->'wheelchair' IN ('yes','limited','designated')
+              -- ...or any contained device, minus sandpit-only claims. `limited`
+              -- dominates on playgrounds (taginfo: 5.7k vs 10.5k `yes`); matches
+              -- HoverPreview treating yes+limited as accessible.
+              OR (e.tags->'wheelchair' IN ('yes','limited','designated')
+                  AND (NOT (e.tags ? 'playground')
+                       OR e.tags->'playground' != 'sandpit')))                  AS for_wheelchair,
       BOOL_OR(pl.tags->'enclosed' = 'yes' OR pl.barrier = 'fence')            AS has_fence,
       BOOL_OR(pl.tags->'dog' = 'yes')                                        AS has_dogs,
       CASE WHEN BOOL_OR(pl.tags ? 'shade') THEN BOOL_OR(pl.tags->'shade' = 'yes') END AS has_shade
