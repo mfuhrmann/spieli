@@ -12,7 +12,8 @@ Most of this is already shipped: the `wheelchair` filter toggle, the removable c
 - Widen `for_wheelchair` in `get_playground_stats` (`importer/api.sql:232`) to:
   - Match the **playground polygon's own** `wheelchair` tag (`pl.tags->'wheelchair'`), not just devices.
   - Accept `IN ('yes','limited','designated')` instead of `= 'yes'` on both sources.
-- No frontend changes — filter, chip, FilterPanel, i18n (de/en/fr/es), and `matchesFilters` (`for_wheelchair`) already consume the boolean.
+- Filter, filter-chip, FilterPanel, and `matchesFilters` (`for_wheelchair`) already consume the boolean — unchanged. Cluster-tier rings already honour the filter via `clusterFilterMap.wheelchair → filter_wheelchair` (`api.js:55`); the widened server aggregate makes those rings correct.
+- **Frontend (new):** add a wheelchair-accessible badge to the playground detail panel (`PlaygroundPanel.svelte` status row), gated on `attr.for_wheelchair`, with a `details.wheelchairAccessible` i18n key in all four locale files. This is the "chip" half of the issue for the details view — previously only `HoverPreview` showed an accessibility marker (and it read the area-only raw tag; the detail badge uses the computed `for_wheelchair`, so it also reflects device-derived accessibility).
 - No import change — `osmium tags-filter` keeps all tags of matched objects into the hstore, so the `wheelchair` tag is already present on both playgrounds and devices.
 
 ## Root Cause

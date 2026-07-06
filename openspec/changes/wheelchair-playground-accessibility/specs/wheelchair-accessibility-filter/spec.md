@@ -35,3 +35,13 @@ Previously `for_wheelchair` was derived from device tags only and matched `wheel
 
 - **WHEN** a playground carries only sensory-accessibility keys (`blind`, `deaf`, `tactile_paving`) and no `wheelchair` tag
 - **THEN** those keys do not participate in the filter and `for_wheelchair` is `false`
+
+#### Scenario: Cluster rings honour the wheelchair filter
+
+- **WHEN** the `wheelchair` filter is enabled at a cluster-tier zoom
+- **THEN** `get_playground_clusters` is called with `filter_wheelchair=true` and the ring buckets count only playgrounds whose `for_wheelchair` is true
+
+#### Scenario: Detail panel shows an accessibility badge
+
+- **WHEN** a selected playground has `for_wheelchair = true`
+- **THEN** the detail panel shows a wheelchair-accessible badge (`details.wheelchairAccessible`), and shows no such badge when `for_wheelchair` is false
