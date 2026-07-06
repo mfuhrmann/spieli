@@ -239,9 +239,9 @@ CREATE MATERIALIZED VIEW public.playground_stats AS
       -- in app/src/lib/playgroundThemes.js — keep both in sync. Values may be
       -- ';'-separated; split (trimming whitespace) and test array overlap.
       BOOL_OR(
-        regexp_split_to_array(lower(COALESCE(pl.tags->'playground:theme','')), '\s*;\s*')
+        regexp_split_to_array(btrim(lower(COALESCE(pl.tags->'playground:theme',''))), '\s*;\s*')
           && ARRAY['ship','octopus','castle','rocket','spiderweb','circus','dragon','water','adventure']
-        OR regexp_split_to_array(lower(COALESCE(e.tags->'playground:theme','')), '\s*;\s*')
+        OR regexp_split_to_array(btrim(lower(COALESCE(e.tags->'playground:theme',''))), '\s*;\s*')
           && ARRAY['ship','octopus','castle','rocket','spiderweb','circus','dragon','water','adventure']
       )                                                                       AS has_theme,
       CASE WHEN BOOL_OR(pl.tags ? 'shade') THEN BOOL_OR(pl.tags->'shade' = 'yes') END AS has_shade
