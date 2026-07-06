@@ -15,6 +15,7 @@
   import { createRegistry } from './registry.js';
   import { attachHubOrchestrator } from './hubOrchestrator.js';
   import { mapStore } from '../stores/map.js';
+  import { selection } from '../stores/selection.js';
   import { filterStore } from '../stores/filters.js';
   import { macroFilteredStore } from '../stores/macroFiltered.js';
   import { macroCoverageStore } from '../stores/macroCoverage.js';
@@ -123,9 +124,12 @@
   // A deeplink hash (e.g. #bayern/W123) expresses an explicit target that takes
   // precedence over the geolocation / bbox initial fit. While it's pending we
   // suppress tryFit entirely and let AppShell.tryRestoreFromHash frame the
-  // selected playground. A moveend-watch + timeout fallback re-enables the
-  // normal fit only if the restore never delivers (404, unknown slug, hydration
-  // error) — mirrors StandaloneApp's deeplink guard.
+  // selected playground. Success is observed through the `selection` store —
+  // the restore's own signal — not a moveend: an unrelated pan can't latch a
+  // false success, and a *late* restore (slow backend) re-suppresses the fit
+  // instead of losing the race to a backends-settled fit. A timeout re-enables
+  // the normal fit only if the restore never delivers (404, unknown slug,
+  // hydration error).
   let deeplinkPending = false;
   let deeplinkFitTimer = null;
   let detachDeeplinkWatcher = null;
@@ -213,7 +217,14 @@
     // backends settle. Uses a 3 s timeout and a 5-min cache so a repeat
     // page-load doesn't trigger another GPS fix. On error or timeout,
     // geolocDone is set so tryFit falls through to the bbox fit.
-    if (typeof navigator !== 'undefined' && navigator.geolocation) {
+    //
+    // Skipped entirely when a deeplink owns the framing: the GPS fix would only
+    // be discarded (tryFit stays suppressed), so requesting it just pops a
+    // needless permission prompt — and if the deeplink later fails, the bbox
+    // fallback is the right frame, not a GPS jump away from the shared link.
+    if (deeplinkPending) {
+      geolocDone = true;
+    } else if (typeof navigator !== 'undefined' && navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         pos => {
           geolocCoord = [pos.coords.longitude, pos.coords.latitude];
@@ -235,21 +246,24 @@
       tryFit();
     });
 
-    // Arm the deeplink fallback once the map is published (Map.svelte mounts
-    // before HubApp, so latestMap is already set). If AppShell's deeplink
-    // restore succeeds it fires a moveend (fitViewToSelection) and we leave the
-    // map on the linked playground. If no moveend arrives within the timeout the
-    // restore failed — disarm and run the normal geoloc/bbox fit.
-    if (deeplinkPending && latestMap) {
-      let restored = false;
-      const onMove = () => { restored = true; };
-      latestMap.once('moveend', onMove);
-      detachDeeplinkWatcher = () => latestMap.un('moveend', onMove);
+    // Arm the deeplink fallback. AppShell.tryRestoreFromHash sets the
+    // `selection` store (and fits to it) once it resolves the linked
+    // playground — that store transition, not a moveend, is our success
+    // signal. While a selection is present we keep the fit suppressed, so even
+    // a restore that resolves AFTER the timeout re-closes the gate and a
+    // late backends-settled fit can't clobber the linked playground. If no
+    // selection ever arrives the restore failed — the timeout opens the gate
+    // and runs the normal bbox fit.
+    if (deeplinkPending) {
+      detachDeeplinkWatcher = selection.subscribe(sel => {
+        if (sel.feature) {
+          deeplinkPending = true; // restore delivered — it owns the framing
+          if (deeplinkFitTimer) { clearTimeout(deeplinkFitTimer); deeplinkFitTimer = null; }
+        }
+      });
       deeplinkFitTimer = setTimeout(() => {
         deeplinkFitTimer = null;
-        detachDeeplinkWatcher?.();
-        detachDeeplinkWatcher = null;
-        if (!restored) { deeplinkPending = false; tryFit(); }
+        if (!get(selection).feature) { deeplinkPending = false; tryFit(); }
       }, 1500);
     }
 
