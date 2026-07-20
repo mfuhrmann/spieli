@@ -1589,7 +1589,7 @@
 <p>Weblate batches translation saves and periodically pushes a commit to the <code>weblate-translations</code> branch. The maintainer opens a PR from <code>weblate-translations</code> → <code>main</code>, reviews the JSON diff, and merges. The next <code>make docker-build</code> bundles the updated locale files into the app.</p>
 <p>Weblate never pushes directly to <code>main</code> — every translation update goes through a PR.</p>
 <h2 id="language-graduation">Language graduation<a class="headerlink" href="#language-graduation" title="Permanent link">&para;</a></h2>
-<p>A language becomes visible in the app only when it reaches <strong>≥ 80% completion</strong> (≥ 464 of 580 keys) in Weblate. Below that threshold the locale file exists in the repo and Weblate keeps improving it, but the running app ignores it — users with that browser language fall back to English.</p>
+<p>A language becomes visible in the app only when it reaches <strong>≥ 80% completion</strong> (≥ 529 of 661 keys) in Weblate. Below that threshold the locale file exists in the repo and Weblate keeps improving it, but the running app ignores it — users with that browser language fall back to English.</p>
 <p>When a language crosses the threshold:</p>
 <ol>
 <li>Open a PR editing <code>app/src/lib/i18n.js</code>:<ul>
@@ -1602,6 +1602,35 @@
 </ol>
 <h2 id="adding-new-ui-strings-developer-workflow">Adding new UI strings (developer workflow)<a class="headerlink" href="#adding-new-ui-strings-developer-workflow" title="Permanent link">&para;</a></h2>
 <p>New translatable strings <strong>must</strong> be added to <code>locales/en.json</code> first. <code>locales/de.json</code> must be updated in the <strong>same commit</strong>. Adding a key only to <code>de.json</code> breaks Weblate — it uses <code>locales/en.json</code> as the source template and won't surface keys that are absent from it.</p>
+<p><strong>Never edit the other locale files by hand.</strong> <code>es.json</code>, <code>fr.json</code>, <code>sk.json</code> and the rest are owned by Weblate. Editing one directly collides with whatever a translator has pending for that same file, and Weblate's rebase onto <code>main</code> breaks — which is exactly how the component sat in a merge-conflict error state from May to July 2026, blocking every translation from reaching the repo.</p>
+<p>The <code>i18n Guard</code> CI job (<code>.github/workflows/i18n-guard.yml</code>) enforces this: a PR touching any locale other than <code>en.json</code> or <code>de.json</code> fails.</p>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Who edits it</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>locales/en.json</code></td>
+<td>Developers — Weblate's source template</td>
+</tr>
+<tr>
+<td><code>locales/de.json</code></td>
+<td>Developers — maintainer-authored, primary deployment language</td>
+</tr>
+<tr>
+<td>everything else</td>
+<td>Weblate translators only</td>
+</tr>
+</tbody>
+</table>
+<p>Two legitimate exceptions bypass the guard:</p>
+<ul>
+<li>PRs from the <code>weblate-translations</code> branch — Weblate's own translation pushes</li>
+<li>PRs labelled <code>i18n-manual</code> — landing or repairing a translation out-of-band</li>
+</ul>
 <p>Keys follow the existing nested structure. Plural strings use ICU inline format:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">&quot;deviceCount&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;{count, plural, one {# piece of equipment} other {# pieces of equipment}}&quot;</span>
 </code></pre></div>
