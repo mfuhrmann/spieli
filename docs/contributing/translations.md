@@ -17,7 +17,7 @@ Weblate never pushes directly to `main` — every translation update goes throug
 
 ## Language graduation
 
-A language becomes visible in the app only when it reaches **≥ 80% completion** (≥ 464 of 580 keys) in Weblate. Below that threshold the locale file exists in the repo and Weblate keeps improving it, but the running app ignores it — users with that browser language fall back to English.
+A language becomes visible in the app only when it reaches **≥ 80% completion** (≥ 529 of 661 keys) in Weblate. Below that threshold the locale file exists in the repo and Weblate keeps improving it, but the running app ignores it — users with that browser language fall back to English.
 
 When a language crosses the threshold:
 
@@ -30,6 +30,21 @@ When a language crosses the threshold:
 ## Adding new UI strings (developer workflow)
 
 New translatable strings **must** be added to `locales/en.json` first. `locales/de.json` must be updated in the **same commit**. Adding a key only to `de.json` breaks Weblate — it uses `locales/en.json` as the source template and won't surface keys that are absent from it.
+
+**Never edit the other locale files by hand.** `es.json`, `fr.json`, `sk.json` and the rest are owned by Weblate. Editing one directly collides with whatever a translator has pending for that same file, and Weblate's rebase onto `main` breaks — which is exactly how the component sat in a merge-conflict error state from May to July 2026, blocking every translation from reaching the repo.
+
+The `i18n Guard` CI job (`.github/workflows/i18n-guard.yml`) enforces this: a PR touching any locale other than `en.json` or `de.json` fails.
+
+| File | Who edits it |
+|---|---|
+| `locales/en.json` | Developers — Weblate's source template |
+| `locales/de.json` | Developers — maintainer-authored, primary deployment language |
+| everything else | Weblate translators only |
+
+Two legitimate exceptions bypass the guard:
+
+- PRs from the `weblate-translations` branch — Weblate's own translation pushes
+- PRs labelled `i18n-manual` — landing or repairing a translation out-of-band
 
 Keys follow the existing nested structure. Plural strings use ICU inline format:
 

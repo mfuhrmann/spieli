@@ -1,0 +1,77 @@
+name: i18n Guard
+
+# Weblate owns every locale file except the English source template.
+# When a PR edits a translated locale directly, it collides with whatever
+# Weblate has pending for that same file, and the component's rebase onto
+# main breaks — which is how spieli/ui-strings sat in a merge-conflict
+# error state from 2026-05-01 onwards. See issue #742.
+#
+# Developers add new strings to locales/en.json, plus locales/de.json in
+# the same commit. German is the primary deployment language and is
+# maintainer-authored, so it stays hand-editable. Weblate propagates the
+# new keys to every other language itself, and translators fill them in
+# there.
+#
+# If a German translator ever joins the Weblate project, drop de from the
+# allowed set below so it becomes Weblate-owned like every other language.
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'locales/**'
+
+env:
+  CI: true
+
+jobs:
+  locale-ownership:
+    name: Only en.json and de.json may be edited by hand
+    runs-on: ubuntu-latest
+
+    # Weblate's own PRs legitimately carry translated locales. So do
+    # maintainer PRs that land or repair a translation out-of-band — those
+    # opt out with the `i18n-manual` label.
+    if: >-
+      github.event.pull_request.head.ref != 'weblate-translations' &&
+      !contains(github.event.pull_request.labels.*.name, 'i18n-manual')
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          fetch-depth: 0
+
+      - name: Check which locale files the PR touches
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+
+          changed=$(git diff --name-only "$BASE_SHA" "$HEAD_SHA" -- 'locales/' \
+                    | grep -vE '^locales/(en|de)\.json$' || true)
+
+          if [ -z "$changed" ]; then
+            echo "Only hand-editable locales touched (en.json / de.json)."
+            exit 0
+          fi
+
+          echo "::error::PR edits translator-owned locale files"
+          echo
+          echo "These files are managed by Weblate and must not be edited by hand:"
+          echo
+          echo "$changed" | sed 's/^/  /'
+          echo
+          echo "Add new strings to locales/en.json, plus locales/de.json in the"
+          echo "same commit. Weblate propagates them to every other language,"
+          echo "and translators fill them in there."
+          echo
+          echo "Editing a translated locale directly collides with Weblate's"
+          echo "pending changes to the same file and breaks its rebase onto main."
+          echo
+          echo "If this PR genuinely needs to carry translations (landing work"
+          echo "out-of-band, repairing a broken file), add the 'i18n-manual'"
+          echo "label to opt out of this check."
+          exit 1
