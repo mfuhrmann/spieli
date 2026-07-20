@@ -1,5 +1,6 @@
 <script>
   import { onMount, onDestroy } from 'svelte';
+  import { _ } from 'svelte-i18n';
   import { Map, View } from 'ol';
   import { Tile as TileLayer, Vector as VectorLayer } from 'ol/layer.js';
   import VectorSource from 'ol/source/Vector.js';
@@ -473,7 +474,11 @@
 </script>
 
 <svelte:window on:keydown={(e) => { if (e.key === 'Escape' && backendPopup) backendPopup = null; }} />
-<div bind:this={mapContainer} class="map-container">
+<!-- tabindex is required, not decorative: OpenLayers attaches its KeyboardPan/KeyboardZoom
+     listeners to this exact element (via `target: mapContainer`), so it must be focusable
+     for those interactions to activate at all. -->
+<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+<div bind:this={mapContainer} class="map-container" role="region" aria-label={$_('map.ariaLabel')} tabindex="0">
   {#if backendPopup}
     <div
       class="backend-popup"
@@ -511,6 +516,13 @@
     height: 100%;
     position: absolute;
     inset: 0;
+  }
+  .map-container:focus {
+    outline: none;
+  }
+  .map-container:focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: -2px;
   }
 
   .backend-popup {
