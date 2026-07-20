@@ -1,19 +1,28 @@
 # Weblate component configuration reference.
 #
 # This file is NOT automatically read by Weblate. Use it as a checklist
-# when manually configuring the component on hosted.weblate.org (#356).
+# when manually configuring the component on hosted.weblate.org (#356),
+# and as a record of what the live component is actually set to.
 # Field names and values map directly to the Weblate REST API schema:
 # https://docs.weblate.org/en/latest/api.html#post--api-components-
+#
+# Live component: https://hosted.weblate.org/projects/spieli/ui-strings/
 #
 # NOTE: The design doc originally specified file_format: json-i18n — that
 # identifier does not exist in Weblate. The correct format for nested JSON
 # files is json-nested. ICU plural strings (e.g. equipment.deviceCount) are
 # treated as opaque string values; translators write the full ICU expression
 # for their language's plural forms, which Weblate's string checks validate.
+#
+# Weblate's checks catch broken ICU *syntax* but cannot catch a grammatically
+# correct form placed in the wrong plural category — see #747, where nine
+# Slovak strings had the genitive plural in `many`, which for cs/sk matches
+# only fractional numbers. docs/contributing/translation-guide.md documents
+# the per-language rule.
 
 component:
-  name: spieli
-  slug: spieli
+  name: ui-strings
+  slug: ui-strings
   file_format: json-nested
   filemask: locales/*.json
   template: locales/en.json
@@ -25,3 +34,20 @@ component:
   add_message: "chore(i18n): add {{ language_name }} translation from Weblate"
   delete_message: "chore(i18n): remove {{ language_name }} translation from Weblate"
   new_lang: add
+
+# File format parameters, set under Settings → Files on the component.
+# These replaced the "Customize JSON output" add-on, which was removed in
+# Weblate 5.13.
+#
+# Do not enable json_sort_keys: Weblate follows the en.json template order,
+# and sorting would reshuffle every locale file into one unreviewable diff.
+file_format_params:
+  json_indent: 2
+  json_indent_style: spaces
+
+# Add-ons enabled on the component (Operations → Add-ons).
+addons:
+  # Removes translation keys no longer present in en.json. Without this,
+  # locale files accumulate stale keys — es.json and fr.json each carried
+  # three that predated their removal from the template.
+  - weblate.cleanup.generic
