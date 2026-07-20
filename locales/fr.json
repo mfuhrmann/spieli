@@ -324,9 +324,6 @@
         "ok": "OK",
         "addData": {
             "introText": "Les données de cette carte proviennent de {name}. Vous pouvez les modifier directement – aucun compte n'est nécessaire pour MapComplete.",
-            "equipTitle": "Équipements & détails",
-            "mapcompleteText": "Ajoutez des équipements, des photos et d'autres détails en un clic.",
-            "wikiTitle": "Wiki OSM",
             "wikiLinkText": "Règles de cartographie pour les aires de jeux de cette région",
             "osm": {
                 "label": "OpenStreetMap",
