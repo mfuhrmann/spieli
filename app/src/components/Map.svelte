@@ -518,7 +518,7 @@
     inset: 0;
   }
   .map-container:focus-visible {
-    outline: 2px solid #2563eb;
+    outline: 2px solid var(--color-ring);
     outline-offset: -2px;
   }
 
