@@ -26,6 +26,7 @@ STACKS=(
   "$HOME/spieli-sachsen-anhalt:data-node-ui:8092"
   "$HOME/spieli-sh:data-node-ui:8093"
   "$HOME/spieli-thueringen:data-node-ui:8094"
+  "$HOME/spieli-niedersachsen:data-node-ui:8096"
   "$HOME/spieli:ui auto-update:8080"
 )
 # ─────────────────────────────────────────────────────────────────────────────
@@ -50,8 +51,14 @@ for entry in "${STACKS[@]}"; do
   # Explicitly pull each image by name to bypass the Docker daemon's manifest
   # cache, which can cause `docker compose pull` to skip a freshly-pushed tag
   # it already has locally (observed with rapid CI push + immediate upgrade run).
-  docker compose config --images | sort -u | xargs -I{} docker pull {}
-  docker compose pull
+  #
+  # The profile flags are REQUIRED here: app and importer are profile-gated
+  # (profiles: [ui, data-node-ui] / [data-node, data-node-ui]). Without them,
+  # `config --images` and `pull` silently exclude those services, so the
+  # freshly-built spieli / spieli-importer :latest tags are never pulled and
+  # `up -d app` then boots the stale locally-cached image.
+  docker compose "${profile_flags[@]}" config --images | sort -u | xargs -I{} docker pull {}
+  docker compose "${profile_flags[@]}" pull
 
   echo "→ Restarting app container..."
   docker compose "${profile_flags[@]}" up -d app
