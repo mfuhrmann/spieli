@@ -27,6 +27,7 @@
       "basketball": "Basketball court",
       "fence": "Fenced",
       "hasDogs": "Dogs allowed",
+      "theme": "Themed",
       "shade": "With shade"
     },
     "completeness": {
