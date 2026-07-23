@@ -96,6 +96,8 @@ Browser ──► nginx ──► Vite-built static assets (app/dist/)
 - **osm2pgsql**: imports OSM PBF data in default pgsql mode (`--slim --drop --hstore`); creates `planet_osm_*` tables; schema bootstrap in `db/init.sql`
 - **osmium-tool**: bbox clip + tag filter before osm2pgsql (reduces ~300 MB → ~5 MB per region)
 
+**Native NixOS path (alternative to Docker)**: `flake.nix` + `nix/` package the same stack as native systemd services (`services.spieli.enable`) — no container runtime. It reuses `db/init.sql`, `importer/api.sql`, and `importer/import.sh` verbatim (the latter reads `DATA_DIR`/`API_SQL` env vars, defaulting to the container paths), and shares config.js/legal generation via `oci/app/gen-runtime.sh`. Standalone mode only; a `nixosTest` (`nix flake check`) is the anti-drift gate. See `docs/ops/nixos.md`.
+
 ## App modes
 
 `app/src/main.js` mounts either `StandaloneApp` or `HubApp` based on `appMode` in config:

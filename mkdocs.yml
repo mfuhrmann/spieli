@@ -34,6 +34,7 @@ nav:
       - Quick Start: getting-started/quick-start.md
   - Operations:
       - Manual Deploy: ops/manual-deploy.md
+      - NixOS (native): ops/nixos.md
       - HTTPS Setup: ops/https-setup.md
       - Federated Deployment: ops/federated-deployment.md
       - Single-host Federation: ops/single-host-federation.md

@@ -29,3 +29,7 @@ docs/project-scan-report.json
 site/
 .venv
 /spieli/
+
+# Nix build artifacts
+result
+result-*
