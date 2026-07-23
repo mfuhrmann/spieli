@@ -508,11 +508,27 @@ elif [ -n "$REIMPORT_INTERVAL_MIN_DAYS" ] && [ -n "$REIMPORT_INTERVAL_MAX_DAYS" 
     # reliable fallback. Ignored if the DB isn't up yet (|| true).
     _clear_importing
 
-    # Always apply api.sql on startup so schema changes from a new image take
-    # effect immediately — even when the PBF reimport is deferred by the grace
-    # check below. Without this, a Watchtower image update would leave the app
+    # Apply api.sql on startup so schema changes from a new image take effect
+    # immediately — even when the PBF reimport is deferred by the grace check
+    # below. Without this, a Watchtower image update would leave the app
     # running against the old schema for up to REIMPORT_INTERVAL days.
-    run_api_apply
+    # Skipped on a fresh database: api.sql references the planet_osm_* tables,
+    # which only exist after the first import — applying it here would fail and
+    # restart-loop the container before run_import is ever reached. run_import
+    # applies the schema itself once the import is done.
+    echo "[importer] Waiting for PostgreSQL at ${POSTGRES_HOST}:${POSTGRES_PORT}..."
+    until pg_isready -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -q; do
+        sleep 2
+    done
+    HAS_OSM_TABLES=$(psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" \
+        -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -A \
+        -c "SELECT to_regclass('planet_osm_polygon') IS NOT NULL" \
+        2>/dev/null || true)
+    if [ "$HAS_OSM_TABLES" = "t" ]; then
+        run_api_apply
+    else
+        echo "[importer] Fresh database — no planet_osm tables yet. Deferring API schema apply to first import."
+    fi
 
     # Startup grace check: if a recent import is on record in the DB, sleep
     # until the next scheduled time rather than importing immediately. This
