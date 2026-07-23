@@ -43,6 +43,9 @@
     "tagAccessible": "Accessible",
     "playground": "Playground"
   },
+  "map": {
+    "ariaLabel": "Playground map"
+  },
   "zoom": {
     "in": "Zoom in",
     "out": "Zoom out"
