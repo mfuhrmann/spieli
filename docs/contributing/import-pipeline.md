@@ -111,7 +111,7 @@ Several boolean columns in `playground_stats` are computed from equipment found 
 | `is_water` | `playground` contains `water` or ∈ `splash_pad`, `pump` |
 | `for_wheelchair` | `wheelchair=yes` on any equipment |
 | `has_soccer` / `has_basketball` | `leisure=pitch` with matching `sport` value |
-| `has_fence` | `barrier=fence` on playground |
+| `has_fence` | `enclosed=yes` or `barrier=fence` on playground |
 | `has_dogs` | `dog=yes` on playground |
 | `has_shade` | `shade` tag on playground — `true` when `shade=yes`, `false` when `shade=no`, `null` when untagged |
 

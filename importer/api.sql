@@ -156,6 +156,10 @@ CREATE MATERIALIZED VIEW public.playground_stats AS
       MAX(p.operator)         AS operator,
       MAX(p.access)           AS access,
       MAX(p.surface)          AS surface,
+      -- barrier is an osm2pgsql style column, so it lands in a dedicated
+      -- column and is NOT copied into the tags hstore — must be read as a
+      -- column, not via tags->'barrier' (which is always NULL).
+      MAX(p.barrier)          AS barrier,
       -- tags are identical across all fragments of one relation, but
       -- order_by-area keeps the chosen value deterministic if a future
       -- osm2pgsql change ever introduced per-fragment tag variance.
@@ -177,6 +181,7 @@ CREATE MATERIALIZED VIEW public.playground_stats AS
       n.operator,
       n.access,
       n.surface,
+      n.barrier,
       n.tags
     FROM planet_osm_point n
     WHERE n.leisure = 'playground'
@@ -232,7 +237,7 @@ CREATE MATERIALIZED VIEW public.playground_stats AS
       BOOL_OR(e.tags->'wheelchair' = 'yes'
               AND (NOT (e.tags ? 'playground')
                    OR e.tags->'playground' != 'sandpit'))                       AS for_wheelchair,
-      BOOL_OR(pl.tags->'barrier' = 'fence')                                   AS has_fence,
+      BOOL_OR(pl.tags->'enclosed' = 'yes' OR pl.barrier = 'fence')            AS has_fence,
       BOOL_OR(pl.tags->'dog' = 'yes')                                        AS has_dogs,
       CASE WHEN BOOL_OR(pl.tags ? 'shade') THEN BOOL_OR(pl.tags->'shade' = 'yes') END AS has_shade
     FROM all_playgrounds pl
