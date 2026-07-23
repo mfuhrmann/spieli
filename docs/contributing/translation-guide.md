@@ -47,24 +47,47 @@ Weblate shows this as a **single input field** — you must write the complete I
 {count, plural, other {# ベンチ}}
 ```
 
-**Languages with four plural forms** (Polish, Czech, Ukrainian) — you must include `one`, `few`, `many`, and `other`:
+**Languages with four plural forms** (Polish, Ukrainian, Czech, Slovak) — you must include `one`, `few`, `many`, and `other`.
 
-Polish example:
+Careful here: these languages all use four categories, but they **disagree about which category a large number lands in**. Getting this wrong is easy, because the string still looks complete and Weblate reports no error — it just renders the wrong word for every count from 5 upwards.
+
+| Language | `many` matches | `other` matches |
+|---|---|---|
+| Polish, Ukrainian | integers 0 and 5+ | fractions (1.5) |
+| Czech, Slovak | fractions (1.5) | **integers 0 and 5+** |
+
+So in Polish and Ukrainian the genitive plural goes in `many`, and in Czech and Slovak it goes in `other`.
+
+Polish example — genitive `ławek` in `many`, fraction form in `other`:
 ```
 {count, plural, one {# ławka} few {# ławki} many {# ławek} other {# ławki}}
 ```
 
-Czech example:
-```
-{count, plural, one {# lavička} few {# lavičky} many {# laviček} other {# lavičky}}
-```
-
-Ukrainian example:
+Ukrainian example — genitive `лавок` in `many`, fraction form in `other`:
 ```
 {count, plural, one {# лавка} few {# лавки} many {# лавок} other {# лавки}}
 ```
 
-Weblate will warn you if the ICU syntax is broken — fix any flagged strings before saving.
+Czech example — genitive `laviček` in **`other`**, fraction form in `many`:
+```
+{count, plural, one {# lavička} few {# lavičky} many {# lavičky} other {# laviček}}
+```
+
+Slovak example — genitive `lavičiek` in **`other`**, fraction form in `many`:
+```
+{count, plural, one {# lavička} few {# lavičky} many {# lavičky} other {# lavičiek}}
+```
+
+If you are unsure which category your language uses for a given number, check it directly. In any browser's developer console:
+
+```js
+new Intl.PluralRules('cs').select(5)   // "other"
+new Intl.PluralRules('pl').select(5)   // "many"
+```
+
+This is the same rule the app uses at runtime, so it is authoritative.
+
+Weblate will warn you if the ICU *syntax* is broken — fix any flagged strings before saving. It cannot tell you that a grammatically correct form is sitting in the wrong category, so that part is on you.
 
 ## Things to keep as-is
 
