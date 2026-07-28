@@ -327,6 +327,7 @@
       "wikiLinkText": "OSM-Wiki: Spielplätze",
       "githubLabel": "Quellcode auf GitHub",
       "translateLabel": "Mit Weblate übersetzen",
+      "weblateCredit": "Übersetzt von der Community mit {weblateLink}",
       "osm": {
         "label": "OpenStreetMap",
         "text": "Die Daten stammen aus {osmLink} — einer freien, kollaborativen Weltkarte von Millionen Freiwilligen. Nur was eingetragen wurde, erscheint auch hier.",

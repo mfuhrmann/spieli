@@ -327,6 +327,7 @@
       "wikiLinkText": "OSM Wiki: Playgrounds",
       "githubLabel": "Source code on GitHub",
       "translateLabel": "Help translate on Weblate",
+      "weblateCredit": "Translated by the community with {weblateLink}",
       "osm": {
         "label": "OpenStreetMap",
         "text": "The data comes from {osmLink} — a free, collaborative world map built by millions of volunteers. Only what has been mapped will appear here.",
