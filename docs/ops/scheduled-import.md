@@ -16,6 +16,30 @@ REIMPORT_INTERVAL_MAX_DAYS=8
 
 A random interval in `[MIN, MAX]` days is chosen after each successful import, spreading load across operators who deploy at similar times. When the importer container restarts (e.g. after a Watchtower image update), it checks the last import timestamp in the database — if a recent import is on record, it sleeps the remaining interval rather than re-importing immediately.
 
+### What happens on container startup
+
+Every daemon-mode start runs the same three steps before the schedule takes over:
+
+1. **Apply `api.sql`** — so schema changes carried by a new image take effect at once instead of waiting up to `REIMPORT_INTERVAL_MAX_DAYS` for the next import. Without this a Watchtower update would leave the app on the old schema.
+2. **Grace check** — if a recent import is on record, sleep the remainder of the interval instead of re-importing.
+3. **Import** — otherwise run the import immediately, then loop.
+
+Step 1 is **skipped when no import has ever completed**. `api.sql` builds views over the `planet_osm_*` tables that only exist after the first import, so applying it on a fresh database would fail and restart-loop the container before the import could run. You will see this on a first start:
+
+```
+[importer] No completed import on record — deferring API schema apply to first import.
+```
+
+The import that follows applies the schema itself, so nothing is lost. Both step 1 and step 2 key off the same marker (`api.import_status`), which is what makes deferring safe: if the marker is absent, the grace check also finds no timestamp and falls straight through to an immediate import — a deferred apply is always followed by an import, never by a sleep.
+
+If the importer cannot reach the database to answer that question, it retries, then says so and continues to the import rather than assuming either answer:
+
+```
+[importer] WARNING: import state unknown after 3 attempts — skipping startup API schema apply and continuing to import.
+```
+
+Seeing that line on a populated node means credentials or connectivity need attention — see [Troubleshooting](troubleshooting.md).
+
 !!! note "When both vars are unset (default)"
     The importer runs once and exits (one-shot mode). Use this when you manage scheduling externally (systemd, cron).
 

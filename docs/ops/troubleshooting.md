@@ -34,6 +34,45 @@ If you are using the local development setup, `make import` is equivalent. If th
 
 ---
 
+## Importer restart-loops on a fresh install with `relation "planet_osm_point" does not exist`
+
+**Symptom:** On a brand-new data-node install the importer never populates the database and restarts forever:
+
+```
+importer-1  | [importer] Daemon mode: interval 2–10 days.
+importer-1  | [importer] API_ONLY mode — skipping PBF download and osm2pgsql import.
+importer-1  | [importer] Applying API schema...
+importer-1  | psql:/tmp/tmp.JsTPhaBgfJ:87: ERROR:  relation "planet_osm_point" does not exist
+importer-1 exited with code 3 (restarting)
+```
+
+**Cause:** Fixed in spieli 0.8.1 and later. Older images applied `api.sql` on daemon startup before the first import had created the `planet_osm_*` tables, so the schema apply failed and the container restarted before it ever reached the import. The `API_ONLY mode` line in the log is misleading — that banner was printed unconditionally; `API_ONLY` was not actually set.
+
+**Fix:** Pull a current image and restart:
+
+```bash
+docker compose pull importer
+docker compose --profile <mode> up -d importer
+```
+
+The importer now defers the startup schema apply until an import has completed, and logs `No completed import on record — deferring API schema apply to first import.` instead.
+
+**Workaround for older images** — bootstrap once in one-shot mode, which imports before applying the schema, then start the daemon:
+
+```bash
+docker compose stop importer
+docker compose --profile <mode> run --rm \
+  -e REIMPORT_INTERVAL_MIN_DAYS= \
+  -e REIMPORT_INTERVAL_MAX_DAYS= \
+  importer
+docker compose --profile <mode> up -d importer
+```
+
+!!! note "`API_ONLY=1` on a never-imported database"
+    `api.sql` cannot be applied before the first import. Current images exit with `No completed import on record — nothing to apply yet.` instead of failing inside `api.sql`, so a sequential upgrade sweep ([`scripts/upgrade-stacks.sh`](https://github.com/mfuhrmann/spieli/blob/main/scripts/upgrade-stacks.sh)) is not aborted by one stack that has never imported.
+
+---
+
 ## Map loads but shows no playgrounds
 
 **Symptom:** Map tiles appear (streets and buildings visible) but no playground polygons are drawn, or the detail panel is empty.
