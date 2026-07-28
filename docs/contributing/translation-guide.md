@@ -1,6 +1,8 @@
 # Translating spieli
 
-Thanks for helping translate spieli! This guide explains everything you need to know.
+[![Translation status](https://hosted.weblate.org/widget/spieli/ui-strings/svg-badge.svg)](https://hosted.weblate.org/engage/spieli/)
+
+Thanks for helping translate spieli! Translation happens on [Weblate](https://weblate.org/), which hosts this project free of charge under its [Libre plan](https://weblate.org/hosting/). This guide explains everything you need to know.
 
 ## What is spieli?
 
@@ -10,7 +12,7 @@ Your translation makes it accessible to communities in your language.
 ## How to translate
 
 1. Create a free account on [hosted.weblate.org](https://hosted.weblate.org)
-2. Open the **spieli** project and pick your language
+2. Open the [**spieli** project](https://hosted.weblate.org/engage/spieli/) and pick your language
 3. Click any untranslated string and type your translation
 4. Save — that's it. No GitHub account needed.
 

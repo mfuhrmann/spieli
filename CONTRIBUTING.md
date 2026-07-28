@@ -2,6 +2,8 @@
 
 All contributions are welcome — code, translations, bug reports, or documentation improvements.
 
+Translations are managed with [Weblate](https://weblate.org/), which hosts spieli free of charge under its Libre plan: **[translate spieli on Weblate](https://hosted.weblate.org/engage/spieli/)** — no GitHub account needed. Do not hand-edit locale files other than `locales/en.json` and `locales/de.json`; see [the translation workflow](https://mfuhrmann.github.io/spieli/contributing/translations/).
+
 ## Repository layout
 
 | Directory | Contents |
@@ -12,7 +14,7 @@ All contributions are welcome — code, translations, bug reports, or documentat
 | `oci/` | Docker build contexts — `oci/app/` (Svelte app + nginx) |
 | `processing/` | OSM data pipeline scripts (Lua rules, SQL, shell) used during import |
 | `taginfo/` | [taginfo](https://taginfo.openstreetmap.org) metadata describing the OSM tags this project uses. Keep `taginfo/taginfo.json` in sync when you change the `osmium tags-filter` in `importer/import.sh`, the tags read in `importer/api.sql`, or the tags rendered by the frontend (e.g. `app/src/lib/equipmentAttributes.js`). |
-| `locales/` | Translation files (`*.json`, one per language) — not yet active in the Svelte rewrite |
+| `locales/` | Translation files (`*.json`, one per language) — maintained on [Weblate](https://hosted.weblate.org/engage/spieli/); only `en.json` and `de.json` are hand-edited |
 | `deploy/` | Systemd unit files for automated weekly import on Linux servers |
 
 ## Step 1 — Create a GitHub issue

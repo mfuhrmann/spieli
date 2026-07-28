@@ -1,6 +1,10 @@
 # Translate spieli
 
-spieli uses [hosted.weblate.org](https://hosted.weblate.org) for community translations. Translators work through a web UI — no GitHub account or knowledge of JSON is required.
+[![Translation status](https://hosted.weblate.org/widget/spieli/ui-strings/svg-badge.svg)](https://hosted.weblate.org/engage/spieli/)
+
+spieli is translated with [Weblate](https://weblate.org/), which hosts the project free of charge under its [Libre plan](https://weblate.org/hosting/) for free software projects. Translators work through a web UI — no GitHub account or knowledge of JSON is required.
+
+**[Help translate spieli →](https://hosted.weblate.org/engage/spieli/)**
 
 ## How translations reach the app
 

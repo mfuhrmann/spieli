@@ -326,6 +326,7 @@
       "introText": "Die Daten dieser Karte stammen aus {osmLink}. Du kannst sie direkt mit {mapcompleteLink} bearbeiten – kein weiterer Account außer einem OpenStreetMap-Konto (kostenlos) erforderlich.",
       "wikiLinkText": "OSM-Wiki: Spielplätze",
       "githubLabel": "Quellcode auf GitHub",
+      "translateLabel": "Mit Weblate übersetzen",
       "osm": {
         "label": "OpenStreetMap",
         "text": "Die Daten stammen aus {osmLink} — einer freien, kollaborativen Weltkarte von Millionen Freiwilligen. Nur was eingetragen wurde, erscheint auch hier.",

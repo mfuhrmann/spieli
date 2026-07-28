@@ -63,6 +63,10 @@
             <span class="link-icon">⚙️</span>
             <span>{$_('modal.addData.githubLabel')}</span>
           </a>
+          <a class="link-card" href="https://hosted.weblate.org/engage/spieli/" target="_blank" rel="noopener">
+            <span class="link-icon">🌍</span>
+            <span>{$_('modal.addData.translateLabel')}</span>
+          </a>
           {#if impressumUrl}
             <a class="link-card" href={impressumUrl} target="_blank" rel="noopener">
               <span class="link-icon">📋</span>
