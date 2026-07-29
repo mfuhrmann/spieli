@@ -38,11 +38,60 @@ STACKS=(
 )
 # ─────────────────────────────────────────────────────────────────────────────
 
-fail() { echo "ERROR: $*" >&2; exit 1; }
+# ── Sweep bookkeeping ─────────────────────────────────────────────────────────
+# Recorded as the sweep progresses so that any abort — a planned fail() or an
+# unexpected death under `set -e` — can say how far it got. Without this, a run
+# that died at stack 5 of 15 looks like a completed run apart from the error
+# text, and the ten stacks left on the old image are never mentioned.
+upgraded=()        # stacks that finished every step
+verify_failed=()   # stacks upgraded, but whose post-upgrade check was inconclusive
+current=""         # stack being processed right now
+reimport_pids=()   # "name:pid" for forced reimports launched in the background
+
+# $1 = exit code, rest = reason.
+report_abort() {
+  local rc=$1; shift
+  echo "" >&2
+  echo "ERROR: $*" >&2
+  echo "" >&2
+  if [[ ${#upgraded[@]} -gt 0 ]]; then
+    echo "  Upgraded before the abort: ${upgraded[*]}" >&2
+  else
+    echo "  Upgraded before the abort: (none)" >&2
+  fi
+  echo "  Aborted while processing:  ${current:-<before the first stack>}" >&2
+  echo "  NOT upgraded:              that stack and every one after it." >&2
+  echo "                             Re-run after fixing — completed stacks are idempotent." >&2
+
+  # A forced reimport is launched detached, so it outlives this script. Re-running
+  # the sweep while one is in flight makes the next api.sql step race it on the
+  # playground_stats DROP/CREATE — the race documented at the API_ONLY step below.
+  local entry pid
+  for entry in "${reimport_pids[@]:-}"; do
+    [[ -n "$entry" ]] || continue
+    pid=${entry##*:}
+    if kill -0 "$pid" 2>/dev/null; then
+      echo "" >&2
+      echo "  WARNING: a forced reimport for ${entry%%:*} is still running (PID $pid)." >&2
+      echo "           Wait for it to finish before re-running, or the api.sql step" >&2
+      echo "           will race it and fail." >&2
+    fi
+  done
+  exit "$rc"
+}
+
+fail() { report_abort 1 "$*"; }
+
+# Catch the abort points that are not guarded by an explicit `|| fail`: image
+# pulls, container starts, the API_ONLY importer run. Without this they die bare
+# under `set -e` and the operator gets a raw Compose error with no indication
+# that later stacks were skipped.
+trap 'report_abort $? "unexpected failure while processing ${current:-<startup>}"' ERR
 
 for entry in "${STACKS[@]}"; do
   IFS=: read -r dir profiles port <<< "$entry"
   name=$(basename "$dir")
+  current="$name"
 
   echo ""
   echo "━━━ $name ━━━"
@@ -113,21 +162,57 @@ for entry in "${STACKS[@]}"; do
 
   echo "→ Verifying..."
   sleep 3
+  # Verification is deliberately NOT fatal to the sweep. By this point the images
+  # are pulled and the containers restarted, so the upgrade itself succeeded; only
+  # the check is inconclusive. Aborting here would leave every later stack on the
+  # old image over a stack that is merely not serving data yet. Inconclusive
+  # results are collected and reported with a non-zero exit at the very end.
+  #
+  # The status code is read explicitly rather than relying on `curl -sf`, which
+  # collapses "nothing is listening" and "PostgREST answered 404" into one exit
+  # status. That distinction matters: a data-node that has never completed an
+  # import has no api schema, so get_meta does not exist and 404 is the expected
+  # answer, not a fault (#759, #779).
+  body=$(mktemp)
   if [[ "$profiles" == *"data-node"* ]]; then
-    meta=$(curl -sf "http://localhost:${port}/api/rpc/get_meta") \
-      || fail "get_meta unreachable for $name on port $port"
-    result=$(printf '%s' "$meta" | \
-      python3 -c "import sys,json; d=json.load(sys.stdin); print('version:', d.get('version','?'), ' playgrounds:', d.get('playground_count','?'))")
-    playground_count=$(printf '%s' "$meta" | \
-      python3 -c "import sys,json; print(json.load(sys.stdin).get('playground_count', 0))")
-    echo "  $result"
+    # `|| true` then a separate emptiness check: curl already reports 000 in
+    # %{http_code} when it never got a response, so overwriting a code it did
+    # print would throw away the 404-vs-unreachable distinction this relies on.
+    code=$(curl -s -o "$body" -w '%{http_code}' \
+      "http://localhost:${port}/api/rpc/get_meta") || true
+    [[ -n "$code" ]] || code=000
+    if [[ "$code" == "200" ]]; then
+      result=$(python3 -c "import sys,json; d=json.load(sys.stdin); print('version:', d.get('version','?'), ' playgrounds:', d.get('playground_count','?'))" < "$body")
+      playground_count=$(python3 -c "import sys,json; print(json.load(sys.stdin).get('playground_count', 0))" < "$body")
+      echo "  $result"
+    else
+      # -1 (not 0) so the forced-reimport trigger below is skipped: on a stack
+      # that has never imported, the daemon importer restarted above does the
+      # first import itself, and a second concurrent importer would race it.
+      playground_count=-1
+      verify_failed+=("$name (HTTP $code)")
+      if [[ "$code" == "404" ]]; then
+        echo "  get_meta returned 404 — no api schema, so this stack has most likely never"
+        echo "  completed an import. The daemon importer applies api.sql on its first import"
+        echo "  run. Upgrade succeeded; not treating this as a sweep failure."
+      else
+        echo "  WARNING: get_meta check failed (HTTP $code) on port $port."
+        echo "  Images were upgraded and containers restarted; verification was inconclusive."
+      fi
+    fi
   else
     # Pure hub has no PostgREST — verify the app is serving HTTP instead.
-    curl -sf "http://localhost:${port}/" -o /dev/null \
-      || fail "App unreachable for $name on port $port"
-    echo "  app responding on port ${port}"
+    code=$(curl -s -o "$body" -w '%{http_code}' "http://localhost:${port}/") || true
+    [[ -n "$code" ]] || code=000
+    if [[ "$code" == "200" ]]; then
+      echo "  app responding on port ${port}"
+    else
+      verify_failed+=("$name (HTTP $code)")
+      echo "  WARNING: app check failed (HTTP $code) on port $port."
+    fi
     playground_count=-1
   fi
+  rm -f "$body"
 
   if [[ "$profiles" == *"data-node"* ]]; then
     echo "→ Restarting daemon importer on new image..."
@@ -144,12 +229,27 @@ for entry in "${STACKS[@]}"; do
           -e REIMPORT_INTERVAL_MAX_DAYS= \
           importer
       ) > "$logfile" 2>&1 &
+      reimport_pids+=("$name:$!")
       echo "  PID $! — check log when done: tail -f $logfile"
     fi
   fi
 
   echo "✓ $name done"
+  upgraded+=("$name")
 done
 
+current=""
+
 echo ""
-echo "All stacks upgraded."
+if [[ ${#verify_failed[@]} -gt 0 ]]; then
+  echo "All ${#upgraded[@]} stacks upgraded, but verification was inconclusive for:"
+  for v in "${verify_failed[@]}"; do
+    echo "  - $v"
+  done
+  echo ""
+  echo "Every stack's image was pulled and its containers restarted. A fresh data-node"
+  echo "with no completed import is expected to show HTTP 404 until its first import"
+  echo "finishes — check the daemon importer's log for those."
+  exit 1
+fi
+echo "All ${#upgraded[@]} stacks upgraded."
