@@ -125,7 +125,7 @@ APP_PORT=8080
 
 Notes:
 
-- `REGISTRY_URL=/registry.json` is the default and means "same origin as the Hub". Set a different value only if you host the registry elsewhere. The value is sanitized by the container entrypoint — only `A-Z a-z 0-9 : / . + _ % ~ -` survive, so query strings (`?v=2`) and fragments (`#anchor`) are silently dropped. Use a clean path.
+- `REGISTRY_URL=/registry.json` is the default and means "same origin as the Hub". Set a different value only if you host the registry elsewhere. The value is sanitized by the container entrypoint — only `A-Z a-z 0-9 : / . + _ % ~ ? # & = @ , ; -` survive, so query strings (`?v=2`) and fragments (`#anchor`) are preserved, but quotes, backslashes, angle brackets, `$`, backticks, parentheses and whitespace are dropped. Percent-encode anything outside that set.
 - `HUB_POLL_INTERVAL` is seconds as a bare integer (e.g. `300`, not `300s`). Default 300 re-fetches playground data from every data-node every 5 minutes.
 - **`API_BASE_URL` is deliberately absent** on a Hub. The Hub speaks to multiple data-nodes over CORS and reads their URLs from `registry.json`; a single `API_BASE_URL` would be meaningless.
 - `OSM_RELATION_ID`, `PBF_URL`, `POSTGRES_PASSWORD` are **not** set on the Hub — it has no database.

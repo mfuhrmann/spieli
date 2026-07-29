@@ -63,6 +63,10 @@
             <span class="link-icon">⚙️</span>
             <span>{$_('modal.addData.githubLabel')}</span>
           </a>
+          <a class="link-card" href="https://hosted.weblate.org/engage/spieli/" target="_blank" rel="noopener">
+            <span class="link-icon">🌍</span>
+            <span>{$_('modal.addData.translateLabel')}</span>
+          </a>
           {#if impressumUrl}
             <a class="link-card" href={impressumUrl} target="_blank" rel="noopener">
               <span class="link-icon">📋</span>
@@ -77,7 +81,14 @@
           {/if}
         </div>
 
-        <p class="version">v{version}</p>
+        <div class="meta">
+          <p class="credit">
+            {@html $_('modal.addData.weblateCredit', { values: {
+              weblateLink: '<a href="https://hosted.weblate.org/engage/spieli/" target="_blank" rel="noopener">Weblate</a>'
+            } })}
+          </p>
+          <p class="version">v{version}</p>
+        </div>
       </div>
       <div class="modal-footer">
         <button type="button" class="ok-btn" onclick={close}>{$_('modal.ok')}</button>
@@ -179,11 +190,28 @@
 
   .link-icon { font-size: 1rem; flex-shrink: 0; }
 
+  .meta {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+
+  .credit {
+    font-size: 0.7rem;
+    color: #9ca3af;
+    margin: 0;
+    line-height: 1.4;
+  }
+  .credit :global(a) { color: #9ca3af; text-decoration: underline; }
+  .credit :global(a:hover) { color: #c05e0f; }
+
   .version {
     font-size: 0.7rem;
     color: #9ca3af;
     margin: 0;
     text-align: right;
+    white-space: nowrap;
   }
 
   .modal-footer {

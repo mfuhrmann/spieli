@@ -7,6 +7,8 @@ For Copilot users: open this file manually — `.github/copilot-instructions.md`
 
 spieli is an interactive web map for exploring playgrounds based on OpenStreetMap data. It is deployable per-region (e.g. Fulda) by setting environment variables. The UI is fully internationalised via svelte-i18n; de, en, fr, and es include complete device name translations. `name_de` in `objPlaygroundEquipment.js` is a fallback for locales that do not yet have translations.
 
+**Locale file ownership** — new UI strings go into `locales/en.json` (Weblate's source template) plus `locales/de.json`, in the same commit. **Never edit any other locale file by hand**; they belong to Weblate translators, and editing them directly breaks Weblate's rebase onto `main`. The `i18n Guard` CI job enforces this. See [`docs/contributing/translations.md`](docs/contributing/translations.md).
+
 ## Git workflow
 
 - **Never push directly to `main`.** All changes go through a feature branch and a pull request.

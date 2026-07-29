@@ -17,6 +17,7 @@ export const defaultFilters = {
     basketball:       false,
     fence:            false,
     hasDogs:          false,
+    theme:            false,
     shade:            false,
     standalonePitches: false,  // layer toggle — show pitches outside playground areas
     showComplete:     true,
@@ -46,6 +47,7 @@ export function matchesFilters(props, filters) {
     if (filters.basketball  && !props.has_basketball)  return false;
     if (filters.fence       && !props.has_fence)       return false;
     if (filters.hasDogs     && !props.has_dogs)       return false;
+    if (filters.theme       && !props.has_theme)      return false;
     if (filters.shade       && !props.has_shade)       return false;
     if (!filters.showComplete || !filters.showPartial || !filters.showMissing) {
         const c = playgroundCompleteness(props);
