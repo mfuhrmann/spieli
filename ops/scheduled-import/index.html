@@ -765,6 +765,15 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#what-happens-on-container-startup" class="md-nav__link">
+    <span class="md-ellipsis">
+      What happens on container startup
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#enabling-daemon-mode" class="md-nav__link">
     <span class="md-ellipsis">
       Enabling daemon mode
@@ -1587,6 +1596,15 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#what-happens-on-container-startup" class="md-nav__link">
+    <span class="md-ellipsis">
+      What happens on container startup
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#enabling-daemon-mode" class="md-nav__link">
     <span class="md-ellipsis">
       Enabling daemon mode
@@ -1704,26 +1722,41 @@
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>REIMPORT_INTERVAL_MAX_DAYS=8
 </code></pre></div>
 <p>A random interval in <code>[MIN, MAX]</code> days is chosen after each successful import, spreading load across operators who deploy at similar times. When the importer container restarts (e.g. after a Watchtower image update), it checks the last import timestamp in the database — if a recent import is on record, it sleeps the remaining interval rather than re-importing immediately.</p>
+<h3 id="what-happens-on-container-startup">What happens on container startup<a class="headerlink" href="#what-happens-on-container-startup" title="Permanent link">&para;</a></h3>
+<p>Every daemon-mode start runs the same three steps before the schedule takes over:</p>
+<ol>
+<li><strong>Apply <code>api.sql</code></strong> — so schema changes carried by a new image take effect at once instead of waiting up to <code>REIMPORT_INTERVAL_MAX_DAYS</code> for the next import. Without this a Watchtower update would leave the app on the old schema.</li>
+<li><strong>Grace check</strong> — if a recent import is on record, sleep the remainder of the interval instead of re-importing.</li>
+<li><strong>Import</strong> — otherwise run the import immediately, then loop.</li>
+</ol>
+<p>Step 1 is <strong>skipped when no import has ever completed</strong>. <code>api.sql</code> builds views over the <code>planet_osm_*</code> tables that only exist after the first import, so applying it on a fresh database would fail and restart-loop the container before the import could run. You will see this on a first start:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>[importer] No completed import on record — deferring API schema apply to first import.
+</code></pre></div>
+<p>The import that follows applies the schema itself, so nothing is lost. Both step 1 and step 2 key off the same marker (<code>api.import_status</code>), which is what makes deferring safe: if the marker is absent, the grace check also finds no timestamp and falls straight through to an immediate import — a deferred apply is always followed by an import, never by a sleep.</p>
+<p>If the importer cannot reach the database to answer that question, it retries, then says so and continues to the import rather than assuming either answer:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>[importer] WARNING: import state unknown after 3 attempts — skipping startup API schema apply and continuing to import.
+</code></pre></div>
+<p>Seeing that line on a populated node means credentials or connectivity need attention — see <a href="../troubleshooting/">Troubleshooting</a>.</p>
 <div class="admonition note">
 <p class="admonition-title">When both vars are unset (default)</p>
 <p>The importer runs once and exits (one-shot mode). Use this when you manage scheduling externally (systemd, cron).</p>
 </div>
 <h3 id="enabling-daemon-mode">Enabling daemon mode<a class="headerlink" href="#enabling-daemon-mode" title="Permanent link">&para;</a></h3>
 <p>Add the two vars to <code>.env</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>REIMPORT_INTERVAL_MIN_DAYS=6
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>REIMPORT_INTERVAL_MAX_DAYS=8
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>REIMPORT_INTERVAL_MIN_DAYS=6
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>REIMPORT_INTERVAL_MAX_DAYS=8
 </code></pre></div>
 <p>Then restart the importer so it picks up the new env:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>data-node-ui<span class="w"> </span>restart<span class="w"> </span>importer
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>data-node-ui<span class="w"> </span>restart<span class="w"> </span>importer
 </code></pre></div>
 <p>Check that it entered daemon mode:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>logs<span class="w"> </span>importer<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-i<span class="w"> </span>daemon
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="c1"># [importer] Daemon mode: interval 6–8 days.</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>logs<span class="w"> </span>importer<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-i<span class="w"> </span>daemon
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="c1"># [importer] Daemon mode: interval 6–8 days.</span>
 </code></pre></div>
 <h2 id="automatic-image-updates-with-watchtower">Automatic image updates with Watchtower<a class="headerlink" href="#automatic-image-updates-with-watchtower" title="Permanent link">&para;</a></h2>
 <p>Watchtower complements daemon mode: it pulls updated spieli images daily and restarts the affected containers. The importer's startup grace check (see above) prevents an unplanned re-import on Watchtower-triggered restarts.</p>
 <p>Enable Watchtower by including the <code>auto-update</code> profile:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>data-node-ui<span class="w"> </span>--profile<span class="w"> </span>auto-update<span class="w"> </span>up<span class="w"> </span>-d
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>data-node-ui<span class="w"> </span>--profile<span class="w"> </span>auto-update<span class="w"> </span>up<span class="w"> </span>-d
 </code></pre></div>
 <p>Or add <code>auto-update</code> to any existing <code>up</code> invocation. Watchtower polls Docker Hub every 24 hours and cleans up old images automatically.</p>
 <h2 id="how-long-does-an-import-take">How long does an import take?<a class="headerlink" href="#how-long-does-an-import-take" title="Permanent link">&para;</a></h2>
@@ -1765,8 +1798,8 @@
 <p>If you prefer external scheduling, leave <code>REIMPORT_INTERVAL_MIN_DAYS</code> and <code>REIMPORT_INTERVAL_MAX_DAYS</code> unset. The importer exits with code 0 after a successful one-shot run.</p>
 <h3 id="systemd-timer">systemd timer<a class="headerlink" href="#systemd-timer" title="Permanent link">&para;</a></h3>
 <p>spieli ships unit files in <code>deploy/</code> for Linux hosts with systemd:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>sudo<span class="w"> </span>cp<span class="w"> </span>deploy/spieli-import.service<span class="w"> </span>/etc/systemd/system/
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>sudo<span class="w"> </span>cp<span class="w"> </span>deploy/spieli-import.timer<span class="w">   </span>/etc/systemd/system/
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>sudo<span class="w"> </span>cp<span class="w"> </span>deploy/spieli-import.service<span class="w"> </span>/etc/systemd/system/
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>sudo<span class="w"> </span>cp<span class="w"> </span>deploy/spieli-import.timer<span class="w">   </span>/etc/systemd/system/
 </code></pre></div>
 <p>Open <code>/etc/systemd/system/spieli-import.service</code> and set:</p>
 <ul>
@@ -1775,18 +1808,18 @@
 <li><code>User=</code> — user in the <code>docker</code> group that owns the deployment directory</li>
 </ul>
 <p>The default timer fires weekly on Sunday at 04:00. Change the schedule in <code>spieli-import.timer</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">[Timer]</span>
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="na">OnCalendar</span><span class="o">=</span><span class="s">Sun 04:00</span><span class="w">      </span><span class="c1"># weekly, Sunday 4 AM</span>
-<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="c1"># OnCalendar=daily         # every day at midnight</span>
-<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="c1"># OnCalendar=*-*-* 03:30  # every day at 3:30 AM</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="k">[Timer]</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="na">OnCalendar</span><span class="o">=</span><span class="s">Sun 04:00</span><span class="w">      </span><span class="c1"># weekly, Sunday 4 AM</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="c1"># OnCalendar=daily         # every day at midnight</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="c1"># OnCalendar=*-*-* 03:30  # every day at 3:30 AM</span>
 </code></pre></div>
 <p>Enable and start:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>sudo<span class="w"> </span>systemctl<span class="w"> </span>daemon-reload
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>sudo<span class="w"> </span>systemctl<span class="w"> </span><span class="nb">enable</span><span class="w"> </span>--now<span class="w"> </span>spieli-import.timer
-<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>systemctl<span class="w"> </span>list-timers<span class="w"> </span>spieli-import.timer
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>sudo<span class="w"> </span>systemctl<span class="w"> </span>daemon-reload
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>sudo<span class="w"> </span>systemctl<span class="w"> </span><span class="nb">enable</span><span class="w"> </span>--now<span class="w"> </span>spieli-import.timer
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>systemctl<span class="w"> </span>list-timers<span class="w"> </span>spieli-import.timer
 </code></pre></div>
 <h3 id="host-cron">Host cron<a class="headerlink" href="#host-cron" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>0 4 * * 0 cd /opt/spieli &amp;&amp; docker compose --profile data-node-ui run --rm importer &gt;&gt; /var/log/spieli-import.log 2&gt;&amp;1
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>0 4 * * 0 cd /opt/spieli &amp;&amp; docker compose --profile data-node-ui run --rm importer &gt;&gt; /var/log/spieli-import.log 2&gt;&amp;1
 </code></pre></div>
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
