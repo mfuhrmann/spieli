@@ -165,6 +165,10 @@ bash ~/upgrade-stacks.sh
 
 The script pulls images, restarts each app container, runs `API_ONLY=1` for data-nodes, verifies `get_meta`, restarts the daemon importer, and moves to the next stack. The hub entry skips the importer steps automatically.
 
+**Verification is not fatal to the sweep.** By the time a stack is verified its images are already pulled and its containers restarted, so a failed check means the upgrade worked but the stack is not serving data yet. The script records the stack, carries on with the rest, and exits non-zero at the end listing every inconclusive one. A data-node that has never completed an import answers `404` on `get_meta` and is called out as such — expected until its first import finishes.
+
+If the sweep does abort — a failed image pull or container start — it prints which stacks were upgraded, which one it stopped on, and that everything from there onward was not reached. Completed stacks are idempotent, so re-run after fixing the cause. One caveat it will warn you about: if a forced reimport was launched in the background before the abort, wait for it to finish first, or the next run's `API_ONLY=1` step races it on the `playground_stats` rebuild.
+
 !!! note "Watchtower and the single-VPS setup"
     On a single-VPS federation, only the hub stack runs `--profile auto-update`. The single Watchtower instance restarts all containers on the host, including data-node containers — their stacks don't need their own `auto-update` profile.
 
