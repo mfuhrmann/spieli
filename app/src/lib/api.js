@@ -61,6 +61,7 @@ const clusterFilterMap = {
     basketball:   'filter_basketball',
     fence:        'filter_fence',
     hasDogs:      'filter_has_dogs',
+    theme:        'filter_theme',
     shade:        'filter_shade',
 };
 

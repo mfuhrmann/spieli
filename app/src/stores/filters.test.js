@@ -5,7 +5,7 @@ const noFilters = {
   private: false, water: false, baby: false, toddler: false,
   wheelchair: false, bench: false, picnic: false, shelter: false,
   tableTennis: false, soccer: false, basketball: false, fence: false,
-  hasDogs: false, shade: false, standalonePitches: false,
+  hasDogs: false, theme: false, shade: false, standalonePitches: false,
   showComplete: true, showPartial: true, showMissing: true,
 };
 
@@ -120,6 +120,14 @@ const noFilters = {
   const f = { ...noFilters, shade: true };
   assert.equal(matchesFilters({ has_shade: true }, f), true);
   assert.equal(matchesFilters({ has_shade: false }, f), false);
+  assert.equal(matchesFilters({}, f), false);
+}
+
+// 15b. theme filter
+{
+  const f = { ...noFilters, theme: true };
+  assert.equal(matchesFilters({ has_theme: true }, f), true);
+  assert.equal(matchesFilters({ has_theme: false }, f), false);
   assert.equal(matchesFilters({}, f), false);
 }
 
