@@ -1998,7 +1998,7 @@
 </code></pre></div>
 <p>Notes:</p>
 <ul>
-<li><code>REGISTRY_URL=/registry.json</code> is the default and means "same origin as the Hub". Set a different value only if you host the registry elsewhere. The value is sanitized by the container entrypoint — only <code>A-Z a-z 0-9 : / . + _ % ~ -</code> survive, so query strings (<code>?v=2</code>) and fragments (<code>#anchor</code>) are silently dropped. Use a clean path.</li>
+<li><code>REGISTRY_URL=/registry.json</code> is the default and means "same origin as the Hub". Set a different value only if you host the registry elsewhere. The value is sanitized by the container entrypoint — only <code>A-Z a-z 0-9 : / . + _ % ~ ? # &amp; = @ , ; -</code> survive, so query strings (<code>?v=2</code>) and fragments (<code>#anchor</code>) are preserved, but quotes, backslashes, angle brackets, <code>$</code>, backticks, parentheses and whitespace are dropped. Percent-encode anything outside that set.</li>
 <li><code>HUB_POLL_INTERVAL</code> is seconds as a bare integer (e.g. <code>300</code>, not <code>300s</code>). Default 300 re-fetches playground data from every data-node every 5 minutes.</li>
 <li><strong><code>API_BASE_URL</code> is deliberately absent</strong> on a Hub. The Hub speaks to multiple data-nodes over CORS and reads their URLs from <code>registry.json</code>; a single <code>API_BASE_URL</code> would be meaningless.</li>
 <li><code>OSM_RELATION_ID</code>, <code>PBF_URL</code>, <code>POSTGRES_PASSWORD</code> are <strong>not</strong> set on the Hub — it has no database.</li>
