@@ -1641,7 +1641,7 @@ Your translation makes it accessible to communities in your language.</p>
 <h2 id="how-to-translate">How to translate<a class="headerlink" href="#how-to-translate" title="Permanent link">&para;</a></h2>
 <ol>
 <li>Create a free account on <a href="https://hosted.weblate.org">hosted.weblate.org</a></li>
-<li>Open the <a href="https://hosted.weblate.org/engage/spieli/"><strong>spieli</strong> project</a> and pick your language</li>
+<li>Open the <a href="https://hosted.weblate.org/engage/spieli/"><strong>spieli</strong> project</a>, choose the <strong>ui-strings</strong> component, and pick your language — <code>ui-strings</code> is the one that reaches the app. The project also lists a <code>glossary</code> component; that holds terminology only, and translations made there never ship.</li>
 <li>Click any untranslated string and type your translation</li>
 <li>Save — that's it. No GitHub account needed.</li>
 </ol>
@@ -1681,17 +1681,53 @@ Weblate shows this as a <strong>single input field</strong> — you must write t
 <p><strong>Languages with no plural forms</strong> (Japanese): use <code>other</code> only:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>{count, plural, other {# ベンチ}}
 </code></pre></div>
-<p><strong>Languages with four plural forms</strong> (Polish, Czech, Ukrainian) — you must include <code>one</code>, <code>few</code>, <code>many</code>, and <code>other</code>:</p>
-<p>Polish example:
+<p><strong>Languages with four plural forms</strong> (Polish, Ukrainian, Czech, Slovak) — you must include <code>one</code>, <code>few</code>, <code>many</code>, and <code>other</code>.</p>
+<p>Careful here: these languages all use four categories, but they <strong>disagree about which category a large number lands in</strong>. Getting this wrong is easy, because the string still looks complete and Weblate reports no error — it just renders the wrong word for every count from 5 upwards.</p>
+<table>
+<thead>
+<tr>
+<th>Language</th>
+<th><code>many</code> matches</th>
+<th><code>other</code> matches</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Polish</td>
+<td>integers 0 and 5+, <strong>except</strong> those ending in 2–4 (22 → <code>few</code>; 12–14 stay <code>many</code>)</td>
+<td>fractions (1.5)</td>
+</tr>
+<tr>
+<td>Ukrainian</td>
+<td>integers 0 and 5+, <strong>except</strong> those ending in 1–4 (21 → <code>one</code>, 22 → <code>few</code>; 11–14 stay <code>many</code>)</td>
+<td>fractions (1.5)</td>
+</tr>
+<tr>
+<td>Czech, Slovak</td>
+<td>fractions (1.5)</td>
+<td><strong>integers 0 and 5+</strong> (21, 22, 101 all <code>other</code>)</td>
+</tr>
+</tbody>
+</table>
+<p>So in Polish and Ukrainian the genitive plural goes in <code>many</code>, and in Czech and Slovak it goes in <code>other</code>.</p>
+<p>Polish example — genitive <code>ławek</code> in <code>many</code>, fraction form in <code>other</code>:
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>{count, plural, one {# ławka} few {# ławki} many {# ławek} other {# ławki}}
 </code></pre></div></p>
-<p>Czech example:
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>{count, plural, one {# lavička} few {# lavičky} many {# laviček} other {# lavičky}}
+<p>Ukrainian example — genitive <code>лавок</code> in <code>many</code>, fraction form in <code>other</code>:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>{count, plural, one {# лавка} few {# лавки} many {# лавок} other {# лавки}}
 </code></pre></div></p>
-<p>Ukrainian example:
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>{count, plural, one {# лавка} few {# лавки} many {# лавок} other {# лавки}}
+<p>Czech example — genitive <code>laviček</code> in <strong><code>other</code></strong>, fraction form in <code>many</code>:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>{count, plural, one {# lavička} few {# lavičky} many {# lavičky} other {# laviček}}
 </code></pre></div></p>
-<p>Weblate will warn you if the ICU syntax is broken — fix any flagged strings before saving.</p>
+<p>Slovak example — genitive <code>lavičiek</code> in <strong><code>other</code></strong>, fraction form in <code>many</code>:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>{count, plural, one {# lavička} few {# lavičky} many {# lavičky} other {# lavičiek}}
+</code></pre></div></p>
+<p>If you are unsure which category your language uses for a given number, check it directly. In any browser's developer console:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="ow">new</span><span class="w"> </span><span class="nb">Intl</span><span class="p">.</span><span class="nx">PluralRules</span><span class="p">(</span><span class="s1">&#39;cs&#39;</span><span class="p">).</span><span class="nx">select</span><span class="p">(</span><span class="mf">5</span><span class="p">)</span><span class="w">   </span><span class="c1">// &quot;other&quot;</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="ow">new</span><span class="w"> </span><span class="nb">Intl</span><span class="p">.</span><span class="nx">PluralRules</span><span class="p">(</span><span class="s1">&#39;pl&#39;</span><span class="p">).</span><span class="nx">select</span><span class="p">(</span><span class="mf">5</span><span class="p">)</span><span class="w">   </span><span class="c1">// &quot;many&quot;</span>
+</code></pre></div>
+<p>This is the same rule the app uses at runtime, so it is authoritative.</p>
+<p>Weblate will warn you if the ICU <em>syntax</em> is broken — fix any flagged strings before saving. It cannot tell you that a grammatically correct form is sitting in the wrong category, so that part is on you.</p>
 <h2 id="things-to-keep-as-is">Things to keep as-is<a class="headerlink" href="#things-to-keep-as-is" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Placeholders like <code>{regionName}</code>, <code>{count}</code>, <code>{name}</code> — do not translate these</li>

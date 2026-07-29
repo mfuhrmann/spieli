@@ -1081,6 +1081,21 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="How translations reach the app">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#if-the-component-gets-stuck" class="md-nav__link">
+    <span class="md-ellipsis">
+      If the component gets stuck
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1526,6 +1541,21 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="How translations reach the app">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#if-the-component-gets-stuck" class="md-nav__link">
+    <span class="md-ellipsis">
+      If the component gets stuck
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1588,8 +1618,19 @@
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>  (web UI, no GitHub)           branch on GitHub              → make docker-build
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>                                                               → live in app
 </code></pre></div>
-<p>Weblate batches translation saves and periodically pushes a commit to the <code>weblate-translations</code> branch. The maintainer opens a PR from <code>weblate-translations</code> → <code>main</code>, reviews the JSON diff, and merges. The next <code>make docker-build</code> bundles the updated locale files into the app.</p>
+<p>Weblate batches translation saves and periodically pushes a commit to the <code>weblate-translations</code> branch, then opens — or reuses — a pull request against <code>main</code>. It keeps <strong>one long-lived PR</strong> ("Translations update from Hosted Weblate") rather than opening a new one per batch, so the same PR number accumulates commits until a maintainer merges it. The maintainer reviews the JSON diff and merges; the next <code>make docker-build</code> bundles the updated locale files into the app.</p>
 <p>Weblate never pushes directly to <code>main</code> — every translation update goes through a PR.</p>
+<p>The live component is <a href="https://hosted.weblate.org/projects/spieli/ui-strings/"><code>spieli/ui-strings</code></a>. The project also contains an auto-created <code>spieli/glossary</code> component backed by a local-only repository; it holds terminology, has no git remote, and needs no maintenance.</p>
+<h3 id="if-the-component-gets-stuck">If the component gets stuck<a class="headerlink" href="#if-the-component-gets-stuck" title="Permanent link">&para;</a></h3>
+<p>Weblate rebases its commits onto <code>main</code> on every pull. If a commit on <code>main</code> touched the same locale file Weblate has pending, that rebase fails and <strong>stays</strong> failed — Weblate stops pulling entirely, and no translation can reach the repo until it is resolved. The component sat in exactly this state from May to July 2026.</p>
+<p>Recovery, in order:</p>
+<ol>
+<li>Land anything valuable from <code>weblate-translations</code> in a normal PR first, since step 3 discards it. Check what is actually on that branch — it may be far behind <code>main</code> and its translations may be worse than what the repo already has.</li>
+<li>Confirm the salvaged work is merged into <code>main</code>.</li>
+<li>Weblate → Operations → Repository maintenance → <strong>Reset all changes in the Weblate repository</strong>. This resets to upstream and discards Weblate's local commits.</li>
+</ol>
+<p>Do <strong>not</strong> use "Reset and reapply translations" for this — it replays the pending commits onto the reset state and reproduces the same conflict.</p>
+<p>The <code>i18n Guard</code> CI job exists to prevent the situation recurring; see below.</p>
 <h2 id="language-graduation">Language graduation<a class="headerlink" href="#language-graduation" title="Permanent link">&para;</a></h2>
 <p>Weblate collects translations for every registered language, but the app loads only the languages listed in <code>SUPPORTED</code> in <code>app/src/lib/i18n.js</code> — today that is <code>de</code> and <code>en</code>. There is no automatic threshold: reaching 100% in Weblate does not by itself make a language visible. Until a maintainer registers it, the locale file sits in the repo and users with that browser language fall back to English.</p>
 <p><strong>≥ 80% completion</strong> is the bar a maintainer uses to decide a language is ready to activate. When a language crosses it:</p>
@@ -1638,38 +1679,66 @@
 </code></pre></div>
 <p>When you add a new key, Weblate automatically marks it as needing translation in all registered languages.</p>
 <h2 id="weblate-component-settings">Weblate component settings<a class="headerlink" href="#weblate-component-settings" title="Permanent link">&para;</a></h2>
-<p>The <code>.weblate.yml</code> file in the repo root documents the intended component configuration for the manual setup step. Key settings:</p>
+<p>The <code>.weblate.yml</code> file in the repo root records the component configuration. Weblate does not read it — it is a checklist for manual setup and a record of what the live component is set to.</p>
 <table>
 <thead>
 <tr>
 <th>Setting</th>
 <th>Value</th>
+<th>Where</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>File format</td>
 <td><code>json-nested</code></td>
+<td>Settings → Files</td>
 </tr>
 <tr>
 <td>File mask</td>
 <td><code>locales/*.json</code></td>
+<td>Settings → Files</td>
 </tr>
 <tr>
 <td>Source template</td>
 <td><code>locales/en.json</code></td>
+<td>Settings → Files</td>
 </tr>
 <tr>
 <td>Source language</td>
 <td><code>en</code></td>
+<td>Settings → Basic</td>
 </tr>
 <tr>
 <td>Push branch</td>
 <td><code>weblate-translations</code></td>
+<td>Settings → Version control</td>
+</tr>
+<tr>
+<td>JSON indentation</td>
+<td><code>2</code>, spaces</td>
+<td>Settings → Files</td>
+</tr>
+<tr>
+<td>Sort JSON keys</td>
+<td><strong>off</strong></td>
+<td>Settings → Files</td>
+</tr>
+<tr>
+<td>Cleanup translation files</td>
+<td>enabled</td>
+<td>Operations → Add-ons</td>
 </tr>
 </tbody>
 </table>
-<p>ICU plural strings appear as a single field in the Weblate editor. Translators write the full ICU expression for their language — Weblate's built-in checks catch syntax errors.</p>
+<p><code>json_indent</code> replaced the "Customize JSON output" add-on, which Weblate removed in 5.13. Leave key sorting off — Weblate follows the <code>en.json</code> template order, and sorting would reshuffle every locale file into one unreviewable diff.</p>
+<p>The <strong>Cleanup translation files</strong> add-on (<code>weblate.cleanup.generic</code>) removes keys no longer present in <code>en.json</code>. Without it, locale files accumulate stale keys.</p>
+<p>ICU plural strings appear as a single field in the Weblate editor. Translators write the full ICU expression for their language.</p>
+<div class="admonition warning">
+<p class="admonition-title">Weblate cannot validate plural categories</p>
+<p>Weblate's checks catch broken ICU <em>syntax</em>, but not a grammatically correct form placed in the wrong plural category. Nine Slovak strings shipped with the genitive plural in <code>many</code> — a category that, for Czech and Slovak, matches only fractional numbers — so every count from 5 upwards rendered ungrammatically (#747). The string parsed fine and Weblate reported no error.</p>
+<p><a href="../translation-guide/"><code>translation-guide.md</code></a> documents the per-language rule and how translators can verify it with <code>Intl.PluralRules</code>.</p>
+</div>
 
 
 
