@@ -26,6 +26,14 @@ STACKS=(
   "$HOME/spieli-sachsen-anhalt:data-node-ui:8092"
   "$HOME/spieli-sh:data-node-ui:8093"
   "$HOME/spieli-thueringen:data-node-ui:8094"
+  "$HOME/spieli-niedersachsen:data-node-ui:8096"
+  # Port 8095 is intentionally absent: Baden-Württemberg is hosted on a
+  # different operator's machine and joins the federation via registry.json,
+  # so this host has no ~/spieli-bawue stack to upgrade. Do not re-add it here.
+  # Note scripts/setup-germany-backends.sh allocates 8095 to bawue in its
+  # federation-wide BACKENDS list and would provision it locally too —
+  # SKIP_SLUGS=("bawue") is what keeps it off this host, and that opt-out is
+  # manual, so confirm it before assuming the stack is absent.
   "$HOME/spieli:ui auto-update:8080"
 )
 # ─────────────────────────────────────────────────────────────────────────────
@@ -50,8 +58,43 @@ for entry in "${STACKS[@]}"; do
   # Explicitly pull each image by name to bypass the Docker daemon's manifest
   # cache, which can cause `docker compose pull` to skip a freshly-pushed tag
   # it already has locally (observed with rapid CI push + immediate upgrade run).
-  docker compose config --images | sort -u | xargs -I{} docker pull {}
-  docker compose pull
+  #
+  # The profile flags are REQUIRED here: app and importer are profile-gated
+  # (profiles: [ui, data-node-ui] / [data-node, data-node-ui]). Without them,
+  # `config --images` and `pull` silently exclude those services, so the
+  # freshly-built spieli / spieli-importer :latest tags are never pulled and
+  # `up -d app` then boots the stale locally-cached image.
+  #
+  # Only the ghcr.io/mfuhrmann :latest tags need the manifest-cache bypass — CI
+  # re-pushes those under a tag that is usually already present locally.
+  # Everything else is left to `docker compose pull` below: postgis and
+  # postgrest are version-pinned, and containrrr/watchtower is untagged (so
+  # :latest) but is only reached by the hub's auto-update profile.
+  # Force-pulling all of them would turn a stack sweep into 60+ registry
+  # requests, where one anonymous Docker Hub 429 on an image that did not need
+  # pulling would abort the whole run under `set -e`.
+  # Capture the status explicitly: `mapfile < <(...)` cannot fail, because
+  # process-substitution exit status is not propagated and pipefail does not
+  # reach inside <(). A failing or empty `config --images` would leave images
+  # empty, skip the loop, and let `up -d app` boot the stale cached digest —
+  # the bug this block exists to prevent, failing silently. An empty result is
+  # also fatal: it means the profile does not match the stack's compose file.
+  images_raw=$(docker compose "${profile_flags[@]}" config --images | sort -u) \
+    || fail "docker compose config --images failed for $name — later stacks were NOT upgraded"
+  [[ -n "$images_raw" ]] \
+    || fail "no images resolved for $name (profiles: '$profiles') — later stacks were NOT upgraded"
+  mapfile -t images <<< "$images_raw"
+  for img in "${images[@]}"; do
+    [[ "$img" == ghcr.io/mfuhrmann/* ]] || continue
+    docker pull "$img" \
+      || fail "docker pull $img failed for $name — later stacks were NOT upgraded, re-run after fixing"
+  done
+  # Guarded for the same reason as the GHCR loop above: with the profile flags
+  # this now genuinely reaches Docker Hub for postgis/postgrest, so an anonymous
+  # 429 here would otherwise abort the sweep with a bare Compose error and no
+  # indication that the remaining stacks were never upgraded.
+  docker compose "${profile_flags[@]}" pull \
+    || fail "docker compose pull failed for $name — later stacks were NOT upgraded, re-run after fixing"
 
   echo "→ Restarting app container..."
   docker compose "${profile_flags[@]}" up -d app
@@ -63,7 +106,7 @@ for entry in "${STACKS[@]}"; do
     # on container startup; while it is idle between reimport cycles it won't
     # touch playground_stats. Running both concurrently races on the DROP/CREATE
     # of that materialized view and reliably fails on large datasets.
-    docker compose --profile data-node-ui run --rm -e API_ONLY=1 importer
+    docker compose "${profile_flags[@]}" run --rm -e API_ONLY=1 importer
   else
     echo "→ Pure hub — no importer, skipping api.sql step."
   fi
@@ -96,7 +139,7 @@ for entry in "${STACKS[@]}"; do
       logfile="/tmp/${name}-reimport.log"
       echo "→ No playgrounds found — triggering forced reimport in background (log: $logfile)"
       (
-        docker compose --profile data-node-ui run --rm \
+        docker compose "${profile_flags[@]}" run --rm \
           -e REIMPORT_INTERVAL_MIN_DAYS= \
           -e REIMPORT_INTERVAL_MAX_DAYS= \
           importer
