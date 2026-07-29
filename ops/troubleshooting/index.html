@@ -1867,7 +1867,7 @@
 </code></pre></div>
 <div class="admonition note">
 <p class="admonition-title"><code>API_ONLY=1</code> on a never-imported database</p>
-<p><code>api.sql</code> cannot be applied before the first import. Current images exit with <code>No completed import on record — nothing to apply yet.</code> instead of failing inside <code>api.sql</code>, so a sequential upgrade sweep (<a href="https://github.com/mfuhrmann/spieli/blob/main/scripts/upgrade-stacks.sh"><code>scripts/upgrade-stacks.sh</code></a>) is not aborted by one stack that has never imported.</p>
+<p><code>api.sql</code> cannot be applied before the first import. Current images exit with <code>No completed import on record — nothing to apply yet.</code> instead of failing inside <code>api.sql</code>, so the <code>API_ONLY=1</code> step of a sequential upgrade sweep (<a href="https://github.com/mfuhrmann/spieli/blob/main/scripts/upgrade-stacks.sh"><code>scripts/upgrade-stacks.sh</code></a>) is no longer aborted by a stack that has never imported. The <code>get_meta</code> verification that follows still fails on such a stack — there is no <code>api</code> schema to query yet.</p>
 </div>
 <hr />
 <h2 id="map-loads-but-shows-no-playgrounds">Map loads but shows no playgrounds<a class="headerlink" href="#map-loads-but-shows-no-playgrounds" title="Permanent link">&para;</a></h2>
