@@ -109,7 +109,7 @@ Several boolean columns in `playground_stats` are computed from equipment found 
 | `for_baby` | `baby=yes` on any equipment; `playground` ∈ `baby_swing`, `basketswing`, `sandpit`, `springy`; `capacity:baby` present |
 | `for_toddler` | `provided_for:toddler=yes` on any equipment; `playground=basketswing` |
 | `is_water` | `playground` contains `water` or ∈ `splash_pad`, `pump` |
-| `for_wheelchair` | `wheelchair=yes` on any equipment |
+| `for_wheelchair` | `wheelchair` ∈ `yes`, `limited`, `designated` on the playground area **or** on any equipment within it (equipment tagged `playground=sandpit` does not count). Note: a `wheelchair=no` on the area does not currently override a positive value on a contained device |
 | `has_soccer` / `has_basketball` | `leisure=pitch` with matching `sport` value |
 | `has_fence` | `enclosed=yes` or `barrier=fence` on playground |
 | `has_dogs` | `dog=yes` on playground |

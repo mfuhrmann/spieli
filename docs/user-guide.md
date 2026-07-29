@@ -42,7 +42,7 @@ Open the filter panel to show only playgrounds that match your needs:
 | Water play | Water features (`is_water=yes`) |
 | Baby equipment | Equipment suitable for babies |
 | Toddler equipment | Equipment suitable for toddlers |
-| Wheelchair | Wheelchair-accessible equipment or surface |
+| Wheelchair | The playground area or a piece of its equipment is tagged wheelchair-accessible. Includes partial (`limited`) accessibility, so check the detail panel before relying on it |
 | Bench | At least one bench |
 | Picnic table | At least one picnic table |
 | Shelter | A covered shelter |
