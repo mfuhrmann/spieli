@@ -1,6 +1,8 @@
 # Translating spieli
 
-Thanks for helping translate spieli! This guide explains everything you need to know.
+[![Translation status](https://hosted.weblate.org/widget/spieli/ui-strings/svg-badge.svg)](https://hosted.weblate.org/engage/spieli/)
+
+Thanks for helping translate spieli! Translation happens on [Weblate](https://weblate.org/), which hosts this project free of charge under its [Libre plan](https://weblate.org/hosting/). This guide explains everything you need to know.
 
 ## What is spieli?
 
@@ -10,7 +12,7 @@ Your translation makes it accessible to communities in your language.
 ## How to translate
 
 1. Create a free account on [hosted.weblate.org](https://hosted.weblate.org)
-2. Open the **spieli** project, choose the **ui-strings** component, and pick your language — `ui-strings` is the one that reaches the app. The project also lists a `glossary` component; that holds terminology only, and translations made there never ship.
+2. Open the [**spieli** project](https://hosted.weblate.org/engage/spieli/), choose the **ui-strings** component, and pick your language — `ui-strings` is the one that reaches the app. The project also lists a `glossary` component; that holds terminology only, and translations made there never ship.
 3. Click any untranslated string and type your translation
 4. Save — that's it. No GitHub account needed.
 
@@ -97,8 +99,14 @@ Weblate will warn you if the ICU *syntax* is broken — fix any flagged strings 
 
 ## When does my translation go live?
 
-A language appears in the app once it reaches **80% completion**.
-Until then your work is saved and visible to other translators.
+The app currently ships German and English only. Other languages are
+collected in Weblate and activated by a maintainer once they reach
+**80% completion** — it is a manual step, not an automatic threshold, so
+crossing 80% does not switch your language on by itself. Until then your
+work is saved in the repo and visible to other translators.
+
+If your language is complete and still not live, open an issue — that is
+the signal to activate it.
 
 ## Questions?
 

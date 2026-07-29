@@ -64,6 +64,20 @@ New to OSM concepts like relation IDs or PBF files? See the [glossary](https://m
 
 ---
 
+## Translations
+
+[![Translation status](https://hosted.weblate.org/widget/spieli/ui-strings/svg-badge.svg)](https://hosted.weblate.org/engage/spieli/)
+
+spieli is translated with [Weblate](https://weblate.org/), a libre web-based translation platform. Weblate hosts the project free of charge under its [Libre plan](https://weblate.org/hosting/) for free software projects.
+
+**[Help translate spieli →](https://hosted.weblate.org/engage/spieli/)** — no GitHub account and no JSON knowledge needed; a free Weblate account is enough. See the [translator instructions](https://mfuhrmann.github.io/spieli/contributing/translation-guide/).
+
+<a href="https://hosted.weblate.org/engage/spieli/">
+  <img src="https://hosted.weblate.org/widget/spieli/ui-strings/multi-auto.svg" alt="Translation status per language" />
+</a>
+
+---
+
 ## Matrix Contact
 
 Come and let's play:

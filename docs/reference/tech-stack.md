@@ -21,7 +21,7 @@
 | Containers | Docker / Docker Compose | — | Packaging, orchestration, profiles |
 | E2E testing | [Playwright](https://playwright.dev/) | 1.x | Browser automation tests |
 | CI/CD | GitHub Actions | — | Build gate, E2E tests, Docker image publishing (GHCR) |
-| Translations platform | [Weblate](https://hosted.weblate.org) | — | Community translation management |
+| Translations platform | [Weblate](https://weblate.org/) | — | Community translation management — [hosted free](https://hosted.weblate.org/engage/spieli/) under Weblate's Libre plan |
 
 ## Why this stack
 

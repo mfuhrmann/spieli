@@ -70,6 +70,12 @@ Multiple regional instances can be aggregated into a single **Hub** map — see 
 | Understand the translation workflow | [Translation Workflow](contributing/translations.md) |
 | Cut a release or upgrade dependencies | [Maintainer Guide](contributing/maintaining.md) |
 
+## Translations
+
+[![Translation status](https://hosted.weblate.org/widget/spieli/ui-strings/svg-badge.svg)](https://hosted.weblate.org/engage/spieli/)
+
+spieli is translated with [Weblate](https://weblate.org/), a libre web-based translation platform that hosts this project free of charge under its [Libre plan](https://weblate.org/hosting/). **[Help translate spieli →](https://hosted.weblate.org/engage/spieli/)**
+
 ## Reference
 
 | Topic | Go to… |

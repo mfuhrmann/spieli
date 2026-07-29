@@ -1,6 +1,10 @@
 # Translate spieli
 
-spieli uses [hosted.weblate.org](https://hosted.weblate.org) for community translations. Translators work through a web UI — no GitHub account or knowledge of JSON is required.
+[![Translation status](https://hosted.weblate.org/widget/spieli/ui-strings/svg-badge.svg)](https://hosted.weblate.org/engage/spieli/)
+
+spieli is translated with [Weblate](https://weblate.org/), which hosts the project free of charge under its [Libre plan](https://weblate.org/hosting/) for free software projects. Translators work through a web UI — no GitHub account or knowledge of JSON is required.
+
+**[Help translate spieli →](https://hosted.weblate.org/engage/spieli/)**
 
 ## How translations reach the app
 
@@ -33,9 +37,9 @@ The `i18n Guard` CI job exists to prevent the situation recurring; see below.
 
 ## Language graduation
 
-A language becomes visible in the app only when it reaches **≥ 80% completion** (≥ 529 of 661 keys) in Weblate. Below that threshold the locale file exists in the repo and Weblate keeps improving it, but the running app ignores it — users with that browser language fall back to English.
+Weblate collects translations for every registered language, but the app loads only the languages listed in `SUPPORTED` in `app/src/lib/i18n.js` — today that is `de` and `en`. There is no automatic threshold: reaching 100% in Weblate does not by itself make a language visible. Until a maintainer registers it, the locale file sits in the repo and users with that browser language fall back to English.
 
-When a language crosses the threshold:
+**≥ 80% completion** is the bar a maintainer uses to decide a language is ready to activate. When a language crosses it:
 
 1. Open a PR editing `app/src/lib/i18n.js`:
     - Add the language code to the `SUPPORTED` array

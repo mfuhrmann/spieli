@@ -49,8 +49,9 @@ Open the filter panel to show only playgrounds that match your needs:
 | Table tennis | A table tennis table |
 | Football | A football pitch |
 | Basketball | A basketball court |
-| Fenced | A fence around the playground (`barrier=fence`) |
+| Fenced | A fence around the playground (`enclosed=yes` or `barrier=fence`) |
 | Dogs allowed | Dogs are permitted (`dog=yes`) |
+| Themed | Has a recognised theme — ship, octopus, castle, … (`playground:theme`) |
 | With shade | Shaded areas (`shade=yes`) |
 | Exclude private | Hide access-restricted playgrounds |
 
