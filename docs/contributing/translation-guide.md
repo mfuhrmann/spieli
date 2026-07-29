@@ -75,8 +75,14 @@ Weblate will warn you if the ICU syntax is broken — fix any flagged strings be
 
 ## When does my translation go live?
 
-A language appears in the app once it reaches **80% completion**.
-Until then your work is saved and visible to other translators.
+The app currently ships German and English only. Other languages are
+collected in Weblate and activated by a maintainer once they reach
+**80% completion** — it is a manual step, not an automatic threshold, so
+crossing 80% does not switch your language on by itself. Until then your
+work is saved in the repo and visible to other translators.
+
+If your language is complete and still not live, open an issue — that is
+the signal to activate it.
 
 ## Questions?
 
