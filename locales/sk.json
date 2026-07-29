@@ -101,11 +101,11 @@
     "thisLocation": "táto poloha"
   },
   "equipment": {
-    "deviceCount": "{count, plural, one {# hrací prvok} few {# hracie prvky} many {# hracích prvkov} other {# hracie prvky}}",
-    "fitnessCount": "{count, plural, one {# fitness prvok} few {# fitness prvky} many {# fitness prvkov} other {# fitness prvky}}",
-    "benches": "{count, plural, one {# lavička} few {# lavičky} many {# lavičiek} other {# lavičky}}",
-    "shelters": "{count, plural, one {# prístrešok} few {# prístrešky} many {# prístreškov} other {# prístrešky}}",
-    "picnic": "{count, plural, one {# piknikový stôl} few {# piknikové stoly} many {# piknikových stolov} other {# piknikové stoly}}",
+    "deviceCount": "{count, plural, one {# hrací prvok} few {# hracie prvky} many {# hracie prvky} other {# hracích prvkov}}",
+    "fitnessCount": "{count, plural, one {# fitness prvok} few {# fitness prvky} many {# fitness prvky} other {# fitness prvkov}}",
+    "benches": "{count, plural, one {# lavička} few {# lavičky} many {# lavičky} other {# lavičiek}}",
+    "shelters": "{count, plural, one {# prístrešok} few {# prístrešky} many {# prístrešky} other {# prístreškov}}",
+    "picnic": "{count, plural, one {# piknikový stôl} few {# piknikové stoly} many {# piknikové stoly} other {# piknikových stolov}}",
     "noDevices": "Nie sú zmapované žiadne prvky.",
     "fitnessDefault": "Fitness prvok",
     "pitchDefault": "športové ihrisko",
@@ -472,7 +472,7 @@
     "count": "{count, plural, one {# recenzia} few {# recenzie} many {# recenzií} other {# recenzií}}",
     "empty": "Zatiaľ žiadne recenzie - buďte prvý!",
     "selectRating": "Vyberte hodnotenie",
-    "starLabel": "{n, plural, one {# hviezdička} few {# hviezdičky} many {# hviezdičiek} other {# hviezdičky}}",
+    "starLabel": "{n, plural, one {# hviezdička} few {# hviezdičky} many {# hviezdičky} other {# hviezdičiek}}",
     "opinionPlaceholder": "Váš názor (nepovinné)",
     "submit": "Odoslať recenziu",
     "submitting": "Odosiela sa…",
@@ -482,9 +482,9 @@
     "privacyNote": "Recenzie sú anonymné a uložené cez {mangroveLink}.",
     "today": "dnes",
     "daysAgo": "pred {count, plural, one {# dňom} few {# dňami} many {# dňami} other {# dňami}}",
-    "weeksAgo": "pred {count, plural, one {# týždňom} few {# týždňami} many {# týždňami} other {# týždňom}}",
-    "monthsAgo": "pred {count, plural, one {# mesiacom} few {# mesiacmi} many {# mesiacmi} other {# mesiacom}}",
-    "yearsAgo": "pred {count, plural, one {# rokom} few {# rokmi} many {# rokmi} other {# rokom}}"
+    "weeksAgo": "pred {count, plural, one {# týždňom} few {# týždňami} many {# týždňom} other {# týždňami}}",
+    "monthsAgo": "pred {count, plural, one {# mesiacom} few {# mesiacmi} many {# mesiacom} other {# mesiacmi}}",
+    "yearsAgo": "pred {count, plural, one {# rokom} few {# rokmi} many {# rokom} other {# rokmi}}"
   },
   "equipAttr": {
     "theme": "Téma",
