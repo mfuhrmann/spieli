@@ -1579,7 +1579,9 @@
 
 
 <h1 id="translate-spieli">Translate spieli<a class="headerlink" href="#translate-spieli" title="Permanent link">&para;</a></h1>
-<p>spieli uses <a href="https://hosted.weblate.org">hosted.weblate.org</a> for community translations. Translators work through a web UI — no GitHub account or knowledge of JSON is required.</p>
+<p><a href="https://hosted.weblate.org/engage/spieli/"><img alt="Translation status" src="https://hosted.weblate.org/widget/spieli/ui-strings/svg-badge.svg" /></a></p>
+<p>spieli is translated with <a href="https://weblate.org/">Weblate</a>, which hosts the project free of charge under its <a href="https://weblate.org/hosting/">Libre plan</a> for free software projects. Translators work through a web UI — no GitHub account or knowledge of JSON is required.</p>
+<p><strong><a href="https://hosted.weblate.org/engage/spieli/">Help translate spieli →</a></strong></p>
 <h2 id="how-translations-reach-the-app">How translations reach the app<a class="headerlink" href="#how-translations-reach-the-app" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>Translator edits strings       Weblate pushes commit         Maintainer merges PR
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>on hosted.weblate.org    →     to weblate-translations   →   into main
@@ -1589,8 +1591,8 @@
 <p>Weblate batches translation saves and periodically pushes a commit to the <code>weblate-translations</code> branch. The maintainer opens a PR from <code>weblate-translations</code> → <code>main</code>, reviews the JSON diff, and merges. The next <code>make docker-build</code> bundles the updated locale files into the app.</p>
 <p>Weblate never pushes directly to <code>main</code> — every translation update goes through a PR.</p>
 <h2 id="language-graduation">Language graduation<a class="headerlink" href="#language-graduation" title="Permanent link">&para;</a></h2>
-<p>A language becomes visible in the app only when it reaches <strong>≥ 80% completion</strong> (≥ 529 of 661 keys) in Weblate. Below that threshold the locale file exists in the repo and Weblate keeps improving it, but the running app ignores it — users with that browser language fall back to English.</p>
-<p>When a language crosses the threshold:</p>
+<p>Weblate collects translations for every registered language, but the app loads only the languages listed in <code>SUPPORTED</code> in <code>app/src/lib/i18n.js</code> — today that is <code>de</code> and <code>en</code>. There is no automatic threshold: reaching 100% in Weblate does not by itself make a language visible. Until a maintainer registers it, the locale file sits in the repo and users with that browser language fall back to English.</p>
+<p><strong>≥ 80% completion</strong> is the bar a maintainer uses to decide a language is ready to activate. When a language crosses it:</p>
 <ol>
 <li>Open a PR editing <code>app/src/lib/i18n.js</code>:<ul>
 <li>Add the language code to the <code>SUPPORTED</code> array</li>
