@@ -19,21 +19,98 @@ Weblate batches translation saves and periodically pushes a commit to the `webla
 
 Weblate never pushes directly to `main` — every translation update goes through a PR.
 
+Merge that PR with whichever button you like. `main` allows only squash and rebase merges, and both rewrite Weblate's commits, but the component is set to `merge_style: merge` so it integrates `main` by merging rather than by replaying its own commits — see [If the component gets stuck](#if-the-component-gets-stuck).
+
 The live component is [`spieli/ui-strings`](https://hosted.weblate.org/projects/spieli/ui-strings/). The project also contains an auto-created `spieli/glossary` component backed by a local-only repository; it holds terminology, has no git remote, and needs no maintenance.
 
 ### If the component gets stuck
 
-Weblate rebases its commits onto `main` on every pull. If a commit on `main` touched the same locale file Weblate has pending, that rebase fails and **stays** failed — Weblate stops pulling entirely, and no translation can reach the repo until it is resolved. The component sat in exactly this state from May to July 2026.
+Weblate integrates `main` on every pull. When that integration fails it **stays** failed — Weblate stops pulling entirely, no translation can reach the repo, and `auto_lock_error` locks the component. Two distinct causes have hit this project.
 
-Recovery, in order:
+**1. An upstream commit edited a locale Weblate had pending.** Editing `fr.json` or `sk.json` by hand collides with whatever a translator has unmerged for that file. The component sat in this state from May to July 2026. The `i18n Guard` CI job exists to prevent it; see below.
 
-1. Land anything valuable from `weblate-translations` in a normal PR first, since step 3 discards it. Check what is actually on that branch — it may be far behind `main` and its translations may be worse than what the repo already has.
+**2. A Weblate PR was squash-merged.** `main` is governed by the `protect_main` ruleset, whose `allowed_merge_methods` is `["squash", "rebase"]` — both rewrite commits, so a Weblate PR can never land with its commits intact and they never become ancestors of `main`. Under the old `merge_style: rebase` Weblate replayed all of them on every update, and they conflicted against the already-squashed state:
+
+```
+Rebasing (2/12)
+dropping d2359df Translated using Weblate (Czech) -- patch contents already upstream
+CONFLICT (content): Merge conflict in locales/fr.json
+error: could not apply 5ed1863... Translated using Weblate (French)
+```
+
+This was structural — it recurred on every Weblate PR merge. Fixed on 2026-07-29 (#794) by switching the component to `merge_style: merge`, which integrates `main` by merging instead of replaying. **If this cause reappears, check that setting first.**
+
+#### Diagnosing
+
+`wlc repo` reports the component's git state, including the full failure text:
+
+```console
+$ wlc repo
+merge_failure: CONFLICT (content): Merge conflict in locales/fr.json
+needs_commit: False
+needs_merge: True
+```
+
+`needs_commit: False` means no translator edits are sitting uncommitted in Weblate's database — important, because a reset discards Weblate's git commits and you want to know nothing unsaved is riding on them.
+
+#### Recovery
+
+Before resetting, prove no translation is lost. Add Weblate's exported repo as a remote and diff every locale against `main`:
+
+```bash
+git remote add weblate https://hosted.weblate.org/git/spieli/ui-strings/
+git remote update weblate
+for f in locales/*.json; do
+  echo "$f: $(git diff --numstat origin/main weblate/main -- "$f")"
+done
+```
+
+A locale that prints nothing is byte-identical on both sides and cannot lose anything. For any locale that does differ, inspect the diff and decide which side is correct — then:
+
+1. Land anything valuable from Weblate in a normal PR first, labelled `i18n-manual`, since the reset discards it.
 2. Confirm the salvaged work is merged into `main`.
-3. Weblate → Operations → Repository maintenance → **Reset all changes in the Weblate repository**. This resets to upstream and discards Weblate's local commits.
+3. Reset Weblate onto upstream:
+
+    ```bash
+    wlc lock && wlc reset && wlc pull && wlc unlock
+    ```
+
+    The same four actions exist in the web UI under Operations → Repository maintenance.
+
+4. Verify: `wlc repo` shows an empty `merge_failure` and `needs_merge: False`, and `git remote update weblate` leaves `weblate/main` at the same commit as `origin/main`.
 
 Do **not** use "Reset and reapply translations" for this — it replays the pending commits onto the reset state and reproduces the same conflict.
 
-The `i18n Guard` CI job exists to prevent the situation recurring; see below.
+A reset touches only Weblate's git checkout. Its database is untouched, so per-string translation history, authorship, suggestions and comments all survive.
+
+#### The `wlc` CLI
+
+[`wlc`](https://docs.weblate.org/en/latest/wlc.html) drives the Weblate API from a shell. It is not packaged for Debian or Arch, and PEP 668 blocks `pip install --user` on most distros:
+
+```bash
+uv tool install wlc     # or: pipx install wlc
+```
+
+Configure `~/.config/weblate`, then `chmod 600` it — it holds an API token from [your profile](https://hosted.weblate.org/accounts/profile/#api):
+
+```ini
+[weblate]
+url = https://hosted.weblate.org/api/
+translation = spieli/ui-strings
+
+[keys]
+https://hosted.weblate.org/api/ = YOUR_API_KEY
+```
+
+| Command | Does |
+|---|---|
+| `wlc repo` | Show git state — `merge_failure`, `needs_commit`, `needs_merge` |
+| `wlc commit` | Flush pending translator edits into Weblate's git |
+| `wlc lock` / `wlc unlock` | Block translations while doing repository surgery |
+| `wlc reset` | Hard-reset Weblate's checkout onto upstream |
+| `wlc pull` | Fetch and integrate `main` |
+
+Lock state is not in `wlc show`; read it from `GET /api/components/spieli/ui-strings/lock/`.
 
 ## Language graduation
 
@@ -85,9 +162,12 @@ The `.weblate.yml` file in the repo root records the component configuration. We
 | Source template | `locales/en.json` | Settings → Files |
 | Source language | `en` | Settings → Basic |
 | Push branch | `weblate-translations` | Settings → Version control |
+| Merge style | `merge` | Settings → Version control |
 | JSON indentation | `2`, spaces | Settings → Files |
 | Sort JSON keys | **off** | Settings → Files |
 | Cleanup translation files | enabled | Operations → Add-ons |
+
+**Merge style must stay `merge`.** Weblate's default is `rebase`, which replays Weblate's own commits onto `main` on every pull. Because `main` allows only squash and rebase merges, those commits never become ancestors of `main`, so the replay repeats forever and eventually conflicts — see [If the component gets stuck](#if-the-component-gets-stuck). With `merge`, Weblate merges `main` into its branch instead and a squashed upstream PR integrates cleanly.
 
 `json_indent` replaced the "Customize JSON output" add-on, which Weblate removed in 5.13. Leave key sorting off — Weblate follows the `en.json` template order, and sorting would reshuffle every locale file into one unreviewable diff.
 

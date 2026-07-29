@@ -29,6 +29,17 @@ component:
   source_language: en
   push_branch: weblate-translations
   push_on_commit: true
+  # Must stay `merge`. Weblate's default is `rebase`, which replays Weblate's
+  # own commits onto main on every pull. main allows only squash and rebase
+  # merges (the protect_main ruleset), so those commits never become ancestors
+  # of main, the replay repeats forever, and it eventually conflicts — this
+  # broke the component on 2026-07-29 (#794). With `merge`, Weblate merges main
+  # into its branch and a squashed upstream PR integrates cleanly.
+  merge_style: merge
+  # NOTE (#794): not returned as a component field by the REST API, and the
+  # push for PR #734 carried 12 unsquashed commits — so this either maps to the
+  # "Squash Git commits" add-on or is not in effect. Verify in the UI before
+  # relying on it.
   squash_commits: true
   commit_message: "chore(i18n): update translations from Weblate"
   add_message: "chore(i18n): add {{ language_name }} translation from Weblate"
