@@ -124,6 +124,9 @@ _wait_for_db() {
 # Prints "t" or "f" and returns 0 when the question was answered. Returns
 # non-zero with psql's error text on stdout when the database could not be
 # asked at all — callers MUST NOT read a failed probe as "fresh database".
+# Because stderr is merged in to carry that error text, a warning on an
+# otherwise successful probe lands above the verdict: callers read the LAST
+# line, never the whole value.
 # -X keeps a stray psqlrc out of the parsed output, -w never prompts for a
 # password, and ON_ERROR_STOP makes a SQL error a non-zero exit rather than
 # empty output (to_regclass itself returns NULL instead of erroring for a
@@ -547,7 +550,8 @@ if [ -n "$API_ONLY" ]; then
     # Only a definitive "f" short-circuits. A failed probe falls through to
     # run_api_apply on purpose: API_ONLY is an explicit operator request, so
     # the real psql error belongs in the operator's terminal.
-    if _IMPORT_STATE=$(_has_completed_import) && [ "$_IMPORT_STATE" = "f" ]; then
+    if _IMPORT_STATE=$(_has_completed_import) &&
+        [ "$(printf '%s\n' "$_IMPORT_STATE" | tail -n 1)" = "f" ]; then
         echo "[importer] No completed import on record — nothing to apply yet."
         echo "[importer] Run a full import first: docker compose run --rm importer"
         exit 0
@@ -576,8 +580,9 @@ elif [ -n "$REIMPORT_INTERVAL_MIN_DAYS" ] && [ -n "$REIMPORT_INTERVAL_MAX_DAYS" 
     #
     # The grace check below keys off the same api.import_status sentinel, which
     # is what makes deferring safe: no sentinel means the grace check also finds
-    # no timestamp and falls straight through to an immediate import. A deferred
-    # apply is therefore always followed by an import, never by a sleep.
+    # no timestamp and falls straight through to the import. The only wait that
+    # can intervene is the deliberate fresh-install stagger
+    # (REIMPORT_STARTUP_JITTER_MAX_HOURS) — never a grace sleep.
     _wait_for_db
 
     # Retry the probe a few times so a transient hiccup — a connection-slot
@@ -590,6 +595,12 @@ elif [ -n "$REIMPORT_INTERVAL_MIN_DAYS" ] && [ -n "$REIMPORT_INTERVAL_MAX_DAYS" 
     PROBE_TRY=1
     while [ "$PROBE_TRY" -le 3 ]; do
         if IMPORT_STATE=$(_has_completed_import); then
+            # Keep only the last line: the probe merges stderr into its output
+            # so a failure carries psql's diagnosis, but that also means a
+            # warning on an otherwise successful probe would prefix the verdict
+            # and match neither "t" nor "f" below — reading a populated node as
+            # "unknown" and skipping the apply it needs.
+            IMPORT_STATE=$(printf '%s\n' "$IMPORT_STATE" | tail -n 1)
             break
         fi
         echo "[importer] Could not determine import state (attempt ${PROBE_TRY}/3): ${IMPORT_STATE}" >&2
@@ -602,7 +613,14 @@ elif [ -n "$REIMPORT_INTERVAL_MIN_DAYS" ] && [ -n "$REIMPORT_INTERVAL_MAX_DAYS" 
 
     if [ "$IMPORT_STATE" = "t" ]; then
         echo "[importer] Applying API schema on startup (image may carry schema changes)."
-        run_api_apply
+        # Never fatal. The marker proves a prior apply *started* finishing, not
+        # that it completed: api.sql is not applied in a single transaction, and
+        # planet_osm-dependent objects are created after the marker, so an apply
+        # killed partway (OOM or disk pressure during an index build, say)
+        # leaves the marker set on an incomplete schema. Aborting here would
+        # restart-loop the container on every subsequent start — #759 by another
+        # route. run_import re-applies the schema, so falling through is safe.
+        run_api_apply || echo "[importer] WARNING: startup schema apply failed — continuing to import." >&2
     elif [ "$IMPORT_STATE" = "f" ]; then
         echo "[importer] No completed import on record — deferring API schema apply to first import."
     else
