@@ -21,6 +21,12 @@ STACKS=(
   "$HOME/spieli-sachsen-anhalt:data-node-ui:8092"
   "$HOME/spieli-sh:data-node-ui:8093"
   "$HOME/spieli-thueringen:data-node-ui:8094"
+  "$HOME/spieli-niedersachsen:data-node-ui:8096"
+  # Port 8095 is intentionally absent: Baden-Württemberg is hosted on a
+  # different operator's machine and joins the federation via registry.json,
+  # so this host has no ~/spieli-bawue stack to reimport. Do not re-add it here
+  # — scripts/setup-germany-backends.sh reserves 8095 for it federation-wide,
+  # not on this host.
 )
 
 failed=()
@@ -41,7 +47,16 @@ for entry in "${STACKS[@]}"; do
   echo ""
   echo "━━━ $name — 0 playgrounds, running forced reimport ━━━"
   cd "$dir"
-  if docker compose --profile data-node-ui run --rm \
+
+  # Use the stack's own profiles rather than assuming data-node-ui: app and
+  # importer are profile-gated, so a stack on a different profile set would
+  # otherwise be run against the wrong services (see #718).
+  profile_flags=()
+  for p in $profiles; do
+    profile_flags+=(--profile "$p")
+  done
+
+  if docker compose "${profile_flags[@]}" run --rm \
       -e REIMPORT_INTERVAL_MIN_DAYS= \
       -e REIMPORT_INTERVAL_MAX_DAYS= \
       importer; then
