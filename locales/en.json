@@ -330,6 +330,8 @@
       "introText": "The data on this map comes from {osmLink}. You can edit it directly using {mapcompleteLink} – no additional account beyond a free OpenStreetMap account is required.",
       "wikiLinkText": "OSM Wiki: Playgrounds",
       "githubLabel": "Source code on GitHub",
+      "translateLabel": "Help translate on Weblate",
+      "weblateCredit": "Translated by the community with {weblateLink}",
       "osm": {
         "label": "OpenStreetMap",
         "text": "The data comes from {osmLink} — a free, collaborative world map built by millions of volunteers. Only what has been mapped will appear here.",
