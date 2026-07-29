@@ -69,7 +69,7 @@ docker compose --profile <mode> up -d importer
 ```
 
 !!! note "`API_ONLY=1` on a never-imported database"
-    `api.sql` cannot be applied before the first import. Current images exit with `No completed import on record — nothing to apply yet.` instead of failing inside `api.sql`, so a sequential upgrade sweep ([`scripts/upgrade-stacks.sh`](https://github.com/mfuhrmann/spieli/blob/main/scripts/upgrade-stacks.sh)) is not aborted by one stack that has never imported.
+    `api.sql` cannot be applied before the first import. Current images exit with `No completed import on record — nothing to apply yet.` instead of failing inside `api.sql`, so the `API_ONLY=1` step of a sequential upgrade sweep ([`scripts/upgrade-stacks.sh`](https://github.com/mfuhrmann/spieli/blob/main/scripts/upgrade-stacks.sh)) is no longer aborted by a stack that has never imported. The `get_meta` verification that follows still fails on such a stack — there is no `api` schema to query yet.
 
 ---
 
