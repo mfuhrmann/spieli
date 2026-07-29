@@ -17,7 +17,7 @@
     "esbuild": "^0.28.1",
     "fetch-jsonp": "1.4.0",
     "lucide-svelte": "^1.0.1",
-    "ol": "10.9.0",
+    "ol": "10.10.0",
     "opening_hours": "^3.14.0",
     "supercluster": "^8.0.1",
     "svelte": "^5.56.7",
