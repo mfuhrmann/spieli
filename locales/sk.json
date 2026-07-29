@@ -24,7 +24,16 @@
       "shelter": "S prístreškom",
       "tableTennis": "S pingpongovým stolom",
       "soccer": "S futbalovým ihriskom",
-      "basketball": "Basketbalové ihrisko"
+      "basketball": "Basketbalové ihrisko",
+      "fence": "Oplotené",
+      "hasDogs": "Psy povolené",
+      "shade": "S tieňom"
+    },
+    "completeness": {
+      "title": "Kvalita dát",
+      "showComplete": "vysoká",
+      "showPartial": "stredná",
+      "showMissing": "nízka"
     }
   },
   "hover": {
@@ -61,7 +70,8 @@
     "osmBtn": "Pozrieť na OpenStreetMap",
     "closeBtn": "Zavrieť",
     "copyLink": "Kopírovať odkaz",
-    "backToMap": "Nazad na mapu"
+    "backToMap": "Nazad na mapu",
+    "navigateHere": "Poďme tam"
   },
   "completeness": {
     "legendTitle": "Kvalita údajov",
@@ -336,7 +346,9 @@
         "chatLabel": "miestny OSM komunitný chat",
         "simpleText": "Otázky a diskusia v",
         "simpleChatLabel": "miestny chat"
-      }
+      },
+      "introText": "Údaje na tejto mape pochádzajú z {osmLink}. Môžete ju upraviť priamo cez {mapcompleteLink} - potrebujete len účet na OpenStreetMap.",
+      "githubLabel": "Zdrojový kód na GitHube"
     },
     "about": {
       "history": {
@@ -662,5 +674,19 @@
       "whale": "Veľryba",
       "windmill": "Veterný mlyn"
     }
+  },
+  "legal": {
+    "title": "Právne informácie",
+    "buttonLabel": "Poskytovateľ a súkromie",
+    "impressum": "Poskytovateľ",
+    "datenschutz": "Ochrana osobných údajov",
+    "contentTitle": "Právne informácie",
+    "loading": "Načítavanie…",
+    "noContent": "K dispozícii nie je žiadny obsah.",
+    "loadError": "Chby pri náčítavaní: {message}",
+    "impressumFor": "Poskytovateľ {name}",
+    "datenschutzFor": "Ochrana osobných údajov pre {name}",
+    "noneFor": "Nie sú dostupné právne informácie pre {name}.",
+    "none": "Nie sú dostupné žiadne právne informácie."
   }
 }
