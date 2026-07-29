@@ -10,7 +10,7 @@ Your translation makes it accessible to communities in your language.
 ## How to translate
 
 1. Create a free account on [hosted.weblate.org](https://hosted.weblate.org)
-2. Open the **spieli** project and pick your language
+2. Open the **spieli** project, choose the **ui-strings** component, and pick your language — `ui-strings` is the one that reaches the app. The project also lists a `glossary` component; that holds terminology only, and translations made there never ship.
 3. Click any untranslated string and type your translation
 4. Save — that's it. No GitHub account needed.
 
@@ -53,8 +53,9 @@ Careful here: these languages all use four categories, but they **disagree about
 
 | Language | `many` matches | `other` matches |
 |---|---|---|
-| Polish, Ukrainian | integers 0 and 5+ | fractions (1.5) |
-| Czech, Slovak | fractions (1.5) | **integers 0 and 5+** |
+| Polish | integers 0 and 5+, **except** those ending in 2–4 (22 → `few`; 12–14 stay `many`) | fractions (1.5) |
+| Ukrainian | integers 0 and 5+, **except** those ending in 1–4 (21 → `one`, 22 → `few`; 11–14 stay `many`) | fractions (1.5) |
+| Czech, Slovak | fractions (1.5) | **integers 0 and 5+** (21, 22, 101 all `other`) |
 
 So in Polish and Ukrainian the genitive plural goes in `many`, and in Czech and Slovak it goes in `other`.
 
