@@ -43,6 +43,9 @@
     "tagAccessible": "Barrierefrei",
     "playground": "Spielplatz"
   },
+  "map": {
+    "ariaLabel": "Spielplatzkarte"
+  },
   "zoom": {
     "in": "Vergrößern",
     "out": "Verkleinern"
