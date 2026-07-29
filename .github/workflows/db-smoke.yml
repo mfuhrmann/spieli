@@ -139,7 +139,11 @@ jobs:
           fi
 
           # It must have gone on to attempt the import rather than exiting.
-          echo "$logs" | grep -q 'Waiting for PostgreSQL' \
+          # Asserted on the download stage, the first log line unique to
+          # run_import: _wait_for_db now runs on the startup path *before* the
+          # probe, so 'Waiting for PostgreSQL' would match even if the script
+          # never reached the import.
+          echo "$logs" | grep -qE 'Downloading|Checking for updated PBF' \
             || { echo "FAIL: importer never reached the import path."; exit 1; }
 
           echo "OK: no schema apply attempted, no misleading banner."
