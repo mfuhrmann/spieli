@@ -7,6 +7,7 @@ on:
     paths:
       - 'importer/api.sql'
       - 'db/init.sql'
+      - 'importer/import.sh'
 
 jobs:
   db-smoke:
@@ -56,3 +57,105 @@ jobs:
           IMPRESSUM_URL: ""
           PRIVACY_URL: ""
           SITE_URL: http://localhost:8080
+
+  daemon-bootstrap:
+    name: Daemon mode bootstraps a fresh database
+    runs-on: ubuntu-latest
+
+    # Regression guard for #759: on a fresh volume the daemon branch must defer
+    # the startup api.sql apply instead of failing inside api.sql and
+    # restart-looping before run_import is ever reached. This is the inverse of
+    # the job above — that one loads the planet_osm_* stubs so api.sql *can*
+    # apply; this one deliberately loads nothing.
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+
+      - name: Set up environment
+        run: cp .env.example .env
+
+      - name: Start database
+        run: docker compose up -d db
+        timeout-minutes: 2
+
+      - name: Wait for database
+        run: |
+          until docker compose exec -T db pg_isready -U osm -d osm; do
+            sleep 1
+          done
+        timeout-minutes: 2
+
+      - name: Build importer image
+        run: docker compose --profile import build importer
+        timeout-minutes: 10
+
+      - name: Start importer in daemon mode against the blank DB
+        # PBF_URL points at the discard port so the download fails fast — this
+        # test is about the startup schema-apply decision, not the import.
+        # OSM_BBOX is set so no Nominatim lookup is attempted.
+        run: |
+          docker compose --profile import run -d --name spieli-daemon-probe \
+            -e REIMPORT_INTERVAL_MIN_DAYS=2 \
+            -e REIMPORT_INTERVAL_MAX_DAYS=10 \
+            -e REIMPORT_STARTUP_JITTER_MAX_HOURS=0 \
+            -e OSM_BBOX=9.5,50.4,9.9,50.7 \
+            -e PBF_URL=http://127.0.0.1:9/nonexistent.osm.pbf \
+            importer
+        timeout-minutes: 2
+
+      - name: Assert the schema apply was deferred, not attempted
+        run: |
+          set -eu
+          deadline=$((SECONDS + 90))
+          while [ "$SECONDS" -lt "$deadline" ]; do
+            if docker logs spieli-daemon-probe 2>&1 \
+                 | grep -q 'deferring API schema apply'; then
+              echo "OK: startup schema apply was deferred."
+              break
+            fi
+            sleep 3
+          done
+
+          logs=$(docker logs spieli-daemon-probe 2>&1)
+          echo "----- importer log -----"
+          echo "$logs"
+          echo "------------------------"
+
+          echo "$logs" | grep -q 'deferring API schema apply' \
+            || { echo "FAIL: importer never logged the deferral (#759 regression)."; exit 1; }
+
+          # The original bug: api.sql applied before any import existed.
+          # Written as `if` rather than `grep && exit` so the passing case does
+          # not return non-zero and trip `set -e`.
+          if echo "$logs" | grep -q 'does not exist'; then
+            echo "FAIL: api.sql was applied against a fresh DB (#759 regression)."
+            exit 1
+          fi
+
+          # The misleading banner that made #759 hard to read.
+          if echo "$logs" | grep -q 'API_ONLY mode'; then
+            echo "FAIL: daemon startup logged 'API_ONLY mode' with API_ONLY unset."
+            exit 1
+          fi
+
+          # It must have gone on to attempt the import rather than exiting.
+          echo "$logs" | grep -q 'Waiting for PostgreSQL' \
+            || { echo "FAIL: importer never reached the import path."; exit 1; }
+
+          echo "OK: no schema apply attempted, no misleading banner."
+        timeout-minutes: 3
+
+      - name: Assert the container did not die
+        run: |
+          set -eu
+          state=$(docker inspect -f '{{.State.Status}}:{{.State.ExitCode}}' spieli-daemon-probe)
+          echo "container state: $state"
+          case "$state" in
+            running:*) echo "OK: importer is alive and scheduling retries." ;;
+            *:0)       echo "OK: importer exited cleanly." ;;
+            *)         echo "FAIL: importer exited non-zero ($state) — restart loop (#759)."; exit 1 ;;
+          esac
+
+      - name: Tear down
+        if: always()
+        run: docker rm -f spieli-daemon-probe || true

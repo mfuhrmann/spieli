@@ -91,6 +91,50 @@ fi
 
 export PGPASSWORD="$POSTGRES_PASSWORD"
 
+# Helper: abort with an operator-facing message on stderr. Inside run_import's
+# subshell this exits the subshell, so daemon mode reports the failed run and
+# retries instead of killing the container.
+fail() {
+    echo "[importer] $*" >&2
+    exit 1
+}
+
+# Helper: block until PostgreSQL accepts connections.
+# `pg_isready` performs no authentication and does not verify POSTGRES_DB
+# exists — it only proves the server is listening and out of startup/recovery.
+# The first real query is what validates credentials.
+_wait_for_db() {
+    echo "[importer] Waiting for PostgreSQL at ${POSTGRES_HOST}:${POSTGRES_PORT}..."
+    until pg_isready -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -q; do
+        sleep 2
+    done
+    echo "[importer] PostgreSQL is ready."
+}
+
+# Helper: has an import ever completed successfully against this database?
+#
+# api.import_status is created near the end of api.sql — after every
+# planet_osm-dependent view — so its existence proves a prior api.sql apply
+# ran to completion, which in turn proves the planet_osm_* tables, the api
+# schema and the web_anon role all exist. That makes it a stricter and more
+# stable precondition than probing planet_osm_polygon directly, which
+# osm2pgsql drops and renames mid-import. The name is schema-qualified, so
+# the answer does not depend on the role's search_path.
+#
+# Prints "t" or "f" and returns 0 when the question was answered. Returns
+# non-zero with psql's error text on stdout when the database could not be
+# asked at all — callers MUST NOT read a failed probe as "fresh database".
+# -X keeps a stray psqlrc out of the parsed output, -w never prompts for a
+# password, and ON_ERROR_STOP makes a SQL error a non-zero exit rather than
+# empty output (to_regclass itself returns NULL instead of erroring for a
+# missing table or schema).
+_has_completed_import() {
+    psql -X -w -v ON_ERROR_STOP=1 \
+        -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" \
+        -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -A \
+        -c "SELECT to_regclass('api.import_status') IS NOT NULL" 2>&1
+}
+
 # Helper: clear importing flag. Called from EXIT trap inside run_import and
 # after the successful UPSERT. Ignores errors — the table may not exist on
 # the very first import (created by schema-apply), or the DB may be
@@ -121,11 +165,7 @@ run_import() (
     # --------------------------------------------------------------------------- #
     # Wait for PostGIS to be ready
     # --------------------------------------------------------------------------- #
-    echo "[importer] Waiting for PostgreSQL at ${POSTGRES_HOST}:${POSTGRES_PORT}..."
-    until pg_isready -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -q; do
-        sleep 2
-    done
-    echo "[importer] PostgreSQL is ready."
+    _wait_for_db
 
     # --------------------------------------------------------------------------- #
     # Download PBF — re-download only if Geofabrik has a newer version.
@@ -470,13 +510,11 @@ run_import() (
 run_api_apply() (
     set -e
 
-    echo "[importer] API_ONLY mode — skipping PBF download and osm2pgsql import."
-
-    echo "[importer] Waiting for PostgreSQL at ${POSTGRES_HOST}:${POSTGRES_PORT}..."
-    until pg_isready -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -q; do
-        sleep 2
-    done
-    echo "[importer] PostgreSQL is ready."
+    # No mode banner here: this function is called both from API_ONLY mode and
+    # from daemon startup, and printing "API_ONLY mode" on the daemon path made
+    # bug reports read as though API_ONLY had been set when it had not (#759).
+    # Each call site announces its own mode.
+    _wait_for_db
 
     echo "[importer] Applying API schema..."
     TMP_API_SQL=$(mktemp)
@@ -498,6 +536,23 @@ run_api_apply() (
 
 if [ -n "$API_ONLY" ]; then
     # ── API-only mode ────────────────────────────────────────────────────── #
+    echo "[importer] API_ONLY mode — skipping PBF download and osm2pgsql import."
+    _wait_for_db
+
+    # api.sql cannot be applied before the first import has created the
+    # planet_osm_* tables. Exit 0 with a diagnosis instead of dying inside
+    # api.sql, so a sequential upgrade sweep (scripts/upgrade-stacks.sh) is not
+    # aborted by one stack that has never completed an import.
+    #
+    # Only a definitive "f" short-circuits. A failed probe falls through to
+    # run_api_apply on purpose: API_ONLY is an explicit operator request, so
+    # the real psql error belongs in the operator's terminal.
+    if _IMPORT_STATE=$(_has_completed_import) && [ "$_IMPORT_STATE" = "f" ]; then
+        echo "[importer] No completed import on record — nothing to apply yet."
+        echo "[importer] Run a full import first: docker compose run --rm importer"
+        exit 0
+    fi
+
     run_api_apply
 elif [ -n "$REIMPORT_INTERVAL_MIN_DAYS" ] && [ -n "$REIMPORT_INTERVAL_MAX_DAYS" ]; then
     # ── Daemon mode ─────────────────────────────────────────────────────────── #
@@ -508,11 +563,51 @@ elif [ -n "$REIMPORT_INTERVAL_MIN_DAYS" ] && [ -n "$REIMPORT_INTERVAL_MAX_DAYS" 
     # reliable fallback. Ignored if the DB isn't up yet (|| true).
     _clear_importing
 
-    # Always apply api.sql on startup so schema changes from a new image take
-    # effect immediately — even when the PBF reimport is deferred by the grace
-    # check below. Without this, a Watchtower image update would leave the app
+    # Apply api.sql on startup so schema changes from a new image take effect
+    # immediately — even when the PBF reimport is deferred by the grace check
+    # below. Without this, a Watchtower image update would leave the app
     # running against the old schema for up to REIMPORT_INTERVAL days.
-    run_api_apply
+    #
+    # Skipped when no import has ever completed: api.sql references the
+    # planet_osm_* tables, which only exist after the first import, so applying
+    # it here would fail and restart-loop the container before run_import is
+    # ever reached (#759). run_import applies the schema itself once the import
+    # is done.
+    #
+    # The grace check below keys off the same api.import_status sentinel, which
+    # is what makes deferring safe: no sentinel means the grace check also finds
+    # no timestamp and falls straight through to an immediate import. A deferred
+    # apply is therefore always followed by an import, never by a sleep.
+    _wait_for_db
+
+    # Retry the probe a few times so a transient hiccup — a connection-slot
+    # spike right after a Watchtower restart, say — is not mistaken for a
+    # verdict. An unanswered probe must never be read as "fresh database":
+    # doing so would silently skip the schema apply on a populated node and
+    # leave the new image on the old schema for up to REIMPORT_INTERVAL days,
+    # which is the exact regression this startup apply exists to prevent.
+    IMPORT_STATE=""
+    PROBE_TRY=1
+    while [ "$PROBE_TRY" -le 3 ]; do
+        if IMPORT_STATE=$(_has_completed_import); then
+            break
+        fi
+        echo "[importer] Could not determine import state (attempt ${PROBE_TRY}/3): ${IMPORT_STATE}" >&2
+        IMPORT_STATE=""
+        PROBE_TRY=$((PROBE_TRY + 1))
+        if [ "$PROBE_TRY" -le 3 ]; then
+            sleep 5
+        fi
+    done
+
+    if [ "$IMPORT_STATE" = "t" ]; then
+        echo "[importer] Applying API schema on startup (image may carry schema changes)."
+        run_api_apply
+    elif [ "$IMPORT_STATE" = "f" ]; then
+        echo "[importer] No completed import on record — deferring API schema apply to first import."
+    else
+        echo "[importer] WARNING: import state unknown after 3 attempts — skipping startup API schema apply and continuing to import." >&2
+    fi
 
     # Startup grace check: if a recent import is on record in the DB, sleep
     # until the next scheduled time rather than importing immediately. This
