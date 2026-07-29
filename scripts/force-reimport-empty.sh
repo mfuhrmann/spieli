@@ -24,9 +24,11 @@ STACKS=(
   "$HOME/spieli-niedersachsen:data-node-ui:8096"
   # Port 8095 is intentionally absent: Baden-Württemberg is hosted on a
   # different operator's machine and joins the federation via registry.json,
-  # so this host has no ~/spieli-bawue stack to reimport. Do not re-add it here
-  # — scripts/setup-germany-backends.sh reserves 8095 for it federation-wide,
-  # not on this host.
+  # so this host has no ~/spieli-bawue stack to reimport. Do not re-add it here.
+  # Note scripts/setup-germany-backends.sh allocates 8095 to bawue in its
+  # federation-wide BACKENDS list and would provision it locally too —
+  # SKIP_SLUGS=("bawue") is what keeps it off this host, and that opt-out is
+  # manual, so confirm it before assuming the stack is absent.
 )
 
 failed=()
@@ -46,11 +48,20 @@ for entry in "${STACKS[@]}"; do
 
   echo ""
   echo "━━━ $name — 0 playgrounds, running forced reimport ━━━"
-  cd "$dir"
+  # Guarded: upgrade-stacks.sh has `cd "$dir" || fail`, and without an
+  # equivalent here a missing directory aborts the whole sweep under `set -e`,
+  # so the failed[] summary below never prints and an earlier genuine failure
+  # becomes indistinguishable from the abort. This script collects failures
+  # rather than dying, so record and move on.
+  cd "$dir" || { echo "✗ $name — cannot cd to $dir"; failed+=("$name"); continue; }
 
-  # Use the stack's own profiles rather than assuming data-node-ui: app and
-  # importer are profile-gated, so a stack on a different profile set would
-  # otherwise be run against the wrong services (see #718).
+  # Derive the profile flags from the stack's own entry instead of hardcoding
+  # data-node-ui, mirroring upgrade-stacks.sh so the two lists stop drifting.
+  # This is consistency, not a functional fix: `docker compose run <svc>`
+  # auto-enables the target service's own profiles, so the importer starts with
+  # or without these flags (verified on Compose v5.1.2 — even a wrong
+  # --profile still runs it). The flags do matter for the config/pull/up calls
+  # in upgrade-stacks.sh (#718).
   profile_flags=()
   for p in $profiles; do
     profile_flags+=(--profile "$p")
