@@ -10,25 +10,35 @@ WEBROOT="/usr/share/nginx/html"
 # Sanitize string values interpolated into JS string literals.
 # Strip anything that isn't safe for the expected value type to prevent
 # single-quote breakout / code injection.
-SAFE_API_BASE_URL=$(printf '%s'    "${API_BASE_URL:-}"    | tr -cd 'A-Za-z0-9:/.+_%~-')
+#
+# safe_url keeps full URL syntax including query strings and fragments —
+# Matrix links (https://matrix.to/#/#room:server) and wiki links with
+# anchors are otherwise silently mangled. Quotes, backslashes, angle
+# brackets and whitespace stay stripped, which is what makes the value
+# safe inside a single-quoted JS string literal.
+safe_url() { printf '%s' "$1" | tr -cd 'A-Za-z0-9:/.+_%~?#&=@,;-'; }
+
+SAFE_API_BASE_URL=$(safe_url  "${API_BASE_URL:-}")
+# PARENT_ORIGIN is an origin (scheme://host[:port]) used for postMessage
+# targeting — no path, query or fragment allowed, so it keeps a tighter set.
 SAFE_PARENT_ORIGIN=$(printf '%s'   "${PARENT_ORIGIN:-}"   | tr -cd 'A-Za-z0-9:/.+-')
-SAFE_REGISTRY_URL=$(printf '%s'    "${REGISTRY_URL:-}"    | tr -cd 'A-Za-z0-9:/.+_%~-')
-SAFE_WIKI_URL=$(printf '%s'        "${REGION_PLAYGROUND_WIKI_URL:-}" | tr -cd 'A-Za-z0-9:/.+_%~-')
-SAFE_CHAT_URL=$(printf '%s'        "${REGION_CHAT_URL:-}" | tr -cd 'A-Za-z0-9:/.+_%~-')
+SAFE_REGISTRY_URL=$(safe_url  "${REGISTRY_URL:-}")
+SAFE_WIKI_URL=$(safe_url      "${REGION_PLAYGROUND_WIKI_URL:-}")
+SAFE_CHAT_URL=$(safe_url      "${REGION_CHAT_URL:-}")
 
 # Legal URLs — IMPRESSUM_URL / PRIVACY_URL override env vars take priority.
 # If unset, construct from SITE_URL + path (assuming nginx serves the
 # generated files at /legal/impressum and /legal/datenschutz).
-SAFE_SITE_URL=$(printf '%s' "${SITE_URL:-}" | tr -cd 'A-Za-z0-9:/.+_%~-')
+SAFE_SITE_URL=$(safe_url "${SITE_URL:-}")
 if [ -n "${IMPRESSUM_URL:-}" ]; then
-    SAFE_IMPRESSUM_URL=$(printf '%s' "${IMPRESSUM_URL}" | tr -cd 'A-Za-z0-9:/.+_%~-')
+    SAFE_IMPRESSUM_URL=$(safe_url "${IMPRESSUM_URL}")
 elif [ -n "$SAFE_SITE_URL" ]; then
     SAFE_IMPRESSUM_URL="${SAFE_SITE_URL}/legal/impressum"
 else
     SAFE_IMPRESSUM_URL="/legal/impressum"
 fi
 if [ -n "${PRIVACY_URL:-}" ]; then
-    SAFE_PRIVACY_URL=$(printf '%s' "${PRIVACY_URL}" | tr -cd 'A-Za-z0-9:/.+_%~-')
+    SAFE_PRIVACY_URL=$(safe_url "${PRIVACY_URL}")
 elif [ -n "$SAFE_SITE_URL" ]; then
     SAFE_PRIVACY_URL="${SAFE_SITE_URL}/legal/datenschutz"
 else
