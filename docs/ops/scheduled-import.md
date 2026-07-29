@@ -30,7 +30,7 @@ Step 1 is **skipped when no import has ever completed**. `api.sql` builds views 
 [importer] No completed import on record — deferring API schema apply to first import.
 ```
 
-The import that follows applies the schema itself, so nothing is lost. Both step 1 and step 2 key off the same marker (`api.import_status`), which is what makes deferring safe: if the marker is absent, the grace check also finds no timestamp and falls straight through to an immediate import — a deferred apply is always followed by an import, never by a sleep.
+The import that follows applies the schema itself, so nothing is lost. Both step 1 and step 2 key off the same marker (`api.import_status`), which is what makes deferring safe: if the marker is absent, the grace check also finds no timestamp and falls straight through to the import. The only wait that can intervene is the deliberate fresh-install stagger (`REIMPORT_STARTUP_JITTER_MAX_HOURS`) — never a grace sleep.
 
 If the importer cannot reach the database to answer that question, it retries, then says so and continues to the import rather than assuming either answer:
 
