@@ -55,26 +55,28 @@ file_format_params:
   json_indent: 2
   json_indent_style: spaces
 
-# Add-ons enabled on the component (Operations → Add-ons).
+# Add-ons, verified against the live install on 2026-07-31 (#796). Read them
+# back from the component's `addons` field (a list of /api/addons/<id>/ URLs)
+# or from /api/addons/; the /addons/ sub-path on the component returns 405.
+# Each object names its scope, and `wlc` has no add-on subcommand, so changes
+# stay a UI action.
 addons:
-  # Removes translation keys no longer present in en.json. Without this,
-  # locale files accumulate stale keys — es.json and fr.json each carried
-  # three that predated their removal from the template.
+  # Project-scoped (Project → Add-ons), so it covers glossary as well and does
+  # not appear in the component's own `addons` list. Removes translation keys
+  # no longer present in en.json — without it locale files accumulate stale
+  # keys, as es.json and fr.json each did with three that predated their
+  # removal from the template.
   - weblate.cleanup.generic
-  # Publishes the component's repository at
-  # https://hosted.weblate.org/git/spieli/ui-strings/. Must stay enabled: the
-  # stuck-component recovery in docs/contributing/translations.md diffs every
-  # locale against that remote to prove no translation is lost before resetting.
-  - weblate.gitexport.gitexport
+  # Component-scoped, enabled 2026-07-31 (#796) with squash: all and
+  # append_trailers: true. Collapses a push into one commit instead of one per
+  # language. This is what the old `squash_commits: true` under `component:`
+  # was reaching for — that is not a component field at all (absent from the
+  # live 89-field schema), so it never took effect and #734 pushed twelve
+  # commits, which main's squash-merge then folded into one commit body.
+  - weblate.git.squash
 
-# Wanted, not yet enabled. `squash_commits` used to sit under `component:`
-# above; it is not a component field at all (#796 — absent from the live
-# component's 89-field REST schema), so it never took effect and #734 pushed
-# twelve unsquashed commits. Squashing is what that setting was reaching for:
-# one commit per push instead of one per language.
-#
-# Add-ons cannot be managed through the API — /api/components/spieli/
-# ui-strings/addons/ and the project-level endpoint both return 405 — so this
-# has to be switched on under Operations → Add-ons. Move it into `addons:`
-# above once it is.
-#   - weblate.git.squash        # "Squash Git commits", strategy: all
+# NOT an add-on here, despite what the Weblate manual implies: Hosted Weblate
+# serves the component repository at the `git_export` URL natively, and
+# weblate.gitexport.gitexport appears nowhere in this install's add-on list.
+# The recovery in docs/contributing/translations.md diffs against that URL, so
+# it still has to resolve — just nothing to enable.
