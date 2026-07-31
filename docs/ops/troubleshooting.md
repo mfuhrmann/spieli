@@ -46,7 +46,7 @@ importer-1  | psql:/tmp/tmp.JsTPhaBgfJ:87: ERROR:  relation "planet_osm_point" d
 importer-1 exited with code 3 (restarting)
 ```
 
-**Cause:** Fixed in spieli 0.8.1 and later. Older images applied `api.sql` on daemon startup before the first import had created the `planet_osm_*` tables, so the schema apply failed and the container restarted before it ever reached the import. The `API_ONLY mode` line in the log is misleading — that banner was printed unconditionally; `API_ONLY` was not actually set.
+**Cause:** Fixed in spieli 0.9.0 and later. Older images applied `api.sql` on daemon startup before the first import had created the `planet_osm_*` tables, so the schema apply failed and the container restarted before it ever reached the import. The `API_ONLY mode` line in the log is misleading — that banner was printed unconditionally; `API_ONLY` was not actually set.
 
 **Fix:** Pull a current image and restart:
 
