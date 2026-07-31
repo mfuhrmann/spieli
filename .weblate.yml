@@ -36,11 +36,10 @@ component:
   # broke the component on 2026-07-29 (#794). With `merge`, Weblate merges main
   # into its branch and a squashed upstream PR integrates cleanly.
   merge_style: merge
-  # NOTE (#794): not returned as a component field by the REST API, and the
-  # push for PR #734 carried 12 unsquashed commits — so this either maps to the
-  # "Squash Git commits" add-on or is not in effect. Verify in the UI before
-  # relying on it.
-  squash_commits: true
+  # Verified against the live component on 2026-07-31 (#796). These three were
+  # the only fields that had drifted — Weblate still carried its stock English
+  # templates, which is why the squash body of #734 reads as twelve
+  # "* Translated using Weblate (…)" bullets. PATCHed to the values below.
   commit_message: "chore(i18n): update translations from Weblate"
   add_message: "chore(i18n): add {{ language_name }} translation from Weblate"
   delete_message: "chore(i18n): remove {{ language_name }} translation from Weblate"
@@ -56,14 +55,45 @@ file_format_params:
   json_indent: 2
   json_indent_style: spaces
 
-# Add-ons enabled on the component (Operations → Add-ons).
+# Add-ons, verified against the live install on 2026-07-31 (#796). `scope` is
+# load-bearing when rebuilding from this file: installing a project-scoped
+# add-on on the component silently narrows what it covers.
+#
+# Read them back from the component's `addons` field (a list of
+# /api/addons/<id>/ URLs) or from /api/addons/; the /addons/ sub-path on the
+# component returns 405. Both need a token — unauthenticated, /api/addons/
+# returns 200 with an empty result set rather than an error. `wlc` has no
+# add-on subcommand, so changes stay a UI action.
 addons:
-  # Removes translation keys no longer present in en.json. Without this,
-  # locale files accumulate stale keys — es.json and fr.json each carried
-  # three that predated their removal from the template.
-  - weblate.cleanup.generic
-  # Publishes the component's repository at
-  # https://hosted.weblate.org/git/spieli/ui-strings/. Must stay enabled: the
-  # stuck-component recovery in docs/contributing/translations.md diffs every
-  # locale against that remote to prove no translation is lost before resetting.
-  - weblate.gitexport.gitexport
+  # Removes translation keys no longer present in en.json — without it locale
+  # files accumulate stale keys, as es.json and fr.json each did with three
+  # that predated their removal from the template. Installed project-wide, so
+  # it covers glossary too and does not appear in the component's own `addons`
+  # list.
+  - id: weblate.cleanup.generic
+    scope: project          # Project → Add-ons
+  # Collapses a push into one commit instead of one per language. This is what
+  # the old `squash_commits: true` under `component:` was reaching for — not a
+  # component field at all (absent from the live 89-field schema), so it never
+  # took effect and #734 pushed twelve commits, which main's squash-merge then
+  # folded into one commit body.
+  #
+  # commit_message left empty: Weblate then builds the squashed body from the
+  # pending commits' own messages, so it repeats once per language. Cosmetic;
+  # set it here to collapse the body to a single line.
+  #
+  # Note that weblate-translations is force-pushed with or without this add-on
+  # — Weblate's GitHub backend always pushes with --force. Squashing only
+  # rewrites more of the branch each time.
+  - id: weblate.git.squash
+    scope: component        # Operations → Add-ons
+    configuration:
+      squash: all
+      append_trailers: true
+      commit_message: ""
+
+# NOT an add-on here, despite what the Weblate manual implies: Hosted Weblate
+# serves the component repository at the `git_export` URL natively, and
+# weblate.gitexport.gitexport appears nowhere in this install's add-on list.
+# The recovery in docs/contributing/translations.md diffs against that URL, so
+# it still has to resolve — just nothing to enable.

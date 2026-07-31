@@ -66,7 +66,7 @@ for f in locales/*.json; do
 done
 ```
 
-The `weblate` URL is served by the **Git exporter** add-on. Without it enabled on the component that host returns nothing and none of the steps below can be carried out.
+The `weblate` URL comes from the component's `git_export` field and is served by Hosted Weblate natively — there is no Git exporter add-on to enable on this project. Check it resolves before relying on it; without it none of the steps below can be carried out.
 
 A locale that prints nothing is byte-identical on both sides and cannot lose anything. For any locale that does differ, inspect the diff and decide which side is correct — then:
 
@@ -177,18 +177,36 @@ The `.weblate.yml` file in the repo root records the component configuration. We
 | Source language | `en` | Settings → Basic |
 | Push branch | `weblate-translations` | Settings → Version control |
 | Merge style | `merge` | Settings → Version control |
+| Commit message templates | `chore(i18n): …` | Settings → Commit messages |
 | JSON indentation | `2`, spaces | Settings → Files |
 | Sort JSON keys | **off** | Settings → Files |
-| Cleanup translation files | enabled | Operations → Add-ons |
-| Git exporter | enabled | Operations → Add-ons |
+| Cleanup translation files | enabled, **project-wide** | Project → Add-ons |
+| Squash Git commits | enabled, `squash: all` | Operations → Add-ons |
+| Git export URL | served natively — no add-on | — |
 
 **Merge style must stay `merge`.** Weblate's default is `rebase`, which replays Weblate's own commits onto `main` on every pull. Because `main` allows only squash and rebase merges, those commits never become ancestors of `main`, so the replay repeats forever and eventually conflicts — see [If the component gets stuck](#if-the-component-gets-stuck). With `merge`, Weblate merges `main` into its branch instead and a squashed upstream PR integrates cleanly.
 
 `json_indent` replaced the "Customize JSON output" add-on, which Weblate removed in 5.13. Leave key sorting off — Weblate follows the `en.json` template order, and sorting would reshuffle every locale file into one unreviewable diff.
 
-The **Cleanup translation files** add-on (`weblate.cleanup.generic`) removes keys no longer present in `en.json`. Without it, locale files accumulate stale keys.
+The **Cleanup translation files** add-on (`weblate.cleanup.generic`) removes keys no longer present in `en.json`. Without it, locale files accumulate stale keys. It is installed at **project** scope, not on the component, so it covers `glossary` too — which is why it does not appear in the component's own `addons` list.
 
-The **Git exporter** add-on (`weblate.gitexport.gitexport`) publishes the component's repository at `https://hosted.weblate.org/git/spieli/ui-strings/`. It must stay enabled — the recovery procedure above diffs against that remote to prove no translation is lost, and without it there is no way to inspect Weblate's checkout before resetting it.
+The **Squash Git commits** add-on (`weblate.git.squash`) collapses a push into one commit instead of one per language. Enabled 2026-07-31 (#796) with `squash: all` and `append_trailers: true`. Before it, #734 arrived as twelve commits, and because `main` squash-merges they all landed in the merge commit body — `cb8d9893` carries eleven `* Translated using Weblate (…)` bullets plus one `* Update translation files`.
+
+It squashes the commits, not their messages: the add-on's own *Commit message* option is empty, so Weblate builds the body from the pending commits' messages and the single commit still repeats `chore(i18n): update translations from Weblate` once per language. Cosmetic — set that option if it ever bothers you.
+
+`weblate-translations` is force-pushed and always was: Weblate's GitHub backend pushes with `--force` regardless of add-ons. Squashing rewrites more of the branch each time, so expect stale line comments on the long-lived translation PR and a `git fetch --force` for local checkouts. Not corruption.
+
+There is **no Git exporter add-on** on this project. Hosted Weblate serves the component's repository at the `git_export` URL natively, so the recovery procedure's `weblate` remote needs nothing enabled.
+
+Commit message templates use Conventional Commits, matching the rest of the repo. They had drifted from `.weblate.yml` and were corrected on the live component on 2026-07-31 (#796); the bullets above predate that.
+
+!!! note "Auditing the configuration over the API"
+
+    A plain `GET` on the component — **no token needed** — returns all 89 fields, including `merge_style`, `push_branch`, `git_export` and the message templates. `wlc show` returns only a trimmed subset, so use a raw request for an audit. `squash_commits` is **not** among the 89 — it is not a component field at all, which is why it never took effect while it sat in `.weblate.yml`.
+
+    Add-ons need a token, and are readable only in the right place. The `/api/components/spieli/ui-strings/addons/` sub-path returns `405 Method Not Allowed` for everyone; instead read the component's `addons` field, which holds `/api/addons/<id>/` URLs, or list `/api/addons/` for every add-on across scopes. Each object names its scope — `component` set and `project` null means component-level, and the reverse for project-wide.
+
+    **Use a token for those two, or they will lie to you.** Unauthenticated, `/api/addons/` answers `200` with `{"count": 0, "results": []}` and `/api/addons/<id>/` answers `404`, so an audit without one concludes no add-ons are installed. `wlc` has no add-on subcommand, so changes stay a UI action.
 
 ICU plural strings appear as a single field in the Weblate editor. Translators write the full ICU expression for their language.
 
