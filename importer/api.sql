@@ -253,9 +253,13 @@ CREATE MATERIALIZED VIEW public.playground_stats AS
       -- teenshelter, one through a pitch. Same false signal that took the derived
       -- flags out of has_equipment (#776).
       --
-      -- The sandpit exclusion is inherited from the previous predicate and is the
-      -- weakest part of this rule: a raised, roll-under sand table is a classic
-      -- inclusive feature. Kept to avoid bundling an unrelated semantic change.
+      -- Sandpits are excluded for the same reason as the area tag: an adult can
+      -- lift a child into essentially any sandpit, so `wheelchair` on one does
+      -- not separate playgrounds. Purpose-built roll-under sand tables do exist
+      -- and would be a real signal, but the tagging cannot express the
+      -- difference — none of the 40 wheelchair-tagged sandpits in Fulda carries
+      -- a `height` or description tag. Revisit if that ever becomes
+      -- distinguishable.
       BOOL_OR(e.tags ? 'playground'
               AND e.tags->'playground' <> 'sandpit'
               AND e.tags->'wheelchair' IN ('yes','limited','designated'))       AS wheelchair_play_yes,

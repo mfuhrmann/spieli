@@ -48,8 +48,12 @@ The current predicate's `NOT (e.tags ? 'playground')` branch lets any object in 
 
 Pitches are the genuinely arguable exclusion: a wheelchair-accessible basketball court is real play infrastructure. They are left out because `leisure=pitch` accessibility usually describes court access rather than adapted play, and because no pitch in this dataset would change state. Revisit if a region shows meaningful `wheelchair` tagging on pitches.
 
-**D5 — `playground=sandpit` stays excluded from `'yes'`, and this is the weakest decision here.**
-Inherited from the existing predicate. A raised, roll-under sandpit is a classic inclusive feature, so the exclusion may be wrong on the merits; it is kept to avoid bundling an unrelated semantic change, and because it affects 2 objects here. Flagged explicitly rather than silently carried — worth a separate look with a maintainer who has surveyed such tables.
+**D5 — `playground=sandpit` stays excluded from `'yes'`, for the same reason as D1.**
+Inherited from the existing predicate, where it arrived unexplained in 6ec3f98 (#67) with the original filter panel. It now has a rationale, and it is the same one: an accompanying adult can lift a child into essentially any sandpit, so `wheelchair` on a sandpit is true nearly everywhere and therefore separates nothing. Admitting it would repeat the area-tag mistake at device level.
+
+Purpose-built roll-under sand tables genuinely are an inclusive feature and would be a real signal — but the tagging cannot express the difference. None of the 40 wheelchair-tagged sandpits in this dataset carries a `height` or description tag, so a raised table and a hole in the ground are indistinguishable to the query. Revisit if that changes.
+
+Measured impact of the exclusion: 6 playgrounds have a positively tagged sandpit, 3 of which already reach `'yes'` through other equipment. Dropping the exclusion would move exactly 3 playgrounds from `'no'` to `'yes'` (18 → 21). Confirmed with the maintainer who surveyed them.
 
 **D6 — Redefine `for_wheelchair` rather than replace it.**
 `for_wheelchair` appears in `get_playgrounds_bbox`, `get_playground`, `get_playgrounds`, `get_playground_centroids` and `filterStore.wheelchair`, and hub mode merges backends of mixed versions. Keeping the name, the type and the position means an un-upgraded backend still answers the filter — with the old, broader meaning, which is a semantic skew rather than a break. That is the same trade `rework-mapping-detail-rating` accepts for the completeness buckets, and it is the cheaper side of the trade in both cases.
