@@ -12,7 +12,7 @@
 - [x] Leave `get_playground_clusters`, `get_playground_centroids` and `get_meta` untouched (design D8)
 - [x] `make db-apply`, then verify the three state counts against the dataset (expected on Fulda: 18 / 58 / 655)
 - [x] Verify `for_wheelchair = (wheelchair_play = 'yes')` for every row
-- [ ] Fresh-volume check: `make down && docker volume rm spieli_pgdata spieli_pgdata2 && make up`
+- [x] Fresh-volume check: `make down && docker volume rm spieli_pgdata spieli_pgdata2 && make up`
 
 ### Frontend
 
