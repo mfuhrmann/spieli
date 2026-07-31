@@ -338,6 +338,38 @@ docker compose -f compose.yml --profile <mode> run --rm importer
 
 ---
 
+## Schema apply fails with `relation "public.playground_stats" does not exist`
+
+**Symptom:** An `API_ONLY=1` run — usually inside `scripts/upgrade-stacks.sh` — dies partway through:
+
+```
+DROP MATERIALIZED VIEW
+SELECT 8802
+CREATE INDEX
+psql:/tmp/tmp.XXXXXX:352: ERROR:  relation "public.playground_stats" does not exist
+```
+
+**Cause:** Two sessions applied `api.sql` at the same time. The script drops and recreates `public.playground_stats`, so the second session's `DROP MATERIALIZED VIEW ... CASCADE` removed the matview while the first was still building its indexes. The daemon importer applies the schema on container startup, so any restart of it during an apply triggers this.
+
+The dangerous case is when the two sessions come from **different image versions**. The failing run is visible; the surviving one is not. If the winner was the old image, the stack ends up serving the previous schema with a current app — and every check looks healthy, because the old schema is internally consistent.
+
+**Fix:** Confirm which schema is actually live. Every release that changed the matview adds columns, so check for one:
+
+```bash
+docker compose exec db psql -U osm -d osm -c "\d public.playground_stats" | grep has_theme
+```
+
+`has_theme` is absent on pre-v0.9.0 schemas. If it is missing after upgrading to v0.9.0 or later, the old image won the race. Recreate the daemon importer on the new image — `--force-recreate` matters, since a plain `up -d` restarts the container from the image it was created with:
+
+```bash
+docker compose --profile <mode> up -d --force-recreate importer
+docker compose logs -f importer   # wait for "Done. PostgREST schema reloaded."
+```
+
+Then re-check for the column. From v0.9.1 on, `api.sql` takes a session advisory lock, so concurrent applies queue instead of racing.
+
+---
+
 ## Database volume is very large after repeated imports
 
 **Symptom:** The `pgdata` Docker volume grows beyond expectations over time.

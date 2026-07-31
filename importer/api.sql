@@ -9,6 +9,32 @@
 --   - Uncommon tags land in other_tags (hstore)
 
 -- =========================================================================
+-- Apply lock. This script is not idempotent under concurrency: it DROPs and
+-- re-CREATEs public.playground_stats, so a second session running api.sql at
+-- the same time can drop the matview out from under the first one — which
+-- fails mid-script ("relation public.playground_stats does not exist") while
+-- the winner silently leaves *its* schema behind. When the two sessions come
+-- from different image versions, the loser is the new schema and the stack is
+-- left serving an old one that looks perfectly healthy (#800).
+--
+-- Ordering the callers cannot prevent this: the daemon importer applies the
+-- schema on startup, so a Watchtower update, a `docker compose up`, an
+-- upgrade sweep and `make db-apply` can each start an apply at any moment.
+-- A session-level advisory lock serialises them wherever they come from; it is
+-- released automatically when the session ends, including on a crash.
+--
+-- lock_timeout turns a stuck holder into a loud failure instead of a hang
+-- (ON_ERROR_STOP=1 aborts the apply), then reverts so it does not change how
+-- the rest of the script waits for ordinary relation locks. 30 min is above
+-- the worst observed full apply; a wait that long means something is wedged.
+-- The key is an arbitrary fixed constant — any concurrent apply uses the same
+-- one, and nothing else in the schema takes advisory locks.
+-- =========================================================================
+SET lock_timeout = '30min';
+SELECT pg_advisory_lock(4207332001);
+RESET lock_timeout;
+
+-- =========================================================================
 -- Parallel-query / memory tuning. We persist via ALTER SYSTEM (writes to
 -- postgresql.auto.conf in the data volume) so the values survive container
 -- recreation and apply to every connection — including PostgREST's runtime
