@@ -2,7 +2,9 @@
 
 ### Requirement: Mapping detail is derived from equipment and info, not from photos
 
-The system SHALL classify every playground into exactly one of three mapping-detail buckets, derived from two signals: whether any equipment is mapped inside the playground area (`hasEquipment`) and whether descriptive tags are present (`hasInfo` — `surface`, `opening_hours`, or an `access` value other than `yes`). The presence or absence of a photo tag SHALL NOT affect the bucket.
+The system SHALL classify every playground into exactly one of three mapping-detail buckets, derived from two signals: whether play infrastructure is mapped inside the playground area (`hasEquipment`) and whether descriptive tags are present (`hasInfo` — `surface`, `opening_hours`, or an `access` value other than `yes`). The presence or absence of a photo tag SHALL NOT affect the bucket.
+
+`hasEquipment` SHALL be satisfied by any object tagged `playground=*` inside the area, or by a `leisure=pitch` for soccer, basketball or table tennis. It SHALL NOT be satisfied by street furniture (`amenity=bench`, `amenity=shelter`, `leisure=picnic_table`) nor by flags derived from equipment tags (`is_water`, `for_baby`, `for_toddler`, `for_wheelchair`) on their own.
 
 The rule is:
 
@@ -12,9 +14,26 @@ The rule is:
 
 The bucket keys `complete` / `partial` / `missing` are the wire and storage identifiers and SHALL NOT be renamed; only their derivation and their user-facing label change.
 
+#### Scenario: A bench alone does not count as equipment
+
+- **WHEN** a playground area contains only an `amenity=bench`, and carries no `playground=*` object and no pitch
+- **THEN** `hasEquipment` is false
+- **AND** if the playground also carries no descriptive tag, its mapping detail is `missing`
+- **AND** if it carries `surface=sand`, its mapping detail is `partial`, not `complete`
+
+#### Scenario: A ball court counts as equipment
+
+- **WHEN** a playground area contains a `leisure=pitch` with `sport=soccer`, `sport=basketball` or `sport=table_tennis`, and no `playground=*` object
+- **THEN** `hasEquipment` is true
+
+#### Scenario: A derived flag alone does not count as equipment
+
+- **WHEN** `for_wheelchair` is true because a bench inside the area carries `wheelchair=yes`, and the area contains no `playground=*` object and no pitch
+- **THEN** `hasEquipment` is false
+
 #### Scenario: Equipment and info without a photo classifies as detailed
 
-- **WHEN** a playground has at least one mapped device, bench, pitch or other equipment item, and carries `surface=sand`
+- **WHEN** a playground has at least one mapped `playground=*` device or a qualifying pitch, and carries `surface=sand`
 - **AND** it carries no `panoramax`, `wikimedia_commons` or Wikimedia-hosted `image` tag
 - **THEN** its mapping detail is `complete`
 - **AND** it renders with the `complete` fill and stroke
@@ -56,24 +75,31 @@ The mapping-detail rule SHALL be implemented identically in the client (`app/src
 
 ### Requirement: Photo availability is surfaced as an additive marker
 
-The system SHALL surface the presence of a photo (`panoramax`, `wikimedia_commons`, or a Wikimedia-hosted `image` tag) as a distinct additive marker rather than as an input to the mapping-detail bucket. The marker SHALL appear as a glyph on the playground polygon and as a badge in the playground detail panel.
+The system SHALL surface the presence of a photo (`panoramax`, `wikimedia_commons`, or a Wikimedia-hosted `image` tag) as a distinct additive marker rather than as an input to the mapping-detail bucket. The marker SHALL be rendered on the map, at the playground's interior point, and SHALL be explained in the legend.
 
-#### Scenario: Photo glyph on a detailed playground
+The detail panel SHALL NOT carry a photo badge: it already renders the photos themselves, so a badge would restate what the reader can see.
 
-- **WHEN** a playground classifies as `complete` and carries a `panoramax` tag
-- **THEN** the polygon renders the `complete` fill plus a camera glyph
-- **AND** the detail panel shows a photo badge
+#### Scenario: Photo glyph is actually drawn
 
-#### Scenario: Photo glyph on a basic playground
+- **WHEN** a playground carrying a `panoramax` tag is rendered at the polygon tier
+- **THEN** a camera glyph appears at the polygon's interior point
+- **AND** it is drawn on top of the polygon fill
 
-- **WHEN** a playground classifies as `partial` and carries a `wikimedia_commons` tag
-- **THEN** the polygon renders the `partial` fill plus a camera glyph
+#### Scenario: Photo glyph is independent of the bucket
+
+- **WHEN** two playgrounds carry a photo tag and classify as `complete` and `partial` respectively
+- **THEN** both render their own bucket fill plus the same camera glyph
 
 #### Scenario: No photo, no glyph
 
 - **WHEN** a playground carries no photo tag
-- **THEN** no camera glyph is rendered and no photo badge appears in the detail panel
-- **AND** no penalty wording is shown
+- **THEN** no camera glyph is rendered
+- **AND** no penalty wording is shown anywhere
+
+#### Scenario: The legend explains the glyph
+
+- **WHEN** the legend is open
+- **THEN** it shows the camera glyph with a label identifying it as "has a photo"
 
 ### Requirement: Mapping detail is presented as a sequential ramp, not a verdict
 

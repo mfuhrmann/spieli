@@ -17,9 +17,11 @@ Each playground is colour-coded to show how much of it has been mapped in OpenSt
 
 | Colour | What it means |
 |---|---|
-| Dark green | Detailed — mapped equipment **and** at least one detail (surface, opening hours, or access) |
-| Mid green | Basic — one of the two, not both |
+| Bright green | Detailed — mapped play equipment **and** at least one detail (surface, opening hours, or access) |
+| Dark green | Basic — one of the two, not both |
 | Neutral grey | Not mapped yet — the playground exists in OSM but carries no equipment and no details |
+
+Play equipment means slides, swings, climbing frames and the like, plus ball courts. A bench or picnic table on its own does not make a playground "basic" — those are useful to know about, but they say nothing about whether there is anything to play on.
 
 A camera glyph marks playgrounds that also have a photo. Photos are a bonus, not part of the rating — a playground with everything mapped except a picture still counts as detailed.
 
@@ -65,8 +67,8 @@ The **Erfasste Details** section lets you show or hide playgrounds by how much o
 
 | State | Meaning |
 |---|---|
-| **detailliert** (dark green) | Mapped equipment **and** at least one detail (surface, opening hours, or access) |
-| **grundlegend** (mid green) | One of the two, not both |
+| **detailliert** (bright green) | Mapped play equipment **and** at least one detail (surface, opening hours, or access) |
+| **grundlegend** (dark green) | One of the two, not both |
 | **noch nicht erfasst** (grey) | Neither |
 
 All three states are shown by default. Deactivate a state to hide those playgrounds — for example, uncheck **Missing** and **Partial** to see only well-documented playgrounds, or uncheck **Complete** and **Partial** to find playgrounds still needing OSM survey work.

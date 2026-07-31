@@ -32,11 +32,13 @@ Each playground carries a **Mapping detail** badge whose colour reflects how muc
 
 | Colour | Legend label | Meaning |
 |--------|-------------|---------|
-| Dark green   | detailliert / detailed | Mapped equipment **and** at least one detail (surface, opening hours, or a non-trivial access value) |
-| Mid green    | grundlegend / basic | One of the two, not both |
+| Bright green | detailliert / detailed | Play infrastructure **and** at least one detail (surface, opening hours, or a non-trivial access value) |
+| Dark green   | grundlegend / basic | One of the two, not both |
 | Neutral grey | noch nicht erfasst / not mapped yet | Neither — the playground exists in OSM but carries nothing else |
 
-A photo is **not** part of the rating. It is shown separately as a camera glyph on the polygon and a badge in the detail panel.
+"Play infrastructure" means `playground=*` objects and soccer / basketball / table-tennis pitches. Benches, shelters and picnic tables do not count — a lone bench must not carry an otherwise unmapped playground.
+
+A photo is **not** part of the rating. It is shown separately as a camera glyph on the map.
 
 The map legend is headed "Erfasste Details" / "Mapping detail". The same three-state breakdown is used in cluster rings, the federation macro view and the hub instance drawer, all reading the same palette (`app/src/lib/completenessPalette.js`).
 

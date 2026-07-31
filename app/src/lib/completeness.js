@@ -16,9 +16,22 @@ import { isWikimediaImageTag } from './commons.js';
 // playground is.
 //
 // Criteria:
-//   hasEquipment — any mapped equipment inside the playground
-//                  (playground=* devices, benches, pitches, etc.)
+//   hasEquipment — actual play infrastructure inside the playground: any
+//                  object tagged playground=*, or a pitch for soccer,
+//                  basketball or table tennis.
 //   hasInfo      — opening_hours, surface, or a non-trivial access value
+//
+// Street furniture does NOT count. Benches, shelters and picnic tables are
+// frequently mapped inside a playground area by someone who never mapped the
+// playground equipment itself, so counting them lifted playgrounds that have
+// nothing to play on — 63 of 221 "has equipment" playgrounds in Fulda were
+// carried by furniture alone. Pitches stay in: they are real play
+// infrastructure, just tagged leisure=pitch rather than playground=*.
+//
+// Derived flags (is_water, for_baby, for_toddler, for_wheelchair) are also
+// out. They are computed from tags on equipment, so a genuine playground
+// device already satisfies device_count — but they can equally be set by a
+// bench carrying wheelchair=yes, which is the same false signal (#776).
 //
 // complete = hasEquipment AND hasInfo
 // partial  = hasEquipment OR  hasInfo
@@ -57,16 +70,9 @@ export function hasPhotoSignal(props) {
 
 export function playgroundCompleteness(props) {
     const hasEquipment = (props.device_count > 0)
-        || (props.bench_count > 0)
-        || (props.shelter_count > 0)
-        || (props.picnic_count > 0)
         || (props.table_tennis_count > 0)
         || props.has_soccer
-        || props.has_basketball
-        || props.is_water
-        || props.for_baby
-        || props.for_toddler
-        || props.for_wheelchair;
+        || props.has_basketball;
     const hasInfo = !!(props.opening_hours || props.surface ||
                        (props.access && props.access !== 'yes'));
 

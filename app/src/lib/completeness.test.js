@@ -6,17 +6,22 @@ import { playgroundCompleteness, hasPhotoSignal } from './completeness.js';
 //   partial  = exactly one present
 //   missing  = neither
 //
+// hasEquipment is play infrastructure only: playground=* objects, or a pitch
+// for soccer / basketball / table tennis. Street furniture (benches,
+// shelters, picnic tables) and the derived flags (is_water, for_baby,
+// for_toddler, for_wheelchair) do NOT count — see completeness.js.
+//
 // A photo is deliberately NOT part of this rule (#733) — it is surfaced
 // separately by hasPhotoSignal(). `name` and `operator` are not signals
-// either (see completeness.js).
+// either.
 
 // --- complete: equipment AND info ---
 
 // 1. equipment + info, no photo → complete (the case the old rule held at
 //    partial, which is the whole point of the rework)
 {
-  assert.equal(playgroundCompleteness({ bench_count: 2, opening_hours: 'x' }), 'complete');
   assert.equal(playgroundCompleteness({ device_count: 12, surface: 'sand' }), 'complete');
+  assert.equal(playgroundCompleteness({ has_soccer: true, opening_hours: 'x' }), 'complete');
 }
 
 // 2. equipment + info + photo → complete (a photo neither helps nor hurts)
@@ -59,23 +64,47 @@ import { playgroundCompleteness, hasPhotoSignal } from './completeness.js';
   assert.equal(playgroundCompleteness({ access: 'permissive' }), 'partial');
 }
 
-// 7. each equipment flag individually counts as equipment → partial
+// 7. play infrastructure counts as equipment → partial
 {
-  const equipmentProps = [
+  const playInfrastructure = [
     { device_count: 1 },
-    { bench_count: 1 },
-    { shelter_count: 1 },
-    { picnic_count: 1 },
     { table_tennis_count: 1 },
     { has_soccer: true },
     { has_basketball: true },
+  ];
+  for (const props of playInfrastructure) {
+    assert.equal(playgroundCompleteness(props), 'partial', `expected partial for ${JSON.stringify(props)}`);
+  }
+}
+
+// 7a. street furniture does NOT count → missing.
+//     A bench mapped inside an otherwise unmapped playground area is the
+//     false signal this rule exists to reject (#733).
+{
+  const furniture = [
+    { bench_count: 5 },
+    { shelter_count: 1 },
+    { picnic_count: 3 },
+  ];
+  for (const props of furniture) {
+    assert.equal(playgroundCompleteness(props), 'missing', `expected missing for ${JSON.stringify(props)}`);
+  }
+  // …and furniture cannot lift a playground that only has info either.
+  assert.equal(playgroundCompleteness({ bench_count: 5, surface: 'grass' }), 'partial');
+}
+
+// 7b. flags derived from equipment tags do NOT count on their own → missing.
+//     A real device already satisfies device_count; on its own such a flag can
+//     come from a bench carrying wheelchair=yes (#776).
+{
+  const derived = [
     { is_water: true },
     { for_baby: true },
     { for_toddler: true },
     { for_wheelchair: true },
   ];
-  for (const props of equipmentProps) {
-    assert.equal(playgroundCompleteness(props), 'partial', `expected partial for ${JSON.stringify(props)}`);
+  for (const props of derived) {
+    assert.equal(playgroundCompleteness(props), 'missing', `expected missing for ${JSON.stringify(props)}`);
   }
 }
 

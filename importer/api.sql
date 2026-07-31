@@ -287,21 +287,28 @@ CREATE MATERIALIZED VIEW public.playground_stats AS
           ),
           false)
       ) AS has_photo,
-      -- Any mapped equipment inside the playground area (devices, benches,
-      -- pitches, etc.). device_count covers playground=* nodes/polygons;
-      -- the other columns cover amenity/leisure-tagged items.
+      -- Actual play infrastructure inside the playground area: any object
+      -- tagged playground=* (device_count), or a pitch for soccer, basketball
+      -- or table tennis.
+      --
+      -- Street furniture is deliberately excluded. Benches, shelters and
+      -- picnic tables are often mapped inside a playground area by someone who
+      -- never mapped the play equipment, so counting them lifted playgrounds
+      -- with nothing to play on — 63 of 221 in Fulda were carried by furniture
+      -- alone. Pitches stay: real play infrastructure, just tagged
+      -- leisure=pitch instead of playground=*.
+      --
+      -- The derived flags (is_water, for_baby, for_toddler, for_wheelchair)
+      -- are out too: a genuine device already satisfies device_count, while a
+      -- bench tagged wheelchair=yes would otherwise carry the playground on
+      -- its own (#776).
+      --
+      -- Mirrors playgroundCompleteness() in app/src/lib/completeness.js.
       (
-        COALESCE(es.device_count,        0) > 0
-        OR COALESCE(es.bench_count,      0) > 0
-        OR COALESCE(es.shelter_count,    0) > 0
-        OR COALESCE(es.picnic_count,     0) > 0
+        COALESCE(es.device_count,          0) > 0
         OR COALESCE(es.table_tennis_count, 0) > 0
         OR COALESCE(es.has_soccer,     false)
         OR COALESCE(es.has_basketball, false)
-        OR COALESCE(es.is_water,       false)
-        OR COALESCE(es.for_baby,       false)
-        OR COALESCE(es.for_toddler,    false)
-        OR COALESCE(es.for_wheelchair, false)
       ) AS has_equipment,
       -- NULLIF('', '') IS NULL — matches JS truthy semantics on empty-string tags.
       -- operator excluded: it's administrative data, not useful to parents.

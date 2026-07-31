@@ -11,7 +11,7 @@
   import { onMount, onDestroy } from 'svelte';
   import OpeningHours from 'opening_hours';
   import { transform } from 'ol/proj';
-  import { X, Share2, Check, ChevronDown, ChevronUp, ChevronRight, Image, Package, Navigation, Star, Info, Phone, Mail, Camera } from 'lucide-svelte';
+  import { X, Share2, Check, ChevronDown, ChevronUp, ChevronRight, Image, Package, Navigation, Star, Info, Phone, Mail } from 'lucide-svelte';
   import { _ } from 'svelte-i18n';
 
   import { selection } from '../stores/selection.js';
@@ -20,7 +20,7 @@
   import { fetchPlaygroundEquipment, fetchNearbyPOIs, fetchTrees, fetchMeta } from '../lib/api.js';
   import { overlayFeaturesStore } from '../stores/overlayLayer.js';
   import { groupEquipment } from '../lib/equipmentGrouping.js';
-  import { playgroundCompleteness, hasPhotoSignal } from '../lib/completeness.js';
+  import { playgroundCompleteness } from '../lib/completeness.js';
   import { COMPLETENESS_PALETTE } from '../lib/completenessPalette.js';
   import { poiRadiusM, appMode, mapMinZoom } from '../lib/config.js';
   import { getPlaygroundTitle, getPlaygroundLocation } from '../lib/playgroundHelpers.js';
@@ -357,7 +357,11 @@
         dot: COMPLETENESS_PALETTE[completenessLevel].base,
       }
     : null;
-  $: hasPhoto = attr ? hasPhotoSignal(attr) : false;
+  // No photo badge here on purpose: the panel already shows the photos
+  // themselves further down (CommonsGallery / PanoramaxViewer), so a chip
+  // saying "has a photo" tells the reader nothing they cannot already see.
+  // The photo marker earns its place on the map, where it is the only way to
+  // tell without opening a playground — see the camera glyph in vectorStyles.
 
   // ── Opening hours ─────────────────────────────────────────────────────────
   function openingHoursState(ohStr, t) {
@@ -581,12 +585,6 @@
             <Badge variant="outline" class="gap-1.5" style={completeness.style}>
               <span class="detail-dot" style="background: {completeness.dot};" aria-hidden="true"></span>
               {$_(completeness.key)}
-            </Badge>
-          {/if}
-          {#if hasPhoto}
-            <Badge variant="outline" class="gap-1">
-              <Camera class="h-3 w-3" />
-              {$_('mappingDetail.hasPhoto')}
             </Badge>
           {/if}
           {#if dataAgeFormatted}
