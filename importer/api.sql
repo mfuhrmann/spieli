@@ -338,6 +338,14 @@ CREATE MATERIALIZED VIEW public.playground_stats AS
     -- Retained only to drive filter_private; never excludes a playground from
     -- the cluster completeness aggregation.
     (COALESCE(pl.access, '') IN ('private', 'customers')) AS access_restricted,
+    -- The three inputs to `completeness`, persisted so the composition of each
+    -- bucket is queryable without re-deriving them:
+    --   SELECT completeness, has_equipment, has_info, has_photo, count(*)
+    --   FROM playground_stats GROUP BY 1,2,3,4 ORDER BY 5 DESC;
+    -- COALESCE keeps them non-null even if the LEFT JOIN misses.
+    COALESCE(ca.has_photo,     false)             AS has_photo,
+    COALESCE(ca.has_equipment, false)             AS has_equipment,
+    COALESCE(ca.has_info,      false)             AS has_info,
     CASE
       WHEN ca.has_photo AND ca.has_equipment AND ca.has_info THEN 'complete'
       WHEN ca.has_photo OR  ca.has_equipment OR  ca.has_info THEN 'partial'
