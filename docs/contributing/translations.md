@@ -51,7 +51,7 @@ needs_commit: False
 needs_merge: True
 ```
 
-`needs_commit: False` means no translator edits are sitting uncommitted in Weblate's database — important, because a reset discards Weblate's git commits and you want to know nothing unsaved is riding on them.
+`needs_commit: False` means every translator edit in Weblate's database has already been written to its git checkout — so the exported repo you diff below reflects all of their work. If it reads `True`, run `wlc commit` first, otherwise that comparison is incomplete before you start. This is not about losing data to the reset: the reset rewrites only Weblate's git checkout, and its database survives (see below).
 
 #### Recovery
 
@@ -59,11 +59,14 @@ Before resetting, prove no translation is lost. Add Weblate's exported repo as a
 
 ```bash
 git remote add weblate https://hosted.weblate.org/git/spieli/ui-strings/
-git remote update weblate
+git remote update origin weblate
 for f in locales/*.json; do
-  echo "$f: $(git diff --numstat origin/main weblate/main -- "$f")"
+  d=$(git diff --numstat origin/main weblate/main -- "$f")
+  [ -n "$d" ] && echo "$f: $d"
 done
 ```
+
+The `weblate` URL is served by the **Git exporter** add-on. Without it enabled on the component that host returns nothing and none of the steps below can be carried out.
 
 A locale that prints nothing is byte-identical on both sides and cannot lose anything. For any locale that does differ, inspect the diff and decide which side is correct — then:
 
@@ -72,12 +75,22 @@ A locale that prints nothing is byte-identical on both sides and cannot lose any
 3. Reset Weblate onto upstream:
 
     ```bash
-    wlc lock && wlc reset && wlc pull && wlc unlock
+    wlc lock
+    wlc reset
+    wlc pull
+    wlc unlock
     ```
+
+    Run these as four separate commands rather than `&&`-chained. If `reset` or
+    `pull` fails — an API error, a still-conflicting upstream, an expired token —
+    a chain never reaches `unlock` and leaves translations blocked. If any step
+    fails, run `wlc unlock` before investigating; `wlc lock-status` shows where
+    things stand.
 
     The same four actions exist in the web UI under Operations → Repository maintenance.
 
 4. Verify: `wlc repo` shows an empty `merge_failure` and `needs_merge: False`, and `git remote update weblate` leaves `weblate/main` at the same commit as `origin/main`.
+5. Close the open "Translations update from Hosted Weblate" PR and delete the `weblate-translations` branch. A reset only rewrites Weblate's own checkout — anything Weblate already pushed survives it, so that PR still carries the discarded commits and merging it later re-introduces them. Step 4 will not catch this, since it compares only `weblate/main` against `origin/main`.
 
 Do **not** use "Reset and reapply translations" for this — it replays the pending commits onto the reset state and reproduces the same conflict.
 
@@ -107,10 +120,11 @@ https://hosted.weblate.org/api/ = YOUR_API_KEY
 | `wlc repo` | Show git state — `merge_failure`, `needs_commit`, `needs_merge` |
 | `wlc commit` | Flush pending translator edits into Weblate's git |
 | `wlc lock` / `wlc unlock` | Block translations while doing repository surgery |
+| `wlc lock-status` | Report whether the component is currently locked |
 | `wlc reset` | Hard-reset Weblate's checkout onto upstream |
 | `wlc pull` | Fetch and integrate `main` |
 
-Lock state is not in `wlc show`; read it from `GET /api/components/spieli/ui-strings/lock/`.
+Lock state is not in `wlc show` — use `wlc lock-status`, which reads `GET /api/components/spieli/ui-strings/lock/`.
 
 ## Language graduation
 
@@ -166,12 +180,15 @@ The `.weblate.yml` file in the repo root records the component configuration. We
 | JSON indentation | `2`, spaces | Settings → Files |
 | Sort JSON keys | **off** | Settings → Files |
 | Cleanup translation files | enabled | Operations → Add-ons |
+| Git exporter | enabled | Operations → Add-ons |
 
 **Merge style must stay `merge`.** Weblate's default is `rebase`, which replays Weblate's own commits onto `main` on every pull. Because `main` allows only squash and rebase merges, those commits never become ancestors of `main`, so the replay repeats forever and eventually conflicts — see [If the component gets stuck](#if-the-component-gets-stuck). With `merge`, Weblate merges `main` into its branch instead and a squashed upstream PR integrates cleanly.
 
 `json_indent` replaced the "Customize JSON output" add-on, which Weblate removed in 5.13. Leave key sorting off — Weblate follows the `en.json` template order, and sorting would reshuffle every locale file into one unreviewable diff.
 
 The **Cleanup translation files** add-on (`weblate.cleanup.generic`) removes keys no longer present in `en.json`. Without it, locale files accumulate stale keys.
+
+The **Git exporter** add-on (`weblate.gitexport.gitexport`) publishes the component's repository at `https://hosted.weblate.org/git/spieli/ui-strings/`. It must stay enabled — the recovery procedure above diffs against that remote to prove no translation is lost, and without it there is no way to inspect Weblate's checkout before resetting it.
 
 ICU plural strings appear as a single field in the Weblate editor. Translators write the full ICU expression for their language.
 

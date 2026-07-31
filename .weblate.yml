@@ -62,3 +62,8 @@ addons:
   # locale files accumulate stale keys — es.json and fr.json each carried
   # three that predated their removal from the template.
   - weblate.cleanup.generic
+  # Publishes the component's repository at
+  # https://hosted.weblate.org/git/spieli/ui-strings/. Must stay enabled: the
+  # stuck-component recovery in docs/contributing/translations.md diffs every
+  # locale against that remote to prove no translation is lost before resetting.
+  - weblate.gitexport.gitexport
