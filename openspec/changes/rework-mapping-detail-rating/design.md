@@ -58,6 +58,38 @@ missing  ("not mapped yet")  = neither
 
 *Alternative rejected:* weighted score thresholded into three buckets. More tunable, but opaque to mappers — a mapper cannot tell what to add next to move a playground up. Boolean axes are self-explaining.
 
+### D2a — `hasEquipment` counts play infrastructure only, not street furniture
+
+Making equipment the pivot exposed how loose the existing `hasEquipment` test was. It accepted `amenity=bench`, `amenity=shelter`, `leisure=picnic_table` and the derived flags (`is_water`, `for_baby`, `for_toddler`, `for_wheelchair`) alongside actual `playground=*` objects.
+
+That matters much more now than it did before. Under the old rule furniture could only lift a playground from `missing` to `partial`; with equipment as the pivot it can carry one all the way to `complete`, on the strength of a bench and a `surface` tag.
+
+Measured on Fulda: **63 of 221** playgrounds registering as "has equipment" were carried by something other than a `playground=*` tag — 32 by a bench, 13 by a picnic table, 10 by a shelter, 15 by a pitch. Benches in particular are often mapped inside a playground area by someone who never mapped the play equipment, so the signal says "somebody surveyed the street furniture here", not "there is something to play on".
+
+Narrowed to:
+
+```
+hasEquipment = device_count > 0            -- any playground=* object
+            OR has_soccer OR has_basketball
+            OR table_tennis_count > 0
+```
+
+*Pitches stay in.* A bolzplatz or basketball hoop is real play infrastructure; it is merely tagged `leisure=pitch` instead of `playground=*`. Excluding them would misjudge exactly the kind of place older children are looking for.
+
+*Derived flags drop out.* A genuine device already satisfies `device_count`, so they add nothing in the true case — but `for_wheelchair` in particular can be set by a bench carrying `wheelchair=yes`, reproducing the furniture problem through a side door ([#776](https://github.com/mfuhrmann/spieli/issues/776)). They remain filter flags; they just stop feeding the rating.
+
+Effect on Fulda (926 playgrounds), against the un-narrowed version of this same change:
+
+| Bucket | Un-narrowed | Narrowed |
+|---|---|---|
+| `complete` | 128 | 118 |
+| `partial` | 211 | 183 |
+| `missing` | 587 | 625 |
+
+49 playgrounds move from `partial` to `missing` — the bench-only cases, now correctly reported as unmapped.
+
+*Alternative rejected:* strict `playground=*` only, no pitches (114 / 176 / 636). Cleaner to state, but drops ball courts, which are genuinely places to play.
+
 ### D3 — The photo becomes an additive marker on both surfaces
 
 A camera glyph composited onto the polygon style, plus a badge in `PlaygroundPanel`. `completeness.js` gains an exported `hasPhotoSignal(props)` — the existing `hasPhoto` predicate, lifted out of the classification path and reused by the styling and panel code, so there is still exactly one definition of "has a photo".
@@ -65,6 +97,10 @@ A camera glyph composited onto the polygon style, plus a badge in `PlaygroundPan
 *Why a separate marker and not a fourth bucket:* it keeps the bucket tuple at three (D1) while still making photo work pay off visually. Photos are additive information, and an additive glyph is the honest encoding.
 
 *Placement:* glyph only at polygon zoom (`activeTierStore === 'polygon'`). Cluster and macro rings stay three-segment — a per-cluster photo count is a new aggregate and a new wire field for marginal value.
+
+*Map only — no panel badge.* The first implementation put a "has a photo" chip in `PlaygroundPanel` as well. That is redundant: by the time the panel is open, the photos themselves are rendered in it by `CommonsGallery` / `PanoramaxViewer`, so the chip announces something already visible. The marker earns its place on the map, where it is the only way to tell which playgrounds have pictures without opening each one. The legend keeps its glyph line.
+
+*Implementation trap:* the glyph needs an explicit `geometry` function returning the polygon's interior point. OpenLayers' `renderPolygonGeometry` handles fill, stroke and text only — an `image` style attached to a Polygon is **silently dropped**: no render, no warning, no error. The first implementation hit exactly this and shipped a legend entry for a glyph that never appeared.
 
 ### D4 — One palette module, sequential ramp, neutral zero
 
@@ -113,6 +149,17 @@ Fills keep the existing `0.18` alpha; strokes stay `1.5` px.
 *Why split:* PR A answers whether the hypothesis holds before PR B commits to the rule — if the `partial` bucket turns out not to be photo-blocked, the rule in D2 needs rethinking and PR B has not been written yet. PR C is isolated because it is the only piece with translation fallout, so it can be reverted alone if Weblate misbehaves.
 
 *Order flexibility:* B is functional and C is cosmetic; B can ship first and carry the old wording for a release if C slips.
+
+### D8 — Palette verified on the real basemap, ordered by visual weight
+
+Checked against the live Fulda dataset at polygon zoom (2026-07-31). Findings, recorded so the next palette change starts from evidence rather than from scratch:
+
+- **No clash with the basemap.** The greens sit clearly apart from OSM's `landuse=grass` / `leisure=park` washes at the fill alphas used. This was the open worry in D4 and it did not materialise.
+- **The ramp runs bright → dark → grey, not dark → light → grey.** `complete` is the bright, saturated green (`#4ade80`) and `partial` the dark one (`#15803d`). Dark-to-light was monotonic in lightness but put the loudest colour on the middle state, so the eye landed on "basic" playgrounds while fully mapped ones receded.
+- **Accepted cost:** with `partial` darker than both neighbours the ramp is not monotonic in lightness, so deuteranopic and protanopic viewers cannot recover the full ordering from lightness alone. Green-versus-grey still separates, which is what the contribution prompt depends on. If this is revisited, the thing to try is holding lightness roughly constant and ordering by saturation instead.
+- **`complete` needs a higher fill alpha** (0.28 vs 0.22 for the others): bright green at 0.22 over a light basemap barely registered.
+- **Two grey collisions surfaced** in `macroRingStyle`. `restricted` was the same `#9ca3af` now used for `missing` and moved to slate-600 (`#475569`) — those two are adjacent solid arcs, so they had to differ. `OFFLINE_STROKE` is *still* `#9ca3af`; it survives only because offline rings are dashed, carry an "offline" label and draw no segments. Worth revisiting if hub state colours are ever reworked.
+- **Still unverified:** `partial` (`#15803d`, 0.22 alpha) over dark backgrounds — woodland, dark park fills. It is now the largest green group (176–211 of 926 in Fulda depending on the equipment rule), so it is the one most worth a second look.
 
 ## Risks / Trade-offs
 

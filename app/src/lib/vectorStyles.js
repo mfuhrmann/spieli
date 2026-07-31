@@ -67,8 +67,13 @@ function isRestrictedAccess(props) {
 // ── Photo marker ─────────────────────────────────────────────────────────────
 //
 // A photo is additive information, so it gets an additive glyph rather than a
-// place in the mapping-detail ramp. Rendered on top of the polygon style; OL
-// places image styles at a polygon's interior point.
+// place in the mapping-detail ramp.
+//
+// The glyph needs an explicit geometry function. OL's renderPolygonGeometry
+// only handles fill, stroke and text — an `image` style attached to a Polygon
+// is silently dropped, never drawn and never warned about. Pointing the style
+// at the polygon's interior point turns it into a point render, which does
+// draw images.
 
 const CAMERA_SVG =
     '<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24">' +
@@ -86,6 +91,14 @@ function getPhotoStyle() {
                 scale: 0.8,
                 opacity: 0.95,
             }),
+            geometry: (feature) => {
+                const g = feature.getGeometry();
+                if (!g) return null;
+                const type = g.getType();
+                if (type === 'Polygon')      return g.getInteriorPoint();
+                if (type === 'MultiPolygon') return g.getInteriorPoints();
+                return g;
+            },
             // Above the polygon fill, below selection.
             zIndex: 1,
         });

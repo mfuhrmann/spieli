@@ -4,12 +4,13 @@ The three-tier completeness rating requires a photo (`panoramax` / `wikimedia_co
 
 ## What Changes
 
+- **`hasEquipment` narrowed to play infrastructure**: `playground=*` objects plus soccer / basketball / table-tennis pitches. Street furniture (bench, shelter, picnic table) and the derived flags (`is_water`, `for_baby`, `for_toddler`, `for_wheelchair`) no longer count. With equipment as the pivot, a lone bench could otherwise carry a playground to the top bucket — 63 of 221 Fulda playgrounds registering as "has equipment" were carried by furniture alone.
 - **Rating rule reworked**: equipment becomes the pivot, the photo becomes a bonus rather than a gate.
   - `detailed` = `hasEquipment AND hasInfo`
   - `basic` = `hasEquipment OR hasInfo`
   - `none` = neither
   - Applied identically in `app/src/lib/completeness.js` and the `playground_stats` matview in `importer/api.sql`.
-- **Photo becomes an additive marker**, not a tier input: a camera glyph on the polygon and a badge in `PlaygroundPanel`. Photo work stays visible and rewarded; its absence stops being a penalty.
+- **Photo becomes an additive marker**, not a tier input: a camera glyph drawn at the playground's interior point, plus a legend line. No panel badge — the panel already shows the photos. Photo work stays visible and rewarded; its absence stops being a penalty.
 - **Framing reworked**: "Data Quality" → "Mapping detail"; `high` / `medium` / `low` → `detailed` / `basic` / `not mapped yet`. The value describes the map, not the playground.
 - **Palette reworked**: the diverging traffic light (green / yellow / red) is replaced by a sequential single-hue ramp — dark green → mid green → neutral grey. A sequential ramp reads as "more / less"; neutral grey for the zero case reads as "nothing here yet, help out" and links naturally into `DataContributionModal`.
 - **Diagnostic columns exposed**: `playground_stats` gains `has_photo`, `has_equipment`, `has_info` as persisted columns so the `partial` breakdown is measurable before and after the rule change (Step 0 of the issue plan), and so future rating tweaks can be evaluated without a schema round-trip.
