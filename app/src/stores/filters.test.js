@@ -54,6 +54,12 @@ const noFilters = {
   const f = { ...noFilters, wheelchair: true };
   assert.equal(matchesFilters({ for_wheelchair: true }, f), true);
   assert.equal(matchesFilters({ for_wheelchair: false }, f), false);
+  // The filter reads the boolean projection only. wheelchair_play carries the
+  // tri-state for display; 'no' (surveyed, nothing suitable) and null (never
+  // surveyed) must both fail the filter, and neither may match on its own.
+  assert.equal(matchesFilters({ for_wheelchair: false, wheelchair_play: 'no' }, f), false);
+  assert.equal(matchesFilters({ for_wheelchair: false, wheelchair_play: null }, f), false);
+  assert.equal(matchesFilters({ for_wheelchair: true, wheelchair_play: 'yes' }, f), true);
 }
 
 // 7. bench filter — bench_count must be > 0

@@ -44,7 +44,7 @@
     "tagWater": "Wasser",
     "tagBaby": "Baby",
     "tagTrees": "Bäume",
-    "tagAccessible": "Barrierefrei",
+    "tagAccessible": "Barrierefreies Spielen",
     "playground": "Spielplatz"
   },
   "map": {
@@ -440,6 +440,8 @@
     "accessLabel": "Zugänglichkeit",
     "forBaby": "Für Babys",
     "forToddler": "Für Kleinkinder",
+    "wheelchairPlay": "Rollstuhlgerechte Geräte",
+    "wheelchairPlayNone": "Keine rollstuhlgerechten Geräte erfasst",
     "shaded": "Schattig",
     "notShaded": "Kein Schatten",
     "ageGroups": {
