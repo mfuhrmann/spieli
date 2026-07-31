@@ -7,14 +7,23 @@
 // written out in all four places with a comment asking the reader to keep
 // them in sync by hand.
 //
-// The scale is a SEQUENTIAL single-hue ramp — dark green → mid green →
-// neutral grey — not a traffic light. A diverging red/amber/green scale
-// encodes "good vs bad about a midpoint", which reads as a verdict on the
-// playground. A sequential ramp encodes "more vs less", which is what the
-// value actually measures: how much of this playground has been mapped.
+// The scale is a single-hue green ramp ending in neutral grey — not a traffic
+// light. A diverging red/amber/green scale encodes "good vs bad about a
+// midpoint", which reads as a verdict on the playground. This one encodes
+// "more vs less", which is what the value actually measures: how much of this
+// playground has been mapped.
 //
-// The ramp varies primarily in LIGHTNESS, so it survives deuteranopia and
-// protanopia. The green/amber/red scale it replaces did not.
+// Ordering is by VISUAL WEIGHT, not by lightness: the brightest, most
+// saturated green marks the most detailed playgrounds, so the map draws the
+// eye to them rather than to the middle state. An earlier revision ran
+// dark → light instead, which was monotonic in lightness but made the middle
+// state the loudest thing on the screen.
+//
+// Known trade-off: because `partial` is darker than both its neighbours, the
+// ramp is not monotonic in lightness, so viewers with deuteranopia or
+// protanopia cannot recover the full ordering from lightness alone. They can
+// still separate "green of some kind" from "grey", which is the distinction
+// that carries the contribution call to action.
 //
 // Neutral grey for the zero case reads as "nothing here yet" rather than
 // "bad playground", which is the state we want to invite contributions for.
@@ -51,16 +60,16 @@
  */
 export const COMPLETENESS_PALETTE = {
     complete: {
+        base:   '#4ade80',
+        fill:   'rgba(74, 222, 128, 0.28)',
+        stroke: '#15803d',
+        hatch:  { stroke: 'rgba(22, 163, 74, 0.55)',  bg: 'rgba(74, 222, 128, 0.08)' },
+    },
+    partial: {
         base:   '#15803d',
         fill:   'rgba(21, 128, 61, 0.22)',
         stroke: '#14532d',
         hatch:  { stroke: 'rgba(21, 128, 61, 0.55)',  bg: 'rgba(21, 128, 61, 0.08)' },
-    },
-    partial: {
-        base:   '#4ade80',
-        fill:   'rgba(74, 222, 128, 0.22)',
-        stroke: '#15803d',
-        hatch:  { stroke: 'rgba(22, 163, 74, 0.55)',  bg: 'rgba(74, 222, 128, 0.08)' },
     },
     missing: {
         base:   '#9ca3af',
