@@ -11,7 +11,7 @@
   const labelKey = {
     complete: 'mappingDetail.detailed',
     partial:  'mappingDetail.basic',
-    missing:  'mappingDetail.notMapped',
+    missing:  'mappingDetail.noDetails',
   };
 </script>
 

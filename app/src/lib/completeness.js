@@ -9,7 +9,7 @@ import { isWikimediaImageTag } from './commons.js';
 // Their user-facing labels are different on purpose:
 //
 //     'complete' → "detailed"        'partial' → "basic"
-//     'missing'  → "not mapped yet"
+//     'missing'  → "no details yet"
 //
 // The labels live in locales/*.json under `mappingDetail.*`. The value
 // describes how much of the playground has been MAPPED, not how good the

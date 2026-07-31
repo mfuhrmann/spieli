@@ -29,7 +29,7 @@ Pitches *do* count: a bolzplatz or basketball hoop is real play infrastructure, 
 |---|---|---|---|
 | `complete` | detailed | Both criteria satisfied | Bright green (`#4ade80`) |
 | `partial` | basic | Exactly one satisfied | Dark green (`#15803d`) |
-| `missing` | not mapped yet | Neither satisfied | Slate blue-grey (`#64748b`) |
+| `missing` | no details yet | Neither satisfied | Slate blue-grey (`#64748b`) |
 
 The identifiers `complete` / `partial` / `missing` are wire and storage values — they appear in API responses, in `playground_stats`, and in the `filterStore` keys. They deliberately differ from the labels shown to users; renaming them would break federation between backends on different versions.
 
@@ -96,10 +96,10 @@ All UI strings live under the `mappingDetail.*` namespace in `locales/de.json` a
 | `mappingDetail.legendTitle` | Erfasste Details | Mapping detail |
 | `mappingDetail.detailed` | detailliert | detailed |
 | `mappingDetail.basic` | grundlegend | basic |
-| `mappingDetail.notMapped` | noch nicht erfasst | not mapped yet |
+| `mappingDetail.noDetails` | keine Details | no details yet |
 | `mappingDetail.hasPhoto` | hat ein Foto | has a photo |
 | `completeness.restrictedHint` | nicht öffentlich | not public |
 
 `completeness.restrictedHint` stays in its old namespace — access restriction is a separate axis from mapping detail.
 
-The filter labels under `filter.completeness.*` use the same wording (`detailliert` / `grundlegend` / `noch nicht erfasst`); the filter keys themselves (`showComplete`, `showPartial`, `showMissing`) keep the identifier naming.
+The filter labels under `filter.completeness.*` use the same wording (`detailliert` / `grundlegend` / `keine Details`); the filter keys themselves (`showComplete`, `showPartial`, `showMissing`) keep the identifier naming.

@@ -29,8 +29,8 @@
 
 ## 3. PR C — Reframe the wording
 
-- [x] 3.1 Add a `mappingDetail` block to `locales/en.json` (`legendTitle`: "Mapping detail", `detailed`, `basic`, `notMapped`: "not mapped yet") and remove the old `completeness` rating keys at `:80-84`
-- [x] 3.2 Mirror the same keys in `locales/de.json` ("Erfasste Details", "detailliert", "grundlegend", "noch nicht erfasst"); **edit no other locale file**
+- [x] 3.1 Add a `mappingDetail` block to `locales/en.json` (`legendTitle`: "Mapping detail", `detailed`, `basic`, `noDetails`: "no details yet", `hasPhoto`) and remove the old `completeness` rating keys. Landed as `notMapped`/"not mapped yet" first; renamed because it read as "this playground is not in the map"
+- [x] 3.2 Mirror the same keys in `locales/de.json` ("Erfasste Details", "detailliert", "grundlegend", "keine Details", "hat ein Foto"); **edit no other locale file**
 - [x] 3.3 Repoint `CompletenessLegend.svelte`, `FilterPanel.svelte` and `FilterChips.svelte` at the new keys (`filterStore` keys `showComplete` / `showPartial` / `showMissing` stay unchanged)
 - [x] 3.4 Update the `completeness` label at `locales/en.json:99` and any remaining "Data Quality" / "Data complete" strings
 - [x] 3.5 Add a legend line explaining the camera glyph
