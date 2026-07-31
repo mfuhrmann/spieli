@@ -55,25 +55,43 @@ file_format_params:
   json_indent: 2
   json_indent_style: spaces
 
-# Add-ons, verified against the live install on 2026-07-31 (#796). Read them
-# back from the component's `addons` field (a list of /api/addons/<id>/ URLs)
-# or from /api/addons/; the /addons/ sub-path on the component returns 405.
-# Each object names its scope, and `wlc` has no add-on subcommand, so changes
-# stay a UI action.
+# Add-ons, verified against the live install on 2026-07-31 (#796). `scope` is
+# load-bearing when rebuilding from this file: installing a project-scoped
+# add-on on the component silently narrows what it covers.
+#
+# Read them back from the component's `addons` field (a list of
+# /api/addons/<id>/ URLs) or from /api/addons/; the /addons/ sub-path on the
+# component returns 405. Both need a token — unauthenticated, /api/addons/
+# returns 200 with an empty result set rather than an error. `wlc` has no
+# add-on subcommand, so changes stay a UI action.
 addons:
-  # Project-scoped (Project → Add-ons), so it covers glossary as well and does
-  # not appear in the component's own `addons` list. Removes translation keys
-  # no longer present in en.json — without it locale files accumulate stale
-  # keys, as es.json and fr.json each did with three that predated their
-  # removal from the template.
-  - weblate.cleanup.generic
-  # Component-scoped, enabled 2026-07-31 (#796) with squash: all and
-  # append_trailers: true. Collapses a push into one commit instead of one per
-  # language. This is what the old `squash_commits: true` under `component:`
-  # was reaching for — that is not a component field at all (absent from the
-  # live 89-field schema), so it never took effect and #734 pushed twelve
-  # commits, which main's squash-merge then folded into one commit body.
-  - weblate.git.squash
+  # Removes translation keys no longer present in en.json — without it locale
+  # files accumulate stale keys, as es.json and fr.json each did with three
+  # that predated their removal from the template. Installed project-wide, so
+  # it covers glossary too and does not appear in the component's own `addons`
+  # list.
+  - id: weblate.cleanup.generic
+    scope: project          # Project → Add-ons
+  # Collapses a push into one commit instead of one per language. This is what
+  # the old `squash_commits: true` under `component:` was reaching for — not a
+  # component field at all (absent from the live 89-field schema), so it never
+  # took effect and #734 pushed twelve commits, which main's squash-merge then
+  # folded into one commit body.
+  #
+  # commit_message is deliberately left empty for now: with it empty and
+  # append_trailers on, Weblate builds the squashed body from the pending
+  # commits' own messages, so the body repeats commit_message once per
+  # language. Setting it here collapses that to a single line.
+  #
+  # Squashing also makes the push a rewrite — Weblate resets onto the remote
+  # branch after each commit and its GitHub backend pushes with --force — so
+  # weblate-translations' history is replaced on every batch.
+  - id: weblate.git.squash
+    scope: component        # Operations → Add-ons
+    configuration:
+      squash: all
+      append_trailers: true
+      commit_message: ""
 
 # NOT an add-on here, despite what the Weblate manual implies: Hosted Weblate
 # serves the component repository at the `git_export` URL natively, and

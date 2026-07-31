@@ -190,7 +190,12 @@ The `.weblate.yml` file in the repo root records the component configuration. We
 
 The **Cleanup translation files** add-on (`weblate.cleanup.generic`) removes keys no longer present in `en.json`. Without it, locale files accumulate stale keys. It is installed at **project** scope, not on the component, so it covers `glossary` too — which is why it does not appear in the component's own `addons` list.
 
-The **Squash Git commits** add-on (`weblate.git.squash`) collapses a push into one commit instead of one per language. Enabled 2026-07-31 (#796) with `squash: all` and `append_trailers: true`. Before it, #734 arrived as twelve commits, and because `main` squash-merges they all landed in the merge commit body — `cb8d9893` carries twelve `* Translated using Weblate (…)` bullets.
+The **Squash Git commits** add-on (`weblate.git.squash`) collapses a push into one commit instead of one per language. Enabled 2026-07-31 (#796) with `squash: all` and `append_trailers: true`. Before it, #734 arrived as twelve commits, and because `main` squash-merges they all landed in the merge commit body — `cb8d9893` carries eleven `* Translated using Weblate (…)` bullets plus one `* Update translation files`.
+
+Two consequences worth knowing before reading the next translation PR as breakage:
+
+- **The squashed commit still repeats the message once per language.** The add-on's own *Commit message* option is empty, and with `append_trailers` on, Weblate builds the body from `git log --format=%B` of the pending commits. So one commit arrives carrying `chore(i18n): update translations from Weblate` N times. Setting the add-on's Commit message option is what collapses that to a single line.
+- **`weblate-translations` is force-pushed.** Squashing runs `git reset --mixed` onto the remote branch after every commit, and Weblate's GitHub backend pushes with `--force`. With `push_on_commit: true` that happens on each batch, so the open translation PR's branch history is replaced as it goes: line comments go stale, approvals reset, and a local checkout of that branch needs `git fetch --force`. This is normal, not corruption.
 
 There is **no Git exporter add-on** on this project. Hosted Weblate serves the component's repository at the `git_export` URL natively, so the recovery procedure's `weblate` remote needs nothing enabled.
 
@@ -198,9 +203,11 @@ Commit message templates use Conventional Commits, matching the rest of the repo
 
 !!! note "Auditing the configuration over the API"
 
-    An authenticated `GET` on the component returns all 89 fields, including `merge_style`, `push_branch`, `git_export` and the message templates. `wlc show` returns only a trimmed public subset, so use a raw request for an audit. `squash_commits` is **not** among the 89 — it is not a component field at all, which is why it never took effect while it sat in `.weblate.yml`.
+    A plain `GET` on the component — **no token needed** — returns all 89 fields, including `merge_style`, `push_branch`, `git_export` and the message templates. `wlc show` returns only a trimmed subset, so use a raw request for an audit. `squash_commits` is **not** among the 89 — it is not a component field at all, which is why it never took effect while it sat in `.weblate.yml`.
 
-    Add-ons are readable, but not where you would expect. The `/api/components/spieli/ui-strings/addons/` sub-path returns `405 Method Not Allowed`; instead read the component's `addons` field, which holds `/api/addons/<id>/` URLs, or list `/api/addons/` for every add-on across scopes. Each object names its scope — `component` set and `project` null means component-level, and the reverse for project-wide. `wlc` has no add-on subcommand, so changes stay a UI action.
+    Add-ons need a token, and are readable only in the right place. The `/api/components/spieli/ui-strings/addons/` sub-path returns `405 Method Not Allowed` for everyone; instead read the component's `addons` field, which holds `/api/addons/<id>/` URLs, or list `/api/addons/` for every add-on across scopes. Each object names its scope — `component` set and `project` null means component-level, and the reverse for project-wide.
+
+    **Use a token for those two, or they will lie to you.** Unauthenticated, `/api/addons/` answers `200` with `{"count": 0, "results": []}` and `/api/addons/<id>/` answers `404`, so an audit without one concludes no add-ons are installed. `wlc` has no add-on subcommand, so changes stay a UI action.
 
 ICU plural strings appear as a single field in the Weblate editor. Translators write the full ICU expression for their language.
 
