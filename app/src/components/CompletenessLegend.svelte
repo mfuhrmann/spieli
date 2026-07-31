@@ -3,7 +3,11 @@
   import { COMPLETENESS_PALETTE, COMPLETENESS_ORDER } from '../lib/completenessPalette.js';
 
   // Swatches read straight from the map palette — the legend cannot drift
-  // away from the polygons and rings it explains.
+  // away from the rings it explains.
+  //
+  // `base`, not `fill`: cluster and macro ring segments are drawn in the solid
+  // base colour, so a swatch tinted with the polygon's translucent fill would
+  // show a visibly different colour than the rings right next to it.
   const labelKey = {
     complete: 'mappingDetail.detailed',
     partial:  'mappingDetail.basic',
@@ -18,7 +22,7 @@
       <li class="legend-row">
         <span
           class="swatch"
-          style="background: {COMPLETENESS_PALETTE[key].fill}; border-color: {COMPLETENESS_PALETTE[key].stroke};"
+          style="background: {COMPLETENESS_PALETTE[key].base}; border-color: {COMPLETENESS_PALETTE[key].stroke};"
           aria-hidden="true"
         ></span>
         <span>{$_(labelKey[key])}</span>

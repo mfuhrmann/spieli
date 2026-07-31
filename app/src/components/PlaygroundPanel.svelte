@@ -352,9 +352,13 @@
   $: completeness = completenessLevel
     ? {
         key: MAPPING_DETAIL_KEY[completenessLevel],
+        // Tinted background rather than the solid base: dark text on solid
+        // #15803d is unreadable. The dot carries the identity colour, so the
+        // badge still ties visually to the legend swatches and ring segments.
         style: `background: ${COMPLETENESS_PALETTE[completenessLevel].fill};`
              + `border-color: ${COMPLETENESS_PALETTE[completenessLevel].stroke};`
              + 'color: #1f2937;',
+        dot: COMPLETENESS_PALETTE[completenessLevel].base,
       }
     : null;
   $: hasPhoto = attr ? hasPhotoSignal(attr) : false;
@@ -578,7 +582,10 @@
       {#if completeness || dataAgeFormatted}
         <div class="status-row mb-4">
           {#if completeness}
-            <Badge variant="outline" style={completeness.style}>{$_(completeness.key)}</Badge>
+            <Badge variant="outline" class="gap-1.5" style={completeness.style}>
+              <span class="detail-dot" style="background: {completeness.dot};" aria-hidden="true"></span>
+              {$_(completeness.key)}
+            </Badge>
           {/if}
           {#if hasPhoto}
             <Badge variant="outline" class="gap-1">
@@ -1202,6 +1209,14 @@
   }
 
   /* ── Data-age chip + fixed popover ──────────────────────────────────── */
+  .detail-dot {
+    display: inline-block;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
   .data-age-chip {
     display: inline-flex;
     align-items: center;

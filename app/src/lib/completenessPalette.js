@@ -27,12 +27,27 @@
 /**
  * Base colours, one per bucket.
  *
- * `base`   — the swatch colour. Legend chips, cluster ring segments and macro
- *            ring segments all use this, so the legend always equals the map.
- * `fill`   — polygon fill, the base at low alpha.
- * `stroke` — polygon outline.
+ * `base`   — the bucket's identity colour, drawn opaque.
+ * `fill`   — the base at low alpha, for shapes laid over the basemap.
+ * `stroke` — outline / border.
  * `hatch`  — access-restricted polygons: diagonal hatch stroke over a faint
  *            background wash, both derived from the base.
+ *
+ * WHICH FIELD GOES WHERE — get this wrong and two surfaces showing the same
+ * bucket render in visibly different colours:
+ *
+ *   surface                        field    why
+ *   ─────────────────────────────  ───────  ──────────────────────────────────
+ *   cluster ring segments          base     opaque arcs on the map
+ *   macro ring segments            base     same
+ *   legend swatches                base     must equal the rings beside them
+ *   hub drawer dots + bar          base     opaque
+ *   playground polygons            fill     translucent over the basemap
+ *   panel badge background         fill     dark text must stay readable —
+ *                                           the badge's dot uses `base`
+ *
+ * Rule of thumb: anything opaque uses `base`; only shapes the basemap shows
+ * through, or backgrounds carrying text, use `fill`.
  */
 export const COMPLETENESS_PALETTE = {
     complete: {
