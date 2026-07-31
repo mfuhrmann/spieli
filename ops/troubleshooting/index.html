@@ -1851,7 +1851,7 @@
 <a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>importer-1  | psql:/tmp/tmp.JsTPhaBgfJ:87: ERROR:  relation &quot;planet_osm_point&quot; does not exist
 <a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>importer-1 exited with code 3 (restarting)
 </code></pre></div>
-<p><strong>Cause:</strong> Fixed in spieli 0.8.1 and later. Older images applied <code>api.sql</code> on daemon startup before the first import had created the <code>planet_osm_*</code> tables, so the schema apply failed and the container restarted before it ever reached the import. The <code>API_ONLY mode</code> line in the log is misleading — that banner was printed unconditionally; <code>API_ONLY</code> was not actually set.</p>
+<p><strong>Cause:</strong> Fixed in spieli 0.9.0 and later. Older images applied <code>api.sql</code> on daemon startup before the first import had created the <code>planet_osm_*</code> tables, so the schema apply failed and the container restarted before it ever reached the import. The <code>API_ONLY mode</code> line in the log is misleading — that banner was printed unconditionally; <code>API_ONLY</code> was not actually set.</p>
 <p><strong>Fix:</strong> Pull a current image and restart:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>pull<span class="w"> </span>importer
 <a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>up<span class="w"> </span>-d<span class="w"> </span>importer
