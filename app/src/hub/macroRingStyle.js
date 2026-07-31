@@ -28,17 +28,22 @@ import { COMPLETENESS_BASE } from '../lib/completenessPalette.js';
 // legend cannot drift apart.
 //
 // `restricted` is a different axis — access, not mapping detail — and is drawn
-// as a fourth arc right next to `missing`. It uses slate-600 rather than a
-// grey: the palette's `missing` is now neutral grey (#9ca3af), and two
-// adjacent grey arcs would be indistinguishable.
+// as a fourth arc right next to `missing`, so the two must stay clearly apart.
+// It has moved twice for that reason: originally grey, which collided when
+// `missing` became grey; then slate-600, which collided again when `missing`
+// moved to slate-500. Violet settles it by leaving the neutral range
+// altogether, and reads as "different kind of thing" rather than "even less
+// mapped" — which is right, since restricted is about access.
 const COLOR = {
   ...COMPLETENESS_BASE,
-  restricted: '#475569', // tailwind slate-600 — also used for unknown-completeness rings
+  restricted: '#7c3aed', // tailwind violet-600 — also used for unknown-completeness rings
 };
 const RING_WIDTH      = 14; // slightly thicker than cluster (12) for country-scale prominence
 const CENTER_FILL     = 'rgba(255, 255, 255, 0.95)';
 const CENTER_STROKE   = '#1f2937';
 const CENTER_TEXT     = '#1f2937';
+// gray-400. Free of the mapping-detail palette again since `missing` moved to
+// slate-500 — offline and no-match rings are the only plain greys left.
 const OFFLINE_STROKE   = '#9ca3af';
 const OFFLINE_FILL     = 'rgba(255, 255, 255, 0.85)';
 const OFFLINE_TEXT     = '#6b7280';

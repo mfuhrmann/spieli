@@ -34,7 +34,7 @@ Each playground carries a **Mapping detail** badge whose colour reflects how muc
 |--------|-------------|---------|
 | Bright green | detailliert / detailed | Play infrastructure **and** at least one detail (surface, opening hours, or a non-trivial access value) |
 | Dark green   | grundlegend / basic | One of the two, not both |
-| Neutral grey | noch nicht erfasst / not mapped yet | Neither — the playground exists in OSM but carries nothing else |
+| Slate blue-grey | noch nicht erfasst / not mapped yet | Neither — the playground exists in OSM but carries nothing else |
 
 "Play infrastructure" means `playground=*` objects and soccer / basketball / table-tennis pitches. Benches, shelters and picnic tables do not count — a lone bench must not carry an otherwise unmapped playground.
 
@@ -42,7 +42,7 @@ A photo is **not** part of the rating. It is shown separately as a camera glyph 
 
 The map legend is headed "Erfasste Details" / "Mapping detail". The same three-state breakdown is used in cluster rings, the federation macro view and the hub instance drawer, all reading the same palette (`app/src/lib/completenessPalette.js`).
 
-The scale is a sequential green-to-grey ramp rather than a traffic light: it measures how much of the map is filled in, not how good the playground is. Grey means "nobody has mapped this yet — help out", not "bad playground".
+The scale is a green-to-slate ramp rather than a traffic light: it measures how much of the map is filled in, not how good the playground is. The slate step means "nobody has mapped this yet — help out", not "bad playground". A plain grey was tried first and lost against the basemap, which draws residential landuse and buildings in warm greys of its own.
 
 Internally, the three states are referred to as `complete`, `partial`, and `missing`. These values appear in the API responses (see [`api.md`](api.md)) and in the database (`playground_stats` materialised view). They are deliberately *not* renamed to match the labels — federation between backends on different versions depends on them. Full rule in [`completeness.md`](completeness.md).
 

@@ -6,7 +6,7 @@ spieli is a free, interactive playground map based on OpenStreetMap data. This g
 
 Use your mouse (desktop) or fingers (mobile) to pan and zoom. The map shows:
 
-- **Playground polygons** — coloured outlines of playground areas, colour-coded by data quality (see below)
+- **Playground polygons** — coloured outlines of playground areas, colour-coded by mapping detail (see below)
 - **Cluster rings** — at lower zoom levels, nearby playgrounds are grouped into ring indicators showing counts
 
 Click or tap any playground to open its detail panel.
@@ -19,13 +19,13 @@ Each playground is colour-coded to show how much of it has been mapped in OpenSt
 |---|---|
 | Bright green | Detailed — mapped play equipment **and** at least one detail (surface, opening hours, or access) |
 | Dark green | Basic — one of the two, not both |
-| Neutral grey | Not mapped yet — the playground exists in OSM but carries no equipment and no details |
+| Slate blue-grey | Not mapped yet — the playground exists in OSM but carries no equipment and no details |
 
 Play equipment means slides, swings, climbing frames and the like, plus ball courts. A bench or picnic table on its own does not make a playground "basic" — those are useful to know about, but they say nothing about whether there is anything to play on.
 
 A camera glyph marks playgrounds that also have a photo. Photos are a bonus, not part of the rating — a playground with everything mapped except a picture still counts as detailed.
 
-The colours describe the OSM data, not the real-world quality of the playground. Grey means nobody has mapped it yet, which is an invitation to help rather than a warning.
+The colours describe the OSM data, not the real-world quality of the playground. The slate step means nobody has mapped it yet, which is an invitation to help rather than a warning.
 
 ## Finding playgrounds
 
@@ -69,7 +69,7 @@ The **Erfasste Details** section lets you show or hide playgrounds by how much o
 |---|---|
 | **detailliert** (bright green) | Mapped play equipment **and** at least one detail (surface, opening hours, or access) |
 | **grundlegend** (dark green) | One of the two, not both |
-| **noch nicht erfasst** (grey) | Neither |
+| **noch nicht erfasst** (slate blue-grey) | Neither |
 
 All three states are shown by default. Deactivate a state to hide those playgrounds — for example, uncheck **Missing** and **Partial** to see only well-documented playgrounds, or uncheck **Complete** and **Partial** to find playgrounds still needing OSM survey work.
 
