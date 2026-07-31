@@ -68,7 +68,9 @@
           {/if}
           {#if isWheelchair}
             <span class="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full" style="background:rgba(99,102,241,.1);color:#6366f1;">
-              <Accessibility class="h-3 w-3" />{$_('hover.tagAccessible')}
+              <!-- Same key as the panel badge on purpose: one signal, one wording.
+                   Two keys drifted apart the moment they existed. -->
+              <Accessibility class="h-3 w-3" />{$_('details.wheelchairPlay')}
             </span>
           {/if}
           {#if isRestricted}

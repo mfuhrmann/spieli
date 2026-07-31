@@ -41,7 +41,6 @@
     "tagWater": "Water",
     "tagBaby": "Baby",
     "tagTrees": "Trees",
-    "tagAccessible": "Accessible play",
     "playground": "Playground"
   },
   "map": {
@@ -438,8 +437,8 @@
     "accessLabel": "Accessibility",
     "forBaby": "For babies",
     "forToddler": "For toddlers",
-    "wheelchairPlay": "Wheelchair-accessible equipment",
-    "wheelchairPlayNone": "No wheelchair-accessible equipment recorded",
+    "wheelchairPlay": "Accessible play",
+    "wheelchairPlayNone": "No accessible play recorded",
     "shaded": "Shaded",
     "notShaded": "No shade",
     "ageGroups": {
