@@ -47,7 +47,7 @@ The wire keys stay `complete` / `partial` / `missing` everywhere: `get_playgroun
 ```
 complete ("detailed")        = hasEquipment AND hasInfo
 partial  ("basic")           = hasEquipment OR  hasInfo
-missing  ("not mapped yet")  = neither
+missing  ("no details yet")  = neither
 ```
 
 `hasPhoto` drops out of the classification entirely and is re-surfaced by D3.
@@ -114,17 +114,19 @@ Proposed values (final contrast check during implementation):
 |---|---|---|---|
 | `complete` | detailed | `#15803d` | `#14532d` |
 | `partial` | basic | `#86efac` | `#3f6212` |
-| `missing` | not mapped yet | `#9ca3af` | `#4b5563` |
+| `missing` | no details yet | `#64748b` | `#334155` |
 
 Fills keep the existing `0.18` alpha; strokes stay `1.5` px.
 
 *Why sequential over diverging:* a diverging scale encodes "good vs bad about a midpoint" — exactly the reading being complained about. A single-hue ramp encodes "more vs less", which is what the value measures. It also varies primarily in **lightness**, so it survives deuteranopia and protanopia, which the current green/amber/red does not.
 
-*Why neutral grey and not a pale green for the zero case:* grey reads as "no data here", not "bad playground", and pairs naturally with the contribution call-to-action. Extending the green ramp to its palest step would read as "a little bit mapped", which is untrue.
+*Why a neutral and not a pale green for the zero case:* a neutral reads as "no data here", not "bad playground", and pairs naturally with the contribution call-to-action. Extending the green ramp to its palest step would read as "a little bit mapped", which is untrue. (Which neutral changed later — see D8: plain grey lost against the basemap and the step is now a cool slate.)
 
 ### D5 — Rename the i18n block rather than redefine keys in place
 
-`locales/en.json` and `locales/de.json` get a new `mappingDetail` block (`legendTitle`, `detailed`, `basic`, `notMapped`); the old `completeness` block's rating keys are removed.
+`locales/en.json` and `locales/de.json` get a new `mappingDetail` block (`legendTitle`, `detailed`, `basic`, `noDetails`); the old `completeness` block's rating keys are removed.
+
+The lowest step is "keine Details" / "no details yet", **not** "noch nicht erfasst" / "not mapped yet". The first wording was ambiguous in both languages: next to a legend headed "Erfasste Details" it read as "this playground is not in the map", when in fact it is on screen — that is why the reader can see it. The label has to answer *how much detail*, matching the heading, not *whether the place exists*.
 
 *Why not keep the keys and change the English values:* every other locale would keep its existing translation ("hoch" / "mittel" / "niedrig", etc.) under a key whose meaning has changed, and Weblate would show them as translated. That ships a wrong label in ~10 locales, silently. Removing and adding keys makes the untranslated state visible and falls back to English until a translator gets to it — honest, and it is Weblate's normal workflow.
 

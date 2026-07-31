@@ -34,7 +34,7 @@ Each playground carries a **Mapping detail** badge whose colour reflects how muc
 |--------|-------------|---------|
 | Bright green | detailliert / detailed | Play infrastructure **and** at least one detail (surface, opening hours, or a non-trivial access value) |
 | Dark green   | grundlegend / basic | One of the two, not both |
-| Slate blue-grey | noch nicht erfasst / not mapped yet | Neither — the playground exists in OSM but carries nothing else |
+| Slate blue-grey | keine Details / no details yet | Neither — the playground exists in OSM but carries nothing else |
 
 "Play infrastructure" means `playground=*` objects and soccer / basketball / table-tennis pitches. Benches, shelters and picnic tables do not count — a lone bench must not carry an otherwise unmapped playground.
 

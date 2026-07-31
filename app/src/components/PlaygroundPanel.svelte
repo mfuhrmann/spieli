@@ -346,7 +346,7 @@
   const MAPPING_DETAIL_KEY = {
     complete: 'mappingDetail.detailed',
     partial:  'mappingDetail.basic',
-    missing:  'mappingDetail.notMapped',
+    missing:  'mappingDetail.noDetails',
   };
   $: completenessLevel = attr ? playgroundCompleteness(attr) : null;
   $: completeness = completenessLevel

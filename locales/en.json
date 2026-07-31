@@ -37,7 +37,7 @@
       "title": "Mapping detail",
       "showComplete": "detailed",
       "showPartial": "basic",
-      "showMissing": "not mapped yet"
+      "showMissing": "no details yet"
     }
   },
   "hover": {
@@ -86,7 +86,7 @@
     "legendTitle": "Mapping detail",
     "detailed": "detailed",
     "basic": "basic",
-    "notMapped": "not mapped yet",
+    "noDetails": "no details yet",
     "hasPhoto": "has a photo"
   },
   "completeness": {

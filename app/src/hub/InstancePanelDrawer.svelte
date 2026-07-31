@@ -220,7 +220,7 @@
               <div class="instance-completeness" style={detailVars}>
                 <span class="cdot cdot--complete"></span>{complete} {$_('mappingDetail.detailed')}
                 <span class="cdot cdot--partial"></span>{partial} {$_('mappingDetail.basic')}
-                <span class="cdot cdot--missing"></span>{missing} {$_('mappingDetail.notMapped')}
+                <span class="cdot cdot--missing"></span>{missing} {$_('mappingDetail.noDetails')}
               </div>
               {#if total > 0}
                 {@const pct = Math.round(complete / total * 100)}

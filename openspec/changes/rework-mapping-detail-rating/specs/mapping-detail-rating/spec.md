@@ -10,7 +10,7 @@ The rule is:
 
 - `complete` (labelled "detailed") — `hasEquipment AND hasInfo`
 - `partial` (labelled "basic") — `hasEquipment OR hasInfo`
-- `missing` (labelled "not mapped yet") — neither
+- `missing` (labelled "no details yet") — neither
 
 The bucket keys `complete` / `partial` / `missing` are the wire and storage identifiers and SHALL NOT be renamed; only their derivation and their user-facing label change.
 
@@ -54,7 +54,7 @@ The bucket keys `complete` / `partial` / `missing` are the wire and storage iden
 - **THEN** its mapping detail is `missing`
 - **AND** the photo is still surfaced by the separate photo marker requirement
 
-#### Scenario: Bare playground classifies as not mapped yet
+#### Scenario: Bare playground classifies as no details yet
 
 - **WHEN** a playground has neither mapped equipment nor any descriptive tag
 - **THEN** its mapping detail is `missing`
@@ -103,7 +103,7 @@ The detail panel SHALL NOT carry a photo badge: it already renders the photos th
 
 ### Requirement: Mapping detail is presented as a sequential ramp, not a verdict
 
-The system SHALL present mapping detail with a sequential single-hue ramp — dark green for `complete`, mid green for `partial`, neutral grey for `missing` — and SHALL NOT use a red / amber / green traffic light. The user-facing wording SHALL describe how much has been mapped ("Mapping detail": `detailed` / `basic` / `not mapped yet`) rather than grading the playground ("Data Quality": `high` / `medium` / `low`).
+The system SHALL present mapping detail with a green ramp ending in a cool slate — bright green for `complete`, dark green for `partial`, slate blue-grey for `missing` — and SHALL NOT use a red / amber / green traffic light. The user-facing wording SHALL describe how much detail has been recorded ("Mapping detail": `detailed` / `basic` / `no details yet`) rather than grading the playground ("Data Quality": `high` / `medium` / `low`). The lowest label SHALL NOT imply the playground is absent from the map.
 
 The same palette SHALL apply to every surface that renders the buckets: playground polygons, cluster ring segments, hub macro ring segments, and the legend.
 
@@ -111,22 +111,22 @@ The same palette SHALL apply to every surface that renders the buckets: playgrou
 
 - **WHEN** the map legend is opened
 - **THEN** its title reads "Mapping detail" (de: "Erfasste Details")
-- **AND** its three entries read `detailed`, `basic` and `not mapped yet`
-- **AND** its swatches show dark green, mid green and neutral grey
+- **AND** its three entries read `detailed`, `basic` and `no details yet`
+- **AND** its swatches show bright green, dark green and slate blue-grey
 - **AND** no red swatch appears anywhere in the legend
 
 #### Scenario: Cluster rings use the same palette as polygons
 
 - **WHEN** a cluster ring renders segments for `complete`, `partial` and `missing`
 - **THEN** each segment colour equals the corresponding polygon fill base colour
-- **AND** the `missing` segment is neutral grey
+- **AND** the `missing` segment is slate blue-grey
 
 #### Scenario: Macro rings use the same palette
 
 - **WHEN** the hub macro view renders a backend's stacked ring from its `get_meta` buckets
 - **THEN** the segment colours match the polygon and cluster palette
 
-#### Scenario: The not-mapped-yet bucket invites contribution
+#### Scenario: The no-details bucket invites contribution
 
 - **WHEN** a playground in the `missing` bucket is selected
 - **THEN** the panel presents the state as an invitation to contribute rather than a defect

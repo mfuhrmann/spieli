@@ -37,7 +37,7 @@
       "title": "Erfasste Details",
       "showComplete": "detailliert",
       "showPartial": "grundlegend",
-      "showMissing": "noch nicht erfasst"
+      "showMissing": "keine Details"
     }
   },
   "hover": {
@@ -86,7 +86,7 @@
     "legendTitle": "Erfasste Details",
     "detailed": "detailliert",
     "basic": "grundlegend",
-    "notMapped": "noch nicht erfasst",
+    "noDetails": "keine Details",
     "hasPhoto": "hat ein Foto"
   },
   "completeness": {

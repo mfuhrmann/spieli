@@ -7,7 +7,7 @@
 // written out in all four places with a comment asking the reader to keep
 // them in sync by hand.
 //
-// The scale is a single-hue green ramp ending in neutral grey — not a traffic
+// The scale is a single-hue green ramp ending in a cool slate — not a traffic
 // light. A diverging red/amber/green scale encodes "good vs bad about a
 // midpoint", which reads as a verdict on the playground. This one encodes
 // "more vs less", which is what the value actually measures: how much of this
@@ -22,7 +22,7 @@
 // Known trade-off: because `partial` is darker than both its neighbours, the
 // ramp is not monotonic in lightness, so viewers with deuteranopia or
 // protanopia cannot recover the full ordering from lightness alone. They can
-// still separate "green of some kind" from "grey", which is the distinction
+// still separate "green of some kind" from "slate", which is the distinction
 // that carries the contribution call to action.
 //
 // The zero case is a cool slate blue-grey, not a plain grey. A neutral colour
@@ -40,7 +40,7 @@
 // Bucket keys stay `complete` / `partial` / `missing` — those are the wire
 // and storage identifiers (see get_playground_clusters, get_meta,
 // playground_stats). Their user-facing labels are "detailed" / "basic" /
-// "not mapped yet" and live in locales/*.json under `mappingDetail.*`.
+// "no details yet" and live in locales/*.json under `mappingDetail.*`.
 
 /**
  * Base colours, one per bucket.
