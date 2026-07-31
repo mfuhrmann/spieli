@@ -3,10 +3,10 @@
 - [x] 1.1 Add `has_photo`, `has_equipment`, `has_info` to the `playground_stats` matview select list in `importer/api.sql` (the flags already exist in the CTE around `:315-340`; select them through instead of discarding them)
 - [x] 1.2 Document the three new columns in `docs/reference/completeness.md` (not `api.md` — the matview is documented there, and `docs/contributing/import-pipeline.md` is being fully rewritten by the in-flight `fix-import-pipeline-docs` change)
 - [x] 1.3 Verify with a fresh-volume import: `make down && docker volume rm spieli_pgdata spieli_pgdata2 && make up`, then confirm the columns exist and `completeness` is unchanged by this PR
-- [~] 1.4 Run the breakdown and record the output in `openspec/changes/rework-mapping-detail-rating/measurement.md` — **Fulda (local, 923) done; Hessen run still pending, needs PR A deployed**:
+- [~] 1.4 Run the breakdown and record the output in `openspec/changes/rework-mapping-detail-rating/measurement.md` — **Fulda (local, 926) done; Hessen run still pending, needs PR A deployed**:
       `SELECT completeness, has_equipment, has_info, has_photo, count(*) FROM playground_stats GROUP BY 1,2,3,4 ORDER BY 5 DESC;`
-- [x] 1.5 **Decision gate — passed.** Not via the originally stated test (Fulda's `partial` is only 20% photo-blocked), but via Hessen's bucket totals: `complete` sits at 87 of 8802 (1.0%) against Fulda's 7.3% under the same rule, which only photo availability can explain. See `measurement.md` Run 2. D2 stands
-- [ ] 1.6 Open PR A with the `requires-schema-update` label
+- [x] 1.5 **Decision gate — passed.** Not via the originally stated test (Fulda's `partial` is only 20% photo-blocked), but via Hessen's bucket totals: `complete` sits at 87 of 8802 (1.0%) against Fulda's 8.0% under the same rule, which only photo availability can explain. See `measurement.md` Run 2. D2 stands
+- [x] 1.6 Open PR A with the `requires-schema-update` label — [#803](https://github.com/mfuhrmann/spieli/pull/803)
 
 ## 2. PR B — Rework the rule
 
