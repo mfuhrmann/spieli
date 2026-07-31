@@ -192,10 +192,9 @@ The **Cleanup translation files** add-on (`weblate.cleanup.generic`) removes key
 
 The **Squash Git commits** add-on (`weblate.git.squash`) collapses a push into one commit instead of one per language. Enabled 2026-07-31 (#796) with `squash: all` and `append_trailers: true`. Before it, #734 arrived as twelve commits, and because `main` squash-merges they all landed in the merge commit body — `cb8d9893` carries eleven `* Translated using Weblate (…)` bullets plus one `* Update translation files`.
 
-Two consequences worth knowing before reading the next translation PR as breakage:
+It squashes the commits, not their messages: the add-on's own *Commit message* option is empty, so Weblate builds the body from the pending commits' messages and the single commit still repeats `chore(i18n): update translations from Weblate` once per language. Cosmetic — set that option if it ever bothers you.
 
-- **The squashed commit still repeats the message once per language.** The add-on's own *Commit message* option is empty, and with `append_trailers` on, Weblate builds the body from `git log --format=%B` of the pending commits. So one commit arrives carrying `chore(i18n): update translations from Weblate` N times. Setting the add-on's Commit message option is what collapses that to a single line.
-- **`weblate-translations` is force-pushed.** Squashing runs `git reset --mixed` onto the remote branch after every commit, and Weblate's GitHub backend pushes with `--force`. With `push_on_commit: true` that happens on each batch, so the open translation PR's branch history is replaced as it goes: line comments go stale, approvals reset, and a local checkout of that branch needs `git fetch --force`. This is normal, not corruption.
+`weblate-translations` is force-pushed and always was: Weblate's GitHub backend pushes with `--force` regardless of add-ons. Squashing rewrites more of the branch each time, so expect stale line comments on the long-lived translation PR and a `git fetch --force` for local checkouts. Not corruption.
 
 There is **no Git exporter add-on** on this project. Hosted Weblate serves the component's repository at the `git_export` URL natively, so the recovery procedure's `weblate` remote needs nothing enabled.
 

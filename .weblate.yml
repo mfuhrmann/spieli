@@ -78,14 +78,13 @@ addons:
   # took effect and #734 pushed twelve commits, which main's squash-merge then
   # folded into one commit body.
   #
-  # commit_message is deliberately left empty for now: with it empty and
-  # append_trailers on, Weblate builds the squashed body from the pending
-  # commits' own messages, so the body repeats commit_message once per
-  # language. Setting it here collapses that to a single line.
+  # commit_message left empty: Weblate then builds the squashed body from the
+  # pending commits' own messages, so it repeats once per language. Cosmetic;
+  # set it here to collapse the body to a single line.
   #
-  # Squashing also makes the push a rewrite — Weblate resets onto the remote
-  # branch after each commit and its GitHub backend pushes with --force — so
-  # weblate-translations' history is replaced on every batch.
+  # Note that weblate-translations is force-pushed with or without this add-on
+  # — Weblate's GitHub backend always pushes with --force. Squashing only
+  # rewrites more of the branch each time.
   - id: weblate.git.squash
     scope: component        # Operations → Add-ons
     configuration:
