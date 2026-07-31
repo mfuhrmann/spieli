@@ -1091,6 +1091,39 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="If the component gets stuck">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#diagnosing" class="md-nav__link">
+    <span class="md-ellipsis">
+      Diagnosing
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#recovery" class="md-nav__link">
+    <span class="md-ellipsis">
+      Recovery
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-wlc-cli" class="md-nav__link">
+    <span class="md-ellipsis">
+      The wlc CLI
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
       </ul>
@@ -1551,6 +1584,39 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="If the component gets stuck">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#diagnosing" class="md-nav__link">
+    <span class="md-ellipsis">
+      Diagnosing
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#recovery" class="md-nav__link">
+    <span class="md-ellipsis">
+      Recovery
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-wlc-cli" class="md-nav__link">
+    <span class="md-ellipsis">
+      The wlc CLI
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
       </ul>
@@ -1620,17 +1686,108 @@
 </code></pre></div>
 <p>Weblate batches translation saves and periodically pushes a commit to the <code>weblate-translations</code> branch, then opens — or reuses — a pull request against <code>main</code>. It keeps <strong>one long-lived PR</strong> ("Translations update from Hosted Weblate") rather than opening a new one per batch, so the same PR number accumulates commits until a maintainer merges it. The maintainer reviews the JSON diff and merges; the next <code>make docker-build</code> bundles the updated locale files into the app.</p>
 <p>Weblate never pushes directly to <code>main</code> — every translation update goes through a PR.</p>
+<p>Merge that PR with whichever button you like. <code>main</code> allows only squash and rebase merges, and both rewrite Weblate's commits, but the component is set to <code>merge_style: merge</code> so it integrates <code>main</code> by merging rather than by replaying its own commits — see <a href="#if-the-component-gets-stuck">If the component gets stuck</a>.</p>
 <p>The live component is <a href="https://hosted.weblate.org/projects/spieli/ui-strings/"><code>spieli/ui-strings</code></a>. The project also contains an auto-created <code>spieli/glossary</code> component backed by a local-only repository; it holds terminology, has no git remote, and needs no maintenance.</p>
 <h3 id="if-the-component-gets-stuck">If the component gets stuck<a class="headerlink" href="#if-the-component-gets-stuck" title="Permanent link">&para;</a></h3>
-<p>Weblate rebases its commits onto <code>main</code> on every pull. If a commit on <code>main</code> touched the same locale file Weblate has pending, that rebase fails and <strong>stays</strong> failed — Weblate stops pulling entirely, and no translation can reach the repo until it is resolved. The component sat in exactly this state from May to July 2026.</p>
-<p>Recovery, in order:</p>
+<p>Weblate integrates <code>main</code> on every pull. When that integration fails it <strong>stays</strong> failed — Weblate stops pulling entirely, no translation can reach the repo, and <code>auto_lock_error</code> locks the component. Two distinct causes have hit this project.</p>
+<p><strong>1. An upstream commit edited a locale Weblate had pending.</strong> Editing <code>fr.json</code> or <code>sk.json</code> by hand collides with whatever a translator has unmerged for that file. The component sat in this state from May to July 2026. The <code>i18n Guard</code> CI job exists to prevent it; see below.</p>
+<p><strong>2. A Weblate PR was squash-merged.</strong> <code>main</code> is governed by the <code>protect_main</code> ruleset, whose <code>allowed_merge_methods</code> is <code>["squash", "rebase"]</code> — both rewrite commits, so a Weblate PR can never land with its commits intact and they never become ancestors of <code>main</code>. Under the old <code>merge_style: rebase</code> Weblate replayed all of them on every update, and they conflicted against the already-squashed state:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>Rebasing (2/12)
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>dropping d2359df Translated using Weblate (Czech) -- patch contents already upstream
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>CONFLICT (content): Merge conflict in locales/fr.json
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>error: could not apply 5ed1863... Translated using Weblate (French)
+</code></pre></div>
+<p>This was structural — it recurred on every Weblate PR merge. Fixed on 2026-07-29 (#794) by switching the component to <code>merge_style: merge</code>, which integrates <code>main</code> by merging instead of replaying. <strong>If this cause reappears, check that setting first.</strong></p>
+<h4 id="diagnosing">Diagnosing<a class="headerlink" href="#diagnosing" title="Permanent link">&para;</a></h4>
+<p><code>wlc repo</code> reports the component's git state, including the full failure text:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="gp">$ </span>wlc<span class="w"> </span>repo
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="go">merge_failure: CONFLICT (content): Merge conflict in locales/fr.json</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="go">needs_commit: False</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="go">needs_merge: True</span>
+</code></pre></div>
+<p><code>needs_commit: False</code> means every translator edit in Weblate's database has already been written to its git checkout — so the exported repo you diff below reflects all of their work. If it reads <code>True</code>, run <code>wlc commit</code> first, otherwise that comparison is incomplete before you start. This is not about losing data to the reset: the reset rewrites only Weblate's git checkout, and its database survives (see below).</p>
+<h4 id="recovery">Recovery<a class="headerlink" href="#recovery" title="Permanent link">&para;</a></h4>
+<p>Before resetting, prove no translation is lost. Add Weblate's exported repo as a remote and diff every locale against <code>main</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>git<span class="w"> </span>remote<span class="w"> </span>add<span class="w"> </span>weblate<span class="w"> </span>https://hosted.weblate.org/git/spieli/ui-strings/
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>git<span class="w"> </span>remote<span class="w"> </span>update<span class="w"> </span>origin<span class="w"> </span>weblate
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="k">for</span><span class="w"> </span>f<span class="w"> </span><span class="k">in</span><span class="w"> </span>locales/*.json<span class="p">;</span><span class="w"> </span><span class="k">do</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">  </span><span class="nv">d</span><span class="o">=</span><span class="k">$(</span>git<span class="w"> </span>diff<span class="w"> </span>--numstat<span class="w"> </span>origin/main<span class="w"> </span>weblate/main<span class="w"> </span>--<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$f</span><span class="s2">&quot;</span><span class="k">)</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">  </span><span class="o">[</span><span class="w"> </span>-n<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$d</span><span class="s2">&quot;</span><span class="w"> </span><span class="o">]</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$f</span><span class="s2">: </span><span class="nv">$d</span><span class="s2">&quot;</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="k">done</span>
+</code></pre></div>
+<p>The <code>weblate</code> URL is served by the <strong>Git exporter</strong> add-on. Without it enabled on the component that host returns nothing and none of the steps below can be carried out.</p>
+<p>A locale that prints nothing is byte-identical on both sides and cannot lose anything. For any locale that does differ, inspect the diff and decide which side is correct — then:</p>
 <ol>
-<li>Land anything valuable from <code>weblate-translations</code> in a normal PR first, since step 3 discards it. Check what is actually on that branch — it may be far behind <code>main</code> and its translations may be worse than what the repo already has.</li>
+<li>Land anything valuable from Weblate in a normal PR first, labelled <code>i18n-manual</code>, since the reset discards it.</li>
 <li>Confirm the salvaged work is merged into <code>main</code>.</li>
-<li>Weblate → Operations → Repository maintenance → <strong>Reset all changes in the Weblate repository</strong>. This resets to upstream and discards Weblate's local commits.</li>
+<li>
+<p>Reset Weblate onto upstream:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>wlc<span class="w"> </span>lock
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>wlc<span class="w"> </span>reset
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>wlc<span class="w"> </span>pull
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>wlc<span class="w"> </span>unlock
+</code></pre></div>
+<p>Run these as four separate commands rather than <code>&amp;&amp;</code>-chained. If <code>reset</code> or
+<code>pull</code> fails — an API error, a still-conflicting upstream, an expired token —
+a chain never reaches <code>unlock</code> and leaves translations blocked. If any step
+fails, run <code>wlc unlock</code> before investigating; <code>wlc lock-status</code> shows where
+things stand.</p>
+<p>The same four actions exist in the web UI under Operations → Repository maintenance.</p>
+</li>
+<li>
+<p>Verify: <code>wlc repo</code> shows an empty <code>merge_failure</code> and <code>needs_merge: False</code>, and <code>git remote update weblate</code> leaves <code>weblate/main</code> at the same commit as <code>origin/main</code>.</p>
+</li>
+<li>Close the open "Translations update from Hosted Weblate" PR and delete the <code>weblate-translations</code> branch. A reset only rewrites Weblate's own checkout — anything Weblate already pushed survives it, so that PR still carries the discarded commits and merging it later re-introduces them. Step 4 will not catch this, since it compares only <code>weblate/main</code> against <code>origin/main</code>.</li>
 </ol>
 <p>Do <strong>not</strong> use "Reset and reapply translations" for this — it replays the pending commits onto the reset state and reproduces the same conflict.</p>
-<p>The <code>i18n Guard</code> CI job exists to prevent the situation recurring; see below.</p>
+<p>A reset touches only Weblate's git checkout. Its database is untouched, so per-string translation history, authorship, suggestions and comments all survive.</p>
+<h4 id="the-wlc-cli">The <code>wlc</code> CLI<a class="headerlink" href="#the-wlc-cli" title="Permanent link">&para;</a></h4>
+<p><a href="https://docs.weblate.org/en/latest/wlc.html"><code>wlc</code></a> drives the Weblate API from a shell. It is not packaged for Debian or Arch, and PEP 668 blocks <code>pip install --user</code> on most distros:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>uv<span class="w"> </span>tool<span class="w"> </span>install<span class="w"> </span>wlc<span class="w">     </span><span class="c1"># or: pipx install wlc</span>
+</code></pre></div>
+<p>Configure <code>~/.config/weblate</code>, then <code>chmod 600</code> it — it holds an API token from <a href="https://hosted.weblate.org/accounts/profile/#api">your profile</a>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">[weblate]</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="na">url</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">https://hosted.weblate.org/api/</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="na">translation</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">spieli/ui-strings</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="k">[keys]</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="na">https</span><span class="o">:</span><span class="s">//hosted.weblate.org/api/ = YOUR_API_KEY</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>wlc repo</code></td>
+<td>Show git state — <code>merge_failure</code>, <code>needs_commit</code>, <code>needs_merge</code></td>
+</tr>
+<tr>
+<td><code>wlc commit</code></td>
+<td>Flush pending translator edits into Weblate's git</td>
+</tr>
+<tr>
+<td><code>wlc lock</code> / <code>wlc unlock</code></td>
+<td>Block translations while doing repository surgery</td>
+</tr>
+<tr>
+<td><code>wlc lock-status</code></td>
+<td>Report whether the component is currently locked</td>
+</tr>
+<tr>
+<td><code>wlc reset</code></td>
+<td>Hard-reset Weblate's checkout onto upstream</td>
+</tr>
+<tr>
+<td><code>wlc pull</code></td>
+<td>Fetch and integrate <code>main</code></td>
+</tr>
+</tbody>
+</table>
+<p>Lock state is not in <code>wlc show</code> — use <code>wlc lock-status</code>, which reads <code>GET /api/components/spieli/ui-strings/lock/</code>.</p>
 <h2 id="language-graduation">Language graduation<a class="headerlink" href="#language-graduation" title="Permanent link">&para;</a></h2>
 <p>Weblate collects translations for every registered language, but the app loads only the languages listed in <code>SUPPORTED</code> in <code>app/src/lib/i18n.js</code> — today that is <code>de</code> and <code>en</code>. There is no automatic threshold: reaching 100% in Weblate does not by itself make a language visible. Until a maintainer registers it, the locale file sits in the repo and users with that browser language fall back to English.</p>
 <p><strong>≥ 80% completion</strong> is the bar a maintainer uses to decide a language is ready to activate. When a language crosses it:</p>
@@ -1675,7 +1832,7 @@
 <li>PRs labelled <code>i18n-manual</code> — landing or repairing a translation out-of-band</li>
 </ul>
 <p>Keys follow the existing nested structure. Plural strings use ICU inline format:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">&quot;deviceCount&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;{count, plural, one {# piece of equipment} other {# pieces of equipment}}&quot;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="nt">&quot;deviceCount&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;{count, plural, one {# piece of equipment} other {# pieces of equipment}}&quot;</span>
 </code></pre></div>
 <p>When you add a new key, Weblate automatically marks it as needing translation in all registered languages.</p>
 <h2 id="weblate-component-settings">Weblate component settings<a class="headerlink" href="#weblate-component-settings" title="Permanent link">&para;</a></h2>
@@ -1715,6 +1872,11 @@
 <td>Settings → Version control</td>
 </tr>
 <tr>
+<td>Merge style</td>
+<td><code>merge</code></td>
+<td>Settings → Version control</td>
+</tr>
+<tr>
 <td>JSON indentation</td>
 <td><code>2</code>, spaces</td>
 <td>Settings → Files</td>
@@ -1729,10 +1891,17 @@
 <td>enabled</td>
 <td>Operations → Add-ons</td>
 </tr>
+<tr>
+<td>Git exporter</td>
+<td>enabled</td>
+<td>Operations → Add-ons</td>
+</tr>
 </tbody>
 </table>
+<p><strong>Merge style must stay <code>merge</code>.</strong> Weblate's default is <code>rebase</code>, which replays Weblate's own commits onto <code>main</code> on every pull. Because <code>main</code> allows only squash and rebase merges, those commits never become ancestors of <code>main</code>, so the replay repeats forever and eventually conflicts — see <a href="#if-the-component-gets-stuck">If the component gets stuck</a>. With <code>merge</code>, Weblate merges <code>main</code> into its branch instead and a squashed upstream PR integrates cleanly.</p>
 <p><code>json_indent</code> replaced the "Customize JSON output" add-on, which Weblate removed in 5.13. Leave key sorting off — Weblate follows the <code>en.json</code> template order, and sorting would reshuffle every locale file into one unreviewable diff.</p>
 <p>The <strong>Cleanup translation files</strong> add-on (<code>weblate.cleanup.generic</code>) removes keys no longer present in <code>en.json</code>. Without it, locale files accumulate stale keys.</p>
+<p>The <strong>Git exporter</strong> add-on (<code>weblate.gitexport.gitexport</code>) publishes the component's repository at <code>https://hosted.weblate.org/git/spieli/ui-strings/</code>. It must stay enabled — the recovery procedure above diffs against that remote to prove no translation is lost, and without it there is no way to inspect Weblate's checkout before resetting it.</p>
 <p>ICU plural strings appear as a single field in the Weblate editor. Translators write the full ICU expression for their language.</p>
 <div class="admonition warning">
 <p class="admonition-title">Weblate cannot validate plural categories</p>
