@@ -15,7 +15,10 @@
   $: isWater = attr?.is_water;
   $: hasTrees = attr?.tree_count > 0;
   $: forBaby = attr?.for_baby;
-  $: isWheelchair = attr?.wheelchair === 'yes' || attr?.wheelchair === 'limited';
+  // Server-computed play-equipment accessibility, not the area's own wheelchair
+  // tag. The raw tag describes site access, which barely separates playgrounds —
+  // it disagreed with the wheelchair filter on 67 of 69 hover icons (#777).
+  $: isWheelchair = attr?.for_wheelchair;
   $: isRestricted = attr?.access === 'private' || attr?.access === 'customers';
   $: area = attr?.area > 0 ? `${Math.round(attr.area / 10) * 10 || attr.area} m²` : null;
 

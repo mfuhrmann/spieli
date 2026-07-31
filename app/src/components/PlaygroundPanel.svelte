@@ -11,7 +11,7 @@
   import { onMount, onDestroy } from 'svelte';
   import OpeningHours from 'opening_hours';
   import { transform } from 'ol/proj';
-  import { X, Share2, Check, ChevronDown, ChevronUp, ChevronRight, Image, Package, Navigation, Star, Info, Phone, Mail } from 'lucide-svelte';
+  import { X, Share2, Check, ChevronDown, ChevronUp, ChevronRight, Image, Package, Navigation, Star, Info, Phone, Mail, Accessibility } from 'lucide-svelte';
   import { _ } from 'svelte-i18n';
 
   import { selection } from '../stores/selection.js';
@@ -593,7 +593,7 @@
       {/if}
 
       <!-- Status pills: opening hours, baby/toddler, shade -->
-      {#if openingHoursInfo || attr.for_baby || attr.for_toddler || attr.has_shade != null}
+      {#if openingHoursInfo || attr.for_baby || attr.for_toddler || attr.wheelchair_play || attr.has_shade != null}
         <div class="status-row mb-4">
           {#if openingHoursInfo}
             <Badge
@@ -612,6 +612,19 @@
           {/if}
           {#if attr.for_toddler}
             <Badge variant="info" class="whitespace-nowrap">{$_('details.forToddler')}</Badge>
+          {/if}
+          <!-- Tri-state: a badge when suitable equipment is tagged, a plain note
+               when someone surveyed and found none, nothing at all when no play
+               device carries a wheelchair tag. The third case is unknown, not a
+               negative, and must not read as one. -->
+          {#if attr.wheelchair_play === 'yes'}
+            <Badge variant="info" class="gap-[5px] whitespace-nowrap">
+              <Accessibility class="h-3 w-3" aria-hidden="true" />{$_('details.wheelchairPlay')}
+            </Badge>
+          {:else if attr.wheelchair_play === 'no'}
+            <Badge variant="neutralSoft" class="gap-[5px] whitespace-nowrap">
+              <Accessibility class="h-3 w-3" aria-hidden="true" />{$_('details.wheelchairPlayNone')}
+            </Badge>
           {/if}
           {#if attr.has_shade != null}
             <Badge variant={attr.has_shade ? 'successSoft' : 'dangerSoft'} class="whitespace-nowrap">

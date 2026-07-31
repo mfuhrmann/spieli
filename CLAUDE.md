@@ -237,6 +237,8 @@ All PostgREST-exposed functions live in the `api` schema. See [`docs/reference/a
 
 The `playground_stats` materialised view is rebuilt with each `make db-apply` and carries the per-playground `completeness` (`'complete' | 'partial' | 'missing'`) — the rule mirrors `app/src/lib/completeness.js` exactly.
 
+**Wheelchair signal** — `wheelchair_play` is a tri-state (`'yes' | 'no' | NULL`) derived from **play devices only**: `playground=*` objects excluding `playground=sandpit`, tagged `wheelchair` ∈ `yes`/`limited`/`designated`. `'no'` means devices were surveyed and none qualified; `NULL` means nobody recorded it — unknown, not negative, and the panel must never present it as one. The playground area's own `wheelchair` tag is deliberately **not** an input: it describes site access, which barely separates playgrounds for an audience travelling with an adult, and admitting it qualified 59 of 731 Fulda playgrounds that have no suitable equipment at all. Street furniture and pitches cannot set it either — the same false-signal rule as `has_equipment`. `for_wheelchair` is kept as the boolean projection (`wheelchair_play = 'yes'`) so the `filterStore` key and mixed-version federation are unaffected. Hover icon, panel badge and filter all read the server value; nothing reads the raw tag. See [`docs/user-guide.md`](docs/user-guide.md#wheelchair-accessibility).
+
 Run `make db-apply` after modifying `api.sql` to apply changes without a full re-import.
 
 **After any change to `importer/api.sql` or `db/init.sql`, verify with a fresh-volume import:**
