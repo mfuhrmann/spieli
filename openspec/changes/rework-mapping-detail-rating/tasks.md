@@ -21,9 +21,9 @@
 - [x] 2.9 Add the photo badge to `app/src/components/PlaygroundPanel.svelte`
 - [x] 2.10 Update `app/src/lib/completeness.test.js` for the new rule — cover equipment+info without photo → `complete`, equipment alone → `partial`, info alone → `partial`, photo alone → `missing`, empty-string tags → absent
 - [x] 2.11 Add a JS↔SQL parity check covering every `hasEquipment` × `hasInfo` combination
-- [ ] 2.12 Contrast-check `partial` and `missing` polygons over `landuse=grass` and `leisure=park` on the real basemap; darken the values if they wash out
+- [x] 2.12 Contrast-check on the real basemap — no clash with the basemap greens. Led to flipping the ramp (bright green now = detailed) and raising `complete` fill alpha to 0.28. Findings recorded as `design.md` D8. Still open there: `partial` over dark backgrounds (woodland)
 - [x] 2.13 Update `docs/contributing/import-pipeline.md` (rating rule) and the `completeness.js` ↔ `api.sql` mirror note in `CLAUDE.md`
-- [ ] 2.14 Verify with a fresh-volume import, then `make db-apply && make docker-build` and re-run the breakdown query to confirm the `complete` share moved as predicted
+- [x] 2.14 Verified: fresh-volume import clean, `make db-apply` + `make docker-build` applied, breakdown re-run. Fulda 926: complete 118, partial 183, missing 625 — matches the projection exactly
 - [x] 2.15 Run `make test`
 - [ ] 2.16 Open PR B with the `requires-schema-update` label; note the bucket-count shift in the PR body for the release notes
 
@@ -34,7 +34,7 @@
 - [x] 3.3 Repoint `CompletenessLegend.svelte`, `FilterPanel.svelte` and `FilterChips.svelte` at the new keys (`filterStore` keys `showComplete` / `showPartial` / `showMissing` stay unchanged)
 - [x] 3.4 Update the `completeness` label at `locales/en.json:99` and any remaining "Data Quality" / "Data complete" strings
 - [x] 3.5 Add a legend line explaining the camera glyph
-- [ ] 3.6 Reframe the `missing` case in `PlaygroundPanel` as a contribution invitation and confirm the `DataContributionModal` entry point is reachable from it
+- [ ] 3.6 Reframe the `missing` case in `PlaygroundPanel` as a contribution invitation and confirm the `DataContributionModal` entry point is reachable from it — **left for the maintainer: wording, not mechanics**
 - [ ] 3.7 Confirm the `i18n Guard` CI job passes and `make test` is green
 - [ ] 3.8 Open PR C
 
