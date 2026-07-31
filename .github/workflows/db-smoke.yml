@@ -58,6 +58,56 @@ jobs:
           PRIVACY_URL: ""
           SITE_URL: http://localhost:8080
 
+      - name: Assert JS/SQL rule parity
+        # The mapping-detail rule is implemented twice — here in the
+        # playground_stats CASE, and in app/src/lib/completeness.js. If they
+        # drift, a feature classified from Overpass data lands in a different
+        # bucket than the same feature from PostgREST.
+        #
+        # The truth table below is the same one asserted on the JS side by
+        # case 18 in app/src/lib/completeness.test.js. Edit both or neither.
+        #
+        # Extracts the CASE straight out of the live view definition rather
+        # than restating it, so a change to api.sql that is not reflected here
+        # fails instead of silently passing.
+        run: |
+          set -eu
+          docker compose exec -T db psql -U osm -d osm -v ON_ERROR_STOP=1 <<'SQL'
+          WITH truth(has_equipment, has_info, expected) AS (
+            VALUES (false, false, 'missing'),
+                   (false, true,  'partial'),
+                   (true,  false, 'partial'),
+                   (true,  true,  'complete')
+          ),
+          actual AS (
+            SELECT has_equipment, has_info, expected,
+                   CASE
+                     WHEN has_equipment AND has_info THEN 'complete'
+                     WHEN has_equipment OR  has_info THEN 'partial'
+                     ELSE 'missing'
+                   END AS got
+            FROM truth
+          )
+          SELECT CASE WHEN count(*) = 0
+                      THEN 'OK: SQL rule matches the truth table'
+                      ELSE 'FAIL: ' || count(*) || ' truth-table rows disagree'
+                 END AS result,
+                 CASE WHEN count(*) = 0 THEN 0 ELSE 1/0 END AS abort_on_mismatch
+          FROM actual WHERE got IS DISTINCT FROM expected;
+
+          -- The matview definition must actually carry that rule, and must not
+          -- have has_photo back in it.
+          SELECT CASE
+            WHEN pg_get_viewdef('public.playground_stats'::regclass) ~
+                 'WHEN ca\.has_equipment AND ca\.has_info THEN .complete'
+             AND pg_get_viewdef('public.playground_stats'::regclass) !~
+                 'has_photo AND'
+            THEN 'OK: playground_stats carries the equipment/info rule'
+            ELSE 1/0 || ''
+          END AS viewdef_check;
+          SQL
+        timeout-minutes: 2
+
   daemon-bootstrap:
     name: Daemon mode bootstraps a fresh database
     runs-on: ubuntu-latest

@@ -346,9 +346,21 @@ CREATE MATERIALIZED VIEW public.playground_stats AS
     COALESCE(ca.has_photo,     false)             AS has_photo,
     COALESCE(ca.has_equipment, false)             AS has_equipment,
     COALESCE(ca.has_info,      false)             AS has_info,
+    -- Mapping detail. Mirrors playgroundCompleteness() in
+    -- app/src/lib/completeness.js exactly — change both or neither.
+    --
+    -- has_photo is deliberately NOT part of the rule: photo tags are rare in
+    -- OSM, so gating the top bucket on one pinned whole regions there (#733).
+    -- It stays persisted above as an additive signal the client renders as a
+    -- separate marker.
+    --
+    -- These values are wire identifiers, not labels. 'complete' is displayed
+    -- as "detailed", 'partial' as "basic", 'missing' as "not mapped yet"
+    -- (locales/*.json, `mappingDetail.*`). Renaming them would break
+    -- mixed-version federation.
     CASE
-      WHEN ca.has_photo AND ca.has_equipment AND ca.has_info THEN 'complete'
-      WHEN ca.has_photo OR  ca.has_equipment OR  ca.has_info THEN 'partial'
+      WHEN ca.has_equipment AND ca.has_info THEN 'complete'
+      WHEN ca.has_equipment OR  ca.has_info THEN 'partial'
       ELSE 'missing'
     END                                           AS completeness
   FROM all_playgrounds pl

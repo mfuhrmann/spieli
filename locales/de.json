@@ -31,10 +31,10 @@
       "shade": "Mit Schatten"
     },
     "completeness": {
-      "title": "Datenqualität",
-      "showComplete": "hoch",
-      "showPartial": "mittel",
-      "showMissing": "schlecht"
+      "title": "Erfasste Details",
+      "showComplete": "detailliert",
+      "showPartial": "grundlegend",
+      "showMissing": "noch nicht erfasst"
     }
   },
   "hover": {
@@ -77,17 +77,14 @@
     "backToMap": "Zurück zur Karte",
     "navigateHere": "Bring mich hierher"
   },
+  "mappingDetail": {
+    "legendTitle": "Erfasste Details",
+    "detailed": "detailliert",
+    "basic": "grundlegend",
+    "notMapped": "noch nicht erfasst",
+    "hasPhoto": "hat ein Foto"
+  },
   "completeness": {
-    "legendTitle": "Datenqualität",
-    "complete": "hoch",
-    "partial": "mittel",
-    "missing": "niedrig",
-    "dotComplete": "Daten vollständig",
-    "dotPartial": "Teilweise erfasst",
-    "dotMissing": "Daten fehlen",
-    "badgeComplete": "Datenqualität",
-    "badgePartial": "Datenqualität",
-    "badgeMissing": "Datenqualität",
     "restrictedHint": "nicht öffentlich"
   },
   "accordion": {
@@ -96,7 +93,7 @@
     "shadow": "Schattigkeit",
     "surroundings": "Umfeld",
     "reviews": "Bewertungen",
-    "completeness": "Datenvollständigkeit"
+    "completeness": "Erfasste Details"
   },
   "location": {
     "btn": "Standort verfolgen",

@@ -31,10 +31,10 @@
       "shade": "With shade"
     },
     "completeness": {
-      "title": "Data quality",
-      "showComplete": "high",
-      "showPartial": "medium",
-      "showMissing": "low"
+      "title": "Mapping detail",
+      "showComplete": "detailed",
+      "showPartial": "basic",
+      "showMissing": "not mapped yet"
     }
   },
   "hover": {
@@ -77,17 +77,14 @@
     "backToMap": "Back to map",
     "navigateHere": "Take me there"
   },
+  "mappingDetail": {
+    "legendTitle": "Mapping detail",
+    "detailed": "detailed",
+    "basic": "basic",
+    "notMapped": "not mapped yet",
+    "hasPhoto": "has a photo"
+  },
   "completeness": {
-    "legendTitle": "Data Quality",
-    "complete": "high",
-    "partial": "medium",
-    "missing": "low",
-    "dotComplete": "Data complete",
-    "dotPartial": "Partially mapped",
-    "dotMissing": "No data",
-    "badgeComplete": "Data Quality",
-    "badgePartial": "Data Quality",
-    "badgeMissing": "Data Quality",
     "restrictedHint": "not public"
   },
   "accordion": {
@@ -96,7 +93,7 @@
     "shadow": "Shade",
     "surroundings": "Surroundings",
     "reviews": "Reviews",
-    "completeness": "Data completeness"
+    "completeness": "Mapping detail"
   },
   "location": {
     "btn": "My location",

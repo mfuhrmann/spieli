@@ -7,7 +7,8 @@ import Stroke from 'ol/style/Stroke.js';
 import Circle from 'ol/style/Circle.js';
 
 import { objDevices, objFeatures } from './objPlaygroundEquipment.js';
-import { playgroundCompleteness } from './completeness.js';
+import { playgroundCompleteness, hasPhotoSignal } from './completeness.js';
+import { COMPLETENESS_PALETTE, COMPLETENESS_ORDER } from './completenessPalette.js';
 
 // ── Playground completeness colours ──────────────────────────────────────────
 
@@ -29,40 +30,33 @@ function makeHatchPattern(color, bgColor) {
 }
 
 // Lazily initialised — canvas only available in browser context
-let _hatchComplete, _hatchPartial, _hatchMissing;
+let _hatchCache = null;
 function getHatch(type) {
-    if (!_hatchComplete) {
-        _hatchComplete = makeHatchPattern('rgba(34,139,34,0.55)',  'rgba(34,139,34,0.08)');
-        _hatchPartial  = makeHatchPattern('rgba(180,130,0,0.55)',  'rgba(234,179,8,0.08)');
-        _hatchMissing  = makeHatchPattern('rgba(200,50,50,0.55)',  'rgba(239,68,68,0.06)');
+    if (!_hatchCache) {
+        _hatchCache = {};
+        for (const key of COMPLETENESS_ORDER) {
+            const { hatch } = COMPLETENESS_PALETTE[key];
+            _hatchCache[key] = makeHatchPattern(hatch.stroke, hatch.bg);
+        }
     }
-    return type === 'complete' ? _hatchComplete
-         : type === 'partial'  ? _hatchPartial
-         : _hatchMissing;
+    return _hatchCache[type] ?? _hatchCache.missing;
 }
 
-const _styleComplete = new Style({
-    fill: new Fill({ color: 'rgba(34, 139, 34, 0.22)' }),
-    stroke: new Stroke({ color: '#155215', width: 1.5 })
-});
-const _stylePartial = new Style({
-    fill: new Fill({ color: 'rgba(234, 179, 8, 0.22)' }),
-    stroke: new Stroke({ color: '#92400e', width: 1.5 })
-});
-const _styleMissing = new Style({
-    fill: new Fill({ color: 'rgba(239, 68, 68, 0.18)' }),
-    stroke: new Stroke({ color: '#991b1b', width: 1.5 })
-});
+const _polygonStyles = Object.fromEntries(
+    COMPLETENESS_ORDER.map(key => [key, new Style({
+        fill: new Fill({ color: COMPLETENESS_PALETTE[key].fill }),
+        stroke: new Stroke({ color: COMPLETENESS_PALETTE[key].stroke, width: 1.5 })
+    })])
+);
 
 function makeHatchStyle(type) {
-    const colors = {
-        complete: { stroke: '#155215' },
-        partial:  { stroke: '#92400e' },
-        missing:  { stroke: '#991b1b' },
-    };
     return new Style({
         fill: new Fill({ color: getHatch(type) }),
-        stroke: new Stroke({ color: colors[type].stroke, width: 1.5, lineDash: [6, 3] })
+        stroke: new Stroke({
+            color: (COMPLETENESS_PALETTE[type] ?? COMPLETENESS_PALETTE.missing).stroke,
+            width: 1.5,
+            lineDash: [6, 3]
+        })
     });
 }
 
@@ -70,14 +64,43 @@ function isRestrictedAccess(props) {
     return props.access === 'private' || props.access === 'customers';
 }
 
+// ── Photo marker ─────────────────────────────────────────────────────────────
+//
+// A photo is additive information, so it gets an additive glyph rather than a
+// place in the mapping-detail ramp. Rendered on top of the polygon style; OL
+// places image styles at a polygon's interior point.
+
+const CAMERA_SVG =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24">' +
+    '<path d="M9 3.5h6L16.5 6H21a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h4.5L9 3.5z" ' +
+    'fill="#ffffff" stroke="#14532d" stroke-width="2" stroke-linejoin="round"/>' +
+    '<circle cx="12" cy="13" r="3.6" fill="none" stroke="#14532d" stroke-width="2"/>' +
+    '</svg>';
+
+let _photoStyle = null;
+function getPhotoStyle() {
+    if (!_photoStyle) {
+        _photoStyle = new Style({
+            image: new Icon({
+                src: 'data:image/svg+xml;utf8,' + encodeURIComponent(CAMERA_SVG),
+                scale: 0.8,
+                opacity: 0.95,
+            }),
+            // Above the polygon fill, below selection.
+            zIndex: 1,
+        });
+    }
+    return _photoStyle;
+}
+
 /** Style function for the playground polygon layer. */
 export function playgroundStyleFn(feature) {
     const props = feature.getProperties();
     const c = playgroundCompleteness(props);
-    if (isRestrictedAccess(props)) return makeHatchStyle(c);
-    if (c === 'complete') return _styleComplete;
-    if (c === 'partial')  return _stylePartial;
-    return _styleMissing;
+    const base = isRestrictedAccess(props)
+        ? makeHatchStyle(c)
+        : (_polygonStyles[c] ?? _polygonStyles.missing);
+    return hasPhotoSignal(props) ? [base, getPhotoStyle()] : base;
 }
 
 // ── Selected playground highlight ────────────────────────────────────────────

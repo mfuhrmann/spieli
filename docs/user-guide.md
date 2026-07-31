@@ -11,17 +11,19 @@ Use your mouse (desktop) or fingers (mobile) to pan and zoom. The map shows:
 
 Click or tap any playground to open its detail panel.
 
-## Data quality colours
+## Mapping detail colours
 
-Each playground is colour-coded to show how completely it has been mapped in OpenStreetMap:
+Each playground is colour-coded to show how much of it has been mapped in OpenStreetMap:
 
 | Colour | What it means |
 |---|---|
-| Green | Well-mapped — has a photo, mapped equipment, and at least one detail (surface, opening hours, or access) |
-| Orange | Partially mapped — at least one of photo, equipment, or detail is present |
-| Red | Barely mapped — the playground exists in OSM but has no photo, no mapped equipment, and no details |
+| Dark green | Detailed — mapped equipment **and** at least one detail (surface, opening hours, or access) |
+| Mid green | Basic — one of the two, not both |
+| Neutral grey | Not mapped yet — the playground exists in OSM but carries no equipment and no details |
 
-The colours reflect the OSM data, not the real-world quality of the playground.
+A camera glyph marks playgrounds that also have a photo. Photos are a bonus, not part of the rating — a playground with everything mapped except a picture still counts as detailed.
+
+The colours describe the OSM data, not the real-world quality of the playground. Grey means nobody has mapped it yet, which is an invitation to help rather than a warning.
 
 ## Finding playgrounds
 
@@ -57,15 +59,15 @@ Open the filter panel to show only playgrounds that match your needs:
 
 Active filters appear as chips below the search bar. Click a chip to remove that filter.
 
-### Data quality filter
+### Mapping detail filter
 
-The **Datenqualität** section lets you show or hide playgrounds by their OSM data completeness:
+The **Erfasste Details** section lets you show or hide playgrounds by how much of them is mapped:
 
 | State | Meaning |
 |---|---|
-| **Complete** (green) | Has photo, mapped equipment, and at least one detail (surface, opening hours, or access) |
-| **Partial** (amber) | Has at least one of the above |
-| **Missing** (red) | No mapped data at all |
+| **detailliert** (dark green) | Mapped equipment **and** at least one detail (surface, opening hours, or access) |
+| **grundlegend** (mid green) | One of the two, not both |
+| **noch nicht erfasst** (grey) | Neither |
 
 All three states are shown by default. Deactivate a state to hide those playgrounds — for example, uncheck **Missing** and **Partial** to see only well-documented playgrounds, or uncheck **Complete** and **Partial** to find playgrounds still needing OSM survey work.
 

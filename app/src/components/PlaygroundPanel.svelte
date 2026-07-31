@@ -11,7 +11,7 @@
   import { onMount, onDestroy } from 'svelte';
   import OpeningHours from 'opening_hours';
   import { transform } from 'ol/proj';
-  import { X, Share2, Check, ChevronDown, ChevronUp, ChevronRight, Image, Package, Navigation, Star, Info, Phone, Mail } from 'lucide-svelte';
+  import { X, Share2, Check, ChevronDown, ChevronUp, ChevronRight, Image, Package, Navigation, Star, Info, Phone, Mail, Camera } from 'lucide-svelte';
   import { _ } from 'svelte-i18n';
 
   import { selection } from '../stores/selection.js';
@@ -20,7 +20,8 @@
   import { fetchPlaygroundEquipment, fetchNearbyPOIs, fetchTrees, fetchMeta } from '../lib/api.js';
   import { overlayFeaturesStore } from '../stores/overlayLayer.js';
   import { groupEquipment } from '../lib/equipmentGrouping.js';
-  import { playgroundCompleteness } from '../lib/completeness.js';
+  import { playgroundCompleteness, hasPhotoSignal } from '../lib/completeness.js';
+  import { COMPLETENESS_PALETTE } from '../lib/completenessPalette.js';
   import { poiRadiusM, appMode, mapMinZoom } from '../lib/config.js';
   import { getPlaygroundTitle, getPlaygroundLocation } from '../lib/playgroundHelpers.js';
   import { aggregatePlaygroundThemes, areaThemesOf, themeIcon, themeName } from '../lib/playgroundThemes.js';
@@ -333,21 +334,26 @@
     closeDataAgePopover();
   });
 
-  // ── Completeness badge ────────────────────────────────────────────────────
-  const COMPLETENESS_VARIANT = {
-    complete: 'success',
-    partial:  'warning',
-    missing:  'destructive',
-  };
-  const COMPLETENESS_KEY = {
-    complete: 'completeness.badgeComplete',
-    partial:  'completeness.badgePartial',
-    missing:  'completeness.badgeMissing',
+  // ── Mapping-detail badge ──────────────────────────────────────────────────
+  // Tinted from the shared map palette rather than a semantic Badge variant,
+  // so the badge colour always equals the polygon the user just tapped. The
+  // old success/warning/destructive variants encoded a verdict ("this one is
+  // bad"), which is exactly the reading being removed (#733).
+  const MAPPING_DETAIL_KEY = {
+    complete: 'mappingDetail.detailed',
+    partial:  'mappingDetail.basic',
+    missing:  'mappingDetail.notMapped',
   };
   $: completenessLevel = attr ? playgroundCompleteness(attr) : null;
   $: completeness = completenessLevel
-    ? { variant: COMPLETENESS_VARIANT[completenessLevel], key: COMPLETENESS_KEY[completenessLevel] }
+    ? {
+        key: MAPPING_DETAIL_KEY[completenessLevel],
+        style: `background: ${COMPLETENESS_PALETTE[completenessLevel].fill};`
+             + `border-color: ${COMPLETENESS_PALETTE[completenessLevel].stroke};`
+             + 'color: #1f2937;',
+      }
     : null;
+  $: hasPhoto = attr ? hasPhotoSignal(attr) : false;
 
   // ── Opening hours ─────────────────────────────────────────────────────────
   function openingHoursState(ohStr, t) {
@@ -564,11 +570,17 @@
         <p class="text-sm text-muted-foreground italic mb-3">{part}</p>
       {/each}
 
-      <!-- Data Quality + Data Age -->
+      <!-- Mapping detail + photo marker + data age -->
       {#if completeness || dataAgeFormatted}
         <div class="status-row mb-4">
           {#if completeness}
-            <Badge variant={completeness.variant}>{$_(completeness.key)}</Badge>
+            <Badge variant="outline" style={completeness.style}>{$_(completeness.key)}</Badge>
+          {/if}
+          {#if hasPhoto}
+            <Badge variant="outline" class="gap-1">
+              <Camera class="h-3 w-3" />
+              {$_('mappingDetail.hasPhoto')}
+            </Badge>
           {/if}
           {#if dataAgeFormatted}
             <button
