@@ -2,6 +2,15 @@
   import { _ } from 'svelte-i18n';
   import { X } from 'lucide-svelte';
   import LegalContentModal from '../components/LegalContentModal.svelte';
+  import { COMPLETENESS_BASE } from '../lib/completenessPalette.js';
+
+  // Dots and bar segments read the shared mapping-detail palette rather than
+  // hardcoding hexes in <style> — a <style> block can't import, so the colours
+  // are applied as CSS custom properties on the elements that use them.
+  const detailVars =
+    `--detail-complete: ${COMPLETENESS_BASE.complete};` +
+    `--detail-partial: ${COMPLETENESS_BASE.partial};` +
+    `--detail-missing: ${COMPLETENESS_BASE.missing};`;
 
   /** @type {Array<{ url: string, name: string, version: string|null, loading: boolean, error: string|null, playgroundCount: number, dataAgeSec: number|null, osmDataAgeSec: number|null, lastReachable: string|null, healthUp: boolean|null, observationStale: boolean }>} */
   export let backends;
@@ -208,14 +217,14 @@
             {#if b.completeness}
               {@const { complete, partial, missing } = b.completeness}
               {@const total = complete + partial + missing}
-              <div class="instance-completeness">
-                <span class="cdot cdot--complete"></span>{complete} {$_('completeness.complete')}
-                <span class="cdot cdot--partial"></span>{partial} {$_('completeness.partial')}
-                <span class="cdot cdot--missing"></span>{missing} {$_('completeness.missing')}
+              <div class="instance-completeness" style={detailVars}>
+                <span class="cdot cdot--complete"></span>{complete} {$_('mappingDetail.detailed')}
+                <span class="cdot cdot--partial"></span>{partial} {$_('mappingDetail.basic')}
+                <span class="cdot cdot--missing"></span>{missing} {$_('mappingDetail.notMapped')}
               </div>
               {#if total > 0}
                 {@const pct = Math.round(complete / total * 100)}
-                <div class="completeness-bar-row">
+                <div class="completeness-bar-row" style={detailVars}>
                   <div class="completeness-bar" title="{pct} %">
                     <div class="completeness-bar__seg completeness-bar__seg--complete" style="width: {complete / total * 100}%"></div>
                     <div class="completeness-bar__seg completeness-bar__seg--partial"  style="width: {partial  / total * 100}%"></div>
@@ -419,9 +428,9 @@
     border-radius: 50%;
     flex-shrink: 0;
   }
-  .cdot--complete { background: #16a34a; }
-  .cdot--partial  { background: #d97706; }
-  .cdot--missing  { background: #dc2626; }
+  .cdot--complete { background: var(--detail-complete); }
+  .cdot--partial  { background: var(--detail-partial); }
+  .cdot--missing  { background: var(--detail-missing); }
 
   .completeness-bar-row {
     display: flex;
@@ -453,9 +462,9 @@
     min-width: 0;
     transition: width 0.3s ease;
   }
-  .completeness-bar__seg--complete { background: #16a34a; }
-  .completeness-bar__seg--partial  { background: #d97706; }
-  .completeness-bar__seg--missing  { background: #dc2626; }
+  .completeness-bar__seg--complete { background: var(--detail-complete); }
+  .completeness-bar__seg--partial  { background: var(--detail-partial); }
+  .completeness-bar__seg--missing  { background: var(--detail-missing); }
 
   .instance-overlap {
     font-size: 0.72rem;

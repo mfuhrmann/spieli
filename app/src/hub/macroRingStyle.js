@@ -21,12 +21,19 @@
 
 import Style from 'ol/style/Style.js';
 import { radiusForCount } from '../lib/clusterStyle.js';
+import { COMPLETENESS_BASE } from '../lib/completenessPalette.js';
 
+// Mapping-detail segments come from the shared palette (see
+// lib/completenessPalette.js) so macro rings, cluster rings, polygons and the
+// legend cannot drift apart.
+//
+// `restricted` is a different axis — access, not mapping detail — and is drawn
+// as a fourth arc right next to `missing`. It uses slate-600 rather than a
+// grey: the palette's `missing` is now neutral grey (#9ca3af), and two
+// adjacent grey arcs would be indistinguishable.
 const COLOR = {
-  complete:   '#228b22', // legend "complete"  fill base
-  partial:    '#eab308', // legend "partial"   fill base
-  missing:    '#ef4444', // legend "missing"   fill base
-  restricted: '#9ca3af', // tailwind gray-400 — also used for unknown-completeness rings
+  ...COMPLETENESS_BASE,
+  restricted: '#475569', // tailwind slate-600 — also used for unknown-completeness rings
 };
 const RING_WIDTH      = 14; // slightly thicker than cluster (12) for country-scale prominence
 const CENTER_FILL     = 'rgba(255, 255, 255, 0.95)';
