@@ -25,8 +25,17 @@
 // still separate "green of some kind" from "grey", which is the distinction
 // that carries the contribution call to action.
 //
-// Neutral grey for the zero case reads as "nothing here yet" rather than
-// "bad playground", which is the state we want to invite contributions for.
+// The zero case is a cool slate blue-grey, not a plain grey. A neutral colour
+// is right — it reads as "nothing here yet" rather than "bad playground",
+// which is the state we want to invite contributions for — but plain grey at
+// low alpha disappeared into the basemap, which renders residential landuse
+// (#e0dfdf) and buildings (#d9d0c9) in warm greys of its own. The slight blue
+// cast separates it from those without making it look like a judgement.
+//
+// This bucket covers most of the map — 625 of 926 playgrounds in Fulda — so it
+// has to stay quiet while remaining findable. Its fill sits at 0.24 with a
+// dark stroke: the outline carries "there is a playground here", the fill
+// stays out of the way.
 //
 // Bucket keys stay `complete` / `partial` / `missing` — those are the wire
 // and storage identifiers (see get_playground_clusters, get_meta,
@@ -72,10 +81,10 @@ export const COMPLETENESS_PALETTE = {
         hatch:  { stroke: 'rgba(21, 128, 61, 0.55)',  bg: 'rgba(21, 128, 61, 0.08)' },
     },
     missing: {
-        base:   '#9ca3af',
-        fill:   'rgba(156, 163, 175, 0.18)',
-        stroke: '#4b5563',
-        hatch:  { stroke: 'rgba(107, 114, 128, 0.55)', bg: 'rgba(156, 163, 175, 0.06)' },
+        base:   '#64748b',
+        fill:   'rgba(100, 116, 139, 0.24)',
+        stroke: '#334155',
+        hatch:  { stroke: 'rgba(51, 65, 85, 0.55)',   bg: 'rgba(100, 116, 139, 0.08)' },
     },
 };
 

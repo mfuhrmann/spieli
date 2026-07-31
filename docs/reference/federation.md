@@ -64,7 +64,7 @@ Each regional instance exposes the tiered playground API plus the federation dis
 | `GET /api/rpc/get_playground` | Single-feature lookup by `osm_id` | deeplink hydration |
 | `GET /api/rpc/get_playgrounds` | **Deprecated** — region-scoped FeatureCollection. The Hub falls back to it once per backend per session if a tier RPC 404s, with a one-time warning | legacy fallback only |
 
-CORS is enabled on `/api/` so the Hub can query instances cross-origin from the browser. Backends running pre-P1 releases (no tier RPCs, no completeness extension to `get_meta`) still join successfully — the macro view shows them as "data quality unknown" (flat gray ring) and the cluster tier silently skips them rather than burning bandwidth on a region-wide legacy fetch that would be discarded.
+CORS is enabled on `/api/` so the Hub can query instances cross-origin from the browser. Backends running pre-P1 releases (no tier RPCs, no completeness extension to `get_meta`) still join successfully — the macro view shows them as "mapping detail unknown" (flat violet ring) and the cluster tier silently skips them rather than burning bandwidth on a region-wide legacy fetch that would be discarded.
 
 ## Registry
 
@@ -143,7 +143,7 @@ Each ring has one of four visual states, driven by `federation-status.json` (see
 | **Importing** | Solid blue ring + count + "updating" label | Backend reachable, osm2pgsql actively running |
 | **Degraded** | Solid amber ring + "no data" label | Backend reachable, not importing, but playground count is zero |
 
-Pre-P1 backends that omit the completeness fields from `get_meta` render as a flat gray ring (all count mapped into the "restricted / unknown" segment) so the operator sees "data quality unknown" rather than a misleading all-zero healthy ring.
+Pre-P1 backends that omit the completeness fields from `get_meta` render as a flat violet ring (all count mapped into the "restricted / unknown" segment) so the operator sees "mapping detail unknown" rather than a misleading all-zero healthy ring.
 
 ### Architecture flow
 
