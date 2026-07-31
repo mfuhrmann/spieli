@@ -5,6 +5,12 @@
   import { selection } from '../stores/selection.js';
   import { mapStore } from '../stores/map.js';
   import { playgroundCompleteness } from '../lib/completeness.js';
+  import { COMPLETENESS_BASE } from '../lib/completenessPalette.js';
+
+  const detailVars =
+    `--detail-complete: ${COMPLETENESS_BASE.complete};` +
+    `--detail-partial: ${COMPLETENESS_BASE.partial};` +
+    `--detail-missing: ${COMPLETENESS_BASE.missing};`;
   import { fetchPlaygroundByOsmId } from '../lib/api.js';
   import { _ } from 'svelte-i18n';
   import { fitViewToSelection } from '../lib/playgroundHelpers.js';
@@ -117,7 +123,7 @@
   {:else if items.length === 0}
     <div class="nearby-loading">{$_('nearby.empty')}</div>
   {:else}
-    <ul class="nearby-list">
+    <ul class="nearby-list" style={detailVars}>
       {#each items.slice(0, 5) as item}
         <li>
           <button class="nearby-item" onclick={() => selectSuggestion(item)}>
@@ -187,9 +193,11 @@
     border-radius: 50%;
   }
 
-  .dot-complete { background: #22c55e; }
-  .dot-partial  { background: #f59e0b; }
-  .dot-missing  { background: #ef4444; }
+  /* From completenessPalette.js via custom properties on the list — a <style>
+     block cannot import. Opaque `base`, matching the map and the legend. */
+  .dot-complete { background: var(--detail-complete); }
+  .dot-partial  { background: var(--detail-partial); }
+  .dot-missing  { background: var(--detail-missing); }
 
   .nearby-name {
     flex: 1;
