@@ -20,7 +20,7 @@
   import { macroFilteredStore } from '../stores/macroFiltered.js';
   import { macroCoverageStore } from '../stores/macroCoverage.js';
   import { activeTierStore } from '../stores/tier.js';
-  import { clusterMaxZoom } from '../lib/config.js';
+  import { clusterMaxZoom, regionChatUrl } from '../lib/config.js';
   import { regionFitPadding } from '../lib/playgroundHelpers.js';
   import * as osmIdDedup from './osmIdDedup.js';
 
@@ -75,7 +75,10 @@
     return () => { if (detach) detach(); unsub(); };
   });
 
-  const dataContribLinks = { chatUrl: null };
+  // Same shape as StandaloneApp: the hub's own REGION_CHAT_URL, since a hub
+  // has one operator and one community channel regardless of how many
+  // backends it federates.
+  const dataContribLinks = { chatUrl: regionChatUrl };
 
   // Sync resolver for deep-link slug → backend URL. Reads the current backends
   // list via `get()` so AppShell can call it from its restore loop without

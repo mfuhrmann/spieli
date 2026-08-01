@@ -14,7 +14,7 @@ All variables are set in `.env` (copy from `.env.example`). The installer genera
 | `REGISTRY_URL` | `/registry.json` | hub | URL of the registry JSON listing backends. Default is same-origin; bind-mount or bake in a custom file. See [Federated Deployment](federated-deployment.md) and [`registry.json` reference](../reference/registry-json.md). |
 | `API_BASE_URL` | `/api` | ui, data-node-ui | Base URL of the PostgREST API. Set to the remote URL for `ui` mode (e.g. `https://data.example.com/api`). |
 | `REGION_PLAYGROUND_WIKI_URL` | Generic OSM wiki | ui, data-node-ui | Wiki page linked in the "Contribute" modal |
-| `REGION_CHAT_URL` | *(hidden)* | ui, data-node-ui | Community chat link; leave empty to hide the button |
+| `REGION_CHAT_URL` | *(hidden)* | ui, data-node-ui, hub | Community chat link shown in the "Contribute data" modal; leave empty to hide the button. In hub mode this is the hub operator's own channel — backends do not contribute one. |
 | `MAP_ZOOM` | `12` | ui, data-node-ui | Initial map zoom level |
 | `MAP_MIN_ZOOM` | `10` | ui, data-node-ui | Minimum zoom level |
 | `PARENT_ORIGIN` | *(own origin)* | data-node-ui | Allowed origin for `postMessage` events — set to the Hub's full origin when embedding in a Hub |

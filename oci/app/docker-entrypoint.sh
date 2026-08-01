@@ -59,6 +59,7 @@ window.APP_CONFIG = {
   clusterMaxZoom:    ${CLUSTER_MAX_ZOOM:-13},
   macroMaxZoom:      ${MACRO_MAX_ZOOM:-7},
   parentOrigin:      '${SAFE_PARENT_ORIGIN}',
+  regionChatUrl:     $(js_or_null "$SAFE_CHAT_URL"),
   impressumUrl:      $(js_or_null "$SAFE_IMPRESSUM_URL"),
   privacyUrl:        $(js_or_null "$SAFE_PRIVACY_URL")
 };
@@ -69,7 +70,7 @@ window.APP_CONFIG = {
   appMode:                    'standalone',
   osmRelationId:              ${OSM_RELATION_ID:-62700},
   regionPlaygroundWikiUrl:    '${SAFE_WIKI_URL:-https://wiki.openstreetmap.org/wiki/Tag:leisure%3Dplayground}',
-  regionChatUrl:              '${SAFE_CHAT_URL}' || null,
+  regionChatUrl:              $(js_or_null "$SAFE_CHAT_URL"),
   mapZoom:                    ${MAP_ZOOM:-12},
   mapMinZoom:                 ${MAP_MIN_ZOOM:-7},
   poiRadiusM:                 ${POI_RADIUS_M:-5000},
