@@ -33,6 +33,34 @@ export const parentOrigin = c.parentOrigin || '*';
 // Default locale for the UI. When empty, falls back to navigator.language → 'en'.
 export const defaultLocale = c.defaultLocale || '';
 
+// --- Region metadata ---
+//
+// These describe the region whose OSM data this deployment serves, which is a
+// different question from `defaultLocale` ("what language is the interface
+// in"). A Fulda instance serving an English-speaking audience runs
+// defaultLocale=en and keeps regionLang=de — its playgrounds are still called
+// what they are called.
+
+// BCP 47 language of the OSM data (playground names). Drives the `lang`
+// attribute on OSM-derived text and, through it, CSS hyphenation.
+export const regionLang = c.regionLang || 'de';
+
+// ISO 3166-1 alpha-2 country used to resolve public holidays in
+// `opening_hours` values.
+export const regionCountry = c.regionCountry || 'de';
+
+// Optional sub-country code for holiday calendars that vary by state (e.g.
+// 'he' for Hessen). Empty means "pass no state", which is what the app did
+// before this option existed — see docs/ops/configuration.md.
+export const regionState = c.regionState || '';
+
+// `address` for the `opening_hours` constructor, shared by every call site so
+// they cannot drift apart. `state` is omitted unless configured: passing one
+// would change holiday evaluation for deployments that never asked for it.
+export const openingHoursAddress = regionState
+    ? { country_code: regionCountry, state: regionState }
+    : { country_code: regionCountry };
+
 // Legal pages — null hides the LegalButton entirely.
 export const impressumUrl = c.impressumUrl || null;
 export const privacyUrl   = c.privacyUrl   || null;

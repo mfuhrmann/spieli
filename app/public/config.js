@@ -19,6 +19,14 @@ window.APP_CONFIG = {
   // UI language. Empty = auto-detect from browser. Supported: 'de', 'en'.
   defaultLocale: '',
 
+  // Region metadata — what the served OSM data is, not what the UI is in.
+  // regionLang is the language playgrounds are named in (drives `lang` on
+  // OSM-derived text and CSS hyphenation); regionCountry/regionState resolve
+  // public holidays in `opening_hours`. Empty regionState = library default.
+  regionLang: 'de',
+  regionCountry: 'de',
+  regionState: '',
+
   // --- Hub mode ---
   registryUrl: './registry.json',
   hubPollInterval: 300,

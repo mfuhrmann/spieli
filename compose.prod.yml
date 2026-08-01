@@ -114,6 +114,10 @@ services:
       OSM_RELATION_ID:            ${OSM_RELATION_ID}
       REGION_PLAYGROUND_WIKI_URL: ${REGION_PLAYGROUND_WIKI_URL:-}
       REGION_CHAT_URL:            ${REGION_CHAT_URL:-}
+      DEFAULT_LOCALE:             ${DEFAULT_LOCALE:-}
+      REGION_LANG:                ${REGION_LANG:-de}
+      REGION_COUNTRY:             ${REGION_COUNTRY:-de}
+      REGION_STATE:               ${REGION_STATE:-}
       MAP_ZOOM:                   ${MAP_ZOOM:-12}
       MAP_MIN_ZOOM:               ${MAP_MIN_ZOOM:-10}
       POI_RADIUS_M:               ${POI_RADIUS_M:-5000}
