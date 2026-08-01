@@ -145,20 +145,40 @@ for entry in "${STACKS[@]}"; do
   docker compose "${profile_flags[@]}" pull \
     || fail "docker compose pull failed for $name — later stacks were NOT upgraded, re-run after fixing"
 
-  echo "→ Restarting app container..."
-  docker compose "${profile_flags[@]}" up -d app
-
   # Pure hub stacks (DEPLOY_MODE=ui) have no importer — skip importer steps.
   if [[ "$profiles" == *"data-node"* ]]; then
+    # The daemon importer must be stopped for the whole apply, not merely assumed
+    # idle. Its startup path applies api.sql itself (importer/import.sh), so any
+    # restart during the one-shot below races it on the playground_stats
+    # DROP/CREATE. Worse, until it is recreated the daemon still runs the *old*
+    # image and therefore the old api.sql: when it wins that race it leaves the
+    # previous schema in place, and every later check passes because the old
+    # schema is internally consistent (#800 — a v0.9.0 app served the v0.8.0
+    # matview, missing has_theme, with the row count and get_meta looking fine).
+    echo "→ Stopping daemon importer for the schema apply..."
+    docker compose "${profile_flags[@]}" stop importer
+
     echo "→ Applying api.sql (one-shot, never triggers full reimport)..."
-    # Run API_ONLY=1 before restarting the daemon. The daemon only runs api.sql
-    # on container startup; while it is idle between reimport cycles it won't
-    # touch playground_stats. Running both concurrently races on the DROP/CREATE
-    # of that materialized view and reliably fails on large datasets.
+    # Sole writer now: the daemon is down and this container runs the freshly
+    # pulled image. Unlike the daemon's startup apply — deliberately non-fatal —
+    # a failure here aborts the sweep, which is the signal the sweep relies on.
     docker compose "${profile_flags[@]}" run --rm -e API_ONLY=1 importer
+
+    echo "→ Recreating daemon importer on the new image..."
+    # --force-recreate, not a plain `up -d`: a stopped container is restarted
+    # from the image it was created with, so `up -d` alone would bring the old
+    # image back up (#800). Recreating re-runs the daemon's own startup apply of
+    # the same api.sql — idempotent, and cheap next to leaving the stack on an
+    # image whose schema no longer matches the app.
+    docker compose "${profile_flags[@]}" up -d --force-recreate importer
   else
     echo "→ Pure hub — no importer, skipping api.sql step."
   fi
+
+  # After the importer, so the app is only restarted once the schema it expects
+  # is the one in the database.
+  echo "→ Restarting app container..."
+  docker compose "${profile_flags[@]}" up -d app
 
   echo "→ Verifying..."
   sleep 3
@@ -187,7 +207,7 @@ for entry in "${STACKS[@]}"; do
       echo "  $result"
     else
       # -1 (not 0) so the forced-reimport trigger below is skipped: on a stack
-      # that has never imported, the daemon importer restarted above does the
+      # that has never imported, the daemon importer recreated above does the
       # first import itself, and a second concurrent importer would race it.
       playground_count=-1
       verify_failed+=("$name (HTTP $code)")
@@ -215,10 +235,9 @@ for entry in "${STACKS[@]}"; do
   rm -f "$body"
 
   if [[ "$profiles" == *"data-node"* ]]; then
-    echo "→ Restarting daemon importer on new image..."
-    # Restart after verify so the daemon's api.sql startup run does not race
-    # with the API_ONLY=1 container above.
-    docker compose "${profile_flags[@]}" up -d importer
+    # The daemon importer was already recreated on the new image before the
+    # schema apply — see the stop/apply/recreate sequence above. Restarting it
+    # here as well would apply api.sql a third time for no benefit.
 
     if [[ "$playground_count" -eq 0 ]]; then
       logfile="/tmp/${name}-reimport.log"
