@@ -33,6 +33,27 @@ The logic is maintained in two mirrored places that must stay in sync:
 
 Run `make db-apply` after changing the SQL definition to rebuild the materialized view.
 
+### Persisted criterion columns
+
+`playground_stats` stores the three criteria alongside the derived state, as non-null booleans:
+
+| Column | Criterion |
+|---|---|
+| `has_photo` | **hasPhoto** above |
+| `has_equipment` | **hasEquipment** above |
+| `has_info` | **hasInfo** above |
+
+They are not exposed through any API function — they exist so the composition of each state can be measured directly instead of re-derived:
+
+```sql
+SELECT completeness, has_equipment, has_info, has_photo, count(*)
+FROM playground_stats
+GROUP BY 1,2,3,4
+ORDER BY 5 DESC;
+```
+
+This is the query to run before and after any change to the criteria, to see which criterion is actually gating a state.
+
 ## Locale keys
 
 All UI strings live under the `completeness.*` namespace in `locales/de.json` and `locales/en.json` (repo root).
