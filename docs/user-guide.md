@@ -42,7 +42,7 @@ Open the filter panel to show only playgrounds that match your needs:
 | Water play | Water features (`is_water=yes`) |
 | Baby equipment | Equipment suitable for babies |
 | Toddler equipment | Equipment suitable for toddlers |
-| Accessible play | At least one piece of *play equipment* tagged wheelchair-accessible — see [Wheelchair accessibility](#wheelchair-accessibility) |
+| Wheelchair-friendly | At least one piece of *play equipment* tagged wheelchair-accessible — see [Wheelchair accessibility](#wheelchair-accessibility) |
 | Bench | At least one bench |
 | Picnic table | At least one picnic table |
 | Shelter | A covered shelter |
@@ -71,8 +71,8 @@ That is a deliberate choice. With an accompanying adult, nearly every playground
 
 | What you see | What it means |
 |---|---|
-| **Accessible play** | Someone tagged at least one device as accessible |
-| **No accessible play recorded** | Someone surveyed the equipment here and none of it is tagged accessible |
+| **Wheelchair-friendly** | Someone tagged at least one device as accessible |
+| **No wheelchair-friendly equipment recorded** | Someone surveyed the equipment here and none of it is tagged accessible |
 | *(nothing)* | Nobody has recorded accessibility for this playground either way — unknown, not negative |
 
 The third row is by far the most common. Accessibility tagging is patchy in OpenStreetMap and tends to exist only where a mapper has walked the site with it in mind, so entire regions can show nothing at all. That is a gap in the map, not a finding about the playgrounds.
@@ -97,7 +97,7 @@ Click any playground to open its detail panel. The panel shows:
 
 - Name, operator, opening hours (when mapped)
 - Surface type and size
-- Status pills — completeness, data age, and (when tagged) a shade pill (Shaded / No shade), baby / toddler suitability, and accessible play (see [Wheelchair accessibility](#wheelchair-accessibility))
+- Status pills — completeness, data age, and (when tagged) a shade pill (Shaded / No shade), baby / toddler suitability, and wheelchair-friendly equipment (see [Wheelchair accessibility](#wheelchair-accessibility))
 - Theme highlight — a symbol for playgrounds with a theme, such as a ship or castle (see [Playground themes](#playground-themes))
 - Equipment list — devices, pitches, benches, and their sub-attributes, including each item's surface when tagged
 - Street-level photos (from Panoramax, when available)
