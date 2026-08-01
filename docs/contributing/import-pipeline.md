@@ -22,7 +22,8 @@ Tag-filtered PBF (~1–5 MB)
         │
         ▼  api.sql applied by import.sh
         │   ALTER SYSTEM (pg tuning)
-        │   DROP + CREATE MATERIALIZED VIEW playground_stats
+        │   CREATE INDEX on planet_osm_* (idempotent)
+        │   BUILD playground_stats under a staging name, then swap it in
         │   CREATE/REPLACE api schema functions
         │
         ▼  PostgREST /api/rpc/* endpoints
@@ -83,6 +84,21 @@ It is built entirely from the standard osm2pgsql tables:
 - Playground polygons and nodes come from `planet_osm_polygon` (`leisure = 'playground'`) and `planet_osm_point`.
 - Equipment and trees are joined from `planet_osm_point` and `planet_osm_polygon` using spatial containment (`ST_Intersects` / `ST_DWithin`).
 - Less common tags (e.g. `panoramax`, `opening_hours`) are read from the `tags` hstore column.
+
+### How the rebuild avoids an outage
+
+The view is **not** dropped and recreated in place. `api.sql` builds it under the staging name `playground_stats_new`, indexes it, and then swaps it in inside a single `DO` block:
+
+```sql
+DROP MATERIALIZED VIEW IF EXISTS public.playground_stats CASCADE;
+ALTER MATERIALIZED VIEW public.playground_stats_new RENAME TO playground_stats;
+```
+
+The build is the long statement — minutes on a Bundesland-sized region. Dropping first meant the view was absent for that whole window, and every reader of it (`get_meta`, both map tiers) failed with `relation "public.playground_stats" does not exist`. Since the daemon importer re-applies `api.sql` on every container start, that made any routine restart a multi-minute API outage ([#720](https://github.com/mfuhrmann/spieli/issues/720)). With the swap, readers keep the old view until the rename commits.
+
+A `DO` block rather than a literal `BEGIN`/`COMMIT` because both callers must stay atomic: `import.sh` runs the file with plain `psql -f` (autocommit), `make db-apply` runs it with `--single-transaction`.
+
+The `planet_osm_*` indexes are created *before* the build for the same reason — the build joins against those tables, so it is the statement that needs them.
 
 The completeness logic in `api.sql` must stay in sync with `app/src/lib/completeness.js` in the frontend. Both implement the same rule:
 
