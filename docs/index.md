@@ -39,7 +39,7 @@ Multiple regional instances can be aggregated into a single **Hub** map — see 
 | I want to… | Go to… |
 |---|---|
 | Learn how to use the map | [User Guide](user-guide.md) |
-| Understand the data quality colours | [User Guide → Data quality colours](user-guide.md#data-quality-colours) |
+| Understand the mapping detail colours | [User Guide → Mapping detail colours](user-guide.md#mapping-detail-colours) |
 | Add or improve playground data | [User Guide → Adding data](user-guide.md#adding-or-improving-data) |
 
 ## Operations

@@ -1,143 +1,167 @@
 import assert from 'node:assert/strict';
-import { playgroundCompleteness } from './completeness.js';
+import { playgroundCompleteness, hasPhotoSignal } from './completeness.js';
 
-// completeness = f(hasPhoto, hasEquipment, hasInfo):
-//   complete = all three present
-//   partial  = at least one present
-//   missing  = none present
-// `name` and `operator` are intentionally NOT signals (see completeness.js).
+// mapping detail = f(hasEquipment, hasInfo):
+//   complete = both present
+//   partial  = either present
+//   missing  = neither
+//
+// A photo is NOT an input (#733) — it is surfaced separately via
+// hasPhotoSignal(). `name` and `operator` are not signals either.
+//
+// This must stay in lockstep with the completeness_attrs CTE in
+// importer/api.sql; see docs/reference/completeness.md.
 
-// --- complete: all three signals ---
+// --- complete: equipment AND info ---
 
-// 1. photo + equipment + info → complete
+// 1. devices + surface → complete
 {
   assert.equal(
-    playgroundCompleteness({ panoramax: 'abc123', device_count: 2, surface: 'sand' }),
+    playgroundCompleteness({ device_count: 2, surface: 'sand' }),
     'complete',
   );
 }
 
-// 2. panoramax:* prefix counts as photo → complete
+// 2. pitch + opening_hours → complete
 {
   assert.equal(
-    playgroundCompleteness({ 'panoramax:sequence': 'abc', has_soccer: true, opening_hours: 'Mo-Su 08:00-20:00' }),
+    playgroundCompleteness({ has_soccer: true, opening_hours: 'Mo-Su 08:00-20:00' }),
     'complete',
   );
 }
 
-// --- partial: exactly one or two signals ---
-
-// 3. photo + equipment, no info → partial
+// 3. a photo neither adds to nor subtracts from the rule — the same props
+//    reach the same state with and without one
 {
-  assert.equal(playgroundCompleteness({ panoramax: 'abc', device_count: 1 }), 'partial');
+  const base = { device_count: 1, surface: 'sand' };
+  assert.equal(playgroundCompleteness(base), 'complete');
+  assert.equal(playgroundCompleteness({ ...base, panoramax: 'abc123' }), 'complete');
+  assert.equal(playgroundCompleteness({ ...base, wikimedia_commons: 'Category:Foo' }), 'complete');
 }
 
-// 4. photo + info, no equipment → partial
-{
-  assert.equal(playgroundCompleteness({ panoramax: 'abc', surface: 'grass' }), 'partial');
-}
+// --- partial: exactly one of the two ---
 
-// 5. equipment + info, no photo → partial
-{
-  assert.equal(playgroundCompleteness({ bench_count: 2, opening_hours: 'x' }), 'partial');
-}
-
-// 6. photo only → partial
-{
-  assert.equal(playgroundCompleteness({ panoramax: 'abc' }), 'partial');
-}
-
-// 6a. wikimedia_commons counts as a photo (issue #650) → partial
-{
-  assert.equal(playgroundCompleteness({ wikimedia_commons: 'Category:Foo' }), 'partial');
-}
-
-// 6b. Wikimedia-hosted image tag counts as a photo (issue #650) → partial
-{
-  assert.equal(playgroundCompleteness({ image: 'https://upload.wikimedia.org/x.jpg' }), 'partial');
-  assert.equal(playgroundCompleteness({ image: 'https://commons.wikimedia.org/wiki/File:X.jpg' }), 'partial');
-}
-
-// 6d. Off-Wikimedia image link does NOT count — the gallery can't render it,
-// so it must not raise completeness (issue #650) → missing
-{
-  assert.equal(playgroundCompleteness({ image: 'https://www.mapillary.com/app/?pKey=123' }), 'missing');
-  assert.equal(playgroundCompleteness({ image: 'https://example.com/x.jpg' }), 'missing');
-  // host-suffix spoof must not slip through
-  assert.equal(playgroundCompleteness({ image: 'https://wikimedia.org.evil.com/x.jpg' }), 'missing');
-  // plain http (mixed content) does not count
-  assert.equal(playgroundCompleteness({ image: 'http://upload.wikimedia.org/x.jpg' }), 'missing');
-}
-
-// 6c. wikimedia_commons + equipment + info → complete
-{
-  assert.equal(
-    playgroundCompleteness({ wikimedia_commons: 'Category:Foo', device_count: 1, surface: 'sand' }),
-    'complete',
-  );
-}
-
-// 7. equipment only → partial
+// 4. equipment only
 {
   assert.equal(playgroundCompleteness({ device_count: 1 }), 'partial');
+  assert.equal(playgroundCompleteness({ table_tennis_count: 1 }), 'partial');
+  assert.equal(playgroundCompleteness({ has_soccer: true }), 'partial');
+  assert.equal(playgroundCompleteness({ has_basketball: true }), 'partial');
 }
 
-// 8. info only (opening_hours / surface) → partial
+// 5. info only
 {
   assert.equal(playgroundCompleteness({ opening_hours: 'Mo-Su 08:00-20:00' }), 'partial');
   assert.equal(playgroundCompleteness({ surface: 'sand' }), 'partial');
 }
 
-// 9. non-trivial access counts as info → partial
+// 6. non-trivial access counts as info
 {
   assert.equal(playgroundCompleteness({ access: 'private' }), 'partial');
   assert.equal(playgroundCompleteness({ access: 'no' }), 'partial');
   assert.equal(playgroundCompleteness({ access: 'permissive' }), 'partial');
 }
 
-// 10. each equipment flag individually counts as equipment → partial
+// --- missing ---
+
+// 7. a photo alone is not mapping detail — it no longer lifts anything
 {
-  const equipmentProps = [
-    { device_count: 1 },
-    { bench_count: 1 },
+  assert.equal(playgroundCompleteness({ panoramax: 'abc' }), 'missing');
+  assert.equal(playgroundCompleteness({ 'panoramax:sequence': 'abc' }), 'missing');
+  assert.equal(playgroundCompleteness({ wikimedia_commons: 'Category:Foo' }), 'missing');
+  assert.equal(playgroundCompleteness({ image: 'https://upload.wikimedia.org/x.jpg' }), 'missing');
+}
+
+// 8. street furniture is NOT play infrastructure (#776). A bench inside a
+//    playground area says nothing about whether there is anything to play on,
+//    and under the equipment-as-pivot rule it would otherwise carry a
+//    playground to `complete` on a bench plus a surface tag.
+{
+  const furniture = [
+    { bench_count: 3 },
     { shelter_count: 1 },
-    { picnic_count: 1 },
-    { table_tennis_count: 1 },
-    { has_soccer: true },
-    { has_basketball: true },
+    { picnic_count: 2 },
+  ];
+  for (const props of furniture) {
+    assert.equal(
+      playgroundCompleteness(props), 'missing',
+      `furniture must not count as equipment: ${JSON.stringify(props)}`,
+    );
+    // …and must not reach `complete` when combined with info either.
+    assert.equal(
+      playgroundCompleteness({ ...props, surface: 'sand' }), 'partial',
+      `furniture + info must stay partial: ${JSON.stringify(props)}`,
+    );
+  }
+}
+
+// 9. derived audience/feature flags are out. They are computed from tags on
+//    equipment, so a real device already satisfies device_count — but a bench
+//    carrying wheelchair=yes would set for_wheelchair, which is the same false
+//    signal (#776).
+{
+  const derived = [
     { is_water: true },
     { for_baby: true },
     { for_toddler: true },
     { for_wheelchair: true },
   ];
-  for (const props of equipmentProps) {
-    assert.equal(playgroundCompleteness(props), 'partial', `expected partial for ${JSON.stringify(props)}`);
+  for (const props of derived) {
+    assert.equal(
+      playgroundCompleteness(props), 'missing',
+      `derived flag must not count as equipment: ${JSON.stringify(props)}`,
+    );
   }
 }
 
-// --- missing: no signals ---
-
-// 11. access: 'yes' does NOT count as info → missing
+// 10. access: 'yes' does NOT count as info
 {
   assert.equal(playgroundCompleteness({ access: 'yes' }), 'missing');
 }
 
-// 12. name and operator are NOT signals → missing
+// 11. name and operator are administrative, not mapping detail
 {
   assert.equal(playgroundCompleteness({ name: 'Park' }), 'missing');
   assert.equal(playgroundCompleteness({ operator: 'City Parks' }), 'missing');
   assert.equal(playgroundCompleteness({ name: 'Park', operator: 'City Parks' }), 'missing');
 }
 
-// 13. zero counts do NOT count as equipment → missing
+// 12. zero counts do not count
 {
-  assert.equal(playgroundCompleteness({ device_count: 0, bench_count: 0 }), 'missing');
+  assert.equal(playgroundCompleteness({ device_count: 0, table_tennis_count: 0 }), 'missing');
 }
 
-// 14. nothing relevant → missing
+// 13. nothing relevant
 {
   assert.equal(playgroundCompleteness({}), 'missing');
   assert.equal(playgroundCompleteness({ nearest_highway: 'residential' }), 'missing');
+}
+
+// --- hasPhotoSignal: the additive marker ---
+
+// 14. tags that count as a renderable photo
+{
+  assert.equal(hasPhotoSignal({ panoramax: 'abc123' }), true);
+  assert.equal(hasPhotoSignal({ 'panoramax:sequence': 'abc' }), true);
+  assert.equal(hasPhotoSignal({ wikimedia_commons: 'Category:Foo' }), true);
+  assert.equal(hasPhotoSignal({ image: 'https://upload.wikimedia.org/x.jpg' }), true);
+  assert.equal(hasPhotoSignal({ image: 'https://commons.wikimedia.org/wiki/File:X.jpg' }), true);
+}
+
+// 15. an image the gallery cannot render is not a photo signal (#650)
+{
+  assert.equal(hasPhotoSignal({ image: 'https://www.mapillary.com/app/?pKey=123' }), false);
+  assert.equal(hasPhotoSignal({ image: 'https://example.com/x.jpg' }), false);
+  // host-suffix spoof must not slip through
+  assert.equal(hasPhotoSignal({ image: 'https://wikimedia.org.evil.com/x.jpg' }), false);
+  // plain http (mixed content) does not count
+  assert.equal(hasPhotoSignal({ image: 'http://upload.wikimedia.org/x.jpg' }), false);
+}
+
+// 16. no photo tag at all
+{
+  assert.equal(hasPhotoSignal({}), false);
+  assert.equal(hasPhotoSignal({ device_count: 3, surface: 'sand' }), false);
 }
 
 console.log('All completeness tests passed.');

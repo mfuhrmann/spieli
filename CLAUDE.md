@@ -148,7 +148,7 @@ To test Hub mode locally: set `appMode: 'hub'` in `app/public/config.js`, run `m
 | `FilterChips.svelte` | Active-filter chip bar shown below the search bar |
 | `SearchBar.svelte` | Nominatim location search |
 | `BottomSheet.svelte` | Swipeable bottom sheet used on mobile to surface PlaygroundPanel |
-| `CompletenessLegend.svelte` | Map legend explaining complete/partial/missing colour coding |
+| `CompletenessLegend.svelte` | Map legend explaining the mapping-detail ramp and the photo glyph; swatches read `completenessPalette.js` directly |
 | `DataContributionModal.svelte` | Modal prompting users to contribute data via MapComplete |
 | `LegalContentModal.svelte` | Modal for imprint / legal content fetched from `get_legal()` |
 | `LocateButton.svelte` | Button that pans map to user's GPS position; auto-locates on page load when geolocation permission is already granted |
@@ -235,7 +235,9 @@ All PostgREST-exposed functions live in the `api` schema. See [`docs/reference/a
 - `get_legal(type)` — imprint / legal text fetched from the `legal_content` table
 - `get_playgrounds(relation_id)` — **deprecated** region-scoped variant; SQL `COMMENT` flags it for removal
 
-The `playground_stats` materialised view is rebuilt with each `make db-apply` and carries the per-playground `completeness` (`'complete' | 'partial' | 'missing'`) — the rule mirrors `app/src/lib/completeness.js` exactly.
+The `playground_stats` materialised view is rebuilt with each `make db-apply` and carries the per-playground `completeness` (`'complete' | 'partial' | 'missing'`) plus its two inputs `has_equipment` / `has_info` and the separate `has_photo` signal — the rule mirrors `app/src/lib/completeness.js` exactly, and the db-smoke workflow fails if the two drift.
+
+**Mapping detail** (`completeness`) = `has_equipment AND has_info` → `complete`, either one → `partial`, neither → `missing`. `has_equipment` counts play infrastructure only — `playground=*` objects plus soccer/basketball/table-tennis pitches. Street furniture (bench, shelter, picnic table) and the derived flags (`is_water`, `for_baby`, `for_toddler`, `for_wheelchair`) are deliberately excluded: they let a lone bench carry an otherwise unmapped playground. A photo is **not** an input either; it is an additive marker — a camera glyph on the map, nothing in the panel (the panel already shows the photos). The three identifiers are wire values and deliberately differ from their user-facing labels — `complete` displays as "detailed", `partial` as "basic", `missing` as "no details yet" (`mappingDetail.*` in `locales/*.json`). Never rename the identifiers: mixed-version federation depends on them. All colours live in `app/src/lib/completenessPalette.js`; nothing else may hardcode them. `missing` is slate blue-grey (`#64748b`), not a plain grey — plain grey vanished against the basemap. See [`docs/reference/completeness.md`](docs/reference/completeness.md).
 
 Run `make db-apply` after modifying `api.sql` to apply changes without a full re-import.
 
@@ -247,7 +249,7 @@ This catches ordering bugs (e.g. a function referencing a table defined later in
 
 ### Styles (`app/src/lib/vectorStyles.js`)
 
-- `playgroundStyleFn` — playground polygon fill/stroke, colour-coded by completeness
+- `playgroundStyleFn` — playground polygon fill/stroke, colour-coded by mapping detail (colours from `completenessPalette.js`); appends a camera glyph when `hasPhotoSignal(props)` is true
 - `equipmentLayerStyleFn` — equipment points/polygons (green for pitches, teal for fitness, grey for devices)
 - `treeStyle` — small green dot for trees
 - `locationDotStyleFn` — pulsing blue dot for user's GPS position (60 pre-computed styles, 2s cycle)

@@ -2,6 +2,7 @@
   import { filterStore, hasActiveFilters, activeFilterCount, defaultFilters } from '../stores/filters.js';
   import { _ } from 'svelte-i18n';
   import { Filter, Droplets, Baby, Accessibility, Armchair, UtensilsCrossed, Home, RectangleHorizontal, Goal, CircleDot, Lock, Layers, BarChart3, ShieldCheck, Dog, Sun, Sparkles } from 'lucide-svelte';
+  import { COMPLETENESS_PALETTE } from '../lib/completenessPalette.js';
 
   let open = false;
   let wrap;
@@ -38,6 +39,16 @@
   $: activeCount = activeFilterCount($filterStore);
 
   const COMPLETENESS_STATES = ['showComplete', 'showPartial', 'showMissing'];
+
+  // Filter dots must show the same colours as the map. Exposed as custom
+  // properties because a <style> block can't import the palette module.
+  const detailVars =
+    `--detail-complete: ${COMPLETENESS_PALETTE.complete.base};` +
+    `--detail-partial: ${COMPLETENESS_PALETTE.partial.base};` +
+    `--detail-missing: ${COMPLETENESS_PALETTE.missing.base};` +
+    `--detail-complete-stroke: ${COMPLETENESS_PALETTE.complete.stroke};` +
+    `--detail-partial-stroke: ${COMPLETENESS_PALETTE.partial.stroke};` +
+    `--detail-missing-stroke: ${COMPLETENESS_PALETTE.missing.stroke};`;
 
   function toggle(key) {
     filterStore.update(f => ({ ...f, [key]: !f[key] }));
@@ -90,7 +101,7 @@
         {/each}
       </div>
 
-      <div class="completeness-section">
+      <div class="completeness-section" style={detailVars}>
         <span class="layer-title"><BarChart3 class="h-3 w-3" /> {$_('filter.completeness.title')}</span>
         {#each COMPLETENESS_STATES as key}
           <label class="filter-item" class:completeness-hidden={!$filterStore[key]}>
@@ -266,9 +277,12 @@
     flex-shrink: 0;
   }
 
-  .showComplete-dot { border-color: #155215; background: rgba(21, 82, 21, 0.15); }
-  .showPartial-dot  { border-color: #92400e; background: rgba(146, 64, 14, 0.15); }
-  .showMissing-dot  { border-color: #991b1b; background: rgba(153, 27, 27, 0.15); }
+  /* Colours come from completenessPalette.js via the custom properties set on
+     .completeness-section — a <style> block cannot import. Dots use the opaque
+     `base` so they match the legend swatches and the rings on the map. */
+  .showComplete-dot { border-color: var(--detail-complete-stroke); background: var(--detail-complete); }
+  .showPartial-dot  { border-color: var(--detail-partial-stroke);  background: var(--detail-partial); }
+  .showMissing-dot  { border-color: var(--detail-missing-stroke);  background: var(--detail-missing); }
 
   .filter-item.completeness-hidden {
     opacity: 0.5;

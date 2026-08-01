@@ -287,21 +287,28 @@ CREATE MATERIALIZED VIEW public.playground_stats AS
           ),
           false)
       ) AS has_photo,
-      -- Any mapped equipment inside the playground area (devices, benches,
-      -- pitches, etc.). device_count covers playground=* nodes/polygons;
-      -- the other columns cover amenity/leisure-tagged items.
+      -- Actual play infrastructure inside the playground area: any object
+      -- tagged playground=* (device_count), or a pitch for soccer, basketball
+      -- or table tennis.
+      --
+      -- Street furniture is deliberately excluded. Benches, shelters and
+      -- picnic tables are often mapped inside a playground area by someone who
+      -- never mapped the play equipment, so counting them lifted playgrounds
+      -- with nothing to play on — 63 of 221 in Fulda were carried by furniture
+      -- alone. Pitches stay: real play infrastructure, just tagged
+      -- leisure=pitch instead of playground=*.
+      --
+      -- The derived flags (is_water, for_baby, for_toddler, for_wheelchair)
+      -- are out too: a genuine device already satisfies device_count, while a
+      -- bench tagged wheelchair=yes would otherwise carry the playground on
+      -- its own (#776).
+      --
+      -- Mirrors playgroundCompleteness() in app/src/lib/completeness.js.
       (
-        COALESCE(es.device_count,        0) > 0
-        OR COALESCE(es.bench_count,      0) > 0
-        OR COALESCE(es.shelter_count,    0) > 0
-        OR COALESCE(es.picnic_count,     0) > 0
+        COALESCE(es.device_count,          0) > 0
         OR COALESCE(es.table_tennis_count, 0) > 0
         OR COALESCE(es.has_soccer,     false)
         OR COALESCE(es.has_basketball, false)
-        OR COALESCE(es.is_water,       false)
-        OR COALESCE(es.for_baby,       false)
-        OR COALESCE(es.for_toddler,    false)
-        OR COALESCE(es.for_wheelchair, false)
       ) AS has_equipment,
       -- NULLIF('', '') IS NULL — matches JS truthy semantics on empty-string tags.
       -- operator excluded: it's administrative data, not useful to parents.
@@ -338,9 +345,29 @@ CREATE MATERIALIZED VIEW public.playground_stats AS
     -- Retained only to drive filter_private; never excludes a playground from
     -- the cluster completeness aggregation.
     (COALESCE(pl.access, '') IN ('private', 'customers')) AS access_restricted,
+    -- The three inputs to `completeness`, persisted so the composition of each
+    -- bucket is queryable without re-deriving them:
+    --   SELECT completeness, has_equipment, has_info, has_photo, count(*)
+    --   FROM playground_stats GROUP BY 1,2,3,4 ORDER BY 5 DESC;
+    -- COALESCE keeps them non-null even if the LEFT JOIN misses.
+    COALESCE(ca.has_photo,     false)             AS has_photo,
+    COALESCE(ca.has_equipment, false)             AS has_equipment,
+    COALESCE(ca.has_info,      false)             AS has_info,
+    -- Mapping detail. Mirrors playgroundCompleteness() in
+    -- app/src/lib/completeness.js exactly — change both or neither.
+    --
+    -- has_photo is deliberately NOT part of the rule: photo tags are rare in
+    -- OSM, so gating the top bucket on one pinned whole regions there (#733).
+    -- It stays persisted above as an additive signal the client renders as a
+    -- separate marker.
+    --
+    -- These values are wire identifiers, not labels. 'complete' is displayed
+    -- as "detailed", 'partial' as "basic", 'missing' as "not mapped yet"
+    -- (locales/*.json, `mappingDetail.*`). Renaming them would break
+    -- mixed-version federation.
     CASE
-      WHEN ca.has_photo AND ca.has_equipment AND ca.has_info THEN 'complete'
-      WHEN ca.has_photo OR  ca.has_equipment OR  ca.has_info THEN 'partial'
+      WHEN ca.has_equipment AND ca.has_info THEN 'complete'
+      WHEN ca.has_equipment OR  ca.has_info THEN 'partial'
       ELSE 'missing'
     END                                           AS completeness
   FROM all_playgrounds pl
