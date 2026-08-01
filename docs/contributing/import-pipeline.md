@@ -100,6 +100,10 @@ A `DO` block rather than a literal `BEGIN`/`COMMIT` because both callers must st
 
 The `planet_osm_*` indexes are created *before* the build for the same reason — the build joins against those tables, so it is the statement that needs them.
 
+The PostgREST connections are terminated inside the same transaction as the swap, not in a statement ahead of it. PostgREST reconnects on its own, so terminating separately leaves a gap in which a fresh connection can take a read lock — and the swap's pending `AccessExclusiveLock` then queues *ahead of every later reader*, stalling API traffic for as long as that straggler runs. In one transaction there is no gap.
+
+**Disk headroom:** the staging view coexists with the live one, so peak disk use for `playground_stats` and its indexes is roughly **double** the steady-state size during a rebuild. Negligible for a city-sized region (Fulda's matview is ~230 kB) but worth checking before an apply on a Bundesland-sized node with a nearly full volume.
+
 The completeness logic in `api.sql` must stay in sync with `app/src/lib/completeness.js` in the frontend. Both implement the same rule:
 
 | Criterion | SQL (api.sql) | JS (completeness.js) |

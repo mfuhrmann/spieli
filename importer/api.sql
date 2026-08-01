@@ -359,10 +359,29 @@ CREATE MATERIALIZED VIEW public.playground_stats_new AS
 CREATE UNIQUE INDEX playground_stats_new_osm_idx      ON public.playground_stats_new (osm_id, osm_type);
 CREATE INDEX        playground_stats_new_centroid_idx ON public.playground_stats_new USING GIST (centroid_3857);
 
--- Terminate PostgREST connections that hold (or could re-acquire) locks on
--- playground_stats so the swap's DROP does not block on
--- AccessExclusiveLock. We target *all* PostgREST connection states (active,
--- idle, idle in transaction) because:
+-- The swap. Readers see either the old view or the new one, never the gap
+-- between them.
+--
+-- A DO block rather than a literal BEGIN/COMMIT pair, because this file is
+-- fed to psql two different ways: `import.sh` runs it with plain `-f`
+-- (autocommit, where a bare DROP would commit on its own and open exactly
+-- the window this change closes), while `make db-apply` runs it with
+-- --single-transaction (where a literal COMMIT would end that transaction
+-- mid-file and leave the rest of the apply non-atomic). A DO block is one
+-- statement, so it is atomic under both.
+--
+-- The PostgREST terminate is part of *this* transaction rather than a
+-- statement ahead of it. Terminating in its own statement commits, and
+-- PostgREST reconnects on its own, so a fresh connection can take an
+-- AccessShareLock in the gap before the DROP asks for AccessExclusiveLock.
+-- A pending exclusive lock queues ahead of every later reader, so that gap
+-- does not merely delay the swap — it stalls all API traffic behind it for
+-- as long as the straggling query runs. Issuing the terminate and the DROP
+-- in one transaction leaves no such gap: any connection arriving after the
+-- terminate queues behind our own lock request instead of in front of it.
+--
+-- We target *all* PostgREST connection states (active, idle, idle in
+-- transaction) because:
 --   - 'active' / 'idle in transaction' actually hold the AccessShareLock
 --     that blocks the DROP — these are the ones that matter.
 --   - 'idle' connections can reconnect and re-acquire the lock between our
@@ -370,13 +389,18 @@ CREATE INDEX        playground_stats_new_centroid_idx ON public.playground_stats
 -- We scope by application_name='PostgREST' (PostgREST sets this by default)
 -- so admin shells / monitoring / replication helpers are not collateral.
 -- pg_terminate_backend requires superuser or pg_signal_backend membership;
--- the DO block fails loudly if the role lacks that privilege rather than
+-- the block fails loudly if the role lacks that privilege rather than
 -- silently leaving the DROP to block.
 --
--- This sits immediately before the swap rather than before the build: the
--- build no longer needs a lock on the live view, so there is no reason to
--- drop the API's connections minutes ahead of the moment that needs it.
-DO $playground_stats_unblock$
+-- The whole thing sits after the build rather than before it: the build no
+-- longer needs a lock on the live view, so there is no reason to drop the
+-- API's connections minutes ahead of the moment that needs it.
+--
+-- CASCADE is retained from the previous in-place drop: nothing currently
+-- depends on the view — the api functions are LANGUAGE sql/plpgsql with
+-- quoted bodies, which record no dependency — but a future dependent object
+-- must not silently block the apply.
+DO $playground_stats_swap$
 DECLARE
   failed int;
 BEGIN
@@ -393,26 +417,7 @@ BEGIN
       'Could not terminate % PostgREST connection(s) — current role lacks pg_signal_backend?',
       failed;
   END IF;
-END
-$playground_stats_unblock$;
 
--- The swap. Readers see either the old view or the new one, never the gap
--- between them.
---
--- A DO block rather than a literal BEGIN/COMMIT pair, because this file is
--- fed to psql two different ways: `import.sh` runs it with plain `-f`
--- (autocommit, where a bare DROP would commit on its own and open exactly
--- the window this change closes), while `make db-apply` runs it with
--- --single-transaction (where a literal COMMIT would end that transaction
--- mid-file and leave the rest of the apply non-atomic). A DO block is one
--- statement, so it is atomic under both.
---
--- CASCADE is retained from the previous in-place drop: nothing currently
--- depends on the view — the api functions are LANGUAGE sql/plpgsql with
--- quoted bodies, which record no dependency — but a future dependent object
--- must not silently block the apply.
-DO $playground_stats_swap$
-BEGIN
   DROP MATERIALIZED VIEW IF EXISTS public.playground_stats CASCADE;
   ALTER MATERIALIZED VIEW public.playground_stats_new RENAME TO playground_stats;
   ALTER INDEX public.playground_stats_new_osm_idx      RENAME TO playground_stats_osm_idx;
