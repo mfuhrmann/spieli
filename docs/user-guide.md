@@ -72,7 +72,7 @@ That is a deliberate choice. With an accompanying adult, nearly every playground
 | What you see | What it means |
 |---|---|
 | **Wheelchair-friendly** | Someone tagged at least one device as accessible |
-| **No wheelchair-friendly equipment recorded** | Someone surveyed the equipment here and none of it is tagged accessible |
+| **No wheelchair equipment** | Someone surveyed the equipment here and none of it is tagged accessible |
 | *(nothing)* | Nobody has recorded accessibility for this playground either way — unknown, not negative |
 
 The third row is by far the most common. Accessibility tagging is patchy in OpenStreetMap and tends to exist only where a mapper has walked the site with it in mind, so entire regions can show nothing at all. That is a gap in the map, not a finding about the playgrounds.
