@@ -15,6 +15,10 @@ All variables are set in `.env` (copy from `.env.example`). The installer genera
 | `API_BASE_URL` | `/api` | ui, data-node-ui | Base URL of the PostgREST API. Set to the remote URL for `ui` mode (e.g. `https://data.example.com/api`). |
 | `REGION_PLAYGROUND_WIKI_URL` | Generic OSM wiki | ui, data-node-ui | Wiki page linked in the "Contribute" modal |
 | `REGION_CHAT_URL` | *(hidden)* | ui, data-node-ui | Community chat link; leave empty to hide the button |
+| `DEFAULT_LOCALE` | *(browser)* | ui, data-node-ui | UI language. Leave empty to auto-detect from the visitor's browser. Supported: `de`, `en`. An unsupported value falls back to `en`. |
+| `REGION_LANG` | `de` | ui, data-node-ui | Language your region's playgrounds are **named** in (BCP 47). Not the same as `DEFAULT_LOCALE` — see [Language settings](#language-settings). |
+| `REGION_COUNTRY` | `de` | ui, data-node-ui | Country whose public-holiday calendar `opening_hours` values are evaluated against (ISO 3166-1 alpha-2). |
+| `REGION_STATE` | *(unset)* | ui, data-node-ui | Sub-country code for holiday calendars that vary by state (e.g. `he` for Hessen). Leave empty to keep the library default. Codes are defined by the [`opening_hours` library](https://github.com/opening-hours/opening_hours.js#holidays), not by a public standard. |
 | `MAP_ZOOM` | `12` | ui, data-node-ui | Initial map zoom level |
 | `MAP_MIN_ZOOM` | `10` | ui, data-node-ui | Minimum zoom level |
 | `PARENT_ORIGIN` | *(own origin)* | data-node-ui | Allowed origin for `postMessage` events — set to the Hub's full origin when embedding in a Hub |
@@ -27,6 +31,31 @@ All variables are set in `.env` (copy from `.env.example`). The installer genera
 | `PG_MAX_PARALLEL_MAINTENANCE_WORKERS` | `2` | data-node, data-node-ui | Parallel workers for `CREATE INDEX` / `VACUUM`. Must be ≤ `PG_MAX_PARALLEL_WORKERS`. |
 | `PG_MAINTENANCE_WORK_MEM` | `256MB` | data-node, data-node-ui | Memory per maintenance operation (index builds etc.). Total peak ≈ `value × (PG_MAX_PARALLEL_MAINTENANCE_WORKERS + 1)`. **Must include a unit suffix** (`kB`, `MB`, `GB`, `TB`); a bare integer is interpreted as kilobytes by PostgreSQL. |
 | `PG_WORK_MEM` | `32MB` | data-node, data-node-ui | Memory per sort/hash operation inside parallel workers. Total peak per query ≈ `value × (PG_MAX_PARALLEL_WORKERS_PER_GATHER + 1) × hash/sort nodes`. **Must include a unit suffix** (`kB`, `MB`, `GB`, `TB`); a bare integer is interpreted as kilobytes by PostgreSQL. |
+
+### Language settings
+
+`DEFAULT_LOCALE` and `REGION_LANG` answer different questions and are
+deliberately independent:
+
+| | Question | Affects |
+|---|---|---|
+| `DEFAULT_LOCALE` | What language is the **interface** in? | Every translated label, and the document's `lang` attribute |
+| `REGION_LANG` | What language are the **playgrounds named** in? | The `lang` attribute on OSM-derived names |
+
+A Fulda instance serving an English-speaking audience sets
+`DEFAULT_LOCALE=en` and keeps `REGION_LANG=de`: the buttons read "Filter",
+but the playgrounds are still called *Spielplatz Am Rosengarten*. Screen
+readers use these attributes to pick a pronunciation, and CSS hyphenation
+uses `REGION_LANG` to break long compound names correctly.
+
+Set `REGION_LANG` to the language your OSM `name` tags are actually written
+in. A bilingual region gets one value for all names — per-object language is
+not derivable from OSM data.
+
+`REGION_COUNTRY` and `REGION_STATE` are separate again: they only affect how
+public holidays in `opening_hours` values are resolved. A German-language
+deployment serving Austrian playgrounds sets `REGION_LANG=de` with
+`REGION_COUNTRY=at`.
 
 > **How `PG_*` values are applied.** The importer runs `ALTER SYSTEM SET …`
 > at the top of `api.sql`, then `SELECT pg_reload_conf()`. The values are

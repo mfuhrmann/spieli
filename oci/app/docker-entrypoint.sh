@@ -26,6 +26,15 @@ SAFE_REGISTRY_URL=$(safe_url  "${REGISTRY_URL:-}")
 SAFE_WIKI_URL=$(safe_url      "${REGION_PLAYGROUND_WIKI_URL:-}")
 SAFE_CHAT_URL=$(safe_url      "${REGION_CHAT_URL:-}")
 
+# Language, country and state codes — letters, digits and hyphen cover BCP 47
+# language tags, ISO 3166-1 alpha-2 and the opening_hours state identifiers.
+safe_code() { printf '%s' "$1" | tr -cd 'A-Za-z0-9-'; }
+
+SAFE_DEFAULT_LOCALE=$(safe_code "${DEFAULT_LOCALE:-}")
+SAFE_REGION_LANG=$(safe_code    "${REGION_LANG:-de}")
+SAFE_REGION_COUNTRY=$(safe_code "${REGION_COUNTRY:-de}")
+SAFE_REGION_STATE=$(safe_code   "${REGION_STATE:-}")
+
 # Legal URLs — IMPRESSUM_URL / PRIVACY_URL override env vars take priority.
 # If unset, construct from SITE_URL + path (assuming nginx serves the
 # generated files at /legal/impressum and /legal/datenschutz).
@@ -59,6 +68,10 @@ window.APP_CONFIG = {
   clusterMaxZoom:    ${CLUSTER_MAX_ZOOM:-13},
   macroMaxZoom:      ${MACRO_MAX_ZOOM:-7},
   parentOrigin:      '${SAFE_PARENT_ORIGIN}',
+  defaultLocale:     '${SAFE_DEFAULT_LOCALE}',
+  regionLang:        '${SAFE_REGION_LANG}',
+  regionCountry:     '${SAFE_REGION_COUNTRY}',
+  regionState:       '${SAFE_REGION_STATE}',
   impressumUrl:      $(js_or_null "$SAFE_IMPRESSUM_URL"),
   privacyUrl:        $(js_or_null "$SAFE_PRIVACY_URL")
 };
@@ -76,6 +89,10 @@ window.APP_CONFIG = {
   apiBaseUrl:                 '${SAFE_API_BASE_URL}',
   clusterMaxZoom:             ${CLUSTER_MAX_ZOOM:-13},
   parentOrigin:               '${SAFE_PARENT_ORIGIN}',
+  defaultLocale:              '${SAFE_DEFAULT_LOCALE}',
+  regionLang:                 '${SAFE_REGION_LANG}',
+  regionCountry:              '${SAFE_REGION_COUNTRY}',
+  regionState:                '${SAFE_REGION_STATE}',
   impressumUrl:               $(js_or_null "$SAFE_IMPRESSUM_URL"),
   privacyUrl:                 $(js_or_null "$SAFE_PRIVACY_URL")
 };

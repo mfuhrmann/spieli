@@ -109,6 +109,8 @@ To test Hub mode locally: set `appMode: 'hub'` in `app/public/config.js`, run `m
 
 `app/public/config.js` is the config bridge — sets `window.APP_CONFIG`. In Docker, `oci/app/docker-entrypoint.app.sh` overwrites it from env vars at startup. `app/src/lib/config.js` reads `window.APP_CONFIG` and exports named constants.
 
+**Region metadata vs UI locale.** `defaultLocale` is the interface language; `regionLang` (default `'de'`) is the language the served OSM data is *named* in, and the two are configured independently. OSM-derived text carries `lang={regionLang}`; interface text inherits `document.documentElement.lang`, which `setupI18n()` writes from the resolved locale. `regionCountry` / `regionState` resolve public holidays in `opening_hours`; every call site takes the derived `openingHoursAddress` export rather than a literal. See [`docs/contributing/frontend-guide.md`](docs/contributing/frontend-guide.md#language-attributes).
+
 ## Key frontend architecture
 
 ### Stores (`app/src/stores/`)

@@ -12,7 +12,7 @@
   import OpeningHours from 'opening_hours';
   import { transform } from 'ol/proj';
   import { X, Share2, Check, ChevronDown, ChevronUp, ChevronRight, Image, Package, Navigation, Star, Info, Phone, Mail } from 'lucide-svelte';
-  import { _ } from 'svelte-i18n';
+  import { _, locale } from 'svelte-i18n';
 
   import { selection } from '../stores/selection.js';
   import { mapStore } from '../stores/map.js';
@@ -21,8 +21,8 @@
   import { overlayFeaturesStore } from '../stores/overlayLayer.js';
   import { groupEquipment } from '../lib/equipmentGrouping.js';
   import { playgroundCompleteness } from '../lib/completeness.js';
-  import { poiRadiusM, appMode, mapMinZoom } from '../lib/config.js';
-  import { getPlaygroundTitle, getPlaygroundLocation } from '../lib/playgroundHelpers.js';
+  import { poiRadiusM, appMode, mapMinZoom, regionLang, openingHoursAddress } from '../lib/config.js';
+  import { getPlaygroundTitle, getPlaygroundLocation, hasOsmName } from '../lib/playgroundHelpers.js';
   import { aggregatePlaygroundThemes, areaThemesOf, themeIcon, themeName } from '../lib/playgroundThemes.js';
   import { summarizeEquipment } from '../lib/equipmentSummary.js';
   import { cn } from '../lib/utils.js';
@@ -42,6 +42,10 @@
   $: feature     = $selection.feature;
   $: backendUrl  = $selection.backendUrl;
   $: attr        = feature ? feature.getProperties() : null;
+  // An OSM name is a proper noun in the region's language; the `nearby.defaultName`
+  // placeholder is interface text. Without this the heading inherits the document
+  // language, which is the UI locale (WCAG 3.1.2).
+  $: titleLang   = hasOsmName(attr) ? regionLang : $locale;
   $: backendName = appMode === 'hub' ? (feature?.get('_backendName') ?? null) : null;
 
   // ── Async data ────────────────────────────────────────────────────────────
@@ -361,7 +365,7 @@
       return d.toLocaleDateString(undefined, { weekday: 'short', day: '2-digit', month: '2-digit' });
     };
     try {
-      const oh = new OpeningHours(ohStr, { address: { country_code: 'de' } });
+      const oh = new OpeningHours(ohStr, { address: openingHoursAddress });
       const now = new Date();
       const isOpen = oh.getState(now);
       const next = oh.getNextChange(now);
@@ -510,7 +514,7 @@
     {#if !embedded}
       <div class="info-panel__header">
         <div class="flex-1 min-w-0">
-          <h2 class="panel-title">{getPlaygroundTitle(attr, $_)}</h2>
+          <h2 class="panel-title" lang={titleLang}>{getPlaygroundTitle(attr, $_)}</h2>
           {#if getPlaygroundLocation(attr, $_)}
             <p class="text-sm text-muted-foreground mt-0.5">{getPlaygroundLocation(attr, $_)}</p>
           {/if}
@@ -529,7 +533,7 @@
       <!-- Embedded header (mobile full-screen panel) -->
       <div class="flex items-start justify-between gap-2 mb-4">
         <div class="flex-1 min-w-0">
-          <h2 class="panel-title">{getPlaygroundTitle(attr, $_)}</h2>
+          <h2 class="panel-title" lang={titleLang}>{getPlaygroundTitle(attr, $_)}</h2>
           {#if getPlaygroundLocation(attr, $_)}
             <p class="text-sm text-muted-foreground mt-0.5">{getPlaygroundLocation(attr, $_)}</p>
           {/if}
