@@ -18,7 +18,7 @@
       "water": "Wasserspielplatz",
       "baby": "Baby-geeignet",
       "toddler": "Kleinkind-geeignet",
-      "wheelchair": "Rollstuhlgerecht",
+      "wheelchair": "Rollstuhl-geeignet",
       "bench": "Mit Sitzbank",
       "picnic": "Mit Picknicktisch",
       "shelter": "Mit Unterstand",
@@ -41,7 +41,7 @@
     "tagWater": "Wasser",
     "tagBaby": "Baby",
     "tagTrees": "Bäume",
-    "tagAccessible": "Barrierefrei",
+    "tagWheelchair": "Rollstuhl",
     "playground": "Spielplatz"
   },
   "map": {
@@ -438,6 +438,8 @@
     "accessLabel": "Zugänglichkeit",
     "forBaby": "Für Babys",
     "forToddler": "Für Kleinkinder",
+    "wheelchairPlay": "Rollstuhl-geeignet",
+    "wheelchairPlayNone": "Keine Rollstuhlgeräte",
     "shaded": "Schattig",
     "notShaded": "Kein Schatten",
     "ageGroups": {

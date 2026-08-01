@@ -234,9 +234,41 @@ CREATE MATERIALIZED VIEW public.playground_stats AS
               OR (e.tags ? 'playground' AND e.tags->'capacity:baby' IS NOT NULL)) AS for_baby,
       BOOL_OR((e.tags->'provided_for:toddler' = 'yes')
               OR (e.tags->'playground' = 'basketswing'))                        AS for_toddler,
-      BOOL_OR(e.tags->'wheelchair' = 'yes'
-              AND (NOT (e.tags ? 'playground')
-                   OR e.tags->'playground' != 'sandpit'))                       AS for_wheelchair,
+      -- Wheelchair suitability is a statement about PLAY EQUIPMENT, not about
+      -- site access. With an accompanying adult nearly every playground can be
+      -- entered, and the age range served (roughly 0-14) makes the unaccompanied,
+      -- self-transferring user the edge case rather than the norm — so the area's
+      -- own `wheelchair` tag separates almost nothing. Measured on Fulda, 59 of
+      -- 731 playgrounds carry a positive area tag with no suitable device inside
+      -- them; admitting those would make the badge mean "you can probably get
+      -- in". The area tag is therefore deliberately not an input (#727, #728).
+      --
+      -- `limited` counts as suitable: on the objects that actually carry it here
+      -- (spring riders, seesaws, swings, roundabouts) it means "usable with
+      -- assistance", and assistance is the assumed condition for this age group.
+      --
+      -- Only `playground=*` objects qualify. The previous predicate's
+      -- `NOT (e.tags ? 'playground')` branch let a bench, shelter or pitch carry
+      -- the claim — one of the six playgrounds it flagged qualified through a
+      -- teenshelter, one through a pitch. Same false signal that took the derived
+      -- flags out of has_equipment (#776).
+      --
+      -- Sandpits are excluded for the same reason as the area tag: an adult can
+      -- lift a child into essentially any sandpit, so `wheelchair` on one does
+      -- not separate playgrounds. Purpose-built roll-under sand tables do exist
+      -- and would be a real signal, but the tagging cannot express the
+      -- difference — none of the 40 wheelchair-tagged sandpits in Fulda carries
+      -- a `height` or description tag. Revisit if that ever becomes
+      -- distinguishable.
+      BOOL_OR(e.tags ? 'playground'
+              AND e.tags->'playground' <> 'sandpit'
+              AND e.tags->'wheelchair' IN ('yes','limited','designated'))       AS wheelchair_play_yes,
+      -- Was accessibility surveyed here at all? Mappers record `wheelchair=no`
+      -- far more often than any positive value (602 devices against 39 in
+      -- Fulda). Keeping that lets the panel separate "someone checked and there
+      -- is nothing suitable" from "nobody ever looked" — opposite answers for a
+      -- parent planning a trip, indistinguishable before this change.
+      BOOL_OR(e.tags ? 'playground' AND e.tags ? 'wheelchair')                  AS wheelchair_surveyed,
       BOOL_OR(pl.tags->'enclosed' = 'yes' OR pl.barrier = 'fence')            AS has_fence,
       BOOL_OR(pl.tags->'dog' = 'yes')                                        AS has_dogs,
       -- has_theme: any allowlisted playground:theme on the area tag OR on a
@@ -301,7 +333,7 @@ CREATE MATERIALIZED VIEW public.playground_stats AS
         OR COALESCE(es.is_water,       false)
         OR COALESCE(es.for_baby,       false)
         OR COALESCE(es.for_toddler,    false)
-        OR COALESCE(es.for_wheelchair, false)
+        OR COALESCE(es.wheelchair_play_yes, false)
       ) AS has_equipment,
       -- NULLIF('', '') IS NULL — matches JS truthy semantics on empty-string tags.
       -- operator excluded: it's administrative data, not useful to parents.
@@ -327,7 +359,20 @@ CREATE MATERIALIZED VIEW public.playground_stats AS
     COALESCE(es.is_water,       false) AS is_water,
     COALESCE(es.for_baby,       false) AS for_baby,
     COALESCE(es.for_toddler,    false) AS for_toddler,
-    COALESCE(es.for_wheelchair, false) AS for_wheelchair,
+    -- Tri-state play-equipment accessibility: 'yes' | 'no' | NULL.
+    --   'yes'  a suitable play device is tagged accessible
+    --   'no'   accessibility was surveyed here and nothing suitable was found
+    --   NULL   no play device carries a wheelchair tag — unknown, not absent
+    -- The rule lives on the aggregates in equip_stats above.
+    CASE
+      WHEN COALESCE(es.wheelchair_play_yes, false) THEN 'yes'
+      WHEN COALESCE(es.wheelchair_surveyed, false) THEN 'no'
+    END                                AS wheelchair_play,
+    -- Boolean projection of the tri-state. Kept under its original name so the
+    -- filterStore key, the wire field and mixed-version federation are all
+    -- unaffected: an un-upgraded backend still answers the wheelchair filter,
+    -- just with the older, broader predicate.
+    COALESCE(es.wheelchair_play_yes, false) AS for_wheelchair,
     COALESCE(es.has_fence,       false) AS has_fence,
     COALESCE(es.has_dogs,       false) AS has_dogs,
     COALESCE(es.has_theme,      false) AS has_theme,
@@ -432,6 +477,7 @@ AS $$
               'for_baby',           COALESCE(s.for_baby, false),
               'for_toddler',        COALESCE(s.for_toddler, false),
               'for_wheelchair',     COALESCE(s.for_wheelchair, false),
+              'wheelchair_play',    s.wheelchair_play,
               'has_fence',          COALESCE(s.has_fence, false),
               'has_dogs',           COALESCE(s.has_dogs, false),
               'has_theme',          COALESCE(s.has_theme, false),
@@ -745,6 +791,7 @@ AS $$
               'for_baby',           COALESCE(s.for_baby, false),
               'for_toddler',        COALESCE(s.for_toddler, false),
               'for_wheelchair',     COALESCE(s.for_wheelchair, false),
+              'wheelchair_play',    s.wheelchair_play,
               'has_fence',          COALESCE(s.has_fence, false),
               'has_dogs',           COALESCE(s.has_dogs, false),
               'has_theme',          COALESCE(s.has_theme, false),
@@ -842,6 +889,7 @@ AS $$
         'for_baby',           COALESCE(s.for_baby, false),
         'for_toddler',        COALESCE(s.for_toddler, false),
         'for_wheelchair',     COALESCE(s.for_wheelchair, false),
+        'wheelchair_play',    s.wheelchair_play,
         'has_fence',          COALESCE(s.has_fence, false),
         'has_dogs',           COALESCE(s.has_dogs, false),
         'has_theme',          COALESCE(s.has_theme, false),

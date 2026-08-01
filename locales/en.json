@@ -18,7 +18,7 @@
       "water": "Water playground",
       "baby": "Baby-friendly",
       "toddler": "Toddler-friendly",
-      "wheelchair": "Wheelchair accessible",
+      "wheelchair": "Wheelchair-friendly",
       "bench": "With bench",
       "picnic": "With picnic table",
       "shelter": "With shelter",
@@ -41,7 +41,7 @@
     "tagWater": "Water",
     "tagBaby": "Baby",
     "tagTrees": "Trees",
-    "tagAccessible": "Accessible",
+    "tagWheelchair": "Wheelchair",
     "playground": "Playground"
   },
   "map": {
@@ -438,6 +438,8 @@
     "accessLabel": "Accessibility",
     "forBaby": "For babies",
     "forToddler": "For toddlers",
+    "wheelchairPlay": "Wheelchair-friendly",
+    "wheelchairPlayNone": "No wheelchair equipment",
     "shaded": "Shaded",
     "notShaded": "No shade",
     "ageGroups": {

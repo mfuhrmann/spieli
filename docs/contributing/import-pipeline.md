@@ -109,7 +109,8 @@ Several boolean columns in `playground_stats` are computed from equipment found 
 | `for_baby` | `baby=yes` on any equipment; `playground` ∈ `baby_swing`, `basketswing`, `sandpit`, `springy`; `capacity:baby` present |
 | `for_toddler` | `provided_for:toddler=yes` on any equipment; `playground=basketswing` |
 | `is_water` | `playground` contains `water` or ∈ `splash_pad`, `pump` |
-| `for_wheelchair` | `wheelchair=yes` on any equipment |
+| `for_wheelchair` | boolean projection of `wheelchair_play = 'yes'` (see below) |
+| `wheelchair_play` | Tri-state, derived from **play devices only** (`playground=*`, excluding `playground=sandpit`). `'yes'` when one is tagged `wheelchair` ∈ `yes`, `limited`, `designated`; `'no'` when devices carry a `wheelchair` tag but none qualifies; `NULL` when none carries one. The playground area's own `wheelchair` tag is deliberately **not** an input — it describes site access, which barely separates playgrounds, whereas the equipment tag is what the audience is asking about. Street furniture and pitches cannot set it either. See [`docs/user-guide.md`](../user-guide.md#wheelchair-accessibility) for the user-facing wording |
 | `has_soccer` / `has_basketball` | `leisure=pitch` with matching `sport` value |
 | `has_fence` | `enclosed=yes` or `barrier=fence` on playground |
 | `has_dogs` | `dog=yes` on playground |
