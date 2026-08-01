@@ -366,7 +366,7 @@ docker compose --profile <mode> up -d --force-recreate importer
 docker compose logs -f importer   # wait for "Done. PostgREST schema reloaded."
 ```
 
-Then re-check for the column. From v0.9.1 on, `api.sql` takes a session advisory lock, so concurrent applies queue instead of racing.
+Then re-check for the column. From v0.10.0 on, `api.sql` takes a session advisory lock, so concurrent applies queue instead of racing.
 
 ---
 
