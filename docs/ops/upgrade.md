@@ -79,10 +79,10 @@ docker compose --profile <mode> run --rm -e API_ONLY=1 importer
 This updates all PostgREST functions and the version number reported by `get_meta`. It runs as a one-shot container — the daemon importer is not affected.
 
 !!! warning "Run API_ONLY=1 before restarting the daemon"
-    The daemon importer also applies `api.sql` on container startup. If you restart the daemon and then immediately run `API_ONLY=1`, both processes race on the `DROP`/`CREATE` of the `playground_stats` materialized view. On large datasets this reliably causes `ERROR: relation "public.playground_stats" does not exist`. Always complete step 3 and verify (step 4) before starting the daemon (step 5).
+    The daemon importer also applies `api.sql` on container startup, so restarting it and running `API_ONLY=1` at the same time means two concurrent applies. Since v0.10.0 the `playground_stats` rebuild is an atomic swap, so this no longer takes the API offline or leaves a half-built view — but the last writer still wins, and if that is the daemon on its *old* image, the stack ends up serving the old schema while reporting healthy. Always complete step 3 and verify (step 4) before starting the daemon (step 5).
 
-!!! warning "If API_ONLY=1 fails mid-run"
-    `API_ONLY=1` drops and recreates `playground_stats`. A crash partway through leaves the view gone and PostgREST will log `relation "public.playground_stats" does not exist`. Recovery: run a full re-import — it recreates everything from scratch.
+!!! info "If API_ONLY=1 fails mid-run"
+    Since v0.10.0 the API stays up: `playground_stats` is built under a staging name and swapped in, so a crash before the swap leaves the previous view serving traffic. Re-run `API_ONLY=1` after fixing the cause — the staging view is dropped and rebuilt on the next attempt. On v0.9.0 and earlier the view was dropped first, and a crash partway through left it gone, with PostgREST logging `relation "public.playground_stats" does not exist`; recovery there is a full re-import.
 
 **Step 4 — Verify**
 
