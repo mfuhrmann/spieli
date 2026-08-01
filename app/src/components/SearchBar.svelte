@@ -1,4 +1,5 @@
 <script>
+  import { tick } from 'svelte';
   import { fromLonLat } from 'ol/proj';
   import { mapStore } from '../stores/map.js';
   import { nominatimFetch } from '../lib/nominatim.js';
@@ -16,11 +17,30 @@
   let results = [];
   let showResults = false;
   let inputEl;
+  let resultsEl;
+
+  /** Index of the option named by `aria-activedescendant`; -1 = none active. */
+  let activeIndex = -1;
+
+  const idPrefix = `searchbar-${instanceCounter++}`;
+  const listboxId = `${idPrefix}-listbox`;
+  const optionId = (i) => `${idPrefix}-option-${i}`;
+
+  $: listOpen = showResults && results.length > 0;
+  $: activeId = listOpen && activeIndex >= 0 ? optionId(activeIndex) : undefined;
+  $: void scrollActiveIntoView(activeIndex, listOpen);
+
+  async function scrollActiveIntoView(i, open) {
+    if (!open || i < 0) return;
+    await tick();
+    resultsEl?.children?.[i]?.scrollIntoView({ block: 'nearest' });
+  }
 
   async function search() {
     const q = query.trim();
     if (!q) {
       results = [];
+      activeIndex = -1;
       showResults = false;
       return;
     }
@@ -50,10 +70,12 @@
         });
       }
       results = hits.slice(0, 5);
+      activeIndex = -1;
       showResults = results.length > 0;
     } catch (err) {
       console.error('Search failed:', err);
       results = [];
+      activeIndex = -1;
       showResults = false;
     } finally {
       searching = false;
@@ -67,14 +89,43 @@
     $mapStore?.getView().animate({ center: coord, zoom: 17 });
     query = result.display_name.split(',')[0];
     showResults = false;
+    activeIndex = -1;
     if (onlocation) onlocation(lat, lon);
   }
 
   function onKeydown(e) {
-    if (e.key === 'Enter') search();
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (results.length === 0) return;
+      // Reopen a list that was dismissed while its results are still cached.
+      if (!showResults) {
+        showResults = true;
+        return;
+      }
+      activeIndex = activeIndex >= results.length - 1 ? 0 : activeIndex + 1;
+      return;
+    }
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (!listOpen) return;
+      activeIndex = activeIndex <= 0 ? results.length - 1 : activeIndex - 1;
+      return;
+    }
+    if (e.key === 'Enter') {
+      if (listOpen && activeIndex >= 0) {
+        e.preventDefault();
+        selectResult(results[activeIndex]);
+      } else {
+        search();
+      }
+      return;
+    }
     if (e.key === 'Escape') {
+      // Keep focus in the input, and keep the window-level Escape handlers
+      // (PlaygroundPanel close, Map popup) from also firing on this press.
+      if (listOpen) e.stopPropagation();
       showResults = false;
-      inputEl?.blur();
+      activeIndex = -1;
     }
   }
 
@@ -90,6 +141,7 @@
   function clearSearch() {
     query = '';
     results = [];
+    activeIndex = -1;
     showResults = false;
     inputEl?.focus();
     if (onlocation) onlocation(null, null);
@@ -99,15 +151,28 @@
     if (results.length > 0) showResults = true;
   }
 
-  function onBlur(e) {
-    // Delay hiding to allow click on results
-    setTimeout(() => {
-      showResults = false;
-    }, 200);
+  /**
+   * Dismissal is focus containment, not a timer: the list closes only once
+   * focus leaves the whole card. A timer raced both a mouse click on a result
+   * (Safari) and a touch scroll inside the list (iOS).
+   */
+  function onCardFocusOut(e) {
+    if (e.currentTarget.contains(e.relatedTarget)) return;
+    showResults = false;
+    activeIndex = -1;
+  }
+
+  /**
+   * Deliberately `mousedown`, not `pointerdown`: on touch, `mousedown` is
+   * synthesised after the tap completes, so suppressing it cannot interfere
+   * with scrolling the list. It keeps the input from blurring on click.
+   */
+  function onResultsMousedown(e) {
+    e.preventDefault();
   }
 </script>
 
-<div class="search-card">
+<div class="search-card" onfocusout={onCardFocusOut}>
   <div class="search-input-wrapper">
     <div class="search-icon">
       {#if searching}
@@ -125,8 +190,13 @@
       onkeydown={onKeydown}
       oninput={onInput}
       onfocus={onFocus}
-      onblur={onBlur}
       aria-label={$_('search.ariaLabel')}
+      role="combobox"
+      aria-autocomplete="list"
+      aria-expanded={listOpen}
+      aria-controls={listboxId}
+      aria-activedescendant={activeId}
+      aria-busy={searching}
     />
     {#if query}
       <button class="clear-btn" onclick={clearSearch} aria-label={$_('search.clearLabel')}>
@@ -135,10 +205,34 @@
     {/if}
   </div>
 
-  {#if showResults && results.length > 0}
-    <div class="search-results">
-      {#each results as result}
-        <button class="result-item" onclick={() => selectResult(result)}>
+  {#if listOpen}
+    <div
+      class="search-results"
+      bind:this={resultsEl}
+      id={listboxId}
+      role="listbox"
+      aria-label={$_('search.ariaLabel')}
+      tabindex="-1"
+      onmousedown={onResultsMousedown}
+    >
+      {#each results as result, i}
+        <!--
+          Options stay real buttons: `role="option"` overrides the native
+          role, while the button keeps working for touch screen readers,
+          whose virtual cursor activates options directly and never follows
+          `aria-activedescendant`. `tabindex="-1"` keeps them out of the tab
+          order — arrow keys, not Tab, reach them on desktop.
+        -->
+        <button
+          class="result-item"
+          class:active={i === activeIndex}
+          id={optionId(i)}
+          role="option"
+          aria-selected={i === activeIndex}
+          tabindex="-1"
+          onclick={() => selectResult(result)}
+          onmousemove={() => (activeIndex = i)}
+        >
           <MapPin class="h-4 w-4 text-gray-400 shrink-0" />
           <span class="result-text">{result.display_name}</span>
         </button>
@@ -149,6 +243,13 @@
 
 <script context="module">
   import { MapPin } from 'lucide-svelte';
+
+  /**
+   * Element ids in the combobox contract must be unique per instance, and the
+   * component is in legacy mode so `$props.id()` is unavailable. A
+   * module-scoped counter gives every mounted instance its own id prefix.
+   */
+  let instanceCounter = 0;
 </script>
 
 <style>
@@ -228,7 +329,12 @@
     transition: background 0.15s;
   }
 
-  .result-item:hover {
+  /*
+   * `.active` is the single highlight, written by both arrow keys and
+   * pointer movement. A separate `:hover` rule would let the pointer
+   * highlight one row while `aria-activedescendant` named another.
+   */
+  .result-item.active {
     background: #f1f3f4;
   }
 
@@ -238,5 +344,23 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  /* Nominatim display_name values are long, and the search card is narrowed
+     further on mobile — a single ellipsised line makes results hard to tell
+     apart. Wrap to two lines below the mobile breakpoint. */
+  @media (max-width: 1023px) {
+    .result-item {
+      align-items: flex-start;
+    }
+
+    .result-text {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      -webkit-box-orient: vertical;
+      white-space: normal;
+      text-overflow: clip;
+    }
   }
 </style>
