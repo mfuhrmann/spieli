@@ -1077,6 +1077,11 @@
   /* ── Status row (opening hours + age chip) ──────────── */
   .status-row {
     display: flex;
+    /* Chips must wrap: the row can hold opening hours, baby, toddler,
+       wheelchair and shade at once, which overflows the panel on any
+       realistic width. Without this they are clipped at the right edge
+       instead of moving to a second line. */
+    flex-wrap: wrap;
     align-items: center;
     gap: 8px;
   }
