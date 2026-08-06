@@ -18,15 +18,28 @@ Reported as [issue #814](https://github.com/mfuhrmann/spieli/issues/814) for Slo
 
 **The graduation process already existed and was already specified.** `add-weblate-community-translations/specs/i18n-language-support/spec.md` requires that a language reaching 80% in Weblate be added to `SUPPORTED` by a maintainer PR. That step was never performed for `sk`, and never for `fr` or `es` either, despite both sitting at ~97%. A process that depends on a human noticing a Weblate percentage is the root cause, so this change replaces it with a derived one.
 
-**And the threshold was published to translators as a promise.** The `instructions` field on the Weblate project — shown to every translator on the project page — states:
+**Two texts describe graduation, aimed at two audiences, and they drifted.** The maintainer-facing documentation is accurate. `docs/contributing/translations.md:131` states plainly:
+
+> There is no automatic threshold: reaching 100% in Weblate does not by itself make a language visible. Until a maintainer registers it, the locale file sits in the repo and users with that browser language fall back to English.
+
+It even names the current state correctly — *"today that is `de` and `en`"* — and describes 80% as *"the bar a maintainer uses to decide"*, followed by a three-step manual procedure.
+
+The translator-facing text does not say that. The `instructions` field on the Weblate project, shown to every contributor on the project page, states:
 
 > **When does my translation go live?**
 > A language appears in the app once it reaches **80% completion**.
 > Until then your work is saved and visible to other translators.
 
-That has never been true for any language. `sk` at 95.8%, `fr` and `es` at 96.2% each cleared the stated bar and stayed invisible. Volunteers were given a concrete, checkable condition, met it, and got silence — with no signal anywhere that anything was wrong, because nothing failed.
+Read plainly, that describes an automatic threshold. `sk` at 95.8%, `fr` and `es` at 96.2% each cleared the stated bar and stayed invisible.
 
-This is the strongest argument for deriving the gate rather than hand-applying it. The 80% number was never the problem; the fact that honouring it depended on someone remembering is. A published promise enforced by a build step cannot quietly go unkept.
+```
+maintainer-facing   translations.md   "until a maintainer registers it"    accurate
+translator-facing   Weblate           "a language appears once it reaches" reads as automatic
+```
+
+The volunteer reads the second. The person who must act reads the first. Nothing reconciles them, and nothing fails when they disagree — so three languages sat dormant with no error, no warning, and no one aware.
+
+That is the case for deriving the gate rather than hand-applying it. The 80% number was never the problem, and this is not a case of missing information: `translations.md` correctly recorded that only `de` and `en` were live, at all times. Knowing simply was not wired to anything. Computing the gate from `locales/` collapses both texts into one enforced fact, and makes the translator-facing wording true rather than aspirational.
 
 The reporter also hit a second, independent defect. `pickLocale()` consults only `navigator.language` (that is, `navigator.languages[0]`):
 
