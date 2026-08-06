@@ -74,7 +74,8 @@ Blocking. `locales/` sits outside Vite's root (`app/`). Everything below assumes
 
 - [ ] `docs/contributing/translations.md` — graduation is automatic at ≥80%; no maintainer PR needed; state the denominator and why themes are excluded
 - [ ] `CLAUDE.md` — correct the stale claim that de/en/fr/es "include complete device name translations"; `sk` now qualifies, and registration is derived rather than listed
-- [ ] Update the Weblate project description so translators see the real threshold and denominator
+- [ ] Correct the Weblate project `instructions` field — it currently promises "a language appears in the app once it reaches 80% completion", which has never held. State the real denominator (excludes `equipAttr.themes.*`) and that graduation now takes effect on the next build with no manual step
+- [ ] Post a Weblate announcement acknowledging that `sk`, `fr` and `es` each passed 80% and stayed invisible. Component scope (`/api/components/spieli/ui-strings/announcements/`), not translation scope — French and Spanish translators were failed identically and never heard about it. Writes are token-gated; UI path is Manage → Post announcement
 - [ ] `make docs-build` passes
 
 ### 10. Follow-ups — file, do not implement here

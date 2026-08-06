@@ -4,7 +4,9 @@ Thirteen locale files exist; two are registered. The eleven others have been mer
 
 The graduation step that should have connected them was specified — `add-weblate-community-translations/specs/i18n-language-support/spec.md` says a maintainer opens a PR adding the code to `SUPPORTED` once Weblate shows ≥80%. It was never performed, for any language. `fr` and `es` have sat at ~97% for months.
 
-That is the design constraint worth taking seriously: **the failure mode was a manual step nobody was reminded to take.** A fix that adds five more entries to a hand-maintained array reproduces it on locale #14. Every decision below is chosen to remove the human from the loop or to make omission fail loudly.
+Worse, the threshold was published to translators as a commitment. The Weblate project's `instructions` field tells every contributor that "a language appears in the app once it reaches **80% completion**". Three languages cleared it and none appeared.
+
+That is the design constraint worth taking seriously: **the failure mode was a manual step nobody was reminded to take, backing a promise that was made publicly.** A fix that adds five more entries to a hand-maintained array reproduces it on locale #14. Every decision below is chosen to remove the human from the loop or to make omission fail loudly.
 
 ## Decision 1 — Derive the locale list, do not maintain it
 
