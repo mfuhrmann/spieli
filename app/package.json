@@ -26,7 +26,7 @@
     "tailwind-variants": "^3.3.0"
   },
   "devDependencies": {
-    "@sveltejs/vite-plugin-svelte": "^7.2.0",
+    "@sveltejs/vite-plugin-svelte": "^7.3.0",
     "@tailwindcss/postcss": "^4.3.3",
     "tailwindcss": "^4.3.3",
     "vite": "8.0.16"
