@@ -25,6 +25,10 @@
 - [ ] 2a.4 Serve the style document, glyphs and sprites from the same origin as the tiles. Easy to miss, and if missed the browser still contacts a third party for fonts even though tiles are local.
 - [ ] 2a.5 Check bundle-size impact; the build already warns above 500 kB.
 - [ ] 2a.6 Confirm the vector basemap renders under both app modes and does not disturb the existing tier layer ordering.
+- [ ] 2a.7 Adopt OpenFreeMap **Bright** as the style (D11) and vendor it, so the two edits below are ours to make and cannot be changed upstream underneath us.
+- [ ] 2a.8 Desaturate `park`, `landcover_grass` and `landcover_wood` so the green channel belongs to playground completeness.
+- [ ] 2a.9 Thin or drop the POI icon layers — the strongest competitor for attention, and the same move as thinning the tileset (D10).
+- [ ] 2a.10 Re-check completeness legibility against real data with the **tuned** style. The published comparison used stock styles; the shipped one will not be stock.
 
 ## 2b. Macro-tier basemap (D6)
 
@@ -68,7 +72,7 @@
 - [ ] 5.5 Confirm the generated privacy page matches the configured mode in both directions (provider named / no third-party row).
 - [ ] 5.6 With proxying on, confirm CSP can be tightened to `img-src 'self' data:` without breaking the map, and decide whether to do so in this change or follow up.
 - [ ] 5.7 With proxying on and a map panned across many tiles, confirm the access log contains **no** tile entries (D8) — the check that the privacy property actually holds, not just that the directive is present.
-- [ ] 5.8 Vector: confirm the style renders, that zooming to z21 issues no requests above the tileset's `maxzoom: 14`, and that glyphs and sprites are fetched same-origin (devtools shows no third-party host).
+- [ ] 5.8 Vector: confirm the tuned style renders and complete/partial/missing remain distinguishable against park and landcover fills, that zooming to z21 issues no requests above the tileset's `maxzoom: 14`, and that glyphs and sprites are fetched same-origin (devtools shows no third-party host).
 - [ ] 5.9 Local delivery: confirm every basemap request is answered from local storage and none reaches a provider, including on a deliberate cache-miss-shaped request.
 - [ ] 5.10 Pan beyond the covered area and confirm the result is not silently blank tiles presented as valid map data (D9).
 - [ ] 5.11 `make test` and `make build`.

@@ -28,15 +28,14 @@ Where knudli *is* instructive is the delivery axis. They route Overpass through 
 - Attribution follows the provider automatically, because it is a licence obligation, not decoration.
 - The privacy disclosure follows the configuration, so it cannot silently drift from what the deployment actually does.
 - Enabling proxying does not accumulate a per-visitor location trail on the operator's own disk (D8).
-- The hub macro tier renders correctly with a Germany-only provider, so coverage does not veto the provider choice (D6).
+- The basemap covers the whole federation — Germany, Czechia and Slovakia — including on the hub, which renders every backend on one map, and the macro tier stays readable outside that extent (D6).
+- The completeness colours stay distinguishable against the basemap, because hue is the app's primary encoding (D11).
 - Today's behaviour is preserved for an operator who changes nothing.
-
-- The basemap covers the whole federation — Germany, Czechia and Slovakia — including on the hub, which renders every backend on one map.
 
 **Non-Goals:**
 - **Flipping the shipped default provider.** Changing the default alters the cartographic appearance of every deployment, which is a maintainer decision about visual identity rather than a technical one; see task 6.2.
 - **Generating a basemap from spieli's own imported data.** D5; the import is tag-filtered to playground features and has no roads or water to draw. Serving a prebuilt extract is a different thing and is in scope (D10).
-- **Styling work beyond adopting an existing style.** The change wires up a vector style and makes it configurable; designing a spieli-specific cartography is separate.
+- **Designing a spieli-specific cartography from scratch.** Adopting Bright and applying the two bounded edits in D11 is in scope; an original map design is not.
 
 ## Decisions
 
@@ -226,6 +225,35 @@ So the delivery axis from D1 gains a third position, and it is the recommended o
 **Kept in scope regardless:** the proxy path (b). It is the incremental step, it is what an operator with less disk uses, and it is the only option for anyone pointing at a provider whose data cannot be redistributed. D8's logging requirement applies to (b) and (c) alike, since both put the tile stream through the operator's nginx.
 
 *Alternative considered:* keep raster and accept blank tiles outside Germany until vector lands. Rejected — silently blank maps for two of three countries is not a shippable intermediate state, and D9 shows it would also poison the cache.
+
+### D11 — Style: OpenFreeMap Bright, tuned; the underlay is ours to edit
+
+The style question turned out to be a correctness question wearing an aesthetic one's clothes, and then a product question on top of that.
+
+**The constraint.** spieli encodes its primary signal — playground completeness — entirely in hue: green `rgba(34,139,34,.22)` / `#155215`, amber `rgba(234,179,8,.22)` / `#92400e`, red `rgba(239,68,68,.18)` / `#991b1b`. So the requirement on any basemap is: **it must not use the channel the data encodes in.** CARTO Voyager satisfies this today by being a desaturated data-underlay style, a property that was inherited rather than chosen and appears in no requirement anywhere. Losing it silently during the migration was a live risk.
+
+**Measured against real data.** Five candidates rendered over 115 real playgrounds from the Hessen backend at z16, using the exact rule from `completeness.js` and the exact fills from `vectorStyles.js`:
+
+| Style | Verdict |
+|---|---|
+| **Bright** (OpenFreeMap) | **Chosen.** Warm and map-like; park fills light enough that polygons hold their edge |
+| Positron (OpenFreeMap) | Runner-up. Best contrast — neutral `rgb(230,233,229)` parks, no POI clutter — but austere |
+| Graybeard (VersaTiles) | Viable. Maximum contrast, but greyscale water reads clinical |
+| Liberty (OpenFreeMap) | Rejected. Saturated `rgb(95,208,100)` park outlines directly under green polygons |
+| CARTO Voyager | Blocked. Watermarked without a key; a key makes privacy worse (D9) |
+
+*Correction recorded deliberately:* an earlier revision rejected "Liberty / Bright" together. Bright had not been rendered at that point, only judged by name. On inspection its parks are materially lighter than Liberty's and it does not carry Liberty's saturated park outline. Grouping them was wrong.
+
+**Why Bright over Positron.** Positron wins the contrast test outright. Bright wins the one that is not measurable here: a family-facing playground map benefits from reading as a warm, familiar map rather than a data substrate. That is a product judgement, and it is the maintainer's.
+
+**Two edits ship with it**, because Bright does not satisfy the constraint out of the box:
+
+1. Desaturate `park`, `landcover_grass` and `landcover_wood`, reclaiming the green channel for playground data.
+2. Thin or drop the POI icon layers — the blue icons compete for attention harder than the greens do.
+
+Both are only possible because the migration replaces a fixed raster image with a style document we own. **This is the first upside of the migration that is not damage control.** Edit 2 is also the same work as building a thinner tileset, so the legibility fix and the mobile-performance lever from D10 coincide.
+
+*Consequence for scope:* style tuning moves from non-goal into scope as a small bounded piece, and any legibility check must run against the **tuned** style. The published comparison uses stock styles; the shipped one will not be stock.
 
 ## Risks / Trade-offs
 
