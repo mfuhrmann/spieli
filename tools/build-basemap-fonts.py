@@ -22,6 +22,7 @@ Usage:
     tools/build-basemap-fonts.py [--out DIR] [--font noto-sans:400,400-italic]
 """
 import argparse
+import json
 import os
 import re
 import sys
@@ -30,10 +31,28 @@ import urllib.request
 
 CDN = 'https://cdn.jsdelivr.net/npm/@fontsource'
 DEFAULT_OUT = 'app/public/basemap/fonts'
-# What the vendored Bright style asks for. Kept explicit rather than parsed out
-# of the style: the mapping from a style's font stacks to @fontsource package
-# names is not mechanical, and a wrong guess fails silently as a 404.
-DEFAULT_FONTS = 'noto-sans:400,400-italic'
+# What the vendored Bright style asks for: its text-font stacks are
+# "Noto Sans Regular", "Noto Sans Bold" and "Noto Sans Italic", which
+# ol-mapbox-style resolves to weights 400, 700 and 400-italic (700-italic
+# covers a bold-italic stack being added upstream). Kept explicit rather than
+# parsed out of the style: the mapping from a style's font stacks to
+# @fontsource package names is not mechanical, and a wrong guess fails silently
+# as a 404 and a system-font fallback.
+#
+# Missing a weight is not cosmetic. The style's stacks are checked against this
+# list by `make basemap-fonts` (see check_style_coverage below), because an
+# absent weight renders as a system font AND, once /basemap/ falls through to
+# the tile server, turns every page load into an upstream request for a file
+# that does not exist there either.
+DEFAULT_FONTS = 'noto-sans:400,400-italic,700,700-italic'
+# Style font-stack suffix -> the @fontsource weight file that satisfies it.
+STACK_WEIGHTS = {
+    'Regular': '400',
+    'Italic': '400-italic',
+    'Bold': '700',
+    'Bold Italic': '700-italic',
+}
+DEFAULT_STYLE = 'app/public/basemap/style.local.json'
 # Subsets that cover the federation's languages (de, cs, sk) plus the UI's
 # other locales. Everything else is dropped to keep the payload small.
 KEEP_SUBSETS = ('latin', 'latin-ext')
@@ -119,16 +138,72 @@ def build(out_dir, spec):
     return 0 if total else 1
 
 
+def check_style_coverage(out_dir, style_path):
+    """Fail if the style asks for a weight this build did not vendor.
+
+    The failure mode without this is invisible: MapLibre falls back to a system
+    font for the missing stack, the map still renders, and every visitor's
+    browser quietly asks the tile server for a CSS file it has never heard of.
+    """
+    try:
+        with open(style_path, encoding='utf-8') as fh:
+            style = json.load(fh)
+    except (OSError, ValueError) as exc:
+        print(f'  WARNING: style coverage not checked ({exc})', file=sys.stderr)
+        return 0
+
+    stacks = set()
+    for layer in style.get('layers', []):
+        font = (layer.get('layout') or {}).get('text-font')
+        if isinstance(font, str):
+            stacks.add(font)
+        elif isinstance(font, list):
+            stacks.update(f for f in font if isinstance(f, str))
+
+    missing = []
+    for stack in sorted(stacks):
+        # Split on the longest known variant suffix, so "Noto Sans Bold Italic"
+        # yields family "Noto Sans" rather than "Noto Sans Bold". A first-space
+        # split would give "Noto", which finds nothing and reports every stack
+        # as missing.
+        best = None
+        for variant, weight in STACK_WEIGHTS.items():
+            suffix = ' ' + variant
+            if stack.endswith(suffix) and (best is None or len(variant) > len(best[0])):
+                best = (variant, weight, stack[:-len(suffix)])
+        if best is None:
+            missing.append(f'{stack} (no known weight mapping)')
+            continue
+        _, weight, family = best
+        slug = family.lower().replace(' ', '-')
+        css = os.path.join(out_dir, slug, f'{weight}.css')
+        if not os.path.isfile(css):
+            missing.append(f'{stack} -> {slug}/{weight}.css')
+
+    if missing:
+        print('  ERROR: the style asks for font stacks with no vendored file:',
+              file=sys.stderr)
+        for m in missing:
+            print(f'    {m}', file=sys.stderr)
+        return 1
+    print(f'  style coverage OK ({len(stacks)} stacks)')
+    return 0
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('--out', default=DEFAULT_OUT)
     ap.add_argument('--font', default=DEFAULT_FONTS,
                     help=f'space-separated family:weights (default: {DEFAULT_FONTS})')
+    ap.add_argument('--style', default=DEFAULT_STYLE,
+                    help='style whose text-font stacks must be covered '
+                         f'(default: {DEFAULT_STYLE})')
     args = ap.parse_args()
     os.makedirs(args.out, exist_ok=True)
     print(f'-> {args.out}')
-    return build(args.out, args.font)
+    rc = build(args.out, args.font)
+    return rc or check_style_coverage(args.out, args.style)
 
 
 if __name__ == '__main__':
