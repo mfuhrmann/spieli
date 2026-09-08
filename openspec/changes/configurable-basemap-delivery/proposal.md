@@ -1,3 +1,5 @@
+> Umbrella issue: #823. Implementation ticket: #828. The disclosure half shipped separately as #825 / PR #826.
+
 ## Why
 
 The basemap URL is hardcoded at `app/src/components/Map.svelte:135` (`basemaps.cartocdn.com`, keyless). Issue #823 opened because CARTO now requires an API key on raster basemaps and is watermarking keyless requests. Two things follow from that, and only one of them is about CARTO.
