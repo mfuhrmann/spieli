@@ -26,6 +26,12 @@ requires a thinner *tileset*, which is a separate piece of work.
 
 Usage:
     tools/build-basemap-style.py [--source URL] [--out PATH]
+                                 [--asset-base BASE] [--local-out PATH]
+
+--asset-base rewrites the style's tile, glyph and sprite URLs onto one origin
+(normally /basemap), which is what makes the browser talk only to this
+instance. --local-out emits that same-origin variant alongside the upstream one
+from a SINGLE fetch, so the two cannot be built from different upstreams.
 """
 import argparse
 import colorsys
@@ -117,12 +123,29 @@ def rewrite_assets(style, base):
     """
     base = base.rstrip('/')
     changed = []
+    dropped_query = []
 
     def relocate(url):
-        if not isinstance(url, str) or '://' not in url:
+        if not isinstance(url, str):
             return url, False
-        path = url.split('://', 1)[1]
-        path = path.split('/', 1)[1] if '/' in path else ''
+        # Protocol-relative (//host/path) counts as a third-party fetch just as
+        # much as https://host/path, and both the rewrite and the leak check
+        # used to walk straight past it.
+        if url.startswith('//'):
+            rest = url[2:]
+        elif '://' in url:
+            rest = url.split('://', 1)[1]
+        else:
+            return url, False
+        path = rest.split('/', 1)[1] if '/' in rest else ''
+        # Query strings are dropped, not carried. Rebuilding against a keyed
+        # provider (--source 'https://x/style?key=...') would otherwise bake the
+        # operator's API key into a committed style and hand it to every
+        # browser. A key belongs server-side, re-attached by the proxy.
+        head, sep, _ = path.partition('?')
+        if sep:
+            dropped_query.append(url)
+        path = head.partition('#')[0]
         return f'{base}/{path}', True
 
     if style.get('glyphs'):
@@ -145,17 +168,28 @@ def rewrite_assets(style, base):
             if any(ok for _, ok in moved):
                 changed.append(f'source:{name}')
 
+    for url in dropped_query:
+        print(f'  note: dropped the query string from {url.split("?")[0]}?… — a '
+              'provider key must not be baked into a committed style',
+              file=sys.stderr)
+
     return changed
 
 
-def build(source, out, asset_base=None):
+def load_style(source):
     if source.startswith(('http://', 'https://')):
         req = urllib.request.Request(source, headers={'User-Agent': 'spieli-style-build'})
         with urllib.request.urlopen(req, timeout=30) as fh:
-            style = json.load(fh)
-    else:
-        with open(source, encoding='utf-8') as fh:
-            style = json.load(fh)
+            return json.load(fh)
+    with open(source, encoding='utf-8') as fh:
+        return json.load(fh)
+
+
+def build(source, out, asset_base=None, style=None):
+    # `style` lets one fetch produce both variants. Fetching twice let the
+    # upstream rotate between the two calls, yielding a style.json and a
+    # style.local.json built from different upstreams with nothing detecting it.
+    style = copy.deepcopy(style) if style is not None else load_style(source)
 
     before = len(style['layers'])
     kept, dropped, recoloured = [], [], []
@@ -200,8 +234,17 @@ def build(source, out, asset_base=None):
     # it rather than trust it: this is the property the whole caching design
     # rests on, and a silent miss looks exactly like success.
     if asset_base:
+        # The asset base's own host is not a leak when it is given as an
+        # absolute origin — without this exemption the documented remediation
+        # (--asset-base https://tiles.example.org) always failed, flagging the
+        # operator's own origin as third-party and writing nothing.
+        allowed = set()
+        if '://' in asset_base:
+            allowed.add(asset_base.split('://', 1)[1].split('/', 1)[0])
         blob = json.dumps(style)
-        leaked = sorted(set(re.findall(r'https?://[A-Za-z0-9.-]+', blob)))
+        # (?:https?:)? so a protocol-relative //host reference is caught too.
+        leaked = sorted({h for h in re.findall(r'(?:https?:)?//([A-Za-z0-9.:-]+)', blob)
+                         if h not in allowed})
         if leaked:
             print(f'{source}\n  -> NOT WRITTEN', file=sys.stderr)
             print('  ERROR: --asset-base build still references: '
@@ -237,8 +280,17 @@ def main():
                          'proxied or locally-served delivery (e.g. /basemap). '
                          'Omit to keep upstream URLs, which means the visitor\'s '
                          'browser contacts the upstream host directly.')
+    ap.add_argument('--local-out', default=None,
+                    help='also write a same-origin variant here, from the same '
+                         'fetch (implies --asset-base /basemap unless given)')
     args = ap.parse_args()
-    return build(args.source, args.out, args.asset_base)
+
+    style = load_style(args.source)
+    rc = build(args.source, args.out, args.asset_base, style=style)
+    if rc or not args.local_out:
+        return rc
+    return build(args.source, args.local_out, args.asset_base or '/basemap',
+                 style=style)
 
 
 if __name__ == '__main__':
