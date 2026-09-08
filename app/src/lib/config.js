@@ -76,8 +76,13 @@ export const basemapUrlIsExplicit = !!c.basemapUrl;
 // attribution we cannot know. Without this the warning fires on every default
 // deployment, and its own text ("the entrypoint refuses to start on this")
 // would be false, since the entrypoint deliberately exempts the default.
+// `//host/style.json` starts with '/' but is a scheme-relative THIRD-PARTY URL,
+// not a same-origin path — treating it as bundled suppresses the warning for
+// exactly the case it exists to catch. The entrypoint's host_of() makes the
+// same distinction server-side.
+const _isSameOriginPath = (u) => u.startsWith('/') && !u.startsWith('//');
 const _operatorConfiguredSource =
-    !!c.basemapUrl || (!!c.basemapStyleUrl && !c.basemapStyleUrl.startsWith('/'));
+    !!c.basemapUrl || (!!c.basemapStyleUrl && !_isSameOriginPath(c.basemapStyleUrl));
 if (_operatorConfiguredSource && !c.basemapAttribution && typeof console !== 'undefined') {
     console.warn(
         '[spieli] A basemap source is configured but basemapAttribution is empty, ' +

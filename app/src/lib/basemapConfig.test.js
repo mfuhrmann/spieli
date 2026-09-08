@@ -14,9 +14,19 @@ let failures = 0;
 
 async function withConfig(appConfig, fn, label) {
     globalThis.window = { APP_CONFIG: appConfig };
-    const mod = await import(`./config.js?basemap-test=${encodeURIComponent(label)}`);
+    // The attribution warning fires at module load, so it has to be captured
+    // around the import rather than inspected afterwards.
+    const realWarn = console.warn;
+    const warnings = [];
+    console.warn = (...args) => warnings.push(args.join(' '));
+    let mod;
     try {
-        await fn(mod);
+        mod = await import(`./config.js?basemap-test=${encodeURIComponent(label)}`);
+    } finally {
+        console.warn = realWarn;
+    }
+    try {
+        await fn(mod, warnings);
         console.log(`  ok  ${label}`);
     } catch (err) {
         failures += 1;
@@ -25,6 +35,9 @@ async function withConfig(appConfig, fn, label) {
         delete globalThis.window;
     }
 }
+
+const attributionWarnings = (warnings) =>
+    warnings.filter((w) => w.includes('basemapAttribution'));
 
 await withConfig({}, (c) => {
     assert.equal(c.basemapStyleUrl, '/basemap/style.json', 'default is the vendored style');
@@ -99,6 +112,48 @@ await withConfig({
     assert.equal(c.basemapIsVector, false, 'an explicit raster URL opts out of vector');
     assert.equal(c.basemapUrlIsExplicit, true, 'and is available as the style fallback');
 }, 'an explicit raster URL replaces the vector default');
+
+// ── Attribution warning ──────────────────────────────────────────────────────
+// The warning's own text says "the container entrypoint refuses to start on
+// this". That is true for an operator-configured source and deliberately false
+// for spieli's own bundled style, so firing it on a default deployment would
+// put a false statement in every dev console. It can regress in either
+// direction silently, hence both a positive and a negative case.
+
+await withConfig({}, (_c, warnings) => {
+    assert.equal(attributionWarnings(warnings).length, 0,
+        'the default deployment must not warn: the bundled style ships its own credit');
+}, 'no attribution warning for the compiled-in default');
+
+await withConfig({
+    basemapStyleUrl: '/basemap/style.local.json',
+}, (_c, warnings) => {
+    assert.equal(attributionWarnings(warnings).length, 0,
+        'a same-origin bundled style is not an operator-configured provider');
+}, 'no attribution warning for the same-origin bundled style');
+
+await withConfig({
+    basemapStyleUrl: 'https://tiles.example.org/style.json',
+}, (_c, warnings) => {
+    assert.equal(attributionWarnings(warnings).length, 1,
+        'a third-party style with no attribution must warn');
+}, 'attribution warning for a third-party style');
+
+// Regression guard: '//host/style.json' starts with '/' but is third-party.
+// A naive startsWith('/') check treats it as bundled and stays silent.
+await withConfig({
+    basemapStyleUrl: '//tiles.example.org/style.json',
+}, (_c, warnings) => {
+    assert.equal(attributionWarnings(warnings).length, 1,
+        'a scheme-relative style URL is third-party, not same-origin');
+}, 'attribution warning for a scheme-relative style URL');
+
+await withConfig({
+    basemapUrl: 'https://raster.example.org/{z}/{x}/{y}.png',
+}, (_c, warnings) => {
+    assert.equal(attributionWarnings(warnings).length, 1,
+        'a configured raster source with no attribution must warn');
+}, 'attribution warning for a raster source');
 
 if (failures) {
     console.error(`basemapConfig.test.js: ${failures} failure(s)`);
