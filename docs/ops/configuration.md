@@ -170,7 +170,9 @@ Setting `BASEMAP_STYLE_URL=/basemap/style.json` gets you a *same-origin style do
 
 Proxying has no fallback to direct delivery. If the upstream is unreachable, tiles fail and the map renders without a basemap. That is deliberate: falling back would leak exactly the addresses proxying was enabled to protect, at the moment something is already wrong.
 
-For the same reason, enabling `BASEMAP_PROXY` while `BASEMAP_STYLE_URL` points at a third party is **rejected at startup**: the style takes precedence over the raster URL, so the browser would fetch everything directly and the proxy would sit unused while the privacy page claimed otherwise. A same-origin style plus a proxy is fine.
+For the same reason, enabling `BASEMAP_PROXY` alongside a vector style is **rejected at startup** whenever that style would still send the browser to a third party — the style takes precedence over the raster URL, so the browser would fetch everything directly while the proxy sat unused and the privacy page claimed otherwise.
+
+That check looks at the style *document*, not just its URL. A same-origin `BASEMAP_STYLE_URL` proves nothing on its own: the bundled `/basemap/style.json` is served locally but points its tiles, glyphs and sprites at `tiles.openfreemap.org`, so it is rejected too. Rebuild it with `--asset-base` first. Only a style whose assets are all same-origin can be combined with the proxy.
 
 ### Costs of proxying
 

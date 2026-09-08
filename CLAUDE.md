@@ -182,7 +182,7 @@ To test Hub mode locally: set `appMode: 'hub'` in `app/public/config.js`, run `m
 
 The map manages the basemap plus six overlay layers. Tiered playground delivery uses two of them — the active one is driven by `activeTierStore`:
 
-1. **basemap** (zIndex 0) — raster `XYZ` from `basemapUrl`, or a `VectorTileLayer` styled via `ol-mapbox-style` when `basemapStyleUrl` is set. The library is dynamically imported, so raster deployments do not carry it. When `BASEMAP_PROXY_UPSTREAM` is configured the entrypoint rewrites `basemapUrl` to the same-origin `/tiles/` path.
+1. **basemap** (zIndex 0) — raster `XYZ` from `basemapUrl`, or a `VectorTileLayer` styled via `ol-mapbox-style` when `basemapStyleUrl` is set. The library is dynamically imported, so raster deployments do not carry it. When `BASEMAP_PROXY=true` the entrypoint derives the upstream origin and tile path from `BASEMAP_URL` and rewrites `basemapUrl` to the same-origin `/tiles/` path.
 2. **macroOutlineLayer** (zIndex 1) — bundled Natural Earth world outline (`app/public/basemap/world-110m.json`), fetched lazily on the first macro tier and visible only there, so the area outside the basemap tileset's coverage is not silently blank.
 3. **playgroundLayer** (zIndex 10) — polygon tier (zoom > `clusterMaxZoom`, default 13). Playground polygons styled by `playgroundStyleFn`, filtered by `filterStore`. Visible only when `$activeTierStore === 'polygon'`.
 4. **clusterLayer** (zIndex 12) — cluster tier (zoom ≤ `clusterMaxZoom`). Server-bucketed cluster rings + single-child dots rendered via the canvas `stackedRingRenderer` in `app/src/lib/clusterStyle.js`. Visible only when `$activeTierStore === 'cluster'`.

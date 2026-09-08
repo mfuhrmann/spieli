@@ -69,18 +69,27 @@ die() { printf '[spieli] FATAL: %s\n' "$1" >&2; exit 1; }
 # nginx size/time values: digits with an optional unit suffix. Validated rather
 # than stripped, because stripping turns 4.5g into 45g — a tenfold cache
 # ceiling the operator never asked for, with no error.
-check_nginx_size() {
-    case "$2" in
-        ''|*[!0-9kKmMgG]*|*[!0-9]*[!kKmMgG]) die "$1 must be digits with an optional k/m/g suffix (got: $2)" ;;
-        [!0-9]*) die "$1 must start with a digit (got: $2)" ;;
+# Digits, then at most one unit letter. Written as "strip one optional trailing
+# suffix, then require all digits" so multi-suffix values like 4gg or 90dd are
+# rejected here with a clear message instead of surviving to a generic nginx
+# parse error after the config has already been written.
+check_nginx_unit() {
+    _name=$1 _val=$2 _units=$3 _desc=$4
+    case "$_val" in
+        '') die "$_name must not be empty ($_desc)" ;;
+    esac
+    _digits=$_val
+    case "$_val" in
+        *[!0-9]) _digits=${_val%?}                    # drop a single trailing unit
+                 _last=${_val#"$_digits"}
+                 case "$_units" in *"$_last"*) ;; *) die "$_name has an unknown unit '$_last' ($_desc, got: $_val)" ;; esac ;;
+    esac
+    case "$_digits" in
+        ''|*[!0-9]*) die "$_name must be digits with at most one unit suffix ($_desc, got: $_val)" ;;
     esac
 }
-check_nginx_time() {
-    case "$2" in
-        ''|*[!0-9smhdwMy]*|*[!0-9]*[!smhdwMy]) die "$1 must be digits with an optional s/m/h/d/w/M/y suffix (got: $2)" ;;
-        [!0-9]*) die "$1 must start with a digit (got: $2)" ;;
-    esac
-}
+check_nginx_size() { check_nginx_unit "$1" "$2" 'kKmMgG' 'k/m/g'; }
+check_nginx_time() { check_nginx_unit "$1" "$2" 'smhdwMy' 's/m/h/d/w/M/y'; }
 
 SAFE_BASEMAP_URL=$(safe_tile_url "${BASEMAP_URL:-}")
 SAFE_BASEMAP_STYLE_URL=$(safe_tile_url "${BASEMAP_STYLE_URL:-}")
@@ -101,6 +110,25 @@ host_of() {
     case "$_h" in \{*\}.*) _h=${_h#*\}.} ;; esac   # strip {a-d}. subdomain group
     _h=${_h%%:*}          # strip port
     printf '%s' "$_h"
+}
+
+# style_asset_hosts <style-url> — third-party hosts referenced INSIDE a style
+# document (sources[*].url/tiles, sprite, glyphs), for a style this instance
+# serves itself. A same-origin style URL says nothing about where the style then
+# sends the browser: the bundled style.json is served from /basemap/ but points
+# its tiles, glyphs and sprites at the upstream host. Checking only the URL's
+# own host therefore misses the bypass entirely.
+style_asset_hosts() {
+    case "$1" in
+        /*) _f="${WEBROOT}$1" ;;
+        *) return ;;                 # remote style: its own host already counts
+    esac
+    [ -f "$_f" ] || return
+    # Deliberately a text scan rather than a JSON parse: there is no jq in the
+    # runtime image, and any http(s) URL in a style document is an asset the
+    # browser will fetch, whichever key it hangs off.
+    grep -o 'https\?://[A-Za-z0-9._-]*' "$_f" 2>/dev/null \
+        | sed -e 's#^https\?://##' | sort -u | tr '\n' ' '
 }
 
 # Attribution is a licence obligation, not decoration. Showing the built-in
@@ -151,6 +179,16 @@ if [ -n "$BASEMAP_PROXY_ENABLED" ]; then
     [ -n "$BASEMAP_TILE_PATH" ] || \
         die "BASEMAP_URL has no path to proxy (got: $SAFE_BASEMAP_URL)"
 
+    # Split any query string off the path. It stays server-side and is
+    # re-attached by nginx, so a provider key in BASEMAP_URL never reaches the
+    # browser — which is the one thing proxying can do for a keyed provider
+    # that direct delivery cannot.
+    BASEMAP_TILE_QUERY=""
+    case "$BASEMAP_TILE_PATH" in
+        *\?*) BASEMAP_TILE_QUERY=${BASEMAP_TILE_PATH#*\?}
+              BASEMAP_TILE_PATH=${BASEMAP_TILE_PATH%%\?*} ;;
+    esac
+
     # The frontend now asks this instance for tiles, preserving the provider's
     # own path shape — so a {z}/{y}/{x} provider keeps its axis order and a
     # non-.png extension still works.
@@ -161,8 +199,17 @@ if [ -n "$BASEMAP_PROXY_ENABLED" ]; then
     # third party, and the privacy page would then claim nobody was contacted.
     # Fail closed. A same-origin style is fine and is the supported way to run
     # vector tiles without a third party.
-    if [ -n "$SAFE_BASEMAP_STYLE_URL" ] && [ -n "$(host_of "$SAFE_BASEMAP_STYLE_URL")" ]; then
-        die "BASEMAP_PROXY is enabled but BASEMAP_STYLE_URL points at a third party ($(host_of "$SAFE_BASEMAP_STYLE_URL")). The style takes precedence over the proxy, so tiles, glyphs and sprites would be fetched directly and the proxy would sit unused. Vendor the style locally (tools/build-basemap-style.py --asset-base) or unset BASEMAP_PROXY."
+    if [ -n "$SAFE_BASEMAP_STYLE_URL" ]; then
+        _style_host=$(host_of "$SAFE_BASEMAP_STYLE_URL")
+        if [ -n "$_style_host" ]; then
+            die "BASEMAP_PROXY is enabled but BASEMAP_STYLE_URL points at a third party ($_style_host). The style takes precedence over the proxy, so tiles, glyphs and sprites would be fetched directly and the proxy would sit unused. Vendor the style locally (tools/build-basemap-style.py --asset-base) or unset BASEMAP_PROXY."
+        fi
+        # A same-origin style URL is not enough: the document's own asset hosts
+        # decide where the browser actually goes.
+        _asset_hosts=$(style_asset_hosts "$SAFE_BASEMAP_STYLE_URL")
+        if [ -n "$_asset_hosts" ]; then
+            die "BASEMAP_PROXY is enabled but the style at $SAFE_BASEMAP_STYLE_URL still points its tiles, glyphs or sprites at: ${_asset_hosts}. The style takes precedence over the proxy, so every visitor would fetch those directly and the proxy would sit unused. Rebuild the style with: tools/build-basemap-style.py --asset-base <your-origin>"
+        fi
     fi
 fi
 
@@ -172,8 +219,17 @@ if [ -n "$BASEMAP_PROXY_ENABLED" ]; then
     BASEMAP_TILE_PROVIDER_HOST=""
 else
     _basemap_effective="${SAFE_BASEMAP_STYLE_URL:-$SAFE_BASEMAP_URL}"
-    [ -n "$_basemap_effective" ] && BASEMAP_TILE_PROVIDER_HOST=$(host_of "$_basemap_effective") \
-                                || BASEMAP_TILE_PROVIDER_HOST="basemaps.cartocdn.com"
+    if [ -z "$_basemap_effective" ]; then
+        BASEMAP_TILE_PROVIDER_HOST="basemaps.cartocdn.com"
+    else
+        BASEMAP_TILE_PROVIDER_HOST=$(host_of "$_basemap_effective")
+        # A same-origin style still sends the browser wherever its assets live,
+        # so reporting "no third party" from an empty host would put a false
+        # statement on the privacy page. Fall back to the document's own hosts.
+        if [ -z "$BASEMAP_TILE_PROVIDER_HOST" ] && [ -n "$SAFE_BASEMAP_STYLE_URL" ]; then
+            BASEMAP_TILE_PROVIDER_HOST=$(style_asset_hosts "$SAFE_BASEMAP_STYLE_URL" | sed 's/ *$//')
+        fi
+    fi
 fi
 
 # ── Basemap proxy nginx config ────────────────────────────────────────────────
@@ -203,7 +259,7 @@ CACHEEOF
 # The capture is deliberately shaped like a tile path rather than a catch-all:
 # an unconstrained (.*) would let anyone fetch and cache arbitrary paths from
 # the upstream origin through this instance, evicting real tiles.
-location ~ ^/tiles/(?<tile_path>[A-Za-z0-9/_.-]+\.(?:png|jpg|jpeg|webp|pbf|mvt))\$ {
+location ~ ^/tiles/(?<tile_path>[A-Za-z0-9/_.@,+%~-]+\.(?:png|jpg|jpeg|webp|avif|pbf|mvt))\$ {
     # Access logging is OFF deliberately, and this is a correctness property
     # rather than a tuning choice. Proxying moves the visitor's tile stream
     # onto this server; at high zoom that z/x/y sequence is not metadata about
@@ -219,7 +275,7 @@ location ~ ^/tiles/(?<tile_path>[A-Za-z0-9/_.-]+\.(?:png|jpg|jpeg|webp|pbf|mvt))
     # ORIGINAL request URI and silently ignores any rewrite, so the upstream
     # would receive /tiles/... and answer 404 with nothing in the error log.
     set \$tiles_upstream ${BASEMAP_PROXY_ORIGIN};
-    proxy_pass \$tiles_upstream/\$tile_path;
+    proxy_pass \$tiles_upstream/\$tile_path${BASEMAP_TILE_QUERY:+?${BASEMAP_TILE_QUERY}};
 
     # A variable in proxy_pass defers DNS to the resolver above, and nginx then
     # omits SNI unless told otherwise. Tile providers are CDN-hosted and
@@ -259,6 +315,7 @@ location ~ ^/tiles/(?<tile_path>[A-Za-z0-9/_.-]+\.(?:png|jpg|jpeg|webp|pbf|mvt))
     proxy_hide_header X-Content-Type-Options;
     proxy_hide_header Referrer-Policy;
     proxy_hide_header Permissions-Policy;
+    proxy_hide_header Content-Security-Policy;
     proxy_hide_header Cache-Control;
 
     # add_header does not inherit into a level that declares its own, so the
@@ -267,6 +324,7 @@ location ~ ^/tiles/(?<tile_path>[A-Za-z0-9/_.-]+\.(?:png|jpg|jpeg|webp|pbf|mvt))
     add_header X-Content-Type-Options    "nosniff"                          always;
     add_header Referrer-Policy           "strict-origin-when-cross-origin"  always;
     add_header Permissions-Policy        "geolocation=(self)"               always;
+    add_header Content-Security-Policy    "default-src 'none'; img-src 'self' data:; sandbox" always;
     add_header Cache-Control             "public, max-age=2592000"          always;
 }
 TILEEOF

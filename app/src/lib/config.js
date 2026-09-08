@@ -49,6 +49,22 @@ export const basemapAttribution = c.basemapAttribution || DEFAULT_BASEMAP_ATTRIB
 // a matching attribution, so an explicit URL always carries its own licence.
 export const basemapUrlIsExplicit = !!c.basemapUrl;
 
+// The "a configured source carries its own attribution" rule is enforced by the
+// container entrypoint, which refuses to start without it. That guard does not
+// exist in `make dev` or when app/public/config.js is edited by hand, where the
+// same mistake silently renders the CARTO credit over another provider's tiles.
+// Warn rather than throw: a dev server should not be bricked by a licence
+// nit, but the mistake must not be invisible either.
+if ((c.basemapUrl || c.basemapStyleUrl) && !c.basemapAttribution &&
+    typeof console !== 'undefined') {
+    console.warn(
+        '[spieli] A basemap source is configured but basemapAttribution is empty, ' +
+        'so the default CARTO + OpenStreetMap credit is being shown over it. ' +
+        'Attribution is a licence obligation — set basemapAttribution to match ' +
+        'the configured provider. (The container entrypoint refuses to start on this.)',
+    );
+}
+
 // True when a vector style is configured. Map.svelte builds a VectorTileLayer
 // in that case and a raster TileLayer otherwise.
 export const basemapIsVector = !!basemapStyleUrl;

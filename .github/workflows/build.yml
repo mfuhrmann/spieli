@@ -71,7 +71,15 @@ jobs:
             printf '\n── %s\n' "$desc"
             docker run --rm --entrypoint sh "$@" spieli-app:citest -c '
               /docker-entrypoint.sh >/dev/null 2>&1 &
-              sleep 2
+              # Poll for the generated config rather than sleeping a fixed
+              # interval: on a slow runner a fixed sleep validates a
+              # half-written file, which is a flake in either direction.
+              i=0
+              while [ ! -s /usr/share/nginx/html/config.js ] \\
+                    || [ ! -f /etc/nginx/tiles-location.conf ]; do
+                i=$((i+1)); [ "$i" -gt 100 ] && { echo "entrypoint did not finish"; exit 1; }
+                sleep 0.2
+              done
               nginx -t
             '
           }
@@ -95,7 +103,11 @@ jobs:
           set -eu
           expect_fail() {
             desc="$1"; shift
-            if docker run --rm --entrypoint sh "$@" spieli-app:citest \
+            # timeout: if a regression makes the misconfiguration ACCEPTED, the
+            # entrypoint execs nginx in the foreground and `docker run` never
+            # returns — blocking the job until the workflow timeout instead of
+            # failing fast with the message below.
+            if timeout 30 docker run --rm --entrypoint sh "$@" spieli-app:citest \
                  -c '/docker-entrypoint.sh' >/dev/null 2>&1; then
               echo "FAIL: expected startup to be refused — $desc"
               exit 1
