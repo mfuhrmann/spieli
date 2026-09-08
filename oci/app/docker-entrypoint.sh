@@ -57,6 +57,17 @@ safe_tile_url() { printf '%s' "$1" | tr -cd 'A-Za-z0-9:/.+_%~?#&=@,{}-'; }
 # semicolons, nothing that could close a directive or open a block.
 safe_origin() { printf '%s' "$1" | tr -cd 'A-Za-z0-9:/._-'; }
 
+# require_origin <name> <value> — reject rather than strip. Everything else in
+# this feature fails closed, and stripping fails quietly-wrong: userinfo
+# (https://user:pw@host -> https://userpw) and IPv6 literals
+# (http://[::1]:8080 -> http://::18080) both survive as a DIFFERENT origin that
+# nginx then proxies to, with nothing in the logs saying so.
+require_origin() {
+    _name=$1 _val=$2
+    [ "$(safe_origin "$_val")" = "$_val" ] || \
+        die "$_name contains characters that are not valid in an origin (scheme://host[:port]), got: $_val"
+}
+
 # Attribution is operator-supplied HTML (it must carry <a href> links), so it
 # cannot be reduced to an alphanumeric set. Single quotes and backslashes are
 # stripped because the value is emitted inside a single-quoted JS literal, and
@@ -92,14 +103,29 @@ check_nginx_size() { check_nginx_unit "$1" "$2" 'kKmMgG' 'k/m/g'; }
 check_nginx_time() { check_nginx_unit "$1" "$2" 'smhdwMy' 's/m/h/d/w/M/y'; }
 
 # Where the bundled style's tiles and sprites are fetched from. Today a public
-# server; point it at a local tileserver later and nothing else changes — not
-# the style, not the app, not the cache config.
-SAFE_BASEMAP_UPSTREAM=$(safe_origin "${BASEMAP_UPSTREAM:-https://tiles.openfreemap.org}")
-while :; do case "$SAFE_BASEMAP_UPSTREAM" in */) SAFE_BASEMAP_UPSTREAM=${SAFE_BASEMAP_UPSTREAM%/} ;; *) break ;; esac; done
+# server; point it at your own tileserver later to stop using a public one.
+# That is a TWO-step swap, not one: the style document carries the provider's
+# own asset paths, so a differently-shaped tileserver also needs the style
+# rebuilt against it (tools/build-basemap-style.py --source ... --asset-base
+# /basemap). See docs/ops/configuration.md#basemap.
+SAFE_BASEMAP_UPSTREAM="${BASEMAP_UPSTREAM:-https://tiles.openfreemap.org}"
+require_origin BASEMAP_UPSTREAM "$SAFE_BASEMAP_UPSTREAM"
+# Scheme first, THEN trim: trimming trailing slashes first eats the "//" out of
+# a bare "https://" and reports it as a missing scheme, which sends the operator
+# looking in the wrong place.
 case "$SAFE_BASEMAP_UPSTREAM" in
     http://*|https://*) ;;
     *) die "BASEMAP_UPSTREAM must start with http:// or https:// (got: $SAFE_BASEMAP_UPSTREAM)" ;;
 esac
+_bm_scheme="${SAFE_BASEMAP_UPSTREAM%%://*}://"
+_bm_hostport="${SAFE_BASEMAP_UPSTREAM#*://}"
+while :; do case "$_bm_hostport" in */) _bm_hostport=${_bm_hostport%/} ;; *) break ;; esac; done
+# An empty host parses as a URL prefix but proxies nowhere: nginx accepts the
+# config and every asset 500s at request time.
+case "$_bm_hostport" in
+    ''|:*) die "BASEMAP_UPSTREAM has no host (got: $SAFE_BASEMAP_UPSTREAM)" ;;
+esac
+SAFE_BASEMAP_UPSTREAM="${_bm_scheme}${_bm_hostport}"
 # Origin only — scheme://host[:port], no path. proxy_pass with a variable that
 # carries a URI part REPLACES the request URI instead of appending to it, so a
 # path here silently collapses every asset onto that one path: /basemap/planet
@@ -117,15 +143,20 @@ SAFE_BASEMAP_STYLE_URL=$(safe_tile_url "${BASEMAP_STYLE_URL:-}")
 # injected, because the attribution rule is about an operator pointing at a
 # provider whose credit we cannot know — not about spieli's own bundled style,
 # which ships with a matching default credit.
+# Written as an `if` rather than `A || B && C`: that form is the canonical
+# mixed-||/&& trap (it groups as (A||B)&&C, but reads as A||(B&&C)), and under
+# `set -e` its exit status when nothing is configured depends on how the shell
+# scopes AND-OR lists.
 BASEMAP_SOURCE_CONFIGURED=""
-[ -n "$SAFE_BASEMAP_URL" ] || [ -n "$SAFE_BASEMAP_STYLE_URL" ] && BASEMAP_SOURCE_CONFIGURED=1
+if [ -n "$SAFE_BASEMAP_URL" ] || [ -n "$SAFE_BASEMAP_STYLE_URL" ]; then
+    BASEMAP_SOURCE_CONFIGURED=1
+fi
 
 # Unless the operator names a style, serve the same-origin variant: its assets
 # all resolve under /basemap/, so the browser never contacts the upstream and
 # the cache absorbs the load. style.json (public URLs) exists for `make dev`,
 # which has no nginx to proxy through.
-if [ -z "$SAFE_BASEMAP_STYLE_URL" ] && [ -z "$SAFE_BASEMAP_URL" ] \
-   ; then
+if [ -z "$SAFE_BASEMAP_STYLE_URL" ] && [ -z "$SAFE_BASEMAP_URL" ]; then
     if [ -f "$WEBROOT/basemap/style.local.json" ]; then
         SAFE_BASEMAP_STYLE_URL="/basemap/style.local.json"
     else
@@ -141,8 +172,11 @@ SAFE_BASEMAP_ATTRIBUTION=$(safe_attribution "${BASEMAP_ATTRIBUTION:-}")
 # path. Handles scheme-relative URLs, ports, userinfo and {a-d} subdomain groups.
 host_of() {
     case "$1" in
-        /*) printf '' ; return ;;
+        # //host must be tested BEFORE /path: a case statement takes the first
+        # match, so with /* first the //* branch is unreachable and a
+        # scheme-relative third-party URL is reported as same-origin.
         //*) _h=${1#//} ;;
+        /*) printf '' ; return ;;
         *://*) _h=${1#*://} ;;
         *) _h=$1 ;;
     esac
@@ -250,7 +284,7 @@ if [ -n "$BASEMAP_PROXY_ENABLED" ]; then
         # decide where the browser actually goes.
         _asset_hosts=$(style_asset_hosts "$SAFE_BASEMAP_STYLE_URL")
         if [ -n "$_asset_hosts" ]; then
-            die "BASEMAP_PROXY is enabled but the style at $SAFE_BASEMAP_STYLE_URL still points its tiles, glyphs or sprites at: ${_asset_hosts}. The style takes precedence over the proxy, so every visitor would fetch those directly and the proxy would sit unused. Rebuild the style with: tools/build-basemap-style.py --asset-base <your-origin>"
+            die "BASEMAP_PROXY is enabled but the style at $SAFE_BASEMAP_STYLE_URL still points its tiles, glyphs or sprites at: ${_asset_hosts}. The style takes precedence over the proxy, so every visitor would fetch those directly and the proxy would sit unused. Rebuild the style same-origin with: tools/build-basemap-style.py --asset-base /basemap --out app/public/basemap/style.local.json"
         fi
     fi
 fi
@@ -258,28 +292,41 @@ fi
 # The host(s) the visitor's browser actually contacts, for the privacy page.
 # The style wins over the raster URL, matching app/src/lib/config.js.
 #
-# NOTE for whoever consumes this (the privacy-page work in #826): the value is
-# a SPACE-SEPARATED LIST, not a single host — a style document can reference
-# several asset hosts. Render it as a list. It is also empty in two very
-# different situations: proxied delivery (genuinely nobody is contacted) and a
-# missing or unreadable style file (unknown). Treat an empty value with a
-# configured style as "unknown", never as "no third party contacted".
-if [ -n "$BASEMAP_PROXY_ENABLED" ]; then
-    BASEMAP_TILE_PROVIDER_HOST=""
-else
+# NOTE for whoever consumes this (the privacy-page work in #826): read
+# BASEMAP_TILE_PROVIDER_STATE first, never the host list alone. An empty list
+# means two opposite things, and the common case is now the good one:
+#
+#   none     nobody is contacted — the browser only ever talks to this origin.
+#            This is the DEFAULT deployment (bundled same-origin style) and
+#            proxied delivery. Say so plainly; do not hedge it as "unknown".
+#   hosts    BASEMAP_TILE_PROVIDER_HOST is a SPACE-SEPARATED LIST of hosts the
+#            browser contacts — not a single host, because a style document can
+#            reference several. Render it as a list.
+#   unknown  a style is configured but its document could not be read, so where
+#            it sends the browser cannot be determined. Never render this as
+#            "no third party contacted".
+BASEMAP_TILE_PROVIDER_HOST=""
+BASEMAP_TILE_PROVIDER_STATE="none"
+if [ -z "$BASEMAP_PROXY_ENABLED" ]; then
+    # SAFE_BASEMAP_STYLE_URL is always set by this point (operator-set, or
+    # defaulted to the bundled style above, or the entrypoint has already died),
+    # so there is no "nothing configured" case left to handle here.
     _basemap_effective="${SAFE_BASEMAP_STYLE_URL:-$SAFE_BASEMAP_URL}"
-    if [ -z "$_basemap_effective" ]; then
-        # Nothing configured: the frontend falls back to the vendored style,
-        # so the hosts the browser contacts are that style's own asset hosts.
-        # Keep this in step with DEFAULT_BASEMAP_STYLE_URL in lib/config.js.
-        BASEMAP_TILE_PROVIDER_HOST=$(style_asset_hosts /basemap/style.json | sed 's/ *$//')
-    else
-        BASEMAP_TILE_PROVIDER_HOST=$(host_of "$_basemap_effective")
+    BASEMAP_TILE_PROVIDER_HOST=$(host_of "$_basemap_effective")
+    if [ -n "$BASEMAP_TILE_PROVIDER_HOST" ]; then
+        BASEMAP_TILE_PROVIDER_STATE="hosts"
+    elif [ -n "$SAFE_BASEMAP_STYLE_URL" ]; then
         # A same-origin style still sends the browser wherever its assets live,
         # so reporting "no third party" from an empty host would put a false
-        # statement on the privacy page. Fall back to the document's own hosts.
-        if [ -z "$BASEMAP_TILE_PROVIDER_HOST" ] && [ -n "$SAFE_BASEMAP_STYLE_URL" ]; then
+        # statement on the privacy page. Read the document's own hosts.
+        _style_file="${WEBROOT}${SAFE_BASEMAP_STYLE_URL%%\?*}"
+        if [ -f "$_style_file" ]; then
             BASEMAP_TILE_PROVIDER_HOST=$(style_asset_hosts "$SAFE_BASEMAP_STYLE_URL" | sed 's/ *$//')
+            if [ -n "$BASEMAP_TILE_PROVIDER_HOST" ]; then
+                BASEMAP_TILE_PROVIDER_STATE="hosts"
+            fi
+        else
+            BASEMAP_TILE_PROVIDER_STATE="unknown"
         fi
     fi
 fi
@@ -293,40 +340,107 @@ check_nginx_size BASEMAP_CACHE_MAX_SIZE   "$BASEMAP_CACHE_MAX_SIZE"
 check_nginx_size BASEMAP_CACHE_KEYS_ZONE  "$BASEMAP_CACHE_KEYS_ZONE"
 check_nginx_time BASEMAP_CACHE_INACTIVE   "$BASEMAP_CACHE_INACTIVE"
 
+# The upstream sees one client per stack. Naming only the project would make 16
+# federated backends indistinguishable and their operators uncontactable, which
+# is the opposite of the "be a good citizen" intent — so include SITE_URL when
+# it is set. Quotes and backslashes are already stripped by safe_url, and the
+# value is interpolated into a double-quoted nginx string.
+BASEMAP_CACHE_UA="spieli/basemap-cache (+https://github.com/mfuhrmann/spieli)"
+if [ -n "$SAFE_SITE_URL" ]; then
+    BASEMAP_CACHE_UA="spieli/basemap-cache (+https://github.com/mfuhrmann/spieli; ${SAFE_SITE_URL})"
+fi
+
 # ── Bundled-style asset cache (/basemap/) ─────────────────────────────────────
 # Everything the bundled style references lives under /basemap/, so the visitor
 # only ever talks to this origin. Vendored files (the style itself, the fonts)
 # are served from disk; tiles and sprites fall through to the upstream and are
 # cached — which is as much about not hammering a donation-funded public server
 # as it is about the visitor's privacy.
-cat > /etc/nginx/basemap-location.conf <<BMEOF
-# Generated by docker-entrypoint.sh.
-# ^~ is load-bearing: nginx evaluates regex locations before plain prefixes, so
+#
+# The upstream half only exists when the effective style actually routes the
+# browser through /basemap/. An operator running a third-party style has the
+# browser fetching assets from that provider directly, so a live proxy and a
+# 4 GB cache zone pointed at tiles.openfreemap.org would sit there unused,
+# reachable, and contradicting what the deployment actually does.
+BASEMAP_ASSETS_LOCAL=""
+case "$SAFE_BASEMAP_STYLE_URL" in
+    /basemap/*) BASEMAP_ASSETS_LOCAL=1 ;;
+esac
+
+# Header block shared by both variants of the /basemap/ prefix location. ^~ is
+# load-bearing: nginx evaluates regex locations before plain prefixes, so
 # without it the static-asset block (~* \.(js|css|png|...)$) claims every .png
 # under /basemap/ and answers try_files ... =404. That silently breaks the
 # sprite sheet and the whole ne2_shaded source while the map still renders,
 # because most icon layers are dropped from the tuned style.
+#
+# That same short-circuit means the static block no longer sets cache headers
+# on the files vendored here, so they are set below instead. The style document
+# gets a deliberately SHORT ttl: its URL is stable across image rebuilds but its
+# content is not, so a long cache would pin a stale style — and with it a stale
+# upstream build id — in returning visitors' browsers.
+_bm_disk_block=$(cat <<'BMDISK'
 location ^~ /basemap/ {
+    add_header Cache-Control "public, max-age=300" always;
+BMDISK
+)
+_bm_disk_immutable=$(cat <<'BMIMM'
+
+    # Vendored content that only ever changes together with its filename. Kept
+    # =404 rather than falling through: nothing under /basemap/ with these
+    # extensions comes from the tile server, so a miss here is a missing build
+    # artefact, and relaying it upstream would turn every page load into a
+    # request the upstream can only answer with a 404 of its own.
+    location ~* ^/basemap/.+\.(?:woff2?|css|svg)$ {
+        add_header Cache-Control "public, max-age=31536000, immutable" always;
+        try_files $uri =404;
+    }
+}
+BMIMM
+)
+
+if [ -n "$BASEMAP_ASSETS_LOCAL" ]; then
+cat > /etc/nginx/basemap-location.conf <<BMEOF
+# Generated by docker-entrypoint.sh.
+${_bm_disk_block}
     # Vendored files (the style document, the UI webfonts) are served from
     # disk; everything else falls through to the cached upstream.
     try_files \$uri @basemap_upstream;
-}
+${_bm_disk_immutable}
 
 location @basemap_upstream {
-    # The sibling /tiles/ block constrains its capture for a reason: an
-    # unconstrained proxy lets anyone pull and cache arbitrary paths from the
-    # upstream origin through this instance, evicting real tiles and doing it
-    # under our own truthful User-Agent. Same discipline here — only the shapes
-    # a style actually asks for, and only GET.
-    if (\$uri !~ "^/basemap/[A-Za-z0-9/_.@,+%~-]+\$") { return 404; }
+    # A character class is not a shape constraint. Filtering only the
+    # CHARACTERS made this a general caching relay for the whole upstream
+    # origin — GET /basemap/styles/bright returned 200 with 48 KB, a path the
+    # style never asks for — so anyone could pull and cache arbitrary upstream
+    # paths through this instance, evicting real tiles and doing it under our
+    # own truthful User-Agent. Constrain the SHAPE the way the sibling /tiles/
+    # block does: an asset extension, or a single extension-less segment for
+    # the TileJSON pointer.
+    #
+    # Spaces are in the class because MapLibre glyph fontstacks contain them
+    # ("Noto Sans Regular") and nginx percent-DECODES \$uri before this runs, so
+    # a class without a space rejects every glyph range.
+    if (\$uri !~ "^/basemap/(?:[A-Za-z0-9 /_.@,+%~-]+\.(?:pbf|mvt|png|jpg|jpeg|webp|avif|json)|[A-Za-z0-9_.@~-]+)\$") { return 404; }
+    # No basemap asset carries a query string, but args DO enter the default
+    # proxy_cache_key — so ?1, ?2, ?3 … is an unbounded cache-fill vector that
+    # evicts real tiles while every request looks individually legitimate.
+    if (\$is_args) { return 404; }
     limit_except GET { deny all; }
     # Same reasoning as /tiles/: the z/x/y stream is a per-visitor record of
-    # what they looked at, so it is not written to disk here.
+    # what they looked at, so it is not written to disk here. Note this covers
+    # access_log only — error_log still records the proxied URI when an
+    # upstream request fails.
     access_log off;
 
     set \$bm_upstream ${SAFE_BASEMAP_UPSTREAM};
     # /basemap/<path> maps 1:1 onto <upstream>/<path>; the style build strips
     # only the origin, so no mapping has to be reversed here.
+    #
+    # proxy_pass with a variable and NO URI part forwards the rewritten URI:
+    # the "break" ends rewrite processing but keeps the new \$uri, which is what
+    # proxy_pass then uses. (Verified against a stub upstream: it receives
+    # /planet, not /basemap/planet.)
     rewrite ^/basemap/(.*)\$ /\$1 break;
     proxy_pass \$bm_upstream;
 
@@ -334,7 +448,10 @@ location @basemap_upstream {
     proxy_ssl_server_name on;
     proxy_ssl_name \$proxy_host;
 
-    proxy_set_header User-Agent      "spieli/basemap-cache (+https://github.com/mfuhrmann/spieli)";
+    # Identifies the project AND this instance, so the upstream can tell the
+    # federation's backends apart and reach the operator rather than seeing
+    # anonymous load from N indistinguishable caches.
+    proxy_set_header User-Agent      "${BASEMAP_CACHE_UA}";
     proxy_set_header Host            \$proxy_host;
     proxy_set_header Referer         "";
     proxy_set_header Cookie          "";
@@ -344,8 +461,8 @@ location @basemap_upstream {
     # for the TileJSON document. Clearing it for everything would send and store
     # every vector tile uncompressed — measured at roughly a third more bytes,
     # paid twice: on the upstream fetch this feature exists to be polite about,
-    # and again on delivery. $bm_accept_encoding is empty only for the
-    # extension-less TileJSON path.
+    # and again on delivery. \$bm_accept_encoding is empty only for the
+    # TileJSON shapes.
     proxy_set_header Accept-Encoding \$bm_accept_encoding;
     proxy_hide_header Set-Cookie;
 
@@ -353,20 +470,40 @@ location @basemap_upstream {
     # ABSOLUTE upstream tile URLs. Proxying the document is not enough — without
     # this the browser reads those URLs and goes straight to the upstream,
     # defeating both the cache and the same-origin property.
-    sub_filter_types application/json;
+    #
+    # text/plain is in the type list because a self-hosted tileserver may serve
+    # TileJSON with a laxer Content-Type, and a sub_filter that silently does
+    # not run looks exactly like one that did.
+    sub_filter_types application/json text/plain;
     sub_filter_once off;
     sub_filter "${SAFE_BASEMAP_UPSTREAM}/" "/basemap/";
+    # Same origin written protocol-relative.
+    sub_filter "//${SAFE_BASEMAP_UPSTREAM#*://}/" "/basemap/";
 
     proxy_cache basemap;
-    # Extension-less paths are the TileJSON pointer: short-lived, because the
-    # build id inside it rotates upstream. Everything else is content-addressed.
+    # NOTE: these are a FLOOR, not a policy. A response's own Cache-Control or
+    # Expires takes priority over proxy_cache_valid in nginx, and the default
+    # upstream sends one on everything (86400 on the TileJSON pointer,
+    # 315360000 on tiles), so in the default deployment these values are only
+    # reached by an upstream that sends no freshness headers at all. That is
+    # deliberate: the upstream knows which of its own documents rotate, and
+    # second-guessing it is how the pointer ends up outliving its build.
     proxy_cache_valid 200 30d;
     proxy_cache_valid 404 5m;
     proxy_cache_revalidate on;
+    # A Set-Cookie or Vary from the upstream would otherwise make the response
+    # uncacheable outright — a silently useless cache in front of the server
+    # this exists to spare. Neither is meaningful for a tile: the request
+    # carries no cookie (cleared above) and Accept-Encoding is a pure function
+    # of the path, so nothing varies per visitor.
+    proxy_ignore_headers Set-Cookie Vary;
     # Collapse duplicate misses into one upstream request, and keep serving
-    # from cache through an upstream outage rather than amplifying it.
+    # from cache through an upstream outage rather than amplifying it. The
+    # background update is what makes "stale while updating" refresh out of
+    # band instead of making one unlucky visitor wait for the upstream.
     proxy_cache_lock on;
     proxy_cache_use_stale error timeout updating http_500 http_502 http_503 http_504;
+    proxy_cache_background_update on;
 
     proxy_connect_timeout 5s;
     proxy_read_timeout   20s;
@@ -380,11 +517,9 @@ location @basemap_upstream {
     add_header Referrer-Policy         "strict-origin-when-cross-origin"  always;
     add_header Permissions-Policy      "geolocation=(self)"               always;
     add_header Content-Security-Policy "default-src 'none'; img-src 'self' data:; sandbox" always;
-    # Long-lived for immutable tiles, short for the mutable TileJSON pointer
-    # (upstream marks it max-age=86400 because the build id it names rotates —
-    # pinning it for 30 days outlives the build and blanks the map), and
-    # no-store for failures, so a transient upstream error is not cached in
-    # visitors' browsers for a month.
+    # Long-lived for content-addressed tiles, short for the mutable TileJSON
+    # pointer, no-store for failures. See the maps in 09-basemap-cache.conf for
+    # why this is keyed on \$status and \$request_uri and not on \$upstream_*.
     add_header Cache-Control \$bm_cache_control always;
 
     # A redirect would hand the browser an absolute upstream URL, undoing both
@@ -405,20 +540,47 @@ proxy_cache_path /var/cache/nginx/basemap levels=2:2 keys_zone=basemap:${BASEMAP
 # matches — the TileJSON then arrives gzipped, sub_filter cannot run on it, and
 # the browser is handed absolute upstream tile URLs while everything still
 # looks fine.
+# Two shapes, because "the TileJSON pointer" is not one shape across servers:
+# OpenFreeMap serves it extension-less (/planet), tileserver-gl serves it as
+# /data/<id>.json.
 map \$request_uri \$bm_accept_encoding {
-    default              "gzip";
-    "~^/basemap/[^.?]+\$" "";
+    default                   "gzip";
+    "~^/basemap/[^.?]+\$"      "";
+    "~^/basemap/[^?]+\.json\$" "";
 }
 
-# Immutable tiles cache long; the TileJSON pointer follows the upstream's own
-# 24h policy because the build id it names rotates; failures are never cached
-# in the visitor's browser.
-map \$upstream_status \$bm_cache_control {
-    default  "public, max-age=2592000";
+# What the VISITOR's browser is told to do. Keyed on \$request_uri and \$status,
+# never on \$upstream_status or \$upstream_http_*: those are EMPTY on a cache
+# hit, so a status-keyed map falls to its default on every hit — which served
+# cached 404s with a 30-day max-age, the exact opposite of the intent.
+map \$request_uri \$bm_cache_control_ttl {
+    # Tiles and sprites are content-addressed: the path carries the build id.
+    default                   "public, max-age=2592000";
+    # The TileJSON pointer NAMES that build id and rotates when it does.
+    # Pinning it past the rotation leaves the browser asking for tile paths
+    # that no longer exist, and the map goes blank with nothing in the logs.
+    "~^/basemap/[^.?]+\$"      "public, max-age=86400";
+    "~^/basemap/[^?]+\.json\$" "public, max-age=86400";
+}
+map \$status \$bm_cache_control {
+    default  \$bm_cache_control_ttl;
     "~^[45]" "no-store";
 }
 BMCEOF
 mkdir -p /var/cache/nginx/basemap
+else
+# No same-origin style: /basemap/ still serves what is vendored in the image
+# (the macro-tier world outline, the style documents themselves), but nothing
+# is proxied and no cache zone is allocated.
+cat > /etc/nginx/basemap-location.conf <<BMEOF
+# Generated by docker-entrypoint.sh — disk only. The configured style does not
+# route the browser through /basemap/, so there is nothing to proxy or cache.
+${_bm_disk_block}
+    try_files \$uri =404;
+${_bm_disk_immutable}
+BMEOF
+: > /etc/nginx/conf.d/09-basemap-cache.conf
+fi
 
 # ── Basemap proxy nginx config ────────────────────────────────────────────────
 # Both files are always written so the include in nginx.conf never fails.
@@ -452,10 +614,17 @@ location ~ ^/tiles/(?<tile_path>[A-Za-z0-9/_.@,+%~-]+\.(?:png|jpg|jpeg|webp|avif
 
     limit_except GET { deny all; }
 
-    # The upstream URI is built explicitly rather than via rewrite: when
-    # proxy_pass carries a variable and no URI part, nginx forwards the
-    # ORIGINAL request URI and silently ignores any rewrite, so the upstream
-    # would receive /tiles/... and answer 404 with nothing in the error log.
+    # The upstream URI is built explicitly here because this location has to
+    # re-attach the provider's query string and reorder nothing else.
+    #
+    # The rule, since the sibling /basemap/ block relies on the other half of
+    # it: when proxy_pass carries a variable and NO URI part, nginx forwards
+    # the CURRENT \$uri — which includes the location prefix, so a bare
+    # proxy_pass here would send /tiles/... upstream and get a 404 with nothing
+    # in the error log. A "rewrite ... break" does change \$uri and therefore
+    # does take effect; that is how @basemap_upstream strips its own prefix.
+    # (A URI part on the variable is different again: it REPLACES the request
+    # URI, which is why BASEMAP_UPSTREAM is rejected if it carries a path.)
     set \$tiles_upstream ${BASEMAP_PROXY_ORIGIN};
     proxy_pass \$tiles_upstream/\$tile_path${BASEMAP_TILE_QUERY:+?${BASEMAP_TILE_QUERY}};
 
