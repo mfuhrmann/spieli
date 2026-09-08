@@ -31,8 +31,9 @@ window.APP_CONFIG = {
   //                     This is the default: the vendored style in public/basemap.
   //   basemapUrl      — an OpenLayers XYZ raster template. Placeholders are
   //                     substituted by name, so a provider using {z}/{y}/{x}
-  //                     needs no code change. Opt-in, and the fallback if the
-  //                     style fails to load.
+  //                     needs no code change. Setting it alone REPLACES the
+  //                     vector default; it is only a fallback for a failed
+  //                     style when basemapStyleUrl is also set explicitly.
   // Setting basemapStyleUrl wins.
   basemapStyleUrl: '/basemap/style.json',
   basemapUrl: '',

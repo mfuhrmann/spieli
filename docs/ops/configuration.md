@@ -18,7 +18,7 @@ All variables are set in `.env` (copy from `.env.example`). The installer genera
 | `MAP_ZOOM` | `12` | ui, data-node-ui | Initial map zoom level |
 | `MAP_MIN_ZOOM` | `10` | ui, data-node-ui | Minimum zoom level |
 | `BASEMAP_URL` | *(unset)* | ui, data-node-ui | Raster basemap as an OpenLayers XYZ template. Placeholders are substituted by name, so a provider using `{z}/{y}/{x}` needs no code change. See [Basemap](#basemap). |
-| `BASEMAP_STYLE_URL` | `/basemap/style.json` | ui, data-node-ui | MapLibre style document, rendered as vector tiles. Takes precedence over `BASEMAP_URL`. See [Basemap](#basemap). |
+| `BASEMAP_STYLE_URL` | *(unset — the app falls back to `/basemap/style.json`)* | ui, data-node-ui | MapLibre style document, rendered as vector tiles. Takes precedence over `BASEMAP_URL`. See [Basemap](#basemap). |
 | `BASEMAP_ATTRIBUTION` | OpenFreeMap + OpenMapTiles + OSM | ui, data-node-ui | Attribution HTML shown on the map. **Required** whenever `BASEMAP_URL` or `BASEMAP_STYLE_URL` is set — the container refuses to start otherwise. Trusted HTML: rendered into the page as-is. |
 | `BASEMAP_PROXY` | *(unset)* | ui, data-node-ui | `true` serves tiles through this instance, so the browser fetches from same-origin `/tiles/` and never contacts the provider. The upstream origin **and** the tile path are derived from `BASEMAP_URL`. See [Basemap](#basemap). |
 | `BASEMAP_CACHE_MAX_SIZE` | `4g` | ui, data-node-ui | Disk ceiling for the tile cache. Only used when `BASEMAP_PROXY` is enabled. |
@@ -145,7 +145,18 @@ The basemap is the one service every visitor contacts on every map movement, so 
 
 ### Two source shapes
 
-`BASEMAP_STYLE_URL` (a MapLibre style document, rendered as vector tiles) takes precedence over `BASEMAP_URL` (an OpenLayers XYZ raster template) when both are set.
+Leave both unset and you get the bundled vector style. It is the application's compiled-in default, **not** the env var's default — do not copy `/basemap/style.json` into `.env` as a value. Setting `BASEMAP_STYLE_URL` marks the basemap as *configured*, which then requires `BASEMAP_ATTRIBUTION` (the container refuses to start without it) and is rejected outright alongside `BASEMAP_PROXY`, because the bundled style's assets are not same-origin.
+
+Precedence when you do set them:
+
+| Set | Result |
+|---|---|
+| neither | the bundled vector style |
+| `BASEMAP_STYLE_URL` | that style, vector |
+| `BASEMAP_URL` only | that raster template — **replaces** the vector default entirely |
+| both | the style renders; the raster URL is the fallback if the style fails to load |
+
+`BASEMAP_URL` is an OpenLayers XYZ raster template.
 
 Raster templates are passed through verbatim, so a provider using a reversed axis order works without a code change:
 

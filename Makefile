@@ -3,7 +3,7 @@
         seed-load seed-load2 seed-extract seed-extract2 import2 \
         require-npm require-docker installer lan-url \
         docs-install docs-serve docs-build docs-clean \
-        basemap-style basemap-outline basemap-assets require-python3 \
+        basemap-style basemap-outline basemap-fonts basemap-assets require-python3 \
         help
 
 # Bail with a clear message when a required tool is missing.
@@ -163,7 +163,10 @@ basemap-style: require-python3   ## Rebuild app/public/basemap/style.json from u
 basemap-outline: require-python3 ## Rebuild the macro-tier world outline from Natural Earth
 	python3 tools/build-macro-outline.py
 
-basemap-assets: basemap-style basemap-outline  ## Rebuild both basemap assets
+basemap-fonts: require-python3   ## Re-vendor the webfonts the basemap style needs
+	python3 tools/build-basemap-fonts.py
+
+basemap-assets: basemap-style basemap-outline basemap-fonts  ## Rebuild all basemap assets
 
 ## ── Help ──────────────────────────────────────────────────────────────────────
 

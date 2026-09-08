@@ -182,9 +182,10 @@
       : new TileLayer({ source: rasterBasemapSource(), zIndex: 0 });
 
     if (basemapIsVector) {
-      // Dynamically imported so raster deployments do not carry it: the
-      // library adds ~310 kB raw / ~50 kB gzipped to the bundle, and the
-      // default delivery is raster.
+      // Dynamically imported: the library adds ~310 kB raw / ~50 kB gzipped.
+      // Vector is now the default, so most deployments do load it — but on a
+      // second round trip after first paint rather than in the main bundle,
+      // and a raster-configured deployment still never fetches it at all.
       import('ol-mapbox-style')
         .then(({ applyStyle }) => applyStyle(basemap, basemapStyleUrl, {
           // ol-mapbox-style otherwise resolves webfonts from cdn.jsdelivr.net
@@ -213,6 +214,12 @@
           // operator never chose.
           if (!basemapUrlIsExplicit) return;
           try {
+            // NOTE: basemapAttribution was written for the style provider, so
+            // the fallback credits it over the raster provider's tiles. Both
+            // are operator-configured in the only case this can fire (style
+            // and raster both set), and a single attribution string cannot
+            // describe two providers — tracked in #830 rather than silently
+            // rendering the wrong credit forever.
             olMap.removeLayer(basemap);
             olMap.addLayer(new TileLayer({ source: rasterBasemapSource(), zIndex: 0 }));
           } catch (fallbackErr) {
@@ -545,7 +552,12 @@
       playgroundLayer.setVisible(tier === 'polygon');
       clusterLayer.setVisible(tier === 'cluster');
       macroLayer.setVisible(tier === 'macro');
-      if (macroOutlineLayer) {
+      // Only meaningful under a vector basemap, whose background is not
+      // painted by applyStyle, so the outline shows through where the tileset
+      // has no coverage. Raster tiles are opaque PNGs at zIndex 0, so an
+      // outline beneath them can never be seen — and fetching it would be a
+      // pointless 164 kB on every macro entry.
+      if (macroOutlineLayer && basemapIsVector) {
         macroOutlineLayer.setVisible(tier === 'macro');
         if (tier === 'macro') loadMacroOutline();
       }

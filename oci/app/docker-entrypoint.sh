@@ -213,8 +213,15 @@ if [ -n "$BASEMAP_PROXY_ENABLED" ]; then
     fi
 fi
 
-# The host the visitor's browser actually contacts, for the privacy page. The
-# style wins over the raster URL, matching app/src/lib/config.js.
+# The host(s) the visitor's browser actually contacts, for the privacy page.
+# The style wins over the raster URL, matching app/src/lib/config.js.
+#
+# NOTE for whoever consumes this (the privacy-page work in #826): the value is
+# a SPACE-SEPARATED LIST, not a single host — a style document can reference
+# several asset hosts. Render it as a list. It is also empty in two very
+# different situations: proxied delivery (genuinely nobody is contacted) and a
+# missing or unreadable style file (unknown). Treat an empty value with a
+# configured style as "unknown", never as "no third party contacted".
 if [ -n "$BASEMAP_PROXY_ENABLED" ]; then
     BASEMAP_TILE_PROVIDER_HOST=""
 else
