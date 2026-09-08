@@ -31,12 +31,23 @@ export const poiRadiusM = c.poiRadiusM ?? 5000;
 //
 // Style wins when both are set — it is the more specific of the two, and an
 // operator who adds a style URL to an existing raster config means to switch.
-export const basemapStyleUrl = c.basemapStyleUrl || '';
-export const basemapUrl = c.basemapUrl ||
+const DEFAULT_BASEMAP_URL =
     'https://{a-d}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png';
-export const basemapAttribution = c.basemapAttribution ||
+const DEFAULT_BASEMAP_ATTRIBUTION =
     '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors ' +
     '| &copy; <a href="https://carto.com/attributions">CARTO</a>';
+
+export const basemapStyleUrl = c.basemapStyleUrl || '';
+export const basemapUrl = c.basemapUrl || DEFAULT_BASEMAP_URL;
+export const basemapAttribution = c.basemapAttribution || DEFAULT_BASEMAP_ATTRIBUTION;
+
+// Whether the operator configured the raster source themselves, as opposed to
+// inheriting the compiled-in CARTO default. The distinction matters for the
+// vector fallback below: falling back to a default the operator never chose
+// would send visitors to a third party they may have picked vector precisely
+// to avoid. The entrypoint refuses to start if a source is configured without
+// a matching attribution, so an explicit URL always carries its own licence.
+export const basemapUrlIsExplicit = !!c.basemapUrl;
 
 // True when a vector style is configured. Map.svelte builds a VectorTileLayer
 // in that case and a raster TileLayer otherwise.

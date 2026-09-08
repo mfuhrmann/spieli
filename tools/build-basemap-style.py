@@ -31,6 +31,7 @@ import argparse
 import colorsys
 import copy
 import json
+import os
 import re
 import sys
 import urllib.request
@@ -41,7 +42,7 @@ DEFAULT_OUT = 'app/public/basemap/style.json'
 # Fills carrying green, which collides with the completeness palette.
 GREEN_LAYERS = {
     'park', 'landcover-wood', 'landcover-grass', 'landcover-grass-park',
-    'landcover-farmland', 'landuse-cemetery',
+    'landuse-cemetery',
 }
 # Symbol layers drawn from the `poi` source layer.
 DROP_SOURCE_LAYERS = {'poi'}
@@ -56,14 +57,16 @@ HSL_RE = re.compile(
 
 def desaturate_hex(value):
     h = value.lstrip('#')
-    if len(h) == 3:
-        h = ''.join(c * 2 for c in h)
+    if len(h) in (3, 4):
+        h = ''.join(c * 2 for c in h)   # #rgb / #rgba -> #rrggbb / #rrggbbaa
     if len(h) not in (6, 8):
         return value
+    alpha = h[6:8]                      # preserved: dropping it turns a
+                                        # translucent fill opaque
     r, g, b = (int(h[i:i + 2], 16) / 255 for i in (0, 2, 4))
     hue, light, sat = colorsys.rgb_to_hls(r, g, b)
     r, g, b = colorsys.hls_to_rgb(hue, min(1.0, light + LIGHT_LIFT), sat * SAT_KEEP)
-    return '#%02x%02x%02x' % (round(r * 255), round(g * 255), round(b * 255))
+    return '#%02x%02x%02x%s' % (round(r * 255), round(g * 255), round(b * 255), alpha)
 
 
 def desaturate(value):
@@ -86,6 +89,11 @@ def desaturate(value):
         return value
     if isinstance(value, list):
         return [desaturate(v) for v in value]
+    if isinstance(value, dict):
+        # Legacy stop functions: {"base": 1.2, "stops": [[z, "#rrggbb"], ...]}.
+        # Without this the colours inside pass through at full saturation while
+        # the layer is still reported as recoloured.
+        return {k: desaturate(v) for k, v in value.items()}
     return value
 
 
@@ -110,6 +118,12 @@ def rewrite_assets(style, base):
 
     for name, source in (style.get('sources') or {}).items():
         if source.get('url'):
+            # The TileJSON that `url` points at carries minzoom/maxzoom, and
+            # dropping it loses them — the client would then request z15-21
+            # instead of overzooming the deepest available tile. Defaults match
+            # the OpenMapTiles schema.
+            source.setdefault('minzoom', 0)
+            source.setdefault('maxzoom', 14)
             source.pop('url')
             source['tiles'] = [f'{base}/tiles/{name}/{{z}}/{{x}}/{{y}}.pbf']
             changed.append(f'source:{name}')
@@ -153,6 +167,19 @@ def build(source, out, asset_base=None):
         'spieli:generator': 'tools/build-basemap-style.py',
     })
 
+    # Validate BEFORE writing. Writing first means a failed rebuild has already
+    # replaced the vendored style with an unedited upstream copy — green parks
+    # restored, competing with the completeness palette — even though the
+    # command exits non-zero.
+    if not dropped and not recoloured:
+        print(f'{source}\n  -> NOT WRITTEN', file=sys.stderr)
+        print('  ERROR: no layers matched — upstream layer ids have probably '
+              'changed. Update GREEN_LAYERS / DROP_SOURCE_LAYERS.', file=sys.stderr)
+        return 1
+    for wanted in sorted(GREEN_LAYERS - set(recoloured)):
+        print(f'  note: {wanted} not present upstream (nothing to recolour)')
+
+    os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
     with open(out, 'w', encoding='utf-8') as fh:
         json.dump(style, fh, separators=(',', ':'))
 
@@ -166,10 +193,6 @@ def build(source, out, asset_base=None):
         print('  assets: upstream (tiles, glyphs and sprites are fetched from '
               f'{style.get("glyphs", "").split("/fonts")[0] or "the upstream host"} '
               'by the visitor\'s browser)')
-    if not dropped and not recoloured:
-        print('  WARNING: no layers matched — upstream layer ids may have changed',
-              file=sys.stderr)
-        return 1
     return 0
 
 

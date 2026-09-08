@@ -87,7 +87,7 @@ spieli calls several third-party services at runtime. Your users' browsers make 
 | Service | What is sent |
 |---|---|
 | Nominatim | Search query text, IP address |
-| CartoDB | Map tile coordinates, IP address |
+| Basemap provider (CartoDB by default, configurable — see [Configuration](configuration.md#basemap); none when `BASEMAP_PROXY` is enabled) | Map tile coordinates, IP address |
 | Panoramax | Photo UUID, IP address (if photos viewed) |
 | Mangrove.reviews | Playground osm_id (if reviews opened) |
 | Geofabrik | Nothing — server-side download only |

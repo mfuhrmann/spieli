@@ -238,3 +238,17 @@ The app uses Bootstrap 5 (component classes) and Tailwind CSS 4 (utility classes
 - [Testing Guide](testing.md) — how to write and run tests
 - [Add a Device](add-device.md) — adding a new playground device type
 - [Source Tree Analysis](../source-tree-analysis.md) — annotated directory map
+
+## Basemap layers
+
+The basemap is configuration-driven (`app/src/lib/config.js`), not hardcoded:
+
+- `basemapStyleUrl` set → a `VectorTileLayer` styled with `ol-mapbox-style`, which is **dynamically imported** so raster deployments do not carry its ~310 kB.
+- otherwise → an XYZ `TileLayer` built from `basemapUrl`.
+
+Two things are easy to get wrong here, and both were caught in review:
+
+- **Attribution belongs to the source, not the layer.** OpenLayers resolves it via `layer.getSource().getAttributions()`, so passing `attributions` as a layer option silently does nothing. On the vector path it must be applied after `applyStyle()` has created the source.
+- **The vector fallback is gated on `basemapUrlIsExplicit`.** When a style fails to load, falling back to `basemapUrl` is only safe if the operator set it; the compiled-in default is a third party that a vector deployment may have chosen vector to avoid.
+
+`macroOutlineLayer` (zIndex 1) draws a bundled Natural Earth world outline under the hub macro tier, fetched lazily on first use from `/basemap/world-110m.json` (absolute — a relative path breaks under region URLs). It exists because the basemap tileset covers only the federation's own countries.

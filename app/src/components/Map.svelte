@@ -17,6 +17,7 @@
   import {
     mapZoom, mapMinZoom, mapMaxZoom, apiBaseUrl,
     basemapUrl, basemapStyleUrl, basemapAttribution, basemapIsVector,
+    basemapUrlIsExplicit,
   } from '../lib/config.js';
   import {
     playgroundStyleFn,
@@ -78,7 +79,7 @@
     if (macroOutlineLoaded || !macroOutlineLayer) return;
     macroOutlineLoaded = true;
     try {
-      const res = await fetch('basemap/world-110m.json');
+      const res = await fetch('/basemap/world-110m.json');
       if (!res.ok) throw new Error(`world outline ${res.status}`);
       macroOutlineLayer.getSource().addFeatures(
         new GeoJSON().readFeatures(await res.json(), {
@@ -87,9 +88,11 @@
         }),
       );
     } catch (err) {
-      // Context only — the macro rings still render without it.
+      // macroOutlineLoaded stays true deliberately: the tier subscription
+      // calls this on every transition into macro, so resetting it would
+      // refetch a missing asset on each one. Context only — the macro rings
+      // still render without it.
       console.warn('[spieli] macro world outline unavailable:', err);
-      macroOutlineLoaded = false;
     }
   }
   let equipmentLayer = null;  // overlay: equipment points/polygons
@@ -168,27 +171,44 @@
     // applyStyle() styles a layer we own rather than apply() taking over the
     // map, so the layer ordering and the activeTierStore wiring below are
     // untouched by the basemap choice.
+    const rasterBasemapSource = () => new XYZ({
+      url: basemapUrl,
+      attributions: basemapAttribution,
+    });
+
     const basemap = basemapIsVector
-      ? new VectorTileLayer({ declutter: true, attributions: basemapAttribution })
-      : new TileLayer({
-          source: new XYZ({
-            url: basemapUrl,
-            attributions: basemapAttribution,
-          }),
-        });
+      ? new VectorTileLayer({ declutter: true })
+      : new TileLayer({ source: rasterBasemapSource() });
 
     if (basemapIsVector) {
       // Dynamically imported so raster deployments do not carry it: the
       // library adds ~310 kB raw / ~50 kB gzipped to the bundle, and the
       // default delivery is raster.
-      //
-      // The style document carries its own source, glyph and sprite URLs.
-      // Failure must not take the whole map down — the data layers are the
-      // point, and a missing basemap is recoverable while a blank page is not.
       import('ol-mapbox-style')
         .then(({ applyStyle }) => applyStyle(basemap, basemapStyleUrl))
+        .then(() => {
+          // Attribution belongs to the SOURCE, not the layer — OpenLayers
+          // resolves it via layer.getSource().getAttributions(), so setting it
+          // as a layer option silently does nothing. applyStyle creates the
+          // source, so the operator's value is applied once it exists,
+          // overriding whatever the upstream style document declared.
+          basemap.getSource()?.setAttributions(basemapAttribution);
+        })
         .catch(err => {
           console.error('[spieli] basemap style failed to load:', err);
+          // Fall back to the raster source ONLY when the operator configured
+          // one. Falling back to the compiled-in CARTO default would send
+          // visitors to a third party that an operator running vector tiles
+          // may have chosen vector specifically to avoid — the same failure
+          // mode as a proxy quietly reverting to direct delivery. With nothing
+          // safe to fall back to, the map renders without a basemap.
+          if (!basemapUrlIsExplicit) return;
+          try {
+            olMap.removeLayer(basemap);
+            olMap.addLayer(new TileLayer({ source: rasterBasemapSource(), zIndex: 0 }));
+          } catch (fallbackErr) {
+            console.error('[spieli] raster basemap fallback failed:', fallbackErr);
+          }
         });
     }
 

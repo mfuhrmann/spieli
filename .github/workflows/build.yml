@@ -40,6 +40,80 @@ jobs:
       - name: Build
         run: make build
 
+  # ── Entrypoint + generated nginx config (CI gate) ────────────────────────────
+  # The app entrypoint generates nginx config at container startup, so a
+  # malformed heredoc is a start-up failure rather than a degraded feature — and
+  # the docker job below does not run on pull requests. Without this leg, two
+  # silent nginx bugs (proxy_pass ignoring a rewrite, and a missing SNI
+  # directive) reached a green PR. This builds the image and exercises the
+  # entrypoint in every delivery mode, validating the result with `nginx -t`.
+  entrypoint-config:
+    name: Entrypoint config
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Build app image
+        run: docker build -f oci/app/Dockerfile -t spieli-app:citest .
+
+      - name: Validate generated nginx config in every delivery mode
+        run: |
+          set -eu
+          check() {
+            desc="$1"; shift
+            printf '\n── %s\n' "$desc"
+            docker run --rm --entrypoint sh "$@" spieli-app:citest -c '
+              /docker-entrypoint.sh >/dev/null 2>&1 &
+              sleep 2
+              nginx -t
+            '
+          }
+          check "direct (defaults)" -e APP_MODE=standalone
+          check "direct, explicit raster provider" \
+            -e APP_MODE=standalone \
+            -e BASEMAP_URL='https://tiles.example.org/{z}/{y}/{x}.png' \
+            -e BASEMAP_ATTRIBUTION='(c) Example'
+          check "proxied" \
+            -e APP_MODE=standalone \
+            -e BASEMAP_URL='https://tiles.example.org/a/{z}/{x}/{y}.png' \
+            -e BASEMAP_ATTRIBUTION='(c) Example' \
+            -e BASEMAP_PROXY=true
+          check "vector style, hub mode" \
+            -e APP_MODE=hub -e REGISTRY_URL=/registry.json \
+            -e BASEMAP_STYLE_URL=/basemap/style.json \
+            -e BASEMAP_ATTRIBUTION='(c) Example'
+
+      - name: Misconfiguration must fail closed, not start silently
+        run: |
+          set -eu
+          expect_fail() {
+            desc="$1"; shift
+            if docker run --rm --entrypoint sh "$@" spieli-app:citest \
+                 -c '/docker-entrypoint.sh' >/dev/null 2>&1; then
+              echo "FAIL: expected startup to be refused — $desc"
+              exit 1
+            fi
+            echo "ok (refused): $desc"
+          }
+          expect_fail "source configured without attribution" \
+            -e BASEMAP_URL='https://tiles.example.org/{z}/{x}/{y}.png'
+          expect_fail "proxy enabled with a third-party style URL" \
+            -e BASEMAP_URL='https://tiles.example.org/a/{z}/{x}/{y}.png' \
+            -e BASEMAP_ATTRIBUTION='(c) Example' \
+            -e BASEMAP_PROXY=true \
+            -e BASEMAP_STYLE_URL='https://tiles.openfreemap.org/styles/bright'
+          expect_fail "fractional cache size" \
+            -e BASEMAP_URL='https://tiles.example.org/a/{z}/{x}/{y}.png' \
+            -e BASEMAP_ATTRIBUTION='(c) Example' \
+            -e BASEMAP_PROXY=true -e BASEMAP_CACHE_MAX_SIZE=4.5g
+
   # ── Docker image ─────────────────────────────────────────────────────────────
   # NOTE: this job builds (and pushes) the images only on push to main / tags —
   # it does NOT run on pull requests, and `ubuntu-latest` is linux/amd64 only.

@@ -21,6 +21,7 @@ Usage:
 """
 import argparse
 import json
+import os
 import urllib.request
 
 SOURCE = ('https://raw.githubusercontent.com/nvkelso/natural-earth-vector/'
@@ -30,6 +31,8 @@ DEFAULT_OUT = 'app/public/basemap/world-110m.json'
 
 def dedupe(ring):
     """Drop consecutive duplicate points left behind by rounding."""
+    if not ring:
+        return ring
     out = [ring[0]]
     for point in ring[1:]:
         if point != out[-1]:
@@ -43,8 +46,16 @@ def dedupe(ring):
 
 def reduce_geometry(geom, precision):
     def ring(coords):
-        return dedupe([[round(x, precision), round(y, precision)] for x, y in coords])
+        # Positions may carry a third (elevation) ordinate; only x/y are drawn,
+        # so take the first two rather than unpacking a fixed pair.
+        return dedupe([[round(p[0], precision), round(p[1], precision)] for p in coords])
 
+    if not geom:
+        return None
+    if geom['type'] == 'GeometryCollection':
+        reduced = [reduce_geometry(g, precision) for g in geom.get('geometries', [])]
+        return {'type': 'GeometryCollection',
+                'geometries': [g for g in reduced if g]}
     if geom['type'] == 'Polygon':
         return {'type': 'Polygon',
                 'coordinates': [ring(r) for r in geom['coordinates']]}
@@ -67,20 +78,24 @@ def main():
     with urllib.request.urlopen(req, timeout=60) as fh:
         data = json.load(fh)
 
-    out = {
-        'type': 'FeatureCollection',
-        'features': [
-            {'type': 'Feature', 'properties': {},
-             'geometry': reduce_geometry(f['geometry'], args.precision)}
-            for f in data['features']
-        ],
-    }
+    features = []
+    skipped = 0
+    for f in data['features']:
+        geom = reduce_geometry(f.get('geometry'), args.precision)
+        if not geom:
+            skipped += 1
+            continue
+        features.append({'type': 'Feature', 'properties': {}, 'geometry': geom})
+
+    out = {'type': 'FeatureCollection', 'features': features}
     text = json.dumps(out, separators=(',', ':'))
+    os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)
     with open(args.out, 'w', encoding='utf-8') as fh:
         fh.write(text)
 
     print(f'{args.source}\n  -> {args.out}')
-    print(f'  features: {len(out["features"])}')
+    print(f'  features: {len(features)}'
+          + (f' ({skipped} skipped: no usable geometry)' if skipped else ''))
     print(f'  size: {len(text) / 1024:.0f} KB at {args.precision} decimal places')
 
 
