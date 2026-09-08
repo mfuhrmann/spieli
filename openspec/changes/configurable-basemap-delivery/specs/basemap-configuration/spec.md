@@ -23,6 +23,46 @@ The basemap tile source SHALL be configurable through environment variables and 
 - **THEN** the map renders using the documented default source
 - **AND** the deployment behaves as it did before this change
 
+### Requirement: Vector basemap support
+
+The application SHALL support vector basemaps in addition to raster, because no keyless raster provider covers the federation's target area of Germany, Czechia and Slovakia. An operator selects a vector basemap by configuring a style URL, and the application renders it client-side.
+
+Vector tilesets cap at a lower maximum zoom than the map allows and rely on the client overzooming beyond it. The application MUST continue to render at the map's full zoom range when the configured tileset's maximum zoom is lower.
+
+#### Scenario: Operator configures a vector style
+
+- **WHEN** an operator configures a vector style URL instead of a raster tile template
+- **THEN** the map renders the vector basemap
+- **AND** no raster tile requests are made for the basemap
+
+#### Scenario: Zooming beyond the tileset's maximum zoom
+
+- **WHEN** the tileset declares a maximum zoom below the map's maximum zoom
+- **AND** the user zooms past it
+- **THEN** the basemap continues to render by overzooming the deepest available tiles
+- **AND** no requests are issued for tiles beyond the tileset's maximum zoom
+
+#### Scenario: Style assets do not leak to a third party
+
+- **WHEN** a vector basemap is configured for local or proxied delivery
+- **THEN** the style document, glyphs and sprites are served from the same origin as the tiles
+- **AND** the visitor's browser contacts no third-party host for them
+
+### Requirement: Locally served basemap tiles
+
+The application SHALL support serving basemap tiles from a local copy held by the instance, with no request path to any provider at request time. This is distinct from proxied delivery, which contacts a provider on a cache miss.
+
+#### Scenario: No provider is contacted at request time
+
+- **WHEN** the basemap is configured for local delivery and a visitor browses the map
+- **THEN** every basemap request is answered from the instance's own storage
+- **AND** no request is made to any external provider, on a cache miss or otherwise
+
+#### Scenario: Coverage gaps are visible, not silent
+
+- **WHEN** a visitor pans outside the area the local copy covers
+- **THEN** the deployment does not present blank tiles as though they were valid map data
+
 ### Requirement: Attribution follows the configured provider
 
 The displayed map attribution SHALL be configurable via `BASEMAP_ATTRIBUTION` and MUST correspond to the configured source. Because attribution is a licence obligation for the providers under consideration, the application MUST NOT display an attribution belonging to a provider it is not using.

@@ -8,6 +8,12 @@ CARTO's API-key requirement (issue #823) is the trigger, but the analysis in tha
 
 `scripts/upgrade-stacks.sh:14-30` lists **15 `data-node-ui` stacks on a single VPS**, each running its own nginx, plus Baden-Württemberg on a different operator's machine joining via `registry.json`. Any per-stack resource (a tile cache) is multiplied by 15 on that host. This is why cache size must be bounded and configurable rather than assumed free.
 
+### Scope: the federation is no longer Germany-only
+
+The target coverage is **Germany plus Czechia and Slovakia**. This arrived after the first draft and it invalidates that draft's recommendation, so it is recorded here rather than folded in silently.
+
+It matters more than a bounding-box change because the hub renders every backend on one map. Per-region providers cannot paper over it: a hub view with basemap.de tiles over Germany and nothing over Czechia is one map with a hole in it. Whatever the hub uses must cover the whole federation, and that constraint propagates to the data nodes for consistency.
+
 ### Comparison of prior art
 
 [knudli](https://codeberg.org/gruessung/knudli) (Flutter playground map, same domain) was examined for precedent. It does **not** solve the provider question: `lib/core/config/constants.dart:113` hardcodes `tile.openstreetmap.org` and `docs/konzept_online_tiles.md:243` explicitly declines to revisit it. It works for them because a native app can set `User-Agent: Knudli/{version}`, which OSM's Tile Usage Policy is written around; their own `docs/web-deployment-plan.md` concedes browsers cannot set that header. So knudli offers no usable precedent for the provider axis.
@@ -18,17 +24,19 @@ Where knudli *is* instructive is the delivery axis. They route Overpass through 
 
 **Goals:**
 - An operator changes basemap provider by editing `.env` and restarting, with no rebuild.
-- An operator can eliminate third-party tile contact entirely without self-hosting a tile build.
+- An operator can eliminate third-party tile contact entirely, either by proxying or by serving a local copy (D10).
 - Attribution follows the provider automatically, because it is a licence obligation, not decoration.
 - The privacy disclosure follows the configuration, so it cannot silently drift from what the deployment actually does.
 - Enabling proxying does not accumulate a per-visitor location trail on the operator's own disk (D8).
 - The hub macro tier renders correctly with a Germany-only provider, so coverage does not veto the provider choice (D6).
 - Today's behaviour is preserved for an operator who changes nothing.
 
+- The basemap covers the whole federation — Germany, Czechia and Slovakia — including on the hub, which renders every backend on one map.
+
 **Non-Goals:**
-- **Flipping the shipped default provider.** D9 records a recommendation under a privacy-first weighting (basemap.de, proxied), but changing the default alters the cartographic appearance of every deployment. That is a maintainer decision about visual identity, not a technical one; see task 6.2.
-- **Vector basemap support.** OpenFreeMap and VersaTiles are vector-only (verified in D9) and need `ol-mapbox-style` plus a real frontend rework. Out of scope; D2 keeps the config shape from foreclosing it. This is what leaves non-German operators without a keyless option for now.
-- **Self-hosted tile generation** (planetiler/PMTiles in the importer). Out of scope, and D5 records why it is heavier than it looks.
+- **Flipping the shipped default provider.** Changing the default alters the cartographic appearance of every deployment, which is a maintainer decision about visual identity rather than a technical one; see task 6.2.
+- **Generating a basemap from spieli's own imported data.** D5; the import is tag-filtered to playground features and has no roads or water to draw. Serving a prebuilt extract is a different thing and is in scope (D10).
+- **Styling work beyond adopting an existing style.** The change wires up a vector style and makes it configurable; designing a spieli-specific cartography is separate.
 
 ## Decisions
 
@@ -78,19 +86,36 @@ Critically, **there is no automatic fallback from proxied to direct.** If the up
 
 *Alternative considered:* fall back to direct on upstream failure. Rejected: a privacy boundary that yields under load is not a boundary. Degrading to a blank basemap is honest and recoverable; silently leaking is neither.
 
-### D4 — Cache is bounded, because caching scales with usage and pre-seeding scales with area
+### D4 — Cache sizing is a raster problem, and vector dissolves it
 
-The distinction matters and is easy to get backwards. Tile counts for full coverage:
+**Superseded in part by D10.** The original reasoning — that caching scales with usage while pre-seeding scales with area, so a bounded LRU cache is the only affordable option — is correct *for raster* and misleading as a general claim. Kept because the raster arithmetic is still what rules raster out.
+
+Raster full coverage, using per-zoom sizes measured against basemap.de rather than a flat average:
 
 ```
-Hessen (one Bundesland)          z≤14      25k tiles     0.5–3 GB
-                                 z≤16     390k tiles     8–49 GB
-                                 z≤18     6.2M tiles     125–780 GB   (mapMaxZoom is 21)
+Germany     z10-18   80.8M tiles   2,929 GB
+Czechia     z10-18                   675 GB
+Slovakia    z10-18                   419 GB
+                                  ─────────
+federation total                  4,023 GB
 ```
 
-Pre-seeding a Bundesland as raster is infeasible, and doing it 15 times on one VPS more so. But a demand-driven cache never holds full coverage: visitors look at populated areas and around playgrounds, a small fraction of the theoretical extent. An nginx `proxy_cache_path ... max_size=` with LRU eviction bounds it directly, so `BASEMAP_CACHE_MAX_SIZE` defaults conservatively (single-digit GB) and the 15-stack host stays predictable.
+Nothing sensible caches that, so raster forces a demand-driven LRU cache, a working-set guess, and eviction tuning.
 
-This is also the reason proxy-caching is not a weaker form of self-hosting: they have different cost curves, not different amounts of the same cost.
+Vector removes the problem rather than shrinking it, because OpenFreeMap's tileset has **`maxzoom: 14`** and the client renders z15–21 by overzooming the same tiles. Zooming to street level costs zero additional tiles:
+
+```
+Germany     z0-14   317,618 tiles    53.3 GB
+Czechia     z0-14    73,571 tiles    12.3 GB
+Slovakia    z0-14    45,650 tiles     7.7 GB
+                                   ────────
+federation total                     73.3 GB   (generous bbox coverage,
+                                                including sea and overlap)
+```
+
+At that size the cache stops being a cache. Complete, permanent coverage of the whole federation fits in well under 100 GB, so there is no eviction policy to tune, no working set to estimate, and no cold-start penalty. `BASEMAP_CACHE_MAX_SIZE` remains configurable, but on the vector path its job is a safety ceiling rather than a rationing mechanism.
+
+Sizing note for whichever path is taken: nginx's `keys_zone` holds roughly 8,000 keys per MB, and it binds before disk does. The `keys_zone=10m` in most copy-paste examples tracks about 80,000 tiles, so a large `max_size` with a default `keys_zone` yields a cache that stays almost entirely empty. The federation's ~437k vector tiles need roughly 55 MB. `inactive` matters just as much: its 10-minute default evicts tiles regardless of free space, which is wrong by orders of magnitude for basemap tiles.
 
 ### D5 — Serving a basemap from the existing PostGIS is not viable
 
@@ -100,13 +125,17 @@ It fails on the data. `importer/import.sh:290` tag-filters the PBF to playground
 
 Do not re-propose without first addressing the filter.
 
+**Scope boundary, since D10 now recommends serving tiles ourselves.** This decision rejects *generating* a basemap from spieli's own imported data. It does not reject *serving* a prebuilt vector extract produced elsewhere, which is a different proposition: no import change, no filter change, no JVM, just a file on disk. D5 stays true; D10 does not contradict it.
+
 ### D6 — The hub macro tier needs its own basemap, and it is cheap
 
 #823 treats basemap.de's Germany-only coverage as a blocker, because at `macroMaxZoom: 7` the hub renders a Europe-wide view that would be blank outside Germany.
 
 But the macro tier draws one ring per backend at its bbox centroid. It needs enough context to read as "Germany", not street detail. `Map.svelte:432` already subscribes to `activeTierStore` and flips `setVisible` per tier for three layers; a macro-only basemap — plausibly a bundled Natural Earth 1:110m outline, no network request at all — is one more line in that existing block.
 
-**Revised to in-scope.** Originally deferred on the grounds that it only matters if a Germany-only provider is chosen. D9 makes that the recommended provider, so deferring it would leave a known blocker in front of the recommendation for the sake of roughly thirty lines. A bundled outline also removes a network dependency from the macro tier rather than adding one, which suits the privacy-first framing.
+**Revised to in-scope, and the reason survived the scope change.** Originally deferred as only mattering for a Germany-only provider. It still matters under D10: a mirrored tileset covering Germany, Czechia and Slovakia is a three-country tileset, so at `macroMaxZoom: 7` everything outside those borders is blank exactly as it would have been with basemap.de. Mirroring narrows the coverage gap, it does not close it.
+
+Two cheap ways to close it, to be decided during implementation: a bundled Natural Earth outline with no network request at all, or mirroring low-zoom world tiles, which is nearly free — z0–6 worldwide is 5,461 tiles, a few hundred MB. OpenFreeMap's own style already carries a `ne2_shaded` Natural Earth raster source capped at `maxzoom: 6` for precisely this purpose, which is a useful precedent either way.
 
 ### D7 — Disclosure is generated from configuration, not hardcoded
 
@@ -138,6 +167,21 @@ Recording the outcome of evaluating the provider options with privacy as the top
 
 Usefully, this means **the privacy-first path does not depend on Open Question 1.** Whether CARTO's terms permit proxying stops mattering once CARTO is not the provider.
 
+**basemap.de is also excluded, on the multi-country scope.** An earlier revision of this decision recommended it. That was correct for a Germany-only federation and is wrong for this one, and the failure mode is bad enough to record in full: basemap.de does not 404 outside Germany, it returns `200 OK` with a blank tile.
+
+| probe (z13) | status | bytes |
+|---|---|---|
+| Dresden (DE) | 200 | 148,712 |
+| Berlin (DE) | 200 | 143,560 |
+| Prague (CZ) | 200 | 334 |
+| Brno (CZ) | 200 | 854 |
+| Bratislava (SK) | 200 | 854 |
+| Košice (SK) | 200 | 854 |
+
+Nothing errors, nothing alerts, and a proxy cache would store millions of blank tiles as though they were valid. The map would show a void beginning about 60 km from Dresden. A provider that fails silently and cache-poisons on the way is worse than one that fails loudly.
+
+**No keyless raster basemap has worldwide coverage** (probed: OpenFreeMap and VersaTiles are vector-only, OpenFreeMap's raster path 403s). Combined with the above, raster has no viable candidate for this federation: CARTO is excluded on privacy, basemap.de on coverage, OSM's tile server by its usage policy. **The multi-country scope therefore makes vector mandatory rather than optional**, which is the substance of D10.
+
 **Verified structural constraint: there is no keyless raster basemap with worldwide coverage.** Probed directly:
 
 | Endpoint | Result |
@@ -153,9 +197,41 @@ So raster-and-worldwide does not exist among keyless options. Germany-only raste
 
 **Not decided here:** whether to flip the *shipped default* from CARTO to basemap.de. That changes the cartographic appearance of every deployment, which is a maintainer call about the project's visual identity rather than a technical one. The mechanism is provider-agnostic either way; see task 6.2.
 
+### D10 — Vector is mandatory, and at vector sizes mirroring beats proxying
+
+Two conclusions the multi-country scope forces, both reversing earlier positions in this document.
+
+**Vector moves from non-goal to requirement.** The first draft deferred vector support as "a real frontend rework, out of scope". That was affordable while a keyless raster provider existed for the target area. For Germany + Czechia + Slovakia none does (D9), so the rework is no longer optional and the change must carry it: an `ol-mapbox-style` integration and a style-URL configuration shape alongside the XYZ template.
+
+**Serving the tiles ourselves becomes the preferred delivery, not the heaviest option.** D4's arithmetic assumed raster, where full coverage is thousands of GB and only a demand cache is affordable. At 73 GB for the whole federation, a complete local copy is ordinary. That inverts the comparison:
+
+```
+                        raster (old assumption)      vector (measured)
+full federation copy    4,023 GB   infeasible        73 GB   ordinary
+delivery that follows   proxy + LRU cache            serve from disk
+upstream dependency     permanent                    none, after the fetch
+```
+
+Mirroring dominates proxying on every axis that motivated proxying in the first place: no visitor data reaches a third party (same as proxy), no upstream terms-of-service question (better), no rate-limit exposure (better), no dependence on OpenFreeMap's single maintainer and donation funding (better), and no cold-cache latency (better). The only thing proxying retains is automatic freshness, and basemap data does not need to be fresh to the minute — a periodic extract refresh is sufficient and fits the pattern the importer already uses for PBFs.
+
+So the delivery axis from D1 gains a third position, and it is the recommended one:
+
+```
+(a) direct    browser ─────────────────────▶ provider
+(b) proxied   browser ─▶ nginx ─▶ cache ───▶ provider
+(c) mirrored  browser ─▶ nginx ─▶ local tiles        ← recommended
+                                  (periodic refresh, no request path to a provider)
+```
+
+**Kept in scope regardless:** the proxy path (b). It is the incremental step, it is what an operator with less disk uses, and it is the only option for anyone pointing at a provider whose data cannot be redistributed. D8's logging requirement applies to (b) and (c) alike, since both put the tile stream through the operator's nginx.
+
+*Alternative considered:* keep raster and accept blank tiles outside Germany until vector lands. Rejected — silently blank maps for two of three countries is not a shippable intermediate state, and D9 shows it would also poison the cache.
+
 ## Risks / Trade-offs
 
-- **Upstream terms may forbid proxying.** Still the largest external risk, but it has moved: with CARTO excluded on privacy grounds (D9), the question that matters is basemap.de's terms under proxy load, not CARTO's (Open Question 2). Mitigation: proxying is opt-in, and the docs must state that operators are responsible for checking their chosen provider's terms.
+- **Redistribution rights for a mirrored tileset.** The risk that replaces the proxying-terms question on the recommended path. OpenMapTiles-schema tiles built from OSM are ODbL, which is why mirroring looks defensible, but "we may serve a local copy of this tileset to our users" must be confirmed against the specific source before an operator does it, not assumed from the data licence.
+- **Vector rework is real scope.** `ol-mapbox-style`, a style asset, glyphs and sprites, and a second configuration shape. It is larger than everything else in this change combined, and it is now on the critical path rather than deferred.
+- **Upstream terms may forbid proxying.** Applies to the proxy path only. With CARTO excluded on privacy grounds and basemap.de on coverage, this no longer gates the recommendation; it gates operators who point path (b) at a provider of their own choosing.
 - **Proxying concentrates the trail rather than removing it (D8).** Mitigated by making tile logging off the default, but the mitigation is a config directive, so it can be undone by an operator editing nginx or by a reverse proxy in front of the stack logging the same requests. Task 2.7 checks the second case; the first is inherent.
 - **Operator egress.** Proxied tiles are served twice from the operator's perspective: inbound on a cache miss, outbound to every visitor always. On a small VPS with metered traffic this is a real cost, and it is worse with a heavy provider. Mitigation: document it; it is the operator's informed choice.
 - **A proxy concentrates rate limiting.** All visitors appear to the upstream as one IP, which can trip abuse heuristics that per-visitor traffic would not. Mitigation: cache aggressively, set a truthful `User-Agent` on the proxied request, respect upstream cache headers.
@@ -167,7 +243,11 @@ So raster-and-worldwide does not exist among keyless options. Germany-only raste
 These bear on the *provider* decision (#823 item 3), not on this change. Recorded so it is not made on assumption.
 
 1. ~~**Do CARTO's terms permit proxying and caching their tiles?**~~ **Moot on the recommended path.** Still unread, and still decisive if anyone wants to keep CARTO — but D9 excludes CARTO on privacy grounds independent of its terms, so this no longer gates the decision.
-2. **What are basemap.de's service terms under proxy load?** *Open, and now the load-bearing question*, since D9 recommends basemap.de. The data is CC BY 4.0, but the WMTS endpoint's own rate limits and acceptable-use terms are a separate matter from the data licence. Must be read before an operator points production traffic through a cache.
+2. ~~**What are basemap.de's service terms under proxy load?**~~ **Moot.** basemap.de is excluded on coverage (D9), so its terms no longer bear on the decision.
+
+2a. **May the chosen vector tileset be mirrored and served to our users?** *The new load-bearing question.* OSM-derived OpenMapTiles-schema data is ODbL, but the hosted service's own terms are a separate matter, exactly as they were for basemap.de. Must be read before an operator serves a local copy. If the answer is no for OpenFreeMap, VersaTiles and self-building from a Geofabrik extract are the fallbacks, and the last of those has no such question at all.
+
+2b. **Which style, and how large are its glyphs and sprites?** The 73 GB figure counts tiles only. Fonts and sprite sheets are small but they are additional assets that must also be served locally, or the "no third-party contact" property leaks through the style rather than the tiles — an easy thing to miss.
 3. ~~**What is the real tile-weight difference across zoom levels?**~~ **Answered.** Measured over one column of tiles through Fulda, same area, both providers:
 
    | zoom | CARTO | basemap.de | ratio |
