@@ -417,3 +417,68 @@ docker compose -f compose.yml --profile <mode> run --rm importer
 ```
 
 This re-applies `api.sql` (recreating `playground_stats`) and re-imports OSM data. It takes longer than `API_ONLY=1` but is always safe.
+
+## The map renders, but labels or icons are missing
+
+**Symptom:** the basemap draws roads, water and landcover, but place names are missing, or they render in a system font that looks wrong next to the rest of the UI.
+
+**Cause:** the webfonts the style asks for are not vendored in the image. Labels are drawn from `/basemap/fonts/<family>/<weight>.css`, not from the style's `glyphs` endpoint, and a missing weight fails silently: MapLibre falls back to a system font and the map still renders. It also puts a request the tile server cannot answer on every page load.
+
+**Fix:** check which weights the style asks for and re-vendor them.
+
+```bash
+# Lists the style's font stacks and fails if one has no vendored file
+make basemap-fonts
+# What is actually in the image:
+docker compose exec app ls /usr/share/nginx/html/basemap/fonts/noto-sans/
+```
+
+`Noto Sans Bold` needs `700.css`, `Noto Sans Italic` needs `400-italic.css`, and so on. `make basemap-fonts` fetches all of them and then asserts the coverage, so a green run means every stack in the style resolves.
+
+Missing *icons* rather than labels point at the sprite sheet instead: check that `/basemap/sprites/…` returns 200 and not 404.
+
+```bash
+curl -sI http://localhost:8080/basemap/sprites/ofm_f384/ofm.png | head -1
+```
+
+A 404 there usually means an nginx location-precedence problem — regex locations are matched before plain prefixes, so a `~* \.png$` block can claim these paths unless the `/basemap/` location uses `^~`.
+
+---
+
+## Container refuses to start: `style.local.json is missing from the image`
+
+**Symptom:** the app container exits immediately with
+
+```
+[spieli] FATAL: app/public/basemap/style.local.json is missing from the image.
+```
+
+**Cause:** `style.local.json` is a build artefact, not a checked-in-by-hand file, and the build did not produce it. This is deliberate: the entrypoint refuses to fall back to `style.json`, whose assets point at the public tile server, because that would silently send every visitor to a third party while the docs promise the opposite.
+
+**Fix:** regenerate both style variants and rebuild.
+
+```bash
+make basemap-style     # writes style.json and style.local.json from one fetch
+make docker-build
+```
+
+---
+
+## Basemap tiles are slow or fail after an upgrade
+
+**Symptom:** the map is sluggish or patchy for a while after `make docker-build`, then recovers.
+
+**Cause:** the tile cache lives at `/var/cache/nginx/basemap`. Without a volume it sits on the container's writable layer and is discarded on every rebuild, so the next visitors refill it from the upstream one tile at a time.
+
+**Fix:** mount a volume so it survives rebuilds. `compose.yml` ships one (`basemap_cache`); if you deploy from `compose.prod.yml` or a hand-written file, add the equivalent:
+
+```yaml
+services:
+  app:
+    volumes:
+      - basemap_cache:/var/cache/nginx/basemap
+volumes:
+  basemap_cache:
+```
+
+This matters most for an upgrade sweep across several stacks, which would otherwise send every one of them at the public tile server cold at the same time.

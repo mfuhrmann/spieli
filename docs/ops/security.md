@@ -87,12 +87,25 @@ spieli calls several third-party services at runtime. Your users' browsers make 
 | Service | What is sent |
 |---|---|
 | Nominatim | Search query text, IP address |
-| Basemap provider (configurable — see [Configuration](configuration.md#basemap); none when `BASEMAP_PROXY` is enabled) | Map tile coordinates, IP address |
+| Basemap provider — **nothing by default**, see below | Map tile coordinates, IP address (only if you configure a third-party basemap) |
 | Panoramax | Photo UUID, IP address (if photos viewed) |
 | Mangrove.reviews | Playground osm_id (if reviews opened) |
 | Geofabrik | Nothing — server-side download only |
 
 No personal data, user accounts, or tracking pixels are added by spieli itself. See [External Services](../reference/external-services.md) for the full list.
+
+### The basemap is same-origin by default
+
+Out of the box, no basemap request leaves your server.
+The bundled vector style references every asset — tiles, sprites, glyphs and webfonts — under `/basemap/` on your own instance.
+nginx serves what is vendored in the image from disk and fetches the rest from `BASEMAP_UPSTREAM` server-side, caching it.
+Your visitors' browsers never contact the tile server, and those proxied requests are not written to the access log.
+
+This is the default, not something you have to switch on.
+`BASEMAP_PROXY` is a separate, older mechanism for proxying a *raster* provider and is not what makes the above true.
+
+You lose the property only by opting out: setting `BASEMAP_STYLE_URL` or `BASEMAP_URL` to a third party points visitors' browsers at that provider directly.
+The container refuses to start if you do that without also setting `BASEMAP_ATTRIBUTION`.
 
 ## CORS for Hub data-nodes
 

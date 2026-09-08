@@ -109,7 +109,26 @@ To test Hub mode locally: set `appMode: 'hub'` in `app/public/config.js`, run `m
 
 ## Runtime configuration
 
-`app/public/config.js` is the config bridge — sets `window.APP_CONFIG`. In Docker, `oci/app/docker-entrypoint.app.sh` overwrites it from env vars at startup. `app/src/lib/config.js` reads `window.APP_CONFIG` and exports named constants.
+`app/public/config.js` is the config bridge — sets `window.APP_CONFIG`. In Docker, `oci/app/docker-entrypoint.sh` overwrites it from env vars at startup. `app/src/lib/config.js` reads `window.APP_CONFIG` and exports named constants.
+
+### Basemap delivery
+
+Same-origin by default; nothing to switch on. The entrypoint generates two nginx files:
+
+- `/etc/nginx/basemap-location.conf` — the `^~ /basemap/` prefix location (`^~` is load-bearing: regex locations are matched *before* plain prefixes, so without it the `~* \.png$` static block claims every sprite and raster tile) plus the `@basemap_upstream` named location that proxies and caches.
+- `/etc/nginx/conf.d/09-basemap-cache.conf` — `proxy_cache_path` and the maps driving `Accept-Encoding` and the visitor-facing `Cache-Control`.
+
+Those maps are keyed on `$request_uri` and `$status`, never `$upstream_status` or `$upstream_http_*`: those are **empty on a cache hit**, so a map keyed on them falls to its default on every hit.
+
+| Env var | Role |
+|---|---|
+| `BASEMAP_UPSTREAM` | Origin the cache fetches from (default `https://tiles.openfreemap.org`). Origin only — a path is refused at startup, because `proxy_pass` with a URI-bearing variable *replaces* the request URI instead of prefixing it. |
+| `BASEMAP_CACHE_MAX_SIZE` / `_KEYS_ZONE` / `_INACTIVE` | Cache sizing. Validated, not sanitised: `4.5g` is rejected rather than silently becoming `45g`. |
+| `BASEMAP_STYLE_URL` / `BASEMAP_URL` | Opt *out* to a third-party provider. Requires `BASEMAP_ATTRIBUTION`, and is refused alongside `BASEMAP_PROXY` when the style is not same-origin. |
+
+The proxying half is only generated when the effective style routes the browser through `/basemap/`; otherwise `/basemap/` serves vendored files from disk and no cache zone is allocated.
+
+`make basemap-style` builds **both** style variants from a single upstream fetch — `style.json` (upstream URLs, for `make dev`, which has no nginx) and `style.local.json` (all assets under `/basemap/`, what the container serves). `make basemap-fonts` vendors the webfonts and fails if the style asks for a weight it did not vendor, because that failure is otherwise invisible: a system-font fallback plus an upstream request on every page load.
 
 ## Key frontend architecture
 
@@ -182,8 +201,8 @@ To test Hub mode locally: set `appMode: 'hub'` in `app/public/config.js`, run `m
 
 The map manages the basemap plus six overlay layers. Tiered playground delivery uses two of them — the active one is driven by `activeTierStore`:
 
-1. **basemap** (zIndex 0) — raster `XYZ` from `basemapUrl`, or a `VectorTileLayer` styled via `ol-mapbox-style` when `basemapStyleUrl` is set. The library is dynamically imported, so raster deployments do not carry it. When `BASEMAP_PROXY=true` the entrypoint derives the upstream origin and tile path from `BASEMAP_URL` and rewrites `basemapUrl` to the same-origin `/tiles/` path.
-2. **macroOutlineLayer** (zIndex 1) — bundled Natural Earth world outline (`app/public/basemap/world-110m.json`), fetched lazily on the first macro tier and visible only there, so the area outside the basemap tileset's coverage is not silently blank.
+1. **basemap** (zIndex 0) — raster `XYZ` from `basemapUrl`, or a `VectorTileLayer` styled via `ol-mapbox-style` when `basemapStyleUrl` is set. The library is dynamically imported, so raster deployments do not carry it. **The default is vector and same-origin**: the container serves `/basemap/style.local.json`, whose tiles, sprites and glyphs all resolve under `/basemap/` on this instance. nginx serves the vendored files from disk and proxies the rest to `BASEMAP_UPSTREAM` through a persistent cache, so the visitor's browser never contacts the tile server. `BASEMAP_PROXY` is a separate, older raster-only mechanism: it derives the upstream origin and tile path from `BASEMAP_URL` and rewrites `basemapUrl` to the same-origin `/tiles/` path.
+2. **macroOutlineLayer** (zIndex -1) — bundled Natural Earth world outline (`app/public/basemap/world-110m.json`), fetched lazily on the first macro tier and visible only there, so the area outside the basemap tileset's coverage is not silently blank. It sits *below* the basemap: at zIndex 1 it washed the basemap out everywhere the basemap does render.
 3. **playgroundLayer** (zIndex 10) — polygon tier (zoom > `clusterMaxZoom`, default 13). Playground polygons styled by `playgroundStyleFn`, filtered by `filterStore`. Visible only when `$activeTierStore === 'polygon'`.
 4. **clusterLayer** (zIndex 12) — cluster tier (zoom ≤ `clusterMaxZoom`). Server-bucketed cluster rings + single-child dots rendered via the canvas `stackedRingRenderer` in `app/src/lib/clusterStyle.js`. Visible only when `$activeTierStore === 'cluster'`.
 5. **treeLayer** (zIndex 15) — natural=tree dots, shown when a playground is selected.
@@ -273,6 +292,7 @@ rebuild should be diffed rather than trusted.
 | Script | Purpose |
 |---|---|
 | `build-basemap-style.py` | Rebuilds both style variants: `style.json` (upstream URLs, used by `make dev`) and `style.local.json` (all assets under `/basemap/`, used by the container). Built from an upstream MapLibre style (default OpenFreeMap Bright). Desaturates the green landcover fills and drops the `poi` symbol layers, because spieli encodes completeness in green/amber/red and a green basemap competes with its own data. `--asset-base` rewrites tile/glyph/sprite URLs to a local origin; without it the committed style still fetches tiles, fonts and sprites from the upstream host. |
+| `build-basemap-fonts.py` | Vendors the @fontsource webfonts the style's `text-font` stacks need (`app/public/basemap/fonts/`), latin + latin-ext. `ol-mapbox-style` renders labels from a webfont CSS template, **not** from the style's `glyphs` endpoint, so a missing weight is invisible: labels fall back to a system font and every page load asks the upstream for a file it does not have. The build asserts coverage against the style and fails if a stack has no vendored file. |
 | `build-macro-outline.py` | Rebuilds `app/public/basemap/world-110m.json` from Natural Earth 1:110m — the world outline shown under the hub macro tier, so areas outside the federation's tileset are not blank. |
 
 ## Documentation
