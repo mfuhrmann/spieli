@@ -17,6 +17,13 @@ All variables are set in `.env` (copy from `.env.example`). The installer genera
 | `REGION_CHAT_URL` | *(hidden)* | ui, data-node-ui | Community chat link; leave empty to hide the button |
 | `MAP_ZOOM` | `12` | ui, data-node-ui | Initial map zoom level |
 | `MAP_MIN_ZOOM` | `10` | ui, data-node-ui | Minimum zoom level |
+| `BASEMAP_URL` | CARTO Voyager | ui, data-node-ui | Raster basemap as an OpenLayers XYZ template. Placeholders are substituted by name, so a provider using `{z}/{y}/{x}` needs no code change. See [Basemap](#basemap). |
+| `BASEMAP_STYLE_URL` | *(unset)* | ui, data-node-ui | MapLibre style document, rendered as vector tiles. Takes precedence over `BASEMAP_URL`. See [Basemap](#basemap). |
+| `BASEMAP_ATTRIBUTION` | CARTO + OSM | ui, data-node-ui | Attribution HTML shown on the map. **Must match the configured provider** — it is a licence obligation, not decoration. |
+| `BASEMAP_PROXY_UPSTREAM` | *(unset)* | ui, data-node-ui | Upstream tile origin to proxy through this instance. When set, the browser fetches tiles from same-origin `/tiles/` and never contacts the provider. See [Basemap](#basemap). |
+| `BASEMAP_CACHE_MAX_SIZE` | `4g` | ui, data-node-ui | Disk ceiling for the tile cache. Only used when `BASEMAP_PROXY_UPSTREAM` is set. |
+| `BASEMAP_CACHE_KEYS_ZONE` | `64m` | ui, data-node-ui | nginx cache key zone. Holds roughly 8000 keys per MB and **binds before disk does** — a large `BASEMAP_CACHE_MAX_SIZE` behind a small keys zone yields a cache that stays almost empty. |
+| `BASEMAP_CACHE_INACTIVE` | `90d` | ui, data-node-ui | How long an unrequested tile survives. nginx defaults to 10 minutes, which evicts tiles regardless of free space — far too short for basemap tiles. |
 | `PARENT_ORIGIN` | *(own origin)* | data-node-ui | Allowed origin for `postMessage` events — set to the Hub's full origin when embedding in a Hub |
 | `APP_PORT` | `8080` | ui, data-node-ui | Host port the app is exposed on |
 | `POSTGRES_PASSWORD` | `change-me` | data-node, data-node-ui | Database password — **change in production** |
@@ -131,3 +138,59 @@ docker compose --profile <mode> up -d app
 docker compose --profile <mode> down
 docker compose --profile <mode> up -d
 ```
+
+## Basemap
+
+The basemap is the one service every visitor contacts on every map movement, so how it is delivered is a privacy decision as much as a rendering one.
+
+### Two source shapes
+
+`BASEMAP_STYLE_URL` (a MapLibre style document, rendered as vector tiles) takes precedence over `BASEMAP_URL` (an OpenLayers XYZ raster template) when both are set.
+
+Raster templates are passed through verbatim, so a provider using a reversed axis order works without a code change:
+
+```bash
+BASEMAP_URL='https://sgx.geodatenzentrum.de/wmts_basemapde/tile/1.0.0/de_basemapde_web_raster_farbe/default/GLOBAL_WEBMERCATOR/{z}/{y}/{x}.png'
+```
+
+That example is included because it exercises the axis-order case, **not as a recommendation**: basemap.de covers Germany only, and outside Germany it returns `200 OK` with a blank tile rather than an error. Nothing fails, nothing alerts, and a proxy cache will happily store the blanks. Check your provider's coverage against your region before adopting it.
+
+Whatever you choose, set `BASEMAP_ATTRIBUTION` to match. Showing one provider's attribution over another's tiles is a licence problem, not a cosmetic one.
+
+### Three delivery modes
+
+| Mode | Configuration | Who sees the visitor |
+|---|---|---|
+| **direct** (default) | `BASEMAP_URL` or `BASEMAP_STYLE_URL` pointing at a third party | The provider receives every visitor's IP address, User-Agent, `Referer` and tile coordinates |
+| **proxied** | `BASEMAP_PROXY_UPSTREAM` set | The provider sees only this server. The visitor's browser never contacts it |
+| **mirrored** | `BASEMAP_STYLE_URL` pointing at a locally served style | No provider is contacted at request time at all |
+
+Proxying has no fallback to direct delivery. If the upstream is unreachable, tiles fail and the map renders without a basemap. That is deliberate: falling back would leak exactly the addresses proxying was enabled to protect, at the moment something is already wrong.
+
+### Costs of proxying
+
+Proxied tiles are served twice from the operator's point of view — inbound on a cache miss, outbound to every visitor always — so tile egress moves onto your server. Budget accordingly, and check that your chosen provider's terms permit proxying and caching; that is your responsibility, not spieli's.
+
+Two cache settings bind before disk does, and both have defaults that will surprise you:
+
+- **`BASEMAP_CACHE_KEYS_ZONE`** holds roughly 8000 keys per MB. The `10m` seen in most nginx examples tracks about 80,000 tiles, so a large `max_size` behind it yields a cache that stays almost entirely empty.
+- **`BASEMAP_CACHE_INACTIVE`** defaults in nginx to 10 minutes, evicting tiles regardless of free space. spieli defaults it to 90 days instead.
+
+Sizing depends heavily on raster versus vector. Vector tilesets cap at a low maximum zoom and the client renders deeper zooms by overzooming the same tiles, so full coverage is orders of magnitude smaller than the raster equivalent for the same area.
+
+### Tile requests are never access-logged
+
+When proxying is enabled, nginx sets `access_log off` on `/tiles/`. This is a correctness property of the feature rather than a hardening tip: proxying moves the visitor's tile stream onto your server, and at high zoom that z/x/y sequence is not metadata about what someone looked at — it *is* what they looked at. Logging it would build a per-visitor location trail on your disk, which is worse than the third-party delivery proxying replaces. Error-level logging is retained so upstream failures stay diagnosable.
+
+If you run a reverse proxy in front of spieli (Traefik, for example), check that it does not log the tile path either. A location trail is no less a location trail for being written by the ingress.
+
+### The bundled style
+
+`app/public/basemap/style.json` is a vendored copy of OpenFreeMap Bright with two edits, regenerated with `tools/build-basemap-style.py`:
+
+1. Green landcover fills are desaturated, because spieli encodes playground data completeness in green, amber and red. A basemap that paints parks green competes with the map's primary signal.
+2. The `poi` symbol layers are dropped, as the strongest competitor for attention.
+
+The second edit is a legibility change only. Dropping a style layer does not reduce render cost — the tile data is still decoded and simply not drawn.
+
+Pass `--asset-base` to rewrite the style's tile, glyph and sprite URLs to your own origin. Without it those assets are still fetched from the upstream host even if the tiles are local, which quietly breaks any claim that no third party is contacted.

@@ -25,6 +25,19 @@ window.APP_CONFIG = {
   // Hub uses a wider default zoom to show all registered regions
   // mapZoom and mapMinZoom above are reused; override here if needed
 
+  // --- Basemap ---
+  // Two shapes, checked in this order:
+  //   basemapStyleUrl — a MapLibre style document, rendered as vector tiles.
+  //   basemapUrl      — an OpenLayers XYZ raster template. Placeholders are
+  //                     substituted by name, so a provider using {z}/{y}/{x}
+  //                     needs no code change.
+  // Setting basemapStyleUrl wins; basemapUrl is the fallback.
+  basemapStyleUrl: '',
+  basemapUrl: 'https://{a-d}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+  basemapAttribution:
+    '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors ' +
+    '| &copy; <a href="https://carto.com/attributions">CARTO</a>',
+
   // --- Tiered playground delivery (standalone mode in P1) ---
   // Two tiers: cluster (zoom ≤ 13) and polygon (zoom > 13).
   clusterMaxZoom: 13,

@@ -3,6 +3,7 @@
         seed-load seed-load2 seed-extract seed-extract2 import2 \
         require-npm require-docker installer lan-url \
         docs-install docs-serve docs-build docs-clean \
+        basemap-style basemap-outline basemap-assets \
         help
 
 # Bail with a clear message when a required tool is missing.
@@ -150,6 +151,16 @@ docs-build:               ## Build static docs site into site/
 
 docs-clean:               ## Remove site/ and .venv
 	rm -rf site/ .venv
+
+## ── Basemap assets ────────────────────────────────────────────────────────────
+
+basemap-style:            ## Rebuild app/public/basemap/style.json from upstream
+	python3 tools/build-basemap-style.py
+
+basemap-outline:          ## Rebuild the macro-tier world outline from Natural Earth
+	python3 tools/build-macro-outline.py
+
+basemap-assets: basemap-style basemap-outline  ## Rebuild both basemap assets
 
 ## ── Help ──────────────────────────────────────────────────────────────────────
 

@@ -48,6 +48,8 @@ make serve        # preview production build locally
 make test         # unit tests + Playwright E2E tests
 make test-unit    # unit tests only (app/src/lib/*.test.js + app/src/stores/*.test.js)
 make lan-url      # print LAN IP for mobile testing
+
+make basemap-assets   # regenerate the vendored basemap style + macro world outline
 ```
 
 ## Docker Compose stack
@@ -178,14 +180,16 @@ To test Hub mode locally: set `appMode: 'hub'` in `app/public/config.js`, run `m
 
 ### Layers in Map.svelte
 
-The map manages five OL layers beyond the basemap. Tiered playground delivery uses two of them — the active one is driven by `activeTierStore`:
+The map manages the basemap plus six overlay layers. Tiered playground delivery uses two of them — the active one is driven by `activeTierStore`:
 
-1. **playgroundLayer** (zIndex 10) — polygon tier (zoom > `clusterMaxZoom`, default 13). Playground polygons styled by `playgroundStyleFn`, filtered by `filterStore`. Visible only when `$activeTierStore === 'polygon'`.
-2. **clusterLayer** (zIndex 12) — cluster tier (zoom ≤ `clusterMaxZoom`). Server-bucketed cluster rings + single-child dots rendered via the canvas `stackedRingRenderer` in `app/src/lib/clusterStyle.js`. Visible only when `$activeTierStore === 'cluster'`.
-3. **treeLayer** (zIndex 15) — natural=tree dots, shown when a playground is selected.
-4. **equipmentLayer** (zIndex 20) — playground devices/pitches/benches, shown when a playground is selected.
-5. **pitchLayer** (zIndex 9) — standalone pitches outside any playground, loaded on `moveend` at zoom ≥ 12, visibility controlled by `filterStore.standalonePitches`.
-6. **locationLayer** (zIndex 30) — user's GPS position. Pulsing blue dot (`#007aff`) inside a white ring at lower zoom levels; translucent accuracy circle at high zoom (top 3 levels). Driven by `location` store.
+1. **basemap** (zIndex 0) — raster `XYZ` from `basemapUrl`, or a `VectorTileLayer` styled via `ol-mapbox-style` when `basemapStyleUrl` is set. The library is dynamically imported, so raster deployments do not carry it. When `BASEMAP_PROXY_UPSTREAM` is configured the entrypoint rewrites `basemapUrl` to the same-origin `/tiles/` path.
+2. **macroOutlineLayer** (zIndex 1) — bundled Natural Earth world outline (`app/public/basemap/world-110m.json`), fetched lazily on the first macro tier and visible only there, so the area outside the basemap tileset's coverage is not silently blank.
+3. **playgroundLayer** (zIndex 10) — polygon tier (zoom > `clusterMaxZoom`, default 13). Playground polygons styled by `playgroundStyleFn`, filtered by `filterStore`. Visible only when `$activeTierStore === 'polygon'`.
+4. **clusterLayer** (zIndex 12) — cluster tier (zoom ≤ `clusterMaxZoom`). Server-bucketed cluster rings + single-child dots rendered via the canvas `stackedRingRenderer` in `app/src/lib/clusterStyle.js`. Visible only when `$activeTierStore === 'cluster'`.
+5. **treeLayer** (zIndex 15) — natural=tree dots, shown when a playground is selected.
+6. **equipmentLayer** (zIndex 20) — playground devices/pitches/benches, shown when a playground is selected.
+7. **pitchLayer** (zIndex 9) — standalone pitches outside any playground, loaded on `moveend` at zoom ≥ 12, visibility controlled by `filterStore.standalonePitches`.
+8. **locationLayer** (zIndex 30) — user's GPS position. Pulsing blue dot (`#007aff`) inside a white ring at lower zoom levels; translucent accuracy circle at high zoom (top 3 levels). Driven by `location` store.
 
 Equipment and tree layers are driven by `overlayFeaturesStore` (written by PlaygroundPanel, read by Map). Cluster vs polygon visibility is driven by `activeTierStore` (written by the orchestrator).
 
@@ -259,6 +263,8 @@ This catches ordering bugs (e.g. a function referencing a table defined later in
 |---|---|
 | `upgrade-stacks.sh` | Sequential upgrade of all spieli stacks on a single VPS. Edit the `STACKS` array at the top. For data-node stacks: runs `API_ONLY=1` first, verifies `get_meta`, then restarts the daemon importer. Pure hub stacks skip the `API_ONLY` step. |
 | `setup-germany-backends.sh` | Bootstraps all 15 non-Hessen German Bundesland data-node stacks and wires them into a hub with Traefik. One-time setup script. |
+| `tools/build-basemap-style.py` | Rebuilds `app/public/basemap/style.json` from an upstream MapLibre style (default OpenFreeMap Bright). Desaturates the green landcover fills and drops the `poi` symbol layers, because spieli encodes completeness in green/amber/red and a green basemap competes with its own data. `--asset-base` rewrites tile/glyph/sprite URLs to a local origin. |
+| `tools/build-macro-outline.py` | Rebuilds `app/public/basemap/world-110m.json` from Natural Earth 1:110m — the world outline shown under the hub macro tier, so areas outside the federation's tileset are not blank. |
 | `migrate-hub-hessen.sh` | Splits a combined hub+Hessen stack into a pure hub (`DEPLOY_MODE=ui`) and a dedicated Hessen data-node. Two-phase: Phase 1 creates `~/spieli-hessen` and runs the first import; Phase 2 (`--convert`) updates `registry.json`, switches hub to ui-only, and removes orphaned volumes. |
 
 ## Documentation

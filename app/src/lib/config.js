@@ -23,6 +23,25 @@ export const mapMaxZoom = c.mapMaxZoom ?? 21;
 // Search radius in metres for nearby POIs.
 export const poiRadiusM = c.poiRadiusM ?? 5000;
 
+// --- Basemap ---------------------------------------------------------------
+// Two configuration shapes. `basemapStyleUrl` points at a MapLibre style
+// document and renders vector tiles via ol-mapbox-style; `basemapUrl` is an
+// OpenLayers XYZ raster template. OL substitutes {z}/{x}/{y} and {a-d} by name,
+// so a provider using a reversed {z}/{y}/{x} axis order needs no code branch.
+//
+// Style wins when both are set — it is the more specific of the two, and an
+// operator who adds a style URL to an existing raster config means to switch.
+export const basemapStyleUrl = c.basemapStyleUrl || '';
+export const basemapUrl = c.basemapUrl ||
+    'https://{a-d}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png';
+export const basemapAttribution = c.basemapAttribution ||
+    '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors ' +
+    '| &copy; <a href="https://carto.com/attributions">CARTO</a>';
+
+// True when a vector style is configured. Map.svelte builds a VectorTileLayer
+// in that case and a raster TileLayer otherwise.
+export const basemapIsVector = !!basemapStyleUrl;
+
 // Base URL for the PostgREST API (e.g. "/api" in Docker, empty string for local dev).
 // When empty, the app falls back to Overpass for playground data.
 export const apiBaseUrl = c.apiBaseUrl || '';
