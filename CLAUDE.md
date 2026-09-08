@@ -272,7 +272,7 @@ rebuild should be diffed rather than trusted.
 
 | Script | Purpose |
 |---|---|
-| `build-basemap-style.py` | Rebuilds `app/public/basemap/style.json` from an upstream MapLibre style (default OpenFreeMap Bright). Desaturates the green landcover fills and drops the `poi` symbol layers, because spieli encodes completeness in green/amber/red and a green basemap competes with its own data. `--asset-base` rewrites tile/glyph/sprite URLs to a local origin; without it the committed style still fetches tiles, fonts and sprites from the upstream host. |
+| `build-basemap-style.py` | Rebuilds both style variants: `style.json` (upstream URLs, used by `make dev`) and `style.local.json` (all assets under `/basemap/`, used by the container). Built from from an upstream MapLibre style (default OpenFreeMap Bright). Desaturates the green landcover fills and drops the `poi` symbol layers, because spieli encodes completeness in green/amber/red and a green basemap competes with its own data. `--asset-base` rewrites tile/glyph/sprite URLs to a local origin; without it the committed style still fetches tiles, fonts and sprites from the upstream host. |
 | `build-macro-outline.py` | Rebuilds `app/public/basemap/world-110m.json` from Natural Earth 1:110m — the world outline shown under the hub macro tier, so areas outside the federation's tileset are not blank. |
 
 ## Documentation

@@ -105,32 +105,45 @@ def rewrite_assets(style, base):
     without this rewrite the map still contacts the upstream host for fonts and
     icons even when the tiles themselves are served locally, which quietly
     breaks any claim that no third party is contacted.
+
+    Only the ORIGIN is stripped; the upstream path is preserved verbatim. That
+    keeps the mapping 1:1 so a plain prefix proxy can serve it — inventing new
+    paths here would force the proxy to reverse a mapping it cannot know.
+
+    Note the `openmaptiles` source is a TileJSON endpoint, not a tile template.
+    Rewriting its `url` is necessary but not sufficient: the document it returns
+    carries absolute upstream tile URLs, so the proxy must also rewrite those in
+    the response body (see the sub_filter in the generated nginx config).
     """
     base = base.rstrip('/')
     changed = []
 
+    def relocate(url):
+        if not isinstance(url, str) or '://' not in url:
+            return url, False
+        path = url.split('://', 1)[1]
+        path = path.split('/', 1)[1] if '/' in path else ''
+        return f'{base}/{path}', True
+
     if style.get('glyphs'):
-        style['glyphs'] = f'{base}/fonts/{{fontstack}}/{{range}}.pbf'
-        changed.append('glyphs')
+        style['glyphs'], ok = relocate(style['glyphs'])
+        if ok:
+            changed.append('glyphs')
     if style.get('sprite'):
-        style['sprite'] = f'{base}/sprites/sprite'
-        changed.append('sprite')
+        style['sprite'], ok = relocate(style['sprite'])
+        if ok:
+            changed.append('sprite')
 
     for name, source in (style.get('sources') or {}).items():
         if source.get('url'):
-            # The TileJSON that `url` points at carries minzoom/maxzoom, and
-            # dropping it loses them — the client would then request z15-21
-            # instead of overzooming the deepest available tile. Defaults match
-            # the OpenMapTiles schema.
-            source.setdefault('minzoom', 0)
-            source.setdefault('maxzoom', 14)
-            source.pop('url')
-            source['tiles'] = [f'{base}/tiles/{name}/{{z}}/{{x}}/{{y}}.pbf']
-            changed.append(f'source:{name}')
+            source['url'], ok = relocate(source['url'])
+            if ok:
+                changed.append(f'source:{name}(tilejson)')
         elif source.get('tiles'):
-            suffix = '.png' if source.get('type') == 'raster' else '.pbf'
-            source['tiles'] = [f'{base}/tiles/{name}/{{z}}/{{x}}/{{y}}{suffix}']
-            changed.append(f'source:{name}')
+            moved = [relocate(t) for t in source['tiles']]
+            source['tiles'] = [u for u, _ in moved]
+            if any(ok for _, ok in moved):
+                changed.append(f'source:{name}')
 
     return changed
 

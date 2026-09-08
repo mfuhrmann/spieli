@@ -17,6 +17,7 @@ All variables are set in `.env` (copy from `.env.example`). The installer genera
 | `REGION_CHAT_URL` | *(hidden)* | ui, data-node-ui | Community chat link; leave empty to hide the button |
 | `MAP_ZOOM` | `12` | ui, data-node-ui | Initial map zoom level |
 | `MAP_MIN_ZOOM` | `10` | ui, data-node-ui | Minimum zoom level |
+| `BASEMAP_UPSTREAM` | `https://tiles.openfreemap.org` | ui, data-node-ui | Where the bundled style's tiles and sprites are fetched from and cached. Point it at your own tileserver to stop using a public one; nothing else changes. See [Basemap](#basemap). |
 | `BASEMAP_URL` | *(unset)* | ui, data-node-ui | Raster basemap as an OpenLayers XYZ template. Placeholders are substituted by name, so a provider using `{z}/{y}/{x}` needs no code change. See [Basemap](#basemap). |
 | `BASEMAP_STYLE_URL` | *(unset — the app falls back to `/basemap/style.json`)* | ui, data-node-ui | MapLibre style document, rendered as vector tiles. Takes precedence over `BASEMAP_URL`. See [Basemap](#basemap). |
 | `BASEMAP_ATTRIBUTION` | OpenFreeMap + OpenMapTiles + OSM | ui, data-node-ui | Attribution HTML shown on the map. **Required** whenever `BASEMAP_URL` or `BASEMAP_STYLE_URL` is set — the container refuses to start otherwise. Trusted HTML: rendered into the page as-is. |
@@ -142,6 +143,25 @@ docker compose --profile <mode> up -d
 ## Basemap
 
 The basemap is the one service every visitor contacts on every map movement, so how it is delivered is a privacy decision as much as a rendering one.
+
+### The default: a cached public tile server
+
+Out of the box the bundled vector style references every asset under `/basemap/` on **this instance**. nginx serves the vendored parts (the style, the fonts) from disk and fetches tiles and sprites from `BASEMAP_UPSTREAM`, caching them.
+
+That arrangement does two jobs at once:
+
+- **It is kind to the upstream.** OpenFreeMap is donation-funded and run by one person. A federation of backends sending every visitor's tile requests straight there is not a neighbourly load pattern; a cache in front means one client per deployment, with duplicate misses collapsed (`proxy_cache_lock`) and conditional revalidation rather than full refetches.
+- **Visitors' browsers never contact it.** No third party sees a visitor's IP address or the z/x/y stream that reveals what they were looking at.
+
+Tile requests are not written to the access log, for the same reason they are not sent to a third party. Vendored static assets (fonts, the style document) are logged normally — a font fetched once says nothing about where anyone looked.
+
+**To run your own tileserver**, point `BASEMAP_UPSTREAM` at it:
+
+```bash
+BASEMAP_UPSTREAM=http://tileserver:8080
+```
+
+Nothing else changes — not the style, not the app, not the cache configuration. That swap is the reason the assets are routed this way rather than pointed straight at the public server.
 
 ### Two source shapes
 
