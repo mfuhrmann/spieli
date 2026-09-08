@@ -5,10 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Datenschutzerklärung</title>
   <style>
-    body { font-family: sans-serif; max-width: 720px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; color: #222; }
+    body { font-family: sans-serif; max-width: 860px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; color: #222; }
     h1 { font-size: 1.6rem; margin-bottom: 0.5rem; }
     h2 { font-size: 1.2rem; margin-top: 2rem; }
     a  { color: #1a6b3a; }
+    .services { width: 100%; border-collapse: collapse; margin-top: 1rem; font-size: 0.95rem; }
+    .services th, .services td { border: 1px solid #d4d4d4; padding: 0.5rem 0.6rem; text-align: left; vertical-align: top; }
+    .services th { background: #f3f4f6; font-weight: 600; }
+    .services code { font-size: 0.9em; word-break: break-all; }
+    .scroll { overflow-x: auto; }
   </style>
 </head>
 <body>
@@ -19,16 +24,56 @@
   E-Mail: <a href="mailto:{{IMPRESSUM_EMAIL}}">{{IMPRESSUM_EMAIL}}</a></p>
 
   <h2>Grundsatz</h2>
-  <p>Diese Anwendung erhebt keine Nutzerkonten, setzt keine Tracking-Cookies und führt keine Analyse des Nutzerverhaltens durch.</p>
+  <p>Diese Anwendung ist so gebaut, dass sie selbst so wenig wie möglich über Sie erfährt: Sie erhebt keine Nutzerkonten, setzt keine Tracking-Cookies und führt keine Analyse des Nutzerverhaltens durch.</p>
+  <p>Damit die Karte funktioniert, lädt Ihr Browser jedoch Inhalte direkt von Servern Dritter. Diese Anbieter erhalten dabei technisch zwangsläufig Ihre IP-Adresse, Ihre Browserkennung (User-Agent) und die Adresse dieser Seite als Herkunft (Referer). Bei Kartenkacheln kommen die angefragten Kachelkoordinaten hinzu, aus denen sich ableiten lässt, welchen Kartenausschnitt Sie betrachten. Welche Anbieter das sind und wann sie kontaktiert werden, steht vollständig im nächsten Abschnitt. Auf die Datenverarbeitung durch diese Anbieter haben wir keinen Einfluss; es gelten deren jeweilige Datenschutzbestimmungen.</p>
 
-  <h2>Kartendaten</h2>
-  <p>Die Anwendung verwendet Geodaten aus <a href="https://www.openstreetmap.org/" target="_blank" rel="noopener">OpenStreetMap</a>, die unter der <a href="https://opendatacommons.org/licenses/odbl/" target="_blank" rel="noopener">Open Database Licence (ODbL)</a> bereitgestellt werden. Die Daten sind öffentlich zugänglich; es werden keine personenbezogenen Daten übertragen.</p>
+  <h2>Eingebundene Dienste Dritter</h2>
+  <div class="scroll">
+  <table class="services">
+    <thead>
+      <tr><th>Dienst</th><th>Zweck</th><th>Wird kontaktiert</th><th>Übermittelte Daten</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a href="https://carto.com/" target="_blank" rel="noopener">CARTO</a><br><code>basemaps.cartocdn.com</code></td>
+        <td>Hintergrundkarte (Kartenkacheln)</td>
+        <td>Bei jedem Laden der Karte und bei jeder Bewegung des Kartenausschnitts</td>
+        <td>IP-Adresse, User-Agent, Referer, Kachelkoordinaten (Zoomstufe, X, Y)</td>
+      </tr>
+      <tr>
+        <td><a href="https://nominatim.openstreetmap.org/" target="_blank" rel="noopener">Nominatim</a> (OpenStreetMap Foundation)<br><code>nominatim.openstreetmap.org</code></td>
+        <td>Ortssuche und Auflösung von Regions-Adressen wie <code>/fulda</code></td>
+        <td>Bei einer Suchanfrage sowie beim Aufruf einer Regions-Adresse</td>
+        <td>IP-Adresse, User-Agent, Referer, eingegebener Suchbegriff</td>
+      </tr>
+      <tr>
+        <td><a href="https://panoramax.xyz/" target="_blank" rel="noopener">Panoramax</a><br><code>api.panoramax.xyz</code></td>
+        <td>Fotos auf Straßenebene</td>
+        <td>Beim Auswählen eines Spielplatzes, zu dem Fotos vorliegen</td>
+        <td>IP-Adresse, User-Agent, Referer, Kennung des abgerufenen Fotos</td>
+      </tr>
+      <tr>
+        <td><a href="https://commons.wikimedia.org/" target="_blank" rel="noopener">Wikimedia Commons</a><br><code>commons.wikimedia.org</code>, <code>upload.wikimedia.org</code></td>
+        <td>Spielplatzfotos aus den OSM-Tags <code>wikimedia_commons</code> und <code>image</code></td>
+        <td>Beim Auswählen eines Spielplatzes, für den solche Tags hinterlegt sind</td>
+        <td>IP-Adresse, User-Agent, Referer, Name der abgerufenen Bilddatei</td>
+      </tr>
+      <tr>
+        <td><a href="https://mangrove.reviews/" target="_blank" rel="noopener">Mangrove Reviews</a><br><code>api.mangrove.reviews</code></td>
+        <td>Abruf und Abgabe von Bewertungen</td>
+        <td>Beim Auswählen eines Spielplatzes; zusätzlich beim Absenden einer Bewertung</td>
+        <td>IP-Adresse, User-Agent, Referer, Koordinaten des Spielplatzes. Beim Absenden zusätzlich Ihre Bewertung, ein optionaler Kommentar und Ihr öffentlicher Schlüssel (siehe „Lokale Speicherung“)</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+  <p>Die Kartendaten selbst stammen aus <a href="https://www.openstreetmap.org/" target="_blank" rel="noopener">OpenStreetMap</a> und stehen unter der <a href="https://opendatacommons.org/licenses/odbl/" target="_blank" rel="noopener">Open Database Licence (ODbL)</a>. Sie werden von dieser Instanz selbst ausgeliefert; für die Spielplatzdaten verlässt keine Anfrage den Server dieses Angebots.</p>
 
-  <h2>Standortsuche (Nominatim)</h2>
-  <p>Für die Ortssuche wird die API <a href="https://nominatim.openstreetmap.org/" target="_blank" rel="noopener">Nominatim</a> abgefragt. Dabei wird der eingegebene Suchbegriff übertragen. Es werden keine weiteren Nutzerdaten weitergegeben.</p>
+  <h2>Übermittlung in Drittländer</h2>
+  <p>CARTO (CARTO Inc.) und Mangrove Reviews haben ihren Sitz beziehungsweise ihre Infrastruktur ganz oder teilweise außerhalb der Europäischen Union. Mit dem Aufruf der Karte beziehungsweise dem Auswählen eines Spielplatzes werden die oben genannten Daten daher auch in Drittländer übermittelt, für die unter Umständen kein Angemessenheitsbeschluss der Europäischen Kommission vorliegt.</p>
 
-  <h2>Fotos (Panoramax)</h2>
-  <p>Sofern zu einem Spielplatz Fotos verfügbar sind, werden diese vom Dienst <a href="https://panoramax.xyz/" target="_blank" rel="noopener">Panoramax</a> geladen. Beim Aufruf dieser Inhalte gelten die Datenschutzbestimmungen von Panoramax.</p>
+  <h2>Lokale Speicherung</h2>
+  <p>Wenn Sie zum ersten Mal eine Bewertung absenden, wird dafür in Ihrem Browser ein kryptografisches Schlüsselpaar erzeugt und dort dauerhaft gespeichert (<code>localStorage</code>, Schlüssel <code>spieli-mangrove-keypair</code>). Der öffentliche Teil wird mit jeder Bewertung übertragen und dient als pseudonyme Kennung, über die Ihre Bewertungen einander zugeordnet werden können. Es handelt sich damit um einen dauerhaften pseudonymen Wiedererkennungswert. Er entsteht erst beim Absenden einer Bewertung, nicht beim bloßen Betrachten der Karte, und Sie können ihn jederzeit durch Löschen der Websitedaten in Ihrem Browser entfernen. Damit verlieren Sie allerdings die Möglichkeit, zuvor abgegebene Bewertungen zu ändern. Weitere lokal gespeicherte Werte betreffen ausschließlich Bedienzustände der Oberfläche und verlassen Ihr Gerät nicht.</p>
 
 {{HUB_PRIVACY_SECTION}}
   <h2>Standortbestimmung</h2>
