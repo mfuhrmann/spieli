@@ -97,6 +97,55 @@ jobs:
             -e BASEMAP_STYLE_URL=/basemap/style.json \
             -e BASEMAP_ATTRIBUTION='(c) Example'
 
+      - name: Basemap assets must actually resolve, not just parse
+        run: |
+          set -eu
+          # nginx -t cannot see any of this. A location-precedence mistake made
+          # every .png under /basemap/ answer 404 from the static-asset block
+          # while the map still rendered, because the tuned style draws few
+          # icons — a failure that looks exactly like success.
+          docker rm -f bmcheck >/dev/null 2>&1 || true
+          # A user-defined network is required, not cosmetic: nginx.conf uses
+          # Docker's embedded resolver at 127.0.0.11, which only exists on
+          # user-defined networks. On the default bridge every proxied request
+          # hangs until the resolver timeout instead of resolving the upstream.
+          docker network create bmnet >/dev/null 2>&1 || true
+          docker run -d --name bmcheck --network bmnet -p 18099:80 \
+            -e APP_MODE=standalone spieli-app:citest
+          for i in $(seq 1 40); do
+            curl -sf -o /dev/null http://127.0.0.1:18099/config.js && break
+            sleep 1
+          done
+
+          echo "-- the app must be handed the same-origin style"
+          curl -sf http://127.0.0.1:18099/config.js | grep -q "style.local.json" \
+            || { echo "FAIL: config.js does not name style.local.json"; exit 1; }
+
+          echo "-- every asset the style references must resolve"
+          for path in \
+            /basemap/style.local.json \
+            /basemap/planet \
+            /basemap/sprites/ofm_f384/ofm.json \
+            /basemap/sprites/ofm_f384/ofm.png \
+            /basemap/natural_earth/ne2sr/3/4/2.png \
+            /basemap/fonts/noto-sans/400.css ; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "http://127.0.0.1:18099$path" || echo 000)
+            echo "   $code  $path"
+            [ "$code" = "200" ] || { echo "FAIL: $path returned $code"; exit 1; }
+          done
+
+          echo "-- the TileJSON body must not hand the browser upstream tile URLs"
+          body=$(curl -s --max-time 30 http://127.0.0.1:18099/basemap/planet)
+          echo "$body" | grep -q '"tiles":\["/basemap/' \
+            || { echo "FAIL: TileJSON tiles[] not rewritten to /basemap/"; echo "$body" | head -c 300; exit 1; }
+
+          echo "-- the proxy must not be an open cache"
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST --max-time 20 http://127.0.0.1:18099/basemap/planet || echo 000)
+          [ "$code" = "403" ] || { echo "FAIL: POST /basemap/ returned $code, expected 403"; exit 1; }
+
+          docker rm -f bmcheck >/dev/null 2>&1 || true
+          docker network rm bmnet >/dev/null 2>&1 || true
+
       - name: Misconfiguration must fail closed, not start silently
         run: |
           set -eu
@@ -132,6 +181,8 @@ jobs:
             -e BASEMAP_URL='https://tiles.example.org/a/{z}/{x}/{y}.png' \
             -e BASEMAP_ATTRIBUTION='(c) Example' \
             -e BASEMAP_PROXY=true -e BASEMAP_CACHE_MAX_SIZE=4gg
+          expect_fail "upstream carrying a path" \
+            -e BASEMAP_UPSTREAM='https://tiles.example.org/data'
           expect_fail "fractional cache size" \
             -e BASEMAP_URL='https://tiles.example.org/a/{z}/{x}/{y}.png' \
             -e BASEMAP_ATTRIBUTION='(c) Example' \

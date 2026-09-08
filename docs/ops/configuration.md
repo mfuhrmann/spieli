@@ -22,7 +22,7 @@ All variables are set in `.env` (copy from `.env.example`). The installer genera
 | `BASEMAP_STYLE_URL` | *(unset — the app falls back to `/basemap/style.json`)* | ui, data-node-ui | MapLibre style document, rendered as vector tiles. Takes precedence over `BASEMAP_URL`. See [Basemap](#basemap). |
 | `BASEMAP_ATTRIBUTION` | OpenFreeMap + OpenMapTiles + OSM | ui, data-node-ui | Attribution HTML shown on the map. **Required** whenever `BASEMAP_URL` or `BASEMAP_STYLE_URL` is set — the container refuses to start otherwise. Trusted HTML: rendered into the page as-is. |
 | `BASEMAP_PROXY` | *(unset)* | ui, data-node-ui | `true` serves tiles through this instance, so the browser fetches from same-origin `/tiles/` and never contacts the provider. The upstream origin **and** the tile path are derived from `BASEMAP_URL`. See [Basemap](#basemap). |
-| `BASEMAP_CACHE_MAX_SIZE` | `4g` | ui, data-node-ui | Disk ceiling for the tile cache. Only used when `BASEMAP_PROXY` is enabled. |
+| `BASEMAP_CACHE_MAX_SIZE` | `4g` | ui, data-node-ui | Disk ceiling per cache zone. The basemap cache always exists; enabling `BASEMAP_PROXY` adds a second zone sized from the same value, so the on-disk total can be twice this. |
 | `BASEMAP_CACHE_KEYS_ZONE` | `64m` | ui, data-node-ui | nginx cache key zone. Holds roughly 8000 keys per MB and **binds before disk does** — a large `BASEMAP_CACHE_MAX_SIZE` behind a small keys zone yields a cache that stays almost empty. |
 | `BASEMAP_CACHE_INACTIVE` | `90d` | ui, data-node-ui | How long an unrequested tile survives. nginx defaults to 10 minutes, which evicts tiles regardless of free space — far too short for basemap tiles. |
 | `PARENT_ORIGIN` | *(own origin)* | data-node-ui | Allowed origin for `postMessage` events — set to the Hub's full origin when embedding in a Hub |
@@ -146,26 +146,35 @@ The basemap is the one service every visitor contacts on every map movement, so 
 
 ### The default: a cached public tile server
 
-Out of the box the bundled vector style references every asset under `/basemap/` on **this instance**. nginx serves the vendored parts (the style, the fonts) from disk and fetches tiles and sprites from `BASEMAP_UPSTREAM`, caching them.
+Out of the box the bundled vector style references every asset under `/basemap/` on **this instance**. nginx serves what is vendored in the image (the style document and the UI webfonts) from disk and fetches everything else — tiles, sprites, and MapLibre glyph ranges — from `BASEMAP_UPSTREAM`, caching it.
 
 That arrangement does two jobs at once:
 
 - **It is kind to the upstream.** OpenFreeMap is donation-funded and run by one person. A federation of backends sending every visitor's tile requests straight there is not a neighbourly load pattern; a cache in front means one client per deployment, with duplicate misses collapsed (`proxy_cache_lock`) and conditional revalidation rather than full refetches.
 - **Visitors' browsers never contact it.** No third party sees a visitor's IP address or the z/x/y stream that reveals what they were looking at.
 
-Tile requests are not written to the access log, for the same reason they are not sent to a third party. Vendored static assets (fonts, the style document) are logged normally — a font fetched once says nothing about where anyone looked.
+Proxied requests are not written to the access log, for the same reason they are not sent to a third party: at high zoom the z/x/y stream is a record of what someone looked at. Files served from disk are logged normally — a webfont or the style document fetched once says nothing about where anyone looked.
 
-**To run your own tileserver**, point `BASEMAP_UPSTREAM` at it:
+The cache lives on the container's writable layer, so `make docker-build` discards it and the next visitors refill it from the upstream. Mount a volume at `/var/cache/nginx/basemap` to keep it, which matters more here than for `/tiles/`: this cache is on by default, and an upgrade sweep across stacks otherwise sends every one of them cold at the public server.
+
+**To run your own tileserver**, two steps — the bundled style carries the *provider's* asset paths (`/planet`, `/sprites/ofm_f384/ofm`, `/natural_earth/…`), so a differently-shaped server needs the style rebuilt against it:
 
 ```bash
+# 1. rebuild the style against the new provider
+tools/build-basemap-style.py --source https://my-tileserver/styles/foo \
+                             --asset-base /basemap \
+                             --out app/public/basemap/style.local.json
+# 2. point the cache at it (origin only — a path is rejected at startup)
 BASEMAP_UPSTREAM=http://tileserver:8080
 ```
 
-Nothing else changes — not the style, not the app, not the cache configuration. That swap is the reason the assets are routed this way rather than pointed straight at the public server.
+An earlier draft of this section claimed the swap was one variable and nothing else. It is not: a 1:1 prefix proxy cannot reshape one provider's URL layout into another's. Two steps, both scriptable, is the honest version — and a provider migration is a one-time operation that already involves standing up a server.
+
+`BASEMAP_UPSTREAM` must be an origin (`scheme://host[:port]`) with no path. A path is refused at startup rather than accepted, because `proxy_pass` with a variable *replaces* the request URI instead of prefixing it — every asset would collapse onto that one path and the map would render blank with no error.
 
 ### Two source shapes
 
-Leave both unset and you get the bundled vector style. It is the application's compiled-in default, **not** the env var's default — do not copy `/basemap/style.json` into `.env` as a value. Setting `BASEMAP_STYLE_URL` marks the basemap as *configured*, which then requires `BASEMAP_ATTRIBUTION` (the container refuses to start without it) and is rejected outright alongside `BASEMAP_PROXY`, because the bundled style's assets are not same-origin.
+Leave both unset and you get the bundled vector style. It is the application's compiled-in default, **not** the env var's default — do not copy `/basemap/style.json` into `.env` as a value. Setting `BASEMAP_STYLE_URL` marks the basemap as *configured*, which then requires `BASEMAP_ATTRIBUTION` — the container refuses to start without it. A style whose assets point at a third party is also rejected alongside `BASEMAP_PROXY`, since the style would bypass the proxy; the bundled style is same-origin and is accepted.
 
 Precedence when you do set them:
 

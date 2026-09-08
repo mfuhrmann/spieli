@@ -175,8 +175,12 @@ def build(source, out, asset_base=None):
     style['layers'] = kept
     rewritten = rewrite_assets(style, asset_base) if asset_base else []
     style['name'] = 'spieli basemap'
+    # The source is recorded WITHOUT its scheme. The entrypoint decides whether
+    # a style is same-origin by text-scanning it for http(s):// — provenance
+    # metadata carrying a full URL reads as a third-party asset host, which made
+    # the proxy refuse the very style it was meant to accept.
     style['metadata'] = dict(style.get('metadata') or {}, **{
-        'spieli:source': source,
+        'spieli:source': re.sub(r'^[a-z]+://', '', source),
         'spieli:generator': 'tools/build-basemap-style.py',
     })
 
@@ -191,6 +195,18 @@ def build(source, out, asset_base=None):
         return 1
     for wanted in sorted(GREEN_LAYERS - set(recoloured)):
         print(f'  note: {wanted} not present upstream (nothing to recolour)')
+
+    # An --asset-base build exists to contain no third-party URL at all. Assert
+    # it rather than trust it: this is the property the whole caching design
+    # rests on, and a silent miss looks exactly like success.
+    if asset_base:
+        blob = json.dumps(style)
+        leaked = sorted(set(re.findall(r'https?://[A-Za-z0-9.-]+', blob)))
+        if leaked:
+            print(f'{source}\n  -> NOT WRITTEN', file=sys.stderr)
+            print('  ERROR: --asset-base build still references: '
+                  + ', '.join(leaked), file=sys.stderr)
+            return 1
 
     os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
     with open(out, 'w', encoding='utf-8') as fh:

@@ -71,8 +71,14 @@ export const basemapUrlIsExplicit = !!c.basemapUrl;
 // same mistake silently renders the default credit over another provider's tiles.
 // Warn rather than throw: a dev server should not be bricked by a licence
 // nit, but the mistake must not be invisible either.
-if ((c.basemapUrl || c.basemapStyleUrl) && !c.basemapAttribution &&
-    typeof console !== 'undefined') {
+// A same-origin style is spieli's own bundled default, which ships with a
+// matching credit — the rule is about an operator pointing at a provider whose
+// attribution we cannot know. Without this the warning fires on every default
+// deployment, and its own text ("the entrypoint refuses to start on this")
+// would be false, since the entrypoint deliberately exempts the default.
+const _operatorConfiguredSource =
+    !!c.basemapUrl || (!!c.basemapStyleUrl && !c.basemapStyleUrl.startsWith('/'));
+if (_operatorConfiguredSource && !c.basemapAttribution && typeof console !== 'undefined') {
     console.warn(
         '[spieli] A basemap source is configured but basemapAttribution is empty, ' +
         'so the default OpenFreeMap + OpenStreetMap credit is being shown over it. ' +

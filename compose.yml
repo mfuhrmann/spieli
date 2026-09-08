@@ -169,6 +169,7 @@ services:
       REGION_CHAT_URL:             ${REGION_CHAT_URL:-}
       MAP_ZOOM:                    ${MAP_ZOOM:-12}
       MAP_MIN_ZOOM:                ${MAP_MIN_ZOOM:-10}
+      BASEMAP_UPSTREAM:            ${BASEMAP_UPSTREAM:-}
       BASEMAP_URL:                 ${BASEMAP_URL:-}
       BASEMAP_STYLE_URL:           ${BASEMAP_STYLE_URL:-}
       BASEMAP_ATTRIBUTION:         ${BASEMAP_ATTRIBUTION:-}
