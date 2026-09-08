@@ -6,7 +6,7 @@ spieli integrates with the following free external services at runtime:
 |---|---|
 | [Geofabrik](https://download.geofabrik.de) | Source of OSM PBF extracts for import |
 | [Nominatim](https://nominatim.openstreetmap.org) | Location search and region bounding box |
-| [CartoDB Voyager](https://carto.com/basemaps) | Background map tiles |
+| [OpenFreeMap](https://openfreemap.org) / [OpenMapTiles](https://www.openmaptiles.org) | Background map tiles (default; configurable, and avoidable entirely via `BASEMAP_PROXY`) |
 | [Panoramax](https://panoramax.xyz) | Street-level photos |
 | [Wikimedia Commons](https://commons.wikimedia.org) | Playground photos from `wikimedia_commons` / `image` tags |
 | [Mangrove.reviews](https://mangrove.reviews) | Pseudonymous community reviews |

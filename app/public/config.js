@@ -28,15 +28,18 @@ window.APP_CONFIG = {
   // --- Basemap ---
   // Two shapes, checked in this order:
   //   basemapStyleUrl — a MapLibre style document, rendered as vector tiles.
+  //                     This is the default: the vendored style in public/basemap.
   //   basemapUrl      — an OpenLayers XYZ raster template. Placeholders are
   //                     substituted by name, so a provider using {z}/{y}/{x}
-  //                     needs no code change.
-  // Setting basemapStyleUrl wins; basemapUrl is the fallback.
-  basemapStyleUrl: '',
-  basemapUrl: 'https://{a-d}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+  //                     needs no code change. Opt-in, and the fallback if the
+  //                     style fails to load.
+  // Setting basemapStyleUrl wins.
+  basemapStyleUrl: '/basemap/style.json',
+  basemapUrl: '',
   basemapAttribution:
-    '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors ' +
-    '| &copy; <a href="https://carto.com/attributions">CARTO</a>',
+    '&copy; <a href="https://openfreemap.org/">OpenFreeMap</a> ' +
+    '&copy; <a href="https://www.openmaptiles.org/">OpenMapTiles</a> | ' +
+    'Data from <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
 
   // --- Tiered playground delivery (standalone mode in P1) ---
   // Two tiers: cluster (zoom ≤ 13) and polygon (zoom > 13).

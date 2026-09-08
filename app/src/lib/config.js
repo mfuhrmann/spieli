@@ -31,35 +31,51 @@ export const poiRadiusM = c.poiRadiusM ?? 5000;
 //
 // Style wins when both are set — it is the more specific of the two, and an
 // operator who adds a style URL to an existing raster config means to switch.
-const DEFAULT_BASEMAP_URL =
-    'https://{a-d}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png';
+// The default basemap is the vendored vector style, served by this instance.
+// There is no raster default: no keyless raster provider covers the
+// federation's area (basemap.de is Germany-only and answers 200 with a blank
+// tile outside it), so a raster default would have to be a keyed commercial
+// one — which is what this change exists to remove.
+const DEFAULT_BASEMAP_STYLE_URL = '/basemap/style.json';
 const DEFAULT_BASEMAP_ATTRIBUTION =
-    '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors ' +
-    '| &copy; <a href="https://carto.com/attributions">CARTO</a>';
+    '&copy; <a href="https://openfreemap.org/">OpenFreeMap</a> ' +
+    '&copy; <a href="https://www.openmaptiles.org/">OpenMapTiles</a> | ' +
+    'Data from <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
 
-export const basemapStyleUrl = c.basemapStyleUrl || '';
-export const basemapUrl = c.basemapUrl || DEFAULT_BASEMAP_URL;
+// Precedence, in order:
+//   1. an explicitly configured style   → vector
+//   2. an explicitly configured raster  → raster (the style default steps aside,
+//      otherwise setting BASEMAP_URL alone would silently still render vector)
+//   3. neither                          → the vendored vector style
+const _styleConfigured = !!c.basemapStyleUrl;
+const _rasterConfigured = !!c.basemapUrl;
+
+export const basemapStyleUrl = _styleConfigured
+    ? c.basemapStyleUrl
+    : (_rasterConfigured ? '' : DEFAULT_BASEMAP_STYLE_URL);
+// No default: raster is opt-in, and doubles as the fallback when a configured
+// style fails to load (see basemapUrlIsExplicit below).
+export const basemapUrl = c.basemapUrl || '';
 export const basemapAttribution = c.basemapAttribution || DEFAULT_BASEMAP_ATTRIBUTION;
 
-// Whether the operator configured the raster source themselves, as opposed to
-// inheriting the compiled-in CARTO default. The distinction matters for the
-// vector fallback below: falling back to a default the operator never chose
-// would send visitors to a third party they may have picked vector precisely
-// to avoid. The entrypoint refuses to start if a source is configured without
-// a matching attribution, so an explicit URL always carries its own licence.
+// Whether the operator configured a raster source at all. There is no raster
+// default, so this is the only way a raster basemap exists — and it is what
+// the vector path falls back to when a style fails to load. With nothing
+// configured there is nothing to fall back to, and the map renders without a
+// basemap rather than reaching for some third party the operator never chose.
 export const basemapUrlIsExplicit = !!c.basemapUrl;
 
 // The "a configured source carries its own attribution" rule is enforced by the
 // container entrypoint, which refuses to start without it. That guard does not
 // exist in `make dev` or when app/public/config.js is edited by hand, where the
-// same mistake silently renders the CARTO credit over another provider's tiles.
+// same mistake silently renders the default credit over another provider's tiles.
 // Warn rather than throw: a dev server should not be bricked by a licence
 // nit, but the mistake must not be invisible either.
 if ((c.basemapUrl || c.basemapStyleUrl) && !c.basemapAttribution &&
     typeof console !== 'undefined') {
     console.warn(
         '[spieli] A basemap source is configured but basemapAttribution is empty, ' +
-        'so the default CARTO + OpenStreetMap credit is being shown over it. ' +
+        'so the default OpenFreeMap + OpenStreetMap credit is being shown over it. ' +
         'Attribution is a licence obligation — set basemapAttribution to match ' +
         'the configured provider. (The container entrypoint refuses to start on this.)',
     );

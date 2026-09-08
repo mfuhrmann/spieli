@@ -26,14 +26,24 @@ async function withConfig(appConfig, fn, label) {
     }
 }
 
-const CARTO = 'basemaps.cartocdn.com';
-
 await withConfig({}, (c) => {
-    assert.ok(c.basemapUrl.includes(CARTO), 'default raster URL is the CARTO template');
-    assert.equal(c.basemapStyleUrl, '', 'no style configured by default');
-    assert.equal(c.basemapIsVector, false, 'default delivery is raster');
-    assert.equal(c.basemapUrlIsExplicit, false, 'compiled-in default is not explicit');
-}, 'unset config falls back to the CARTO raster default');
+    assert.equal(c.basemapStyleUrl, '/basemap/style.json', 'default is the vendored style');
+    assert.equal(c.basemapUrl, '', 'no raster default');
+    assert.equal(c.basemapIsVector, true, 'default delivery is vector');
+    assert.equal(c.basemapUrlIsExplicit, false, 'nothing to fall back to by default');
+}, 'unset config uses the vendored vector style');
+
+// Regression guard for the whole point of this change: no commercial keyed
+// provider may reappear as a compiled-in default. A keyed provider would also
+// reintroduce a per-operator signup, which the federation model cannot carry.
+await withConfig({}, (c) => {
+    const blob = [c.basemapUrl, c.basemapStyleUrl, c.basemapAttribution].join(' ').toLowerCase();
+    for (const banned of ['cartocdn', 'carto.com', 'cartodb']) {
+        assert.ok(!blob.includes(banned), `default config must not reference ${banned}`);
+    }
+    assert.ok(!/[?&](api_?key|access_?token|key)=/i.test(blob),
+        'default config must not carry an API key');
+}, 'no keyed commercial provider in the defaults');
 
 await withConfig({
     basemapUrl: 'https://tiles.example.org/{z}/{y}/{x}.png',
@@ -71,18 +81,24 @@ await withConfig({
     assert.ok(!c.basemapUrl.includes('://'), 'proxied URL names no third-party host');
 }, 'a proxied same-origin tile path is used as-is');
 
-// Regression guard for the fallback rule: falling back to the compiled-in
-// CARTO default would send visitors to a third party an operator running
-// vector tiles may have chosen vector specifically to avoid.
+// Fallback rule: with no raster configured there is nothing to reach for, so
+// a failed style leaves the map without a basemap rather than substituting a
+// third party the operator never chose.
 await withConfig({
     basemapStyleUrl: '/basemap/style.json',
     basemapAttribution: '&copy; Example',
 }, (c) => {
-    assert.equal(c.basemapUrlIsExplicit, false,
-        'with no operator-set raster URL there is nothing safe to fall back to');
-    assert.ok(c.basemapUrl.includes(CARTO),
-        'the default is still exposed, but callers must gate on basemapUrlIsExplicit');
-}, 'vector without an explicit raster URL has no safe fallback');
+    assert.equal(c.basemapUrlIsExplicit, false, 'nothing safe to fall back to');
+    assert.equal(c.basemapUrl, '', 'and no raster URL exists to fall back to');
+}, 'vector without an explicit raster URL has no fallback');
+
+await withConfig({
+    basemapUrl: 'https://raster.example.org/{z}/{x}/{y}.png',
+    basemapAttribution: '&copy; Example',
+}, (c) => {
+    assert.equal(c.basemapIsVector, false, 'an explicit raster URL opts out of vector');
+    assert.equal(c.basemapUrlIsExplicit, true, 'and is available as the style fallback');
+}, 'an explicit raster URL replaces the vector default');
 
 if (failures) {
     console.error(`basemapConfig.test.js: ${failures} failure(s)`);

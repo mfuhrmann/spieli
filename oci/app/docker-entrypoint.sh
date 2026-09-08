@@ -132,7 +132,7 @@ style_asset_hosts() {
 }
 
 # Attribution is a licence obligation, not decoration. Showing the built-in
-# CARTO string over another provider's tiles is exactly the failure the spec
+# default credit over another provider's tiles is exactly the failure the spec
 # forbids, so a configured source without a matching attribution is a
 # configuration error rather than something to paper over with a default.
 if [ -n "$SAFE_BASEMAP_URL" ] || [ -n "$SAFE_BASEMAP_STYLE_URL" ]; then
@@ -220,7 +220,10 @@ if [ -n "$BASEMAP_PROXY_ENABLED" ]; then
 else
     _basemap_effective="${SAFE_BASEMAP_STYLE_URL:-$SAFE_BASEMAP_URL}"
     if [ -z "$_basemap_effective" ]; then
-        BASEMAP_TILE_PROVIDER_HOST="basemaps.cartocdn.com"
+        # Nothing configured: the frontend falls back to the vendored style,
+        # so the hosts the browser contacts are that style's own asset hosts.
+        # Keep this in step with DEFAULT_BASEMAP_STYLE_URL in lib/config.js.
+        BASEMAP_TILE_PROVIDER_HOST=$(style_asset_hosts /basemap/style.json | sed 's/ *$//')
     else
         BASEMAP_TILE_PROVIDER_HOST=$(host_of "$_basemap_effective")
         # A same-origin style still sends the browser wherever its assets live,

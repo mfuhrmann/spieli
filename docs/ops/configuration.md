@@ -17,9 +17,9 @@ All variables are set in `.env` (copy from `.env.example`). The installer genera
 | `REGION_CHAT_URL` | *(hidden)* | ui, data-node-ui | Community chat link; leave empty to hide the button |
 | `MAP_ZOOM` | `12` | ui, data-node-ui | Initial map zoom level |
 | `MAP_MIN_ZOOM` | `10` | ui, data-node-ui | Minimum zoom level |
-| `BASEMAP_URL` | CARTO Voyager | ui, data-node-ui | Raster basemap as an OpenLayers XYZ template. Placeholders are substituted by name, so a provider using `{z}/{y}/{x}` needs no code change. See [Basemap](#basemap). |
-| `BASEMAP_STYLE_URL` | *(unset)* | ui, data-node-ui | MapLibre style document, rendered as vector tiles. Takes precedence over `BASEMAP_URL`. See [Basemap](#basemap). |
-| `BASEMAP_ATTRIBUTION` | CARTO + OSM | ui, data-node-ui | Attribution HTML shown on the map. **Required** whenever `BASEMAP_URL` or `BASEMAP_STYLE_URL` is set — the container refuses to start otherwise. Trusted HTML: rendered into the page as-is. |
+| `BASEMAP_URL` | *(unset)* | ui, data-node-ui | Raster basemap as an OpenLayers XYZ template. Placeholders are substituted by name, so a provider using `{z}/{y}/{x}` needs no code change. See [Basemap](#basemap). |
+| `BASEMAP_STYLE_URL` | `/basemap/style.json` | ui, data-node-ui | MapLibre style document, rendered as vector tiles. Takes precedence over `BASEMAP_URL`. See [Basemap](#basemap). |
+| `BASEMAP_ATTRIBUTION` | OpenFreeMap + OpenMapTiles + OSM | ui, data-node-ui | Attribution HTML shown on the map. **Required** whenever `BASEMAP_URL` or `BASEMAP_STYLE_URL` is set — the container refuses to start otherwise. Trusted HTML: rendered into the page as-is. |
 | `BASEMAP_PROXY` | *(unset)* | ui, data-node-ui | `true` serves tiles through this instance, so the browser fetches from same-origin `/tiles/` and never contacts the provider. The upstream origin **and** the tile path are derived from `BASEMAP_URL`. See [Basemap](#basemap). |
 | `BASEMAP_CACHE_MAX_SIZE` | `4g` | ui, data-node-ui | Disk ceiling for the tile cache. Only used when `BASEMAP_PROXY` is enabled. |
 | `BASEMAP_CACHE_KEYS_ZONE` | `64m` | ui, data-node-ui | nginx cache key zone. Holds roughly 8000 keys per MB and **binds before disk does** — a large `BASEMAP_CACHE_MAX_SIZE` behind a small keys zone yields a cache that stays almost empty. |
