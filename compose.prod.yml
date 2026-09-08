@@ -116,6 +116,14 @@ services:
       REGION_CHAT_URL:            ${REGION_CHAT_URL:-}
       MAP_ZOOM:                   ${MAP_ZOOM:-12}
       MAP_MIN_ZOOM:               ${MAP_MIN_ZOOM:-10}
+      BASEMAP_UPSTREAM:           ${BASEMAP_UPSTREAM:-}
+      BASEMAP_URL:                ${BASEMAP_URL:-}
+      BASEMAP_STYLE_URL:          ${BASEMAP_STYLE_URL:-}
+      BASEMAP_ATTRIBUTION:        ${BASEMAP_ATTRIBUTION:-}
+      BASEMAP_PROXY:              ${BASEMAP_PROXY:-}
+      BASEMAP_CACHE_MAX_SIZE:     ${BASEMAP_CACHE_MAX_SIZE:-4g}
+      BASEMAP_CACHE_KEYS_ZONE:    ${BASEMAP_CACHE_KEYS_ZONE:-64m}
+      BASEMAP_CACHE_INACTIVE:     ${BASEMAP_CACHE_INACTIVE:-90d}
       POI_RADIUS_M:               ${POI_RADIUS_M:-5000}
       API_BASE_URL:               ${API_BASE_URL:-/api}
       REGISTRY_URL:               ${REGISTRY_URL:-/registry.json}
@@ -128,8 +136,15 @@ services:
       IMPRESSUM_PHONE:            ${IMPRESSUM_PHONE:-}
       IMPRESSUM_URL:              ${IMPRESSUM_URL:-}
       PRIVACY_URL:                ${PRIVACY_URL:-}
+    volumes:
+      # Without this the basemap cache sits on the container's writable layer
+      # and every `docker compose pull` discards it. scripts/upgrade-stacks.sh
+      # sweeps the stacks in sequence, so that would send each one at the
+      # public tile server cold — the load pattern this cache exists to avoid.
+      - basemap_cache:/var/cache/nginx/basemap
     restart: on-failure
 
 volumes:
   pgdata:
   pbf_cache:
+  basemap_cache:
