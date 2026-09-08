@@ -116,6 +116,13 @@ services:
       REGION_CHAT_URL:            ${REGION_CHAT_URL:-}
       MAP_ZOOM:                   ${MAP_ZOOM:-12}
       MAP_MIN_ZOOM:               ${MAP_MIN_ZOOM:-10}
+      BASEMAP_URL:                ${BASEMAP_URL:-}
+      BASEMAP_STYLE_URL:          ${BASEMAP_STYLE_URL:-}
+      BASEMAP_ATTRIBUTION:        ${BASEMAP_ATTRIBUTION:-}
+      BASEMAP_PROXY:              ${BASEMAP_PROXY:-}
+      BASEMAP_CACHE_MAX_SIZE:     ${BASEMAP_CACHE_MAX_SIZE:-4g}
+      BASEMAP_CACHE_KEYS_ZONE:    ${BASEMAP_CACHE_KEYS_ZONE:-64m}
+      BASEMAP_CACHE_INACTIVE:     ${BASEMAP_CACHE_INACTIVE:-90d}
       POI_RADIUS_M:               ${POI_RADIUS_M:-5000}
       API_BASE_URL:               ${API_BASE_URL:-/api}
       REGISTRY_URL:               ${REGISTRY_URL:-/registry.json}

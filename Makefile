@@ -1,4 +1,4 @@
-.PHONY: install dev build serve test test-unit \
+.PHONY: install dev build serve test test-unit check-compose \
         up down import docker-build db-apply db-shell \
         seed-load seed-load2 seed-extract seed-extract2 import2 \
         require-npm require-docker installer lan-url \
@@ -43,6 +43,9 @@ test: require-npm test-unit  ## Run unit tests + Playwright E2E tests
 
 test-unit: require-npm    ## Run unit tests in app/src/lib/*.test.js
 	npm --prefix app run test:unit
+
+check-compose: require-python3  ## Fail if compose.prod.yml drops variables compose.yml passes
+	python3 tools/check-compose-parity.py
 
 ## ── Docker Compose stack ──────────────────────────────────────────────────────
 
