@@ -75,8 +75,7 @@ jobs:
               # interval: on a slow runner a fixed sleep validates a
               # half-written file, which is a flake in either direction.
               i=0
-              while [ ! -s /usr/share/nginx/html/config.js ] \\
-                    || [ ! -f /etc/nginx/tiles-location.conf ]; do
+              while [ ! -s /usr/share/nginx/html/config.js ] || [ ! -f /etc/nginx/tiles-location.conf ]; do
                 i=$((i+1)); [ "$i" -gt 100 ] && { echo "entrypoint did not finish"; exit 1; }
                 sleep 0.2
               done
@@ -121,6 +120,18 @@ jobs:
             -e BASEMAP_ATTRIBUTION='(c) Example' \
             -e BASEMAP_PROXY=true \
             -e BASEMAP_STYLE_URL='https://tiles.openfreemap.org/styles/bright'
+          # Regression guard for the review finding: a same-origin style URL is
+          # not enough — the bundled style still points its assets at the
+          # upstream host, so combining it with the proxy must be refused.
+          expect_fail "proxy enabled with the bundled style (remote assets)" \
+            -e BASEMAP_URL='https://tiles.example.org/a/{z}/{x}/{y}.png' \
+            -e BASEMAP_ATTRIBUTION='(c) Example' \
+            -e BASEMAP_PROXY=true \
+            -e BASEMAP_STYLE_URL=/basemap/style.json
+          expect_fail "multi-suffix cache size (4gg)" \
+            -e BASEMAP_URL='https://tiles.example.org/a/{z}/{x}/{y}.png' \
+            -e BASEMAP_ATTRIBUTION='(c) Example' \
+            -e BASEMAP_PROXY=true -e BASEMAP_CACHE_MAX_SIZE=4gg
           expect_fail "fractional cache size" \
             -e BASEMAP_URL='https://tiles.example.org/a/{z}/{x}/{y}.png' \
             -e BASEMAP_ATTRIBUTION='(c) Example' \
