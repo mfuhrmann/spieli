@@ -27,7 +27,7 @@
 - [ ] 2a.6 Confirm the vector basemap renders under both app modes and does not disturb the existing tier layer ordering.
 - [ ] 2a.7 Adopt OpenFreeMap **Bright** as the style (D11) and vendor it, so the two edits below are ours to make and cannot be changed upstream underneath us.
 - [ ] 2a.8 Desaturate `park`, `landcover_grass` and `landcover_wood` so the green channel belongs to playground completeness.
-- [ ] 2a.9 Thin or drop the POI icon layers — the strongest competitor for attention, and the same move as thinning the tileset (D10).
+- [ ] 2a.9 Drop the `poi` symbol layers (`poi_r1`, `poi_r7`, `poi_r20`, `poi_transit`) — the strongest competitor for attention. Legibility only: measured, this does **not** improve render performance (D11), because the data is still decoded. Decide separately whether `poi_transit` stays dropped.
 - [ ] 2a.10 Re-check completeness legibility against real data with the **tuned** style. The published comparison used stock styles; the shipped one will not be stock.
 
 ## 2b. Macro-tier basemap (D6)

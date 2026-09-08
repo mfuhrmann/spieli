@@ -251,7 +251,22 @@ The style question turned out to be a correctness question wearing an aesthetic 
 1. Desaturate `park`, `landcover_grass` and `landcover_wood`, reclaiming the green channel for playground data.
 2. Thin or drop the POI icon layers — the blue icons compete for attention harder than the greens do.
 
-Both are only possible because the migration replaces a fixed raster image with a style document we own. **This is the first upside of the migration that is not damage control.** Edit 2 is also the same work as building a thinner tileset, so the legibility fix and the mobile-performance lever from D10 coincide.
+Both are only possible because the migration replaces a fixed raster image with a style document we own. **This is the first upside of the migration that is not damage control.**
+
+Applied programmatically (saturation cut to 30% of original, lightness lifted 3%) rather than hand-picked, so the result is reproducible: `park`, `landcover-grass` and `landcover-grass-park` go `#d8e8c8` → `#e0e4dc`, `landcover-wood` goes `#6a4` → `#798f6e`, and `poi_r1` / `poi_r7` / `poi_r20` / `poi_transit` are dropped. 119 layers → 115.
+
+**Correction, measured.** An earlier revision of this decision claimed edit 2 was "the same work as building a thinner tileset", so legibility and the D10 mobile-performance lever would coincide. That is wrong:
+
+| CPU | style | p50 | p95 | >32ms |
+|---|---|---|---|---|
+| 4× | Bright stock (119 layers) | 19.9 | 96.6 | 18.2% |
+| 4× | Bright tuned (115 layers) | 20.2 | 99.7 | 19.1% |
+| 6× | Bright stock | 27.9 | 148.5 | 37.9% |
+| 6× | Bright tuned | 27.6 | 77.4 | 44.0% |
+
+No improvement, within noise both ways. A dropped *style* layer still has its data decoded from the tile, it is simply not drawn; only removing the `poi` layer from the **tileset** avoids the decode. Style and tileset are separate artefacts and only the second touches the phone-facing number. The two fixes are aligned in intent and separate in execution: **the style edit buys legibility and nothing else**, and thinning the tileset (D10) remains untested.
+
+*Open judgement:* whether `poi_transit` stays dropped. Nearby transit is genuinely useful beside a playground and spieli already surfaces it in the POI panel, so removing it from the basemap is a choice rather than an obvious win.
 
 *Consequence for scope:* style tuning moves from non-goal into scope as a small bounded piece, and any legibility check must run against the **tuned** style. The published comparison uses stock styles; the shipped one will not be stock.
 
