@@ -21,13 +21,14 @@ Where knudli *is* instructive is the delivery axis. They route Overpass through 
 - An operator can eliminate third-party tile contact entirely without self-hosting a tile build.
 - Attribution follows the provider automatically, because it is a licence obligation, not decoration.
 - The privacy disclosure follows the configuration, so it cannot silently drift from what the deployment actually does.
+- Enabling proxying does not accumulate a per-visitor location trail on the operator's own disk (D8).
+- The hub macro tier renders correctly with a Germany-only provider, so coverage does not veto the provider choice (D6).
 - Today's behaviour is preserved for an operator who changes nothing.
 
 **Non-Goals:**
-- **Choosing a provider.** That is #823 item 3 and depends on unresolved licensing questions (see Open Questions). This change makes that decision cheap to act on and cheap to reverse.
-- **Vector basemap support.** OpenFreeMap and VersaTiles need `ol-mapbox-style` and a real frontend rework. Out of scope; D2 keeps the config shape from foreclosing it.
+- **Flipping the shipped default provider.** D9 records a recommendation under a privacy-first weighting (basemap.de, proxied), but changing the default alters the cartographic appearance of every deployment. That is a maintainer decision about visual identity, not a technical one; see task 6.2.
+- **Vector basemap support.** OpenFreeMap and VersaTiles are vector-only (verified in D9) and need `ol-mapbox-style` plus a real frontend rework. Out of scope; D2 keeps the config shape from foreclosing it. This is what leaves non-German operators without a keyless option for now.
 - **Self-hosted tile generation** (planetiler/PMTiles in the importer). Out of scope, and D5 records why it is heavier than it looks.
-- **The hub macro-tier basemap.** Separate concern, see D6; it only becomes a blocker if a Germany-only provider is chosen.
 
 ## Decisions
 
@@ -99,13 +100,13 @@ It fails on the data. `importer/import.sh:290` tag-filters the PBF to playground
 
 Do not re-propose without first addressing the filter.
 
-### D6 — The hub macro tier is a separate, cheap problem
+### D6 — The hub macro tier needs its own basemap, and it is cheap
 
 #823 treats basemap.de's Germany-only coverage as a blocker, because at `macroMaxZoom: 7` the hub renders a Europe-wide view that would be blank outside Germany.
 
 But the macro tier draws one ring per backend at its bbox centroid. It needs enough context to read as "Germany", not street detail. `Map.svelte:432` already subscribes to `activeTierStore` and flips `setVisible` per tier for three layers; a macro-only basemap — plausibly a bundled Natural Earth 1:110m outline, no network request at all — is one more line in that existing block.
 
-Kept out of scope here because it only becomes necessary if a Germany-only provider is chosen. Recorded so the provider decision is not made under the false belief that this objection is expensive.
+**Revised to in-scope.** Originally deferred on the grounds that it only matters if a Germany-only provider is chosen. D9 makes that the recommended provider, so deferring it would leave a known blocker in front of the recommendation for the sake of roughly thirty lines. A bundled outline also removes a network dependency from the macro tier rather than adding one, which suits the privacy-first framing.
 
 ### D7 — Disclosure is generated from configuration, not hardcoded
 
@@ -113,9 +114,49 @@ PR #826 shipped a privacy table with a hardcoded CARTO row. That was correct whe
 
 So `docker-entrypoint.sh` renders the tile row from the same env vars that configure the layer: named provider in direct mode, omitted in proxied mode with a sentence stating tiles are served by the instance itself. Deriving both from one source is what stops them drifting.
 
+### D8 — Proxying relocates the visitor's trail; it does not delete it
+
+The decisive correction to D3's framing, found while evaluating the options under a privacy-first weighting.
+
+Proxied delivery removes the third party, but the tile stream still exists: it now passes through the operator's nginx instead. With default access logging, every visitor's IP and every z/x/y coordinate they request lands in `access.log`. At z16–18 that stream is not metadata about the content, it *is* the content: which street, which playground, in sequence.
+
+So the data does not disappear, it moves — from one provider with a retention policy and a compliance function, to 15 stacks on a hobbyist-operated VPS, whose operator silently becomes the controller for a per-visitor location trail they did not ask for and may not know exists.
+
+**Measured against the goal that motivates proxying, a proxy with default logging is a downgrade rather than an improvement.** Hence `access_log off` on the tile location is specified as a requirement of the feature rather than left to operator hardening. Error-level logging is retained so failures stay diagnosable.
+
+*Alternative considered:* document it as a recommended hardening step. Rejected — the failure is silent, the default is wrong, and an operator enabling proxying is by definition trying to reduce exposure. A feature that quietly does the opposite of its purpose unless you read the docs is a defect.
+
+This also applies, more weakly, to direct delivery: the operator's nginx already logs page loads. The difference is one of resolution. Page loads are coarse; a tile stream is a movement trace.
+
+### D9 — Under a privacy-first weighting, the delivery axis decides and CARTO is excluded
+
+Recording the outcome of evaluating the provider options with privacy as the top priority, so the reasoning is not re-derived.
+
+**The provider axis nearly collapses.** With proxying on, the provider receives one server IP and an aggregate tile stream it cannot segment per visitor. Every exposure except aggregate area popularity is gone regardless of which provider was chosen. Privacy comes from the delivery decision, not the provider decision.
+
+**CARTO is excluded, and not because of the watermark.** The minimal fix for #823 — obtain a key, paste it in — is the *worst* available privacy outcome. Today CARTO receives referer-attributed, account-less traffic; a key converts it into traffic attributed to a named account, per operator, 16 times over. It resolves the watermark by strictly increasing attributability.
+
+Usefully, this means **the privacy-first path does not depend on Open Question 1.** Whether CARTO's terms permit proxying stops mattering once CARTO is not the provider.
+
+**Verified structural constraint: there is no keyless raster basemap with worldwide coverage.** Probed directly:
+
+| Endpoint | Result |
+|---|---|
+| basemap.de raster (farbe / grau), keyless | `200 image/png` — but Germany only |
+| OpenFreeMap `/styles/liberty` | `200 application/json` — vector only |
+| OpenFreeMap raster path | `403` |
+| VersaTiles style | `200 application/json` — vector only |
+
+So raster-and-worldwide does not exist among keyless options. Germany-only raster is a drop-in with zero frontend work; worldwide requires vector and an `ol-mapbox-style` rework. All 16 current backends are German, which makes basemap.de the right default *for this federation* and not a universal answer. The env-driven configuration this change delivers is exactly what lets both coexist.
+
+**Recommended configuration under this weighting:** basemap.de raster, proxied, with tile logging off, plus the D6 macro outline. No third party receives visitor data, no operator accumulates a location trail, no per-operator signup, no frontend rework.
+
+**Not decided here:** whether to flip the *shipped default* from CARTO to basemap.de. That changes the cartographic appearance of every deployment, which is a maintainer call about the project's visual identity rather than a technical one. The mechanism is provider-agnostic either way; see task 6.2.
+
 ## Risks / Trade-offs
 
-- **Upstream terms may forbid proxying.** The largest risk, and unresolved (see Open Questions). If CARTO's terms prohibit it, the proxy row and the CARTO column become mutually exclusive. Mitigation: proxying is opt-in and the docs must state that operators are responsible for checking their chosen provider's terms.
+- **Upstream terms may forbid proxying.** Still the largest external risk, but it has moved: with CARTO excluded on privacy grounds (D9), the question that matters is basemap.de's terms under proxy load, not CARTO's (Open Question 2). Mitigation: proxying is opt-in, and the docs must state that operators are responsible for checking their chosen provider's terms.
+- **Proxying concentrates the trail rather than removing it (D8).** Mitigated by making tile logging off the default, but the mitigation is a config directive, so it can be undone by an operator editing nginx or by a reverse proxy in front of the stack logging the same requests. Task 2.7 checks the second case; the first is inherent.
 - **Operator egress.** Proxied tiles are served twice from the operator's perspective: inbound on a cache miss, outbound to every visitor always. On a small VPS with metered traffic this is a real cost, and it is worse with a heavy provider. Mitigation: document it; it is the operator's informed choice.
 - **A proxy concentrates rate limiting.** All visitors appear to the upstream as one IP, which can trip abuse heuristics that per-visitor traffic would not. Mitigation: cache aggressively, set a truthful `User-Agent` on the proxied request, respect upstream cache headers.
 - **Tile weight is unverified.** #823's 19 KB vs 125 KB is one tile at one zoom and says so. It should not carry the provider decision unmeasured, and caching changes what it means.
@@ -123,9 +164,20 @@ So `docker-entrypoint.sh` renders the tile row from the same env vars that confi
 
 ## Open Questions
 
-These block the *provider* decision (#823 item 3), not this change. Recorded so it is not made on assumption.
+These bear on the *provider* decision (#823 item 3), not on this change. Recorded so it is not made on assumption.
 
-1. **Do CARTO's terms permit proxying and caching their tiles?** Not settled; must be read, not inferred. This is the single answer most likely to restructure the option table.
-2. **What are basemap.de's service terms under proxy load?** The data is CC BY 4.0, but the WMTS endpoint's own rate limits and acceptable-use terms are a separate question from the data licence.
-3. **What is the real tile-weight difference across zoom levels**, measured properly rather than from one sample, and how much does caching absorb it?
-4. **Is OpenFreeMap's "no logs, no cookies, no API keys" claim verifiable**, and what is its operational durability for 16 deployments that would depend on it?
+1. ~~**Do CARTO's terms permit proxying and caching their tiles?**~~ **Moot on the recommended path.** Still unread, and still decisive if anyone wants to keep CARTO — but D9 excludes CARTO on privacy grounds independent of its terms, so this no longer gates the decision.
+2. **What are basemap.de's service terms under proxy load?** *Open, and now the load-bearing question*, since D9 recommends basemap.de. The data is CC BY 4.0, but the WMTS endpoint's own rate limits and acceptable-use terms are a separate matter from the data licence. Must be read before an operator points production traffic through a cache.
+3. ~~**What is the real tile-weight difference across zoom levels?**~~ **Answered.** Measured over one column of tiles through Fulda, same area, both providers:
+
+   | zoom | CARTO | basemap.de | ratio |
+   |---|---|---|---|
+   | 10 | 17.8 KB | 83.9 KB | 4.7x |
+   | 12 | 24.2 KB | 124.6 KB | 5.1x |
+   | 13 | 27.3 KB | 153.5 KB | 5.6x |
+   | 15 | 29.3 KB | 100.4 KB | 3.4x |
+   | 17 | 16.2 KB | 40.3 KB | 2.5x |
+   | 18 | 12.6 KB | 31.5 KB | 2.5x |
+
+   The ~6x in #823 is close to the worst case, which sits at z13. The penalty falls to **2.5x at z17–18**, which is where users actually sit when looking at a playground, and caching absorbs part of the remainder. Still one column of tiles over one town, so treat it as an order-of-magnitude correction rather than a benchmark — but the objection is materially weaker than #823 assumed.
+4. **Is OpenFreeMap's "no logs, no cookies, no API keys" claim verifiable**, and what is its operational durability for 16 deployments that would depend on it? Relevant only once vector support exists, i.e. for non-German operators.

@@ -13,7 +13,16 @@
 - [ ] 2.3 Honour upstream cache headers; add `BASEMAP_CACHE_MAX_SIZE` (conservative default) and wire it into `proxy_cache_path max_size=`.
 - [ ] 2.4 When proxying is enabled, point `basemapUrl` at the same-origin `/tiles/{z}/{x}/{y}.png` path in the generated `config.js`.
 - [ ] 2.5 Verify no fallback path exists from proxied to direct (D3): an unreachable upstream must fail the tile, not reach the provider from the browser.
-- [ ] 2.6 Decide whether the cache needs a named volume; if so, update `compose.yml` and apply the `requires-compose-update` label.
+- [ ] 2.6 Set `access_log off` on the `/tiles/` location (D8) so proxying does not write a per-visitor location trail to the operator's disk. Keep error-level logging so upstream failures stay diagnosable.
+- [ ] 2.7 Confirm nothing else logs the tile stream: check for a server-level `access_log` that the location does not override, and for any upstream reverse proxy (Traefik on the federated host) that would log it instead.
+- [ ] 2.8 Decide whether the cache needs a named volume; if so, update `compose.yml` and apply the `requires-compose-update` label.
+
+## 2b. Macro-tier basemap (D6)
+
+- [ ] 2b.1 Add a bundled world-outline source (Natural Earth 1:110m or equivalent, no network request) as an OL layer.
+- [ ] 2b.2 Wire its visibility into the existing `activeTierStore` subscription at `Map.svelte:432`, visible only when `tier === 'macro'`.
+- [ ] 2b.3 Confirm the hub macro view reads correctly with a Germany-only tile provider configured, and that the outline does not appear at cluster or polygon tiers.
+- [ ] 2b.4 Check the added asset's effect on bundle size; the build already warns above 500 kB.
 
 ## 3. Make the disclosure follow the configuration
 
@@ -38,11 +47,12 @@
 - [ ] 5.4 Cache: confirm a second view of the same area is served from cache, and that the cache directory respects `BASEMAP_CACHE_MAX_SIZE`.
 - [ ] 5.5 Confirm the generated privacy page matches the configured mode in both directions (provider named / no third-party row).
 - [ ] 5.6 With proxying on, confirm CSP can be tightened to `img-src 'self' data:` without breaking the map, and decide whether to do so in this change or follow up.
-- [ ] 5.7 `make test` and `make build`.
+- [ ] 5.7 With proxying on and a map panned across many tiles, confirm the access log contains **no** tile entries (D8) — the check that the privacy property actually holds, not just that the directive is present.
+- [ ] 5.8 `make test` and `make build`.
 
 ## 6. Follow-ups explicitly not in this change
 
-- [ ] 6.1 Answer the Open Questions in `design.md`, above all whether CARTO's terms permit proxying — it constrains which combinations are legal.
-- [ ] 6.2 Decide the provider (#823 item 3) once those answers exist.
-- [ ] 6.3 Measure tile weight across zoom levels properly, rather than from the single-tile sample in #823.
-- [ ] 6.4 Macro-tier basemap (D6) — only needed if a Germany-only provider is chosen.
+- [ ] 6.1 Read basemap.de's service terms and rate limits for proxied use (`design.md` Open Question 2) — now the load-bearing unknown, since the recommendation points at it. CARTO's terms (Open Question 1) are moot unless someone wants to keep CARTO.
+- [ ] 6.2 **Maintainer decision:** adopt basemap.de + proxy as the shipped default (D9), which changes the cartographic appearance of every deployment, or keep CARTO as the default and leave the privacy-first configuration opt-in.
+- [ ] 6.3 Vector basemap support via `ol-mapbox-style`, which is what non-German operators need for a keyless option (D9 verified that no keyless raster provider has worldwide coverage).
+- [ ] 6.4 Re-measure tile weight over a realistic session rather than one column of tiles, if the weight difference turns out to matter in practice.

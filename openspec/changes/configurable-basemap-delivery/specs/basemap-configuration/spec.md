@@ -74,6 +74,25 @@ Proxied delivery SHALL cache tiles with an operator-configurable maximum size, d
 - **WHEN** a tile already held in the cache is requested again by any visitor
 - **THEN** it is served without a new request to the upstream provider
 
+### Requirement: Proxied tile requests are not logged
+
+Proxied delivery interposes the operator's server between the visitor and the provider, which means the tile request stream — including the visitor's IP address and the z/x/y coordinates that reveal what they are looking at — passes through the operator's web server. Access logging for the tile path SHALL therefore be disabled by default, so that enabling proxying does not create a per-visitor location trail on the operator's disk. An operator who deliberately wants tile logging MUST opt in.
+
+This is a correctness property of proxied delivery, not a hardening recommendation: proxying that writes a location trail to the operator's disk defeats the purpose for which it is enabled.
+
+#### Scenario: Enabling the proxy creates no tile access log
+
+- **WHEN** proxied delivery is enabled with default configuration
+- **AND** a visitor pans the map, generating many tile requests
+- **THEN** no entry for those tile requests appears in the server's access log
+- **AND** no per-visitor record of tile coordinates is written to disk
+
+#### Scenario: Errors remain diagnosable
+
+- **WHEN** the upstream provider returns errors for proxied tile requests
+- **THEN** the operator can still diagnose the failure from error-level logging
+- **AND** that diagnostic path does not require logging successful per-visitor tile requests
+
 ### Requirement: Privacy disclosure reflects the configured delivery path
 
 The generated Datenschutzerklärung SHALL describe the tile delivery actually in use, derived from the same configuration that drives the map layer, so that the two cannot drift apart. It MUST NOT name a tile provider as a recipient of visitor data when tiles are proxied, and MUST NOT omit the provider when they are not.
