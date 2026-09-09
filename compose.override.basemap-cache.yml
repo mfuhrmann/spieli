@@ -1,0 +1,32 @@
+# Join this stack to the host's shared basemap cache.
+#
+#   docker compose -f compose.yml -f compose.override.basemap-cache.yml up -d
+#
+# Only useful on a host running SEVERAL spieli stacks, where fifteen
+# independent caches mean fifteen cold starts and fifteen times the requests to
+# a donation-funded public tile server for the same tiles. A single-stack
+# operator needs none of this — the built-in per-stack cache is the default and
+# is enough.
+#
+# Bring up deploy/basemap-cache first: it creates the `spieli-basemap` network
+# this file expects to already exist. Then set, in this stack's .env:
+#
+#   BASEMAP_UPSTREAM=http://basemap-cache
+#   BASEMAP_CACHE_MAX_SIZE=256m
+#
+# The second line matters. The per-stack cache does not disappear, it becomes a
+# small L1 in front of the shared L2 — and leaving it at the 4g default across
+# fifteen stacks spends 60 GB to save a sub-millisecond hop on the same host.
+#
+# See docs/ops/shared-basemap-cache.md.
+
+services:
+  app:
+    networks:
+      - default
+      - spieli-basemap
+
+networks:
+  spieli-basemap:
+    external: true
+    name: spieli-basemap

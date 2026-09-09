@@ -128,6 +128,8 @@ Those maps are keyed on `$request_uri` and `$status`, never `$upstream_status` o
 
 The proxying half is only generated when the effective style routes the browser through `/basemap/`; otherwise `/basemap/` serves vendored files from disk and no cache zone is allocated.
 
+**Shared cache (multi-stack hosts only)** — `deploy/basemap-cache/` is one nginx cache per *host*, which every stack points `BASEMAP_UPSTREAM` at, joined via `compose.override.basemap-cache.yml`. The browser never touches it: it talks to its own stack, which fetches through the cache server-side, so there is no Traefik router, CORS exception or CSP allowance involved. One rewrite is load-bearing — the shared cache must rewrite the TileJSON's absolute upstream URLs to the relative `/basemap/` path, because each stack's own `sub_filter` looks for *its* upstream (now the cache, not the provider) and would otherwise find nothing and hand the browser the provider's URLs. The map renders identically either way, so CI asserts it. See [`docs/ops/shared-basemap-cache.md`](docs/ops/shared-basemap-cache.md).
+
 `make basemap-style` builds **both** style variants from a single upstream fetch — `style.json` (upstream URLs, for `make dev`, which has no nginx) and `style.local.json` (all assets under `/basemap/`, what the container serves). `make basemap-fonts` vendors the webfonts and fails if the style asks for a weight it did not vendor, because that failure is otherwise invisible: a system-font fallback plus an upstream request on every page load.
 
 ## Key frontend architecture
