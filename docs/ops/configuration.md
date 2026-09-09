@@ -20,6 +20,7 @@ All variables are set in `.env` (copy from `.env.example`). The installer genera
 | `BASEMAP_UPSTREAM` | `https://tiles.openfreemap.org` | ui, data-node-ui | Where the bundled style's tiles and sprites are fetched from and cached. Origin only (`scheme://host[:port]`), no path. Point it at your own tileserver to stop using a public one — a two-step swap, see [Basemap](#basemap). |
 | `BASEMAP_URL` | *(unset)* | ui, data-node-ui | Raster basemap as an OpenLayers XYZ template. Placeholders are substituted by name, so a provider using `{z}/{y}/{x}` needs no code change. See [Basemap](#basemap). |
 | `BASEMAP_STYLE_URL` | *(unset — the app falls back to `/basemap/style.json`)* | ui, data-node-ui | MapLibre style document, rendered as vector tiles. Takes precedence over `BASEMAP_URL`. See [Basemap](#basemap). |
+| `BASEMAP_COVERAGE_BBOX` | *(unset — no limit)* | ui, data-node-ui | `minLon,minLat,maxLon,maxLat` where the basemap has **detailed** data. Only needed for a regional tileset; unset is correct for a planet one. See [Regional tilesets](#regional-tilesets). |
 | `BASEMAP_ATTRIBUTION` | *(the tile server's own credit)* | ui, data-node-ui | Overrides the attribution the map shows. Leave unset and the credit comes from the tile server itself, which is correct for any upstream. **Required** whenever `BASEMAP_URL` or `BASEMAP_STYLE_URL` is set — the container refuses to start otherwise. Trusted HTML: rendered into the page as-is. |
 | `BASEMAP_PROXY` | *(unset)* | ui, data-node-ui | `true` serves tiles through this instance, so the browser fetches from same-origin `/tiles/` and never contacts the provider. The upstream origin **and** the tile path are derived from `BASEMAP_URL`. See [Basemap](#basemap). |
 | `BASEMAP_CACHE_MAX_SIZE` | `4g` | ui, data-node-ui | Disk ceiling per cache zone. The basemap cache always exists; enabling `BASEMAP_PROXY` adds a second zone sized from the same value, so the on-disk total can be twice this. |
@@ -254,6 +255,35 @@ Sizing depends heavily on raster versus vector. Vector tilesets cap at a low max
 When proxying is enabled, nginx sets `access_log off` on `/tiles/`. This is a correctness property of the feature rather than a hardening tip: proxying moves the visitor's tile stream onto your server, and at high zoom that z/x/y sequence is not metadata about what someone looked at — it *is* what they looked at. Logging it would build a per-visitor location trail on your disk, which is worse than the third-party delivery proxying replaces. Error-level logging is retained so upstream failures stay diagnosable.
 
 If you run a reverse proxy in front of spieli (Traefik, for example), check that it does not log the tile path either. A location trail is no less a location trail for being written by the ingress.
+
+### Regional tilesets
+
+A tileset covering a few countries has **two different extents**, and only one of them is discoverable from the tileset itself.
+
+Planetiler bakes Natural Earth and water polygons in globally, so low zooms render everywhere and the declared bounds describe that wide area honestly. OSM detail exists only inside the imported extract. Above roughly z7 outside it the tile server answers `204 No Content`:
+
+| place | z4 | z6 | z8 | z10 | z12 |
+|---|---|---|---|---|---|
+| Fulda (covered) | 200 | 200 | 200 | 200 | 200 |
+| Paris (outside) | 200 | 200 | 204 | 204 | 204 |
+
+The renderer draws an empty tile for a 204. Nothing errors and nothing warns, so the result is indistinguishable from a legitimately empty map.
+
+`BASEMAP_COVERAGE_BBOX` closes that gap. Set it to where your detail actually is and the map shows a quiet notice once the view leaves it:
+
+```bash
+# Germany, Czechia and Slovakia
+BASEMAP_COVERAGE_BBOX=5.8,47.2,22.6,55.1
+```
+
+Leave it unset for a planet tileset. Unset means the notice never appears, which is why this changes nothing for an existing deployment.
+
+Two details worth knowing:
+
+- It keys on the **view centre**, not on the viewport overlapping the box. Near a border a partly-covered view is normal, and warning there would cry wolf.
+- It stays quiet below zoom 8, because the tileset's global low-zoom layer still renders there and nothing is actually missing.
+
+A malformed value is ignored rather than fatal: a typo costs the notice, not the map.
 
 ### The bundled style
 

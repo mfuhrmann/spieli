@@ -1,5 +1,7 @@
 // Runtime configuration injected via window.APP_CONFIG (set by public/config.js or docker-entrypoint.app.sh).
 // Fallback values are used for local development without a container.
+import { parseCoverageBbox } from './basemapCoverage.js';
+
 const c = (typeof window !== 'undefined' && window.APP_CONFIG) || {};
 
 // 'standalone' | 'hub'
@@ -76,6 +78,14 @@ export const basemapAttribution = c.basemapAttribution || DEFAULT_BASEMAP_ATTRIB
 // OpenFreeMap. So the default is a LAST RESORT for the raster path, which has
 // no TileJSON to ask, and the vector path only overrides on an explicit value.
 export const basemapAttributionIsExplicit = !!c.basemapAttribution;
+
+// Where the basemap has DETAILED data, as "minLon,minLat,maxLon,maxLat".
+// Opt-in, and unset is the right default: a planet tileset has no limit, and
+// a tileset cannot describe this itself — its declared bounds cover the wide
+// low-zoom context layer, not the extract that carries the detail.
+// Parsing and the outside-coverage rule live in lib/basemapCoverage.js so they
+// can be tested without a browser.
+export const basemapCoverageBbox = parseCoverageBbox(c.basemapCoverageBbox);
 
 // Whether the operator configured a raster source at all. There is no raster
 // default, so this is the only way a raster basemap exists — and it is what

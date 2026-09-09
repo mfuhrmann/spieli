@@ -19,6 +19,7 @@
     basemapUrl, basemapStyleUrl, basemapAttribution, basemapAttributionIsExplicit,
     FALLBACK_OSM_ATTRIBUTION, basemapIsVector,
     basemapUrlIsExplicit,
+    basemapCoverageBbox,
   } from '../lib/config.js';
   import {
     playgroundStyleFn,
@@ -35,6 +36,8 @@
   import { location } from '../stores/location.js';
   import { playgroundSourceStore } from '../stores/playgroundSource.js';
   import { activeTierStore } from '../stores/tier.js';
+  import { outsideBasemapCoverage } from '../stores/basemapCoverage.js';
+  import { isOutsideCoverage } from '../lib/basemapCoverage.js';
   import { filterStore, matchesFilters } from '../stores/filters.js';
   import { overlayFeaturesStore } from '../stores/overlayLayer.js';
   import { debounce } from '../lib/utils.js';
@@ -166,6 +169,18 @@
       style: macroRingStyleFn,
       visible: false,
     });
+
+    // Detailed-coverage notice (#847). The rule lives in
+    // lib/basemapCoverage.js and is unit-tested there; this only feeds it the
+    // view state and publishes the answer.
+    function updateBasemapCoverage(v) {
+      const centre = v.getCenter();
+      outsideBasemapCoverage.set(isOutsideCoverage(
+        basemapCoverageBbox,
+        centre ? transform(centre, 'EPSG:3857', 'EPSG:4326') : null,
+        v.getZoom(),
+      ));
+    }
 
     // Basemap: a vector style when one is configured, an XYZ raster otherwise.
     // Both sit at the bottom of the stack; the tier layers keep their zIndex.
@@ -381,7 +396,11 @@
     // Steps to zoom out when deselecting via empty-map click — matches the
     // desktop panel-close gesture (PlaygroundPanel DESKTOP_CLOSE_ZOOM_OUT).
     const DESELECT_ZOOM_OUT = 4;
+    // Once up front too: a deployment can load straight into an uncovered
+    // area, and without this the notice would only appear after the first pan.
+    updateBasemapCoverage(view);
     olMap.on('moveend', () => {
+      updateBasemapCoverage(view);
       if (selectionZoom !== null && view.getZoom() <= selectionZoom - DESELECT_ZOOM_OUT) {
         selection.clear();
         selectionZoom = null;

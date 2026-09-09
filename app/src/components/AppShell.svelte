@@ -11,6 +11,7 @@
   import NearbyPlaygrounds from './NearbyPlaygrounds.svelte';
   import DataContributionModal from './DataContributionModal.svelte';
   import CompletenessLegend from './CompletenessLegend.svelte';
+  import BasemapCoverageNotice from './BasemapCoverageNotice.svelte';
   import { onDestroy, onMount } from 'svelte';
   import { Info, Plus, Minus, ArrowLeft } from 'lucide-svelte';
   import { _ } from 'svelte-i18n';
@@ -433,6 +434,9 @@
     onequipmenthover={handleEquipHover}
     onclearequipmenthover={clearEquipHover}
   />
+
+  <!-- Mounted in the shell, not in Map, so both standalone and hub get it. -->
+  <BasemapCoverageNotice />
 
   {#if !(isMobile && $hasSelection)}
     <div class="search-area">

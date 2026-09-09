@@ -167,6 +167,10 @@ if [ -z "$SAFE_BASEMAP_STYLE_URL" ] && [ -z "$SAFE_BASEMAP_URL" ]; then
     fi
 fi
 SAFE_BASEMAP_ATTRIBUTION=$(safe_attribution "${BASEMAP_ATTRIBUTION:-}")
+# Four comma-separated numbers, nothing else. Validated rather than trusted
+# because the value is emitted into a JS literal; the frontend ignores a
+# malformed bbox, so a typo costs the notice rather than the map.
+SAFE_BASEMAP_COVERAGE_BBOX=$(printf '%s' "${BASEMAP_COVERAGE_BBOX:-}" | tr -cd '0-9.,+-')
 
 # host_of <url> — the host a browser would contact, or empty for a same-origin
 # path. Handles scheme-relative URLs, ports, userinfo and {a-d} subdomain groups.
@@ -700,6 +704,7 @@ window.APP_CONFIG = {
   clusterMaxZoom:    ${CLUSTER_MAX_ZOOM:-13},
   macroMaxZoom:      ${MACRO_MAX_ZOOM:-7},
   basemapStyleUrl:   '${SAFE_BASEMAP_STYLE_URL}',
+  basemapCoverageBbox: '${SAFE_BASEMAP_COVERAGE_BBOX}',
   basemapUrl:        '${SAFE_BASEMAP_URL}',
   basemapAttribution:'${SAFE_BASEMAP_ATTRIBUTION}',
   parentOrigin:      '${SAFE_PARENT_ORIGIN}',
@@ -720,6 +725,7 @@ window.APP_CONFIG = {
   apiBaseUrl:                 '${SAFE_API_BASE_URL}',
   clusterMaxZoom:             ${CLUSTER_MAX_ZOOM:-13},
   basemapStyleUrl:            '${SAFE_BASEMAP_STYLE_URL}',
+  basemapCoverageBbox:        '${SAFE_BASEMAP_COVERAGE_BBOX}',
   basemapUrl:                 '${SAFE_BASEMAP_URL}',
   basemapAttribution:         '${SAFE_BASEMAP_ATTRIBUTION}',
   parentOrigin:               '${SAFE_PARENT_ORIGIN}',

@@ -1,4 +1,7 @@
 {
+  "basemap": {
+    "outsideCoverage": "No detailed map data for this area."
+  },
   "appTitle": "{regionName} Playground Map",
   "locate": {
     "title": "Show my location",

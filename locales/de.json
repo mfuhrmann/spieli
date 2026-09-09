@@ -1,4 +1,7 @@
 {
+  "basemap": {
+    "outsideCoverage": "Für diesen Bereich liegen keine detaillierten Kartendaten vor."
+  },
   "appTitle": "{regionName}er spieli",
   "locate": {
     "title": "Meinen Standort anzeigen",
