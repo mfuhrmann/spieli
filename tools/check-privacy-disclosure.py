@@ -30,6 +30,18 @@ import re
 import sys
 
 SRC_DIR = 'app/src'
+NGINX_CONF = 'oci/app/nginx.conf'
+
+# Hosts that serve IMAGES to the browser, and so must be permitted by the CSP's
+# img-src. Kept explicit and separate from the disclosure list because the two
+# answer different questions: disclosure is "who is contacted", this is "who may
+# send us pixels". img-src is the directive someone tightens for good reasons
+# later, and a policy narrower than the app's own allowlist breaks photos
+# silently — the image just never appears.
+IMG_HOSTS = {
+    'upload.wikimedia.org': 'Wikimedia Commons photos',
+    'api.panoramax.xyz': 'Panoramax street-level thumbnails',
+}
 TEMPLATE = 'oci/app/datenschutz.template.html'
 DOCS = 'docs/reference/external-services.md'
 
@@ -84,6 +96,47 @@ def source_files():
                 yield os.path.join(root, name)
 
 
+def csp_img_src(conf_text):
+    """The img-src source list from the CSP in nginx.conf, or None."""
+    m = re.search(r'img-src([^;"]*)', conf_text)
+    return m.group(1).split() if m else None
+
+
+def host_permitted(host, sources):
+    """Does a CSP source list permit this host? Handles `https:` and `*.` forms."""
+    for src in sources:
+        if src in ('https:', '*'):
+            return True
+        s = src.removeprefix('https://')
+        if s == host:
+            return True
+        if s.startswith('*.') and (host.endswith(s[1:]) and host != s[2:]):
+            return True
+    return False
+
+
+def check_csp():
+    with open(NGINX_CONF, encoding='utf-8') as fh:
+        conf = fh.read()
+    sources = csp_img_src(conf)
+    if sources is None:
+        print(f'ERROR: no img-src found in {NGINX_CONF}', file=sys.stderr)
+        return 1
+    missing = [(h, why) for h, why in IMG_HOSTS.items() if not host_permitted(h, sources)]
+    if missing:
+        print('ERROR: the CSP img-src does not permit hosts the app loads images from.',
+              file=sys.stderr)
+        for h, why in missing:
+            print(f'    {h}  ({why})', file=sys.stderr)
+        print(f'  Current img-src: {" ".join(sources)}', file=sys.stderr)
+        print('  A blocked image does not error visibly — it simply never appears.',
+              file=sys.stderr)
+        return 1
+    print(f'  ok  img-src permits {len(IMG_HOSTS)} image host(s): '
+          + ', '.join(sorted(IMG_HOSTS)))
+    return 0
+
+
 def main():
     found = {}
     for path in source_files():
@@ -129,7 +182,7 @@ def main():
 
     print(f'  ok  {len(must_disclose)} contacted host(s) disclosed: '
           + ', '.join(sorted(must_disclose)))
-    return 0
+    return check_csp()
 
 
 if __name__ == '__main__':
