@@ -58,6 +58,16 @@ export const basemapStyleUrl = _styleConfigured
 export const basemapUrl = c.basemapUrl || '';
 export const basemapAttribution = c.basemapAttribution || DEFAULT_BASEMAP_ATTRIBUTION;
 
+// Whether the OPERATOR named a credit, as opposed to falling back to the
+// default above. A vector source declares its own attribution in its TileJSON
+// and that is authoritative — tiles.openfreemap.org and a self-hosted
+// tileserver return different, individually correct values. Overriding that
+// with a compiled-in constant credits whoever the constant happens to name,
+// which is how a map built from our own Planetiler tiles ended up crediting
+// OpenFreeMap. So the default is a LAST RESORT for the raster path, which has
+// no TileJSON to ask, and the vector path only overrides on an explicit value.
+export const basemapAttributionIsExplicit = !!c.basemapAttribution;
+
 // Whether the operator configured a raster source at all. There is no raster
 // default, so this is the only way a raster basemap exists — and it is what
 // the vector path falls back to when a style fails to load. With nothing

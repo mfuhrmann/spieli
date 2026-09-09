@@ -20,7 +20,7 @@ All variables are set in `.env` (copy from `.env.example`). The installer genera
 | `BASEMAP_UPSTREAM` | `https://tiles.openfreemap.org` | ui, data-node-ui | Where the bundled style's tiles and sprites are fetched from and cached. Origin only (`scheme://host[:port]`), no path. Point it at your own tileserver to stop using a public one — a two-step swap, see [Basemap](#basemap). |
 | `BASEMAP_URL` | *(unset)* | ui, data-node-ui | Raster basemap as an OpenLayers XYZ template. Placeholders are substituted by name, so a provider using `{z}/{y}/{x}` needs no code change. See [Basemap](#basemap). |
 | `BASEMAP_STYLE_URL` | *(unset — the app falls back to `/basemap/style.json`)* | ui, data-node-ui | MapLibre style document, rendered as vector tiles. Takes precedence over `BASEMAP_URL`. See [Basemap](#basemap). |
-| `BASEMAP_ATTRIBUTION` | OpenFreeMap + OpenMapTiles + OSM | ui, data-node-ui | Attribution HTML shown on the map. **Required** whenever `BASEMAP_URL` or `BASEMAP_STYLE_URL` is set — the container refuses to start otherwise. Trusted HTML: rendered into the page as-is. |
+| `BASEMAP_ATTRIBUTION` | *(the tile server's own credit)* | ui, data-node-ui | Overrides the attribution the map shows. Leave unset and the credit comes from the tile server itself, which is correct for any upstream. **Required** whenever `BASEMAP_URL` or `BASEMAP_STYLE_URL` is set — the container refuses to start otherwise. Trusted HTML: rendered into the page as-is. |
 | `BASEMAP_PROXY` | *(unset)* | ui, data-node-ui | `true` serves tiles through this instance, so the browser fetches from same-origin `/tiles/` and never contacts the provider. The upstream origin **and** the tile path are derived from `BASEMAP_URL`. See [Basemap](#basemap). |
 | `BASEMAP_CACHE_MAX_SIZE` | `4g` | ui, data-node-ui | Disk ceiling per cache zone. The basemap cache always exists; enabling `BASEMAP_PROXY` adds a second zone sized from the same value, so the on-disk total can be twice this. |
 | `BASEMAP_CACHE_KEYS_ZONE` | `64m` | ui, data-node-ui | nginx cache key zone. Holds roughly 8000 keys per MB and **binds before disk does** — a large `BASEMAP_CACHE_MAX_SIZE` behind a small keys zone yields a cache that stays almost empty. |
@@ -163,7 +163,7 @@ The cache lives on the container's writable layer, so `make docker-build` discar
 
 Running **several stacks on one host**? Point them all at a single shared cache instead of running one per stack — see [Shared Basemap Cache](shared-basemap-cache.md). Fifteen caches at the 4 GB default is up to 60 GB of disk and fifteen separate clients hitting the public tile server, all going cold together on every upgrade sweep.
 
-**To run your own tileserver**, two steps — the bundled style carries the *provider's* asset paths (`/planet`, `/sprites/ofm_f384/ofm`, `/natural_earth/…`), so a differently-shaped server needs the style rebuilt against it:
+**To run your own tileserver**, up to two steps. The bundled style carries the *provider's* asset paths (`/planet`, `/sprites/ofm_f384/ofm`), so a server that mirrors that shape needs only the first step, and a differently-shaped one needs the style rebuilt against it as well:
 
 ```bash
 # 1. rebuild the style against the new provider
@@ -201,7 +201,20 @@ BASEMAP_URL='https://sgx.geodatenzentrum.de/wmts_basemapde/tile/1.0.0/de_basemap
 
 That example is included because it exercises the axis-order case, **not as a recommendation**: basemap.de covers Germany only, and outside Germany it returns `200 OK` with a blank tile rather than an error. Nothing fails, nothing alerts, and a proxy cache will happily store the blanks. Check your provider's coverage against your region before adopting it.
 
-Whatever you choose, set `BASEMAP_ATTRIBUTION` to match. Showing one provider's attribution over another's tiles is a licence problem, not a cosmetic one.
+Whatever you choose, make sure the credit matches. Showing one provider's attribution over another's tiles is a licence problem, not a cosmetic one.
+
+For a **vector** basemap you normally do not have to do anything: a tile server declares its own attribution in its TileJSON, and the map uses that. It is authoritative and it differs between servers exactly as it should:
+
+| Upstream | Credit shown |
+|---|---|
+| `tiles.openfreemap.org` | OpenFreeMap © OpenMapTiles Data from OpenStreetMap |
+| a self-hosted Planetiler build | © OpenMapTiles © OpenStreetMap contributors |
+
+Setting `BASEMAP_ATTRIBUTION` overrides that. Only do so when you have a credit the server cannot know about, because an override that goes stale credits the wrong party silently — that is how a map built from self-hosted tiles came to display "© OpenFreeMap".
+
+Note this follows the **tile server**, not `BASEMAP_UPSTREAM`. With a shared cache the upstream is an internal host while the tiles still originate from the public server, so the hostname says nothing about who to credit.
+
+A **raster** basemap has no TileJSON to ask, which is why `BASEMAP_URL` requires `BASEMAP_ATTRIBUTION` and the container refuses to start without it.
 
 ### Delivery modes
 

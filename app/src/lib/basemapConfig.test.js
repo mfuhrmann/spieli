@@ -113,6 +113,34 @@ await withConfig({
     assert.equal(c.basemapUrlIsExplicit, true, 'and is available as the style fallback');
 }, 'an explicit raster URL replaces the vector default');
 
+// ── Whose credit is shown ────────────────────────────────────────────────────
+// A tile server declares its own attribution in its TileJSON, and that is
+// authoritative — tiles.openfreemap.org and a self-hosted tileserver return
+// different, individually correct values. Map.svelte therefore only overrides
+// it when the OPERATOR named one. Getting this backwards is not cosmetic: it
+// credited OpenFreeMap on a map built from our own Planetiler tiles, which is
+// a licence statement about someone who supplied nothing.
+
+await withConfig({}, (c) => {
+    assert.equal(c.basemapAttributionIsExplicit, false,
+        'nothing configured: let the source speak for itself');
+    assert.ok(c.basemapAttribution.length > 0,
+        'a default still exists as a last resort for the raster path, which has no TileJSON');
+}, 'no operator attribution means the source keeps its own');
+
+await withConfig({ basemapAttribution: '&copy; Stadt Fulda' }, (c) => {
+    assert.equal(c.basemapAttributionIsExplicit, true, 'operator value wins');
+    assert.equal(c.basemapAttribution, '&copy; Stadt Fulda');
+}, 'an operator-set attribution is marked explicit');
+
+// Changing the upstream must NOT by itself change who is credited: with a
+// shared cache the upstream is an internal host while the tiles still come
+// from the public server, so the hostname says nothing about attribution.
+await withConfig({ basemapUpstream: 'http://basemap-cache' }, (c) => {
+    assert.equal(c.basemapAttributionIsExplicit, false,
+        'an upstream change alone must not be read as an attribution change');
+}, 'upstream is not an attribution signal');
+
 // ── Attribution warning ──────────────────────────────────────────────────────
 // The warning's own text says "the container entrypoint refuses to start on
 // this". That is true for an operator-configured source and deliberately false

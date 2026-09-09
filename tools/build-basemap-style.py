@@ -52,6 +52,14 @@ GREEN_LAYERS = {
 }
 # Symbol layers drawn from the `poi` source layer.
 DROP_SOURCE_LAYERS = {'poi'}
+# Sources to drop along with any layer that uses them. `ne2_shaded` is a
+# low-zoom Natural Earth hillshade that upstream declares but no layer in the
+# tuned style draws, so nothing ever fetches it. It is removed rather than left
+# in place because it names a raster path that a self-hosted vector tileserver
+# does not have, which makes the style look like it depends on something it
+# does not. The macro tier already has its own world outline
+# (app/public/basemap/world-110m.json) for the "outside coverage" problem.
+DROP_SOURCES = {'ne2_shaded'}
 
 SAT_KEEP = 0.30    # keep 30% of the original saturation
 LIGHT_LIFT = 0.03  # nudge lighter so the ground stays airy
@@ -198,6 +206,9 @@ def build(source, out, asset_base=None, style=None):
         if layer.get('source-layer') in DROP_SOURCE_LAYERS and layer.get('type') == 'symbol':
             dropped.append(layer['id'])
             continue
+        if layer.get('source') in DROP_SOURCES:
+            dropped.append(layer['id'])
+            continue
         if layer['id'] in GREEN_LAYERS and 'paint' in layer:
             layer = copy.deepcopy(layer)
             for key, value in layer['paint'].items():
@@ -207,6 +218,10 @@ def build(source, out, asset_base=None, style=None):
         kept.append(layer)
 
     style['layers'] = kept
+    # After the layer pass, so a source is only removed once nothing draws it.
+    dropped_sources = [n for n in DROP_SOURCES if n in (style.get('sources') or {})]
+    for name in dropped_sources:
+        del style['sources'][name]
     rewritten = rewrite_assets(style, asset_base) if asset_base else []
     style['name'] = 'spieli basemap'
     # The source is recorded WITHOUT its scheme. The entrypoint decides whether
@@ -259,6 +274,7 @@ def build(source, out, asset_base=None, style=None):
     print(f'  layers {before} -> {len(kept)}')
     print(f'  dropped ({len(dropped)}): {", ".join(dropped) or "none"}')
     print(f'  recoloured ({len(recoloured)}): {", ".join(recoloured) or "none"}')
+    print(f'  sources dropped: {", ".join(dropped_sources) or "none"}')
     if asset_base:
         print(f'  assets -> {asset_base}: {", ".join(rewritten) or "none"}')
     else:

@@ -16,7 +16,7 @@
 
   import {
     mapZoom, mapMinZoom, mapMaxZoom, apiBaseUrl,
-    basemapUrl, basemapStyleUrl, basemapAttribution, basemapIsVector,
+    basemapUrl, basemapStyleUrl, basemapAttribution, basemapAttributionIsExplicit, basemapIsVector,
     basemapUrlIsExplicit,
   } from '../lib/config.js';
   import {
@@ -200,9 +200,16 @@
         .then(() => {
           // Attribution belongs to the SOURCE, not the layer — OpenLayers
           // resolves it via layer.getSource().getAttributions(), so setting it
-          // as a layer option silently does nothing. applyStyle creates the
-          // source, so the operator's value is applied once it exists,
-          // overriding whatever the upstream style document declared.
+          // as a layer option silently does nothing.
+          //
+          // Only override when the OPERATOR named a credit. A tile server
+          // declares its own attribution in its TileJSON and that is
+          // authoritative: tiles.openfreemap.org and a self-hosted tileserver
+          // return different, individually correct values. Overwriting it with
+          // a compiled-in default credits whoever that default names, which is
+          // how a map built from our own Planetiler tiles came to display
+          // "© OpenFreeMap".
+          if (!basemapAttributionIsExplicit) return;
           basemap.getSource()?.setAttributions(basemapAttribution);
         })
         .catch(err => {
