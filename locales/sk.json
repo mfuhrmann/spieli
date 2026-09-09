@@ -27,7 +27,8 @@
       "basketball": "Basketbalové ihrisko",
       "fence": "Oplotené",
       "hasDogs": "Psy povolené",
-      "shade": "S tieňom"
+      "shade": "S tieňom",
+      "theme": "Tematické"
     },
     "completeness": {
       "title": "Kvalita dát",
@@ -348,7 +349,9 @@
         "simpleChatLabel": "miestny chat"
       },
       "introText": "Údaje na tejto mape pochádzajú z {osmLink}. Môžete ju upraviť priamo cez {mapcompleteLink} - potrebujete len účet na OpenStreetMap.",
-      "githubLabel": "Zdrojový kód na GitHube"
+      "githubLabel": "Zdrojový kód na GitHube",
+      "translateLabel": "Pomôžte s prekladom na Weblate",
+      "weblateCredit": "Preklad od komunity na {weblateLink}"
     },
     "about": {
       "history": {
@@ -688,5 +691,8 @@
     "datenschutzFor": "Ochrana osobných údajov pre {name}",
     "noneFor": "Nie sú dostupné právne informácie pre {name}.",
     "none": "Nie sú dostupné žiadne právne informácie."
+  },
+  "map": {
+    "ariaLabel": "Mapa ihrísk"
   }
 }
