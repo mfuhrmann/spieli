@@ -16,7 +16,8 @@
 
   import {
     mapZoom, mapMinZoom, mapMaxZoom, apiBaseUrl,
-    basemapUrl, basemapStyleUrl, basemapAttribution, basemapAttributionIsExplicit, basemapIsVector,
+    basemapUrl, basemapStyleUrl, basemapAttribution, basemapAttributionIsExplicit,
+    FALLBACK_OSM_ATTRIBUTION, basemapIsVector,
     basemapUrlIsExplicit,
   } from '../lib/config.js';
   import {
@@ -209,8 +210,27 @@
           // a compiled-in default credits whoever that default names, which is
           // how a map built from our own Planetiler tiles came to display
           // "© OpenFreeMap".
-          if (!basemapAttributionIsExplicit) return;
-          basemap.getSource()?.setAttributions(basemapAttribution);
+          const source = basemap.getSource();
+          if (!source) return;
+          if (basemapAttributionIsExplicit) {
+            source.setAttributions(basemapAttribution);
+            return;
+          }
+          // Floor. Letting the source speak for itself is right, but a server
+          // that declares nothing would otherwise leave OSM-derived tiles with
+          // NO credit — an empty attribution control, which is a licence
+          // breach rather than the merely-wrong credit this replaced. Common
+          // enough to matter: a stock tileserver-gl config has no attribution
+          // key, and neither does this repo's own CI stub.
+          if (!source.getAttributions()) {
+            source.setAttributions(FALLBACK_OSM_ATTRIBUTION);
+            console.warn(
+              '[spieli] The basemap tile server declares no attribution, so a ' +
+              'bare OpenStreetMap credit is being shown. If its tileset needs ' +
+              'more than that (OpenMapTiles output is CC-BY, for example), set ' +
+              'BASEMAP_ATTRIBUTION.',
+            );
+          }
         })
         .catch(err => {
           console.error('[spieli] basemap style failed to load:', err);

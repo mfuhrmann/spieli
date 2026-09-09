@@ -37,6 +37,15 @@ export const poiRadiusM = c.poiRadiusM ?? 5000;
 // tile outside it), so a raster default would have to be a keyed commercial
 // one — which is what this change exists to remove.
 const DEFAULT_BASEMAP_STYLE_URL = '/basemap/style.json';
+// The floor. OSM-derived vector tiles always warrant at least this, so a tile
+// server that declares no attribution of its own leaves a credit rather than
+// an empty control. Deliberately minimal: it states only what is true of ANY
+// OSM-derived tileset. A tileset with stricter terms (OpenMapTiles output is
+// CC-BY, for instance) needs BASEMAP_ATTRIBUTION set, and the map warns when
+// it falls back to this.
+export const FALLBACK_OSM_ATTRIBUTION =
+    '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+
 const DEFAULT_BASEMAP_ATTRIBUTION =
     '&copy; <a href="https://openfreemap.org/">OpenFreeMap</a> ' +
     '&copy; <a href="https://www.openmaptiles.org/">OpenMapTiles</a> | ' +
@@ -95,8 +104,11 @@ const _operatorConfiguredSource =
     !!c.basemapUrl || (!!c.basemapStyleUrl && !_isSameOriginPath(c.basemapStyleUrl));
 if (_operatorConfiguredSource && !c.basemapAttribution && typeof console !== 'undefined') {
     console.warn(
-        '[spieli] A basemap source is configured but basemapAttribution is empty, ' +
-        'so the default OpenFreeMap + OpenStreetMap credit is being shown over it. ' +
+        '[spieli] A basemap source is configured but basemapAttribution is empty. ' +
+        'A raster source has no attribution of its own, so the built-in default ' +
+        'credit is shown over it; a vector source falls back to whatever its ' +
+        'TileJSON declares, or to a bare OpenStreetMap credit if it declares none. ' +
+        'Either way the credit will not describe this provider. ' +
         'Attribution is a licence obligation — set basemapAttribution to match ' +
         'the configured provider. (The container entrypoint refuses to start on this.)',
     );

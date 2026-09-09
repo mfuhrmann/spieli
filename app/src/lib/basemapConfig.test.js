@@ -141,6 +141,14 @@ await withConfig({ basemapUpstream: 'http://basemap-cache' }, (c) => {
         'an upstream change alone must not be read as an attribution change');
 }, 'upstream is not an attribution signal');
 
+await withConfig({}, (c) => {
+    assert.ok(c.FALLBACK_OSM_ATTRIBUTION.includes('OpenStreetMap'),
+        'the floor must credit OpenStreetMap');
+    assert.ok(!/openfreemap|openmaptiles/i.test(c.FALLBACK_OSM_ATTRIBUTION),
+        'the floor states only what is true of ANY OSM-derived tileset — naming a '
+        + 'specific producer is how the wrong party gets credited');
+}, 'the attribution floor is provider-neutral');
+
 // ── Attribution warning ──────────────────────────────────────────────────────
 // The warning's own text says "the container entrypoint refuses to start on
 // this". That is true for an operator-configured source and deliberately false
