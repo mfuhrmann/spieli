@@ -40,6 +40,12 @@ jobs:
       - name: Build
         run: make build
 
+      # install.sh ships compose.prod.yml as the operator's compose.yml, so a
+      # variable present only in the development file is documented, accepted
+      # in .env, and silently dropped on every production install.
+      - name: Production compose must pass on every variable dev does
+        run: make check-compose
+
   # ── Entrypoint + generated nginx config (CI gate) ────────────────────────────
   # The app entrypoint generates nginx config at container startup, so a
   # malformed heredoc is a start-up failure rather than a degraded feature — and
