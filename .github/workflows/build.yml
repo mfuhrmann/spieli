@@ -46,6 +46,12 @@ jobs:
       - name: Production compose must pass on every variable dev does
         run: make check-compose
 
+      # The Datenschutzerklärung is a legal document that goes stale silently:
+      # adding a fetch() to a new service is a one-line change, noticing it
+      # created an undisclosed third-country transfer is not.
+      - name: Every third-party host the browser contacts must be disclosed
+        run: make check-privacy
+
   # ── Entrypoint + generated nginx config (CI gate) ────────────────────────────
   # The app entrypoint generates nginx config at container startup, so a
   # malformed heredoc is a start-up failure rather than a degraded feature — and

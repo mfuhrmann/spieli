@@ -1,4 +1,4 @@
-.PHONY: install dev build serve test test-unit check-compose \
+.PHONY: install dev build serve test test-unit check-compose check-privacy \
         up down import docker-build db-apply db-shell \
         seed-load seed-load2 seed-extract seed-extract2 import2 \
         require-npm require-docker installer lan-url \
@@ -46,6 +46,9 @@ test-unit: require-npm    ## Run unit tests in app/src/lib/*.test.js
 
 check-compose: require-python3  ## Fail if compose.prod.yml drops variables compose.yml passes
 	python3 tools/check-compose-parity.py
+
+check-privacy: require-python3  ## Fail if the frontend contacts a host the privacy page never names
+	python3 tools/check-privacy-disclosure.py
 
 ## ── Docker Compose stack ──────────────────────────────────────────────────────
 

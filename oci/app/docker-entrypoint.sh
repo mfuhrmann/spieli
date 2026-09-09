@@ -778,6 +778,60 @@ if [ -z "${PRIVACY_URL:-}" ]; then
         # Build hub privacy section into a temp file; awk inlines it at
         # {{HUB_PRIVACY_SECTION}} — avoids sed multiline / & escaping issues.
         HUB_SECTION_FILE=$(mktemp)
+        # The basemap disclosure follows the actual delivery mode rather than
+        # being written once and going stale. BASEMAP_TILE_PROVIDER_STATE is
+        # produced further up; read it, never the host list alone, because an
+        # empty list means two opposite things.
+        BM_ROW_FILE=$(mktemp)
+        BM_SECTION_FILE=$(mktemp)
+        case "$BASEMAP_TILE_PROVIDER_STATE" in
+            hosts)
+                # The operator opted out to a third party. Name it: this is the
+                # one service contacted on every map movement, and the tile
+                # coordinates say what the visitor was looking at.
+                _bm_hosts_html=$(printf '%s' "$BASEMAP_TILE_PROVIDER_HOST" \
+                    | tr -cd 'A-Za-z0-9 ._:-' | sed 's/ /<\/code>, <code>/g')
+                cat > "$BM_ROW_FILE" <<BMROW
+      <tr>
+        <td>Kartenanbieter<br><code>${_bm_hosts_html}</code></td>
+        <td>Hintergrundkarte (Kartenkacheln)</td>
+        <td>Bei jedem Laden der Karte und bei jeder Bewegung des Kartenausschnitts</td>
+        <td>IP-Adresse, User-Agent, Referer, Kachelkoordinaten (Zoomstufe, X, Y). Aus den Kachelkoordinaten l&auml;sst sich ableiten, welchen Kartenausschnitt Sie betrachtet haben</td>
+      </tr>
+BMROW
+                cat > "$BM_SECTION_FILE" <<'BMSEC'
+  <h2>Hintergrundkarte</h2>
+  <p>Diese Instanz ist so konfiguriert, dass die Hintergrundkarte direkt von einem externen Anbieter geladen wird. Ihr Browser nimmt dabei bei jeder Kartenbewegung selbst Verbindung zu diesem Anbieter auf; der Anbieter ist in der Tabelle oben aufgef&uuml;hrt.</p>
+
+BMSEC
+                ;;
+            unknown)
+                cat > "$BM_ROW_FILE" <<'BMROW'
+      <tr>
+        <td>Kartenanbieter<br><code>nicht ermittelbar</code></td>
+        <td>Hintergrundkarte (Kartenkacheln)</td>
+        <td>Bei jedem Laden der Karte und bei jeder Bewegung des Kartenausschnitts</td>
+        <td>IP-Adresse, User-Agent, Referer, Kachelkoordinaten (Zoomstufe, X, Y)</td>
+      </tr>
+BMROW
+                cat > "$BM_SECTION_FILE" <<'BMSEC'
+  <h2>Hintergrundkarte</h2>
+  <p>Diese Instanz verwendet ein eigens konfiguriertes Kartenstil-Dokument, dessen Inhalt hier nicht ausgewertet werden konnte. Es ist daher nicht sichergestellt, dass keine Verbindung zu Dritten aufgebaut wird. Der Betreiber sollte diesen Abschnitt pr&uuml;fen und erg&auml;nzen.</p>
+
+BMSEC
+                ;;
+            *)
+                # none: the browser only ever talks to this instance. Say so
+                # plainly rather than hedging it, because it is the strongest
+                # statement on this page and it is true.
+                : > "$BM_ROW_FILE"
+                cat > "$BM_SECTION_FILE" <<'BMSEC'
+  <h2>Hintergrundkarte</h2>
+  <p>Die Hintergrundkarte wird vollst&auml;ndig von dieser Instanz ausgeliefert. Kartenkacheln, Symbole und Schriften holt der Server selbst und speichert sie zwischen; Ihr Browser nimmt daf&uuml;r zu keinem Dritten Verbindung auf. Es wird deshalb auch nicht protokolliert, welchen Kartenausschnitt Sie betrachten.</p>
+
+BMSEC
+                ;;
+        esac
         if [ "$APP_MODE" = "hub" ]; then
             cat > "$HUB_SECTION_FILE" <<'HUB_HTML'
   <h2>Hub-Modus: Mehrere Instanzen</h2>
@@ -792,15 +846,18 @@ HUB_HTML
             -e "s/{{IMPRESSUM_NAME}}/$SAFE_IMP_NAME_FOR_SED/g" \
             -e "s/{{IMPRESSUM_EMAIL}}/$SAFE_IMP_EMAIL_FOR_SED/g" \
             /datenschutz.template.html | \
-        awk -v hubfile="$HUB_SECTION_FILE" '
-            /\{\{HUB_PRIVACY_SECTION\}\}/ {
-                while ((getline line < hubfile) > 0) print line
-                close(hubfile)
-                next
+        awk -v hubfile="$HUB_SECTION_FILE" \
+            -v bmrowfile="$BM_ROW_FILE" -v bmsecfile="$BM_SECTION_FILE" '
+            function inline(f) {
+                while ((getline line < f) > 0) print line
+                close(f)
             }
+            /\{\{HUB_PRIVACY_SECTION\}\}/    { inline(hubfile);   next }
+            /\{\{BASEMAP_SERVICE_ROW\}\}/    { inline(bmrowfile); next }
+            /\{\{BASEMAP_PRIVACY_SECTION\}\}/ { inline(bmsecfile); next }
             { print }
         ' > "$WEBROOT/datenschutz.html"
-        rm -f "$HUB_SECTION_FILE"
+        rm -f "$HUB_SECTION_FILE" "$BM_ROW_FILE" "$BM_SECTION_FILE"
     else
         {
             printf '<!DOCTYPE html>\n<html lang="de">\n<head>\n'
