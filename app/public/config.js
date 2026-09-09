@@ -25,6 +25,23 @@ window.APP_CONFIG = {
   // Hub uses a wider default zoom to show all registered regions
   // mapZoom and mapMinZoom above are reused; override here if needed
 
+  // --- Basemap ---
+  // Two shapes, checked in this order:
+  //   basemapStyleUrl — a MapLibre style document, rendered as vector tiles.
+  //                     This is the default: the vendored style in public/basemap.
+  //   basemapUrl      — an OpenLayers XYZ raster template. Placeholders are
+  //                     substituted by name, so a provider using {z}/{y}/{x}
+  //                     needs no code change. Setting it alone REPLACES the
+  //                     vector default; it is only a fallback for a failed
+  //                     style when basemapStyleUrl is also set explicitly.
+  // Setting basemapStyleUrl wins.
+  basemapStyleUrl: '/basemap/style.json',
+  basemapUrl: '',
+  basemapAttribution:
+    '&copy; <a href="https://openfreemap.org/">OpenFreeMap</a> ' +
+    '&copy; <a href="https://www.openmaptiles.org/">OpenMapTiles</a> | ' +
+    'Data from <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+
   // --- Tiered playground delivery (standalone mode in P1) ---
   // Two tiers: cluster (zoom ≤ 13) and polygon (zoom > 13).
   clusterMaxZoom: 13,

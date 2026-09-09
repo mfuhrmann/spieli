@@ -2,9 +2,10 @@
   import { onMount, onDestroy } from 'svelte';
   import { _ } from 'svelte-i18n';
   import { Map, View } from 'ol';
-  import { Tile as TileLayer, Vector as VectorLayer } from 'ol/layer.js';
+  import { Tile as TileLayer, Vector as VectorLayer, VectorTile as VectorTileLayer } from 'ol/layer.js';
   import VectorSource from 'ol/source/Vector.js';
   import XYZ from 'ol/source/XYZ.js';
+  import { Style, Fill, Stroke } from 'ol/style.js';
   import GeoJSON from 'ol/format/GeoJSON.js';
   import Feature from 'ol/Feature.js';
   import Point from 'ol/geom/Point.js';
@@ -13,7 +14,11 @@
   import { ScaleLine, defaults as defaultControls } from 'ol/control.js';
   import { defaults as defaultInteractions } from 'ol/interaction/defaults';
 
-  import { mapZoom, mapMinZoom, mapMaxZoom, apiBaseUrl } from '../lib/config.js';
+  import {
+    mapZoom, mapMinZoom, mapMaxZoom, apiBaseUrl,
+    basemapUrl, basemapStyleUrl, basemapAttribution, basemapIsVector,
+    basemapUrlIsExplicit,
+  } from '../lib/config.js';
   import {
     playgroundStyleFn,
     selectionStyle,
@@ -59,6 +64,37 @@
   let playgroundLayer = null; // polygon tier (zoom > clusterMaxZoom) — exposed for filter reactivity
   let clusterLayer = null;    // cluster tier (zoom ≤ clusterMaxZoom) — §3
   let macroLayer = null;      // macro tier (hub-only, zoom ≤ macroMaxZoom) — P2 §5
+  let macroOutlineLayer = null; // world outline shown under the macro tier — D6
+  let macroOutlineLoaded = false;
+
+  // Style for the macro world outline: a quiet land shape, deliberately far
+  // from the completeness palette so it reads as context and never as data.
+  const macroOutlineStyle = new Style({
+    fill: new Fill({ color: 'rgba(222, 226, 220, 0.85)' }),
+    stroke: new Stroke({ color: 'rgba(160, 168, 158, 0.9)', width: 0.6 }),
+  });
+
+  // Loaded on first macro tier only, so standalone deployments never fetch it.
+  async function loadMacroOutline() {
+    if (macroOutlineLoaded || !macroOutlineLayer) return;
+    macroOutlineLoaded = true;
+    try {
+      const res = await fetch('/basemap/world-110m.json');
+      if (!res.ok) throw new Error(`world outline ${res.status}`);
+      macroOutlineLayer.getSource().addFeatures(
+        new GeoJSON().readFeatures(await res.json(), {
+          dataProjection: 'EPSG:4326',
+          featureProjection: 'EPSG:3857',
+        }),
+      );
+    } catch (err) {
+      // macroOutlineLoaded stays true deliberately: the tier subscription
+      // calls this on every transition into macro, so resetting it would
+      // refetch a missing asset on each one. Context only — the macro rings
+      // still render without it.
+      console.warn('[spieli] macro world outline unavailable:', err);
+    }
+  }
   let equipmentLayer = null;  // overlay: equipment points/polygons
   let treeLayer = null;       // overlay: tree dots
   let overlayUnsubscribe = null;
@@ -130,14 +166,67 @@
       visible: false,
     });
 
-    const basemap = new TileLayer({
-      source: new XYZ({
-        url: 'https://{a-d}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
-        attributions:
-          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors ' +
-          '| &copy; <a href="https://carto.com/attributions">CARTO</a>',
-      }),
+    // Basemap: a vector style when one is configured, an XYZ raster otherwise.
+    // Both sit at the bottom of the stack; the tier layers keep their zIndex.
+    // applyStyle() styles a layer we own rather than apply() taking over the
+    // map, so the layer ordering and the activeTierStore wiring below are
+    // untouched by the basemap choice.
+    const rasterBasemapSource = () => new XYZ({
+      url: basemapUrl,
+      attributions: basemapAttribution,
     });
+
+    // Explicit zIndex 0 so the macro outline at -1 is reliably behind it.
+    const basemap = basemapIsVector
+      ? new VectorTileLayer({ declutter: true, zIndex: 0 })
+      : new TileLayer({ source: rasterBasemapSource(), zIndex: 0 });
+
+    if (basemapIsVector) {
+      // Dynamically imported: the library adds ~310 kB raw / ~50 kB gzipped.
+      // Vector is now the default, so most deployments do load it — but on a
+      // second round trip after first paint rather than in the main bundle,
+      // and a raster-configured deployment still never fetches it at all.
+      import('ol-mapbox-style')
+        .then(({ applyStyle }) => applyStyle(basemap, basemapStyleUrl, {
+          // ol-mapbox-style otherwise resolves webfonts from cdn.jsdelivr.net
+          // at runtime, which would add a third-party host to every page load
+          // — the exact leak this basemap work exists to remove, reintroduced
+          // by the rendering library rather than by the tiles. Pointing it at
+          // a same-origin path keeps it local; if no font is shipped there the
+          // request 404s and labels fall back to a system font, which costs
+          // some typographic fidelity and contacts nobody.
+          webfonts: '/basemap/fonts/{font-family}/{fontweight}{-fontstyle}.css',
+        }))
+        .then(() => {
+          // Attribution belongs to the SOURCE, not the layer — OpenLayers
+          // resolves it via layer.getSource().getAttributions(), so setting it
+          // as a layer option silently does nothing. applyStyle creates the
+          // source, so the operator's value is applied once it exists,
+          // overriding whatever the upstream style document declared.
+          basemap.getSource()?.setAttributions(basemapAttribution);
+        })
+        .catch(err => {
+          console.error('[spieli] basemap style failed to load:', err);
+          // Fall back to the raster source ONLY when the operator configured
+          // one. There is no raster default, so with nothing configured there
+          // is nothing safe to reach for and the map renders without a
+          // basemap — rather than silently substituting some third party the
+          // operator never chose.
+          if (!basemapUrlIsExplicit) return;
+          try {
+            // NOTE: basemapAttribution was written for the style provider, so
+            // the fallback credits it over the raster provider's tiles. Both
+            // are operator-configured in the only case this can fire (style
+            // and raster both set), and a single attribution string cannot
+            // describe two providers — tracked in #830 rather than silently
+            // rendering the wrong credit forever.
+            olMap.removeLayer(basemap);
+            olMap.addLayer(new TileLayer({ source: rasterBasemapSource(), zIndex: 0 }));
+          } catch (fallbackErr) {
+            console.error('[spieli] raster basemap fallback failed:', fallbackErr);
+          }
+        });
+    }
 
     const view = new View({
       center: transform([10.5, 51.2], 'EPSG:4326', 'EPSG:3857'), // Germany fallback
@@ -421,6 +510,25 @@
       }
     });
 
+    // Macro-tier world outline (zIndex 1, just above the basemap). The
+    // basemap tileset covers only the federation's own countries, so at
+    // macroMaxZoom everything outside them would be blank — the same silent
+    // void that disqualified a Germany-only provider. This fills it in from a
+    // bundled Natural Earth extract, with no network request to a third party.
+    // Fetched lazily on first macro tier so it never costs standalone users.
+    // zIndex -1: BELOW the basemap, not above it. This is a backdrop that
+    // shows through where the tileset has no coverage, not an overlay. Drawn
+    // on top it washes the basemap out everywhere the basemap does render —
+    // verified by A/B screenshots at the macro tier, where roads, labels and
+    // terrain detail all disappeared behind it.
+    macroOutlineLayer = new VectorLayer({
+      source: new VectorSource(),
+      zIndex: -1,
+      style: macroOutlineStyle,
+      visible: false,
+    });
+    olMap.addLayer(macroOutlineLayer);
+
     // Publish the polygon source once. Consumers that need to know whether
     // the polygon tier is *visible* read activeTierStore; consumers that
     // only need to read or hydrate features (NearbyPlaygrounds, AppShell
@@ -444,6 +552,15 @@
       playgroundLayer.setVisible(tier === 'polygon');
       clusterLayer.setVisible(tier === 'cluster');
       macroLayer.setVisible(tier === 'macro');
+      // Only meaningful under a vector basemap, whose background is not
+      // painted by applyStyle, so the outline shows through where the tileset
+      // has no coverage. Raster tiles are opaque PNGs at zIndex 0, so an
+      // outline beneath them can never be seen — and fetching it would be a
+      // pointless 164 kB on every macro entry.
+      if (macroOutlineLayer && basemapIsVector) {
+        macroOutlineLayer.setVisible(tier === 'macro');
+        if (tier === 'macro') loadMacroOutline();
+      }
       // Equipment and tree overlays only visible in polygon tier
       if (equipmentLayer) equipmentLayer.setVisible(tier === 'polygon');
       if (treeLayer) treeLayer.setVisible(tier === 'polygon');

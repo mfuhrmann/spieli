@@ -48,6 +48,8 @@ make serve        # preview production build locally
 make test         # unit tests + Playwright E2E tests
 make test-unit    # unit tests only (app/src/lib/*.test.js + app/src/stores/*.test.js)
 make lan-url      # print LAN IP for mobile testing
+
+make basemap-assets   # regenerate the vendored basemap style + macro world outline
 ```
 
 ## Docker Compose stack
@@ -107,7 +109,28 @@ To test Hub mode locally: set `appMode: 'hub'` in `app/public/config.js`, run `m
 
 ## Runtime configuration
 
-`app/public/config.js` is the config bridge — sets `window.APP_CONFIG`. In Docker, `oci/app/docker-entrypoint.app.sh` overwrites it from env vars at startup. `app/src/lib/config.js` reads `window.APP_CONFIG` and exports named constants.
+`app/public/config.js` is the config bridge — sets `window.APP_CONFIG`. In Docker, `oci/app/docker-entrypoint.sh` overwrites it from env vars at startup. `app/src/lib/config.js` reads `window.APP_CONFIG` and exports named constants.
+
+### Basemap delivery
+
+Same-origin by default; nothing to switch on. The entrypoint generates two nginx files:
+
+- `/etc/nginx/basemap-location.conf` — the `^~ /basemap/` prefix location (`^~` is load-bearing: regex locations are matched *before* plain prefixes, so without it the `~* \.png$` static block claims every sprite and raster tile) plus the `@basemap_upstream` named location that proxies and caches.
+- `/etc/nginx/conf.d/09-basemap-cache.conf` — `proxy_cache_path` and the maps driving `Accept-Encoding` and the visitor-facing `Cache-Control`.
+
+Those maps are keyed on `$request_uri` and `$status`, never `$upstream_status` or `$upstream_http_*`: those are **empty on a cache hit**, so a map keyed on them falls to its default on every hit.
+
+| Env var | Role |
+|---|---|
+| `BASEMAP_UPSTREAM` | Origin the cache fetches from (default `https://tiles.openfreemap.org`). Origin only — a path is refused at startup, because `proxy_pass` with a URI-bearing variable *replaces* the request URI instead of prefixing it. |
+| `BASEMAP_CACHE_MAX_SIZE` / `_KEYS_ZONE` / `_INACTIVE` | Cache sizing. Validated, not sanitised: `4.5g` is rejected rather than silently becoming `45g`. |
+| `BASEMAP_STYLE_URL` / `BASEMAP_URL` | Opt *out* to a third-party provider. Requires `BASEMAP_ATTRIBUTION`, and is refused alongside `BASEMAP_PROXY` when the style is not same-origin. |
+
+The proxying half is only generated when the effective style routes the browser through `/basemap/`; otherwise `/basemap/` serves vendored files from disk and no cache zone is allocated.
+
+**Shared cache (multi-stack hosts only)** — `deploy/basemap-cache/` is one nginx cache per *host*, which every stack points `BASEMAP_UPSTREAM` at, joined via `compose.override.basemap-cache.yml`. The browser never touches it: it talks to its own stack, which fetches through the cache server-side, so there is no Traefik router, CORS exception or CSP allowance involved. One rewrite is load-bearing — the shared cache must rewrite the TileJSON's absolute upstream URLs to the relative `/basemap/` path, because each stack's own `sub_filter` looks for *its* upstream (now the cache, not the provider) and would otherwise find nothing and hand the browser the provider's URLs. The map renders identically either way, so CI asserts it. See [`docs/ops/shared-basemap-cache.md`](docs/ops/shared-basemap-cache.md).
+
+`make basemap-style` builds **both** style variants from a single upstream fetch — `style.json` (upstream URLs, for `make dev`, which has no nginx) and `style.local.json` (all assets under `/basemap/`, what the container serves). `make basemap-fonts` vendors the webfonts and fails if the style asks for a weight it did not vendor, because that failure is otherwise invisible: a system-font fallback plus an upstream request on every page load.
 
 ## Key frontend architecture
 
@@ -178,14 +201,16 @@ To test Hub mode locally: set `appMode: 'hub'` in `app/public/config.js`, run `m
 
 ### Layers in Map.svelte
 
-The map manages five OL layers beyond the basemap. Tiered playground delivery uses two of them — the active one is driven by `activeTierStore`:
+The map manages the basemap plus six overlay layers. Tiered playground delivery uses two of them — the active one is driven by `activeTierStore`:
 
-1. **playgroundLayer** (zIndex 10) — polygon tier (zoom > `clusterMaxZoom`, default 13). Playground polygons styled by `playgroundStyleFn`, filtered by `filterStore`. Visible only when `$activeTierStore === 'polygon'`.
-2. **clusterLayer** (zIndex 12) — cluster tier (zoom ≤ `clusterMaxZoom`). Server-bucketed cluster rings + single-child dots rendered via the canvas `stackedRingRenderer` in `app/src/lib/clusterStyle.js`. Visible only when `$activeTierStore === 'cluster'`.
-3. **treeLayer** (zIndex 15) — natural=tree dots, shown when a playground is selected.
-4. **equipmentLayer** (zIndex 20) — playground devices/pitches/benches, shown when a playground is selected.
-5. **pitchLayer** (zIndex 9) — standalone pitches outside any playground, loaded on `moveend` at zoom ≥ 12, visibility controlled by `filterStore.standalonePitches`.
-6. **locationLayer** (zIndex 30) — user's GPS position. Pulsing blue dot (`#007aff`) inside a white ring at lower zoom levels; translucent accuracy circle at high zoom (top 3 levels). Driven by `location` store.
+1. **basemap** (zIndex 0) — raster `XYZ` from `basemapUrl`, or a `VectorTileLayer` styled via `ol-mapbox-style` when `basemapStyleUrl` is set. The library is dynamically imported, so raster deployments do not carry it. **The default is vector and same-origin**: the container serves `/basemap/style.local.json`, whose tiles, sprites and glyphs all resolve under `/basemap/` on this instance. nginx serves the vendored files from disk and proxies the rest to `BASEMAP_UPSTREAM` through a persistent cache, so the visitor's browser never contacts the tile server. `BASEMAP_PROXY` is a separate, older raster-only mechanism: it derives the upstream origin and tile path from `BASEMAP_URL` and rewrites `basemapUrl` to the same-origin `/tiles/` path.
+2. **macroOutlineLayer** (zIndex -1) — bundled Natural Earth world outline (`app/public/basemap/world-110m.json`), fetched lazily on the first macro tier and visible only there, so the area outside the basemap tileset's coverage is not silently blank. It sits *below* the basemap: at zIndex 1 it washed the basemap out everywhere the basemap does render.
+3. **playgroundLayer** (zIndex 10) — polygon tier (zoom > `clusterMaxZoom`, default 13). Playground polygons styled by `playgroundStyleFn`, filtered by `filterStore`. Visible only when `$activeTierStore === 'polygon'`.
+4. **clusterLayer** (zIndex 12) — cluster tier (zoom ≤ `clusterMaxZoom`). Server-bucketed cluster rings + single-child dots rendered via the canvas `stackedRingRenderer` in `app/src/lib/clusterStyle.js`. Visible only when `$activeTierStore === 'cluster'`.
+5. **treeLayer** (zIndex 15) — natural=tree dots, shown when a playground is selected.
+6. **equipmentLayer** (zIndex 20) — playground devices/pitches/benches, shown when a playground is selected.
+7. **pitchLayer** (zIndex 9) — standalone pitches outside any playground, loaded on `moveend` at zoom ≥ 12, visibility controlled by `filterStore.standalonePitches`.
+8. **locationLayer** (zIndex 30) — user's GPS position. Pulsing blue dot (`#007aff`) inside a white ring at lower zoom levels; translucent accuracy circle at high zoom (top 3 levels). Driven by `location` store.
 
 Equipment and tree layers are driven by `overlayFeaturesStore` (written by PlaygroundPanel, read by Map). Cluster vs polygon visibility is driven by `activeTierStore` (written by the orchestrator).
 
@@ -260,6 +285,17 @@ This catches ordering bugs (e.g. a function referencing a table defined later in
 | `upgrade-stacks.sh` | Sequential upgrade of all spieli stacks on a single VPS. Edit the `STACKS` array at the top. For data-node stacks: runs `API_ONLY=1` first, verifies `get_meta`, then restarts the daemon importer. Pure hub stacks skip the `API_ONLY` step. |
 | `setup-germany-backends.sh` | Bootstraps all 15 non-Hessen German Bundesland data-node stacks and wires them into a hub with Traefik. One-time setup script. |
 | `migrate-hub-hessen.sh` | Splits a combined hub+Hessen stack into a pure hub (`DEPLOY_MODE=ui`) and a dedicated Hessen data-node. Two-phase: Phase 1 creates `~/spieli-hessen` and runs the first import; Phase 2 (`--convert`) updates `registry.json`, switches hub to ui-only, and removes orphaned volumes. |
+
+## Build tools (`tools/`)
+
+Asset generators, run via `make basemap-assets`. Their output is committed, so a
+rebuild should be diffed rather than trusted.
+
+| Script | Purpose |
+|---|---|
+| `build-basemap-style.py` | Rebuilds both style variants: `style.json` (upstream URLs, used by `make dev`) and `style.local.json` (all assets under `/basemap/`, used by the container). Built from an upstream MapLibre style (default OpenFreeMap Bright). Desaturates the green landcover fills and drops the `poi` symbol layers, because spieli encodes completeness in green/amber/red and a green basemap competes with its own data. `--asset-base` rewrites tile/glyph/sprite URLs to a local origin; without it the committed style still fetches tiles, fonts and sprites from the upstream host. |
+| `build-basemap-fonts.py` | Vendors the @fontsource webfonts the style's `text-font` stacks need (`app/public/basemap/fonts/`), latin + latin-ext. `ol-mapbox-style` renders labels from a webfont CSS template, **not** from the style's `glyphs` endpoint, so a missing weight is invisible: labels fall back to a system font and every page load asks the upstream for a file it does not have. The build asserts coverage against the style and fails if a stack has no vendored file. |
+| `build-macro-outline.py` | Rebuilds `app/public/basemap/world-110m.json` from Natural Earth 1:110m — the world outline shown under the hub macro tier, so areas outside the federation's tileset are not blank. |
 
 ## Documentation
 

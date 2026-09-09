@@ -40,6 +40,389 @@ jobs:
       - name: Build
         run: make build
 
+      # install.sh ships compose.prod.yml as the operator's compose.yml, so a
+      # variable present only in the development file is documented, accepted
+      # in .env, and silently dropped on every production install.
+      - name: Production compose must pass on every variable dev does
+        run: make check-compose
+
+  # ── Entrypoint + generated nginx config (CI gate) ────────────────────────────
+  # The app entrypoint generates nginx config at container startup, so a
+  # malformed heredoc is a start-up failure rather than a degraded feature — and
+  # the docker job below does not run on pull requests. Without this leg, two
+  # silent nginx bugs (proxy_pass ignoring a rewrite, and a missing SNI
+  # directive) reached a green PR. This builds the image and exercises the
+  # entrypoint in every delivery mode, validating the result with `nginx -t`.
+  entrypoint-config:
+    name: Entrypoint config
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Build app image
+        run: docker build -f oci/app/Dockerfile -t spieli-app:citest .
+
+      - name: Validate generated nginx config in every delivery mode
+        run: |
+          set -eu
+          check() {
+            desc="$1"; shift
+            printf '\n── %s\n' "$desc"
+            docker run --rm --entrypoint sh "$@" spieli-app:citest -c '
+              /docker-entrypoint.sh >/dev/null 2>&1 &
+              # Poll for the generated config rather than sleeping a fixed
+              # interval: on a slow runner a fixed sleep validates a
+              # half-written file, which is a flake in either direction.
+              i=0
+              while [ ! -s /usr/share/nginx/html/config.js ] || [ ! -f /etc/nginx/tiles-location.conf ]; do
+                i=$((i+1)); [ "$i" -gt 100 ] && { echo "entrypoint did not finish"; exit 1; }
+                sleep 0.2
+              done
+              nginx -t
+            '
+          }
+          check "direct (defaults)" -e APP_MODE=standalone
+          check "direct, explicit raster provider" \
+            -e APP_MODE=standalone \
+            -e BASEMAP_URL='https://tiles.example.org/{z}/{y}/{x}.png' \
+            -e BASEMAP_ATTRIBUTION='(c) Example'
+          check "proxied" \
+            -e APP_MODE=standalone \
+            -e BASEMAP_URL='https://tiles.example.org/a/{z}/{x}/{y}.png' \
+            -e BASEMAP_ATTRIBUTION='(c) Example' \
+            -e BASEMAP_PROXY=true
+          check "vector style, hub mode" \
+            -e APP_MODE=hub -e REGISTRY_URL=/registry.json \
+            -e BASEMAP_STYLE_URL=/basemap/style.json \
+            -e BASEMAP_ATTRIBUTION='(c) Example'
+
+      - name: Basemap assets must actually resolve, not just parse
+        run: |
+          set -eu
+          # nginx -t cannot see any of this. A location-precedence mistake made
+          # every .png under /basemap/ answer 404 from the static-asset block
+          # while the map still rendered, because the tuned style draws few
+          # icons — a failure that looks exactly like success. So do it for
+          # real, against a STUB upstream rather than the public tile server:
+          # this job asserts spieli's own wiring (prefix rewrite, sub_filter,
+          # shape guard, cache headers), none of which needs a third party, and
+          # pointing it at tiles.openfreemap.org would put a donation-funded
+          # server on the critical path of every PR.
+          cleanup() {
+            rc=$?
+            if [ "$rc" != 0 ]; then
+              echo "── app container log ──"; docker logs bmcheck 2>&1 | tail -50 || true
+              echo "── stub upstream log ──"; docker logs bmstub  2>&1 | tail -30 || true
+            fi
+            docker rm -f bmcheck bmstub >/dev/null 2>&1 || true
+            docker network rm bmnet >/dev/null 2>&1 || true
+            exit "$rc"
+          }
+          trap cleanup EXIT
+
+          # A user-defined network is required, not cosmetic: nginx.conf uses
+          # Docker's embedded resolver at 127.0.0.11, which only exists on
+          # user-defined networks. On the default bridge every proxied request
+          # hangs until the resolver timeout instead of resolving the upstream.
+          docker rm -f bmcheck bmstub >/dev/null 2>&1 || true
+          docker network create bmnet >/dev/null 2>&1 || true
+
+          # Stub upstream. It mimics the shapes the bundled style asks for and
+          # the freshness headers the real server sends (86400 on the rotating
+          # TileJSON pointer, 10y on content-addressed tiles), plus one path the
+          # style never requests, to prove the shape guard refuses it.
+          cat > /tmp/bmstub.conf <<'STUB'
+          server {
+              listen 80;
+              location = /planet {
+                  default_type application/json;
+                  add_header Cache-Control "public, max-age=86400" always;
+                  return 200 '{"tilejson":"3.0.0","tiles":["http://bmstub/planet/BUILDID/{z}/{x}/{y}.pbf"],"minzoom":0,"maxzoom":14}';
+              }
+              location ~ "^/planet/[^/]+/[0-9]+/[0-9]+/[0-9]+\\.pbf$" {
+                  add_header Cache-Control "public, max-age=315360000" always;
+                  return 200 'stub-vector-tile';
+              }
+              location ~ "^/(sprites|natural_earth|fonts)/" {
+                  add_header Cache-Control "public, max-age=315360000" always;
+                  return 200 'stub-asset';
+              }
+              # Reachable on the upstream, never referenced by the style.
+              location = /styles/bright { return 200 'stub-style-document'; }
+              location / { return 404 'stub-not-found'; }
+          }
+          STUB
+          sed -i 's/^          //' /tmp/bmstub.conf
+          docker run -d --name bmstub --network bmnet \
+            -v /tmp/bmstub.conf:/etc/nginx/conf.d/default.conf:ro nginx:alpine
+          docker run -d --name bmcheck --network bmnet -p 18099:80 \
+            -e APP_MODE=standalone -e BASEMAP_UPSTREAM=http://bmstub spieli-app:citest
+
+          ready=
+          for _ in $(seq 1 40); do
+            if curl -sf -o /dev/null http://127.0.0.1:18099/config.js; then ready=1; break; fi
+            sleep 1
+          done
+          # Without this the loop falls through silently and the first real
+          # assertion reports a confusing failure instead of "never started".
+          [ -n "$ready" ] || { echo "FAIL: app container never became ready"; exit 1; }
+
+          echo "-- the app must be handed the same-origin style"
+          curl -sf http://127.0.0.1:18099/config.js | grep -q "style.local.json" \
+            || { echo "FAIL: config.js does not name style.local.json"; exit 1; }
+
+          get() { curl -s -o /dev/null -w '%{http_code}' --max-time 20 "http://127.0.0.1:18099$1" || echo 000; }
+          hdr() { curl -sD- -o /dev/null --max-time 20 "http://127.0.0.1:18099$1" | tr -d '\r' | grep -i "^$2:" | head -1; }
+
+          echo "-- every asset the style references must resolve"
+          # Derived from the style rather than hardcoded, so a style rebuild
+          # that moves an asset fails here instead of in a browser. jq reads the
+          # committed style; the glyph entry is expanded with a real fontstack
+          # because its {fontstack} placeholder contains SPACES once resolved,
+          # and nginx percent-decodes $uri before the shape guard sees it.
+          style=app/public/basemap/style.local.json
+          paths=$(jq -r '
+            [ .sprite + ".json", .sprite + ".png",
+              (.sources[] | (.url // empty)),
+              (.sources[] | (.tiles // [])[] | sub("\\{z\\}/\\{x\\}/\\{y\\}"; "3/4/2")),
+              (.glyphs | sub("\\{fontstack\\}"; "Noto%20Sans%20Regular") | sub("\\{range\\}"; "0-255"))
+            ] | .[]' "$style")
+          # Weights the style's text-font stacks imply, served from disk.
+          fonts=$(jq -r '[.layers[].layout["text-font"]?[]?] | unique | .[]' "$style" \
+            | sed -e 's/.*Bold Italic/700-italic/' -e 's/.*Bold/700/' \
+                  -e 's/.*Italic/400-italic/' -e 's/.*Regular/400/' \
+            | sort -u | sed 's|^|/basemap/fonts/noto-sans/|; s|$|.css|')
+
+          for path in /basemap/style.local.json $paths $fonts; do
+            code=$(get "$path")
+            echo "   $code  $path"
+            [ "$code" = "200" ] || { echo "FAIL: $path returned $code"; exit 1; }
+          done
+
+          echo "-- the TileJSON body must not hand the browser upstream tile URLs"
+          body=$(curl -s --max-time 20 http://127.0.0.1:18099/basemap/planet)
+          echo "$body" | grep -q '"tiles":\["/basemap/' \
+            || { echo "FAIL: TileJSON tiles[] not rewritten to /basemap/"; echo "$body" | head -c 300; exit 1; }
+
+          echo "-- a tile named by that TileJSON must resolve"
+          tile=$(echo "$body" | jq -r '.tiles[0]' | sed 's|{z}/{x}/{y}|9/269/172|')
+          code=$(get "$tile"); echo "   $code  $tile"
+          [ "$code" = "200" ] || { echo "FAIL: tile $tile returned $code"; exit 1; }
+
+          echo "-- the rotating TileJSON pointer must not be pinned for a month"
+          # It names an upstream build id. Caching it past the rotation leaves
+          # returning browsers asking for tile paths that no longer exist, and
+          # the map goes blank with nothing in the logs.
+          cc=$(hdr /basemap/planet Cache-Control); echo "   $cc"
+          echo "$cc" | grep -q 'max-age=86400' \
+            || { echo "FAIL: TileJSON Cache-Control is not the upstream's 86400"; exit 1; }
+          cc=$(hdr "$tile" Cache-Control); echo "   $cc"
+          echo "$cc" | grep -q 'max-age=2592000' \
+            || { echo "FAIL: content-addressed tile did not get the long ttl"; exit 1; }
+
+          echo "-- a vendored font must keep its immutable caching"
+          cc=$(hdr /basemap/fonts/noto-sans/400.css Cache-Control); echo "   $cc"
+          echo "$cc" | grep -q 'immutable' \
+            || { echo "FAIL: vendored /basemap/ asset lost its long-term cache header"; exit 1; }
+
+          echo "-- a failure must not be cached in the visitor's browser, on a hit either"
+          # $upstream_status is EMPTY on a cache hit, so a status-keyed map that
+          # looks right on the miss served cached 404s with a 30-day max-age.
+          # One request cannot see that; the second is the whole test.
+          # A shape the guard ALLOWS but the upstream does not have, so the 404
+          # comes from upstream and is stored by proxy_cache_valid 404 5m —
+          # a guard rejection would never reach the cache and prove nothing.
+          gone="/basemap/absent-$(date +%s).png"
+          for attempt in 1 2; do
+            cc=$(hdr "$gone" Cache-Control)
+            echo "   attempt $attempt: $cc"
+            echo "$cc" | grep -qi 'no-store' \
+              || { echo "FAIL: cached error response is not no-store on attempt $attempt"; exit 1; }
+          done
+
+          echo "-- the proxy must not be an open relay for the upstream origin"
+          # The stub answers /styles/bright with 200. The style never asks for
+          # it, so the shape guard must refuse it here — otherwise anyone can
+          # pull and cache arbitrary upstream paths through this instance.
+          code=$(get /basemap/styles/bright)
+          [ "$code" = "404" ] || { echo "FAIL: /basemap/styles/bright returned $code, expected 404"; exit 1; }
+          # Args are not part of any asset but DO enter the cache key, so ?1,
+          # ?2, ?3 … would be an unbounded cache-fill vector.
+          code=$(get '/basemap/planet?cachebust=1')
+          [ "$code" = "404" ] || { echo "FAIL: query string returned $code, expected 404"; exit 1; }
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST --max-time 20 http://127.0.0.1:18099/basemap/planet || echo 000)
+          [ "$code" = "403" ] || { echo "FAIL: POST /basemap/ returned $code, expected 403"; exit 1; }
+
+          echo "-- proxied requests must stay out of the access log"
+          docker logs bmcheck 2>/dev/null | grep -q '/basemap/planet/BUILDID' \
+            && { echo "FAIL: proxied tile path was written to the access log"; exit 1; }
+          echo "   ok"
+
+      - name: Shared basemap cache must preserve the same-origin rewrite
+        run: |
+          set -eu
+          # The one silent failure this topology can produce. A tileserver's
+          # TileJSON carries ABSOLUTE tile URLs pointing at itself. The shared
+          # cache rewrites them to the relative /basemap/ path; if it does not,
+          # each stack looks for ITS upstream (the cache, not the provider),
+          # finds nothing, and hands the browser the provider's URLs directly.
+          # The map renders perfectly either way — only the privacy property
+          # differs — so it has to be asserted rather than eyeballed.
+          cleanup() {
+            rc=$?
+            if [ "$rc" != 0 ]; then
+              for c in scapp sccache scstub; do
+                echo "── $c ──"; docker logs "$c" 2>&1 | tail -30 || true
+              done
+            fi
+            docker rm -f scapp sccache scstub >/dev/null 2>&1 || true
+            docker network rm scnet >/dev/null 2>&1 || true
+            exit "$rc"
+          }
+          trap cleanup EXIT
+
+          docker rm -f scapp sccache scstub >/dev/null 2>&1 || true
+          docker network create scnet >/dev/null 2>&1 || true
+
+          # Stub tileserver: returns its OWN origin in tiles[], as a real one does.
+          cat > /tmp/scstub.conf <<'STUB'
+          server {
+              listen 80;
+              location = /planet {
+                  default_type application/json;
+                  add_header Cache-Control "public, max-age=86400" always;
+                  return 200 '{"tilejson":"3.0.0","tiles":["http://scstub/planet/BUILDID/{z}/{x}/{y}.pbf"],"minzoom":0,"maxzoom":14}';
+              }
+              location ~ "^/planet/" { return 200 'stub-tile'; }
+              location / { return 404 'stub-not-found'; }
+          }
+          STUB
+          sed -i 's/^          //' /tmp/scstub.conf
+          docker run -d --name scstub --network scnet \
+            -v /tmp/scstub.conf:/etc/nginx/conf.d/default.conf:ro nginx:alpine
+
+          docker run -d --name sccache --network scnet \
+            -e BASEMAP_UPSTREAM=http://scstub \
+            -e BASEMAP_UPSTREAM_HOST=scstub \
+            -e BASEMAP_CACHE_MAX_SIZE=256m \
+            -e BASEMAP_CACHE_KEYS_ZONE=8m \
+            -e BASEMAP_CACHE_INACTIVE=1d \
+            -e BASEMAP_CACHE_RESOLVER=127.0.0.11 \
+            -e "BASEMAP_CACHE_UA=spieli/ci" \
+            -v "$PWD/deploy/basemap-cache/nginx.conf.template:/etc/nginx/templates/basemap-cache.conf.template:ro" \
+            -v /dev/null:/etc/nginx/conf.d/default.conf:ro \
+            nginx:1.29-alpine
+
+          docker run -d --name scapp --network scnet -p 18097:80 \
+            -e APP_MODE=standalone -e BASEMAP_UPSTREAM=http://sccache spieli-app:citest
+
+          ready=
+          for _ in $(seq 1 40); do
+            if curl -sf -o /dev/null http://127.0.0.1:18097/config.js; then ready=1; break; fi
+            sleep 1
+          done
+          [ -n "$ready" ] || { echo "FAIL: stack never became ready"; exit 1; }
+
+          echo "-- the browser must be handed same-origin tile URLs"
+          body=$(curl -s --max-time 20 http://127.0.0.1:18097/basemap/planet)
+          echo "   $body"
+          echo "$body" | grep -q '"tiles":\["/basemap/' || {
+            echo "FAIL: TileJSON was not rewritten to /basemap/ through the shared cache"
+            exit 1; }
+
+          echo "-- and the tile it names must resolve through both hops"
+          tile=$(echo "$body" | jq -r '.tiles[0]' | sed 's|{z}/{x}/{y}|9/269/172|')
+          code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "http://127.0.0.1:18097$tile")
+          echo "   $code  $tile"
+          [ "$code" = "200" ] || { echo "FAIL: tile returned $code"; exit 1; }
+
+          echo "-- the shared cache must collapse repeats into one upstream fetch"
+          for _ in 1 2 3 4 5; do curl -s -o /dev/null "http://127.0.0.1:18097$tile"; done
+          n=$(docker logs scstub 2>&1 | grep -c 'planet/BUILDID/9/269/172' || true)
+          echo "   upstream saw $n request(s) for 6 client requests"
+          [ "$n" = "1" ] || { echo "FAIL: expected exactly 1 upstream fetch, got $n"; exit 1; }
+
+          echo "-- the cache must not be a general relay, even from a stack"
+          code=$(docker exec scapp sh -c \
+            "wget -qS -O /dev/null http://sccache/styles/bright 2>&1 | head -1 | grep -o '[0-9]\{3\}'" || true)
+          echo "   cache answered $code for a path no style requests"
+          [ "$code" = "404" ] || { echo "FAIL: shared cache relayed an arbitrary path ($code)"; exit 1; }
+
+      - name: Misconfiguration must fail closed, not start silently
+        run: |
+          set -eu
+          # Matches the MESSAGE, not just a non-zero exit. Without that, a
+          # case can pass for the wrong reason — if style.local.json went
+          # missing from the image, several of these would "refuse" on that
+          # instead of on the thing they name, and the guard they exist to
+          # protect could be gone entirely.
+          expect_fail() {
+            desc="$1"; want="$2"; shift 2
+            # timeout: if a regression makes the misconfiguration ACCEPTED, the
+            # entrypoint execs nginx in the foreground and `docker run` never
+            # returns — blocking the job until the workflow timeout instead of
+            # failing fast with the message below.
+            if out=$(timeout 30 docker run --rm --entrypoint sh "$@" spieli-app:citest \
+                 -c '/docker-entrypoint.sh' 2>&1); then
+              echo "FAIL: expected startup to be refused — $desc"
+              exit 1
+            fi
+            case "$out" in
+              *"$want"*) echo "ok (refused): $desc" ;;
+              *) echo "FAIL: refused for the wrong reason — $desc"
+                 echo "  wanted to see: $want"
+                 echo "  got: $out"
+                 exit 1 ;;
+            esac
+          }
+          expect_fail "source configured without attribution" \
+            'BASEMAP_ATTRIBUTION must be set' \
+            -e BASEMAP_URL='https://tiles.example.org/{z}/{x}/{y}.png'
+          expect_fail "proxy enabled with a third-party style URL" \
+            'points at a third party' \
+            -e BASEMAP_URL='https://tiles.example.org/a/{z}/{x}/{y}.png' \
+            -e BASEMAP_ATTRIBUTION='(c) Example' \
+            -e BASEMAP_PROXY=true \
+            -e BASEMAP_STYLE_URL='https://tiles.openfreemap.org/styles/bright'
+          # Regression guard for the review finding: a same-origin style URL is
+          # not enough — the bundled style still points its assets at the
+          # upstream host, so combining it with the proxy must be refused.
+          expect_fail "proxy enabled with the bundled style (remote assets)" \
+            'still points its tiles, glyphs or sprites at' \
+            -e BASEMAP_URL='https://tiles.example.org/a/{z}/{x}/{y}.png' \
+            -e BASEMAP_ATTRIBUTION='(c) Example' \
+            -e BASEMAP_PROXY=true \
+            -e BASEMAP_STYLE_URL=/basemap/style.json
+          expect_fail "multi-suffix cache size (4gg)" \
+            'at most one unit suffix' \
+            -e BASEMAP_URL='https://tiles.example.org/a/{z}/{x}/{y}.png' \
+            -e BASEMAP_ATTRIBUTION='(c) Example' \
+            -e BASEMAP_PROXY=true -e BASEMAP_CACHE_MAX_SIZE=4gg
+          expect_fail "upstream carrying a path" \
+            'must be an origin with no path' \
+            -e BASEMAP_UPSTREAM='https://tiles.example.org/data'
+          expect_fail "fractional cache size" \
+            'at most one unit suffix' \
+            -e BASEMAP_URL='https://tiles.example.org/a/{z}/{x}/{y}.png' \
+            -e BASEMAP_ATTRIBUTION='(c) Example' \
+            -e BASEMAP_PROXY=true -e BASEMAP_CACHE_MAX_SIZE=4.5g
+          # safe_origin used to STRIP these rather than reject them, so
+          # https://user:pw@host silently became https://userpw — a different
+          # origin, proxied to, with nothing in the logs saying so.
+          expect_fail "upstream carrying userinfo" \
+            'not valid in an origin' \
+            -e BASEMAP_UPSTREAM='https://user:pw@tiles.example.org'
+          expect_fail "upstream with no host" \
+            'has no host' \
+            -e BASEMAP_UPSTREAM='https://'
+
   # ── Docker image ─────────────────────────────────────────────────────────────
   # NOTE: this job builds (and pushes) the images only on push to main / tags —
   # it does NOT run on pull requests, and `ubuntu-latest` is linux/amd64 only.

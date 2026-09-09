@@ -34,12 +34,7 @@
       <tr><th>Dienst</th><th>Zweck</th><th>Wird kontaktiert</th><th>Übermittelte Daten</th></tr>
     </thead>
     <tbody>
-      <tr>
-        <td><a href="https://carto.com/" target="_blank" rel="noopener">CARTO</a><br><code>basemaps.cartocdn.com</code></td>
-        <td>Hintergrundkarte (Kartenkacheln)</td>
-        <td>Bei jedem Laden der Karte und bei jeder Bewegung des Kartenausschnitts</td>
-        <td>IP-Adresse, User-Agent, Referer, Kachelkoordinaten (Zoomstufe, X, Y)</td>
-      </tr>
+{{BASEMAP_SERVICE_ROW}}
       <tr>
         <td><a href="https://nominatim.openstreetmap.org/" target="_blank" rel="noopener">Nominatim</a> (OpenStreetMap Foundation)<br><code>nominatim.openstreetmap.org</code></td>
         <td>Ortssuche und Auflösung von Regions-Adressen wie <code>/fulda</code></td>
@@ -50,7 +45,7 @@
         <td><a href="https://panoramax.xyz/" target="_blank" rel="noopener">Panoramax</a><br><code>api.panoramax.xyz</code></td>
         <td>Fotos auf Straßenebene</td>
         <td>Beim Auswählen eines Spielplatzes, zu dem Fotos vorliegen</td>
-        <td>IP-Adresse, User-Agent, Referer, Kennung des abgerufenen Fotos</td>
+        <td>IP-Adresse, User-Agent, Referer, Kennung des abgerufenen Fotos. Der Betrachter wird als <code>&lt;iframe&gt;</code> eingebettet, Panoramax erhält damit einen eigenen Browser-Kontext auf dieser Seite und kann dort eigene Daten speichern</td>
       </tr>
       <tr>
         <td><a href="https://commons.wikimedia.org/" target="_blank" rel="noopener">Wikimedia Commons</a><br><code>commons.wikimedia.org</code>, <code>upload.wikimedia.org</code></td>
@@ -69,8 +64,9 @@
   </div>
   <p>Die Kartendaten selbst stammen aus <a href="https://www.openstreetmap.org/" target="_blank" rel="noopener">OpenStreetMap</a> und stehen unter der <a href="https://opendatacommons.org/licenses/odbl/" target="_blank" rel="noopener">Open Database Licence (ODbL)</a>. Sie werden von dieser Instanz selbst ausgeliefert; für die Spielplatzdaten verlässt keine Anfrage den Server dieses Angebots.</p>
 
+{{BASEMAP_PRIVACY_SECTION}}
   <h2>Übermittlung in Drittländer</h2>
-  <p>CARTO (CARTO Inc.) und Mangrove Reviews haben ihren Sitz beziehungsweise ihre Infrastruktur ganz oder teilweise außerhalb der Europäischen Union. Mit dem Aufruf der Karte beziehungsweise dem Auswählen eines Spielplatzes werden die oben genannten Daten daher auch in Drittländer übermittelt, für die unter Umständen kein Angemessenheitsbeschluss der Europäischen Kommission vorliegt.</p>
+  <p>Einzelne der oben genannten Dienste haben ihren Sitz beziehungsweise ihre Infrastruktur ganz oder teilweise außerhalb der Europäischen Union; das betrifft insbesondere Wikimedia (Wikimedia Foundation, USA) und Mangrove Reviews. Beim Auswählen eines Spielplatzes werden die oben genannten Daten daher unter Umständen auch in Drittländer übermittelt, für die kein Angemessenheitsbeschluss der Europäischen Kommission vorliegt.</p>
 
   <h2>Lokale Speicherung</h2>
   <p>Wenn Sie zum ersten Mal eine Bewertung absenden, wird dafür in Ihrem Browser ein kryptografisches Schlüsselpaar erzeugt und dort dauerhaft gespeichert (<code>localStorage</code>, Schlüssel <code>spieli-mangrove-keypair</code>). Der öffentliche Teil wird mit jeder Bewertung übertragen und dient als pseudonyme Kennung, über die Ihre Bewertungen einander zugeordnet werden können. Es handelt sich damit um einen dauerhaften pseudonymen Wiedererkennungswert. Er entsteht erst beim Absenden einer Bewertung, nicht beim bloßen Betrachten der Karte, und Sie können ihn jederzeit durch Löschen der Websitedaten in Ihrem Browser entfernen. Damit verlieren Sie allerdings die Möglichkeit, zuvor abgegebene Bewertungen zu ändern. Weitere lokal gespeicherte Werte betreffen ausschließlich Bedienzustände der Oberfläche und verlassen Ihr Gerät nicht.</p>

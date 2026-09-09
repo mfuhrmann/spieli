@@ -1,7 +1,7 @@
 # External Services
 
 spieli integrates with the following free external services.
-They fall into two groups, and the distinction matters for privacy: only the first group is contacted by the visitor's browser.
+They fall into three groups, and the distinction matters for privacy: only the first group is contacted by the visitor's browser.
 
 ## Contacted by the visitor's browser
 
@@ -10,9 +10,8 @@ The "Also receives" column lists what is sent on top of that.
 
 | Service | Host | Purpose | Contacted when | Also receives |
 |---|---|---|---|---|
-| [CartoDB Voyager](https://carto.com/basemaps) | `basemaps.cartocdn.com` | Background map tiles | Every map load and every pan | Tile coordinates (z/x/y), which reveal the viewed map extent |
 | [Nominatim](https://nominatim.openstreetmap.org) | `nominatim.openstreetmap.org` | Location search, region-URL resolution | On a search query, and on loading a region URL such as `/fulda` | The search term |
-| [Panoramax](https://panoramax.xyz) | `api.panoramax.xyz` | Street-level photos | Selecting a playground that has photos | The requested photo UUID |
+| [Panoramax](https://panoramax.xyz) | `api.panoramax.xyz` | Street-level photos | Selecting a playground that has photos | The requested photo UUID. The viewer is embedded in an `<iframe>`, so Panoramax runs in its own browsing context and can set its own storage there |
 | [Wikimedia Commons](https://commons.wikimedia.org) | `commons.wikimedia.org`, `upload.wikimedia.org` | Playground photos from `wikimedia_commons` / `image` tags | Selecting a playground carrying either tag | The requested file name |
 | [Mangrove.reviews](https://mangrove.reviews) | `api.mangrove.reviews` | Pseudonymous community reviews | Selecting any playground; again on submitting a review | Playground coordinates. On submit: the rating, optional comment, and the browser-held public key |
 
@@ -20,7 +19,7 @@ Playground data itself is served by the instance's own PostgREST, so it never le
 
 Two consequences worth being explicit about:
 
-- **The basemap host is contacted by every visitor on every map movement.** It is currently hardcoded in `app/src/components/Map.svelte`. Making it configurable, and choosing a provider, are tracked in [#823](https://github.com/mfuhrmann/spieli/issues/823).
+- **The basemap is not in this table, and that is the point.** It used to be the largest entry in it, contacted by every visitor on every map movement. It is now fetched server-side and cached, so the browser only ever talks to the instance itself. See the next section.
 - **Reviews create a persistent pseudonymous identifier.** `app/src/lib/reviews.js` generates a P-256 keypair on the first review submission and stores it in `localStorage` under `spieli-mangrove-keypair`. It is not created by merely viewing the map.
 
 Operators must disclose all of the above.
@@ -33,6 +32,9 @@ Contacted by the importer or the container, never by the visitor's browser.
 | Service | Purpose |
 |---|---|
 | [Geofabrik](https://download.geofabrik.de) | Source of OSM PBF extracts for import |
+| [OpenFreeMap](https://openfreemap.org) / [OpenMapTiles](https://www.openmaptiles.org) | Background map tiles, fetched **server-side and cached**. Configurable via `BASEMAP_UPSTREAM`, including pointing it at a tileserver you run yourself. See [Security](../ops/security.md#the-basemap-is-same-origin-by-default) and [Shared Basemap Cache](../ops/shared-basemap-cache.md). |
+
+An operator can move the basemap back into the first group by setting `BASEMAP_URL` or `BASEMAP_STYLE_URL` to a third party. That is a deliberate opt-out, it requires `BASEMAP_ATTRIBUTION`, and the generated Datenschutzerklärung names the provider when it happens.
 
 ## Linked, not embedded
 

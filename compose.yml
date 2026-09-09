@@ -169,6 +169,14 @@ services:
       REGION_CHAT_URL:             ${REGION_CHAT_URL:-}
       MAP_ZOOM:                    ${MAP_ZOOM:-12}
       MAP_MIN_ZOOM:                ${MAP_MIN_ZOOM:-10}
+      BASEMAP_UPSTREAM:            ${BASEMAP_UPSTREAM:-}
+      BASEMAP_URL:                 ${BASEMAP_URL:-}
+      BASEMAP_STYLE_URL:           ${BASEMAP_STYLE_URL:-}
+      BASEMAP_ATTRIBUTION:         ${BASEMAP_ATTRIBUTION:-}
+      BASEMAP_PROXY:               ${BASEMAP_PROXY:-}
+      BASEMAP_CACHE_MAX_SIZE:      ${BASEMAP_CACHE_MAX_SIZE:-4g}
+      BASEMAP_CACHE_KEYS_ZONE:     ${BASEMAP_CACHE_KEYS_ZONE:-64m}
+      BASEMAP_CACHE_INACTIVE:      ${BASEMAP_CACHE_INACTIVE:-90d}
       POI_RADIUS_M:                ${POI_RADIUS_M:-5000}
       API_BASE_URL:                /api
       SITE_URL:                    ${SITE_URL:-}
@@ -179,16 +187,22 @@ services:
       IMPRESSUM_PHONE:             ${IMPRESSUM_PHONE:-}
       IMPRESSUM_URL:               ${IMPRESSUM_URL:-}
       PRIVACY_URL:                 ${PRIVACY_URL:-}
-    # Uncomment to serve a custom registry.json without rebuilding the image.
-    # Place registry.json next to compose.yml and enable the line below.
-    # volumes:
-    #   - ./registry.json:/usr/share/nginx/html/registry.json:ro
+    volumes:
+      # The basemap cache lives on the container's writable layer by default,
+      # so `make docker-build` discards it and the next visitors refill it from
+      # the public tile server. Keeping it matters most across an upgrade
+      # sweep, which would otherwise send every stack at the upstream cold.
+      - basemap_cache:/var/cache/nginx/basemap
+      # Uncomment to serve a custom registry.json without rebuilding the image.
+      # Place registry.json next to compose.yml and enable the line below.
+      # - ./registry.json:/usr/share/nginx/html/registry.json:ro
     restart: unless-stopped
 
 volumes:
   pgdata:
   pgdata2:
   pbf_cache:
+  basemap_cache:
 
 networks:
   default:
