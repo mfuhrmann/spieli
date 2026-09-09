@@ -75,10 +75,14 @@ Content-Security-Policy: default-src 'self'; script-src 'self'; …
 ```
 
 Review these headers against your deployment's needs. The CSP allows:
-- `img-src: self data: https:` — required for OpenLayers tile loading and wiki images
-- `connect-src: self https:` — required for Overpass, Nominatim, Panoramax, Mangrove
+
+- `img-src: self data: *.wikimedia.org *.wikipedia.org api.panoramax.xyz` — an explicit allowlist. The basemap used to require a blanket `https:` here, because tiles arrived as third-party images; they are same-origin now, so only the two services that genuinely serve remote images remain. The Wikimedia entries mirror `isWikimediaHost()` in `app/src/lib/commons.js`: photos come from `upload.wikimedia.org` in practice, but an OSM `image` tag may name any Wikimedia host.
+- `connect-src: self https:` — deliberately still a blanket. Hub mode fans out to whatever backends `registry.json` lists, so an allowlist would break federation the moment a backend is added, and nothing would surface it except a region quietly going missing.
 - `frame-src panoramax.xyz api.panoramax.xyz` — required for Panoramax photo embedding
 - `frame-ancestors: self https:` — allows the app to be embedded in a Hub over HTTPS
+
+!!! warning "Do not tighten `img-src` to `'self' data:`"
+    It looks safe now that tiles are local, but Commons photos and Panoramax thumbnails are remote images by definition. A blocked image does not error visibly — it simply never appears, so the breakage is invisible until someone notices a playground has lost its photos. `make check-privacy` fails the build if the policy stops permitting a host the app loads images from.
 
 ## External service dependencies
 
