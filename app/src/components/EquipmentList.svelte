@@ -1,5 +1,6 @@
 <script>
   import { objDevices, objFitnessStation } from '../lib/objPlaygroundEquipment.js';
+  import { panoramaxThumbUrl, panoramaxViewerUrl } from '../lib/panoramax.js';
   import { objColors } from '../lib/vectorStyles.js';
   import { getEquipmentAttributesFromProps } from '../lib/equipmentAttributes.js';
   import { themeOf, themeIcon, themeName } from '../lib/playgroundThemes.js';
@@ -103,8 +104,8 @@
 
   // Panoramax fullscreen modal for device photos
   let modalUuid = null;
-  const thumbUrl  = uuid => `https://api.panoramax.xyz/api/pictures/${uuid}/thumb.jpg`;
-  const viewerUrl = uuid => `https://api.panoramax.xyz/?pic=${uuid}&nav=none&focus=pic`;
+  const thumbUrl  = panoramaxThumbUrl;
+  const viewerUrl = panoramaxViewerUrl;
 </script>
 
 {#if features.length === 0 && groups.length === 0 && Object.keys(fallbackCounts).length === 0}

@@ -3,7 +3,8 @@
 // Subject URI: geo:{lat},{lon}?u=50  (50 m uncertainty for a polygon)
 // Rating scale: 0–100 (we show 1–5 stars = 20/40/60/80/100)
 
-const MANGROVE_API = 'https://api.mangrove.reviews';
+import { mangroveApiUrl as MANGROVE_API } from './config.js';
+
 const LS_KEY = 'spieli-mangrove-keypair';
 const LS_KEY_LEGACY = 'spielplatzkarte-mangrove-keypair';
 

@@ -26,6 +26,12 @@ All variables are set in `.env` (copy from `.env.example`). The installer genera
 | `BASEMAP_CACHE_MAX_SIZE` | `4g` | ui, data-node-ui | Disk ceiling per cache zone. The basemap cache always exists; enabling `BASEMAP_PROXY` adds a second zone sized from the same value, so the on-disk total can be twice this. |
 | `BASEMAP_CACHE_KEYS_ZONE` | `64m` | ui, data-node-ui | nginx cache key zone. Holds roughly 8000 keys per MB and **binds before disk does** — a large `BASEMAP_CACHE_MAX_SIZE` behind a small keys zone yields a cache that stays almost empty. |
 | `BASEMAP_CACHE_INACTIVE` | `90d` | ui, data-node-ui | How long an unrequested tile survives. nginx defaults to 10 minutes, which evicts tiles regardless of free space — far too short for basemap tiles. |
+| `PROXY_NOMINATIM` | `true` | ui, data-node-ui | Fetch geocoding server-side through `/ext/nominatim/` so the browser never contacts Nominatim. `false` restores direct browser requests. See [External-service proxies](#external-service-proxies). |
+| `PROXY_COMMONS` | `true` | ui, data-node-ui | Fetch the Commons API and the image bytes server-side (`/ext/commons/`, `/ext/wikimedia/`). |
+| `PROXY_MANGROVE` | `true` | ui, data-node-ui | Fetch and submit reviews server-side through `/ext/mangrove/`. Submission still verifies at Mangrove: the JWT signature covers its own claims, so the proxy is transparent to it. |
+| `EXT_CACHE_MAX_SIZE` | `2g` | ui, data-node-ui | Disk ceiling for the shared `/ext/` cache. One zone serves all four services; the default cache key includes the upstream host, so two upstreams cannot collide on a path. |
+| `EXT_CACHE_KEYS_ZONE` | `16m` | ui, data-node-ui | Key zone for the `/ext/` cache. Same caveat as the basemap one: it binds before disk does. |
+| `EXT_CACHE_INACTIVE` | `30d` | ui, data-node-ui | How long an unrequested `/ext/` response survives. |
 | `CSP_CONNECT_EXTRA` | *(unset)* | ui, data-node-ui | Extra origins for the generated `connect-src`, space-separated. Needed when a hub fetches `registry.json` from a URL at runtime, so the entrypoint cannot read it to discover backends. Rejected at startup if malformed. See [Content Security Policy](security.md#nginx-security-headers). |
 | `CSP_IMG_EXTRA` | *(unset)* | ui, data-node-ui | Extra origins for the generated `img-src`, space-separated. Needed when images are rendered from an origin the generator cannot discover. Rejected at startup if malformed. |
 | `PARENT_ORIGIN` | *(own origin)* | data-node-ui | Allowed origin for `postMessage` events — set to the Hub's full origin when embedding in a Hub |
@@ -308,3 +314,41 @@ The second edit is a legibility change only. Dropping a style layer does not red
 `--asset-base` is what rewrites the style's tile, glyph and sprite URLs onto one origin, and it is the whole difference between a local style and a local basemap. **Without it — which is how `style.json` is built — those assets are fetched from `tiles.openfreemap.org` by every visitor**, even though the style document itself is served locally.
 
 Only the origin is stripped; the upstream's own paths are preserved verbatim. That 1:1 mapping is what lets a plain prefix proxy serve the result without reversing a mapping it cannot know. The build refuses to write an `--asset-base` output that still contains a third-party host, and drops any query string it finds, so rebuilding against a keyed provider cannot bake an API key into a committed style.
+
+## External-service proxies
+
+By default the visitor's browser contacts **no third party**. Geocoding, playground photos and reviews are all fetched by this instance and served from its own origin, cached on disk. This is the same mechanism as the basemap, extended to the rest.
+
+```
+Browser ──► this instance ──► nginx cache ──► Nominatim / Commons / Mangrove
+```
+
+Each service can be opted out individually with the `PROXY_*` variables above. Opting out restores direct browser requests for that service and adds its host to the generated Content Security Policy; the others stay proxied.
+
+### Two exceptions
+
+**Panoramax is not proxied at all.** Its thumbnail endpoint answers `308` with a `Location` on a per-instance derivative host, and nginx cannot follow a redirect — relaying it would send the browser to a host the privacy page does not name and the CSP does not allow. Its viewer is an `<iframe>`, and serving a whole interactive third-party application from this origin would grant it same-origin privileges here. Both stay cross-origin, are named in the CSP, and keep their privacy-page rows.
+
+**Equipment-attribute illustrations are not proxied.** They are rendered from `commons.wikimedia.org/wiki/Special:FilePath/…`, which answers with a redirect chain; following it would mean allowing `/w/index.php` through the proxy, which is a much larger relay surface than a photo gallery is worth. The playground photo gallery itself *is* proxied.
+
+### Nothing is logged
+
+Every proxy location sets `access_log off`, and that is a correctness property rather than a tuning choice. Proxying moves the visitor's request stream onto your disk; recording it would rebuild a per-visitor trail and make you the controller of something worse than the third-party disclosure it replaced. Errors are still logged.
+
+If you put a reverse proxy in front of this stack, check that it is not logging the same paths a layer up. Traefik's access log is off by default; if you have enabled it, exclude `/ext/`.
+
+### Nominatim needs its cache to survive restarts
+
+The OSMF usage policy is an absolute **1 request per second**. Proxying concentrates onto one IP the queries that used to spread across every visitor's, so the cache is load-bearing rather than an optimisation — and `compose.yml` mounts a named volume (`ext_cache`) for exactly that reason. A cache on the container's writable layer is discarded on every image rebuild, and an upgrade across a federation would send every instance cold at a 1 r/s upstream simultaneously.
+
+The rate limiter sits on an internal loopback server rather than on the visitor-facing location, so only cache **misses** reach it. That placement matters: `limit_req` runs before the cache lookup, so on the visitor-facing location it sheds requests that were already cached — measured, two simultaneous visitors were enough to break search. When the limiter does shed, a stale cached answer is served if one is held.
+
+The dominant query is shared: region-URL resolution such as `/fulda` is identical for every visitor of an instance, and it is what caches best.
+
+### Sizing the cache
+
+`EXT_CACHE_MAX_SIZE` defaults to a conservative 2 GB for all four services together. Commons image bytes dominate it. Raise it if `du -sh` on the volume sits at the ceiling and images are being re-fetched:
+
+```bash
+docker compose exec app du -sh /var/cache/nginx/ext
+```

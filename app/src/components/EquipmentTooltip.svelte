@@ -1,5 +1,6 @@
 <script>
   import { objDevices, objFitnessStation } from '../lib/objPlaygroundEquipment.js';
+  import { panoramaxThumbUrl } from '../lib/panoramax.js';
   import { themeOf, themeIcon, themeName } from '../lib/playgroundThemes.js';
   import { _ } from 'svelte-i18n';
 
@@ -59,7 +60,7 @@
     }
     return null;
   })();
-  $: thumbUrl = panoramaxUuid ? `https://api.panoramax.xyz/api/pictures/${panoramaxUuid}/thumb.jpg` : null;
+  $: thumbUrl = panoramaxUuid ? panoramaxThumbUrl(panoramaxUuid) : null;
 
   $: style = position ? `left: ${position.x}px; top: ${position.y}px;` : '';
   // Flip tooltip below the cursor when near the top of the viewport.

@@ -1,6 +1,9 @@
 import { nominatimFetch } from './nominatim.js';
 
-const RESERVED_PREFIXES = ['api', 'api2', 'legal', 'metrics'];
+// 'ext' is the same-origin prefix for the external-service proxies (#853).
+// Without it here every /ext/... request would be treated as a region path and
+// geocoded.
+const RESERVED_PREFIXES = ['api', 'api2', 'ext', 'legal', 'metrics'];
 
 /**
  * Synchronous predicate: does this path look like a region URL (e.g. `/Frankfurt`)?

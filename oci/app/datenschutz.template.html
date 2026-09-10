@@ -37,30 +37,7 @@
     </thead>
     <tbody>
 {{BASEMAP_SERVICE_ROW}}
-      <tr>
-        <td><a href="https://nominatim.openstreetmap.org/" target="_blank" rel="noopener">Nominatim</a> (OpenStreetMap Foundation)<br><code>nominatim.openstreetmap.org</code></td>
-        <td>Ortssuche und Auflösung von Regions-Adressen wie <code>/fulda</code></td>
-        <td>Bei einer Suchanfrage sowie beim Aufruf einer Regions-Adresse</td>
-        <td>IP-Adresse, User-Agent, Referer, eingegebener Suchbegriff</td>
-      </tr>
-      <tr>
-        <td><a href="https://panoramax.xyz/" target="_blank" rel="noopener">Panoramax</a><br><code>api.panoramax.xyz</code></td>
-        <td>Fotos auf Straßenebene</td>
-        <td>Beim Auswählen eines Spielplatzes, zu dem Fotos vorliegen</td>
-        <td>IP-Adresse, User-Agent, Referer, Kennung des abgerufenen Fotos. Der Betrachter wird als <code>&lt;iframe&gt;</code> eingebettet, Panoramax erhält damit einen eigenen Browser-Kontext auf dieser Seite und kann dort eigene Daten speichern</td>
-      </tr>
-      <tr>
-        <td><a href="https://commons.wikimedia.org/" target="_blank" rel="noopener">Wikimedia Commons</a><br><code>commons.wikimedia.org</code>, <code>upload.wikimedia.org</code></td>
-        <td>Spielplatzfotos aus den OSM-Tags <code>wikimedia_commons</code> und <code>image</code></td>
-        <td>Beim Auswählen eines Spielplatzes, für den solche Tags hinterlegt sind</td>
-        <td>IP-Adresse, User-Agent, Referer, Name der abgerufenen Bilddatei</td>
-      </tr>
-      <tr>
-        <td><a href="https://mangrove.reviews/" target="_blank" rel="noopener">Mangrove Reviews</a><br><code>api.mangrove.reviews</code></td>
-        <td>Abruf und Abgabe von Bewertungen</td>
-        <td>Erst wenn Sie den Abschnitt „Bewertungen“ ausklappen; danach einmal je weiterem Spielplatz, den Sie bei ausgeklapptem Abschnitt auswählen. Nicht beim bloßen Auswählen eines Spielplatzes. Zusätzlich beim Absenden einer Bewertung</td>
-        <td>IP-Adresse, User-Agent, Referer, Koordinaten des Spielplatzes. Beim Absenden zusätzlich Ihre Bewertung, ein optionaler Kommentar und Ihr öffentlicher Schlüssel (siehe „Lokale Speicherung“)</td>
-      </tr>
+{{EXT_SERVICE_ROWS}}
     </tbody>
   </table>
   </div>
