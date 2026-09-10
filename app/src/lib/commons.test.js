@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { isSafeImageUrl, commonsFileFromUrl, parseCommonsTag, isWikimediaImageTag, stripHtml } from './commons.js';
+import { proxiedImageUrl, isSafeImageUrl, commonsFileFromUrl, parseCommonsTag, isWikimediaImageTag, stripHtml } from './commons.js';
 
 // --- isSafeImageUrl: only https Wikimedia URLs pointing at an actual image ---
 {
@@ -78,3 +78,19 @@ import { isSafeImageUrl, commonsFileFromUrl, parseCommonsTag, isWikimediaImageTa
 }
 
 console.log('commons.test.js: all assertions passed');
+
+// --- proxiedImageUrl is a no-op unless a proxy base is configured ---------
+// This file runs with no window.APP_CONFIG, i.e. the `make dev` / unproxied
+// deployment, where every Wikimedia URL must be left exactly as it is.
+// The proxied behaviour is covered in commonsProxy.test.js.
+{
+    for (const u of [
+        'https://upload.wikimedia.org/wikipedia/commons/a/b/Foo.jpg',
+        'https://thumb.wikimedia.org/x/y.jpg?utm_source=commons.wikimedia.org',
+        'https://commons.wikimedia.org/w/api.php?x=1',
+        'not a url',
+        null,
+    ]) {
+        assert.equal(proxiedImageUrl(u), u);
+    }
+}

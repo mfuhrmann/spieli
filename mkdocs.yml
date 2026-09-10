@@ -39,6 +39,7 @@ nav:
       - Single-host Federation: ops/single-host-federation.md
       - Add a Data-node: ops/add-data-node.md
       - Configuration: ops/configuration.md
+      - Shared Basemap Cache: ops/shared-basemap-cache.md
       - Upgrading: ops/upgrade.md
       - Switching Regions: ops/switch-region.md
       - Scheduled Import: ops/scheduled-import.md

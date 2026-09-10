@@ -1,0 +1,70 @@
+# Shared basemap tile cache — ONE per host, in front of all spieli stacks.
+#
+#   docker compose up -d
+#
+# Then point every stack at it (see docs/ops/shared-basemap-cache.md):
+#
+#   # in each stack's .env
+#   BASEMAP_UPSTREAM=http://basemap-cache
+#   BASEMAP_CACHE_MAX_SIZE=256m        # the per-stack cache becomes a small L1
+#
+#   # and start each stack with the override that joins this network
+#   docker compose -f compose.yml -f compose.override.basemap-cache.yml up -d
+#
+# Nothing is published. The stacks reach this container over the
+# `spieli-basemap` network, and the visitor's browser never touches it — it
+# only ever talks to its own stack's nginx, which fetches through here
+# server-side. That is also why this needs no Traefik router, no CORS
+# exception and no CSP allowance.
+
+services:
+  basemap-cache:
+    image: nginx:1.29-alpine
+    environment:
+      # Where the tiles actually come from. Origin only, no path — the same
+      # rule the stacks enforce, for the same reason.
+      BASEMAP_UPSTREAM:        ${BASEMAP_UPSTREAM:-https://tiles.openfreemap.org}
+      # Host part of the above, used by the sub_filter that rewrites the
+      # TileJSON body's protocol-relative form. Kept separate because nginx
+      # cannot slice a string in a config file.
+      BASEMAP_UPSTREAM_HOST:   ${BASEMAP_UPSTREAM_HOST:-tiles.openfreemap.org}
+      # One shared cache can afford to be much larger than fifteen small ones,
+      # and this is the copy that matters. ~8000 keys per MB of keys_zone, so
+      # keep the zone in step with max_size or the cache stays mostly empty.
+      BASEMAP_CACHE_MAX_SIZE:  ${BASEMAP_CACHE_MAX_SIZE:-16g}
+      BASEMAP_CACHE_KEYS_ZONE: ${BASEMAP_CACHE_KEYS_ZONE:-128m}
+      BASEMAP_CACHE_INACTIVE:  ${BASEMAP_CACHE_INACTIVE:-180d}
+      # Docker's embedded DNS. Only exists on a user-defined network, which is
+      # what `spieli-basemap` is.
+      BASEMAP_CACHE_RESOLVER:  ${BASEMAP_CACHE_RESOLVER:-127.0.0.11}
+      # Identify the operator, not just the project: this is the single client
+      # the upstream sees for this whole host, so it is the one that has to be
+      # contactable. Set SITE_URL or BASEMAP_CACHE_UA to something real.
+      BASEMAP_CACHE_UA:        ${BASEMAP_CACHE_UA:-spieli/shared-basemap-cache (+https://github.com/mfuhrmann/spieli)}
+    volumes:
+      - ./nginx.conf.template:/etc/nginx/templates/basemap-cache.conf.template:ro
+      # The stock image ships a server on :80 that would answer first. An empty
+      # file removes it without needing a custom image.
+      - /dev/null:/etc/nginx/conf.d/default.conf:ro
+      # The whole point: one cache on disk instead of fifteen, and one that
+      # survives `docker compose pull` on every stack.
+      - basemap_cache:/var/cache/nginx/basemap
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/healthz || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    networks:
+      - spieli-basemap
+    restart: unless-stopped
+
+volumes:
+  basemap_cache:
+
+networks:
+  spieli-basemap:
+    # Named rather than project-prefixed, so each stack can join it by this
+    # name. This compose file creates it; bring this stack up before the ones
+    # that declare it external.
+    name: spieli-basemap

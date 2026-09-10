@@ -1,8 +1,9 @@
-.PHONY: install dev build serve test test-unit \
+.PHONY: install dev build serve test test-unit check-compose check-privacy check-equipment-images \
         up down import docker-build db-apply db-shell \
         seed-load seed-load2 seed-extract seed-extract2 import2 \
         require-npm require-docker installer lan-url \
         docs-install docs-serve docs-build docs-clean \
+        basemap-style basemap-outline basemap-fonts basemap-assets equipment-images require-python3 \
         help
 
 # Bail with a clear message when a required tool is missing.
@@ -42,6 +43,12 @@ test: require-npm test-unit  ## Run unit tests + Playwright E2E tests
 
 test-unit: require-npm    ## Run unit tests in app/src/lib/*.test.js
 	npm --prefix app run test:unit
+
+check-compose: require-python3  ## Fail if compose.prod.yml drops variables compose.yml passes
+	python3 tools/check-compose-parity.py
+
+check-privacy: require-python3  ## Fail if the frontend contacts a host the privacy page never names
+	python3 tools/check-privacy-disclosure.py
 
 ## ── Docker Compose stack ──────────────────────────────────────────────────────
 
@@ -150,6 +157,28 @@ docs-build:               ## Build static docs site into site/
 
 docs-clean:               ## Remove site/ and .venv
 	rm -rf site/ .venv
+
+## ── Basemap assets ────────────────────────────────────────────────────────────
+
+require-python3:
+	$(call require,python3)
+
+basemap-style: require-python3   ## Rebuild both basemap style variants from upstream
+	python3 tools/build-basemap-style.py --local-out app/public/basemap/style.local.json
+
+basemap-outline: require-python3 ## Rebuild the macro-tier world outline from Natural Earth
+	python3 tools/build-macro-outline.py
+
+basemap-fonts: require-python3   ## Re-vendor the webfonts the basemap style needs
+	python3 tools/build-basemap-fonts.py
+
+equipment-images: require-python3  ## Resolve equipment illustration File: names to real URLs
+	python3 tools/build-equipment-images.py
+
+check-equipment-images: require-python3  ## Fail if the generated equipment-image map is stale
+	python3 tools/build-equipment-images.py --check
+
+basemap-assets: basemap-style basemap-outline basemap-fonts  ## Rebuild all basemap assets
 
 ## ── Help ──────────────────────────────────────────────────────────────────────
 

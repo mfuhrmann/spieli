@@ -41,3 +41,20 @@ When `apiBaseUrl` is empty in `app/public/config.js`, the frontend falls back to
 make install
 make dev
 ```
+
+## Adding or changing an equipment illustration
+
+The device and pitch tables (`app/src/lib/objPlaygroundEquipment.js`, `app/src/lib/equipmentAttributes.js`) name illustrations as MediaWiki `File:` titles. Those names are resolved to real file URLs at build time, so after adding or changing one:
+
+```bash
+make equipment-images     # re-resolve, rewriting app/src/lib/equipmentImages.generated.json
+```
+
+Commit the regenerated file with your change. It is checked in on purpose, like the basemap assets, so a build never depends on someone else's API being up.
+
+Two things to expect:
+
+- **A name that resolves on neither Commons nor the OSM wiki fails the target.** That is the point: such a name used to render nothing while costing two failing requests. Fix the name, or add it to `KNOWN_MISSING` in `tools/build-equipment-images.py` with a reason.
+- **The resolved URL is not `Special:FilePath`.** It is the real file path on a Wikimedia or OSM-wiki host, which the `/ext/wikimedia/` proxy serves, so the visitor's browser never contacts either wiki. Do not reintroduce a `Special:FilePath` URL in the frontend — CI rejects it.
+
+`make check-equipment-images` re-resolves and fails if the committed map no longer points at the same files. It is not wired into CI, because it depends on two live APIs; run it by hand if illustrations start disappearing.
