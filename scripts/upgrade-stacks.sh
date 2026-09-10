@@ -219,22 +219,26 @@ except Exception:
   docker compose "${profile_flags[@]}" up -d app
 
   echo "→ Verifying..."
-  # NOT a fixed sleep. The daemon importer was just recreated, and its startup
-  # path applies api.sql: that terminates PostgREST's connections and rebuilds
-  # playground_stats, which takes minutes on a Bundesland. A `sleep 3` then a
-  # single curl would catch that window and report 5xx or 404 for every
-  # data-node — marking healthy stacks as failures, printing the misleading
-  # "most likely never completed an import", and setting playground_count=-1,
-  # which disables the zero-playground reimport safety net below.
+  # NOT a fixed sleep. Three things have just moved underneath this check: the
+  # app container was recreated (nginx, which fronts /api/), the daemon was
+  # recreated and applies api.sql on startup, and that apply terminates
+  # PostgREST's connections when it swaps playground_stats in. Any of them can
+  # make one immediate curl answer 5xx or 000.
   #
-  # So poll instead, and treat only a settled answer as an answer:
+  # A `sleep 3` and a single curl would then mark a healthy stack as failed,
+  # print the misleading "most likely never completed an import", and set
+  # playground_count=-1 — which disables the zero-playground reimport safety
+  # net below. So poll, and treat only a settled answer as an answer:
   #   200      -> done
   #   404      -> also terminal (no api schema: this stack has never imported)
-  #   5xx/000  -> the schema is mid-rebuild, or nothing is listening yet; wait
+  #   5xx/000  -> restarting or reconnecting; wait
   #
-  # The ceiling is generous because the rebuild it waits on genuinely is slow
-  # (#720). Progress is printed so a long wait does not look like a hang.
-  verify_deadline=$(( $(date +%s) + 600 ))
+  # Since #720 the rebuild is a build-then-swap, so the wait is seconds rather
+  # than the minutes it would have been while playground_stats was dropped and
+  # recreated in place: the old view keeps serving readers for the whole build,
+  # and only the swap itself is disruptive. The ceiling is still well above
+  # that, and progress is printed so a wait does not read as a hang.
+  verify_deadline=$(( $(date +%s) + 180 ))
   verify_waited=0
   # Verification is deliberately NOT fatal to the sweep. By this point the images
   # are pulled and the containers restarted, so the upgrade itself succeeded; only
@@ -260,7 +264,7 @@ except Exception:
       [[ "$code" == "200" || "$code" == "404" ]] && break
       (( $(date +%s) >= verify_deadline )) && break
       if (( verify_waited % 30 == 0 )); then
-        echo "  waiting for the schema apply to finish (HTTP $code, ${verify_waited}s elapsed)..."
+        echo "  waiting for the API to come back (HTTP $code, ${verify_waited}s elapsed)..."
       fi
       sleep 5
       verify_waited=$(( verify_waited + 5 ))

@@ -17,6 +17,14 @@
 -- get_meta and row counts looking perfectly healthy while two filters were
 -- silently wrong.
 --
+-- Since #720 the rebuild builds under a staging name and swaps it in, so the
+-- live view is no longer absent for minutes — but this lock is not made
+-- redundant by that, only redirected. Two concurrent applies now collide on
+-- `DROP MATERIALIZED VIEW IF EXISTS public.playground_stats_new` instead: the
+-- second one removes the first's staging view mid-build, and the first fails
+-- when it tries to index or rename something that is gone. Same corruption,
+-- one name along.
+--
 -- The lock lives here rather than in the shell, because the shell cannot
 -- order every writer: upgrade-stacks.sh, `make db-apply`, a manual
 -- `run --rm -e API_ONLY=1 importer` and a Watchtower-triggered daemon

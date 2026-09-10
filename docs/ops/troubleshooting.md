@@ -1,5 +1,50 @@
 # Troubleshooting
 
+## A stack serves the old schema after an upgrade
+
+**Symptom:** Nothing looks wrong. `get_meta` answers, row counts are plausible, the UI loads — but a filter added in the new release returns nothing, or returns the pre-release answer.
+
+**Cause:** Two sessions applied `api.sql` around the same time, and the one that finished last came from the **older image**. The daemon importer applies the schema on container startup, so any restart of it during an upgrade makes it a second writer; and a plain `docker compose up -d importer` *restarts* the existing container rather than recreating it, so that writer is still running the previous image. The old schema is internally consistent, so every health check passes ([#800](https://github.com/mfuhrmann/spieli/issues/800)).
+
+This is what happened sweeping v0.9.0: a stack ran the v0.9.0 app against the v0.8.0 matview, with `has_theme` missing and `has_fence` still matching `barrier=fence` only.
+
+**Diagnose** by comparing the version `get_meta` reports against the release you installed:
+
+```bash
+curl -sf http://localhost:<port>/api/rpc/get_meta | \
+  python3 -c "import sys,json; print(json.load(sys.stdin)['version'])"
+```
+
+That field comes from the image that last applied `api.sql`, which is exactly the question. Do **not** check for the presence of a column instead: a column added in an earlier release exists in both schemas, so the check passes on the old one.
+
+**Fix** by recreating the daemon importer on the new image, then re-checking:
+
+```bash
+docker compose --profile <mode> up -d --force-recreate importer
+docker compose logs -f importer   # wait for "Done. PostgREST schema reloaded."
+```
+
+`--force-recreate` is the point: a plain `up -d` restarts the container from the image it was created with.
+
+**Prevention.** From v0.10.0 `api.sql` takes a session-level advisory lock, so concurrent applies queue instead of corrupting each other, and `scripts/upgrade-stacks.sh` stops the importer before applying and recreates it afterwards. The lock cannot tell an old image from a new one, though — it prevents corruption, not a stale last writer — so the stop/recreate ordering still matters when upgrading by hand. See [Upgrading](upgrade.md).
+
+---
+
+## Schema apply fails with `relation "public.playground_stats" does not exist`
+
+**Symptom:** An `API_ONLY=1` run dies partway through:
+
+```
+psql:/tmp/tmp.XXXXXX:352: ERROR:  relation "public.playground_stats" does not exist
+```
+
+**Cause:** Two concurrent applies, as above — on **v0.9.0 and earlier**, where `api.sql` dropped the matview and rebuilt it in place, so the second session's `DROP` removed it while the first was still indexing.
+
+**This should no longer happen.** From v0.10.0 the rebuild builds under a staging name and swaps it in ([#720](https://github.com/mfuhrmann/spieli/issues/720)), and the advisory lock serialises applies ([#800](https://github.com/mfuhrmann/spieli/issues/800)). If you still see it, check whether something is applying an older `api.sql` — a stack that has not been upgraded, or an importer container still on a previous image.
+
+**Recovery on v0.9.0 and earlier:** re-run `API_ONLY=1`. If the matview is gone entirely, a full re-import recreates everything.
+
+---
 ## Port 8080 is already in use
 
 **Symptom:** `docker compose up` fails with `address already in use` or `port is already allocated`.
