@@ -2331,11 +2331,11 @@
 <p>This updates all PostgREST functions and the version number reported by <code>get_meta</code>. It runs as a one-shot container — the daemon importer is not affected.</p>
 <div class="admonition warning">
 <p class="admonition-title">Run API_ONLY=1 before restarting the daemon</p>
-<p>The daemon importer also applies <code>api.sql</code> on container startup. If you restart the daemon and then immediately run <code>API_ONLY=1</code>, both processes race on the <code>DROP</code>/<code>CREATE</code> of the <code>playground_stats</code> materialized view. On large datasets this reliably causes <code>ERROR: relation "public.playground_stats" does not exist</code>. Always complete step 3 and verify (step 4) before starting the daemon (step 5).</p>
+<p>The daemon importer also applies <code>api.sql</code> on container startup, so restarting it and running <code>API_ONLY=1</code> at the same time means two concurrent applies. Since v0.10.0 the <code>playground_stats</code> rebuild is an atomic swap, so this no longer takes the API offline or leaves a half-built view — but the last writer still wins, and if that is the daemon on its <em>old</em> image, the stack ends up serving the old schema while reporting healthy. Always complete step 3 and verify (step 4) before starting the daemon (step 5).</p>
 </div>
-<div class="admonition warning">
+<div class="admonition info">
 <p class="admonition-title">If API_ONLY=1 fails mid-run</p>
-<p><code>API_ONLY=1</code> drops and recreates <code>playground_stats</code>. A crash partway through leaves the view gone and PostgREST will log <code>relation "public.playground_stats" does not exist</code>. Recovery: run a full re-import — it recreates everything from scratch.</p>
+<p>Since v0.10.0 the API stays up: <code>playground_stats</code> is built under a staging name and swapped in, so a crash before the swap leaves the previous view serving traffic. Re-run <code>API_ONLY=1</code> after fixing the cause — the staging view is dropped and rebuilt on the next attempt. On v0.9.0 and earlier the view was dropped first, and a crash partway through left it gone, with PostgREST logging <code>relation "public.playground_stats" does not exist</code>; recovery there is a full re-import.</p>
 </div>
 <p><strong>Step 4 — Verify</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>curl<span class="w"> </span>-sf<span class="w"> </span>http://localhost:&lt;port&gt;/api/rpc/get_meta<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="se">\</span>

@@ -1297,6 +1297,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="The playground_stats materialised view">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#how-the-rebuild-avoids-an-outage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How the rebuild avoids an outage
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -2038,6 +2055,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="The playground_stats materialised view">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#how-the-rebuild-avoids-an-outage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How the rebuild avoids an outage
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -2118,10 +2152,11 @@
 <a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>        │
 <a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>        ▼  api.sql applied by import.sh
 <a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>        │   ALTER SYSTEM (pg tuning)
-<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>        │   DROP + CREATE MATERIALIZED VIEW playground_stats
-<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>        │   CREATE/REPLACE api schema functions
-<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>        │
-<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>        ▼  PostgREST /api/rpc/* endpoints
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>        │   CREATE INDEX on planet_osm_* (idempotent)
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>        │   BUILD playground_stats under a staging name, then swap it in
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>        │   CREATE/REPLACE api schema functions
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>        │
+<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>        ▼  PostgREST /api/rpc/* endpoints
 </code></pre></div>
 <p>The pipeline is driven by <code>importer/import.sh</code>, which is the <code>CMD</code> of the importer Docker image (<code>importer/Dockerfile</code>).</p>
 <h2 id="osm2pgsql-and-the-hstore-schema">osm2pgsql and the hstore schema<a class="headerlink" href="#osm2pgsql-and-the-hstore-schema" title="Permanent link">&para;</a></h2>
@@ -2169,6 +2204,16 @@
 <li>Equipment and trees are joined from <code>planet_osm_point</code> and <code>planet_osm_polygon</code> using spatial containment (<code>ST_Intersects</code> / <code>ST_DWithin</code>).</li>
 <li>Less common tags (e.g. <code>panoramax</code>, <code>opening_hours</code>) are read from the <code>tags</code> hstore column.</li>
 </ul>
+<h3 id="how-the-rebuild-avoids-an-outage">How the rebuild avoids an outage<a class="headerlink" href="#how-the-rebuild-avoids-an-outage" title="Permanent link">&para;</a></h3>
+<p>The view is <strong>not</strong> dropped and recreated in place. <code>api.sql</code> builds it under the staging name <code>playground_stats_new</code>, indexes it, and then swaps it in inside a single <code>DO</code> block:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">DROP</span><span class="w"> </span><span class="n">MATERIALIZED</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="k">public</span><span class="p">.</span><span class="n">playground_stats</span><span class="w"> </span><span class="k">CASCADE</span><span class="p">;</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="k">ALTER</span><span class="w"> </span><span class="n">MATERIALIZED</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="k">public</span><span class="p">.</span><span class="n">playground_stats_new</span><span class="w"> </span><span class="k">RENAME</span><span class="w"> </span><span class="k">TO</span><span class="w"> </span><span class="n">playground_stats</span><span class="p">;</span>
+</code></pre></div>
+<p>The build is the long statement — minutes on a Bundesland-sized region. Dropping first meant the view was absent for that whole window, and every reader of it (<code>get_meta</code>, both map tiers) failed with <code>relation "public.playground_stats" does not exist</code>. Since the daemon importer re-applies <code>api.sql</code> on every container start, that made any routine restart a multi-minute API outage (<a href="https://github.com/mfuhrmann/spieli/issues/720">#720</a>). With the swap, readers keep the old view until the rename commits.</p>
+<p>A <code>DO</code> block rather than a literal <code>BEGIN</code>/<code>COMMIT</code> because both callers must stay atomic: <code>import.sh</code> runs the file with plain <code>psql -f</code> (autocommit), <code>make db-apply</code> runs it with <code>--single-transaction</code>.</p>
+<p>The <code>planet_osm_*</code> indexes are created <em>before</em> the build for the same reason — the build joins against those tables, so it is the statement that needs them.</p>
+<p>The PostgREST connections are terminated inside the same transaction as the swap, not in a statement ahead of it. PostgREST reconnects on its own, so terminating separately leaves a gap in which a fresh connection can take a read lock — and the swap's pending <code>AccessExclusiveLock</code> then queues <em>ahead of every later reader</em>, stalling API traffic for as long as that straggler runs. In one transaction there is no gap.</p>
+<p><strong>Disk headroom:</strong> the staging view coexists with the live one, so peak disk use for <code>playground_stats</code> and its indexes is roughly <strong>double</strong> the steady-state size during a rebuild. Negligible for a city-sized region (Fulda's matview is ~230 kB) but worth checking before an apply on a Bundesland-sized node with a nearly full volume.</p>
 <p>The completeness logic in <code>api.sql</code> must stay in sync with <code>app/src/lib/completeness.js</code> in the frontend. Both implement the same rule:</p>
 <table>
 <thead>
