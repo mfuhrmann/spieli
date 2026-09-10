@@ -178,6 +178,8 @@ services:
       BASEMAP_CACHE_MAX_SIZE:      ${BASEMAP_CACHE_MAX_SIZE:-4g}
       BASEMAP_CACHE_KEYS_ZONE:     ${BASEMAP_CACHE_KEYS_ZONE:-64m}
       BASEMAP_CACHE_INACTIVE:      ${BASEMAP_CACHE_INACTIVE:-90d}
+      CSP_CONNECT_EXTRA:           ${CSP_CONNECT_EXTRA:-}
+      CSP_IMG_EXTRA:               ${CSP_IMG_EXTRA:-}
       POI_RADIUS_M:                ${POI_RADIUS_M:-5000}
       API_BASE_URL:                /api
       SITE_URL:                    ${SITE_URL:-}
