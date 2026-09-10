@@ -2018,7 +2018,7 @@ The "Also receives" column lists what is sent on top of that.</p>
 <td><a href="https://mangrove.reviews">Mangrove.reviews</a></td>
 <td><code>api.mangrove.reviews</code></td>
 <td>Pseudonymous community reviews</td>
-<td>Selecting any playground; again on submitting a review</td>
+<td>Only after the visitor expands the "Reviews" section: once for that playground, then once per further playground selected while the section stays expanded. Never on selection alone, and never before the section is opened. Again on submitting a review</td>
 <td>Playground coordinates. On submit: the rating, optional comment, and the browser-held public key</td>
 </tr>
 </tbody>
@@ -2028,6 +2028,8 @@ The "Also receives" column lists what is sent on top of that.</p>
 <ul>
 <li><strong>The basemap is not in this table, and that is the point.</strong> It used to be the largest entry in it, contacted by every visitor on every map movement. It is now fetched server-side and cached, so the browser only ever talks to the instance itself. See the next section.</li>
 <li><strong>Reviews create a persistent pseudonymous identifier.</strong> <code>app/src/lib/reviews.js</code> generates a P-256 keypair on the first review submission and stores it in <code>localStorage</code> under <code>spieli-mangrove-keypair</code>. It is not created by merely viewing the map.</li>
+<li><strong>A panel section that is collapsed by default contacts nothing.</strong> <code>PlaygroundPanel.svelte</code> mounts each accordion section's component only while that section is open (<code>openSections</code>, default <code>['photos', 'equipment', 'pois']</code>), so a closed section's fetch code never runs. Reviews are closed by default and are therefore not contacted on selection, even though <code>ReviewsPanel</code> fetches on mount. Reading the fetch call alone gives the wrong answer — check the section's default state too. Conversely, photos <em>are</em> open by default, which is why Panoramax and Commons are contacted on selection.</li>
+<li><strong>A re-opened section does not re-fetch.</strong> <code>fetchReviewsCached</code> in <code>app/src/lib/reviews.js</code> holds a per-page in-memory cache keyed on the Mangrove subject URI, so collapsing and re-expanding, or returning to a playground already seen, issues no further request. It is dropped after a submission so the visitor sees their own review, and it is deliberately not <code>localStorage</code>.</li>
 </ul>
 <p>Operators must disclose all of the above.
 <code>oci/app/datenschutz.template.html</code> ships a service table that already does; keep the two in sync when a service is added or removed.</p>

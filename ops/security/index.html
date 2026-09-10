@@ -1109,6 +1109,45 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="nginx security headers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#two-policies-ship-together-on-purpose" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Two policies ship together, on purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-the-narrowed-policy-allows-and-why" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What the narrowed policy allows, and why
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#escape-hatches" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Escape hatches
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -2088,6 +2127,45 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="nginx security headers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#two-policies-ship-together-on-purpose" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Two policies ship together, on purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-the-narrowed-policy-allows-and-why" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What the narrowed policy allows, and why
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#escape-hatches" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Escape hatches
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -2215,17 +2293,85 @@
 </code></pre></div>
 <p>The <code>db</code> and <code>postgrest</code> services should show no host port bindings. If you see <code>0.0.0.0:5432-&gt;5432/tcp</code>, your database is accessible from the network. Remove the <code>ports:</code> entry for the <code>db</code> service from your compose file.</p>
 <h2 id="nginx-security-headers">nginx security headers<a class="headerlink" href="#nginx-security-headers" title="Permanent link">&para;</a></h2>
-<p>The bundled <code>oci/app/nginx.conf</code> includes a Content Security Policy and several other security headers:</p>
+<p>The bundled <code>oci/app/nginx.conf</code> sets several security headers:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>X-Content-Type-Options: nosniff
 <a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>Referrer-Policy: strict-origin-when-cross-origin
 <a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>Permissions-Policy: geolocation=(self)
-<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>Content-Security-Policy: default-src 'self'; script-src 'self'; …
 </code></pre></div>
-<p>Review these headers against your deployment's needs. The CSP allows:
-- <code>img-src: self data: https:</code> — required for OpenLayers tile loading and wiki images
-- <code>connect-src: self https:</code> — required for Overpass, Nominatim, Panoramax, Mangrove
-- <code>frame-src panoramax.xyz api.panoramax.xyz</code> — required for Panoramax photo embedding
-- <code>frame-ancestors: self https:</code> — allows the app to be embedded in a Hub over HTTPS</p>
+<p>The Content Security Policy is <strong>generated at container startup</strong> by <code>oci/app/docker-entrypoint.sh</code> into <code>/etc/nginx/csp.conf</code>, which <code>nginx.conf</code> includes.
+It is not a literal, because two parts of the correct policy are only knowable at runtime: in hub mode the browser connects to backends listed in an operator-supplied <code>registry.json</code>, and a basemap opt-out puts a third-party tile host back in the browser.
+A literal wide enough for every deployment is a literal that protects none of them.</p>
+<p>To see the policy your instance actually serves:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>docker<span class="w"> </span>compose<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>app<span class="w"> </span>cat<span class="w"> </span>/etc/nginx/csp.conf
+</code></pre></div>
+<h3 id="two-policies-ship-together-on-purpose">Two policies ship together, on purpose<a class="headerlink" href="#two-policies-ship-together-on-purpose" title="Permanent link">&para;</a></h3>
+<p>During the current release the container sends <strong>both</strong> of these:</p>
+<table>
+<thead>
+<tr>
+<th>Header</th>
+<th>Host lists</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Content-Security-Policy</code></td>
+<td><code>img-src</code>/<code>connect-src</code> still <code>https:</code></td>
+<td><strong>Enforced</strong></td>
+</tr>
+<tr>
+<td><code>Content-Security-Policy-Report-Only</code></td>
+<td>narrowed to the hosts actually used</td>
+<td><strong>Observed only</strong></td>
+</tr>
+</tbody>
+</table>
+<p>The narrowed policy is delivered in report-only form first because the failure mode of an over-tight CSP is silent: photos simply do not appear, with nothing but a browser console message.
+The path most likely to break is therefore a rarely-taken one, in production.
+Once the report set has been confirmed empty across both app modes and both basemap postures, the report-only policy becomes the enforced one and the wildcard policy is deleted.</p>
+<p>If you see console messages beginning <code>Content Security Policy</code> while running this release, nothing is being blocked — but please report them, because they are exactly what the observation period is for.</p>
+<p>There is deliberately <strong>no <code>report-uri</code></strong>. It would collect a per-visitor record of what each browser tried to load, on your disk, which is the same shape of trail that <a href="#the-basemap-is-same-origin-by-default">serving the basemap yourself</a> exists to remove.</p>
+<h3 id="what-the-narrowed-policy-allows-and-why">What the narrowed policy allows, and why<a class="headerlink" href="#what-the-narrowed-policy-allows-and-why" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>img-src 'self' data: https://*.wikimedia.org https://wikimedia.org https://*.wikipedia.org https://wikipedia.org https://api.panoramax.xyz</code> — playground photos and street-level thumbnails. The Wikimedia entries are wildcards because <code>app/src/lib/commons.js</code> accepts an OSM <code>image</code> tag on any <code>*.wikimedia.org</code> or <code>*.wikipedia.org</code> host; pinning this to <code>upload.</code> and <code>commons.</code> would silently stop rendering valid tags. The apex domains are listed separately because <code>*.example.org</code> does not match <code>example.org</code> in CSP.</li>
+<li><code>connect-src 'self' https://nominatim.openstreetmap.org https://commons.wikimedia.org https://api.mangrove.reviews</code> — search and region-URL resolution, the Commons API, and reviews. Three more origins are added automatically when your configuration calls for them:<ul>
+<li><strong>A remote <code>API_BASE_URL</code>.</strong> A <code>DEPLOY_MODE=ui</code> stack points at PostgREST on another host, and every data call goes to <code>${API_BASE_URL}/rpc/…</code>. Its origin is added, scheme and port included.</li>
+<li><strong>Your hub backends.</strong> Read from the <code>url</code> fields of <code>registry.json</code> when the registry is a same-origin file the entrypoint can read. Only <code>url</code> values are used — a <code>website</code> or docs link elsewhere in the registry does not widen the policy. If your registry is fetched from a URL at runtime, use <code>CSP_CONNECT_EXTRA</code>.</li>
+<li><strong>Your basemap host</strong>, if you opted out of same-origin delivery.</li>
+</ul>
+</li>
+<li><code>frame-src https://panoramax.xyz https://api.panoramax.xyz</code> — the street-level photo viewer. Already narrow, and the model the rest of the policy now follows.</li>
+<li><code>frame-ancestors 'self' https:</code> — <strong>still a wildcard, deliberately.</strong> It governs who may embed spieli, not what spieli discloses, and a hub embeds standalone instances.</li>
+</ul>
+<p>Why narrow <code>img-src</code> and <code>connect-src</code> at all, given the services above are all wanted: the values that reach the URL builders come from OSM tags, which are arbitrary attacker-editable strings.
+<code>commons.js</code> validates that an <code>image</code> tag points at a Wikimedia host before rendering it, and with a <code>https:</code> wildcard that code check is the <em>only</em> thing between a crafted tag and a visitor's browser fetching from a host of the tagger's choosing.
+The policy is the second line behind that check.
+Both are tested: <code>tests/hostile-image-tag.spec.js</code> covers the code check, and the <code>CSP must follow the configuration</code> CI job covers the generated policy.</p>
+<h3 id="escape-hatches">Escape hatches<a class="headerlink" href="#escape-hatches" title="Permanent link">&para;</a></h3>
+<p>Two variables add origins the generator cannot discover. Both take a space-separated list of hosts or origins, and both reject a malformed value at startup rather than emitting a policy that blocks the origin it was meant to allow.</p>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Adds to</th>
+<th>Use when</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>CSP_CONNECT_EXTRA</code></td>
+<td><code>connect-src</code></td>
+<td>Your hub fetches <code>registry.json</code> from a URL at runtime, so the entrypoint cannot read it to discover backends</td>
+</tr>
+<tr>
+<td><code>CSP_IMG_EXTRA</code></td>
+<td><code>img-src</code></td>
+<td>You render images from an origin the generator does not know about</td>
+</tr>
+</tbody>
+</table>
+<p>A self-hosted tileserver on a <strong>non-default port</strong> currently needs both, because the host list feeding the policy drops the port (it is shared with the human-readable privacy page). Harmless while the narrowed policy is report-only; it will be fixed before the enforcing swap.</p>
 <h2 id="external-service-dependencies">External service dependencies<a class="headerlink" href="#external-service-dependencies" title="Permanent link">&para;</a></h2>
 <p>spieli calls several third-party services at runtime. Your users' browsers make direct requests to:</p>
 <table>
@@ -2272,7 +2418,7 @@ The container refuses to start if you do that without also setting <code>BASEMAP
 <p>Data-nodes (<code>data-node-ui</code> mode) respond with <code>Access-Control-Allow-Origin: *</code> on all <code>/api/</code> endpoints. This is intentional — the Hub's browser must be able to query data-nodes cross-origin. If you want to restrict CORS to specific Hub origins, edit the <code>add_header Access-Control-Allow-Origin</code> lines in <code>oci/app/nginx.conf</code> before building your image.</p>
 <h2 id="keeping-images-up-to-date">Keeping images up to date<a class="headerlink" href="#keeping-images-up-to-date" title="Permanent link">&para;</a></h2>
 <p>Pin a specific version tag in <code>compose.yml</code> and update regularly:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ghcr.io/mfuhrmann/spieli:0.4.1</span><span class="w">   </span><span class="c1"># pin a version</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ghcr.io/mfuhrmann/spieli:0.4.1</span><span class="w">   </span><span class="c1"># pin a version</span>
 </code></pre></div>
 <p>Subscribe to <a href="https://github.com/mfuhrmann/spieli/releases">GitHub Releases</a> to be notified of new versions.</p>
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>

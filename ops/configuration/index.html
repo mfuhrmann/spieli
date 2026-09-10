@@ -2388,6 +2388,18 @@
 <td>How long an unrequested tile survives. nginx defaults to 10 minutes, which evicts tiles regardless of free space — far too short for basemap tiles.</td>
 </tr>
 <tr>
+<td><code>CSP_CONNECT_EXTRA</code></td>
+<td><em>(unset)</em></td>
+<td>ui, data-node-ui</td>
+<td>Extra origins for the generated <code>connect-src</code>, space-separated. Needed when a hub fetches <code>registry.json</code> from a URL at runtime, so the entrypoint cannot read it to discover backends. Rejected at startup if malformed. See <a href="../security/#nginx-security-headers">Content Security Policy</a>.</td>
+</tr>
+<tr>
+<td><code>CSP_IMG_EXTRA</code></td>
+<td><em>(unset)</em></td>
+<td>ui, data-node-ui</td>
+<td>Extra origins for the generated <code>img-src</code>, space-separated. Needed when images are rendered from an origin the generator cannot discover. Rejected at startup if malformed.</td>
+</tr>
+<tr>
 <td><code>PARENT_ORIGIN</code></td>
 <td><em>(own origin)</em></td>
 <td>data-node-ui</td>
