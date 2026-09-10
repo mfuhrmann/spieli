@@ -2322,29 +2322,48 @@
 <p><strong>Step 1 — Pull new images</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>pull
 </code></pre></div>
-<p><strong>Step 2 — Restart the app container</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>up<span class="w"> </span>-d<span class="w"> </span>app
+<p><strong>Step 2 — Stop the daemon importer</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>stop<span class="w"> </span>importer
 </code></pre></div>
+<p>This is not optional, and it is not the same as "the daemon is idle". The daemon applies <code>api.sql</code> on <strong>container startup</strong>, so anything that restarts it — a reboot, Watchtower, <code>up -d</code> — makes it a second writer against the same schema. Stopping it removes that possibility for the duration of the apply.</p>
 <p><strong>Step 3 — Apply schema changes (API_ONLY)</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>-e<span class="w"> </span><span class="nv">API_ONLY</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>importer
 </code></pre></div>
-<p>This updates all PostgREST functions and the version number reported by <code>get_meta</code>. It runs as a one-shot container — the daemon importer is not affected.</p>
-<div class="admonition warning">
-<p class="admonition-title">Run API_ONLY=1 before restarting the daemon</p>
-<p>The daemon importer also applies <code>api.sql</code> on container startup, so restarting it and running <code>API_ONLY=1</code> at the same time means two concurrent applies. Since v0.10.0 the <code>playground_stats</code> rebuild is an atomic swap, so this no longer takes the API offline or leaves a half-built view — but the last writer still wins, and if that is the daemon on its <em>old</em> image, the stack ends up serving the old schema while reporting healthy. Always complete step 3 and verify (step 4) before starting the daemon (step 5).</p>
+<p>This updates all PostgREST functions and the version number reported by <code>get_meta</code>. It runs as a one-shot container, and with the daemon stopped it is the only writer.</p>
+<div class="admonition info">
+<p class="admonition-title">Concurrent applies queue rather than race</p>
+<p><code>api.sql</code> takes a session-level advisory lock, so if something applies the schema at the same time — a manual <code>make db-apply</code>, a Watchtower-triggered restart — the second one waits instead of corrupting the first.</p>
+<p>That is a safety net, not a substitute for step 2. <strong>The last writer still wins</strong>, and the lock cannot tell an old image from a new one: if the daemon on its <em>previous</em> image applies last, the stack ends up serving the old schema while reporting healthy. Stopping it first is what prevents that.</p>
 </div>
 <div class="admonition info">
 <p class="admonition-title">If API_ONLY=1 fails mid-run</p>
 <p>Since v0.10.0 the API stays up: <code>playground_stats</code> is built under a staging name and swapped in, so a crash before the swap leaves the previous view serving traffic. Re-run <code>API_ONLY=1</code> after fixing the cause — the staging view is dropped and rebuilt on the next attempt. On v0.9.0 and earlier the view was dropped first, and a crash partway through left it gone, with PostgREST logging <code>relation "public.playground_stats" does not exist</code>; recovery there is a full re-import.</p>
 </div>
-<p><strong>Step 4 — Verify</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>curl<span class="w"> </span>-sf<span class="w"> </span>http://localhost:&lt;port&gt;/api/rpc/get_meta<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span>python3<span class="w"> </span>-c<span class="w"> </span><span class="s2">"import sys,json; d=json.load(sys.stdin); print('version:', d['version'], ' playgrounds:', d['playground_count'])"</span>
+<p><strong>Step 4 — Recreate the daemon importer on the new image</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>up<span class="w"> </span>-d<span class="w"> </span>--force-recreate<span class="w"> </span>importer
+</code></pre></div>
+<p><code>--force-recreate</code> matters. A plain <code>up -d importer</code> <strong>restarts the existing container</strong>, which leaves the daemon on the <em>old</em> image — and since its startup path applies <code>api.sql</code>, the old image then becomes the last writer and quietly restores the old schema. That is what happened during the v0.9.0 sweep (<a href="https://github.com/mfuhrmann/spieli/issues/800">#800</a>): the stack ran the new app against the old schema, with two filters silently wrong while <code>get_meta</code> and row counts looked healthy.</p>
+<div class="admonition warning">
+<p class="admonition-title">The API is unavailable for a few minutes after this step</p>
+<p>The freshly recreated daemon applies <code>api.sql</code> again on startup. That drops and rebuilds <code>playground_stats</code>, which takes minutes on a large region, and terminates PostgREST's connections while it runs. During that window <code>get_meta</code> answers 5xx or reports a missing relation. <strong>This is expected</strong>, and it is why the verification below polls instead of being run once. Watch the importer log and wait for the apply to finish before concluding anything:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>logs<span class="w"> </span>-f<span class="w"> </span>importer
+</code></pre></div>
+</div>
+<p><strong>Step 5 — Restart the app container</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>up<span class="w"> </span>-d<span class="w"> </span>app
+</code></pre></div>
+<p><strong>Step 6 — Verify</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>curl<span class="w"> </span>-sf<span class="w"> </span>http://localhost:&lt;port&gt;/api/rpc/get_meta<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">  </span>python3<span class="w"> </span>-c<span class="w"> </span><span class="s2">"import sys,json; d=json.load(sys.stdin); print('version:', d['version'], ' playgrounds:', d['playground_count'])"</span>
 </code></pre></div>
 <p>Both <code>version</code> and <code>playground_count</code> should be non-zero. If <code>playground_count</code> is 0, see <a href="#if-playground_count-is-zero-after-upgrade">If playground_count is zero after upgrade</a> below.</p>
-<p><strong>Step 5 — Restart the daemon importer on the new image</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>up<span class="w"> </span>-d<span class="w"> </span>importer
+<p>Retry it for a few minutes if it fails: the daemon's startup apply from step 4 has to finish first, and until it does the API is legitimately unavailable.</p>
+<p>Verifying <strong>after</strong> step 4 is deliberate. Verifying before it checks a stack whose last writer may still be the old image, and the old schema is internally consistent enough to pass.</p>
+<p>To confirm the schema really is the new one, compare the <strong>version</strong> <code>get_meta</code> reports against the release you just installed:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>curl<span class="w"> </span>-sf<span class="w"> </span>http://localhost:&lt;port&gt;/api/rpc/get_meta<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="w">  </span>python3<span class="w"> </span>-c<span class="w"> </span><span class="s2">"import sys,json; print(json.load(sys.stdin)['version'])"</span>
 </code></pre></div>
+<p><code>version</code> comes from the image that last applied <code>api.sql</code>, so it is the one field that distinguishes "the new schema is in place" from "an older image applied last". Do <strong>not</strong> check for the presence of a column instead: a column added in an earlier release is present in both schemas, so the check passes on the old one and gives false assurance in exactly the failure mode #800 is about.</p>
 <hr />
 <h2 id="breaking-label-procedures">Breaking label procedures<a class="headerlink" href="#breaking-label-procedures" title="Permanent link">&para;</a></h2>
 <h3 id="requires-env-update">requires-env-update<a class="headerlink" href="#requires-env-update" title="Permanent link">&para;</a></h3>
@@ -2355,35 +2374,35 @@
 </ol>
 <h3 id="requires-compose-update">requires-compose-update<a class="headerlink" href="#requires-compose-update" title="Permanent link">&para;</a></h3>
 <p><code>compose.yml</code> has structural changes (new service, renamed service, removed volume).</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># Download the updated file:</span>
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>curl<span class="w"> </span>-O<span class="w"> </span>https://raw.githubusercontent.com/mfuhrmann/spieli/main/compose.yml
-<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
-<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="c1"># Recreate the stack:</span>
-<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>down
-<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>up<span class="w"> </span>-d
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="c1"># Download the updated file:</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>curl<span class="w"> </span>-O<span class="w"> </span>https://raw.githubusercontent.com/mfuhrmann/spieli/main/compose.yml
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="c1"># Recreate the stack:</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>down
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>up<span class="w"> </span>-d
 </code></pre></div>
 <p>Or re-run <code>install.sh</code> — it re-downloads and applies <code>compose.yml</code> automatically.</p>
 <h3 id="requires-reimport">requires-reimport<a class="headerlink" href="#requires-reimport" title="Permanent link">&para;</a></h3>
 <p>A new OSM tag type was added. Existing data doesn't have the new columns until a fresh import.</p>
 <p>After the image update (Watchtower or manual steps 1–2):</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># Full re-import — also applies api.sql, so no separate API_ONLY step needed</span>
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>importer
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="c1"># Full re-import — also applies api.sql, so no separate API_ONLY step needed</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>importer
 </code></pre></div>
 <p>This takes several minutes for large regions. The separate <code>API_ONLY=1</code> step is not needed — a full re-import also updates all schema functions.</p>
 <hr />
 <h2 id="single-host-federation-multiple-stacks-on-one-vps">Single-host federation (multiple stacks on one VPS)<a class="headerlink" href="#single-host-federation-multiple-stacks-on-one-vps" title="Permanent link">&para;</a></h2>
 <p>When the hub and its data-nodes share a single VPS, use <code>scripts/upgrade-stacks.sh</code>. It handles the correct order (data-nodes first, hub last) and runs each stack sequentially to avoid OOM from concurrent importer runs.</p>
 <p>Copy the script to the VPS once, then edit the <code>STACKS</code> array to match your port layout:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>scp<span class="w"> </span>scripts/upgrade-stacks.sh<span class="w"> </span>user@vps:~/upgrade-stacks.sh
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>scp<span class="w"> </span>scripts/upgrade-stacks.sh<span class="w"> </span>user@vps:~/upgrade-stacks.sh
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="nv">STACKS</span><span class="o">=(</span>
-<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">  </span><span class="s2">"</span><span class="nv">$HOME</span><span class="s2">/spieli-hessen:data-node-ui:8081"</span>
-<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">  </span><span class="s2">"</span><span class="nv">$HOME</span><span class="s2">/spieli-berlin:data-node-ui:8082"</span>
-<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="w">  </span><span class="s2">"</span><span class="nv">$HOME</span><span class="s2">/spieli:ui auto-update:8080"</span><span class="w">   </span><span class="c1"># hub last</span>
-<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="o">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="nv">STACKS</span><span class="o">=(</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="w">  </span><span class="s2">"</span><span class="nv">$HOME</span><span class="s2">/spieli-hessen:data-node-ui:8081"</span>
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="w">  </span><span class="s2">"</span><span class="nv">$HOME</span><span class="s2">/spieli-berlin:data-node-ui:8082"</span>
+<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="w">  </span><span class="s2">"</span><span class="nv">$HOME</span><span class="s2">/spieli:ui auto-update:8080"</span><span class="w">   </span><span class="c1"># hub last</span>
+<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="o">)</span>
 </code></pre></div>
 <p>Run:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>bash<span class="w"> </span>~/upgrade-stacks.sh
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>bash<span class="w"> </span>~/upgrade-stacks.sh
 </code></pre></div>
 <p>The script pulls images, restarts each app container, runs <code>API_ONLY=1</code> for data-nodes, verifies <code>get_meta</code>, restarts the daemon importer, and moves to the next stack. The hub entry skips the importer steps automatically.</p>
 <p><strong>Verification is not fatal to the sweep.</strong> By the time a stack is verified its images are already pulled and its containers restarted, so a failed check means the upgrade worked but the stack is not serving data yet. The script records the stack, carries on with the rest, and exits non-zero at the end listing every inconclusive one. A data-node that has never completed an import answers <code>404</code> on <code>get_meta</code> and is called out as such — expected until its first import finishes.</p>
@@ -2397,10 +2416,10 @@
 <h3 id="if-playground_count-is-zero-after-upgrade">If playground_count is zero after upgrade<a class="headerlink" href="#if-playground_count-is-zero-after-upgrade" title="Permanent link">&para;</a></h3>
 <p><code>get_meta</code> returns <code>playground_count: 0</code> after an upgrade when <code>playground_stats</code> was left in a broken state (see the API_ONLY race warning above), or when the database volume was wiped.</p>
 <p>Recovery: run a full re-import.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="w">  </span>-e<span class="w"> </span><span class="nv">REIMPORT_INTERVAL_MIN_DAYS</span><span class="o">=</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="w">  </span>-e<span class="w"> </span><span class="nv">REIMPORT_INTERVAL_MAX_DAYS</span><span class="o">=</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="w">  </span>importer
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="w">  </span>-e<span class="w"> </span><span class="nv">REIMPORT_INTERVAL_MIN_DAYS</span><span class="o">=</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="w">  </span>-e<span class="w"> </span><span class="nv">REIMPORT_INTERVAL_MAX_DAYS</span><span class="o">=</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="w">  </span>importer
 </code></pre></div>
 <p>The empty <code>REIMPORT_INTERVAL_*</code> overrides force the importer to run immediately regardless of when data was last imported.</p>
 <h3 id="if-you-deleted-the-database-volume">If you deleted the database volume<a class="headerlink" href="#if-you-deleted-the-database-volume" title="Permanent link">&para;</a></h3>
@@ -2408,17 +2427,17 @@
 <ol>
 <li>
 <p>Check whether the PBF cache volume survived:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>docker<span class="w"> </span>volume<span class="w"> </span>ls<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>pbf_cache
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>docker<span class="w"> </span>volume<span class="w"> </span>ls<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>pbf_cache
 </code></pre></div>
 </li>
 <li>
 <p>If it exists, clear it — a previously interrupted import may have left a corrupt filtered PBF. The importer checks timestamps but not content; a corrupt cache causes it to process 0 objects and leave the database silently empty.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>docker<span class="w"> </span>volume<span class="w"> </span>rm<span class="w"> </span>&lt;stack&gt;_pbf_cache
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>docker<span class="w"> </span>volume<span class="w"> </span>rm<span class="w"> </span>&lt;stack&gt;_pbf_cache
 </code></pre></div>
 </li>
 <li>
 <p>Run a full re-import:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>importer
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>importer
 </code></pre></div>
 </li>
 <li>
@@ -2427,11 +2446,11 @@
 </ol>
 <h3 id="downgrading">Downgrading<a class="headerlink" href="#downgrading" title="Permanent link">&para;</a></h3>
 <p>Supported only within the same minor version. Pin a specific version by editing <code>compose.yml</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="c1"># Change :latest to the version you want:</span>
-<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ghcr.io/mfuhrmann/spieli:0.4.0</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="c1"># Change :latest to the version you want:</span>
+<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ghcr.io/mfuhrmann/spieli:0.4.0</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>pull
-<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>up<span class="w"> </span>-d
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>pull
+<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>up<span class="w"> </span>-d
 </code></pre></div>
 <p>The database schema is not automatically rolled back. If the new version added columns or functions, the older app typically ignores them — but this is not tested. When in doubt, re-import from scratch.</p>
 <hr />

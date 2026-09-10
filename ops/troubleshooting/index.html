@@ -1057,6 +1057,28 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#a-stack-serves-the-old-schema-after-an-upgrade" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A stack serves the old schema after an upgrade
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#schema-apply-fails-with-relation-publicplayground_stats-does-not-exist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Schema apply fails with relation "public.playground_stats" does not exist
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#port-8080-is-already-in-use" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2101,6 +2123,28 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#a-stack-serves-the-old-schema-after-an-upgrade" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A stack serves the old schema after an upgrade
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#schema-apply-fails-with-relation-publicplayground_stats-does-not-exist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Schema apply fails with relation "public.playground_stats" does not exist
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#port-8080-is-already-in-use" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2363,45 +2407,69 @@
 
 
 <h1 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h1>
+<h2 id="a-stack-serves-the-old-schema-after-an-upgrade">A stack serves the old schema after an upgrade<a class="headerlink" href="#a-stack-serves-the-old-schema-after-an-upgrade" title="Permanent link">&para;</a></h2>
+<p><strong>Symptom:</strong> Nothing looks wrong. <code>get_meta</code> answers, row counts are plausible, the UI loads — but a filter added in the new release returns nothing, or returns the pre-release answer.</p>
+<p><strong>Cause:</strong> Two sessions applied <code>api.sql</code> around the same time, and the one that finished last came from the <strong>older image</strong>. The daemon importer applies the schema on container startup, so any restart of it during an upgrade makes it a second writer; and a plain <code>docker compose up -d importer</code> <em>restarts</em> the existing container rather than recreating it, so that writer is still running the previous image. The old schema is internally consistent, so every health check passes (<a href="https://github.com/mfuhrmann/spieli/issues/800">#800</a>).</p>
+<p>This is what happened sweeping v0.9.0: a stack ran the v0.9.0 app against the v0.8.0 matview, with <code>has_theme</code> missing and <code>has_fence</code> still matching <code>barrier=fence</code> only.</p>
+<p><strong>Diagnose</strong> by comparing the version <code>get_meta</code> reports against the release you installed:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>curl<span class="w"> </span>-sf<span class="w"> </span>http://localhost:&lt;port&gt;/api/rpc/get_meta<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span>python3<span class="w"> </span>-c<span class="w"> </span><span class="s2">"import sys,json; print(json.load(sys.stdin)['version'])"</span>
+</code></pre></div>
+<p>That field comes from the image that last applied <code>api.sql</code>, which is exactly the question. Do <strong>not</strong> check for the presence of a column instead: a column added in an earlier release exists in both schemas, so the check passes on the old one.</p>
+<p><strong>Fix</strong> by recreating the daemon importer on the new image, then re-checking:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>up<span class="w"> </span>-d<span class="w"> </span>--force-recreate<span class="w"> </span>importer
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>logs<span class="w"> </span>-f<span class="w"> </span>importer<span class="w">   </span><span class="c1"># wait for "Done. PostgREST schema reloaded."</span>
+</code></pre></div>
+<p><code>--force-recreate</code> is the point: a plain <code>up -d</code> restarts the container from the image it was created with.</p>
+<p><strong>Prevention.</strong> From v0.10.0 <code>api.sql</code> takes a session-level advisory lock, so concurrent applies queue instead of corrupting each other, and <code>scripts/upgrade-stacks.sh</code> stops the importer before applying and recreates it afterwards. The lock cannot tell an old image from a new one, though — it prevents corruption, not a stale last writer — so the stop/recreate ordering still matters when upgrading by hand. See <a href="../upgrade/">Upgrading</a>.</p>
+<hr />
+<h2 id="schema-apply-fails-with-relation-publicplayground_stats-does-not-exist">Schema apply fails with <code>relation "public.playground_stats" does not exist</code><a class="headerlink" href="#schema-apply-fails-with-relation-publicplayground_stats-does-not-exist" title="Permanent link">&para;</a></h2>
+<p><strong>Symptom:</strong> An <code>API_ONLY=1</code> run dies partway through:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>psql:/tmp/tmp.XXXXXX:352: ERROR:  relation "public.playground_stats" does not exist
+</code></pre></div>
+<p><strong>Cause:</strong> Two concurrent applies, as above — on <strong>v0.9.0 and earlier</strong>, where <code>api.sql</code> dropped the matview and rebuilt it in place, so the second session's <code>DROP</code> removed it while the first was still indexing.</p>
+<p><strong>This should no longer happen.</strong> From v0.10.0 the rebuild builds under a staging name and swaps it in (<a href="https://github.com/mfuhrmann/spieli/issues/720">#720</a>), and the advisory lock serialises applies (<a href="https://github.com/mfuhrmann/spieli/issues/800">#800</a>). If you still see it, check whether something is applying an older <code>api.sql</code> — a stack that has not been upgraded, or an importer container still on a previous image.</p>
+<p><strong>Recovery on v0.9.0 and earlier:</strong> re-run <code>API_ONLY=1</code>. If the matview is gone entirely, a full re-import recreates everything.</p>
+<hr />
 <h2 id="port-8080-is-already-in-use">Port 8080 is already in use<a class="headerlink" href="#port-8080-is-already-in-use" title="Permanent link">&para;</a></h2>
 <p><strong>Symptom:</strong> <code>docker compose up</code> fails with <code>address already in use</code> or <code>port is already allocated</code>.</p>
 <p><strong>Fix:</strong> Stop whatever is using port 8080, or change the port in <code>.env</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>APP_PORT=8081
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>APP_PORT=8081
 </code></pre></div>
 <p>Then restart the stack:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.yml<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>up<span class="w"> </span>-d
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.yml<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>up<span class="w"> </span>-d
 </code></pre></div>
 <hr />
 <h2 id="import-exits-immediately-or-fails-with-a-database-error">Import exits immediately or fails with a database error<a class="headerlink" href="#import-exits-immediately-or-fails-with-a-database-error" title="Permanent link">&para;</a></h2>
 <p><strong>Symptom:</strong> The import finishes in seconds (normally takes minutes), or you see a <code>connection refused</code> or <code>role does not exist</code> error.</p>
 <p><strong>Fix:</strong> The database must be running before you import. Start the stack first and confirm all containers are healthy:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>ps<span class="w">   </span><span class="c1"># all containers should show "running" or "healthy"</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="c1"># then run the importer — replace &lt;mode&gt; with your DEPLOY_MODE (data-node or data-node-ui)</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>importer
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>ps<span class="w">   </span><span class="c1"># all containers should show "running" or "healthy"</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="c1"># then run the importer — replace &lt;mode&gt; with your DEPLOY_MODE (data-node or data-node-ui)</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>importer
 </code></pre></div>
 <p>If you are using the local development setup, <code>make import</code> is equivalent. If the database shows as unhealthy, try stopping and restarting the stack.</p>
 <hr />
 <h2 id="importer-restart-loops-on-a-fresh-install-with-relation-planet_osm_point-does-not-exist">Importer restart-loops on a fresh install with <code>relation "planet_osm_point" does not exist</code><a class="headerlink" href="#importer-restart-loops-on-a-fresh-install-with-relation-planet_osm_point-does-not-exist" title="Permanent link">&para;</a></h2>
 <p><strong>Symptom:</strong> On a brand-new data-node install the importer never populates the database and restarts forever:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>importer-1  | [importer] Daemon mode: interval 2–10 days.
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>importer-1  | [importer] API_ONLY mode — skipping PBF download and osm2pgsql import.
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>importer-1  | [importer] Applying API schema...
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>importer-1  | psql:/tmp/tmp.JsTPhaBgfJ:87: ERROR:  relation "planet_osm_point" does not exist
-<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>importer-1 exited with code 3 (restarting)
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>importer-1  | [importer] Daemon mode: interval 2–10 days.
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>importer-1  | [importer] API_ONLY mode — skipping PBF download and osm2pgsql import.
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>importer-1  | [importer] Applying API schema...
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>importer-1  | psql:/tmp/tmp.JsTPhaBgfJ:87: ERROR:  relation "planet_osm_point" does not exist
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>importer-1 exited with code 3 (restarting)
 </code></pre></div>
 <p><strong>Cause:</strong> Fixed in spieli 0.9.0 and later. Older images applied <code>api.sql</code> on daemon startup before the first import had created the <code>planet_osm_*</code> tables, so the schema apply failed and the container restarted before it ever reached the import. The <code>API_ONLY mode</code> line in the log is misleading — that banner was printed unconditionally; <code>API_ONLY</code> was not actually set.</p>
 <p><strong>Fix:</strong> Pull a current image and restart:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>pull<span class="w"> </span>importer
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>up<span class="w"> </span>-d<span class="w"> </span>importer
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>pull<span class="w"> </span>importer
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>up<span class="w"> </span>-d<span class="w"> </span>importer
 </code></pre></div>
 <p>The importer now defers the startup schema apply until an import has completed, and logs <code>No completed import on record — deferring API schema apply to first import.</code> instead.</p>
 <p><strong>Workaround for older images</strong> — bootstrap once in one-shot mode, which imports before applying the schema, then start the daemon:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>stop<span class="w"> </span>importer
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">  </span>-e<span class="w"> </span><span class="nv">REIMPORT_INTERVAL_MIN_DAYS</span><span class="o">=</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">  </span>-e<span class="w"> </span><span class="nv">REIMPORT_INTERVAL_MAX_DAYS</span><span class="o">=</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">  </span>importer
-<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>up<span class="w"> </span>-d<span class="w"> </span>importer
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>stop<span class="w"> </span>importer
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">  </span>-e<span class="w"> </span><span class="nv">REIMPORT_INTERVAL_MIN_DAYS</span><span class="o">=</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="w">  </span>-e<span class="w"> </span><span class="nv">REIMPORT_INTERVAL_MAX_DAYS</span><span class="o">=</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="w">  </span>importer
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>up<span class="w"> </span>-d<span class="w"> </span>importer
 </code></pre></div>
 <div class="admonition note">
 <p class="admonition-title"><code>API_ONLY=1</code> on a never-imported database</p>
@@ -2413,7 +2481,7 @@
 <p><strong>Possible causes:</strong></p>
 <ol>
 <li><strong>Import not run</strong> — Run the importer after starting the stack. Playground data is not loaded automatically:
-   <div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>importer
+   <div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>importer
 </code></pre></div></li>
 <li><strong>Wrong relation ID</strong> — Check <code>OSM_RELATION_ID</code> in <code>.env</code>. An incorrect ID filters out all playgrounds. Verify at <a href="https://nominatim.openstreetmap.org">nominatim.openstreetmap.org</a>.</li>
 <li><strong>PBF doesn't cover the relation</strong> — The PBF extract must geographically contain the relation. If <code>OSM_RELATION_ID</code> is a large region (e.g. a whole state), the <code>PBF_URL</code> must point to a matching extract — a district or city PBF will silently produce 0 playgrounds. Check <a href="https://download.geofabrik.de">download.geofabrik.de</a> for the right extract.</li>
@@ -2444,7 +2512,7 @@
 <li>If you changed <code>index.html</code> or a file in <code>public/</code>, stop and restart <code>make dev</code>.</li>
 </ol>
 <p>When testing against the Docker stack, rebuild and restart the app container after changes:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.yml<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>up<span class="w"> </span>-d<span class="w"> </span>--build<span class="w"> </span>app
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.yml<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>up<span class="w"> </span>-d<span class="w"> </span>--build<span class="w"> </span>app
 </code></pre></div>
 <hr />
 <h2 id="lan-ip-for-mobile-testing">LAN IP for mobile testing<a class="headerlink" href="#lan-ip-for-mobile-testing" title="Permanent link">&para;</a></h2>
@@ -2453,7 +2521,7 @@
 <p><code>make lan-url</code> is only available from a source clone. Skip if using pre-built images.</p>
 </div>
 <p>Run this command to find your LAN IP:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>ip<span class="w"> </span>route<span class="w"> </span>get<span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>awk<span class="w"> </span><span class="s1">'{print $7; exit}'</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>ip<span class="w"> </span>route<span class="w"> </span>get<span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>awk<span class="w"> </span><span class="s1">'{print $7; exit}'</span>
 </code></pre></div>
 <p>Then open <code>http://&lt;that-ip&gt;:8080</code> on your phone.</p>
 <hr />
@@ -2470,8 +2538,8 @@
 <h2 id="import-fails-partway-through-with-a-pbf-error">Import fails partway through with a PBF error<a class="headerlink" href="#import-fails-partway-through-with-a-pbf-error" title="Permanent link">&para;</a></h2>
 <p><strong>Symptom:</strong> The importer exits with <code>osmium</code> or <code>osm2pgsql</code> reporting a corrupt or truncated file.</p>
 <p><strong>Fix:</strong> The cached PBF may be corrupt (interrupted download). Delete the cached files and re-run:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>importer<span class="w"> </span>sh<span class="w"> </span>-c<span class="w"> </span><span class="s2">"rm -f /data/*.pbf"</span>
-<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>data-node-ui<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>importer
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>importer<span class="w"> </span>sh<span class="w"> </span>-c<span class="w"> </span><span class="s2">"rm -f /data/*.pbf"</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>data-node-ui<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>importer
 </code></pre></div>
 <p>The importer validates the source PBF with <code>osmium fileinfo</code> before using it and will re-download a corrupt file automatically. If the re-download fails, check <code>PBF_URL</code> in <code>.env</code> — make sure the URL is reachable and returns a valid PBF.</p>
 <hr />
@@ -2480,8 +2548,8 @@
 <p><strong>Possible causes:</strong></p>
 <ol>
 <li><strong>CORS not configured</strong> — The Hub's browser must be able to reach each data-node's <code>/api/</code> cross-origin over HTTPS. Verify with:
-   <div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>curl<span class="w"> </span>-I<span class="w"> </span>https://your-data-node.example.com/api/rpc/get_meta
-<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="c1"># must include: Access-Control-Allow-Origin: *</span>
+   <div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>curl<span class="w"> </span>-I<span class="w"> </span>https://your-data-node.example.com/api/rpc/get_meta
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="c1"># must include: Access-Control-Allow-Origin: *</span>
 </code></pre></div></li>
 <li><strong>registry.json not updated</strong> — The Hub still has the bundled dev <code>registry.json</code> pointing at <code>/api</code> and <code>/api2</code>. See <a href="../federated-deployment/#step-3-stand-up-the-hub">Federated Deployment</a> for how to replace it.</li>
 <li><strong>Data-node not reachable from browser</strong> — The Hub serves the app; the Hub's <em>browser</em> must reach each data-node, not the Hub host. Test from a browser (not the server) by opening each data-node's <code>https://…/api/rpc/get_meta</code> URL directly.</li>
@@ -2491,7 +2559,7 @@
 <h2 id="hub-shows-a-backend-as-reachable-but-with-0-playgrounds">Hub shows a backend as reachable but with 0 playgrounds<a class="headerlink" href="#hub-shows-a-backend-as-reachable-but-with-0-playgrounds" title="Permanent link">&para;</a></h2>
 <p><strong>Symptom:</strong> A data-node appears in the Hub instance drawer with a green or yellow indicator, but its playground count is 0 and no playgrounds are drawn from that backend.</p>
 <p><strong>Hub operator — diagnose remotely:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>curl<span class="w"> </span>https://the-data-node.example.com/api/rpc/get_meta
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>curl<span class="w"> </span>https://the-data-node.example.com/api/rpc/get_meta
 </code></pre></div>
 <p>If <code>playground_count</code> is <code>0</code> and <code>bbox</code> is <code>[null,null,null,null]</code>, the database has no playground data. Pass the findings to the data-node operator.</p>
 <p>If <code>playground_count</code> is <code>&gt; 0</code> and <code>bbox</code> contains real coordinates, the data-node is healthy. The hub has stale cached state — see <strong>Hub operator</strong> below.</p>
@@ -2505,34 +2573,34 @@
 <p><strong>Check whether the hub health poller marked the backend down.</strong> The hub container runs a 60-second cron that writes <code>federation-status.json</code>; backends that exceed the 3-second curl timeout are marked <code>up: false</code> and the hub orchestrator skips them even when <code>get_meta</code> succeeds from the browser:</p>
 </li>
 </ol>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>curl<span class="w"> </span>https://your-hub.example.com/federation-status.json<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="w">  </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">'.backends | to_entries[] | select(.value.up == false) | .key'</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>curl<span class="w"> </span>https://your-hub.example.com/federation-status.json<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="w">  </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">'.backends | to_entries[] | select(.value.up == false) | .key'</span>
 </code></pre></div>
 <p>If the backend slug appears, it is being skipped by the orchestrator. Check whether the backend is slow to respond:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>curl<span class="w"> </span>-w<span class="w"> </span><span class="s1">'%{time_total}s\n'</span><span class="w"> </span>-o<span class="w"> </span>/dev/null<span class="w"> </span>-sf<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="w">  </span>https://the-data-node.example.com/api/rpc/get_meta
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>curl<span class="w"> </span>-w<span class="w"> </span><span class="s1">'%{time_total}s\n'</span><span class="w"> </span>-o<span class="w"> </span>/dev/null<span class="w"> </span>-sf<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="w">  </span>https://the-data-node.example.com/api/rpc/get_meta
 </code></pre></div>
 <p>Response times consistently above 3 seconds will flip <code>up: false</code> on the next hub poll cycle. Investigate slow PostgREST response times on the data-node side (see <a href="#map-loads-but-shows-no-playgrounds">Map loads but shows no playgrounds</a> for database health checks). If the latency is transient, the hub auto-recovers within 60 seconds once the backend is fast again. If the hub container is stuck showing a backend as down despite it being healthy, restart it:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>restart<span class="w"> </span>app<span class="w">   </span><span class="c1"># run on the hub host</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>restart<span class="w"> </span>app<span class="w">   </span><span class="c1"># run on the hub host</span>
 </code></pre></div>
 <p><strong>Data-node operator — possible causes:</strong></p>
 <ol>
 <li><strong>Import not run</strong> — The stack started but the importer was never triggered:
-   <div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="nb">cd</span><span class="w"> </span>~/spieli<span class="w">   </span><span class="c1"># or wherever spieli was installed</span>
-<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>data-node<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>importer
-<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="c1"># or watch daemon logs if auto-update is enabled:</span>
-<a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a>docker<span class="w"> </span>compose<span class="w"> </span>logs<span class="w"> </span>-f<span class="w"> </span>importer
+   <div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="nb">cd</span><span class="w"> </span>~/spieli<span class="w">   </span><span class="c1"># or wherever spieli was installed</span>
+<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>data-node<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>importer
+<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a><span class="c1"># or watch daemon logs if auto-update is enabled:</span>
+<a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a>docker<span class="w"> </span>compose<span class="w"> </span>logs<span class="w"> </span>-f<span class="w"> </span>importer
 </code></pre></div></li>
 <li><strong>PBF doesn't cover the relation</strong> — See <a href="#map-loads-but-shows-no-playgrounds">Map loads but shows no playgrounds</a>, cause 3.</li>
 <li><strong>Outdated image</strong> — See <a href="#hub-backend-returns-function-not-found-errors">Hub backend returns "function not found" errors</a>.</li>
 <li><strong>Daemon importer sleeping after a failed/corrupt previous run</strong> — If the importer ran but was OOM-killed during preprocessing, osm2pgsql may have ingested a partial file and recorded a successful <code>last_import_at</code>. The daemon will not retry until the next scheduled interval. Force an immediate one-shot reimport:
-   <div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="c1"># Clear any stale cached PBF files left by the killed run</span>
-<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>importer<span class="w"> </span>sh<span class="w"> </span>-c<span class="w"> </span><span class="s2">"rm -f /data/*.pbf"</span>
-<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="c1"># Run a one-shot reimport regardless of last_import_at</span>
-<a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a>docker<span class="w"> </span>compose<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a><span class="w">  </span>-e<span class="w"> </span><span class="nv">REIMPORT_INTERVAL_MIN_DAYS</span><span class="o">=</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a><span class="w">  </span>-e<span class="w"> </span><span class="nv">REIMPORT_INTERVAL_MAX_DAYS</span><span class="o">=</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a><span class="w">  </span>importer
+   <div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="c1"># Clear any stale cached PBF files left by the killed run</span>
+<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>importer<span class="w"> </span>sh<span class="w"> </span>-c<span class="w"> </span><span class="s2">"rm -f /data/*.pbf"</span>
+<a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a><span class="c1"># Run a one-shot reimport regardless of last_import_at</span>
+<a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a>docker<span class="w"> </span>compose<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a><span class="w">  </span>-e<span class="w"> </span><span class="nv">REIMPORT_INTERVAL_MIN_DAYS</span><span class="o">=</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a><span class="w">  </span>-e<span class="w"> </span><span class="nv">REIMPORT_INTERVAL_MAX_DAYS</span><span class="o">=</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-19-7" name="__codelineno-19-7" href="#__codelineno-19-7"></a><span class="w">  </span>importer
 </code></pre></div>
    Unsetting both interval variables forces one-shot mode, bypassing the grace check.</li>
 </ol>
@@ -2541,60 +2609,60 @@
 <p><strong>Symptom:</strong> The Hub instance drawer auto-opens and a backend shows a warning: "No position set" with a link to troubleshooting docs.</p>
 <p><strong>Cause:</strong> The backend entry in <code>registry.json</code> has neither a <code>centroid</code> field nor a valid <code>bbox</code> from its <code>get_meta</code> response. Without position data, the backend cannot be placed on the macro view map.</p>
 <p><strong>Fix:</strong> Add a <code>centroid</code> field to the backend's entry in <code>registry.json</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="p">{</span>
-<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="w">  </span><span class="nt">"instances"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a><span class="w">    </span><span class="p">{</span>
-<a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a><span class="w">      </span><span class="nt">"slug"</span><span class="p">:</span><span class="w"> </span><span class="s2">"your-region"</span><span class="p">,</span>
-<a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a><span class="w">      </span><span class="nt">"url"</span><span class="p">:</span><span class="w"> </span><span class="s2">"https://your-backend.example.com/api"</span><span class="p">,</span>
-<a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a><span class="w">      </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Your Region"</span><span class="p">,</span>
-<a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a><span class="w">      </span><span class="nt">"centroid"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mf">10.5</span><span class="p">,</span><span class="w"> </span><span class="mf">51.2</span><span class="p">]</span>
-<a id="__codelineno-17-8" name="__codelineno-17-8" href="#__codelineno-17-8"></a><span class="w">    </span><span class="p">}</span>
-<a id="__codelineno-17-9" name="__codelineno-17-9" href="#__codelineno-17-9"></a><span class="w">  </span><span class="p">]</span>
-<a id="__codelineno-17-10" name="__codelineno-17-10" href="#__codelineno-17-10"></a><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="p">{</span>
+<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a><span class="w">  </span><span class="nt">"instances"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a><span class="w">    </span><span class="p">{</span>
+<a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a><span class="w">      </span><span class="nt">"slug"</span><span class="p">:</span><span class="w"> </span><span class="s2">"your-region"</span><span class="p">,</span>
+<a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a><span class="w">      </span><span class="nt">"url"</span><span class="p">:</span><span class="w"> </span><span class="s2">"https://your-backend.example.com/api"</span><span class="p">,</span>
+<a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a><span class="w">      </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Your Region"</span><span class="p">,</span>
+<a id="__codelineno-20-7" name="__codelineno-20-7" href="#__codelineno-20-7"></a><span class="w">      </span><span class="nt">"centroid"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mf">10.5</span><span class="p">,</span><span class="w"> </span><span class="mf">51.2</span><span class="p">]</span>
+<a id="__codelineno-20-8" name="__codelineno-20-8" href="#__codelineno-20-8"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-20-9" name="__codelineno-20-9" href="#__codelineno-20-9"></a><span class="w">  </span><span class="p">]</span>
+<a id="__codelineno-20-10" name="__codelineno-20-10" href="#__codelineno-20-10"></a><span class="p">}</span>
 </code></pre></div>
 <p>The <code>centroid</code> should be the approximate geographic center of the region in WGS84 coordinates <code>[lon, lat]</code>. Once the first import completes, the <code>bbox</code> from <code>get_meta</code> takes over and the <code>centroid</code> is only used as a fallback.</p>
 <p><strong>See also:</strong> <a href="../../reference/registry-json/">registry.json Reference</a> for the full schema.</p>
 <hr />
 <h2 id="hub-backend-returns-function-not-found-errors">Hub backend returns "function not found" errors<a class="headerlink" href="#hub-backend-returns-function-not-found-errors" title="Permanent link">&para;</a></h2>
 <p><strong>Symptom:</strong> The hub operator checks the data-node API and gets:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="p">{</span><span class="nt">"code"</span><span class="p">:</span><span class="s2">"PGRST202"</span><span class="p">,</span><span class="nt">"message"</span><span class="p">:</span><span class="s2">"Could not find the function api.get_playgrounds_bbox(bbox) in the schema cache."</span><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="p">{</span><span class="nt">"code"</span><span class="p">:</span><span class="s2">"PGRST202"</span><span class="p">,</span><span class="nt">"message"</span><span class="p">:</span><span class="s2">"Could not find the function api.get_playgrounds_bbox(bbox) in the schema cache."</span><span class="p">}</span>
 </code></pre></div>
 <p>The Hub shows 0 playgrounds for that backend.</p>
 <p><strong>Hub operator — diagnose remotely:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>curl<span class="w"> </span>https://the-data-node.example.com/api/rpc/get_meta
-<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="c1"># check "version" — if older than v0.4.9, the image needs updating</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>curl<span class="w"> </span>https://the-data-node.example.com/api/rpc/get_meta
+<a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a><span class="c1"># check "version" — if older than v0.4.9, the image needs updating</span>
 </code></pre></div>
 <p><strong>Data-node operator — fix:</strong></p>
 <p>The image predates the tiered-fetch functions added in v0.4.9. Update and re-import:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="nb">cd</span><span class="w"> </span>~/spieli<span class="w">   </span><span class="c1"># or wherever spieli was installed</span>
-<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>pull
-<a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>data-node<span class="w"> </span>down
-<a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>data-node<span class="w"> </span>up<span class="w"> </span>-d
-<a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>data-node<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>importer
+<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="nb">cd</span><span class="w"> </span>~/spieli<span class="w">   </span><span class="c1"># or wherever spieli was installed</span>
+<a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>pull
+<a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>data-node<span class="w"> </span>down
+<a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>data-node<span class="w"> </span>up<span class="w"> </span>-d
+<a id="__codelineno-23-5" name="__codelineno-23-5" href="#__codelineno-23-5"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>data-node<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>importer
 </code></pre></div>
 <p><strong>Hub operator — verify after the data-node operator confirms the update:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>curl<span class="w"> </span>https://the-data-node.example.com/api/rpc/get_meta
-<a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a><span class="c1"># playground_count should now be &gt; 0</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>curl<span class="w"> </span>https://the-data-node.example.com/api/rpc/get_meta
+<a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a><span class="c1"># playground_count should now be &gt; 0</span>
 </code></pre></div>
 <hr />
 <h2 id="importer-fails-with-permission-denied-on-schema-apply">Importer fails with "permission denied" on schema apply<a class="headerlink" href="#importer-fails-with-permission-denied-on-schema-apply" title="Permanent link">&para;</a></h2>
 <p><strong>Symptom:</strong> <code>psql</code> reports <code>permission denied</code> when the importer runs <code>api.sql</code>.</p>
 <p><strong>Cause:</strong> The SQL runs as the database user configured in <code>.env</code>. This user needs <code>SUPERUSER</code> or at minimum <code>pg_signal_backend</code> (to terminate PostgREST connections) and <code>CREATE</code> on the <code>public</code> schema. The default user (<code>osm</code>) is a superuser — if you changed <code>POSTGRES_USER</code>, verify the role has these privileges.</p>
 <p><strong>Fix:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.yml<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>db<span class="w"> </span>psql<span class="w"> </span>-U<span class="w"> </span>osm<span class="w"> </span>osm
-<a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a><span class="c1"># in psql:</span>
-<a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a>ALTER<span class="w"> </span>ROLE<span class="w"> </span>your_user<span class="w"> </span>SUPERUSER<span class="p">;</span>
-<a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a><span class="se">\q</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.yml<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>db<span class="w"> </span>psql<span class="w"> </span>-U<span class="w"> </span>osm<span class="w"> </span>osm
+<a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a><span class="c1"># in psql:</span>
+<a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a>ALTER<span class="w"> </span>ROLE<span class="w"> </span>your_user<span class="w"> </span>SUPERUSER<span class="p">;</span>
+<a id="__codelineno-25-4" name="__codelineno-25-4" href="#__codelineno-25-4"></a><span class="se">\q</span>
 </code></pre></div>
 <p>Then re-run the importer:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.yml<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>importer
+<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.yml<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>importer
 </code></pre></div>
 <hr />
 <h2 id="database-volume-is-very-large-after-repeated-imports">Database volume is very large after repeated imports<a class="headerlink" href="#database-volume-is-very-large-after-repeated-imports" title="Permanent link">&para;</a></h2>
 <p><strong>Symptom:</strong> The <code>pgdata</code> Docker volume grows beyond expectations over time.</p>
 <p><strong>Cause:</strong> <code>api.sql</code> uses <code>DROP MATERIALIZED VIEW … CASCADE</code> + <code>CREATE MATERIALIZED VIEW</code> on every apply. PostgreSQL does not reclaim the space immediately — it marks pages as dead and waits for autovacuum. After many re-imports, dead tuple bloat can be significant.</p>
 <p><strong>Fix:</strong> Run VACUUM FULL (briefly locks the table):</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.yml<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>db<span class="w"> </span>psql<span class="w"> </span>-U<span class="w"> </span>osm<span class="w"> </span>osm<span class="w"> </span>-c<span class="w"> </span><span class="s2">"VACUUM FULL public.playground_stats;"</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.yml<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>db<span class="w"> </span>psql<span class="w"> </span>-U<span class="w"> </span>osm<span class="w"> </span>osm<span class="w"> </span>-c<span class="w"> </span><span class="s2">"VACUUM FULL public.playground_stats;"</span>
 </code></pre></div>
 <p>Or simply recreate the data volume after a re-import — the volume will start clean.</p>
 <hr />
@@ -2602,14 +2670,14 @@
 <p><strong>Symptom:</strong> One or more backends in the Hub instance drawer permanently show an "updating" badge, even though no import is running.</p>
 <p><strong>Cause:</strong> The <code>importing</code> flag in <code>api.import_status</code> was left <code>true</code> by an importer that was killed with SIGKILL (bypasses the EXIT trap) or crashed before the trap could fire.</p>
 <p><strong>Self-healing:</strong> The importer clears the flag automatically at startup. Restarting the container is usually enough:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>restart<span class="w"> </span>importer
-<a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a><span class="c1"># or, in daemon mode, the container is already running — it will clear the flag</span>
-<a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a><span class="c1"># on its next scheduled run</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>restart<span class="w"> </span>importer
+<a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a><span class="c1"># or, in daemon mode, the container is already running — it will clear the flag</span>
+<a id="__codelineno-28-3" name="__codelineno-28-3" href="#__codelineno-28-3"></a><span class="c1"># on its next scheduled run</span>
 </code></pre></div>
 <p><strong>Manual fix</strong> (if you need it cleared immediately without waiting for a restart):</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a><span class="c1"># From the data-node host</span>
-<a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a>docker<span class="w"> </span>compose<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>db<span class="w"> </span>psql<span class="w"> </span>-U<span class="w"> </span>osm<span class="w"> </span>-d<span class="w"> </span>osm<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-26-3" name="__codelineno-26-3" href="#__codelineno-26-3"></a><span class="w">  </span>-c<span class="w"> </span><span class="s2">"UPDATE api.import_status SET importing = false WHERE id = 1;"</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a><span class="c1"># From the data-node host</span>
+<a id="__codelineno-29-2" name="__codelineno-29-2" href="#__codelineno-29-2"></a>docker<span class="w"> </span>compose<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>db<span class="w"> </span>psql<span class="w"> </span>-U<span class="w"> </span>osm<span class="w"> </span>-d<span class="w"> </span>osm<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-29-3" name="__codelineno-29-3" href="#__codelineno-29-3"></a><span class="w">  </span>-c<span class="w"> </span><span class="s2">"UPDATE api.import_status SET importing = false WHERE id = 1;"</span>
 </code></pre></div>
 <p>The Hub will pick up the corrected value on its next poll cycle (within 60 seconds).</p>
 <hr />
@@ -2617,10 +2685,10 @@
 <p><strong>Symptom:</strong> <code>/impressum</code> or <code>/datenschutz</code> returns 404, or the pages show stale contact information after updating <code>IMPRESSUM_*</code> vars.</p>
 <p><strong>Cause:</strong> The HTML files are generated by <code>docker-entrypoint.sh</code> at container startup. A rebuild is required to pick up changed env vars.</p>
 <p><strong>Fix:</strong> Restart the app container to regenerate legal pages from current env vars:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.yml<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>up<span class="w"> </span>-d<span class="w"> </span>app
+<div class="highlight"><pre><span></span><code><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.yml<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>up<span class="w"> </span>-d<span class="w"> </span>app
 </code></pre></div>
 <p>If <code>get_meta()</code> still returns the old <code>impressum_url</code> / <code>privacy_url</code>, the legal URLs are baked into the database at import time. Re-run the importer to apply them:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.yml<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>importer
+<div class="highlight"><pre><span></span><code><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.yml<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>importer
 </code></pre></div>
 <p><strong>Symptom:</strong> <code>/impressum</code> returns 404 despite <code>IMPRESSUM_NAME</code> being set.</p>
 <p><strong>Cause:</strong> <code>IMPRESSUM_ADDRESS</code> is also required. The entrypoint skips generation when either of the two required vars is empty.</p>
@@ -2629,58 +2697,58 @@
 <p><strong>Symptom:</strong> PostgREST logs <code>relation "public.playground_stats" does not exist</code> after an upgrade.</p>
 <p><strong>Cause:</strong> The <code>API_ONLY=1</code> importer run dropped the <code>playground_stats</code> materialised view but failed before recreating it, leaving the database in a broken state.</p>
 <p><strong>Fix:</strong> Run a full re-import to rebuild everything from scratch:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.yml<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>importer
+<div class="highlight"><pre><span></span><code><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.yml<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>importer
 </code></pre></div>
 <p>This re-applies <code>api.sql</code> (recreating <code>playground_stats</code>) and re-imports OSM data. It takes longer than <code>API_ONLY=1</code> but is always safe.</p>
 <h2 id="the-map-renders-but-labels-or-icons-are-missing">The map renders, but labels or icons are missing<a class="headerlink" href="#the-map-renders-but-labels-or-icons-are-missing" title="Permanent link">&para;</a></h2>
 <p><strong>Symptom:</strong> the basemap draws roads, water and landcover, but place names are missing, or they render in a system font that looks wrong next to the rest of the UI.</p>
 <p><strong>Cause:</strong> the webfonts the style asks for are not vendored in the image. Labels are drawn from <code>/basemap/fonts/&lt;family&gt;/&lt;weight&gt;.css</code>, not from the style's <code>glyphs</code> endpoint, and a missing weight fails silently: MapLibre falls back to a system font and the map still renders. It also puts a request the tile server cannot answer on every page load.</p>
 <p><strong>Fix:</strong> check which weights the style asks for and re-vendor them.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a><span class="c1"># Lists the style's font stacks and fails if one has no vendored file</span>
-<a id="__codelineno-30-2" name="__codelineno-30-2" href="#__codelineno-30-2"></a>make<span class="w"> </span>basemap-fonts
-<a id="__codelineno-30-3" name="__codelineno-30-3" href="#__codelineno-30-3"></a><span class="c1"># What is actually in the image:</span>
-<a id="__codelineno-30-4" name="__codelineno-30-4" href="#__codelineno-30-4"></a>docker<span class="w"> </span>compose<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>app<span class="w"> </span>ls<span class="w"> </span>/usr/share/nginx/html/basemap/fonts/noto-sans/
+<div class="highlight"><pre><span></span><code><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a><span class="c1"># Lists the style's font stacks and fails if one has no vendored file</span>
+<a id="__codelineno-33-2" name="__codelineno-33-2" href="#__codelineno-33-2"></a>make<span class="w"> </span>basemap-fonts
+<a id="__codelineno-33-3" name="__codelineno-33-3" href="#__codelineno-33-3"></a><span class="c1"># What is actually in the image:</span>
+<a id="__codelineno-33-4" name="__codelineno-33-4" href="#__codelineno-33-4"></a>docker<span class="w"> </span>compose<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>app<span class="w"> </span>ls<span class="w"> </span>/usr/share/nginx/html/basemap/fonts/noto-sans/
 </code></pre></div>
 <p><code>Noto Sans Bold</code> needs <code>700.css</code>, <code>Noto Sans Italic</code> needs <code>400-italic.css</code>, and so on. <code>make basemap-fonts</code> fetches all of them and then asserts the coverage, so a green run means every stack in the style resolves.</p>
 <p>Missing <em>icons</em> rather than labels point at the sprite sheet instead: check that <code>/basemap/sprites/…</code> returns 200 and not 404.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a>curl<span class="w"> </span>-sI<span class="w"> </span>http://localhost:8080/basemap/sprites/ofm_f384/ofm.png<span class="w"> </span><span class="p">|</span><span class="w"> </span>head<span class="w"> </span>-1
+<div class="highlight"><pre><span></span><code><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a>curl<span class="w"> </span>-sI<span class="w"> </span>http://localhost:8080/basemap/sprites/ofm_f384/ofm.png<span class="w"> </span><span class="p">|</span><span class="w"> </span>head<span class="w"> </span>-1
 </code></pre></div>
 <p>A 404 there usually means an nginx location-precedence problem — regex locations are matched before plain prefixes, so a <code>~* \.png$</code> block can claim these paths unless the <code>/basemap/</code> location uses <code>^~</code>.</p>
 <hr />
 <h2 id="container-refuses-to-start-stylelocaljson-is-missing-from-the-image">Container refuses to start: <code>style.local.json is missing from the image</code><a class="headerlink" href="#container-refuses-to-start-stylelocaljson-is-missing-from-the-image" title="Permanent link">&para;</a></h2>
 <p><strong>Symptom:</strong> the app container exits immediately with</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a>[spieli] FATAL: app/public/basemap/style.local.json is missing from the image.
+<div class="highlight"><pre><span></span><code><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a>[spieli] FATAL: app/public/basemap/style.local.json is missing from the image.
 </code></pre></div>
 <p><strong>Cause:</strong> <code>style.local.json</code> is a build artefact, not a checked-in-by-hand file, and the build did not produce it. This is deliberate: the entrypoint refuses to fall back to <code>style.json</code>, whose assets point at the public tile server, because that would silently send every visitor to a third party while the docs promise the opposite.</p>
 <p><strong>Fix:</strong> regenerate both style variants and rebuild.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a>make<span class="w"> </span>basemap-style<span class="w">     </span><span class="c1"># writes style.json and style.local.json from one fetch</span>
-<a id="__codelineno-33-2" name="__codelineno-33-2" href="#__codelineno-33-2"></a>make<span class="w"> </span>docker-build
+<div class="highlight"><pre><span></span><code><a id="__codelineno-36-1" name="__codelineno-36-1" href="#__codelineno-36-1"></a>make<span class="w"> </span>basemap-style<span class="w">     </span><span class="c1"># writes style.json and style.local.json from one fetch</span>
+<a id="__codelineno-36-2" name="__codelineno-36-2" href="#__codelineno-36-2"></a>make<span class="w"> </span>docker-build
 </code></pre></div>
 <hr />
 <h2 id="basemap-tiles-are-slow-or-fail-after-an-upgrade">Basemap tiles are slow or fail after an upgrade<a class="headerlink" href="#basemap-tiles-are-slow-or-fail-after-an-upgrade" title="Permanent link">&para;</a></h2>
 <p><strong>Symptom:</strong> the map is sluggish or patchy for a while after <code>make docker-build</code>, then recovers.</p>
 <p><strong>Cause:</strong> the tile cache lives at <code>/var/cache/nginx/basemap</code>. Without a volume it sits on the container's writable layer and is discarded on every rebuild, so the next visitors refill it from the upstream one tile at a time.</p>
 <p><strong>Fix:</strong> mount a volume so it survives rebuilds. <code>compose.yml</code> ships one (<code>basemap_cache</code>); if you deploy from <code>compose.prod.yml</code> or a hand-written file, add the equivalent:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a><span class="nt">services</span><span class="p">:</span>
-<a id="__codelineno-34-2" name="__codelineno-34-2" href="#__codelineno-34-2"></a><span class="w">  </span><span class="nt">app</span><span class="p">:</span>
-<a id="__codelineno-34-3" name="__codelineno-34-3" href="#__codelineno-34-3"></a><span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
-<a id="__codelineno-34-4" name="__codelineno-34-4" href="#__codelineno-34-4"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">basemap_cache:/var/cache/nginx/basemap</span>
-<a id="__codelineno-34-5" name="__codelineno-34-5" href="#__codelineno-34-5"></a><span class="nt">volumes</span><span class="p">:</span>
-<a id="__codelineno-34-6" name="__codelineno-34-6" href="#__codelineno-34-6"></a><span class="w">  </span><span class="nt">basemap_cache</span><span class="p">:</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-37-1" name="__codelineno-37-1" href="#__codelineno-37-1"></a><span class="nt">services</span><span class="p">:</span>
+<a id="__codelineno-37-2" name="__codelineno-37-2" href="#__codelineno-37-2"></a><span class="w">  </span><span class="nt">app</span><span class="p">:</span>
+<a id="__codelineno-37-3" name="__codelineno-37-3" href="#__codelineno-37-3"></a><span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<a id="__codelineno-37-4" name="__codelineno-37-4" href="#__codelineno-37-4"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">basemap_cache:/var/cache/nginx/basemap</span>
+<a id="__codelineno-37-5" name="__codelineno-37-5" href="#__codelineno-37-5"></a><span class="nt">volumes</span><span class="p">:</span>
+<a id="__codelineno-37-6" name="__codelineno-37-6" href="#__codelineno-37-6"></a><span class="w">  </span><span class="nt">basemap_cache</span><span class="p">:</span>
 </code></pre></div>
 <p>This matters most for an upgrade sweep across several stacks, which would otherwise send every one of them at the public tile server cold at the same time.</p>
 <h2 id="photos-search-or-reviews-stopped-working-after-an-upgrade">Photos, search or reviews stopped working after an upgrade<a class="headerlink" href="#photos-search-or-reviews-stopped-working-after-an-upgrade" title="Permanent link">&para;</a></h2>
 <p>Since the external-service proxies landed, these features are served through <code>/ext/</code> paths on your own instance rather than fetched from the third party by the browser. Three things go wrong quietly.</p>
 <p><strong>A cold cache after a rebuild.</strong> <code>make docker-build</code> replaces the container, and a cache on the writable layer goes with it. <code>compose.yml</code> mounts a named volume (<code>ext_cache</code>) so this should not happen — check it is actually mounted:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a>docker<span class="w"> </span>compose<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>app<span class="w"> </span>du<span class="w"> </span>-sh<span class="w"> </span>/var/cache/nginx/ext
-<a id="__codelineno-35-2" name="__codelineno-35-2" href="#__codelineno-35-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>config<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-A2<span class="w"> </span>ext_cache
+<div class="highlight"><pre><span></span><code><a id="__codelineno-38-1" name="__codelineno-38-1" href="#__codelineno-38-1"></a>docker<span class="w"> </span>compose<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>app<span class="w"> </span>du<span class="w"> </span>-sh<span class="w"> </span>/var/cache/nginx/ext
+<a id="__codelineno-38-2" name="__codelineno-38-2" href="#__codelineno-38-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>config<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-A2<span class="w"> </span>ext_cache
 </code></pre></div>
 <p><strong>Search returns nothing under load.</strong> The Nominatim proxy shares the OSMF limit of 1 request per second across the whole instance, and sheds beyond it rather than exceeding the policy. Cached queries are unaffected — the limiter only sees misses — so this shows up as unusual free-text searches failing while region URLs keep working. Look for <code>limiting requests</code> in the error log:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-36-1" name="__codelineno-36-1" href="#__codelineno-36-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>logs<span class="w"> </span>app<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="s2">"limiting requests"</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-39-1" name="__codelineno-39-1" href="#__codelineno-39-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>logs<span class="w"> </span>app<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="s2">"limiting requests"</span>
 </code></pre></div>
 <p>If you see it routinely, your instance is busy enough to want its own Nominatim; point the frontend at it by setting <code>PROXY_NOMINATIM=false</code> and running one on your own network.</p>
 <p><strong>Images render as broken.</strong> Check whether the request 404s at your instance or at Wikimedia:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-37-1" name="__codelineno-37-1" href="#__codelineno-37-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>logs<span class="w"> </span>app<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-i<span class="w"> </span><span class="s2">"ext/wikimedia"</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-40-1" name="__codelineno-40-1" href="#__codelineno-40-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>logs<span class="w"> </span>app<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-i<span class="w"> </span><span class="s2">"ext/wikimedia"</span>
 </code></pre></div>
 <p><code>/ext/</code> locations are deliberately not access-logged, so a successful request leaves no trace by design — only errors appear. A 404 from the instance itself means the path did not match the allowlist; the most likely cause is Wikimedia serving files from a host the proxy does not know about. The proxy accepts any <code>*.wikimedia.org</code> host, so this should be rare, but it is the first thing to check if thumbnails break after a Wikimedia change.</p>
 <p>To rule the proxies out entirely, set <code>PROXY_COMMONS=false</code> and restart: the browser then fetches from Wikimedia directly, as it did before.</p>
