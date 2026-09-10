@@ -123,6 +123,7 @@ Those maps are keyed on `$request_uri` and `$status`, never `$upstream_status` o
 | Env var | Role |
 |---|---|
 | `BASEMAP_UPSTREAM` | Origin the cache fetches from (default `https://tiles.openfreemap.org`). Origin only — a path is refused at startup, because `proxy_pass` with a URI-bearing variable *replaces* the request URI instead of prefixing it. |
+| `BASEMAP_COVERAGE_BBOX` | Where the basemap has *detailed* data. A regional tileset renders global context at low zoom but answers 204 outside its extract above ~z7, and an empty tile is indistinguishable from an empty map — this is what lets the app say so. Rule and parsing in `app/src/lib/basemapCoverage.js`, unit-tested; `Map.svelte` only feeds it view state. |
 | `BASEMAP_CACHE_MAX_SIZE` / `_KEYS_ZONE` / `_INACTIVE` | Cache sizing. Validated, not sanitised: `4.5g` is rejected rather than silently becoming `45g`. |
 | `BASEMAP_STYLE_URL` / `BASEMAP_URL` | Opt *out* to a third-party provider. Requires `BASEMAP_ATTRIBUTION`, and is refused alongside `BASEMAP_PROXY` when the style is not same-origin. |
 
@@ -131,6 +132,38 @@ The proxying half is only generated when the effective style routes the browser 
 **Shared cache (multi-stack hosts only)** — `deploy/basemap-cache/` is one nginx cache per *host*, which every stack points `BASEMAP_UPSTREAM` at, joined via `compose.override.basemap-cache.yml`. The browser never touches it: it talks to its own stack, which fetches through the cache server-side, so there is no Traefik router, CORS exception or CSP allowance involved. One rewrite is load-bearing — the shared cache must rewrite the TileJSON's absolute upstream URLs to the relative `/basemap/` path, because each stack's own `sub_filter` looks for *its* upstream (now the cache, not the provider) and would otherwise find nothing and hand the browser the provider's URLs. The map renders identically either way, so CI asserts it. See [`docs/ops/shared-basemap-cache.md`](docs/ops/shared-basemap-cache.md).
 
 `make basemap-style` builds **both** style variants from a single upstream fetch — `style.json` (upstream URLs, for `make dev`, which has no nginx) and `style.local.json` (all assets under `/basemap/`, what the container serves). `make basemap-fonts` vendors the webfonts and fails if the style asks for a weight it did not vendor, because that failure is otherwise invisible: a system-font fallback plus an upstream request on every page load.
+
+### External-service delivery (`/ext/`)
+
+Same-origin by default, like the basemap. `docker-entrypoint.sh` generates `/etc/nginx/ext-locations.conf` (the prefix/regex locations) and `/etc/nginx/conf.d/11-ext-cache.conf` (the shared `ext` cache zone, the `limit_req_zone`, and an internal loopback server on `127.0.0.1:8091`).
+
+| Path | Upstream | Notes |
+|---|---|---|
+| `/ext/nominatim/` | `nominatim.openstreetmap.org` | `search`/`lookup`/`reverse` only. Proxies to the **loopback server**, which carries the rate limiter |
+| `/ext/commons/` | `commons.wikimedia.org` | `/w/api.php` only |
+| `/ext/wikimedia/<host>/<path>` | any `*.wikimedia.org` | Image bytes. A **regex** location, so its include must stay above the `~* \.(js|css|png…)$` static block |
+| `/ext/mangrove/` | `api.mangrove.reviews` | `reviews` (GET) and `submit/<jwt>` (**PUT**) |
+
+Six things here are load-bearing and were each found the hard way:
+
+- **`access_log off` in every location.** Proxying moves the visitor's request stream onto the operator's disk; logging it is worse than the exposure it replaced. Emitted from `_ext_common` so a call site cannot forget it.
+- **The rate limiter lives on the loopback server, not the visitor-facing location.** `limit_req` runs in the preaccess phase, *before* the cache lookup, so on the outer location it sheds requests that were already cached — two simultaneous visitors were enough to break search. Only misses reach the loopback hop; a shed request falls back to stale via `proxy_cache_use_stale … http_503`.
+- **That loopback server needs a `server_name`.** The limiter is keyed on `$server_name`, and nginx *silently skips* `limit_req` when its key is empty — a limiter that parses and enforces nothing.
+- **`set` must come BEFORE `rewrite … break`.** `break` stops the rewrite module, and `set` is one of its directives, so a `set` after it never runs — the `Cache-Control` header then renders empty and none is sent at all.
+- **Comments inside the generated blocks must not use backticks.** These are unquoted heredocs, so `` `always` `` is command substitution: the shell tried to run `always`, `set` and `rewrite` as commands and the container died before nginx started.
+- **The Wikimedia host is carried in the path, not assumed.** The imageinfo API returns thumbnails on `thumb.wikimedia.org` and originals on `upload.wikimedia.org`; a rewrite pinned to one host sends every thumbnail straight to Wikimedia while appearing to work. `proxiedImageUrl` in `app/src/lib/commons.js` does the rewrite (validate host first, rewrite second) and preserves the `?utm_*` query the API attaches.
+
+**Panoramax is not proxied at all**, and that is a finding rather than an omission: its thumbnail endpoint answers 308 with a `Location` on a per-instance derivative host (nginx cannot follow a redirect, and the derivative hosts are a federation's, not ours to enumerate), and its viewer is an iframe that must not be served from this origin. **Equipment-attribute illustrations are not proxied either** — `equipmentAttributes.js` renders them from `Special:FilePath`, whose redirect chain would need `/w/index.php` opened as a relay. Both are why `img-src` keeps its Wikimedia and Panoramax sources even when every proxy is on; narrowing it would block the images *and* falsify the privacy page.
+
+Per-service opt-out via `PROXY_NOMINATIM` / `PROXY_COMMONS` / `PROXY_MANGROVE` (default on). Opting one out routes the browser directly *and* adds its host to the generated CSP and to the generated privacy-page table — both follow the configuration, neither is hardcoded.
+
+### Content Security Policy
+
+Generated into `/etc/nginx/csp.conf` and included by `nginx.conf`; not a literal, because hub `connect-src` origins come from an operator-supplied `registry.json`, a remote `API_BASE_URL` is another origin, and a basemap opt-out adds a tile host. Written to a temp file and `mv`d, so it is never read half-written.
+
+Two policies ship together for one release: the old wildcard one **enforced**, and the narrowed one **report-only**. A too-tight CSP fails silently, so the swap waits for a clean observation period. No `report-uri` — it would rebuild the per-visitor trail on the operator's disk. `CSP_CONNECT_EXTRA` / `CSP_IMG_EXTRA` cover origins the generator cannot discover.
+
+**Hosts reach the policy as full origins, scheme and port intact.** There are deliberately two derivations of the same set: `host_of` / `style_asset_hosts` produce bare hosts for the privacy page's service table, and `origin_of` / `style_asset_origins` produce origins for the CSP. A CSP host-source with no port matches only the scheme's default port, and one with no scheme only the document's own scheme, so a policy built from the display list blanks the basemap of a tileserver on `:8443` or one reached over `http`. The `:` missing from one `grep` character class is all it took.
 
 ## Key frontend architecture
 
@@ -145,6 +178,7 @@ The proxying half is only generated when the effective style routes the browser 
 | `playgroundSource.js` | Shared OL VectorSource for the polygon tier. Non-null while Map.svelte is mounted; reset to `null` on teardown. Widgets (NearbyPlaygrounds, AppShell deeplink restore) hydrate features into it on demand at any zoom — there is no separate "cluster source" store; the cluster `VectorSource` is owned by `StandaloneApp.svelte` and never published, since no widget consumes it externally. |
 | `tier.js` | Active zoom-tier — `null` \| `'cluster'` \| `'polygon'`. Written by the orchestrator, read by Map for layer visibility |
 | `location.js` | User's current GPS position — `{ lat, lon, accuracy } \| null`. Written by LocateButton (manual + auto-locate), read by Map (location marker) and PlaygroundPanel (navigation origin). |
+| `basemapCoverage.js` | Whether the view has left the basemap's detailed coverage — `null` (no limit declared) \| `false` \| `true`. Written by `Map.svelte` on moveend, read by `BasemapCoverageNotice`. |
 | `urlFraming.js` | Whether an explicit region-URL framing (e.g. `/Lauterbach`) was applied on load — `null` (undecided / no region path) \| `true` (override resolved & framed) \| `false` (region path present but did not resolve). Written by `StandaloneApp`, read by `LocateButton` so auto-locate only suppresses GPS centering when a region framing actually took effect. On `false`, StandaloneApp skips the configured-region fit and leaves the default extent so the current location (if available) takes over. |
 | `hubLoading.js` | Hub fan-out load progress — `{ loaded, total, settling }`. Written by `hubOrchestrator`, read by the hub UI to show a progress indicator. |
 | `macroFiltered.js` | Per-backend filtered aggregate for the hub macro tier — `Map<backendUrl, {count, complete, partial, missing}> \| null`. `null` = no filter active (macro stays zero-fetch, rings use cached `get_meta`). Written by `hubOrchestrator` when a filter is active (sums each backend's filtered `get_playground_clusters` buckets), read by `MacroView` to override ring props. |
@@ -163,7 +197,7 @@ The proxying half is only generated when the effective style routes the browser 
 | `NearbyPlaygrounds.svelte` | Shows nearest playgrounds to the selected one; hydrates polygon source on demand |
 | `POIPanel.svelte` | Nearby POI list (cafés, toilets, etc.) shown inside PlaygroundPanel |
 | `ReviewsPanel.svelte` | Community reviews for a selected playground (fetch + submit) |
-| `PanoramaxViewer.svelte` | Embeds a Panoramax street-level photo viewer for a playground |
+| `PanoramaxViewer.svelte` | Street-level photos for a playground. Shows the **thumbnail** on selection and creates the viewer `<iframe>` only when the visitor activates it (#852) — an iframe gets its own browsing context on the provider's origin, with cookies and its own analytics, so it must not load on plain map use. The iframe carries `referrerpolicy="no-referrer"` and `sandbox="allow-scripts allow-same-origin"`, which is the narrowest set the viewer actually works under (probed: `allow-scripts` alone renders nothing) |
 | `CommonsGallery.svelte` | Inline Wikimedia Commons photo gallery for a playground (from `wikimedia_commons` / `image` tags); thumbnails → fullscreen lightbox with CC attribution. Fetch + URL-safety logic in `app/src/lib/commons.js` |
 | `HoverPreview.svelte` | Floating card on playground hover (desktop only) |
 | `EquipmentTooltip.svelte` | Tooltip on equipment/pitch hover |

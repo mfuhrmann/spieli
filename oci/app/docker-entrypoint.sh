@@ -167,6 +167,10 @@ if [ -z "$SAFE_BASEMAP_STYLE_URL" ] && [ -z "$SAFE_BASEMAP_URL" ]; then
     fi
 fi
 SAFE_BASEMAP_ATTRIBUTION=$(safe_attribution "${BASEMAP_ATTRIBUTION:-}")
+# Four comma-separated numbers, nothing else. Validated rather than trusted
+# because the value is emitted into a JS literal; the frontend ignores a
+# malformed bbox, so a typo costs the notice rather than the map.
+SAFE_BASEMAP_COVERAGE_BBOX=$(printf '%s' "${BASEMAP_COVERAGE_BBOX:-}" | tr -cd '0-9.,+-')
 
 # host_of <url> — the host a browser would contact, or empty for a same-origin
 # path. Handles scheme-relative URLs, ports, userinfo and {a-d} subdomain groups.
@@ -188,6 +192,30 @@ host_of() {
     printf '%s' "$_h"
 }
 
+# origin_of <url> — "scheme://host[:port]" for an absolute URL, "host[:port]"
+# for a scheme-relative one, empty for a same-origin path.
+#
+# Deliberately NOT host_of(), whose consumer is the human-readable privacy page
+# and which drops both scheme and port. Both matter here and in opposite
+# directions: a CSP host-source with no port matches only the scheme's default
+# port, and one with no scheme matches only the document's own scheme. So
+# reducing http://lab.internal:3000 to lab.internal yields a policy that blocks
+# the backend it was added for twice over — wrong port, and no http on an
+# https-served page.
+origin_of() {
+    case "$1" in
+        # //host must be tested BEFORE /path. A `case` takes the first match, so
+        # with /* first the //* branch is unreachable and a scheme-relative URL
+        # is misread as same-origin — the same trap host_of() documents, and one
+        # this function reintroduced on its first draft.
+        //*) _o=${1#//}; _o=${_o%%/*}; _o=${_o##*@}; printf '%s' "$_o" ;;
+        ''|/*) ;;                       # same-origin: 'self' already covers it
+        *://*) _o=${1#*://}; _o=${_o%%/*}; _o=${_o##*@}
+               printf '%s://%s' "${1%%://*}" "$_o" ;;
+        *) _o=${1%%/*}; _o=${_o##*@}; printf '%s' "$_o" ;;
+    esac
+}
+
 # style_asset_hosts <style-url> — third-party hosts referenced INSIDE a style
 # document (sources[*].url/tiles, sprite, glyphs), for a style this instance
 # serves itself. A same-origin style URL says nothing about where the style then
@@ -205,6 +233,30 @@ style_asset_hosts() {
     # browser will fetch, whichever key it hangs off.
     grep -o 'https\?://[A-Za-z0-9._-]*' "$_f" 2>/dev/null \
         | sed -e 's#^https\?://##' | sort -u | tr '\n' ' '
+}
+
+# style_asset_origins <style-url> — the same scan as style_asset_hosts, but
+# emitting full ORIGINS (scheme, host and port) instead of bare hosts.
+#
+# Two functions rather than one, because their consumers want opposite things.
+# style_asset_hosts feeds the privacy page's service table, which reads better
+# as "tiles.openfreemap.org" than as "https://tiles.openfreemap.org". A CSP
+# host-source is not so forgiving: with no port it matches only the scheme's
+# default port, and with no scheme only the document's own scheme. So a
+# tileserver on :8080, or one reached over http from an https-served page, is
+# BLOCKED by a policy built from bare hosts — the map goes blank on a
+# deployment whose configuration we understood perfectly.
+#
+# Note the character class here includes ':' where the other one does not.
+# That single omission is what dropped the port before anything else saw it.
+style_asset_origins() {
+    case "$1" in
+        /*) _f="${WEBROOT}$1" ;;
+        *) return ;;                 # remote style: its own origin already counts
+    esac
+    [ -f "$_f" ] || return
+    grep -o 'https\?://[A-Za-z0-9._:-]*' "$_f" 2>/dev/null \
+        | sed -e 's#/*$##' | sort -u | tr '\n' ' '
 }
 
 # Attribution is a licence obligation, not decoration. Showing the built-in
@@ -307,12 +359,20 @@ fi
 #            "no third party contacted".
 BASEMAP_TILE_PROVIDER_HOST=""
 BASEMAP_TILE_PROVIDER_STATE="none"
+# The same set of places, expressed as CSP sources: full origins, scheme and
+# port intact. Computed here rather than derived from
+# BASEMAP_TILE_PROVIDER_HOST, because that value has already lost both.
+BASEMAP_CSP_SOURCES=""
 if [ -z "$BASEMAP_PROXY_ENABLED" ]; then
     # SAFE_BASEMAP_STYLE_URL is always set by this point (operator-set, or
     # defaulted to the bundled style above, or the entrypoint has already died),
     # so there is no "nothing configured" case left to handle here.
     _basemap_effective="${SAFE_BASEMAP_STYLE_URL:-$SAFE_BASEMAP_URL}"
     BASEMAP_TILE_PROVIDER_HOST=$(host_of "$_basemap_effective")
+    # An XYZ template can carry a {a-d} subdomain group, which origin_of does
+    # not strip because it is not a URL feature. host_of does strip it, so the
+    # group is removed before the origin is taken.
+    BASEMAP_CSP_SOURCES=$(origin_of "$(printf '%s' "$_basemap_effective" | sed -e 's#\({[a-z0-9-]*}\)\.##')")
     if [ -n "$BASEMAP_TILE_PROVIDER_HOST" ]; then
         BASEMAP_TILE_PROVIDER_STATE="hosts"
     elif [ -n "$SAFE_BASEMAP_STYLE_URL" ]; then
@@ -322,6 +382,7 @@ if [ -z "$BASEMAP_PROXY_ENABLED" ]; then
         _style_file="${WEBROOT}${SAFE_BASEMAP_STYLE_URL%%\?*}"
         if [ -f "$_style_file" ]; then
             BASEMAP_TILE_PROVIDER_HOST=$(style_asset_hosts "$SAFE_BASEMAP_STYLE_URL" | sed 's/ *$//')
+            BASEMAP_CSP_SOURCES=$(style_asset_origins "$SAFE_BASEMAP_STYLE_URL" | sed 's/ *$//')
             if [ -n "$BASEMAP_TILE_PROVIDER_HOST" ]; then
                 BASEMAP_TILE_PROVIDER_STATE="hosts"
             fi
@@ -686,6 +747,666 @@ else
 fi
 
 
+# ── External-service proxies (/ext/) ──────────────────────────────────────────
+# The remaining third parties the visitor's browser used to contact directly are
+# fetched server-side instead, through one cache, so the browser only ever talks
+# to this origin. Same mechanism as /basemap/, and the traps below were all
+# found there first.
+#
+# One cache zone for all of them rather than five: sizing five zones is five
+# chances to starve one, and the default proxy_cache_key already includes
+# $proxy_host, so two upstreams sharing a path cannot collide. Freshness still
+# differs per location via proxy_cache_valid.
+#
+# Each service can be turned off individually. Reasons to opt out are
+# per-service — egress cost, cache disk, or an operator who already runs a
+# local Nominatim — and when one is off the browser contacts it directly and
+# the generated CSP names it (see the block after this one).
+
+# ext_enabled <VAR> — a proxy is on unless explicitly disabled. Rejects a
+# value that is neither, rather than quietly treating "flase" as false.
+ext_enabled() {
+    # Quoted: an unquoted eval word-splits a value like "true " (which an
+    # operator can produce with a quoted .env line) and tries to run the second
+    # word, so the container dies with "not found" instead of the intended
+    # FATAL message naming the variable.
+    eval "_ev=\${$1:-}"
+    case "$(printf '%s' "$_ev" | tr 'A-Z' 'a-z')" in
+        ''|1|true|yes|on) printf '1' ;;
+        0|false|no|off) ;;
+        *) die "$1 must be true or false (got: $_ev)" ;;
+    esac
+}
+EXT_NOMINATIM=$(ext_enabled PROXY_NOMINATIM)
+EXT_COMMONS=$(ext_enabled PROXY_COMMONS)
+EXT_MANGROVE=$(ext_enabled PROXY_MANGROVE)
+
+EXT_CACHE_MAX_SIZE="${EXT_CACHE_MAX_SIZE:-2g}"
+EXT_CACHE_KEYS_ZONE="${EXT_CACHE_KEYS_ZONE:-16m}"
+EXT_CACHE_INACTIVE="${EXT_CACHE_INACTIVE:-30d}"
+check_nginx_size EXT_CACHE_MAX_SIZE  "$EXT_CACHE_MAX_SIZE"
+check_nginx_size EXT_CACHE_KEYS_ZONE "$EXT_CACHE_KEYS_ZONE"
+check_nginx_time EXT_CACHE_INACTIVE  "$EXT_CACHE_INACTIVE"
+
+# Identifies the project and the instance. Not decoration: the OSMF usage
+# policy requires a real identifying User-Agent, and anonymous concentrated
+# traffic from N indistinguishable caches is what gets an IP blocked.
+EXT_PROXY_UA="spieli/ext-cache (+https://github.com/mfuhrmann/spieli)"
+if [ -n "$SAFE_SITE_URL" ]; then
+    EXT_PROXY_UA="spieli/ext-cache (+https://github.com/mfuhrmann/spieli; ${SAFE_SITE_URL})"
+fi
+
+# Directives shared by every /ext/ location. Extracted rather than repeated
+# per service: these are the lines that are easy to get wrong, and five copies
+# is five places to forget one. What each location supplies for itself is what
+# genuinely differs — the upstream, the permitted path shape, whether a query
+# string is allowed, which methods, and freshness.
+#
+# Deliberately NOT a parameterised whole-location generator as the plan first
+# had it: the shapes diverge more than they share. /basemap/ forbids query
+# strings outright and rewrites a TileJSON body; Nominatim is nothing but query
+# string; Mangrove needs PUT. A function taking all of that would have more
+# parameters than lines.
+_ext_common=$(cat <<EXTCOMMON
+    # Access logging is OFF, and this is a correctness property rather than a
+    # tuning choice. Proxying moves the visitor's request stream onto this
+    # server; logging it would rebuild, on the operator's disk, the per-visitor
+    # trail this whole change exists to remove — leaving the operator as the
+    # controller of something worse than what was replaced. Errors still log.
+    access_log off;
+
+    proxy_http_version 1.1;
+    # A variable in proxy_pass defers DNS to the resolver, and nginx then omits
+    # SNI unless told otherwise. These upstreams are all virtual-hosted, so
+    # without this the handshake lands on someone else's default vhost.
+    proxy_ssl_server_name on;
+    proxy_ssl_name \$proxy_host;
+    proxy_set_header Host            \$proxy_host;
+
+    # This server is the client now, not a browser. It identifies itself and
+    # forwards nothing that identifies the visitor. Cookie MUST be cleared with
+    # proxy_set_header: proxy_hide_header only filters RESPONSE headers, so it
+    # would leave the visitor's cookies going upstream.
+    proxy_set_header User-Agent      "${EXT_PROXY_UA}";
+    proxy_set_header Referer         "";
+    proxy_set_header Cookie          "";
+    proxy_set_header Accept-Language "";
+    proxy_set_header X-Forwarded-For "";
+    proxy_set_header X-Real-IP       "";
+    proxy_hide_header Set-Cookie;
+
+    # Pinned so the cache key does not depend on what the first requester
+    # happened to negotiate. Vary is ignored below to keep these responses
+    # cacheable at all, and without pinning this that combination serves one
+    # client's encoding to everyone.
+    proxy_set_header Accept-Encoding "gzip";
+
+    proxy_cache ext;
+    proxy_cache_revalidate on;
+    # Cache-Control and Expires are ignored deliberately, and this is the
+    # difference between a cache and a decoration. A response's own freshness
+    # headers take PRIORITY over proxy_cache_valid in nginx, and the MediaWiki
+    # action API answers anonymous queries with
+    # "Cache-Control: private, must-revalidate, max-age=0" — so without this
+    # the Commons cache stores nothing and every playground selection is a
+    # fresh upstream request, while the config looks correct.
+    #
+    # We are not a shared cache in the HTTP sense here: these are public,
+    # unauthenticated documents fetched with all visitor identity stripped, and
+    # the per-location proxy_cache_valid below is the policy.
+    # A Set-Cookie or Vary would otherwise make the response uncacheable — a
+    # silently useless cache in front of the servers this exists to spare.
+    # Nothing varies per visitor here: the request carries no cookie, no
+    # Referer and no Accept-Language, because they were all cleared above.
+    proxy_ignore_headers Set-Cookie Vary Cache-Control Expires X-Accel-Expires;
+    # Collapse duplicate misses into one upstream request, and keep serving
+    # through an outage instead of amplifying it. http_429 is in the stale list
+    # deliberately: being rate limited is exactly when a stale answer beats no
+    # answer.
+    proxy_cache_lock on;
+    proxy_cache_use_stale error timeout updating http_429 http_500 http_502 http_503 http_504;
+    proxy_cache_background_update on;
+
+    proxy_connect_timeout 5s;
+    proxy_read_timeout   20s;
+
+    # Upstreams set their own copies of these, which would otherwise pass
+    # through and appear as duplicate response headers alongside ours.
+    proxy_hide_header X-Content-Type-Options;
+    proxy_hide_header Referrer-Policy;
+    proxy_hide_header Permissions-Policy;
+    proxy_hide_header Content-Security-Policy;
+    proxy_hide_header Cache-Control;
+    # CORS from the upstream is meaningless once this is same-origin, and a
+    # wildcard passed through would let any page read these responses.
+    proxy_hide_header Access-Control-Allow-Origin;
+
+    # add_header does not inherit into a level that declares its own, so the
+    # server-level security headers are repeated rather than silently dropped.
+    add_header X-Content-Type-Options  "nosniff"                          always;
+    add_header Referrer-Policy         "strict-origin-when-cross-origin"  always;
+    add_header Permissions-Policy      "geolocation=(self)"               always;
+    add_header Content-Security-Policy "default-src 'none'; img-src 'self' data:; sandbox" always;
+
+    # \$ext_cache_control is \$ext_cc on success and "no-store" on a 4xx/5xx —
+    # see the map in 11-ext-cache.conf. Each location sets \$ext_cc to its own
+    # TTL. 'always' is required so the header survives an error response, and
+    # that is exactly why the status has to be consulted: without the map, a
+    # transient upstream 404 (or one of our own allowlist rejections) is handed
+    # to the browser with a 30-day max-age, pinning a broken image for a month.
+    # The basemap block hit this and fixed it the same way.
+    add_header Cache-Control \$ext_cache_control always;
+EXTCOMMON
+)
+
+# Always written, so the include in nginx.conf cannot fail.
+: > /etc/nginx/ext-locations.conf.new
+: > /etc/nginx/conf.d/11-ext-cache.conf.new
+
+if [ -n "$EXT_NOMINATIM$EXT_COMMONS$EXT_MANGROVE" ]; then
+    mkdir -p /var/cache/nginx/ext
+    cat > /etc/nginx/conf.d/11-ext-cache.conf.new <<EXTCACHEEOF
+# Generated by docker-entrypoint.sh. http-context directives for the /ext/ cache.
+proxy_cache_path /var/cache/nginx/ext levels=2:2 keys_zone=ext:${EXT_CACHE_KEYS_ZONE}
+                 max_size=${EXT_CACHE_MAX_SIZE} inactive=${EXT_CACHE_INACTIVE} use_temp_path=off;
+
+# What the VISITOR's browser is told to cache. Each /ext/ location sets
+# \$ext_cc to its own TTL; this turns any 4xx/5xx into no-store.
+#
+# Keyed on \$status, never on \$upstream_status: that is empty on a cache hit,
+# so a map keyed on it falls to its default on every hit — the bug that once
+# served cached 404s with a 30-day max-age on the basemap path.
+map \$status \$ext_cache_control {
+    default  \$ext_cc;
+    "~^[45]" "no-store";
+}
+
+EXTCACHEEOF
+fi
+
+if [ -n "$EXT_NOMINATIM" ]; then
+    cat >> /etc/nginx/conf.d/11-ext-cache.conf.new <<EXTNOMCACHEEOF
+# Nominatim's usage policy is an ABSOLUTE 1 req/s. Proxying concentrates onto
+# this one IP the queries that used to spread across every visitor's, so the
+# limit has to be respected by construction rather than by hope.
+#
+# Keyed on a CONSTANT, not on \$binary_remote_addr: a per-visitor limit would
+# let 100 visitors send 100 req/s between them, which is exactly what the
+# policy forbids. This caps the whole instance.
+limit_req_zone \$server_name zone=ext_nominatim:1m rate=1r/s;
+
+# The limiter lives on an internal loopback server, NOT on the visitor-facing
+# location, and that placement is the whole point.
+#
+# limit_req runs in the preaccess phase, which is BEFORE the cache lookup in
+# the content phase. On the visitor-facing location it therefore sheds requests
+# the upstream would never have seen: measured, a query already in the cache
+# got a 503 while the limiter was busy with unrelated misses. Two ordinary
+# visitors are enough to exhaust a 1r/s burst, so that arrangement would have
+# made search and region framing fail under trivial load — worse availability
+# than before proxying, and it would have falsified the argument that a high
+# hit rate is what keeps us inside the policy.
+#
+# Here only a cache MISS reaches the limiter, because a hit is answered before
+# the outer location ever proxies. And when the limiter does shed, the outer
+# location's proxy_cache_use_stale list includes http_503, so a stale answer is
+# served instead of an error wherever one is held.
+server {
+    listen 127.0.0.1:8091;
+    # server_name is NOT decoration here. The limiter is keyed on
+    # \$server_name, and nginx silently skips limit_req when the key evaluates
+    # to an empty string — so without this the limiter is present, parses,
+    # and enforces nothing. Measured: 20 concurrent misses all returned 200.
+    server_name ext-nominatim-internal;
+    # Loopback only, and nothing else in the image talks to it.
+    access_log off;
+    resolver 127.0.0.11 ipv6=off valid=30s;
+
+    location / {
+        limit_req zone=ext_nominatim burst=10 nodelay;
+
+        set \$nominatim_upstream "https://nominatim.openstreetmap.org";
+        proxy_pass \$nominatim_upstream;
+
+        proxy_http_version 1.1;
+        proxy_ssl_server_name on;
+        proxy_ssl_name \$proxy_host;
+        proxy_set_header Host            \$proxy_host;
+        # The OSMF usage policy requires a real identifying User-Agent. This is
+        # the hop that actually talks to them, so it is set here.
+        proxy_set_header User-Agent      "${EXT_PROXY_UA}";
+        proxy_set_header Referer         "";
+        proxy_set_header Cookie          "";
+        proxy_set_header Accept-Language "";
+        proxy_set_header X-Forwarded-For "";
+        proxy_set_header X-Real-IP       "";
+        proxy_connect_timeout 5s;
+        proxy_read_timeout   20s;
+    }
+}
+EXTNOMCACHEEOF
+fi
+
+if [ -n "$EXT_NOMINATIM" ]; then
+    cat >> /etc/nginx/ext-locations.conf.new <<'EXTNOMEOF'
+# ── /ext/nominatim/ → nominatim.openstreetmap.org ────────────────────────────
+# ^~ is load-bearing. nginx matches regex locations BEFORE plain prefixes, so
+# without it a proxied path ending .json or .png is claimed by the static-asset
+# block and answered try_files =404.
+location ^~ /ext/nominatim/ {
+EXTNOMEOF
+    cat >> /etc/nginx/ext-locations.conf.new <<EXTNOM2EOF
+    # Only the two endpoints the frontend calls. A catch-all would make this a
+    # general caching relay for the whole upstream origin, under our own
+    # truthful User-Agent — the mistake the /basemap/ block documents.
+    if (\$uri !~ "^/ext/nominatim/(?:search|lookup|reverse)\$") { return 404; }
+    limit_except GET { deny all; }
+
+    # Proxied to the loopback server in 11-ext-cache.conf, which carries the
+    # rate limiter, rather than straight to Nominatim. The limiter must see
+    # only cache misses — see the long comment there for why putting it on this
+    # location instead breaks search for two simultaneous visitors.
+    #
+    # A literal address, so no resolver is involved and no variable is needed.
+    # Set BEFORE the rewrite below: 'break' stops the rewrite module, and
+    # 'set' is one of its directives, so a set placed after it never runs —
+    # the header then renders empty and no Cache-Control is sent at all.
+    set \$ext_cc "public, max-age=86400";
+    rewrite ^/ext/nominatim/(.*)\$ /\$1 break;
+    proxy_pass http://127.0.0.1:8091;
+${_ext_common}
+    # Settlement geocoding does not change on a timescale that matters, and the
+    # dominant query — region-URL resolution such as /fulda — is identical for
+    # every visitor of this instance. So the hit rate is what keeps the
+    # instance inside the policy, and the TTL is long on purpose.
+    proxy_cache_valid 200 30d;
+    proxy_cache_valid 404 1h;
+}
+
+EXTNOM2EOF
+fi
+
+if [ -n "$EXT_COMMONS" ]; then
+    cat >> /etc/nginx/ext-locations.conf.new <<EXTCOMEOF
+# ── /ext/commons/ → commons.wikimedia.org (the API) ──────────────────────────
+location ^~ /ext/commons/ {
+    if (\$uri !~ "^/ext/commons/w/api\.php\$") { return 404; }
+    limit_except GET { deny all; }
+
+    set \$ext_commons "https://commons.wikimedia.org";
+    # Set BEFORE the rewrite below: 'break' stops the rewrite module, and
+    # 'set' is one of its directives, so a set placed after it never runs —
+    # the header then renders empty and no Cache-Control is sent at all.
+    set \$ext_cc "public, max-age=3600";
+    rewrite ^/ext/commons/(.*)\$ /\$1 break;
+    proxy_pass \$ext_commons;
+${_ext_common}
+    # Category listings and file metadata change when someone edits Commons.
+    # A day is long enough to matter for load and short enough that a new photo
+    # appears the same day.
+    proxy_cache_valid 200 1d;
+    proxy_cache_valid 404 10m;
+}
+
+# ── /ext/wikimedia/<host>/<path> → Wikimedia file hosts (the image bytes) ────
+# A separate location because it is a separate upstream. Proxying only the API
+# would leave the browser fetching every image from Wikimedia anyway, since the
+# API answers with ABSOLUTE file URLs — the same trap the basemap TileJSON
+# needed a sub_filter for. Here the rewrite happens in the frontend instead
+# (proxiedImageUrl in app/src/lib/commons.js), which is unit-testable and beats
+# rewriting a JSON body in nginx.
+#
+# The host is carried IN THE PATH rather than fixed to one upstream, because
+# which host serves a file is Wikimedia's business and it changes: the
+# imageinfo API returns thumbnails on thumb.wikimedia.org and originals on
+# upload.wikimedia.org today, and a proxy hard-wired to one of them silently
+# sends every thumbnail straight to Wikimedia while looking like it works.
+# Constrained to *.wikimedia.org, so this cannot relay for anywhere else.
+#
+# A regex location, matching the sibling /tiles/ block. Note the ordering
+# dependency that comes with it: regex locations are tried in the order they
+# appear in the configuration, so this include must stay ABOVE the
+# ~* \.(js|css|png|...)$ static block in nginx.conf, or that block claims every
+# proxied image and answers try_files =404.
+location ~* ^/ext/wikimedia/(?<wm_host>[a-z0-9-]+\.(?:wikimedia|wikipedia)\.org)/ {
+    limit_except GET { deny all; }
+
+    # Case-INSENSITIVE (~*) and covering wikipedia.org as well as wikimedia.org,
+    # because this has to accept everything proxiedImageUrl rewrites — which is
+    # everything isSafeImageUrl accepts. A narrower pattern here does not fail
+    # safe: the request falls through to the /ext/ catch-all and 404s, so images
+    # that render today would silently break. Commons preserves filename case,
+    # so ".JPG" is common, and 'image' tags legitimately point at
+    # *.wikipedia.org.
+    if (\$uri !~* "\.(?:png|jpe?g|gif|webp|svg|tiff?)\$") { return 404; }
+
+    set \$ext_wm "https://\$wm_host";
+    # The prefix is stripped with 'rewrite ... break' and proxy_pass carries NO
+    # URI part, so nginx forwards the rewritten \$uri and re-encodes it itself,
+    # appending \$args. Building the path as "proxy_pass \$var/\$captured" instead
+    # sends the PERCENT-DECODED capture: a filename like
+    # Spielplatz_N%C3%BCrnberg.jpg then arrives as raw UTF-8 in the request
+    # line and Wikimedia answers 400. Non-ASCII filenames are the norm in a
+    # German-region deployment, so this is the common case, not an edge one.
+    # Set BEFORE the rewrite below: 'break' stops the rewrite module, and
+    # 'set' is one of its directives, so a set placed after it never runs —
+    # the header then renders empty and no Cache-Control is sent at all.
+    set \$ext_cc "public, max-age=2592000";
+    rewrite ^/ext/wikimedia/[^/]+/(.*)\$ /\$1 break;
+    proxy_pass \$ext_wm;
+${_ext_common}
+    # Content-addressed: a thumb URL names its width and its source revision.
+    proxy_cache_valid 200 30d;
+    proxy_cache_valid 404 1h;
+}
+
+EXTCOMEOF
+fi
+
+if [ -n "$EXT_MANGROVE" ]; then
+    cat >> /etc/nginx/ext-locations.conf.new <<EXTMGEOF
+# ── /ext/mangrove/ → api.mangrove.reviews ────────────────────────────────────
+location ^~ /ext/mangrove/ {
+    # Two shapes: the read path, and submission — which is a PUT carrying the
+    # signed JWT in the path, not a body. The signature covers the JWT's own
+    # claims, so a reverse proxy is transparent to verification.
+    if (\$uri !~ "^/ext/mangrove/(?:reviews|submit/[A-Za-z0-9._-]+)\$") { return 404; }
+    # Proxying the submit path is what lets connect-src drop this host
+    # entirely. The cost is that this instance can relay a submission, so the
+    # method list is exact and the body is capped. nginx caches only GET and
+    # HEAD by default, so the PUT is never stored.
+    limit_except GET PUT { deny all; }
+    client_max_body_size 8k;
+
+    set \$ext_mangrove "https://api.mangrove.reviews";
+    # Set BEFORE the rewrite below: 'break' stops the rewrite module, and
+    # 'set' is one of its directives, so a set placed after it never runs —
+    # the header then renders empty and no Cache-Control is sent at all.
+    set \$ext_cc "public, max-age=60";
+    rewrite ^/ext/mangrove/(.*)\$ /\$1 break;
+    proxy_pass \$ext_mangrove;
+${_ext_common}
+    # Short: a review posted by one visitor should show up for the next one
+    # without a long wait. ReviewsPanel invalidates its own session cache on
+    # submit, and this is the server-side half of that.
+    proxy_cache_valid 200 5m;
+    proxy_cache_valid 404 1m;
+}
+
+EXTMGEOF
+fi
+
+# Panoramax is deliberately NOT proxied, and this is a finding rather than an
+# omission. Its thumbnail endpoint answers 308 with a Location on a per-instance
+# derivative host — api.panoramax.xyz redirects to panoramax.openstreetmap.fr —
+# and nginx's proxy module cannot follow a redirect. Relaying it would send the
+# browser to a host nothing here has disclosed and the CSP does not name, which
+# is worse than not proxying at all; rewriting it would mean a proxy location
+# per derivative host, and Panoramax is a federation whose set of those is not
+# ours to enumerate.
+#
+# So Panoramax stays a browser-contacted service for both its thumbnails and
+# its viewer, is named in the CSP, and keeps both rows on the privacy page. The
+# viewer was never proxiable anyway: serving a whole interactive application
+# from this origin would grant it same-origin privileges here.
+
+# Anything under /ext/ that no proxy above claimed is refused here. Without it
+# such a path falls through to the SPA fallback and answers 200 with index.html
+# — harmless, since nothing is proxied, but it makes the proxy surface look
+# larger than it is and hides a typo behind a page that renders.
+#
+# Placement and form both matter. It is a REGEX location, tried after the
+# /ext/wikimedia/ regex above, so it cannot shadow it. As a '^~' prefix it
+# would beat every regex location and break that proxy outright. The four
+# prefix proxies are unaffected either way: nginx picks the longest matching
+# prefix first, and a matched '^~' stops the search before regexes are tried.
+cat >> /etc/nginx/ext-locations.conf.new <<'EXTCATCHEOF'
+location ~ ^/ext/ {
+    access_log off;
+    return 404;
+}
+EXTCATCHEOF
+
+# Same atomic move as csp.conf: never visible half-written.
+mv /etc/nginx/ext-locations.conf.new /etc/nginx/ext-locations.conf
+mv /etc/nginx/conf.d/11-ext-cache.conf.new /etc/nginx/conf.d/11-ext-cache.conf
+
+# What the frontend should call. A disabled proxy means the browser goes
+# direct, and the CSP below has to name that host.
+EXT_NOMINATIM_URL="https://nominatim.openstreetmap.org"
+EXT_COMMONS_API_URL="https://commons.wikimedia.org/w/api.php"
+EXT_COMMONS_FILE_BASE=""   # empty = fetch Wikimedia file bytes directly
+EXT_MANGROVE_URL="https://api.mangrove.reviews"
+# Written as `if` blocks rather than `[ -n x ] && assign`, matching the note
+# further up this file: that form survives `set -e` here, but it is one shell
+# quirk away from a silent early exit and reads as a conditional either way.
+if [ -n "$EXT_NOMINATIM" ]; then
+    EXT_NOMINATIM_URL="/ext/nominatim"
+fi
+if [ -n "$EXT_COMMONS" ]; then
+    EXT_COMMONS_API_URL="/ext/commons/w/api.php"
+    EXT_COMMONS_FILE_BASE="/ext/wikimedia"
+fi
+if [ -n "$EXT_MANGROVE" ]; then
+    EXT_MANGROVE_URL="/ext/mangrove"
+fi
+
+
+# ── Content Security Policy ───────────────────────────────────────────────────
+# The policy used to be a literal in nginx.conf with `img-src ... https:` and
+# `connect-src 'self' https:` — effectively "any host". It is generated here
+# instead, because two parts of the correct answer are only knowable at runtime:
+# hub mode connects to backends listed in an operator-supplied registry, and a
+# basemap opt-out puts a third-party tile host back in the browser. A literal
+# wide enough for every deployment is a literal that protects none of them.
+#
+# The narrowed policy ships as REPORT-ONLY alongside the still-enforced old one.
+# A too-tight CSP fails silently — photos simply do not appear, with nothing but
+# a console message — so the class of bug this would otherwise introduce is "a
+# rarely-taken path breaks in production". One release of observation first.
+
+# _csp_append <list> <token> — appends once, so a host that arrives from two
+# sources (a basemap host that is also a registry host) is not listed twice.
+_csp_append() {
+    case " $1 " in
+        *" $2 "*) printf '%s' "$1" ;;
+        *) if [ -n "$1" ]; then printf '%s %s' "$1" "$2"; else printf '%s' "$2"; fi ;;
+    esac
+}
+
+# registry_hosts — the backend origins hub mode connects to. The registry is
+# operator-supplied and not known at build time, so it is read here.
+#
+# Only the "url" values are taken, NOT every URL in the document. A text scan
+# for any http(s) URL is right for a style document, where every URL really is
+# an asset the browser fetches, but a registry is not: an operator adding a
+# per-instance "website" or a docs link would silently re-widen the very
+# directive this change exists to narrow.
+#
+# Still a text scan rather than a JSON parse: there is no jq in the runtime
+# image.
+registry_hosts() {
+    case "$1" in
+        //*|*://*) origin_of "$1"; return ;;   # remote registry: its own origin
+                                               # counts, contents unreadable here
+    esac
+    _rf="${WEBROOT}${1%%\?*}"
+    [ -f "$_rf" ] || return
+    grep -o '"url"[^"]*"[^"]*"' "$_rf" 2>/dev/null \
+        | sed -e 's/.*"\([^"]*\)"$/\1/' \
+        | while IFS= read -r _ru; do origin_of "$_ru"; printf '\n'; done \
+        | grep -v '^$' | sort -u | tr '\n' ' '
+}
+
+# img-src. The Wikimedia entries are wildcards on purpose: app/src/lib/commons.js
+# accepts an OSM `image` tag on ANY *.wikimedia.org or *.wikipedia.org host
+# (isSafeImageUrl -> isWikimediaHost), so pinning this to upload. and commons.
+# as #854 proposed would silently stop rendering valid tags on the other hosts.
+# The apex domains are listed separately because `*.example.org` does not match
+# `example.org` in CSP. Narrowing the code's accepted host set is a separate
+# decision; the policy matches what the code permits today.
+#
+# Each entry is present only when its service is NOT proxied, which is what
+# makes the default deployment's lists nearly empty: with every proxy on, the
+# browser fetches all of this from this origin and 'self' covers it.
+#
+# The Wikimedia image sources are UNCONDITIONAL, even though the photo gallery
+# is proxied. app/src/lib/equipmentAttributes.js renders equipment-attribute
+# images straight from commons.wikimedia.org/wiki/Special:FilePath/..., and
+# that path is not proxied: Special:FilePath answers with a redirect chain that
+# would need /w/index.php — a full MediaWiki entry point — opened up as a relay
+# to follow. Narrowing img-src while that code still fetches directly would
+# block those images and put a false statement on the privacy page.
+# Tracked as a follow-up; see docs/reference/external-services.md.
+_csp_img=""
+_csp_img=$(_csp_append "$_csp_img" "https://*.wikimedia.org")
+_csp_img=$(_csp_append "$_csp_img" "https://wikimedia.org")
+_csp_img=$(_csp_append "$_csp_img" "https://*.wikipedia.org")
+_csp_img=$(_csp_append "$_csp_img" "https://wikipedia.org")
+# Unconditional: Panoramax thumbnails are always fetched by the browser,
+# because the endpoint redirects to a per-instance derivative host that cannot
+# be proxied. Its viewer iframe is covered by frame-src.
+_csp_img=$(_csp_append "$_csp_img" "https://api.panoramax.xyz")
+
+# connect-src. Nominatim (search and region URLs), the Commons API, and the
+# Mangrove read and submit paths — each only while it is fetched by the browser.
+_csp_connect=""
+if [ -z "$EXT_NOMINATIM" ]; then
+    _csp_connect=$(_csp_append "$_csp_connect" "https://nominatim.openstreetmap.org")
+fi
+if [ -z "$EXT_COMMONS" ]; then
+    _csp_connect=$(_csp_append "$_csp_connect" "https://commons.wikimedia.org")
+fi
+if [ -z "$EXT_MANGROVE" ]; then
+    _csp_connect=$(_csp_append "$_csp_connect" "https://api.mangrove.reviews")
+fi
+
+# Basemap hosts belong in BOTH directives, which is easy to get wrong: raster
+# tiles and a vector style's sprite sheet are images, while the style document
+# and its vector tiles are fetches. Getting only one of the two produces a map
+# that half-renders.
+case "$BASEMAP_TILE_PROVIDER_STATE" in
+    hosts)
+        # BASEMAP_CSP_SOURCES, not BASEMAP_TILE_PROVIDER_HOST: these carry the
+        # scheme and the port, which a CSP host-source needs and the
+        # privacy-page host list has already discarded. See style_asset_origins.
+        for _bmh in $BASEMAP_CSP_SOURCES; do
+            [ -n "$_bmh" ] || continue
+            _csp_img=$(_csp_append     "$_csp_img"     "$_bmh")
+            _csp_connect=$(_csp_append "$_csp_connect" "$_bmh")
+        done
+        ;;
+    unknown)
+        # A style is configured but its document could not be read, so where it
+        # sends the browser is genuinely unknown. Emitting a narrow list here
+        # would blank the basemap of a deployment whose config we failed to
+        # understand, so this one state stays wide and says so. It is also why
+        # BASEMAP_TILE_PROVIDER_STATE must be read before the host list — an
+        # empty list means "nobody" in the 'none' state and "unreadable" here.
+        _csp_img=$(_csp_append     "$_csp_img"     "https:")
+        _csp_connect=$(_csp_append "$_csp_connect" "https:")
+        ;;
+    # none: default and proxied delivery. The browser only talks to this
+    # origin for the basemap, so 'self' already covers it.
+esac
+
+# The PostgREST API. Same-origin /api by default, but DEPLOY_MODE=ui points it
+# at another host entirely, and every data call in app/src/lib/api.js goes to
+# "${baseUrl}/rpc/...". Missing this is not a cosmetic gap: a ui-mode stack
+# would lose every playground the moment the narrowed policy is enforced, which
+# is the most severe way this generator can be wrong.
+_api_origin=$(origin_of "$SAFE_API_BASE_URL")
+if [ -n "$_api_origin" ]; then
+    _csp_connect=$(_csp_append "$_csp_connect" "$_api_origin")
+fi
+
+# Hub backends.
+if [ "$APP_MODE" = "hub" ]; then
+    for _rh in $(registry_hosts "$SAFE_REGISTRY_URL"); do
+        [ -n "$_rh" ] || continue
+        _csp_connect=$(_csp_append "$_csp_connect" "$_rh")
+    done
+fi
+
+# CSP_CONNECT_EXTRA / CSP_IMG_EXTRA — the documented escape hatches. The
+# connect one is also the answer for a hub whose registry is fetched at runtime
+# rather than baked into the image, where the file above does not exist to be
+# read. Both take space-separated hosts or origins, and both exist because a
+# third party can be either fetched from or rendered from: a tileserver on a
+# non-default port needs to appear in BOTH directives, so one variable would
+# have been an escape hatch that only half works.
+#
+# Validated, not stripped: a mangled host silently produces a policy that
+# blocks the very origin it was added for.
+# Validated in the loop rather than in a helper called through $( ): `die` runs
+# `exit 1`, which inside a command substitution ends only the subshell, and
+# `set -e` does not reliably abort on a failed substitution in a `for` word
+# list. The check would have looked present and validated nothing.
+for _ce in ${CSP_CONNECT_EXTRA:-}; do
+    case "$_ce" in
+        *[!A-Za-z0-9.:/*_-]*) die "CSP_CONNECT_EXTRA contains characters that are not valid in a host or origin, got: $_ce" ;;
+    esac
+    _csp_connect=$(_csp_append "$_csp_connect" "$_ce")
+done
+for _ce in ${CSP_IMG_EXTRA:-}; do
+    case "$_ce" in
+        *[!A-Za-z0-9.:/*_-]*) die "CSP_IMG_EXTRA contains characters that are not valid in a host or origin, got: $_ce" ;;
+    esac
+    _csp_img=$(_csp_append "$_csp_img" "$_ce")
+done
+
+# frame-ancestors keeps its https: wildcard: it governs who may embed spieli,
+# not what spieli discloses, and the hub embeds standalone instances. Narrowing
+# it is a separate decision about embedding (see #855).
+_csp_common="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; frame-src https://panoramax.xyz https://api.panoramax.xyz; frame-ancestors 'self' https:"
+
+# Assembled here rather than inside the heredoc so that a fully proxied
+# deployment yields exactly "img-src 'self' data:" and "connect-src 'self'",
+# with no dangling separator. Those two strings are the visible proof that
+# nothing third-party is fetched, so they are worth getting exactly right.
+_csp_img_dir="img-src 'self' data:"
+if [ -n "$_csp_img" ]; then
+    _csp_img_dir="${_csp_img_dir} ${_csp_img}"
+fi
+_csp_connect_dir="connect-src 'self'"
+if [ -n "$_csp_connect" ]; then
+    _csp_connect_dir="${_csp_connect_dir} ${_csp_connect}"
+fi
+
+# Written to a temp file and moved into place, so the file never exists in a
+# half-written state. `cat > file` creates it empty and then fills it, and a
+# reader that catches that window (nginx -t in CI, an operator inspecting it
+# during a restart) sees a truncated policy or an invalid config — a failure
+# that looks exactly like a real regression. rename(2) within one filesystem is
+# atomic, so a reader sees either the old file or the complete new one.
+cat > /etc/nginx/csp.conf.new <<CSPEOF
+# Generated by docker-entrypoint.sh — rewritten on every start, do not edit.
+#
+# TWO policies ship together on purpose. The first is the long-standing
+# wildcard policy and is ENFORCED. The second is the narrowed host list and is
+# REPORT-ONLY: violations appear in the visitor's browser console but nothing is
+# blocked. Note what that does and does not give us: CI asserts on the GENERATED
+# POLICY (the "CSP must follow the configuration" job greps this file), not on
+# violations. Nothing in the repo observes securitypolicyviolation events, and
+# there is deliberately no report-uri, so the observation period depends on
+# operators reporting console messages. When the report set has been confirmed
+# empty across both app modes and both basemap postures, the report-only header
+# becomes the enforced one and the wildcard policy is deleted.
+# See docs/ops/security.md.
+#
+# There is deliberately no report-uri: it would collect a per-visitor record of
+# what the visitor's browser tried to load, on the operator's disk, which is
+# the exact shape of trail #855 exists to remove.
+add_header Content-Security-Policy
+    "${_csp_common}; img-src 'self' data: https:; connect-src 'self' https:"
+    always;
+add_header Content-Security-Policy-Report-Only
+    "${_csp_common}; ${_csp_img_dir}; ${_csp_connect_dir}"
+    always;
+CSPEOF
+mv /etc/nginx/csp.conf.new /etc/nginx/csp.conf
+
+
 # js_or_null <value> — emits a JS string literal or null.
 js_or_null() { [ -n "$1" ] && printf "'%s'" "$1" || printf 'null'; }
 
@@ -700,9 +1421,14 @@ window.APP_CONFIG = {
   clusterMaxZoom:    ${CLUSTER_MAX_ZOOM:-13},
   macroMaxZoom:      ${MACRO_MAX_ZOOM:-7},
   basemapStyleUrl:   '${SAFE_BASEMAP_STYLE_URL}',
+  basemapCoverageBbox: '${SAFE_BASEMAP_COVERAGE_BBOX}',
   basemapUrl:        '${SAFE_BASEMAP_URL}',
   basemapAttribution:'${SAFE_BASEMAP_ATTRIBUTION}',
   parentOrigin:      '${SAFE_PARENT_ORIGIN}',
+  nominatimBaseUrl:  '${EXT_NOMINATIM_URL}',
+  commonsApiUrl:     '${EXT_COMMONS_API_URL}',
+  commonsFileBase:   '${EXT_COMMONS_FILE_BASE}',
+  mangroveApiUrl:    '${EXT_MANGROVE_URL}',
   impressumUrl:      $(js_or_null "$SAFE_IMPRESSUM_URL"),
   privacyUrl:        $(js_or_null "$SAFE_PRIVACY_URL")
 };
@@ -720,9 +1446,14 @@ window.APP_CONFIG = {
   apiBaseUrl:                 '${SAFE_API_BASE_URL}',
   clusterMaxZoom:             ${CLUSTER_MAX_ZOOM:-13},
   basemapStyleUrl:            '${SAFE_BASEMAP_STYLE_URL}',
+  basemapCoverageBbox:        '${SAFE_BASEMAP_COVERAGE_BBOX}',
   basemapUrl:                 '${SAFE_BASEMAP_URL}',
   basemapAttribution:         '${SAFE_BASEMAP_ATTRIBUTION}',
   parentOrigin:               '${SAFE_PARENT_ORIGIN}',
+  nominatimBaseUrl:           '${EXT_NOMINATIM_URL}',
+  commonsApiUrl:              '${EXT_COMMONS_API_URL}',
+  commonsFileBase:            '${EXT_COMMONS_FILE_BASE}',
+  mangroveApiUrl:             '${EXT_MANGROVE_URL}',
   impressumUrl:               $(js_or_null "$SAFE_IMPRESSUM_URL"),
   privacyUrl:                 $(js_or_null "$SAFE_PRIVACY_URL")
 };
@@ -772,6 +1503,153 @@ if [ -z "${PRIVACY_URL:-}" ]; then
         # Build hub privacy section into a temp file; awk inlines it at
         # {{HUB_PRIVACY_SECTION}} — avoids sed multiline / & escaping issues.
         HUB_SECTION_FILE=$(mktemp)
+        # The basemap disclosure follows the actual delivery mode rather than
+        # being written once and going stale. BASEMAP_TILE_PROVIDER_STATE is
+        # produced further up; read it, never the host list alone, because an
+        # empty list means two opposite things.
+        BM_ROW_FILE=$(mktemp)
+        BM_SECTION_FILE=$(mktemp)
+        # The Grundsatz paragraph is about what third parties receive, so its
+        # tile-coordinate clause has to follow the delivery mode too. Left
+        # unconditional it contradicts the Hintergrundkarte section below in
+        # the default same-origin mode, which is the one claim on this page a
+        # visitor is most likely to check.
+        BM_INTRO_FILE=$(mktemp)
+        # The service table follows the proxy configuration, the same way the
+        # basemap row does. With every proxy on, the only row left is the
+        # Panoramax viewer iframe — which is not proxied by design, because
+        # serving a whole third-party application from this origin would give
+        # it same-origin privileges here.
+        #
+        # This is a legal document, so a row that stays on the page after the
+        # service stopped being contacted is a false statement about a data
+        # transfer, not a stale sentence.
+        EXT_ROWS_FILE=$(mktemp)
+        if [ -z "$EXT_NOMINATIM" ]; then
+            cat >> "$EXT_ROWS_FILE" <<'EXTROW_NOM'
+      <tr>
+        <td><a href="https://nominatim.openstreetmap.org/" target="_blank" rel="noopener">Nominatim</a> (OpenStreetMap Foundation)<br><code>nominatim.openstreetmap.org</code></td>
+        <td>Ortssuche und Auflösung von Regions-Adressen wie <code>/fulda</code></td>
+        <td>Bei einer Suchanfrage sowie beim Aufruf einer Regions-Adresse</td>
+        <td>IP-Adresse, User-Agent, Referer, eingegebener Suchbegriff</td>
+      </tr>
+EXTROW_NOM
+        fi
+        if [ -z "$EXT_COMMONS" ]; then
+            cat >> "$EXT_ROWS_FILE" <<'EXTROW_COM'
+      <tr>
+        <td><a href="https://commons.wikimedia.org/" target="_blank" rel="noopener">Wikimedia Commons</a><br><code>commons.wikimedia.org</code>, <code>upload.wikimedia.org</code>, <code>thumb.wikimedia.org</code></td>
+        <td>Spielplatzfotos aus den OSM-Tags <code>wikimedia_commons</code> und <code>image</code></td>
+        <td>Beim Auswählen eines Spielplatzes, für den solche Tags hinterlegt sind</td>
+        <td>IP-Adresse, User-Agent, Referer, Name der abgerufenen Bilddatei</td>
+      </tr>
+EXTROW_COM
+        else
+            # Even with the Commons proxy enabled, one image path is still
+            # fetched by the browser: equipment-attribute illustrations are
+            # rendered straight from Special:FilePath, which cannot be proxied
+            # without opening /w/index.php as a relay. A row that omitted this
+            # would be a false statement about a data transfer.
+            cat >> "$EXT_ROWS_FILE" <<'EXTROW_COM_PARTIAL'
+      <tr>
+        <td><a href="https://commons.wikimedia.org/" target="_blank" rel="noopener">Wikimedia Commons</a><br><code>commons.wikimedia.org</code></td>
+        <td>Abbildungen einzelner Ausstattungsmerkmale</td>
+        <td>Beim Auswählen eines Spielplatzes, für dessen Ausstattung Abbildungen vorliegen. Die Spielplatzfotos selbst werden über diese Instanz geladen und erreichen Wikimedia nicht</td>
+        <td>IP-Adresse, User-Agent, Referer, Name der abgerufenen Bilddatei</td>
+      </tr>
+EXTROW_COM_PARTIAL
+        fi
+        if [ -z "$EXT_MANGROVE" ]; then
+            cat >> "$EXT_ROWS_FILE" <<'EXTROW_MG'
+      <tr>
+        <td><a href="https://mangrove.reviews/" target="_blank" rel="noopener">Mangrove Reviews</a><br><code>api.mangrove.reviews</code></td>
+        <td>Abruf und Abgabe von Bewertungen</td>
+        <td>Erst wenn Sie den Abschnitt „Bewertungen“ ausklappen; danach einmal je weiterem Spielplatz, den Sie bei ausgeklapptem Abschnitt auswählen. Nicht beim bloßen Auswählen eines Spielplatzes. Zusätzlich beim Absenden einer Bewertung</td>
+        <td>IP-Adresse, User-Agent, Referer, Koordinaten des Spielplatzes. Beim Absenden zusätzlich Ihre Bewertung, ein optionaler Kommentar und Ihr öffentlicher Schlüssel (siehe „Lokale Speicherung“)</td>
+      </tr>
+EXTROW_MG
+        fi
+        # Two distinct Panoramax rows, both unconditional. Neither is proxied:
+        # the thumbnail endpoint redirects to a per-instance derivative host
+        # nginx cannot follow, and the viewer is an iframe that must not be
+        # served from this origin. They differ in WHEN they are contacted --
+        # the thumbnail on selection, the viewer only on activation (#852).
+        cat >> "$EXT_ROWS_FILE" <<'EXTROW_PXTHUMB'
+      <tr>
+        <td><a href="https://panoramax.xyz/" target="_blank" rel="noopener">Panoramax</a><br><code>api.panoramax.xyz</code></td>
+        <td>Vorschaubilder der Fotos auf Straßenebene</td>
+        <td>Beim Auswählen eines Spielplatzes, zu dem Fotos vorliegen</td>
+        <td>IP-Adresse, User-Agent, Kennung des abgerufenen Fotos. Ein Referer wird nicht übertragen (<code>referrerpolicy="no-referrer"</code>)</td>
+      </tr>
+EXTROW_PXTHUMB
+        cat >> "$EXT_ROWS_FILE" <<'EXTROW_PXVIEWER'
+      <tr>
+        <td><a href="https://panoramax.xyz/" target="_blank" rel="noopener">Panoramax</a> — Betrachter<br><code>api.panoramax.xyz</code></td>
+        <td>Anzeige der Fotos auf Straßenebene</td>
+        <td>Erst wenn Sie die Vorschau ausdrücklich aktivieren. Beim bloßen Auswählen eines Spielplatzes wird nur das Vorschaubild geladen, nicht der Betrachter</td>
+        <td>IP-Adresse, User-Agent, Kennung des abgerufenen Fotos. Ein Referer wird nicht übertragen (<code>referrerpolicy="no-referrer"</code>). Der Betrachter wird als <code>&lt;iframe&gt;</code> eingebettet, Panoramax erhält damit einen eigenen Browser-Kontext auf dieser Seite und kann dort eigene Daten speichern. Dieser Betrachter wird bewusst nicht über diese Instanz ausgeliefert: eine vollständige fremde Anwendung von dieser Herkunft auszuliefern würde ihr Zugriff auf die Daten dieser Website geben</td>
+      </tr>
+EXTROW_PXVIEWER
+
+        case "$BASEMAP_TILE_PROVIDER_STATE" in
+            hosts)
+                # The operator opted out to a third party. Name it: this is the
+                # one service contacted on every map movement, and the tile
+                # coordinates say what the visitor was looking at.
+                _bm_hosts_html=$(printf '%s' "$BASEMAP_TILE_PROVIDER_HOST" \
+                    | tr -cd 'A-Za-z0-9 ._:-' | sed 's/ /<\/code>, <code>/g')
+                cat > "$BM_ROW_FILE" <<BMROW
+      <tr>
+        <td>Kartenanbieter<br><code>${_bm_hosts_html}</code></td>
+        <td>Hintergrundkarte (Kartenkacheln)</td>
+        <td>Bei jedem Laden der Karte und bei jeder Bewegung des Kartenausschnitts</td>
+        <td>IP-Adresse, User-Agent, Referer, Kachelkoordinaten (Zoomstufe, X, Y). Aus den Kachelkoordinaten l&auml;sst sich ableiten, welchen Kartenausschnitt Sie betrachtet haben</td>
+      </tr>
+BMROW
+                cat > "$BM_SECTION_FILE" <<'BMSEC'
+  <h2>Hintergrundkarte</h2>
+  <p>Diese Instanz ist so konfiguriert, dass die Hintergrundkarte direkt von einem externen Anbieter geladen wird. Ihr Browser nimmt dabei bei jeder Kartenbewegung selbst Verbindung zu diesem Anbieter auf; der Anbieter ist in der Tabelle oben aufgef&uuml;hrt.</p>
+
+BMSEC
+                cat > "$BM_INTRO_FILE" <<'BMINTRO'
+  Bei Kartenkacheln kommen die angefragten Kachelkoordinaten hinzu, aus denen sich ableiten l&auml;sst, welchen Kartenausschnitt Sie betrachten.
+BMINTRO
+                ;;
+            unknown)
+                cat > "$BM_ROW_FILE" <<'BMROW'
+      <tr>
+        <td>Kartenanbieter<br><code>nicht ermittelbar</code></td>
+        <td>Hintergrundkarte (Kartenkacheln)</td>
+        <td>Bei jedem Laden der Karte und bei jeder Bewegung des Kartenausschnitts</td>
+        <td>IP-Adresse, User-Agent, Referer, Kachelkoordinaten (Zoomstufe, X, Y)</td>
+      </tr>
+BMROW
+                cat > "$BM_SECTION_FILE" <<'BMSEC'
+  <h2>Hintergrundkarte</h2>
+  <p>Diese Instanz verwendet ein eigens konfiguriertes Kartenstil-Dokument, dessen Inhalt hier nicht ausgewertet werden konnte. Es ist daher nicht sichergestellt, dass keine Verbindung zu Dritten aufgebaut wird. Der Betreiber sollte diesen Abschnitt pr&uuml;fen und erg&auml;nzen.</p>
+
+BMSEC
+                # Cannot rule out a third-party tile fetch, so keep the clause:
+                # over-disclosing here is the safe direction.
+                cat > "$BM_INTRO_FILE" <<'BMINTRO'
+  Bei Kartenkacheln kommen unter Umst&auml;nden die angefragten Kachelkoordinaten hinzu, aus denen sich ableiten l&auml;sst, welchen Kartenausschnitt Sie betrachten.
+BMINTRO
+                ;;
+            *)
+                # none: the browser only ever talks to this instance. Say so
+                # plainly rather than hedging it, because it is the strongest
+                # statement on this page and it is true.
+                : > "$BM_ROW_FILE"
+                # No third party receives tile coordinates, so the Grundsatz
+                # clause saying otherwise is dropped entirely.
+                : > "$BM_INTRO_FILE"
+                cat > "$BM_SECTION_FILE" <<'BMSEC'
+  <h2>Hintergrundkarte</h2>
+  <p>Die Hintergrundkarte wird vollst&auml;ndig von dieser Instanz ausgeliefert. Kartenkacheln, Symbole und Schriften holt der Server selbst und speichert sie zwischen; Ihr Browser nimmt daf&uuml;r zu keinem Dritten Verbindung auf. Es wird deshalb auch nicht protokolliert, welchen Kartenausschnitt Sie betrachten.</p>
+
+BMSEC
+                ;;
+        esac
         if [ "$APP_MODE" = "hub" ]; then
             cat > "$HUB_SECTION_FILE" <<'HUB_HTML'
   <h2>Hub-Modus: Mehrere Instanzen</h2>
@@ -786,15 +1664,21 @@ HUB_HTML
             -e "s/{{IMPRESSUM_NAME}}/$SAFE_IMP_NAME_FOR_SED/g" \
             -e "s/{{IMPRESSUM_EMAIL}}/$SAFE_IMP_EMAIL_FOR_SED/g" \
             /datenschutz.template.html | \
-        awk -v hubfile="$HUB_SECTION_FILE" '
-            /\{\{HUB_PRIVACY_SECTION\}\}/ {
-                while ((getline line < hubfile) > 0) print line
-                close(hubfile)
-                next
+        awk -v hubfile="$HUB_SECTION_FILE" \
+            -v bmrowfile="$BM_ROW_FILE" -v bmsecfile="$BM_SECTION_FILE" \
+            -v bmintrofile="$BM_INTRO_FILE" -v extrowsfile="$EXT_ROWS_FILE" '
+            function inline(f) {
+                while ((getline line < f) > 0) print line
+                close(f)
             }
+            /\{\{HUB_PRIVACY_SECTION\}\}/    { inline(hubfile);   next }
+            /\{\{BASEMAP_SERVICE_ROW\}\}/    { inline(bmrowfile); next }
+            /\{\{BASEMAP_PRIVACY_SECTION\}\}/ { inline(bmsecfile); next }
+            /\{\{BASEMAP_INTRO_CLAUSE\}\}/   { inline(bmintrofile); next }
+            /\{\{EXT_SERVICE_ROWS\}\}/      { inline(extrowsfile); next }
             { print }
         ' > "$WEBROOT/datenschutz.html"
-        rm -f "$HUB_SECTION_FILE"
+        rm -f "$HUB_SECTION_FILE" "$BM_ROW_FILE" "$BM_SECTION_FILE" "$BM_INTRO_FILE" "$EXT_ROWS_FILE"
     else
         {
             printf '<!DOCTYPE html>\n<html lang="de">\n<head>\n'

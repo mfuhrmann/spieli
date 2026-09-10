@@ -1,6 +1,7 @@
 <script>
-  import { fetchReviews, submitReview, starsHtml, relativeDate } from '../lib/reviews.js';
+  import { fetchReviewsCached, invalidateReviews, submitReview, starsHtml, relativeDate } from '../lib/reviews.js';
   import { _ } from 'svelte-i18n';
+  import { onDestroy } from 'svelte';
 
   /** @type {number} Playground centre latitude (WGS84) */
   export let lat = 0;
@@ -21,7 +22,16 @@
   let submitStatus = '';       // success/error message
 
   let abortCtrl = null;
+  let refreshTimer = null;
 
+  onDestroy(() => clearTimeout(refreshTimer));
+
+  // This component is mounted by a collapsed accordion section in
+  // PlaygroundPanel, so it exists only once the visitor has expanded reviews.
+  // The section then stays open across selections, which is why this reacts to
+  // osmId: the open panel must show the selected playground's reviews, not the
+  // previous one's. fetchReviewsCached makes a return to an already-seen
+  // playground free rather than another request.
   $: if (osmId) loadReviews();
 
   async function loadReviews() {
@@ -30,7 +40,7 @@
     loading = true;
     error = false;
     try {
-      reviews = await fetchReviews(lat, lon, osmId, abortCtrl.signal);
+      reviews = await fetchReviewsCached(lat, lon, osmId, abortCtrl.signal);
     } catch (e) {
       if (e?.name !== 'AbortError') error = true;
     } finally {
@@ -40,15 +50,32 @@
 
   async function submit() {
     if (!selectedRating) return;
+    // Capture which playground this submission is for. The panel survives a
+    // selection change (AppShell keeps it mounted while anything is selected,
+    // and the accordion section stays open), so lat/lon/osmId can already
+    // point at a different playground by the time the await below resolves.
+    // Reading them afterwards would invalidate the wrong subject and leave the
+    // submitted one holding a stale list for the rest of the page's life.
+    const target = { lat, lon, osmId };
     submitting = true;
     submitStatus = '';
     try {
-      const ok = await submitReview(lat, lon, osmId, selectedRating, opinion.trim() || null);
+      const ok = await submitReview(target.lat, target.lon, target.osmId, selectedRating, opinion.trim() || null);
       if (ok) {
         submitStatus = 'success';
         selectedRating = null;
         opinion = '';
-        setTimeout(() => loadReviews(), 1500);
+        // Without this the refresh below is served from the session cache and
+        // the visitor never sees the review they just submitted.
+        invalidateReviews(target.lat, target.lon, target.osmId);
+        clearTimeout(refreshTimer);
+        refreshTimer = setTimeout(() => {
+          // Only refresh if that playground is still the one on screen.
+          // loadReviews() reads the current props and aborts whatever is in
+          // flight, so firing it blindly would abandon the newly selected
+          // playground's load and re-request it.
+          if (osmId === target.osmId) loadReviews();
+        }, 1500);
       } else {
         submitStatus = 'error';
       }
@@ -69,40 +96,45 @@
 {#if loading}
   <small class="text-muted"><i>{$_('reviews.loading')}</i></small>
 
-{:else if error}
-  <small class="text-muted">{$_('reviews.loadError')}</small>
-
 {:else}
-  <!-- Aggregate score card -->
-  {#if ratedReviews.length > 0}
-    <div class="review-aggregate">
-      <span class="review-score">{(avgRating / 20).toFixed(1)}</span>
-      <div>
-        {@html starsHtml(avgRating)}
-        <span class="text-muted" style="font-size:11px">
-          ({$_('reviews.count', { values: { count: ratedReviews.length } })})
-        </span>
-      </div>
-    </div>
-  {/if}
-
-  {#if reviews.length > 0}
-    {#each reviews as r}
-      {@const p = r.payload}
-      <div class="review-card">
-        <div class="review-card__header">
-          {#if typeof p.rating === 'number'}
-            {@html starsHtml(p.rating, '#f59e0b')}
-          {/if}
-          <span class="review-date">{relativeDate(p.iat, $_)}</span>
-        </div>
-        {#if p.opinion}
-          <p class="review-card__body">"{p.opinion}"</p>
-        {/if}
-      </div>
-    {/each}
+  <!-- A failed read must not take the submission form with it: submitting is a
+       separate request that may well succeed while the read path is rate
+       limited or down, and the only way back from the error state would
+       otherwise be to collapse and re-expand the section. -->
+  {#if error}
+    <small class="text-muted d-block mb-2">{$_('reviews.loadError')}</small>
   {:else}
-    <p class="text-muted mb-2" style="font-size:12px">{$_('reviews.empty')}</p>
+    <!-- Aggregate score card -->
+    {#if ratedReviews.length > 0}
+      <div class="review-aggregate">
+        <span class="review-score">{(avgRating / 20).toFixed(1)}</span>
+        <div>
+          {@html starsHtml(avgRating)}
+          <span class="text-muted" style="font-size:11px">
+            ({$_('reviews.count', { values: { count: ratedReviews.length } })})
+          </span>
+        </div>
+      </div>
+    {/if}
+
+    {#if reviews.length > 0}
+      {#each reviews as r}
+        {@const p = r.payload}
+        <div class="review-card">
+          <div class="review-card__header">
+            {#if typeof p.rating === 'number'}
+              {@html starsHtml(p.rating, '#f59e0b')}
+            {/if}
+            <span class="review-date">{relativeDate(p.iat, $_)}</span>
+          </div>
+          {#if p.opinion}
+            <p class="review-card__body">"{p.opinion}"</p>
+          {/if}
+        </div>
+      {/each}
+    {:else}
+      <p class="text-muted mb-2" style="font-size:12px">{$_('reviews.empty')}</p>
+    {/if}
   {/if}
 
   <!-- Submission form -->

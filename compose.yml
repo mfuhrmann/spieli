@@ -170,6 +170,7 @@ services:
       MAP_ZOOM:                    ${MAP_ZOOM:-12}
       MAP_MIN_ZOOM:                ${MAP_MIN_ZOOM:-10}
       BASEMAP_UPSTREAM:            ${BASEMAP_UPSTREAM:-}
+      BASEMAP_COVERAGE_BBOX:      ${BASEMAP_COVERAGE_BBOX:-}
       BASEMAP_URL:                 ${BASEMAP_URL:-}
       BASEMAP_STYLE_URL:           ${BASEMAP_STYLE_URL:-}
       BASEMAP_ATTRIBUTION:         ${BASEMAP_ATTRIBUTION:-}
@@ -177,6 +178,14 @@ services:
       BASEMAP_CACHE_MAX_SIZE:      ${BASEMAP_CACHE_MAX_SIZE:-4g}
       BASEMAP_CACHE_KEYS_ZONE:     ${BASEMAP_CACHE_KEYS_ZONE:-64m}
       BASEMAP_CACHE_INACTIVE:      ${BASEMAP_CACHE_INACTIVE:-90d}
+      CSP_CONNECT_EXTRA:           ${CSP_CONNECT_EXTRA:-}
+      PROXY_NOMINATIM:             ${PROXY_NOMINATIM:-}
+      PROXY_COMMONS:               ${PROXY_COMMONS:-}
+      PROXY_MANGROVE:              ${PROXY_MANGROVE:-}
+      EXT_CACHE_MAX_SIZE:          ${EXT_CACHE_MAX_SIZE:-2g}
+      EXT_CACHE_KEYS_ZONE:         ${EXT_CACHE_KEYS_ZONE:-16m}
+      EXT_CACHE_INACTIVE:          ${EXT_CACHE_INACTIVE:-30d}
+      CSP_IMG_EXTRA:               ${CSP_IMG_EXTRA:-}
       POI_RADIUS_M:                ${POI_RADIUS_M:-5000}
       API_BASE_URL:                /api
       SITE_URL:                    ${SITE_URL:-}
@@ -193,6 +202,7 @@ services:
       # the public tile server. Keeping it matters most across an upgrade
       # sweep, which would otherwise send every stack at the upstream cold.
       - basemap_cache:/var/cache/nginx/basemap
+      - ext_cache:/var/cache/nginx/ext
       # Uncomment to serve a custom registry.json without rebuilding the image.
       # Place registry.json next to compose.yml and enable the line below.
       # - ./registry.json:/usr/share/nginx/html/registry.json:ro
@@ -204,6 +214,7 @@ volumes:
   pbf_cache:
   basemap_cache:
 
+  ext_cache:
 networks:
   default:
   proxy:

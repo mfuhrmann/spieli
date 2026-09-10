@@ -46,6 +46,12 @@ jobs:
       - name: Production compose must pass on every variable dev does
         run: make check-compose
 
+      # The Datenschutzerklärung is a legal document that goes stale silently:
+      # adding a fetch() to a new service is a one-line change, noticing it
+      # created an undisclosed third-country transfer is not.
+      - name: Every third-party host the browser contacts must be disclosed
+        run: make check-privacy
+
   # ── Entrypoint + generated nginx config (CI gate) ────────────────────────────
   # The app entrypoint generates nginx config at container startup, so a
   # malformed heredoc is a start-up failure rather than a degraded feature — and
@@ -102,6 +108,384 @@ jobs:
             -e APP_MODE=hub -e REGISTRY_URL=/registry.json \
             -e BASEMAP_STYLE_URL=/basemap/style.json \
             -e BASEMAP_ATTRIBUTION='(c) Example'
+
+      - name: CSP must follow the configuration
+        run: |
+          set -eu
+          # The narrowed policy names hosts instead of a wildcard, and two parts
+          # of it are only knowable at runtime: hub backends come from an
+          # operator-supplied registry, and a basemap opt-out puts a tile host
+          # back in the browser. Both failure directions are silent — a policy
+          # left wide protects nothing, and a policy missing a host blanks a
+          # feature with only a console message — so both are asserted here.
+          # The field the frontend reads is "url" (see reference/registry-json.md).
+          # "website" is here deliberately: only "url" values may reach the
+          # policy, or an operator adding a link per instance silently re-widens
+          # the directive this change exists to narrow.
+          cat > /tmp/registry.json <<'JSON'
+          {"instances":[
+            {"slug":"hessen","name":"Hessen","url":"https://hessen.example.org/api",
+             "website":"https://not-an-api.example.net/about"},
+            {"slug":"lab","name":"Lab","url":"http://lab.internal:3000/api"}
+          ]}
+          JSON
+          csp() {
+            docker run --rm --entrypoint sh "$@" spieli-app:citest -c '
+              /docker-entrypoint.sh >/dev/null 2>&1 &
+              # Waiting on csp.conf is sound because the entrypoint writes it
+              # to a temp file and moves it into place, so it never exists
+              # half-written. Do NOT switch this to config.js as a readiness
+              # marker: that file ships in the image from the Vite build, so it
+              # is already non-empty before the entrypoint has done anything.
+              i=0
+              while [ ! -s /etc/nginx/csp.conf ]; do
+                i=$((i+1)); [ "$i" -gt 100 ] && { echo "entrypoint did not finish" >&2; exit 1; }
+                sleep 0.2
+              done
+              nginx -t >/dev/null 2>&1 || { echo "generated config is invalid" >&2; exit 1; }
+              # Only the report-only line: the enforced one still carries the
+              # old wildcards by design during the observation release.
+              grep -A1 Content-Security-Policy-Report-Only /etc/nginx/csp.conf | tail -1
+            '
+          }
+          want() {
+            printf '%s' "$2" | grep -qF -- "$1" \
+              || { printf 'expected %s in the report-only policy:\n%s\n' "$1" "$2" >&2; exit 1; }
+          }
+          reject() {
+            printf '%s' "$2" | grep -qF -- "$1" \
+              && { printf 'did NOT expect %s in the report-only policy:\n%s\n' "$1" "$2" >&2; exit 1; }
+            :
+          }
+
+          printf '\n── default: no wildcard, and nothing third-party at all\n'
+          P=$(csp -e APP_MODE=standalone)
+          # The whole point of the change: neither directive may fall back to
+          # "any host". Anchored on the delimiter that actually follows each
+          # one — img-src is followed by ';' because connect-src comes after it,
+          # connect-src by the closing quote. A bare 'https:' search would match
+          # the frame-ancestors wildcard, which stays deliberately, and assert
+          # nothing.
+          reject "img-src 'self' data: https:;" "$P"
+          reject "connect-src 'self' https:\"" "$P"
+          # Since #853 the default proxies the fetch paths, so connect-src
+          # reduces to 'self'. img-src keeps the Wikimedia and Panoramax
+          # sources deliberately — see the "External-service proxies" step.
+          want "connect-src 'self'\"" "$P"
+
+          printf '\n── with the proxies off, each host is named\n'
+          P=$(csp -e APP_MODE=standalone -e PROXY_NOMINATIM=false \
+                -e PROXY_COMMONS=false -e PROXY_MANGROVE=false)
+          want "https://nominatim.openstreetmap.org" "$P"
+          want "https://api.mangrove.reviews" "$P"
+          want "https://*.wikimedia.org" "$P"
+          want "https://api.panoramax.xyz" "$P"
+          reject "img-src 'self' data: https:;" "$P"
+
+          printf '\n── raster opt-out: the configured provider is named\n'
+          P=$(csp -e APP_MODE=standalone \
+                -e BASEMAP_URL='https://tiles.example.org/{z}/{y}/{x}.png' \
+                -e BASEMAP_ATTRIBUTION='(c) Example')
+          # A raster tile is an image and a vector style is a fetch, so a
+          # basemap host has to reach both directives; naming only one
+          # half-renders the map. With every service proxied it is the only
+          # host in either list, which makes that easy to see.
+          # A full origin now, not a bare host: see the port/scheme cases below.
+          want "https://tiles.example.org;" "$P"
+          want "connect-src 'self' https://tiles.example.org\"" "$P"
+
+          printf '\n── a tileserver on a non-default port keeps its port\n'
+          # A CSP host-source with no port matches ONLY the scheme's default
+          # port, so a policy built from bare hosts blanks the basemap of a
+          # deployment we understood perfectly. The privacy page still wants the
+          # bare host, which is why there are two derivations.
+          P=$(csp -e APP_MODE=standalone \
+                -e BASEMAP_URL='https://tiles.example.org:8443/{z}/{x}/{y}.png' \
+                -e BASEMAP_ATTRIBUTION='(c) Example')
+          want "https://tiles.example.org:8443" "$P"
+
+          printf '\n── an http upstream keeps its scheme\n'
+          # With no scheme a host-source matches only the DOCUMENT's scheme, so
+          # a bare host does not cover http behind an https-served page.
+          P=$(csp -e APP_MODE=standalone \
+                -e BASEMAP_URL='http://lab.internal:8080/{z}/{x}/{y}.png' \
+                -e BASEMAP_ATTRIBUTION='(c) Example')
+          want "http://lab.internal:8080" "$P"
+
+          printf '\n── an {a-d} subdomain group is not a host\n'
+          P=$(csp -e APP_MODE=standalone \
+                -e BASEMAP_URL='https://{a-d}.tiles.example.org/{z}/{x}/{y}.png' \
+                -e BASEMAP_ATTRIBUTION='(c) Example')
+          want "https://tiles.example.org" "$P"
+          reject "a-d" "$P"
+
+          printf '\n── proxied: the browser talks only to this origin\n'
+          P=$(csp -e APP_MODE=standalone \
+                -e BASEMAP_URL='https://tiles.example.org/a/{z}/{x}/{y}.png' \
+                -e BASEMAP_ATTRIBUTION='(c) Example' -e BASEMAP_PROXY=true)
+          reject "tiles.example.org" "$P"
+
+          printf '\n── hub: registry backends are named, with scheme and port\n'
+          P=$(csp -v /tmp/registry.json:/usr/share/nginx/html/registry.json:ro \
+                -e APP_MODE=hub -e REGISTRY_URL=/registry.json)
+          want "https://hessen.example.org" "$P"
+          # A CSP host-source with no port matches only the scheme's default
+          # port, and one with no scheme matches only the document's scheme, so
+          # either omission blocks the backend it was added for.
+          want "http://lab.internal:3000" "$P"
+          reject "not-an-api.example.net" "$P"
+
+          printf '\n── hub: a scheme-relative registry URL is not read as same-origin\n'
+          # //host matched a '/*' branch on the first draft and yielded no hosts
+          # at all, silently blocking the whole federation.
+          P=$(csp -e APP_MODE=hub -e REGISTRY_URL='//hub.example.org/registry.json')
+          want "hub.example.org" "$P"
+
+          printf '\n── ui mode: a remote PostgREST origin is named\n'
+          # Every data call goes to "${API_BASE_URL}/rpc/...". Missing this
+          # loses all playground data once the policy is enforced.
+          P=$(csp -e APP_MODE=standalone -e API_BASE_URL='https://data.example.com/api')
+          want "https://data.example.com" "$P"
+
+          printf '\n── default API_BASE_URL adds nothing\n'
+          P=$(csp -e APP_MODE=standalone -e API_BASE_URL=/api)
+          reject "data.example.com" "$P"
+
+          printf '\n── runtime registry: CSP_CONNECT_EXTRA covers what cannot be read\n'
+          P=$(csp -e APP_MODE=hub -e REGISTRY_URL='https://hub.example.org/registry.json' \
+                -e CSP_CONNECT_EXTRA='https://b1.example.org')
+          want "https://hub.example.org" "$P"
+          want "https://b1.example.org" "$P"
+
+          printf '\n── an unreadable style stays wide, and says so\n'
+          # The one state that must NOT be narrow: a style is configured but
+          # could not be read, so where it sends the browser is unknown and a
+          # guess would blank the basemap.
+          P=$(csp -e APP_MODE=standalone -e BASEMAP_STYLE_URL=/basemap/nope.json \
+                -e BASEMAP_ATTRIBUTION='(c) Example')
+          # Anchored for the same reason as the reject above: 'https:' alone is
+          # always present via frame-ancestors. The wildcard is appended to
+          # whatever img-src already carries, so anchor on the separator.
+          want "https:; connect-src" "$P"
+          want "connect-src 'self' https:\"" "$P"
+
+          printf '\n── a mangled extra origin fails closed\n'
+          docker run --rm --entrypoint sh -e CSP_CONNECT_EXTRA='https://bad;evil' \
+            spieli-app:citest -c '/docker-entrypoint.sh 2>&1' | grep -q 'FATAL: CSP_CONNECT_EXTRA' \
+            || { echo 'a mangled CSP_CONNECT_EXTRA was accepted' >&2; exit 1; }
+
+          printf '\nall CSP assertions passed\n'
+
+      - name: External-service proxies
+        run: |
+          set -eu
+          # The /ext/ proxies are the fix that actually removes the exposure, so
+          # the properties asserted here are the ones that make them worth
+          # having: nothing third-party in the delivered CSP, no request stream
+          # on the operator's disk, no relay for arbitrary upstream paths, and
+          # the rate limiter actually enforcing.
+          ext() {
+            docker run --rm --entrypoint sh "$@" spieli-app:citest -c '
+              /docker-entrypoint.sh >/dev/null 2>&1 &
+              i=0
+              while [ ! -s /etc/nginx/csp.conf ]; do
+                i=$((i+1)); [ "$i" -gt 100 ] && { echo "entrypoint did not finish" >&2; exit 1; }
+                sleep 0.2
+              done
+              nginx -t >/dev/null 2>&1 || { nginx -t; exit 1; }
+              # Every grep here is a diagnostic dump, so a legitimately empty
+              # file (all proxies disabled) must not fail the container and
+              # abort the caller mid-assertion.
+              echo "=== config.js"; grep -E "nominatimBaseUrl|commonsApiUrl|commonsFileBase|mangroveApiUrl|panoramaxApiUrl" /usr/share/nginx/html/config.js || true
+              echo "=== csp"; grep -A1 Content-Security-Policy-Report-Only /etc/nginx/csp.conf | tail -1
+              echo "=== locations"; grep -E "^location" /etc/nginx/ext-locations.conf || true
+              echo "=== access_log_count=$(grep -c access_log /etc/nginx/ext-locations.conf || echo 0)"
+              echo "=== limiter"; grep -E "server_name ext-nominatim-internal|limit_req zone=ext_nominatim" /etc/nginx/conf.d/11-ext-cache.conf || true
+            '
+          }
+          want() {
+            printf '%s' "$2" | grep -qF -- "$1" \
+              || { printf 'expected %s in:\n%s\n' "$1" "$2" >&2; exit 1; }
+          }
+          reject() {
+            printf '%s' "$2" | grep -qF -- "$1" \
+              && { printf 'did NOT expect %s in:\n%s\n' "$1" "$2" >&2; exit 1; }
+            :
+          }
+
+          printf '\n── default: everything proxied, CSP collapses to self\n'
+          O=$(ext -e APP_MODE=standalone)
+          want "nominatimBaseUrl:           '/ext/nominatim'" "$O"
+          want "commonsFileBase:            '/ext/wikimedia'" "$O"
+          want "mangroveApiUrl:             '/ext/mangrove'" "$O"
+          # connect-src reaches 'self': every fetch is same-origin.
+          want "connect-src 'self'\"" "$O"
+          # img-src does NOT, and that is deliberate rather than a miss.
+          # equipmentAttributes.js renders equipment illustrations straight from
+          # commons.wikimedia.org/wiki/Special:FilePath/..., which cannot be
+          # proxied without opening /w/index.php as a relay; and Panoramax
+          # thumbnails redirect to a per-instance derivative host nginx cannot
+          # follow. Narrowing img-src while that code still fetches directly
+          # would block the images AND put a false statement on the privacy
+          # page, so both host sets stay.
+          want "https://*.wikimedia.org" "$O"
+          want "https://api.panoramax.xyz" "$O"
+          # The viewer iframe is never proxied, so its host must remain framed.
+          want "frame-src https://panoramax.xyz https://api.panoramax.xyz" "$O"
+
+          printf '\n── every proxy location suppresses request logging\n'
+          # Not a tuning choice: proxying moves the visitor's request stream
+          # onto the operator's disk, and logging it is worse than the exposure
+          # being removed. One per location, plus the catch-all.
+          want "access_log_count=5" "$O"
+
+          printf '\n── the rate limiter is on the loopback server and has a non-empty key\n'
+          # nginx silently skips limit_req when its key is empty, and
+          # $server_name is empty in a server block that does not set one — a
+          # limiter that parses and enforces nothing. This asserts both halves.
+          want "server_name ext-nominatim-internal;" "$O"
+          want "limit_req zone=ext_nominatim" "$O"
+
+          printf '\n── opting one service out names it in the CSP again\n'
+          O=$(ext -e APP_MODE=standalone -e PROXY_MANGROVE=false)
+          want "mangroveApiUrl:             'https://api.mangrove.reviews'" "$O"
+          want "https://api.mangrove.reviews" "$O"
+          # The others stay proxied.
+          want "nominatimBaseUrl:           '/ext/nominatim'" "$O"
+
+          printf '\n── opting Commons out restores the Wikimedia image sources\n'
+          O=$(ext -e APP_MODE=standalone -e PROXY_COMMONS=false)
+          want "commonsFileBase:            ''" "$O"
+          want "https://*.wikimedia.org" "$O"
+
+          printf '\n── the loopback limiter exists only when Nominatim is proxied\n'
+          # Dead config that outlives an opt-out: the container would keep
+          # listening on 127.0.0.1:8091 ready to relay to Nominatim.
+          O=$(ext -e APP_MODE=standalone -e PROXY_NOMINATIM=false)
+          reject "server_name ext-nominatim-internal;" "$O"
+          want "commonsApiUrl:              '/ext/commons/w/api.php'" "$O"
+
+          printf '\n── all proxies off: no locations, no cache zone\n'
+          O=$(ext -e APP_MODE=standalone -e PROXY_NOMINATIM=false -e PROXY_COMMONS=false \
+                -e PROXY_MANGROVE=false)
+          reject "location ^~ /ext/nominatim/" "$O"
+          want "https://nominatim.openstreetmap.org" "$O"
+
+          printf '\n── a value with whitespace fails closed with the intended message\n'
+          # An unquoted eval word-splits "true junk" and runs the second word,
+          # so the container dies with "not found" instead of naming the var.
+          docker run --rm --entrypoint sh -e PROXY_COMMONS='true junk' spieli-app:citest \
+            -c '/docker-entrypoint.sh 2>&1' | grep -q 'FATAL: PROXY_COMMONS' \
+            || { echo 'a whitespace-bearing PROXY_COMMONS was not reported properly' >&2; exit 1; }
+
+          printf '\n── a bad boolean and a bad cache size both fail closed\n'
+          docker run --rm --entrypoint sh -e PROXY_COMMONS=flase spieli-app:citest \
+            -c '/docker-entrypoint.sh 2>&1' | grep -q 'FATAL: PROXY_COMMONS' \
+            || { echo 'a bad PROXY_COMMONS was accepted' >&2; exit 1; }
+          # 4.5g must be rejected, not silently read as 45g.
+          docker run --rm --entrypoint sh -e EXT_CACHE_MAX_SIZE=4.5g spieli-app:citest \
+            -c '/docker-entrypoint.sh 2>&1' | grep -q 'FATAL: EXT_CACHE_MAX_SIZE' \
+            || { echo 'a malformed EXT_CACHE_MAX_SIZE was accepted' >&2; exit 1; }
+
+          printf '\nall external-service proxy assertions passed\n'
+
+      - name: Privacy page must follow the delivery mode
+        run: |
+          set -eu
+          # The Datenschutzerklärung is a legal statement, so every claim on it
+          # has to track the delivery mode. Two ways it goes wrong silently: a
+          # leftover {{PLACEHOLDER}} ships as literal text, and a clause about
+          # what third parties receive stays on the page when no third party is
+          # contacted at all. Neither is visible to `nginx -t`.
+          render() {
+            # Poll for the closing </html>, not for a non-empty file: the page
+            # is written by `sed | awk > file`, whose stdout is block-buffered,
+            # so the file goes non-empty at the first flush with kilobytes
+            # still to come. A `cat` that wins that race truncates the page
+            # mid-document, which fails the positive assertions and — worse —
+            # passes the "no leftover placeholder" ones vacuously.
+            # Only the entrypoint's stdout is dropped; stderr carries its `die`
+            # messages and must reach the step log.
+            docker run --rm --entrypoint sh \
+              -e IMPRESSUM_NAME='Max Mustermann' \
+              -e IMPRESSUM_EMAIL='kontakt@example.com' \
+              "$@" spieli-app:citest -c '
+                /docker-entrypoint.sh >/dev/null &
+                i=0
+                until grep -q "</html>" /usr/share/nginx/html/datenschutz.html 2>/dev/null; do
+                  i=$((i+1))
+                  [ "$i" -gt 100 ] && { echo "entrypoint did not finish" >&2; exit 1; }
+                  sleep 0.2
+                done
+                cat /usr/share/nginx/html/datenschutz.html
+              '
+          }
+
+          fail=0
+
+          # Same-origin (the default): no tile provider named, and no clause
+          # claiming a third party receives tile coordinates.
+          printf '\n── same-origin (defaults)\n'
+          page=$(render -e APP_MODE=standalone)
+          case "$page" in
+            *'{{'*) echo "FAIL: leftover placeholder in same-origin mode"; fail=1 ;;
+            *) echo "ok: no leftover placeholder" ;;
+          esac
+          case "$page" in
+            *Kachelkoordinaten*)
+              echo "FAIL: page mentions tile coordinates going to a third party,"
+              echo "      but the browser only ever talks to this instance"
+              fail=1 ;;
+            *) echo "ok: no third-party tile-coordinate claim" ;;
+          esac
+          case "$page" in
+            *'vollst&auml;ndig von dieser Instanz'*) echo "ok: states tiles are served locally" ;;
+            *) echo "FAIL: same-origin delivery is not stated on the page"; fail=1 ;;
+          esac
+
+          # Third-party opt-out: the provider must be named, and the clause the
+          # same-origin case drops must come back.
+          printf '\n── third-party style URL\n'
+          page=$(render -e APP_MODE=standalone \
+            -e BASEMAP_STYLE_URL='https://tiles.example.org/styles/bright' \
+            -e BASEMAP_ATTRIBUTION='(c) Example')
+          case "$page" in
+            *'{{'*) echo "FAIL: leftover placeholder in third-party mode"; fail=1 ;;
+            *) echo "ok: no leftover placeholder" ;;
+          esac
+          case "$page" in
+            *tiles.example.org*) echo "ok: provider host named" ;;
+            *) echo "FAIL: configured tile provider is not named on the page"; fail=1 ;;
+          esac
+          case "$page" in
+            *Kachelkoordinaten*) echo "ok: tile-coordinate disclosure present" ;;
+            *) echo "FAIL: third-party tile delivery is not disclosed"; fail=1 ;;
+          esac
+
+          # Style set to a same-origin path with no file behind it: the
+          # entrypoint cannot read the asset hosts, so it must hedge rather
+          # than claim either way. This is the branch where being wrong is a
+          # legal problem, because the reassuring answer is the unsafe one.
+          printf '\n── style present but not evaluable\n'
+          page=$(render -e APP_MODE=standalone \
+            -e BASEMAP_STYLE_URL=/basemap/does-not-exist.json \
+            -e BASEMAP_ATTRIBUTION='(c) Example')
+          case "$page" in
+            *'{{'*) echo "FAIL: leftover placeholder in unknown-provider mode"; fail=1 ;;
+            *) echo "ok: no leftover placeholder" ;;
+          esac
+          case "$page" in
+            *'unter Umst&auml;nden'*) echo "ok: disclosure is hedged, not asserted either way" ;;
+            *) echo "FAIL: an unevaluable style must hedge the tile disclosure"; fail=1 ;;
+          esac
+          case "$page" in
+            *'vollst&auml;ndig von dieser Instanz'*)
+              echo "FAIL: claims same-origin delivery for a style it could not read"
+              fail=1 ;;
+            *) echo "ok: does not claim same-origin delivery" ;;
+          esac
+
+          exit "$fail"
 
       - name: Basemap assets must actually resolve, not just parse
         run: |

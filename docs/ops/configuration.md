@@ -20,11 +20,20 @@ All variables are set in `.env` (copy from `.env.example`). The installer genera
 | `BASEMAP_UPSTREAM` | `https://tiles.openfreemap.org` | ui, data-node-ui | Where the bundled style's tiles and sprites are fetched from and cached. Origin only (`scheme://host[:port]`), no path. Point it at your own tileserver to stop using a public one — a two-step swap, see [Basemap](#basemap). |
 | `BASEMAP_URL` | *(unset)* | ui, data-node-ui | Raster basemap as an OpenLayers XYZ template. Placeholders are substituted by name, so a provider using `{z}/{y}/{x}` needs no code change. See [Basemap](#basemap). |
 | `BASEMAP_STYLE_URL` | *(unset — the app falls back to `/basemap/style.json`)* | ui, data-node-ui | MapLibre style document, rendered as vector tiles. Takes precedence over `BASEMAP_URL`. See [Basemap](#basemap). |
-| `BASEMAP_ATTRIBUTION` | OpenFreeMap + OpenMapTiles + OSM | ui, data-node-ui | Attribution HTML shown on the map. **Required** whenever `BASEMAP_URL` or `BASEMAP_STYLE_URL` is set — the container refuses to start otherwise. Trusted HTML: rendered into the page as-is. |
+| `BASEMAP_COVERAGE_BBOX` | *(unset — no limit)* | ui, data-node-ui | `minLon,minLat,maxLon,maxLat` where the basemap has **detailed** data. Only needed for a regional tileset; unset is correct for a planet one. See [Regional tilesets](#regional-tilesets). |
+| `BASEMAP_ATTRIBUTION` | *(the tile server's own credit)* | ui, data-node-ui | Overrides the attribution the map shows. Leave unset and the credit comes from the tile server itself, which is correct for any upstream. **Required** whenever `BASEMAP_URL` or `BASEMAP_STYLE_URL` is set — the container refuses to start otherwise. Trusted HTML: rendered into the page as-is. |
 | `BASEMAP_PROXY` | *(unset)* | ui, data-node-ui | `true` serves tiles through this instance, so the browser fetches from same-origin `/tiles/` and never contacts the provider. The upstream origin **and** the tile path are derived from `BASEMAP_URL`. See [Basemap](#basemap). |
 | `BASEMAP_CACHE_MAX_SIZE` | `4g` | ui, data-node-ui | Disk ceiling per cache zone. The basemap cache always exists; enabling `BASEMAP_PROXY` adds a second zone sized from the same value, so the on-disk total can be twice this. |
 | `BASEMAP_CACHE_KEYS_ZONE` | `64m` | ui, data-node-ui | nginx cache key zone. Holds roughly 8000 keys per MB and **binds before disk does** — a large `BASEMAP_CACHE_MAX_SIZE` behind a small keys zone yields a cache that stays almost empty. |
 | `BASEMAP_CACHE_INACTIVE` | `90d` | ui, data-node-ui | How long an unrequested tile survives. nginx defaults to 10 minutes, which evicts tiles regardless of free space — far too short for basemap tiles. |
+| `PROXY_NOMINATIM` | `true` | ui, data-node-ui | Fetch geocoding server-side through `/ext/nominatim/` so the browser never contacts Nominatim. `false` restores direct browser requests. See [External-service proxies](#external-service-proxies). |
+| `PROXY_COMMONS` | `true` | ui, data-node-ui | Fetch the Commons API and the image bytes server-side (`/ext/commons/`, `/ext/wikimedia/`). |
+| `PROXY_MANGROVE` | `true` | ui, data-node-ui | Fetch and submit reviews server-side through `/ext/mangrove/`. Submission still verifies at Mangrove: the JWT signature covers its own claims, so the proxy is transparent to it. |
+| `EXT_CACHE_MAX_SIZE` | `2g` | ui, data-node-ui | Disk ceiling for the shared `/ext/` cache. One zone serves all four services; the default cache key includes the upstream host, so two upstreams cannot collide on a path. |
+| `EXT_CACHE_KEYS_ZONE` | `16m` | ui, data-node-ui | Key zone for the `/ext/` cache. Same caveat as the basemap one: it binds before disk does. |
+| `EXT_CACHE_INACTIVE` | `30d` | ui, data-node-ui | How long an unrequested `/ext/` response survives. |
+| `CSP_CONNECT_EXTRA` | *(unset)* | ui, data-node-ui | Extra origins for the generated `connect-src`, space-separated. Needed when a hub fetches `registry.json` from a URL at runtime, so the entrypoint cannot read it to discover backends. Rejected at startup if malformed. See [Content Security Policy](security.md#nginx-security-headers). |
+| `CSP_IMG_EXTRA` | *(unset)* | ui, data-node-ui | Extra origins for the generated `img-src`, space-separated. Needed when images are rendered from an origin the generator cannot discover. Rejected at startup if malformed. |
 | `PARENT_ORIGIN` | *(own origin)* | data-node-ui | Allowed origin for `postMessage` events — set to the Hub's full origin when embedding in a Hub |
 | `APP_PORT` | `8080` | ui, data-node-ui | Host port the app is exposed on |
 | `POSTGRES_PASSWORD` | `change-me` | data-node, data-node-ui | Database password — **change in production** |
@@ -163,7 +172,7 @@ The cache lives on the container's writable layer, so `make docker-build` discar
 
 Running **several stacks on one host**? Point them all at a single shared cache instead of running one per stack — see [Shared Basemap Cache](shared-basemap-cache.md). Fifteen caches at the 4 GB default is up to 60 GB of disk and fifteen separate clients hitting the public tile server, all going cold together on every upgrade sweep.
 
-**To run your own tileserver**, two steps — the bundled style carries the *provider's* asset paths (`/planet`, `/sprites/ofm_f384/ofm`, `/natural_earth/…`), so a differently-shaped server needs the style rebuilt against it:
+**To run your own tileserver**, up to two steps. The bundled style carries the *provider's* asset paths (`/planet`, `/sprites/ofm_f384/ofm`), so a server that mirrors that shape needs only the first step, and a differently-shaped one needs the style rebuilt against it as well:
 
 ```bash
 # 1. rebuild the style against the new provider
@@ -201,7 +210,20 @@ BASEMAP_URL='https://sgx.geodatenzentrum.de/wmts_basemapde/tile/1.0.0/de_basemap
 
 That example is included because it exercises the axis-order case, **not as a recommendation**: basemap.de covers Germany only, and outside Germany it returns `200 OK` with a blank tile rather than an error. Nothing fails, nothing alerts, and a proxy cache will happily store the blanks. Check your provider's coverage against your region before adopting it.
 
-Whatever you choose, set `BASEMAP_ATTRIBUTION` to match. Showing one provider's attribution over another's tiles is a licence problem, not a cosmetic one.
+Whatever you choose, make sure the credit matches. Showing one provider's attribution over another's tiles is a licence problem, not a cosmetic one.
+
+For a **vector** basemap you normally do not have to do anything: a tile server declares its own attribution in its TileJSON, and the map uses that. It is authoritative and it differs between servers exactly as it should:
+
+| Upstream | Credit shown |
+|---|---|
+| `tiles.openfreemap.org` | OpenFreeMap © OpenMapTiles Data from OpenStreetMap |
+| a self-hosted Planetiler build | © OpenMapTiles © OpenStreetMap contributors |
+
+Setting `BASEMAP_ATTRIBUTION` overrides that. Only do so when you have a credit the server cannot know about, because an override that goes stale credits the wrong party silently — that is how a map built from self-hosted tiles came to display "© OpenFreeMap".
+
+Note this follows the **tile server**, not `BASEMAP_UPSTREAM`. With a shared cache the upstream is an internal host while the tiles still originate from the public server, so the hostname says nothing about who to credit.
+
+A **raster** basemap has no TileJSON to ask, which is why `BASEMAP_URL` requires `BASEMAP_ATTRIBUTION` and the container refuses to start without it.
 
 ### Delivery modes
 
@@ -242,6 +264,35 @@ When proxying is enabled, nginx sets `access_log off` on `/tiles/`. This is a co
 
 If you run a reverse proxy in front of spieli (Traefik, for example), check that it does not log the tile path either. A location trail is no less a location trail for being written by the ingress.
 
+### Regional tilesets
+
+A tileset covering a few countries has **two different extents**, and only one of them is discoverable from the tileset itself.
+
+Planetiler bakes Natural Earth and water polygons in globally, so low zooms render everywhere and the declared bounds describe that wide area honestly. OSM detail exists only inside the imported extract. Above roughly z7 outside it the tile server answers `204 No Content`:
+
+| place | z4 | z6 | z8 | z10 | z12 |
+|---|---|---|---|---|---|
+| Fulda (covered) | 200 | 200 | 200 | 200 | 200 |
+| Paris (outside) | 200 | 200 | 204 | 204 | 204 |
+
+The renderer draws an empty tile for a 204. Nothing errors and nothing warns, so the result is indistinguishable from a legitimately empty map.
+
+`BASEMAP_COVERAGE_BBOX` closes that gap. Set it to where your detail actually is and the map shows a quiet notice once the view leaves it:
+
+```bash
+# Germany, Czechia and Slovakia
+BASEMAP_COVERAGE_BBOX=5.8,47.2,22.6,55.1
+```
+
+Leave it unset for a planet tileset. Unset means the notice never appears, which is why this changes nothing for an existing deployment.
+
+Two details worth knowing:
+
+- It keys on the **view centre**, not on the viewport overlapping the box. Near a border a partly-covered view is normal, and warning there would cry wolf.
+- It stays quiet below zoom 8, because the tileset's global low-zoom layer still renders there and nothing is actually missing.
+
+A malformed value is ignored rather than fatal: a typo costs the notice, not the map.
+
 ### The bundled style
 
 `make basemap-style` produces **two** variants from a single upstream fetch, both vendored copies of OpenFreeMap Bright with the same two edits:
@@ -263,3 +314,41 @@ The second edit is a legibility change only. Dropping a style layer does not red
 `--asset-base` is what rewrites the style's tile, glyph and sprite URLs onto one origin, and it is the whole difference between a local style and a local basemap. **Without it — which is how `style.json` is built — those assets are fetched from `tiles.openfreemap.org` by every visitor**, even though the style document itself is served locally.
 
 Only the origin is stripped; the upstream's own paths are preserved verbatim. That 1:1 mapping is what lets a plain prefix proxy serve the result without reversing a mapping it cannot know. The build refuses to write an `--asset-base` output that still contains a third-party host, and drops any query string it finds, so rebuilding against a keyed provider cannot bake an API key into a committed style.
+
+## External-service proxies
+
+By default the visitor's browser contacts **no third party**. Geocoding, playground photos and reviews are all fetched by this instance and served from its own origin, cached on disk. This is the same mechanism as the basemap, extended to the rest.
+
+```
+Browser ──► this instance ──► nginx cache ──► Nominatim / Commons / Mangrove
+```
+
+Each service can be opted out individually with the `PROXY_*` variables above. Opting out restores direct browser requests for that service and adds its host to the generated Content Security Policy; the others stay proxied.
+
+### Two exceptions
+
+**Panoramax is not proxied at all.** Its thumbnail endpoint answers `308` with a `Location` on a per-instance derivative host, and nginx cannot follow a redirect — relaying it would send the browser to a host the privacy page does not name and the CSP does not allow. Its viewer is an `<iframe>`, and serving a whole interactive third-party application from this origin would grant it same-origin privileges here. Both stay cross-origin, are named in the CSP, and keep their privacy-page rows.
+
+**Equipment-attribute illustrations are not proxied.** They are rendered from `commons.wikimedia.org/wiki/Special:FilePath/…`, which answers with a redirect chain; following it would mean allowing `/w/index.php` through the proxy, which is a much larger relay surface than a photo gallery is worth. The playground photo gallery itself *is* proxied.
+
+### Nothing is logged
+
+Every proxy location sets `access_log off`, and that is a correctness property rather than a tuning choice. Proxying moves the visitor's request stream onto your disk; recording it would rebuild a per-visitor trail and make you the controller of something worse than the third-party disclosure it replaced. Errors are still logged.
+
+If you put a reverse proxy in front of this stack, check that it is not logging the same paths a layer up. Traefik's access log is off by default; if you have enabled it, exclude `/ext/`.
+
+### Nominatim needs its cache to survive restarts
+
+The OSMF usage policy is an absolute **1 request per second**. Proxying concentrates onto one IP the queries that used to spread across every visitor's, so the cache is load-bearing rather than an optimisation — and `compose.yml` mounts a named volume (`ext_cache`) for exactly that reason. A cache on the container's writable layer is discarded on every image rebuild, and an upgrade across a federation would send every instance cold at a 1 r/s upstream simultaneously.
+
+The rate limiter sits on an internal loopback server rather than on the visitor-facing location, so only cache **misses** reach it. That placement matters: `limit_req` runs before the cache lookup, so on the visitor-facing location it sheds requests that were already cached — measured, two simultaneous visitors were enough to break search. When the limiter does shed, a stale cached answer is served if one is held.
+
+The dominant query is shared: region-URL resolution such as `/fulda` is identical for every visitor of an instance, and it is what caches best.
+
+### Sizing the cache
+
+`EXT_CACHE_MAX_SIZE` defaults to a conservative 2 GB for all four services together. Commons image bytes dominate it. Raise it if `du -sh` on the volume sits at the ceiling and images are being re-fetched:
+
+```bash
+docker compose exec app du -sh /var/cache/nginx/ext
+```

@@ -1,5 +1,7 @@
 // Runtime configuration injected via window.APP_CONFIG (set by public/config.js or docker-entrypoint.app.sh).
 // Fallback values are used for local development without a container.
+import { parseCoverageBbox } from './basemapCoverage.js';
+
 const c = (typeof window !== 'undefined' && window.APP_CONFIG) || {};
 
 // 'standalone' | 'hub'
@@ -37,6 +39,15 @@ export const poiRadiusM = c.poiRadiusM ?? 5000;
 // tile outside it), so a raster default would have to be a keyed commercial
 // one — which is what this change exists to remove.
 const DEFAULT_BASEMAP_STYLE_URL = '/basemap/style.json';
+// The floor. OSM-derived vector tiles always warrant at least this, so a tile
+// server that declares no attribution of its own leaves a credit rather than
+// an empty control. Deliberately minimal: it states only what is true of ANY
+// OSM-derived tileset. A tileset with stricter terms (OpenMapTiles output is
+// CC-BY, for instance) needs BASEMAP_ATTRIBUTION set, and the map warns when
+// it falls back to this.
+export const FALLBACK_OSM_ATTRIBUTION =
+    '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+
 const DEFAULT_BASEMAP_ATTRIBUTION =
     '&copy; <a href="https://openfreemap.org/">OpenFreeMap</a> ' +
     '&copy; <a href="https://www.openmaptiles.org/">OpenMapTiles</a> | ' +
@@ -57,6 +68,24 @@ export const basemapStyleUrl = _styleConfigured
 // style fails to load (see basemapUrlIsExplicit below).
 export const basemapUrl = c.basemapUrl || '';
 export const basemapAttribution = c.basemapAttribution || DEFAULT_BASEMAP_ATTRIBUTION;
+
+// Whether the OPERATOR named a credit, as opposed to falling back to the
+// default above. A vector source declares its own attribution in its TileJSON
+// and that is authoritative — tiles.openfreemap.org and a self-hosted
+// tileserver return different, individually correct values. Overriding that
+// with a compiled-in constant credits whoever the constant happens to name,
+// which is how a map built from our own Planetiler tiles ended up crediting
+// OpenFreeMap. So the default is a LAST RESORT for the raster path, which has
+// no TileJSON to ask, and the vector path only overrides on an explicit value.
+export const basemapAttributionIsExplicit = !!c.basemapAttribution;
+
+// Where the basemap has DETAILED data, as "minLon,minLat,maxLon,maxLat".
+// Opt-in, and unset is the right default: a planet tileset has no limit, and
+// a tileset cannot describe this itself — its declared bounds cover the wide
+// low-zoom context layer, not the extract that carries the detail.
+// Parsing and the outside-coverage rule live in lib/basemapCoverage.js so they
+// can be tested without a browser.
+export const basemapCoverageBbox = parseCoverageBbox(c.basemapCoverageBbox);
 
 // Whether the operator configured a raster source at all. There is no raster
 // default, so this is the only way a raster basemap exists — and it is what
@@ -85,8 +114,11 @@ const _operatorConfiguredSource =
     !!c.basemapUrl || (!!c.basemapStyleUrl && !_isSameOriginPath(c.basemapStyleUrl));
 if (_operatorConfiguredSource && !c.basemapAttribution && typeof console !== 'undefined') {
     console.warn(
-        '[spieli] A basemap source is configured but basemapAttribution is empty, ' +
-        'so the default OpenFreeMap + OpenStreetMap credit is being shown over it. ' +
+        '[spieli] A basemap source is configured but basemapAttribution is empty. ' +
+        'A raster source has no attribution of its own, so the built-in default ' +
+        'credit is shown over it; a vector source falls back to whatever its ' +
+        'TileJSON declares, or to a bare OpenStreetMap credit if it declares none. ' +
+        'Either way the credit will not describe this provider. ' +
         'Attribution is a licence obligation — set basemapAttribution to match ' +
         'the configured provider. (The container entrypoint refuses to start on this.)',
     );
@@ -134,3 +166,28 @@ export const clusterMaxZoom = c.clusterMaxZoom ?? 13;
 //   macroMaxZoom < zoom ≤ clusterMaxZoom → cluster tier fan-out
 //   zoom >  clusterMaxZoom            → polygon tier fan-out
 export const macroMaxZoom = c.macroMaxZoom ?? 7;
+
+// --- External-service delivery (#853) ---
+//
+// Each of these is either a third-party origin the visitor's browser contacts
+// directly, or a same-origin /ext/ path this instance proxies and caches. The
+// container defaults to the proxied form; the checked-in defaults below are the
+// DIRECT hosts, because `make dev` has no nginx to proxy through — the same
+// split as basemap style.json vs style.local.json.
+//
+// Whoever adds a service here: the privacy page and
+// docs/reference/external-services.md both describe this list, and
+// tools/check-privacy-disclosure.py fails the build if a host appears in the
+// frontend and not on the page.
+export const nominatimBaseUrl = c.nominatimBaseUrl || 'https://nominatim.openstreetmap.org';
+export const commonsApiUrl    = c.commonsApiUrl    || 'https://commons.wikimedia.org/w/api.php';
+// Same-origin prefix for Wikimedia *file* bytes, or '' to fetch them directly.
+// Proxying the API alone is not enough: it answers with absolute file URLs, so
+// the browser would still go to Wikimedia for every image. commons.js rewrites
+// those onto this base, keeping the original host as the first path segment —
+// see proxiedImageUrl for why the host cannot be assumed.
+export const commonsFileBase = c.commonsFileBase || '';
+export const mangroveApiUrl   = c.mangroveApiUrl   || 'https://api.mangrove.reviews';
+// Panoramax is intentionally absent: it cannot be proxied (its thumbnail
+// endpoint redirects to a per-instance derivative host, and its viewer is an
+// iframe). The host lives in app/src/lib/panoramax.js, which explains why.
