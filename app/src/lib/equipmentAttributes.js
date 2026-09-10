@@ -22,20 +22,29 @@ import { escapeHtml, tl } from './utils.js';
 // Returning null for an unknown name is the point: nothing is rendered, so a
 // missing illustration costs no request and shows no broken image. The build
 // fails on a name that resolves nowhere, so the map cannot silently rot.
-// Author and licence, when the wiki exposes them. Serving these bytes through
-// our own origin makes us the distributor, so the CC attribution obligation is
-// ours rather than Commons'. The OSM wiki returns no extmetadata, so its 14
-// files carry no credit and this renders nothing for them.
+// Attribution for one illustration.
+//
+// Serving these bytes through our own origin makes us the distributor, so the
+// CC obligation is ours rather than Commons'. Naming the author in plain text
+// is not enough for BY/BY-SA: the source has to be identifiable, so the credit
+// links the file page. That link is available for every entry, including the
+// 14 on the OSM wiki whose API returns no extmetadata and therefore no author
+// or licence — those still credit a source rather than nothing.
+//
+// A link, not a fetch: nothing is requested until the visitor clicks it.
 function imageCredit(img) {
-    const parts = [img.artist, img.license].filter(Boolean);
-    return parts.length ? ` · ${escapeHtml(parts.join(', '))}` : '';
+    const text = [img.artist, img.license].filter(Boolean).join(', ');
+    if (!img.source) return text ? ` · ${escapeHtml(text)}` : '';
+    const label = text || 'Wikimedia Commons / OpenStreetMap-Wiki';
+    return ` · <a href="${escapeHtml(img.source)}" target="_blank" rel="noopener noreferrer"`
+        + ` class="link-secondary">${escapeHtml(label)}</a>`;
 }
 
 function resolvedImage(fileName) {
     const entry = equipmentImages.images[fileName];
     if (!entry) return null;
     const url = proxiedImageUrl(`https://${entry.host}${entry.path}`);
-    return { url, license: entry.license, artist: entry.artist };
+    return { url, license: entry.license, artist: entry.artist, source: entry.source };
 }
 
 const pitchImages = {
@@ -168,10 +177,12 @@ export function getEquipmentAttributesFromProps(props, t) {
     if (!html && !panoramaxUuid) {
         const deviceKey = g('playground');
         const sportRaw  = g('sport');
-        // No onerror fallback any more: the build has already established that
-        // the URL resolves, so a failure here is a proxy or network problem
-        // rather than a wrong name, and a second guess at another host would
-        // just be an undisclosed request.
+        // The onerror no longer FALLS BACK to a second host — that was the
+        // undisclosed request — but it still hides the wrapper. The build
+        // established that the URL resolved when it ran; a file renamed
+        // upstream since then would otherwise leave a broken-image icon
+        // captioned "Symbolbild", which is worse than showing nothing.
+        const onerror = "this.closest('.device-img-wrap').style.display='none'";
         if (deviceKey && objDevices[deviceKey]?.image) {
             const img = resolvedImage(objDevices[deviceKey].image);
             if (img) {
@@ -179,7 +190,7 @@ export function getEquipmentAttributesFromProps(props, t) {
                 html = `<div class="device-img-wrap">` +
                     `<img src="${escapeHtml(img.url)}"` +
                     ` alt="${escapeHtml(altText)}" loading="lazy" referrerpolicy="no-referrer"` +
-                    ` style="object-fit:contain;width:100%">` +
+                    ` onerror="${onerror}" style="object-fit:contain;width:100%">` +
                     `<p class="mb-0 text-muted" style="font-size:0.75rem;"><span class="bi bi-image"></span> ` +
                     `${escapeHtml(t('popup.deviceSymbol'))}${imageCredit(img)}</p></div>`;
             }
@@ -189,7 +200,7 @@ export function getEquipmentAttributesFromProps(props, t) {
                 html = `<div class="device-img-wrap">` +
                     `<img src="${escapeHtml(img.url)}"` +
                     ` alt="${escapeHtml(sportRaw)}" loading="lazy" referrerpolicy="no-referrer"` +
-                    ` style="object-fit:contain;width:100%">` +
+                    ` onerror="${onerror}" style="object-fit:contain;width:100%">` +
                     (imageCredit(img) ? `<p class="mb-0 text-muted" style="font-size:0.7rem;">${imageCredit(img).trim()}</p>` : '') +
                     `</div>`;
             }

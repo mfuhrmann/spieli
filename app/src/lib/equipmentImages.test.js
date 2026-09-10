@@ -50,9 +50,14 @@ const t = (key) => key;   // the translate function is only used for labels
                   `${key} renders an absolute URL: ${out.html.slice(0, 160)}`);
         assert.ok(!out.html.includes('Special:FilePath'),
                   `${key} still uses the redirect chain`);
-        // The onerror fallback used to reach wiki.openstreetmap.org from the
-        // browser with nothing disclosing it.
-        assert.ok(!out.html.includes('onerror'), `${key} still carries an onerror fallback`);
+        // An onerror that HIDES the wrapper is fine and wanted. What must not
+        // come back is the one that reached a second host: that is the
+        // undisclosed request, not the hiding.
+        assert.ok(!out.html.includes('data-fallback'), `${key} still has a fallback host`);
+        assert.ok(!/onerror="[^"]*this\.src/.test(out.html),
+                  `${key}'s onerror assigns a new src`);
+        assert.ok(!/onerror="[^"]*wiki\.openstreetmap/.test(out.html),
+                  `${key}'s onerror names a second host`);
         assert.ok(out.html.includes('referrerpolicy="no-referrer"'),
                   `${key} sends a Referer`);
     }
@@ -75,3 +80,24 @@ const t = (key) => key;   // the translate function is only used for labels
 }
 
 console.log('equipmentImages.test.js: all assertions passed');
+
+// --- every rendered illustration credits an identifiable source ------------
+// Proxying makes us the distributor, so the CC obligation is ours. Naming an
+// author in plain text is not enough for BY/BY-SA — the source has to be
+// reachable, and descriptionurl is available for every entry including the 14
+// OSM-wiki files that carry no author or licence at all.
+{
+    for (const [title, entry] of Object.entries(map.images)) {
+        assert.ok(entry.source, `${title} has no source link`);
+        assert.ok(/^https:\/\//.test(entry.source), `${title} source is not https: ${entry.source}`);
+    }
+    const { objDevices } = await import('./objPlaygroundEquipment.js');
+    const withImage = Object.entries(objDevices)
+        .find(([, d]) => d.image && map.images[d.image]);
+    const out = getEquipmentAttributesFromProps(
+        { playground: withImage[0], osm_type: 'N', osm_id: '1' }, t);
+    assert.ok(out.html.includes('<a href="https://'), 'the credit does not link the source');
+    assert.ok(out.html.includes('rel="noopener noreferrer"'), 'the credit link is not hardened');
+}
+
+console.log('equipmentImages.test.js: attribution assertions passed');

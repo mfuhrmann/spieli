@@ -1079,8 +1079,9 @@ location ~* ^/ext/wikimedia/(?<wm_host>[a-z0-9-]+\.(?:wikimedia|wikipedia)\.org|
     # host, so they belong here rather than in a location of their own.
     #
     # Case-INSENSITIVE (~*) and covering wikipedia.org as well as wikimedia.org,
-    # because this has to accept everything proxiedImageUrl rewrites — which is
-    # everything isSafeImageUrl accepts. A narrower pattern here does not fail
+    # because this has to accept everything proxiedImageUrl rewrites. That set
+    # is isSafeImageUrl's hosts PLUS wiki.openstreetmap.org (see above), not
+    # isSafeImageUrl's alone. A narrower pattern here does not fail
     # safe: the request falls through to the /ext/ catch-all and 404s, so images
     # that render today would silently break. Commons preserves filename case,
     # so ".JPG" is common, and 'image' tags legitimately point at

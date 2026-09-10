@@ -50,6 +50,7 @@ make test-unit    # unit tests only (app/src/lib/*.test.js + app/src/stores/*.te
 make lan-url      # print LAN IP for mobile testing
 
 make basemap-assets   # regenerate the vendored basemap style + macro world outline
+make equipment-images # re-resolve the equipment illustrations' File: names
 ```
 
 ## Docker Compose stack
@@ -322,13 +323,16 @@ This catches ordering bugs (e.g. a function referencing a table defined later in
 
 ## Build tools (`tools/`)
 
-Asset generators, run via `make basemap-assets`. Their output is committed, so a
-rebuild should be diffed rather than trusted.
+Asset generators. Their output is committed, so a rebuild should be diffed
+rather than trusted. Most run via `make basemap-assets`; the equipment-image
+resolver has its own target because it talks to the MediaWiki APIs rather than
+to a tile server.
 
 | Script | Purpose |
 |---|---|
 | `build-basemap-style.py` | Rebuilds both style variants: `style.json` (upstream URLs, used by `make dev`) and `style.local.json` (all assets under `/basemap/`, used by the container). Built from an upstream MapLibre style (default OpenFreeMap Bright). Desaturates the green landcover fills and drops the `poi` symbol layers, because spieli encodes completeness in green/amber/red and a green basemap competes with its own data. `--asset-base` rewrites tile/glyph/sprite URLs to a local origin; without it the committed style still fetches tiles, fonts and sprites from the upstream host. |
 | `build-basemap-fonts.py` | Vendors the @fontsource webfonts the style's `text-font` stacks need (`app/public/basemap/fonts/`), latin + latin-ext. `ol-mapbox-style` renders labels from a webfont CSS template, **not** from the style's `glyphs` endpoint, so a missing weight is invisible: labels fall back to a system font and every page load asks the upstream for a file it does not have. The build asserts coverage against the style and fails if a stack has no vendored file. |
+| `build-equipment-images.py` | Resolves the equipment illustrations' `File:` names to real file URLs, writing `app/src/lib/equipmentImages.generated.json`. Run via `make equipment-images`, **not** `make basemap-assets`. Follows the `Special:FilePath` redirect chain once at build time, because that chain cannot be proxied without allowing `/w/index.php` through the cache. Resolves against Commons then the OSM wiki, and **fails on a name that resolves on neither** — 14 currently do not and are pinned in `KNOWN_MISSING`, so a fifteenth is a build failure rather than a silently blank illustration. Also records author, licence and file-page URL, since serving the bytes through our own origin makes the CC attribution obligation ours. |
 | `build-macro-outline.py` | Rebuilds `app/public/basemap/world-110m.json` from Natural Earth 1:110m — the world outline shown under the hub macro tier, so areas outside the federation's tileset are not blank. |
 
 ## Documentation

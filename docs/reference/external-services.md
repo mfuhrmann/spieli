@@ -52,16 +52,6 @@ When it is created, the iframe carries `referrerpolicy="no-referrer"` and `sandb
 
 **The click gate is the control.** It is what stops that browsing context existing at all unless the visitor asks for it, and closing the viewer destroys the iframe again, so it does not outlive their interest. Dropping `allow-same-origin` would block the cookie but leaves nothing rendered, which is not a trade worth making silently.
 
-### Proxied by default
-
-| Service | Host | Same-origin path | Opt out with |
-|---|---|---|---|
-| [Nominatim](https://nominatim.openstreetmap.org) | `nominatim.openstreetmap.org` | `/ext/nominatim/` | `PROXY_NOMINATIM=false` |
-| [Wikimedia Commons](https://commons.wikimedia.org) | `commons.wikimedia.org` (API), `upload.wikimedia.org` and `thumb.wikimedia.org` (files) | `/ext/commons/`, `/ext/wikimedia/<host>/` | `PROXY_COMMONS=false` |
-| [Mangrove.reviews](https://mangrove.reviews) | `api.mangrove.reviews` | `/ext/mangrove/` | `PROXY_MANGROVE=false` |
-
-Opting a service out restores the old behaviour for it: the browser contacts that host directly, the generated CSP names it, and the privacy page grows its row back. See [Security Hardening](../ops/security.md#nginx-security-headers).
-
 ### What the proxies do and do not do
 
 - **Nothing is logged.** Every proxy location sets `access_log off`. This is a correctness property, not a tuning choice: proxying moves the visitor's request stream onto the operator's disk, and recording it would rebuild the per-visitor trail this design exists to remove — leaving the operator as controller of something worse than what was replaced. Errors are still logged.
