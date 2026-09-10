@@ -1204,6 +1204,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#adding-or-changing-an-equipment-illustration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Adding or changing an equipment illustration
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1929,6 +1940,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#adding-or-changing-an-equipment-illustration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Adding or changing an equipment illustration
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1980,6 +2002,17 @@
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>make<span class="w"> </span>install
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>make<span class="w"> </span>dev
 </code></pre></div>
+<h2 id="adding-or-changing-an-equipment-illustration">Adding or changing an equipment illustration<a class="headerlink" href="#adding-or-changing-an-equipment-illustration" title="Permanent link">&para;</a></h2>
+<p>The device and pitch tables (<code>app/src/lib/objPlaygroundEquipment.js</code>, <code>app/src/lib/equipmentAttributes.js</code>) name illustrations as MediaWiki <code>File:</code> titles. Those names are resolved to real file URLs at build time, so after adding or changing one:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>make<span class="w"> </span>equipment-images<span class="w">     </span><span class="c1"># re-resolve, rewriting app/src/lib/equipmentImages.generated.json</span>
+</code></pre></div>
+<p>Commit the regenerated file with your change. It is checked in on purpose, like the basemap assets, so a build never depends on someone else's API being up.</p>
+<p>Two things to expect:</p>
+<ul>
+<li><strong>A name that resolves on neither Commons nor the OSM wiki fails the target.</strong> That is the point: such a name used to render nothing while costing two failing requests. Fix the name, or add it to <code>KNOWN_MISSING</code> in <code>tools/build-equipment-images.py</code> with a reason.</li>
+<li><strong>The resolved URL is not <code>Special:FilePath</code>.</strong> It is the real file path on a Wikimedia or OSM-wiki host, which the <code>/ext/wikimedia/</code> proxy serves, so the visitor's browser never contacts either wiki. Do not reintroduce a <code>Special:FilePath</code> URL in the frontend — CI rejects it.</li>
+</ul>
+<p><code>make check-equipment-images</code> re-resolves and fails if the committed map no longer points at the same files. It is not wired into CI, because it depends on two live APIs; run it by hand if illustrations start disappearing.</p>
 
 
 

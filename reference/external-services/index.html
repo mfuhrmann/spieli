@@ -1635,10 +1635,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#the-panoramax-viewer-waits-to-be-asked" class="md-nav__link">
+  <a href="#proxied-by-default" class="md-nav__link">
     <span class="md-ellipsis">
       
-        The Panoramax viewer waits to be asked
+        Proxied by default
       
     </span>
   </a>
@@ -1646,10 +1646,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#proxied-by-default" class="md-nav__link">
+  <a href="#equipment-illustrations-are-resolved-at-build-time" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Proxied by default
+        Equipment illustrations are resolved at build time
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-panoramax-viewer-waits-to-be-asked" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Panoramax viewer waits to be asked
       
     </span>
   </a>
@@ -1959,10 +1970,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#the-panoramax-viewer-waits-to-be-asked" class="md-nav__link">
+  <a href="#proxied-by-default" class="md-nav__link">
     <span class="md-ellipsis">
       
-        The Panoramax viewer waits to be asked
+        Proxied by default
       
     </span>
   </a>
@@ -1970,10 +1981,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#proxied-by-default" class="md-nav__link">
+  <a href="#equipment-illustrations-are-resolved-at-build-time" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Proxied by default
+        Equipment illustrations are resolved at build time
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-panoramax-viewer-waits-to-be-asked" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Panoramax viewer waits to be asked
       
     </span>
   </a>
@@ -2059,7 +2081,7 @@
 They fall into groups, and the distinction matters for privacy: what the visitor's browser contacts directly, what it contacts only on a click, and what only this server ever contacts.</p>
 <h2 id="contacted-by-the-visitors-browser">Contacted by the visitor's browser<a class="headerlink" href="#contacted-by-the-visitors-browser" title="Permanent link">&para;</a></h2>
 <p>Most of what used to be here is gone: geocoding, the Commons API, the playground photo bytes and reviews are all fetched <strong>server-side</strong> through a cache on this instance, so the browser only connects to the instance itself.</p>
-<p>Two things still reach a third party directly, and both are deliberate rather than unfinished.</p>
+<p><strong>One</strong> thing still reaches a third party directly, and it is deliberate rather than unfinished.</p>
 <table>
 <thead>
 <tr>
@@ -2074,23 +2096,11 @@ They fall into groups, and the distinction matters for privacy: what the visitor
 <td><a href="https://panoramax.xyz">Panoramax</a></td>
 <td><code>api.panoramax.xyz</code></td>
 <td>Street-level photo <strong>thumbnails</strong> always; the <strong>viewer</strong> only after the visitor activates it</td>
-<td>The thumbnail endpoint answers <code>308</code> with a <code>Location</code> on a per-instance derivative host (<code>panoramax.openstreetmap.fr</code> for the flagship). nginx cannot follow a redirect, and Panoramax is a federation whose derivative hosts are not ours to enumerate. The viewer is an <code>&lt;iframe&gt;</code>: serving a whole interactive application from this origin would grant it same-origin privileges here</td>
-</tr>
-<tr>
-<td><a href="https://commons.wikimedia.org">Wikimedia Commons</a></td>
-<td><code>commons.wikimedia.org</code></td>
-<td>Illustrations of individual <strong>equipment attributes</strong></td>
-<td><code>app/src/lib/equipmentAttributes.js</code> renders them from <code>Special:FilePath</code>, which answers with a redirect chain. Following it would mean allowing <code>/w/index.php</code> — a full MediaWiki entry point — through the proxy</td>
+<td>The thumbnail endpoint answers <code>308</code> with a <code>Location</code> on a per-instance derivative host (<code>panoramax.openstreetmap.fr</code> for the flagship). nginx cannot follow a redirect, and Panoramax is a federation whose derivative hosts are not ours to enumerate. The viewer is an <code>&lt;iframe&gt;</code>: serving a whole interactive application from this origin would grant it same-origin privileges here. See <a href="https://github.com/mfuhrmann/spieli/issues/863">#863</a></td>
 </tr>
 </tbody>
 </table>
-<p>Both are named in the generated Content Security Policy and both keep a row on the generated privacy page. The playground photo <strong>gallery</strong> is proxied; only these equipment illustrations are not.</p>
-<h3 id="the-panoramax-viewer-waits-to-be-asked">The Panoramax viewer waits to be asked<a class="headerlink" href="#the-panoramax-viewer-waits-to-be-asked" title="Permanent link">&para;</a></h3>
-<p>Selecting a playground that has street-level photos fetches the <strong>thumbnail</strong> — a plain image request — and nothing else. The viewer <code>&lt;iframe&gt;</code> is created only when the visitor activates the preview.</p>
-<p>This matters more than the thumbnail does. An iframe gets its own browsing context on <code>api.panoramax.xyz</code>, with cookies, <code>localStorage</code> and whatever script the provider runs there; probing the live viewer shows it attempting to set a Matomo <code>_pk_id</code> analytics cookie. That is persistent identification rather than an address in a log, and it is the strongest capability any third party has on this page.</p>
-<p>When it is created, the iframe carries <code>referrerpolicy="no-referrer"</code> and <code>sandbox="allow-scripts allow-same-origin"</code>. That token set was established by probing the live viewer, not assumed: with <code>allow-scripts</code> alone the viewer renders nothing at all.</p>
-<p><strong>Be clear about what that sandbox does and does not do.</strong> <code>allow-same-origin</code> gives the frame its real origin back, which is what the viewer needs to work — and which means cookies and <code>localStorage</code>, including the Matomo cookie above, behave exactly as they would unsandboxed. The sandbox is not what protects the visitor from that. What it still withholds is popups, form submission, top-level navigation and downloads, so a share or "open in Panoramax" link inside the viewer will not work.</p>
-<p><strong>The click gate is the control.</strong> It is what stops that browsing context existing at all unless the visitor asks for it, and closing the viewer destroys the iframe again, so it does not outlive their interest. Dropping <code>allow-same-origin</code> would block the cookie but leaves nothing rendered, which is not a trade worth making silently.</p>
+<p>It is named in the generated Content Security Policy and keeps its rows on the generated privacy page.</p>
 <h3 id="proxied-by-default">Proxied by default<a class="headerlink" href="#proxied-by-default" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
@@ -2115,6 +2125,12 @@ They fall into groups, and the distinction matters for privacy: what the visitor
 <td><code>PROXY_COMMONS=false</code></td>
 </tr>
 <tr>
+<td><a href="https://wiki.openstreetmap.org">OpenStreetMap wiki</a></td>
+<td><code>wiki.openstreetmap.org</code></td>
+<td><code>/ext/wikimedia/&lt;host&gt;/</code></td>
+<td><code>PROXY_COMMONS=false</code></td>
+</tr>
+<tr>
 <td><a href="https://mangrove.reviews">Mangrove.reviews</a></td>
 <td><code>api.mangrove.reviews</code></td>
 <td><code>/ext/mangrove/</code></td>
@@ -2123,6 +2139,22 @@ They fall into groups, and the distinction matters for privacy: what the visitor
 </tbody>
 </table>
 <p>Opting a service out restores the old behaviour for it: the browser contacts that host directly, the generated CSP names it, and the privacy page grows its row back. See <a href="../../ops/security/#nginx-security-headers">Security Hardening</a>.</p>
+<h3 id="equipment-illustrations-are-resolved-at-build-time">Equipment illustrations are resolved at build time<a class="headerlink" href="#equipment-illustrations-are-resolved-at-build-time" title="Permanent link">&para;</a></h3>
+<p>The device and pitch tables name their illustrations as MediaWiki <code>File:</code> titles. Turning one into a URL used to mean a <code>Special:FilePath</code> request, which is a redirect chain, and that chain cannot be proxied without allowing <code>/w/index.php</code> — a full MediaWiki entry point — through the cache.</p>
+<p>So the redirect is followed at <strong>build time</strong> instead. <code>tools/build-equipment-images.py</code> resolves each name against Commons and then the OSM wiki, and commits <code>app/src/lib/equipmentImages.generated.json</code> holding the real file URL plus author and licence. Rebuild it with <code>make equipment-images</code>.</p>
+<p>Three things follow from that, and each fixed a real defect:</p>
+<ul>
+<li><strong>The bytes come from this instance.</strong> The resolved URL is an ordinary image path on a MediaWiki file host, which <code>/ext/wikimedia/&lt;host&gt;/</code> already serves.</li>
+<li><strong>The OSM wiki is no longer an undisclosed host.</strong> 14 of the 99 illustrations exist only there, and the frontend used to reach them through an <code>&lt;img onerror&gt;</code> fallback that appeared in neither this page nor the CSP. It is listed above now, and it is proxied like the rest.</li>
+<li><strong>A name that resolves nowhere fails the build.</strong> 14 of them did, all pitch illustrations, and in production each one cost two failing requests before an <code>onerror</code> handler hid the element. They are listed in the script's <code>KNOWN_MISSING</code> set so a <em>fifteenth</em> fails the build instead of joining them quietly, and are tracked as a data bug.</li>
+</ul>
+<p>Serving these bytes through our own origin makes us their distributor, so the CC attribution obligation is ours rather than Commons'. The author and licence are rendered under each illustration where the wiki exposes them; the OSM wiki returns no <code>extmetadata</code>, so its 14 files carry no credit.</p>
+<h3 id="the-panoramax-viewer-waits-to-be-asked">The Panoramax viewer waits to be asked<a class="headerlink" href="#the-panoramax-viewer-waits-to-be-asked" title="Permanent link">&para;</a></h3>
+<p>Selecting a playground that has street-level photos fetches the <strong>thumbnail</strong> — a plain image request — and nothing else. The viewer <code>&lt;iframe&gt;</code> is created only when the visitor activates the preview.</p>
+<p>This matters more than the thumbnail does. An iframe gets its own browsing context on <code>api.panoramax.xyz</code>, with cookies, <code>localStorage</code> and whatever script the provider runs there; probing the live viewer shows it attempting to set a Matomo <code>_pk_id</code> analytics cookie. That is persistent identification rather than an address in a log, and it is the strongest capability any third party has on this page.</p>
+<p>When it is created, the iframe carries <code>referrerpolicy="no-referrer"</code> and <code>sandbox="allow-scripts allow-same-origin"</code>. That token set was established by probing the live viewer, not assumed: with <code>allow-scripts</code> alone the viewer renders nothing at all.</p>
+<p><strong>Be clear about what that sandbox does and does not do.</strong> <code>allow-same-origin</code> gives the frame its real origin back, which is what the viewer needs to work — and which means cookies and <code>localStorage</code>, including the Matomo cookie above, behave exactly as they would unsandboxed. The sandbox is not what protects the visitor from that. What it still withholds is popups, form submission, top-level navigation and downloads, so a share or "open in Panoramax" link inside the viewer will not work.</p>
+<p><strong>The click gate is the control.</strong> It is what stops that browsing context existing at all unless the visitor asks for it, and closing the viewer destroys the iframe again, so it does not outlive their interest. Dropping <code>allow-same-origin</code> would block the cookie but leaves nothing rendered, which is not a trade worth making silently.</p>
 <h3 id="what-the-proxies-do-and-do-not-do">What the proxies do and do not do<a class="headerlink" href="#what-the-proxies-do-and-do-not-do" title="Permanent link">&para;</a></h3>
 <ul>
 <li><strong>Nothing is logged.</strong> Every proxy location sets <code>access_log off</code>. This is a correctness property, not a tuning choice: proxying moves the visitor's request stream onto the operator's disk, and recording it would rebuild the per-visitor trail this design exists to remove — leaving the operator as controller of something worse than what was replaced. Errors are still logged.</li>
