@@ -52,6 +52,39 @@ jobs:
       - name: Every third-party host the browser contacts must be disclosed
         run: make check-privacy
 
+      # Deliberately NOT `make check-equipment-images`: that resolves 99 titles
+      # against the live Commons and OSM wiki APIs, which would make this job
+      # slow and dependent on someone else's uptime. These are the properties
+      # that can be checked offline, and they are the ones that regressed.
+      - name: Equipment illustrations must not be fetched from a third party
+        run: |
+          set -eu
+          test -s app/src/lib/equipmentImages.generated.json \
+            || { echo 'the generated equipment-image map is missing' >&2; exit 1; }
+          python3 -c "
+          import json,sys
+          d=json.load(open('app/src/lib/equipmentImages.generated.json'))
+          imgs=d['images']
+          assert len(imgs) > 50, f'only {len(imgs)} images resolved'
+          allowed={'upload.wikimedia.org','thumb.wikimedia.org','wiki.openstreetmap.org'}
+          bad=[k for k,v in imgs.items() if v['host'] not in allowed]
+          assert not bad, f'unexpected hosts: {bad[:3]}'
+          utm=[k for k,v in imgs.items() if 'utm_' in v['path']]
+          assert not utm, f'campaign params survived: {utm[:3]}'
+          print(f'  ok  {len(imgs)} illustrations resolved across {len({v[\"host\"] for v in imgs.values()})} hosts')
+          "
+          # The redirect chain is what forced the direct fetch, so a
+          # CONSTRUCTED Special:FilePath URL must not come back. Matched
+          # together with a scheme: commons.js legitimately *parses* a
+          # Special:FilePath path out of an OSM tag (commonsFileFromUrl), and a
+          # bare grep for the string flags that and the comments explaining it.
+          # Test files are excluded: they carry such URLs as fixtures, because
+          # commonsFileFromUrl's whole job is to parse one out of an OSM tag.
+          if grep -rnE 'https?://[^\"'"'"' ]*Special:FilePath' app/src --include='*.js' --include='*.svelte' | grep -v '\.test\.js:'; then
+            echo 'a Special:FilePath URL is being constructed again — see #862' >&2; exit 1
+          fi
+          echo '  ok  no constructed Special:FilePath URL in the frontend'
+
   # ── Entrypoint + generated nginx config (CI gate) ────────────────────────────
   # The app entrypoint generates nginx config at container startup, so a
   # malformed heredoc is a start-up failure rather than a degraded feature — and
@@ -320,16 +353,15 @@ jobs:
           want "mangroveApiUrl:             '/ext/mangrove'" "$O"
           # connect-src reaches 'self': every fetch is same-origin.
           want "connect-src 'self'\"" "$O"
-          # img-src does NOT, and that is deliberate rather than a miss.
-          # equipmentAttributes.js renders equipment illustrations straight from
-          # commons.wikimedia.org/wiki/Special:FilePath/..., which cannot be
-          # proxied without opening /w/index.php as a relay; and Panoramax
-          # thumbnails redirect to a per-instance derivative host nginx cannot
-          # follow. Narrowing img-src while that code still fetches directly
-          # would block the images AND put a false statement on the privacy
-          # page, so both host sets stay.
-          want "https://*.wikimedia.org" "$O"
-          want "https://api.panoramax.xyz" "$O"
+          # img-src reduces to 'self' data: plus Panoramax, and no further.
+          # Since #862 the equipment illustrations resolve to real file URLs at
+          # build time and go through /ext/wikimedia/, so no Wikimedia host is
+          # fetched by the browser. Panoramax stays because its thumbnail
+          # endpoint redirects to a per-instance derivative host nginx cannot
+          # follow (#863).
+          want "img-src 'self' data: https://api.panoramax.xyz;" "$O"
+          reject "wikimedia.org" "$O"
+          reject "wiki.openstreetmap.org" "$O"
           # The viewer iframe is never proxied, so its host must remain framed.
           want "frame-src https://panoramax.xyz https://api.panoramax.xyz" "$O"
 
@@ -357,6 +389,10 @@ jobs:
           O=$(ext -e APP_MODE=standalone -e PROXY_COMMONS=false)
           want "commonsFileBase:            ''" "$O"
           want "https://*.wikimedia.org" "$O"
+          # The OSM wiki hosts 14 equipment illustrations. Before #862 it was
+          # reached through an <img onerror> fallback that appeared in neither
+          # the CSP nor the privacy page.
+          want "https://wiki.openstreetmap.org" "$O"
 
           printf '\n── the loopback limiter exists only when Nominatim is proxied\n'
           # Dead config that outlives an opt-out: the container would keep

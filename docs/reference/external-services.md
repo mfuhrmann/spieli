@@ -7,14 +7,38 @@ They fall into groups, and the distinction matters for privacy: what the visitor
 
 Most of what used to be here is gone: geocoding, the Commons API, the playground photo bytes and reviews are all fetched **server-side** through a cache on this instance, so the browser only connects to the instance itself.
 
-Two things still reach a third party directly, and both are deliberate rather than unfinished.
+**One** thing still reaches a third party directly, and it is deliberate rather than unfinished.
 
 | Service | Host | What still goes direct | Why it is not proxied |
 |---|---|---|---|
-| [Panoramax](https://panoramax.xyz) | `api.panoramax.xyz` | Street-level photo **thumbnails** always; the **viewer** only after the visitor activates it | The thumbnail endpoint answers `308` with a `Location` on a per-instance derivative host (`panoramax.openstreetmap.fr` for the flagship). nginx cannot follow a redirect, and Panoramax is a federation whose derivative hosts are not ours to enumerate. The viewer is an `<iframe>`: serving a whole interactive application from this origin would grant it same-origin privileges here |
-| [Wikimedia Commons](https://commons.wikimedia.org) | `commons.wikimedia.org` | Illustrations of individual **equipment attributes** | `app/src/lib/equipmentAttributes.js` renders them from `Special:FilePath`, which answers with a redirect chain. Following it would mean allowing `/w/index.php` — a full MediaWiki entry point — through the proxy |
+| [Panoramax](https://panoramax.xyz) | `api.panoramax.xyz` | Street-level photo **thumbnails** always; the **viewer** only after the visitor activates it | The thumbnail endpoint answers `308` with a `Location` on a per-instance derivative host (`panoramax.openstreetmap.fr` for the flagship). nginx cannot follow a redirect, and Panoramax is a federation whose derivative hosts are not ours to enumerate. The viewer is an `<iframe>`: serving a whole interactive application from this origin would grant it same-origin privileges here. See [#863](https://github.com/mfuhrmann/spieli/issues/863) |
 
-Both are named in the generated Content Security Policy and both keep a row on the generated privacy page. The playground photo **gallery** is proxied; only these equipment illustrations are not.
+It is named in the generated Content Security Policy and keeps its rows on the generated privacy page.
+
+### Proxied by default
+
+| Service | Host | Same-origin path | Opt out with |
+|---|---|---|---|
+| [Nominatim](https://nominatim.openstreetmap.org) | `nominatim.openstreetmap.org` | `/ext/nominatim/` | `PROXY_NOMINATIM=false` |
+| [Wikimedia Commons](https://commons.wikimedia.org) | `commons.wikimedia.org` (API), `upload.wikimedia.org` and `thumb.wikimedia.org` (files) | `/ext/commons/`, `/ext/wikimedia/<host>/` | `PROXY_COMMONS=false` |
+| [OpenStreetMap wiki](https://wiki.openstreetmap.org) | `wiki.openstreetmap.org` | `/ext/wikimedia/<host>/` | `PROXY_COMMONS=false` |
+| [Mangrove.reviews](https://mangrove.reviews) | `api.mangrove.reviews` | `/ext/mangrove/` | `PROXY_MANGROVE=false` |
+
+Opting a service out restores the old behaviour for it: the browser contacts that host directly, the generated CSP names it, and the privacy page grows its row back. See [Security Hardening](../ops/security.md#nginx-security-headers).
+
+### Equipment illustrations are resolved at build time
+
+The device and pitch tables name their illustrations as MediaWiki `File:` titles. Turning one into a URL used to mean a `Special:FilePath` request, which is a redirect chain, and that chain cannot be proxied without allowing `/w/index.php` — a full MediaWiki entry point — through the cache.
+
+So the redirect is followed at **build time** instead. `tools/build-equipment-images.py` resolves each name against Commons and then the OSM wiki, and commits `app/src/lib/equipmentImages.generated.json` holding the real file URL plus author and licence. Rebuild it with `make equipment-images`.
+
+Three things follow from that, and each fixed a real defect:
+
+- **The bytes come from this instance.** The resolved URL is an ordinary image path on a MediaWiki file host, which `/ext/wikimedia/<host>/` already serves.
+- **The OSM wiki is no longer an undisclosed host.** 14 of the 99 illustrations exist only there, and the frontend used to reach them through an `<img onerror>` fallback that appeared in neither this page nor the CSP. It is listed above now, and it is proxied like the rest.
+- **A name that resolves nowhere fails the build.** 14 of them did, all pitch illustrations, and in production each one cost two failing requests before an `onerror` handler hid the element. They are listed in the script's `KNOWN_MISSING` set so a *fifteenth* fails the build instead of joining them quietly, and are tracked as a data bug.
+
+Serving these bytes through our own origin makes us their distributor, so the CC attribution obligation is ours rather than Commons'. The author and licence are rendered under each illustration where the wiki exposes them; the OSM wiki returns no `extmetadata`, so its 14 files carry no credit.
 
 ### The Panoramax viewer waits to be asked
 

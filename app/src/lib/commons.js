@@ -25,10 +25,16 @@ import { commonsApiUrl as API, commonsFileBase } from './config.js';
 // Only ever called on values that have already passed isSafeImageUrl or come
 // from the API's own imageinfo, and it still re-checks the host itself, so it
 // can never be the thing that launders a hostile tag into a same-origin path.
+// Hosts whose image bytes the /ext/wikimedia/ proxy will serve. The OSM wiki
+// is here because 14 equipment illustrations exist only there; it is a plain
+// MediaWiki file host like the others, and keeping the list in one place is
+// what stops the frontend rewriting a URL the proxy will then refuse.
+const isProxiableImageHost = h => isWikimediaHost(h) || h === 'wiki.openstreetmap.org';
+
 export function proxiedImageUrl(url) {
     if (!commonsFileBase) return url;               // not proxied
     const u = parseUrl(url);
-    if (!u || !isWikimediaHost(u.hostname)) return url;
+    if (!u || !isProxiableImageHost(u.hostname)) return url;
     return `${commonsFileBase}/${u.hostname}${u.pathname}${u.search}`;
 }
 

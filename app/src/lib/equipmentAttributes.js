@@ -2,7 +2,41 @@
 // Ported from js/popup.js → getEquipmentAttributes / getEquipmentAttributesFromProps.
 
 import { objDevices } from './objPlaygroundEquipment.js';
+import { proxiedImageUrl } from './commons.js';
+// `with { type: 'json' }` is required by Node, which refuses a bare JSON
+// import, and accepted by Vite — so this module stays unit-testable outside a
+// bundler instead of only being reachable through the browser build.
+import equipmentImages from './equipmentImages.generated.json' with { type: 'json' };
 import { escapeHtml, tl } from './utils.js';
+
+// Resolve a `File:` name to a same-origin image URL, or null.
+//
+// The names come from our own device and pitch tables, and the map is built by
+// tools/build-equipment-images.py, which follows the Special:FilePath redirect
+// chain ONCE at build time. Doing it here at runtime is what forced the
+// browser to contact commons.wikimedia.org directly, then fall back to
+// wiki.openstreetmap.org on a 404 — a host no disclosure named and no CSP
+// allowed — and to make two failing requests for the 14 names that exist on
+// neither wiki.
+//
+// Returning null for an unknown name is the point: nothing is rendered, so a
+// missing illustration costs no request and shows no broken image. The build
+// fails on a name that resolves nowhere, so the map cannot silently rot.
+// Author and licence, when the wiki exposes them. Serving these bytes through
+// our own origin makes us the distributor, so the CC attribution obligation is
+// ours rather than Commons'. The OSM wiki returns no extmetadata, so its 14
+// files carry no credit and this renders nothing for them.
+function imageCredit(img) {
+    const parts = [img.artist, img.license].filter(Boolean);
+    return parts.length ? ` · ${escapeHtml(parts.join(', '))}` : '';
+}
+
+function resolvedImage(fileName) {
+    const entry = equipmentImages.images[fileName];
+    if (!entry) return null;
+    const url = proxiedImageUrl(`https://${entry.host}${entry.path}`);
+    return { url, license: entry.license, artist: entry.artist };
+}
 
 const pitchImages = {
     soccer:'File:Association football pitch imperial.svg',
@@ -132,23 +166,33 @@ export function getEquipmentAttributesFromProps(props, t) {
 
     // Fallback image when no panoramax photo and no attributes
     if (!html && !panoramaxUuid) {
-        const onerror = `if(this.dataset.fallback){this.src=this.dataset.fallback;delete this.dataset.fallback}else{this.parentElement.style.display='none'}`;
         const deviceKey = g('playground');
         const sportRaw  = g('sport');
+        // No onerror fallback any more: the build has already established that
+        // the URL resolves, so a failure here is a proxy or network problem
+        // rather than a wrong name, and a second guess at another host would
+        // just be an undisclosed request.
         if (deviceKey && objDevices[deviceKey]?.image) {
-            const imgFile = objDevices[deviceKey].image.replace(/^File:/, '').replace(/ /g, '_');
-            const altText = tl(t, `equipment.devices.${deviceKey}`, objDevices[deviceKey].name_de ?? deviceKey);
-            html = `<div class="device-img-wrap">` +
-                `<img src="https://commons.wikimedia.org/wiki/Special:FilePath/${imgFile}?width=800"` +
-                ` data-fallback="https://wiki.openstreetmap.org/wiki/Special:FilePath/${imgFile}"` +
-                ` alt="${escapeHtml(altText)}" style="object-fit:contain;width:100%" onerror="${onerror}">` +
-                `<p class="mb-0 text-muted" style="font-size:0.75rem;"><span class="bi bi-image"></span> ${escapeHtml(t('popup.deviceSymbol'))}</p></div>`;
+            const img = resolvedImage(objDevices[deviceKey].image);
+            if (img) {
+                const altText = tl(t, `equipment.devices.${deviceKey}`, objDevices[deviceKey].name_de ?? deviceKey);
+                html = `<div class="device-img-wrap">` +
+                    `<img src="${escapeHtml(img.url)}"` +
+                    ` alt="${escapeHtml(altText)}" loading="lazy" referrerpolicy="no-referrer"` +
+                    ` style="object-fit:contain;width:100%">` +
+                    `<p class="mb-0 text-muted" style="font-size:0.75rem;"><span class="bi bi-image"></span> ` +
+                    `${escapeHtml(t('popup.deviceSymbol'))}${imageCredit(img)}</p></div>`;
+            }
         } else if (leisure === 'pitch' && sportRaw && pitchImages[sportRaw]) {
-            const imgFile = pitchImages[sportRaw].replace(/^File:/, '').replace(/ /g, '_');
-            html = `<div class="device-img-wrap">` +
-                `<img src="https://commons.wikimedia.org/wiki/Special:FilePath/${imgFile}?width=800"` +
-                ` data-fallback="https://wiki.openstreetmap.org/wiki/Special:FilePath/${imgFile}"` +
-                ` alt="${escapeHtml(sportRaw)}" style="object-fit:contain;width:100%" onerror="${onerror}"></div>`;
+            const img = resolvedImage(pitchImages[sportRaw]);
+            if (img) {
+                html = `<div class="device-img-wrap">` +
+                    `<img src="${escapeHtml(img.url)}"` +
+                    ` alt="${escapeHtml(sportRaw)}" loading="lazy" referrerpolicy="no-referrer"` +
+                    ` style="object-fit:contain;width:100%">` +
+                    (imageCredit(img) ? `<p class="mb-0 text-muted" style="font-size:0.7rem;">${imageCredit(img).trim()}</p>` : '') +
+                    `</div>`;
+            }
         }
     }
 

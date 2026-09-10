@@ -1,9 +1,9 @@
-.PHONY: install dev build serve test test-unit check-compose check-privacy \
+.PHONY: install dev build serve test test-unit check-compose check-privacy check-equipment-images \
         up down import docker-build db-apply db-shell \
         seed-load seed-load2 seed-extract seed-extract2 import2 \
         require-npm require-docker installer lan-url \
         docs-install docs-serve docs-build docs-clean \
-        basemap-style basemap-outline basemap-fonts basemap-assets require-python3 \
+        basemap-style basemap-outline basemap-fonts basemap-assets equipment-images require-python3 \
         help
 
 # Bail with a clear message when a required tool is missing.
@@ -171,6 +171,12 @@ basemap-outline: require-python3 ## Rebuild the macro-tier world outline from Na
 
 basemap-fonts: require-python3   ## Re-vendor the webfonts the basemap style needs
 	python3 tools/build-basemap-fonts.py
+
+equipment-images: require-python3  ## Resolve equipment illustration File: names to real URLs
+	python3 tools/build-equipment-images.py
+
+check-equipment-images: require-python3  ## Fail if the generated equipment-image map is stale
+	python3 tools/build-equipment-images.py --check
 
 basemap-assets: basemap-style basemap-outline basemap-fonts  ## Rebuild all basemap assets
 
