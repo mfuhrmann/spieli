@@ -1,5 +1,6 @@
 <script>
   import { onMount } from 'svelte';
+  import { panoramaxThumbUrl, panoramaxViewerUrl } from '../lib/panoramax.js';
   import { _ } from 'svelte-i18n';
   import MapCompleteLink from './MapCompleteLink.svelte';
 
@@ -10,8 +11,10 @@
   // rest of the component free of `uuids?.length` checks.
   const uuids = $derived(uuidsProp ?? []);
 
-  const thumbUrl  = uuid => `https://api.panoramax.xyz/api/pictures/${uuid}/thumb.jpg`;
-  const viewerUrl = uuid => `https://api.panoramax.xyz/?pic=${uuid}&nav=none&focus=pic`;
+  // Host lives in lib/panoramax.js, which documents why Panoramax is the one
+  // service that is not proxied.
+  const thumbUrl  = panoramaxThumbUrl;
+  const viewerUrl = panoramaxViewerUrl;
 
   let fullscreen = $state(false);
   let modalIndex = $state(0);

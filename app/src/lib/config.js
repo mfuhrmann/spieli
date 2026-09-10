@@ -188,7 +188,6 @@ export const commonsApiUrl    = c.commonsApiUrl    || 'https://commons.wikimedia
 // see proxiedImageUrl for why the host cannot be assumed.
 export const commonsFileBase = c.commonsFileBase || '';
 export const mangroveApiUrl   = c.mangroveApiUrl   || 'https://api.mangrove.reviews';
-// Thumbnails only. The viewer is an iframe and is deliberately NOT proxied: a
-// same-origin proxy of a whole interactive application would grant it
-// same-origin privileges on this instance, which is worse than the iframe.
-export const panoramaxApiUrl  = c.panoramaxApiUrl  || 'https://api.panoramax.xyz';
+// Panoramax is intentionally absent: it cannot be proxied (its thumbnail
+// endpoint redirects to a per-instance derivative host, and its viewer is an
+// iframe). The host lives in app/src/lib/panoramax.js, which explains why.

@@ -29,7 +29,6 @@ All variables are set in `.env` (copy from `.env.example`). The installer genera
 | `PROXY_NOMINATIM` | `true` | ui, data-node-ui | Fetch geocoding server-side through `/ext/nominatim/` so the browser never contacts Nominatim. `false` restores direct browser requests. See [External-service proxies](#external-service-proxies). |
 | `PROXY_COMMONS` | `true` | ui, data-node-ui | Fetch the Commons API and the image bytes server-side (`/ext/commons/`, `/ext/wikimedia/`). |
 | `PROXY_MANGROVE` | `true` | ui, data-node-ui | Fetch and submit reviews server-side through `/ext/mangrove/`. Submission still verifies at Mangrove: the JWT signature covers its own claims, so the proxy is transparent to it. |
-| `PROXY_PANORAMAX` | `true` | ui, data-node-ui | Fetch street-level **thumbnails** server-side through `/ext/panoramax/`. The viewer iframe is never proxied — see [External-service proxies](#external-service-proxies). |
 | `EXT_CACHE_MAX_SIZE` | `2g` | ui, data-node-ui | Disk ceiling for the shared `/ext/` cache. One zone serves all four services; the default cache key includes the upstream host, so two upstreams cannot collide on a path. |
 | `EXT_CACHE_KEYS_ZONE` | `16m` | ui, data-node-ui | Key zone for the `/ext/` cache. Same caveat as the basemap one: it binds before disk does. |
 | `EXT_CACHE_INACTIVE` | `30d` | ui, data-node-ui | How long an unrequested `/ext/` response survives. |
@@ -318,17 +317,19 @@ Only the origin is stripped; the upstream's own paths are preserved verbatim. Th
 
 ## External-service proxies
 
-By default the visitor's browser contacts **no third party**. Geocoding, playground photos, reviews and street-level thumbnails are all fetched by this instance and served from its own origin, cached on disk. This is the same mechanism as the basemap, extended to the rest.
+By default the visitor's browser contacts **no third party**. Geocoding, playground photos and reviews are all fetched by this instance and served from its own origin, cached on disk. This is the same mechanism as the basemap, extended to the rest.
 
 ```
-Browser ──► this instance ──► nginx cache ──► Nominatim / Commons / Mangrove / Panoramax
+Browser ──► this instance ──► nginx cache ──► Nominatim / Commons / Mangrove
 ```
 
 Each service can be opted out individually with the `PROXY_*` variables above. Opting out restores direct browser requests for that service and adds its host to the generated Content Security Policy; the others stay proxied.
 
-### The one exception
+### Two exceptions
 
-The **Panoramax viewer** is an `<iframe>`, and it is deliberately not proxied. Serving a whole interactive third-party application from this instance's origin would grant it same-origin privileges here — access to this site's storage, and a document able to script the embedding page's origin. That is worse than a cross-origin iframe, so the viewer stays cross-origin. Thumbnails are plain images and are proxied.
+**Panoramax is not proxied at all.** Its thumbnail endpoint answers `308` with a `Location` on a per-instance derivative host, and nginx cannot follow a redirect — relaying it would send the browser to a host the privacy page does not name and the CSP does not allow. Its viewer is an `<iframe>`, and serving a whole interactive third-party application from this origin would grant it same-origin privileges here. Both stay cross-origin, are named in the CSP, and keep their privacy-page rows.
+
+**Equipment-attribute illustrations are not proxied.** They are rendered from `commons.wikimedia.org/wiki/Special:FilePath/…`, which answers with a redirect chain; following it would mean allowing `/w/index.php` through the proxy, which is a much larger relay surface than a photo gallery is worth. The playground photo gallery itself *is* proxied.
 
 ### Nothing is logged
 

@@ -21,7 +21,9 @@ const PROXIED = {
   commonsApiUrl: '/ext/commons/w/api.php',
   commonsFileBase: '/ext/wikimedia',
   mangroveApiUrl: '/ext/mangrove',
-  panoramaxApiUrl: '/ext/panoramax',
+  // No panoramax entry: Panoramax cannot be proxied (its thumbnail endpoint
+  // redirects to a per-instance derivative host, and its viewer is an iframe),
+  // so it stays browser-contacted by design. See app/src/lib/panoramax.js.
 };
 
 /** Record every request, split into same-origin and cross-origin. */

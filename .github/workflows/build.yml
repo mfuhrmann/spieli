@@ -168,15 +168,14 @@ jobs:
           # nothing.
           reject "img-src 'self' data: https:;" "$P"
           reject "connect-src 'self' https:\"" "$P"
-          # Since #853 the default proxies every service, so the directives
-          # reduce all the way to 'self'. The per-service host lists are
-          # asserted in the "External-service proxies" step, which opts each
-          # one out in turn.
-          want "img-src 'self' data:; connect-src 'self'\"" "$P"
+          # Since #853 the default proxies the fetch paths, so connect-src
+          # reduces to 'self'. img-src keeps the Wikimedia and Panoramax
+          # sources deliberately — see the "External-service proxies" step.
+          want "connect-src 'self'\"" "$P"
 
           printf '\n── with the proxies off, each host is named\n'
           P=$(csp -e APP_MODE=standalone -e PROXY_NOMINATIM=false \
-                -e PROXY_COMMONS=false -e PROXY_MANGROVE=false -e PROXY_PANORAMAX=false)
+                -e PROXY_COMMONS=false -e PROXY_MANGROVE=false)
           want "https://nominatim.openstreetmap.org" "$P"
           want "https://api.mangrove.reviews" "$P"
           want "https://*.wikimedia.org" "$P"
@@ -191,7 +190,7 @@ jobs:
           # basemap host has to reach both directives; naming only one
           # half-renders the map. With every service proxied it is the only
           # host in either list, which makes that easy to see.
-          want "img-src 'self' data: tiles.example.org;" "$P"
+          want "tiles.example.org;" "$P"
           want "connect-src 'self' tiles.example.org\"" "$P"
 
           printf '\n── proxied: the browser talks only to this origin\n'
@@ -239,8 +238,9 @@ jobs:
           P=$(csp -e APP_MODE=standalone -e BASEMAP_STYLE_URL=/basemap/nope.json \
                 -e BASEMAP_ATTRIBUTION='(c) Example')
           # Anchored for the same reason as the reject above: 'https:' alone is
-          # always present via frame-ancestors.
-          want "img-src 'self' data: https:;" "$P"
+          # always present via frame-ancestors. The wildcard is appended to
+          # whatever img-src already carries, so anchor on the separator.
+          want "https:; connect-src" "$P"
           want "connect-src 'self' https:\"" "$P"
 
           printf '\n── a mangled extra origin fails closed\n'
@@ -292,9 +292,18 @@ jobs:
           want "nominatimBaseUrl:           '/ext/nominatim'" "$O"
           want "commonsFileBase:            '/ext/wikimedia'" "$O"
           want "mangroveApiUrl:             '/ext/mangrove'" "$O"
-          # The end state the whole epic is aiming at. Anchored on the closing
-          # quote so a trailing host cannot slip in unnoticed.
-          want "img-src 'self' data:; connect-src 'self'\"" "$O"
+          # connect-src reaches 'self': every fetch is same-origin.
+          want "connect-src 'self'\"" "$O"
+          # img-src does NOT, and that is deliberate rather than a miss.
+          # equipmentAttributes.js renders equipment illustrations straight from
+          # commons.wikimedia.org/wiki/Special:FilePath/..., which cannot be
+          # proxied without opening /w/index.php as a relay; and Panoramax
+          # thumbnails redirect to a per-instance derivative host nginx cannot
+          # follow. Narrowing img-src while that code still fetches directly
+          # would block the images AND put a false statement on the privacy
+          # page, so both host sets stay.
+          want "https://*.wikimedia.org" "$O"
+          want "https://api.panoramax.xyz" "$O"
           # The viewer iframe is never proxied, so its host must remain framed.
           want "frame-src https://panoramax.xyz https://api.panoramax.xyz" "$O"
 
@@ -303,7 +312,7 @@ jobs:
           # onto the operator's disk, and logging it is worse than the exposure
           # being removed. One per location, plus the catch-all.
           want "=== access_log
-6" "$O"
+5" "$O"
 
           printf '\n── the rate limiter is on the loopback server and has a non-empty key\n'
           # nginx silently skips limit_req when its key is empty, and
@@ -324,11 +333,25 @@ jobs:
           want "commonsFileBase:            ''" "$O"
           want "https://*.wikimedia.org" "$O"
 
+          printf '\n── the loopback limiter exists only when Nominatim is proxied\n'
+          # Dead config that outlives an opt-out: the container would keep
+          # listening on 127.0.0.1:8091 ready to relay to Nominatim.
+          O=$(ext -e APP_MODE=standalone -e PROXY_NOMINATIM=false)
+          reject "server_name ext-nominatim-internal;" "$O"
+          want "commonsApiUrl:              '/ext/commons/w/api.php'" "$O"
+
           printf '\n── all proxies off: no locations, no cache zone\n'
           O=$(ext -e APP_MODE=standalone -e PROXY_NOMINATIM=false -e PROXY_COMMONS=false \
-                -e PROXY_MANGROVE=false -e PROXY_PANORAMAX=false)
+                -e PROXY_MANGROVE=false)
           reject "location ^~ /ext/nominatim/" "$O"
           want "https://nominatim.openstreetmap.org" "$O"
+
+          printf '\n── a value with whitespace fails closed with the intended message\n'
+          # An unquoted eval word-splits "true junk" and runs the second word,
+          # so the container dies with "not found" instead of naming the var.
+          docker run --rm --entrypoint sh -e PROXY_COMMONS='true junk' spieli-app:citest \
+            -c '/docker-entrypoint.sh 2>&1' | grep -q 'FATAL: PROXY_COMMONS' \
+            || { echo 'a whitespace-bearing PROXY_COMMONS was not reported properly' >&2; exit 1; }
 
           printf '\n── a bad boolean and a bad cache size both fail closed\n'
           docker run --rm --entrypoint sh -e PROXY_COMMONS=flase spieli-app:citest \

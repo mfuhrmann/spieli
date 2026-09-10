@@ -1,23 +1,35 @@
 // Panoramax — helper functions for street-level photos.
+//
+// Panoramax is the one third party the visitor's browser still contacts in a
+// default deployment, and it is deliberate:
+//
+//   * The thumbnail endpoint answers 308 with a Location on a per-instance
+//     derivative host (api.panoramax.xyz -> panoramax.openstreetmap.fr).
+//     nginx's proxy module cannot follow a redirect, so relaying it would send
+//     the browser to a host the privacy page does not name and the CSP does
+//     not allow. Rewriting it would need a proxy location per derivative host,
+//     and Panoramax is a federation whose set of those is not ours to
+//     enumerate.
+//   * The viewer is an <iframe>. Serving a whole interactive third-party
+//     application from this origin would grant it same-origin privileges here
+//     — access to this site's storage, and a document able to script the
+//     embedding page's origin. That is worse than a cross-origin iframe.
+//
+// Both are disclosed in docs/reference/external-services.md and on the
+// generated privacy page, and api.panoramax.xyz is named in img-src and
+// frame-src. Gating the iframe behind an explicit click is #852.
+//
+// These helpers exist so the host appears once rather than in every component
+// that renders a photo.
 
-import { panoramaxApiUrl } from './config.js';
+const PANORAMAX = 'https://api.panoramax.xyz';
 
-// Thumbnail URL for a Panoramax photo UUID (stable redirect to S3).
-// Routed through panoramaxApiUrl, which is a same-origin /ext/ path when this
-// instance proxies.
+// Thumbnail URL for a Panoramax photo UUID.
 export function panoramaxThumbUrl(uuid) {
-    return `${panoramaxApiUrl}/api/pictures/${uuid}/thumb.jpg`;
+    return `${PANORAMAX}/api/pictures/${uuid}/thumb.jpg`;
 }
 
 // Viewer URL for a Panoramax photo UUID.
-//
-// Deliberately NOT routed through the proxy, even when one is configured. This
-// URL is loaded in an <iframe>, and serving a whole interactive third-party
-// application from our own origin would give it same-origin privileges on this
-// instance — access to our localStorage and cookies, and a document that could
-// script the embedding page's origin. That is strictly worse than the
-// cross-origin iframe it would replace. Gating that iframe behind a click is
-// the actual fix, and it is #852.
 export function panoramaxViewerUrl(uuid) {
-    return `https://api.panoramax.xyz/?pic=${uuid}&nav=none&focus=pic`;
+    return `${PANORAMAX}/?pic=${uuid}&nav=none&focus=pic`;
 }

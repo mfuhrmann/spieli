@@ -5,26 +5,26 @@ They fall into groups, and the distinction matters for privacy: what the visitor
 
 ## Contacted by the visitor's browser
 
-**By default, nothing is.** Every service below is fetched server-side through a cache on this instance, so the visitor's browser only ever connects to the instance itself. One exception is listed further down.
+Most of what used to be here is gone: geocoding, the Commons API, the playground photo bytes and reviews are all fetched **server-side** through a cache on this instance, so the browser only connects to the instance itself.
 
-That is a change from earlier releases, where each of these was contacted directly by the browser and received the visitor's IP address, `User-Agent` and `Referer` by construction.
+Two things still reach a third party directly, and both are deliberate rather than unfinished.
 
-| Service | Host | Purpose | Same-origin path | Opt out with |
-|---|---|---|---|---|
-| [Nominatim](https://nominatim.openstreetmap.org) | `nominatim.openstreetmap.org` | Location search, region-URL resolution | `/ext/nominatim/` | `PROXY_NOMINATIM=false` |
-| [Wikimedia Commons](https://commons.wikimedia.org) | `commons.wikimedia.org` (API), `upload.wikimedia.org` and `thumb.wikimedia.org` (files) | Playground photos from `wikimedia_commons` / `image` tags | `/ext/commons/`, `/ext/wikimedia/<host>/` | `PROXY_COMMONS=false` |
-| [Mangrove.reviews](https://mangrove.reviews) | `api.mangrove.reviews` | Pseudonymous community reviews, read and submit | `/ext/mangrove/` | `PROXY_MANGROVE=false` |
-| [Panoramax](https://panoramax.xyz) | `api.panoramax.xyz` | Street-level photo **thumbnails** | `/ext/panoramax/` | `PROXY_PANORAMAX=false` |
+| Service | Host | What still goes direct | Why it is not proxied |
+|---|---|---|---|
+| [Panoramax](https://panoramax.xyz) | `api.panoramax.xyz` | Street-level photo **thumbnails** and the **viewer** | The thumbnail endpoint answers `308` with a `Location` on a per-instance derivative host (`panoramax.openstreetmap.fr` for the flagship). nginx cannot follow a redirect, and Panoramax is a federation whose derivative hosts are not ours to enumerate. The viewer is an `<iframe>`: serving a whole interactive application from this origin would grant it same-origin privileges here |
+| [Wikimedia Commons](https://commons.wikimedia.org) | `commons.wikimedia.org` | Illustrations of individual **equipment attributes** | `app/src/lib/equipmentAttributes.js` renders them from `Special:FilePath`, which answers with a redirect chain. Following it would mean allowing `/w/index.php` — a full MediaWiki entry point — through the proxy |
 
-Opting a service out restores the old behaviour for it: the browser contacts that host directly, and the generated Content Security Policy names it. See [Security Hardening](../ops/security.md#nginx-security-headers).
+Both are named in the generated Content Security Policy and both keep a row on the generated privacy page. The playground photo **gallery** is proxied; only these equipment illustrations are not.
 
-### The one thing the browser still contacts
+### Proxied by default
 
-The **Panoramax viewer** is an `<iframe>` on `api.panoramax.xyz`, and it is deliberately *not* proxied. Serving a whole interactive third-party application from this instance's own origin would give it same-origin privileges here — access to this site's storage, and a document able to script the embedding page's origin. That is strictly worse than a cross-origin iframe.
+| Service | Host | Same-origin path | Opt out with |
+|---|---|---|---|
+| [Nominatim](https://nominatim.openstreetmap.org) | `nominatim.openstreetmap.org` | `/ext/nominatim/` | `PROXY_NOMINATIM=false` |
+| [Wikimedia Commons](https://commons.wikimedia.org) | `commons.wikimedia.org` (API), `upload.wikimedia.org` and `thumb.wikimedia.org` (files) | `/ext/commons/`, `/ext/wikimedia/<host>/` | `PROXY_COMMONS=false` |
+| [Mangrove.reviews](https://mangrove.reviews) | `api.mangrove.reviews` | `/ext/mangrove/` | `PROXY_MANGROVE=false` |
 
-An iframe is also not an image: it gets its own browsing context, with cookies, `localStorage` and whatever script the provider runs. It is the strongest capability any third party has on the page. Gating it behind an explicit click is tracked in [#852](https://github.com/mfuhrmann/spieli/issues/852); until then, selecting a playground that has street-level photos does load it.
-
-Thumbnails are plain `<img>` requests and are proxied like everything else.
+Opting a service out restores the old behaviour for it: the browser contacts that host directly, the generated CSP names it, and the privacy page grows its row back. See [Security Hardening](../ops/security.md#nginx-security-headers).
 
 ### What the proxies do and do not do
 

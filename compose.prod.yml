@@ -129,7 +129,6 @@ services:
       PROXY_NOMINATIM:            ${PROXY_NOMINATIM:-}
       PROXY_COMMONS:              ${PROXY_COMMONS:-}
       PROXY_MANGROVE:             ${PROXY_MANGROVE:-}
-      PROXY_PANORAMAX:            ${PROXY_PANORAMAX:-}
       EXT_CACHE_MAX_SIZE:         ${EXT_CACHE_MAX_SIZE:-2g}
       EXT_CACHE_KEYS_ZONE:        ${EXT_CACHE_KEYS_ZONE:-16m}
       EXT_CACHE_INACTIVE:         ${EXT_CACHE_INACTIVE:-30d}

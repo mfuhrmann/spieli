@@ -2,11 +2,20 @@ import { nominatimBaseUrl } from './config.js';
 
 const DEFAULT_TIMEOUT_MS = 3000;
 
-function getAcceptLanguage() {
-  if (typeof navigator !== 'undefined' && navigator.language) {
-    return navigator.language;
-  }
-  return 'de';
+// Only the PRIMARY subtag: 'de-DE', 'de-AT' and 'de' all become 'de'.
+//
+// This is a cache-cardinality decision, not cosmetics. The value goes into the
+// query string, and the proxy's cache key includes it, so passing the full tag
+// makes region-URL resolution — which is otherwise identical for every visitor
+// of an instance and is the query the cache exists for — a separate entry per
+// browser locale. Nominatim is behind an instance-wide 1 r/s limiter, so a
+// fragmented cache turns into shed requests and a silently empty search box.
+//
+// Nominatim treats this as a preference list and still falls back sensibly, so
+// place names are unaffected in practice.
+export function getAcceptLanguage() {
+  const tag = (typeof navigator !== 'undefined' && navigator.language) || 'de';
+  return tag.split('-')[0].toLowerCase() || 'de';
 }
 
 export async function nominatimFetch(path, params = {}, { timeout = DEFAULT_TIMEOUT_MS, signal } = {}) {

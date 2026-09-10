@@ -102,7 +102,7 @@ There is deliberately **no `report-uri`**. It would collect a per-visitor record
 
 ### What the narrowed policy allows, and why
 
-- `img-src 'self' data:` — in a default deployment, nothing more, for the same reason. With `PROXY_COMMONS=false` the Wikimedia sources come back as wildcards (`https://*.wikimedia.org https://wikimedia.org https://*.wikipedia.org https://wikipedia.org`), because `app/src/lib/commons.js` accepts an OSM `image` tag on any of those hosts; pinning it to `upload.` and `commons.` would silently stop rendering valid tags, and which host serves a file is not fixed — the API currently returns thumbnails on `thumb.wikimedia.org`. The apex domains are listed separately because `*.example.org` does not match `example.org` in CSP. With `PROXY_PANORAMAX=false`, `https://api.panoramax.xyz` comes back too.
+- `img-src 'self' data: https://*.wikimedia.org https://wikimedia.org https://*.wikipedia.org https://wikipedia.org https://api.panoramax.xyz` — these stay even with every proxy enabled, because two image paths are still fetched by the browser: equipment-attribute illustrations and Panoramax thumbnails (see [External-service proxies](configuration.md#external-service-proxies)). Narrowing them while that code fetches directly would block the images and put a false statement on the privacy page. The Wikimedia entries are wildcards (`https://*.wikimedia.org https://wikimedia.org https://*.wikipedia.org https://wikipedia.org`), because `app/src/lib/commons.js` accepts an OSM `image` tag on any of those hosts; pinning it to `upload.` and `commons.` would silently stop rendering valid tags, and which host serves a file is not fixed — the API currently returns thumbnails on `thumb.wikimedia.org`. The apex domains are listed separately because `*.example.org` does not match `example.org` in CSP. With `PROXY_PANORAMAX=false`, `https://api.panoramax.xyz` comes back too.
 - `connect-src 'self'` — in a default deployment, nothing more. Since the external services are fetched server-side (see [External-service proxies](configuration.md#external-service-proxies)), the browser has nothing third-party to connect to. Opting a proxy out with `PROXY_NOMINATIM=false` and friends adds that service's host back. Three further origins are added automatically when your configuration calls for them:
     - **A remote `API_BASE_URL`.** A `DEPLOY_MODE=ui` stack points at PostgREST on another host, and every data call goes to `${API_BASE_URL}/rpc/…`. Its origin is added, scheme and port included.
     - **Your hub backends.** Read from the `url` fields of `registry.json` when the registry is a same-origin file the entrypoint can read. Only `url` values are used — a `website` or docs link elsewhere in the registry does not widen the policy. If your registry is fetched from a URL at runtime, use `CSP_CONNECT_EXTRA`.
@@ -133,10 +133,10 @@ spieli calls several third-party services at runtime, and by default it calls th
 | Service | What the browser sends, by default |
 |---|---|
 | Nominatim | **Nothing** — fetched server-side through `/ext/nominatim/` |
-| Wikimedia Commons | **Nothing** — fetched server-side through `/ext/commons/` and `/ext/wikimedia/` |
+| Wikimedia Commons — playground photos | **Nothing** — fetched server-side through `/ext/commons/` and `/ext/wikimedia/` |
 | Mangrove.reviews | **Nothing** — fetched server-side through `/ext/mangrove/` |
-| Panoramax thumbnails | **Nothing** — fetched server-side through `/ext/panoramax/` |
-| Panoramax **viewer** | Photo UUID, IP address, and its own browsing context. An `<iframe>`, deliberately not proxied |
+| Panoramax (thumbnails **and** viewer) | Photo UUID, IP address. Not proxied: the thumbnail endpoint redirects to a per-instance derivative host, and the viewer is an `<iframe>` that must not be served from this origin |
+| Wikimedia Commons — equipment illustrations | Image file name, IP address. Rendered from `Special:FilePath`, which cannot be proxied without opening `/w/index.php` as a relay |
 | Basemap provider | **Nothing** — fetched server-side and cached, unless you opt out with `BASEMAP_URL` / `BASEMAP_STYLE_URL` |
 | Geofabrik | Nothing — server-side download only |
 
