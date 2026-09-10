@@ -56,7 +56,9 @@
   },
   "panoramax": {
     "noPhotos": "No photos yet.",
-    "fullscreen": "Show fullscreen"
+    "fullscreen": "Show fullscreen",
+    "loadViewer": "Show street-level photo",
+    "loadViewerHint": "Opens the interactive Panoramax viewer, which sets its own cookies"
   },
   "search": {
     "placeholder": "Search …",
