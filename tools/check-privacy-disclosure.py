@@ -50,7 +50,6 @@ LINK_ONLY = {
     'www.wikidata.org',
     'wikidata.org',
     'www.openstreetmap.org',
-    'wiki.openstreetmap.org',
     'openstreetmap.org',
     'de.wikipedia.org',
     'en.wikipedia.org',
@@ -75,6 +74,10 @@ IGNORE_EXACT = {'example.com', 'example.org', 'a.example', 'wikimedia.org.evil.c
 
 # Contacted at runtime from data rather than from a literal in the source, so
 # the scan below cannot see them. Each entry needs a reason.
+# wiki.openstreetmap.org was in LINK_ONLY until #862, which was wrong: 14
+# equipment illustrations exist only on the OSM wiki, and the frontend reached
+# them through an <img> onerror fallback. It is an image host, not just a link,
+# whenever the Commons proxy is disabled.
 RUNTIME_DERIVED = {
     # Image URLs come from the Commons API response and from OSM `image` tags,
     # so the host never appears as a literal outside tests.
@@ -84,6 +87,9 @@ RUNTIME_DERIVED = {
     # Found the hard way: a rewrite that assumed one host sent every thumbnail
     # straight to Wikimedia while appearing to work.
     'thumb.wikimedia.org': 'thumbnail URLs returned by the Commons API',
+    # Resolved at build time into equipmentImages.generated.json rather than
+    # written as a literal, so the host appears in no source file.
+    'wiki.openstreetmap.org': 'equipment illustrations that exist only on the OSM wiki',
 }
 
 HOST_RE = re.compile(r'https?://([A-Za-z0-9][A-Za-z0-9.-]*\.[A-Za-z]{2,})')

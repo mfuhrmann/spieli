@@ -1068,12 +1068,20 @@ ${_ext_common}
 # appear in the configuration, so this include must stay ABOVE the
 # ~* \.(js|css|png|...)$ static block in nginx.conf, or that block claims every
 # proxied image and answers try_files =404.
-location ~* ^/ext/wikimedia/(?<wm_host>[a-z0-9-]+\.(?:wikimedia|wikipedia)\.org)/ {
+location ~* ^/ext/wikimedia/(?<wm_host>[a-z0-9-]+\.(?:wikimedia|wikipedia)\.org|wiki\.openstreetmap\.org)/ {
     limit_except GET { deny all; }
 
+    # wiki.openstreetmap.org is in the host allowlist despite the /ext/wikimedia/
+    # prefix, and the prefix is now a slight misnomer. 14 of the equipment
+    # illustrations exist only on the OSM wiki, and before #862 the browser
+    # reached them through an onerror fallback that no disclosure named and no
+    # CSP allowed. They are ordinary image bytes on an ordinary MediaWiki file
+    # host, so they belong here rather than in a location of their own.
+    #
     # Case-INSENSITIVE (~*) and covering wikipedia.org as well as wikimedia.org,
-    # because this has to accept everything proxiedImageUrl rewrites — which is
-    # everything isSafeImageUrl accepts. A narrower pattern here does not fail
+    # because this has to accept everything proxiedImageUrl rewrites. That set
+    # is isSafeImageUrl's hosts PLUS wiki.openstreetmap.org (see above), not
+    # isSafeImageUrl's alone. A narrower pattern here does not fail
     # safe: the request falls through to the /ext/ catch-all and 404s, so images
     # that render today would silently break. Commons preserves filename case,
     # so ".JPG" is common, and 'image' tags legitimately point at
@@ -1250,19 +1258,24 @@ registry_hosts() {
 # makes the default deployment's lists nearly empty: with every proxy on, the
 # browser fetches all of this from this origin and 'self' covers it.
 #
-# The Wikimedia image sources are UNCONDITIONAL, even though the photo gallery
-# is proxied. app/src/lib/equipmentAttributes.js renders equipment-attribute
-# images straight from commons.wikimedia.org/wiki/Special:FilePath/..., and
-# that path is not proxied: Special:FilePath answers with a redirect chain that
-# would need /w/index.php — a full MediaWiki entry point — opened up as a relay
-# to follow. Narrowing img-src while that code still fetches directly would
-# block those images and put a false statement on the privacy page.
-# Tracked as a follow-up; see docs/reference/external-services.md.
+# The Wikimedia sources are conditional again as of #862. They were
+# unconditional for one release because equipment illustrations still fetched
+# from commons.wikimedia.org directly; those now resolve to real file URLs at
+# build time and go through /ext/wikimedia/ like the photo gallery, so with the
+# Commons proxy on nothing image-shaped reaches Wikimedia.
+#
+# wiki.openstreetmap.org is in this list, not just the Wikimedia hosts: 14
+# equipment illustrations exist only on the OSM wiki, and before #862 the
+# browser reached them through an onerror fallback that appeared in neither the
+# CSP nor the privacy page.
 _csp_img=""
-_csp_img=$(_csp_append "$_csp_img" "https://*.wikimedia.org")
-_csp_img=$(_csp_append "$_csp_img" "https://wikimedia.org")
-_csp_img=$(_csp_append "$_csp_img" "https://*.wikipedia.org")
-_csp_img=$(_csp_append "$_csp_img" "https://wikipedia.org")
+if [ -z "$EXT_COMMONS" ]; then
+    _csp_img=$(_csp_append "$_csp_img" "https://*.wikimedia.org")
+    _csp_img=$(_csp_append "$_csp_img" "https://wikimedia.org")
+    _csp_img=$(_csp_append "$_csp_img" "https://*.wikipedia.org")
+    _csp_img=$(_csp_append "$_csp_img" "https://wikipedia.org")
+    _csp_img=$(_csp_append "$_csp_img" "https://wiki.openstreetmap.org")
+fi
 # Unconditional: Panoramax thumbnails are always fetched by the browser,
 # because the endpoint redirects to a per-instance derivative host that cannot
 # be proxied. Its viewer iframe is covered by frame-src.
@@ -1544,20 +1557,18 @@ EXTROW_NOM
         <td>IP-Adresse, User-Agent, Referer, Name der abgerufenen Bilddatei</td>
       </tr>
 EXTROW_COM
-        else
-            # Even with the Commons proxy enabled, one image path is still
-            # fetched by the browser: equipment-attribute illustrations are
-            # rendered straight from Special:FilePath, which cannot be proxied
-            # without opening /w/index.php as a relay. A row that omitted this
-            # would be a false statement about a data transfer.
-            cat >> "$EXT_ROWS_FILE" <<'EXTROW_COM_PARTIAL'
+            # The OSM wiki hosts 14 of the equipment illustrations, so it is a
+            # browser-contacted image host too whenever the Commons proxy is
+            # off. It used to be reached through an onerror fallback that this
+            # table never mentioned.
+            cat >> "$EXT_ROWS_FILE" <<'EXTROW_OSMWIKI'
       <tr>
-        <td><a href="https://commons.wikimedia.org/" target="_blank" rel="noopener">Wikimedia Commons</a><br><code>commons.wikimedia.org</code></td>
-        <td>Abbildungen einzelner Ausstattungsmerkmale</td>
-        <td>Beim Auswählen eines Spielplatzes, für dessen Ausstattung Abbildungen vorliegen. Die Spielplatzfotos selbst werden über diese Instanz geladen und erreichen Wikimedia nicht</td>
-        <td>IP-Adresse, User-Agent, Referer, Name der abgerufenen Bilddatei</td>
+        <td><a href="https://wiki.openstreetmap.org/" target="_blank" rel="noopener">OpenStreetMap-Wiki</a><br><code>wiki.openstreetmap.org</code></td>
+        <td>Abbildungen einzelner Ausstattungsmerkmale, die nicht bei Wikimedia Commons liegen</td>
+        <td>Beim Auswählen eines Spielplatzes, für dessen Ausstattung solche Abbildungen vorliegen</td>
+        <td>IP-Adresse, User-Agent, Name der abgerufenen Bilddatei. Ein Referer wird nicht übertragen (<code>referrerpolicy="no-referrer"</code>)</td>
       </tr>
-EXTROW_COM_PARTIAL
+EXTROW_OSMWIKI
         fi
         if [ -z "$EXT_MANGROVE" ]; then
             cat >> "$EXT_ROWS_FILE" <<'EXTROW_MG'
