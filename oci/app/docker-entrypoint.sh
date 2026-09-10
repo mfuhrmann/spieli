@@ -712,33 +712,52 @@ _csp_append() {
     esac
 }
 
-# Hosts are emitted WITHOUT a scheme where the scheme is not ours to assume: a
-# bare host-source matches the document's own scheme, so it covers an operator
-# running an http backend or tileserver in a lab. The fixed third-party
-# services below are pinned to https:// because that is what the frontend
-# builds and there is no reason to accept a downgrade.
+# origin_of <url> — "scheme://host[:port]" for an absolute URL, "host[:port]"
+# for a scheme-relative one, empty for a same-origin path.
+#
+# Deliberately NOT host_of(), whose consumer is the human-readable privacy page
+# and which drops both scheme and port. Both matter here and in opposite
+# directions: a CSP host-source with no port matches only the scheme's default
+# port, and one with no scheme matches only the document's own scheme. So
+# reducing http://lab.internal:3000 to lab.internal yields a policy that blocks
+# the backend it was added for twice over — wrong port, and no http on an
+# https-served page.
+origin_of() {
+    case "$1" in
+        # //host must be tested BEFORE /path. A `case` takes the first match, so
+        # with /* first the //* branch is unreachable and a scheme-relative URL
+        # is misread as same-origin — the same trap host_of() documents, and one
+        # this function reintroduced on its first draft.
+        //*) _o=${1#//}; _o=${_o%%/*}; _o=${_o##*@}; printf '%s' "$_o" ;;
+        ''|/*) ;;                       # same-origin: 'self' already covers it
+        *://*) _o=${1#*://}; _o=${_o%%/*}; _o=${_o##*@}
+               printf '%s://%s' "${1%%://*}" "$_o" ;;
+        *) _o=${1%%/*}; _o=${_o##*@}; printf '%s' "$_o" ;;
+    esac
+}
 
 # registry_hosts — the backend origins hub mode connects to. The registry is
 # operator-supplied and not known at build time, so it is read here.
-# Text scan rather than a JSON parse for the same reason as style_asset_hosts:
-# there is no jq in the runtime image, and any http(s) URL in the document is
-# somewhere the browser will be sent.
-# The PORT is deliberately kept, unlike host_of() which drops it for the
-# human-readable privacy page. A CSP host-source with no port matches only the
-# scheme's default port, so reducing http://lab.internal:3000 to lab.internal
-# produces a policy that blocks the backend it was added for.
+#
+# Only the "url" values are taken, NOT every URL in the document. A text scan
+# for any http(s) URL is right for a style document, where every URL really is
+# an asset the browser fetches, but a registry is not: an operator adding a
+# per-instance "website" or a docs link would silently re-widen the very
+# directive this change exists to narrow.
+#
+# Still a text scan rather than a JSON parse: there is no jq in the runtime
+# image.
 registry_hosts() {
     case "$1" in
-        ''|/*) ;;                       # same-origin path: read it below
-        *)  _rh=${1#*://}               # remote registry: its own origin counts,
-            _rh=${_rh%%/*}              # and its contents cannot be read here
-            _rh=${_rh##*@}
-            printf '%s' "$_rh"; return ;;
+        //*|*://*) origin_of "$1"; return ;;   # remote registry: its own origin
+                                               # counts, contents unreadable here
     esac
     _rf="${WEBROOT}${1%%\?*}"
     [ -f "$_rf" ] || return
-    grep -o 'https\?://[A-Za-z0-9._:-]*' "$_rf" 2>/dev/null \
-        | sed -e 's#^https\?://##' | sort -u | tr '\n' ' '
+    grep -o '"url"[^"]*"[^"]*"' "$_rf" 2>/dev/null \
+        | sed -e 's/.*"\([^"]*\)"$/\1/' \
+        | while IFS= read -r _ru; do origin_of "$_ru"; printf '\n'; done \
+        | grep -v '^$' | sort -u | tr '\n' ' '
 }
 
 # img-src. The Wikimedia entries are wildcards on purpose: app/src/lib/commons.js
@@ -760,11 +779,14 @@ _csp_connect="https://nominatim.openstreetmap.org https://commons.wikimedia.org 
 # that half-renders.
 case "$BASEMAP_TILE_PROVIDER_STATE" in
     hosts)
-        # Note: this list comes from host_of/style_asset_hosts, which drop the
+        # These come from host_of/style_asset_hosts, which drop BOTH scheme and
         # port because their other consumer is the human-readable privacy page.
-        # A tileserver on a non-default port therefore needs its origin adding
-        # via CSP_IMG_EXTRA *and* CSP_CONNECT_EXTRA. Harmless while the
-        # narrowed policy is report-only; resolve before the enforcing swap.
+        # A bare host-source matches only the document's own scheme (plus the
+        # http->https upgrade allowance) and only that scheme's default port, so
+        # a tileserver on a non-default port, or one served over http behind an
+        # https instance, needs its origin adding via CSP_IMG_EXTRA *and*
+        # CSP_CONNECT_EXTRA. Harmless while the narrowed policy is report-only;
+        # resolve before the enforcing swap.
         for _bmh in $BASEMAP_TILE_PROVIDER_HOST; do
             [ -n "$_bmh" ] || continue
             _csp_img=$(_csp_append     "$_csp_img"     "$_bmh")
@@ -784,6 +806,16 @@ case "$BASEMAP_TILE_PROVIDER_STATE" in
     # none: default and proxied delivery. The browser only talks to this
     # origin for the basemap, so 'self' already covers it.
 esac
+
+# The PostgREST API. Same-origin /api by default, but DEPLOY_MODE=ui points it
+# at another host entirely, and every data call in app/src/lib/api.js goes to
+# "${baseUrl}/rpc/...". Missing this is not a cosmetic gap: a ui-mode stack
+# would lose every playground the moment the narrowed policy is enforced, which
+# is the most severe way this generator can be wrong.
+_api_origin=$(origin_of "$SAFE_API_BASE_URL")
+if [ -n "$_api_origin" ]; then
+    _csp_connect=$(_csp_append "$_csp_connect" "$_api_origin")
+fi
 
 # Hub backends.
 if [ "$APP_MODE" = "hub" ]; then
@@ -825,16 +857,26 @@ done
 # it is a separate decision about embedding (see #855).
 _csp_common="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; frame-src https://panoramax.xyz https://api.panoramax.xyz; frame-ancestors 'self' https:"
 
-cat > /etc/nginx/csp.conf <<CSPEOF
+# Written to a temp file and moved into place, so the file never exists in a
+# half-written state. `cat > file` creates it empty and then fills it, and a
+# reader that catches that window (nginx -t in CI, an operator inspecting it
+# during a restart) sees a truncated policy or an invalid config — a failure
+# that looks exactly like a real regression. rename(2) within one filesystem is
+# atomic, so a reader sees either the old file or the complete new one.
+cat > /etc/nginx/csp.conf.new <<CSPEOF
 # Generated by docker-entrypoint.sh — rewritten on every start, do not edit.
 #
 # TWO policies ship together on purpose. The first is the long-standing
 # wildcard policy and is ENFORCED. The second is the narrowed host list and is
-# REPORT-ONLY: violations appear in the browser console (and as
-# securitypolicyviolation events, which is how CI asserts on them) but nothing
-# is blocked. When the report set has been confirmed empty across both app
-# modes and both basemap postures, the report-only header becomes the enforced
-# one and the wildcard policy is deleted. See docs/ops/security.md.
+# REPORT-ONLY: violations appear in the visitor's browser console but nothing is
+# blocked. Note what that does and does not give us: CI asserts on the GENERATED
+# POLICY (the "CSP must follow the configuration" job greps this file), not on
+# violations. Nothing in the repo observes securitypolicyviolation events, and
+# there is deliberately no report-uri, so the observation period depends on
+# operators reporting console messages. When the report set has been confirmed
+# empty across both app modes and both basemap postures, the report-only header
+# becomes the enforced one and the wildcard policy is deleted.
+# See docs/ops/security.md.
 #
 # There is deliberately no report-uri: it would collect a per-visitor record of
 # what the visitor's browser tried to load, on the operator's disk, which is
@@ -846,6 +888,7 @@ add_header Content-Security-Policy-Report-Only
     "${_csp_common}; img-src 'self' data: ${_csp_img}; connect-src 'self' ${_csp_connect}"
     always;
 CSPEOF
+mv /etc/nginx/csp.conf.new /etc/nginx/csp.conf
 
 
 # js_or_null <value> — emits a JS string literal or null.

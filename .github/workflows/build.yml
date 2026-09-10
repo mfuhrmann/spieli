@@ -118,15 +118,25 @@ jobs:
           # back in the browser. Both failure directions are silent — a policy
           # left wide protects nothing, and a policy missing a host blanks a
           # feature with only a console message — so both are asserted here.
+          # The field the frontend reads is "url" (see reference/registry-json.md).
+          # "website" is here deliberately: only "url" values may reach the
+          # policy, or an operator adding a link per instance silently re-widens
+          # the directive this change exists to narrow.
           cat > /tmp/registry.json <<'JSON'
           {"instances":[
-            {"name":"Hessen","apiBaseUrl":"https://hessen.example.org/api"},
-            {"name":"Lab","apiBaseUrl":"http://lab.internal:3000/api"}
+            {"slug":"hessen","name":"Hessen","url":"https://hessen.example.org/api",
+             "website":"https://not-an-api.example.net/about"},
+            {"slug":"lab","name":"Lab","url":"http://lab.internal:3000/api"}
           ]}
           JSON
           csp() {
             docker run --rm --entrypoint sh "$@" spieli-app:citest -c '
               /docker-entrypoint.sh >/dev/null 2>&1 &
+              # Waiting on csp.conf is sound because the entrypoint writes it
+              # to a temp file and moves it into place, so it never exists
+              # half-written. Do NOT switch this to config.js as a readiness
+              # marker: that file ships in the image from the Vite build, so it
+              # is already non-empty before the entrypoint has done anything.
               i=0
               while [ ! -s /etc/nginx/csp.conf ]; do
                 i=$((i+1)); [ "$i" -gt 100 ] && { echo "entrypoint did not finish" >&2; exit 1; }
@@ -178,19 +188,36 @@ jobs:
                 -e BASEMAP_ATTRIBUTION='(c) Example' -e BASEMAP_PROXY=true)
           reject "tiles.example.org" "$P"
 
-          printf '\n── hub: registry backends are named, with their ports\n'
+          printf '\n── hub: registry backends are named, with scheme and port\n'
           P=$(csp -v /tmp/registry.json:/usr/share/nginx/html/registry.json:ro \
                 -e APP_MODE=hub -e REGISTRY_URL=/registry.json)
-          want "hessen.example.org" "$P"
+          want "https://hessen.example.org" "$P"
           # A CSP host-source with no port matches only the scheme's default
-          # port, so a stripped port is a policy that blocks the backend it was
-          # added for.
-          want "lab.internal:3000" "$P"
+          # port, and one with no scheme matches only the document's scheme, so
+          # either omission blocks the backend it was added for.
+          want "http://lab.internal:3000" "$P"
+          reject "not-an-api.example.net" "$P"
+
+          printf '\n── hub: a scheme-relative registry URL is not read as same-origin\n'
+          # //host matched a '/*' branch on the first draft and yielded no hosts
+          # at all, silently blocking the whole federation.
+          P=$(csp -e APP_MODE=hub -e REGISTRY_URL='//hub.example.org/registry.json')
+          want "hub.example.org" "$P"
+
+          printf '\n── ui mode: a remote PostgREST origin is named\n'
+          # Every data call goes to "${API_BASE_URL}/rpc/...". Missing this
+          # loses all playground data once the policy is enforced.
+          P=$(csp -e APP_MODE=standalone -e API_BASE_URL='https://data.example.com/api')
+          want "https://data.example.com" "$P"
+
+          printf '\n── default API_BASE_URL adds nothing\n'
+          P=$(csp -e APP_MODE=standalone -e API_BASE_URL=/api)
+          reject "data.example.com" "$P"
 
           printf '\n── runtime registry: CSP_CONNECT_EXTRA covers what cannot be read\n'
           P=$(csp -e APP_MODE=hub -e REGISTRY_URL='https://hub.example.org/registry.json' \
                 -e CSP_CONNECT_EXTRA='https://b1.example.org')
-          want "hub.example.org" "$P"
+          want "https://hub.example.org" "$P"
           want "https://b1.example.org" "$P"
 
           printf '\n── an unreadable style stays wide, and says so\n'

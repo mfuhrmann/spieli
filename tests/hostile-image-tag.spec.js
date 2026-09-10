@@ -25,13 +25,22 @@ function withTags(tags) {
 
 async function loadWith(page, tags) {
   const hits = [];
-  // Anything reaching this route is a request that left for the hostile host.
-  await page.route('**://evil.example.com/**', route => {
-    hits.push(route.request().url());
-    return route.fulfill({ status: 200, contentType: 'image/png', body: '' });
-  });
   await injectApiConfig(page);
   await stubApiRoutes(page, withTags(tags));
+  // A catch-all filtered on hostname, NOT a per-host pattern. A pattern like
+  // '**://evil.example.com/**' looks right and silently matches nothing for
+  // the suffix-spoof case (wikimedia.org.evil.example.com contains no
+  // '://evil.example.com/' substring), so the spoof test would have passed
+  // even if commons.js regressed to a naive substring check.
+  //
+  // Registered last so it is consulted first, then fallback() hands
+  // same-origin requests to the stubs above and, failing those, to the server.
+  await page.route('**/*', route => {
+    const u = new URL(route.request().url());
+    if (u.hostname === 'localhost' || u.hostname === '127.0.0.1') return route.fallback();
+    hits.push({ url: u.href, hostname: u.hostname, protocol: u.protocol });
+    return route.fulfill({ status: 200, contentType: 'image/png', body: '' });
+  });
   await page.goto(`/#W${fixture.features[0].properties.osm_id}`);
   await expect(page.locator('aside.info-panel')).toBeVisible({ timeout: 8000 });
   // The photos accordion section is open by default, so the gallery has
@@ -39,6 +48,18 @@ async function loadWith(page, tags) {
   await page.waitForTimeout(1200);
   return hits;
 }
+
+// The catch-all above records EVERY offsite request, which legitimately
+// includes the basemap style's own tile host. So each test filters for the host
+// it planted rather than asserting the list is empty — an empty-list assertion
+// would fail for reasons that have nothing to do with the tag under test.
+//
+// Filtered on the request's HOSTNAME, not on the URL as a string. A substring
+// match counts the legitimate Commons API call against a hostile tag, because
+// the rejected value is echoed back inside that call's query string — which
+// made this suite fail against correct code.
+const toHost = (hits, host) =>
+  hits.filter(h => h.hostname === host || h.hostname.endsWith(`.${host}`));
 
 test.describe('A hostile OSM image tag reaches no network', () => {
   // Control. Without this the negative assertions below would also pass if the
@@ -59,20 +80,20 @@ test.describe('A hostile OSM image tag reaches no network', () => {
 
   test('a direct image URL on an unrelated host is not fetched', async ({ page }) => {
     const hits = await loadWith(page, { image: `${EVIL}/tracker.png` });
-    expect(hits).toEqual([]);
+    expect(toHost(hits, 'evil.example.com')).toEqual([]);
   });
 
   test('a host-suffix spoof of a Wikimedia domain is not fetched', async ({ page }) => {
     // wikimedia.org.evil.example.com passes a naive "contains wikimedia.org"
     // check and is exactly what the anchored regex in commons.js exists for.
     const hits = await loadWith(page, { image: 'https://wikimedia.org.evil.example.com/x.jpg' });
-    expect(hits).toEqual([]);
+    expect(toHost(hits, 'evil.example.com')).toEqual([]);
   });
 
   test('a plain-http Wikimedia URL is not fetched', async ({ page }) => {
     // Rejected as mixed content by commons.js before the browser would.
     const hits = await loadWith(page, { image: 'http://upload.wikimedia.org/x.jpg' });
-    expect(hits).toEqual([]);
+    expect(hits.filter(h => h.hostname === 'upload.wikimedia.org' && h.protocol === 'http:')).toEqual([]);
   });
 
   test('a hostile tag does not break the panel around it', async ({ page }) => {
@@ -85,6 +106,6 @@ test.describe('A hostile OSM image tag reaches no network', () => {
 
   test('a hostile tag in wikimedia_commons is not fetched either', async ({ page }) => {
     const hits = await loadWith(page, { wikimedia_commons: `File:../../${EVIL}/x.jpg` });
-    expect(hits).toEqual([]);
+    expect(toHost(hits, 'evil.example.com')).toEqual([]);
   });
 });

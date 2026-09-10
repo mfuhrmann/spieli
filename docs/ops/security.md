@@ -103,7 +103,10 @@ There is deliberately **no `report-uri`**. It would collect a per-visitor record
 ### What the narrowed policy allows, and why
 
 - `img-src 'self' data: https://*.wikimedia.org https://wikimedia.org https://*.wikipedia.org https://wikipedia.org https://api.panoramax.xyz` — playground photos and street-level thumbnails. The Wikimedia entries are wildcards because `app/src/lib/commons.js` accepts an OSM `image` tag on any `*.wikimedia.org` or `*.wikipedia.org` host; pinning this to `upload.` and `commons.` would silently stop rendering valid tags. The apex domains are listed separately because `*.example.org` does not match `example.org` in CSP.
-- `connect-src 'self' https://nominatim.openstreetmap.org https://commons.wikimedia.org https://api.mangrove.reviews` — search and region-URL resolution, the Commons API, and reviews. Plus your hub backends, and your basemap host if you opted out.
+- `connect-src 'self' https://nominatim.openstreetmap.org https://commons.wikimedia.org https://api.mangrove.reviews` — search and region-URL resolution, the Commons API, and reviews. Three more origins are added automatically when your configuration calls for them:
+    - **A remote `API_BASE_URL`.** A `DEPLOY_MODE=ui` stack points at PostgREST on another host, and every data call goes to `${API_BASE_URL}/rpc/…`. Its origin is added, scheme and port included.
+    - **Your hub backends.** Read from the `url` fields of `registry.json` when the registry is a same-origin file the entrypoint can read. Only `url` values are used — a `website` or docs link elsewhere in the registry does not widen the policy. If your registry is fetched from a URL at runtime, use `CSP_CONNECT_EXTRA`.
+    - **Your basemap host**, if you opted out of same-origin delivery.
 - `frame-src https://panoramax.xyz https://api.panoramax.xyz` — the street-level photo viewer. Already narrow, and the model the rest of the policy now follows.
 - `frame-ancestors 'self' https:` — **still a wildcard, deliberately.** It governs who may embed spieli, not what spieli discloses, and a hub embeds standalone instances.
 
