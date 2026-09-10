@@ -124,7 +124,7 @@ Two variables add origins the generator cannot discover. Both take a space-separ
 | `CSP_CONNECT_EXTRA` | `connect-src` | Your hub fetches `registry.json` from a URL at runtime, so the entrypoint cannot read it to discover backends |
 | `CSP_IMG_EXTRA` | `img-src` | You render images from an origin the generator does not know about |
 
-A self-hosted tileserver on a **non-default port** currently needs both, because the host list feeding the policy drops the port (it is shared with the human-readable privacy page). Harmless while the narrowed policy is report-only; it will be fixed before the enforcing swap.
+A self-hosted tileserver does **not** need either of these, whatever port or scheme it uses: the basemap host is derived as a full origin, scheme and port intact, precisely because a CSP host-source with no port matches only the scheme's default port and one with no scheme matches only the document's own scheme. The privacy page's service table still shows the bare host, which is what reads well there.
 
 ## External service dependencies
 

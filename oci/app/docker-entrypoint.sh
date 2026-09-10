@@ -192,6 +192,30 @@ host_of() {
     printf '%s' "$_h"
 }
 
+# origin_of <url> — "scheme://host[:port]" for an absolute URL, "host[:port]"
+# for a scheme-relative one, empty for a same-origin path.
+#
+# Deliberately NOT host_of(), whose consumer is the human-readable privacy page
+# and which drops both scheme and port. Both matter here and in opposite
+# directions: a CSP host-source with no port matches only the scheme's default
+# port, and one with no scheme matches only the document's own scheme. So
+# reducing http://lab.internal:3000 to lab.internal yields a policy that blocks
+# the backend it was added for twice over — wrong port, and no http on an
+# https-served page.
+origin_of() {
+    case "$1" in
+        # //host must be tested BEFORE /path. A `case` takes the first match, so
+        # with /* first the //* branch is unreachable and a scheme-relative URL
+        # is misread as same-origin — the same trap host_of() documents, and one
+        # this function reintroduced on its first draft.
+        //*) _o=${1#//}; _o=${_o%%/*}; _o=${_o##*@}; printf '%s' "$_o" ;;
+        ''|/*) ;;                       # same-origin: 'self' already covers it
+        *://*) _o=${1#*://}; _o=${_o%%/*}; _o=${_o##*@}
+               printf '%s://%s' "${1%%://*}" "$_o" ;;
+        *) _o=${1%%/*}; _o=${_o##*@}; printf '%s' "$_o" ;;
+    esac
+}
+
 # style_asset_hosts <style-url> — third-party hosts referenced INSIDE a style
 # document (sources[*].url/tiles, sprite, glyphs), for a style this instance
 # serves itself. A same-origin style URL says nothing about where the style then
@@ -209,6 +233,30 @@ style_asset_hosts() {
     # browser will fetch, whichever key it hangs off.
     grep -o 'https\?://[A-Za-z0-9._-]*' "$_f" 2>/dev/null \
         | sed -e 's#^https\?://##' | sort -u | tr '\n' ' '
+}
+
+# style_asset_origins <style-url> — the same scan as style_asset_hosts, but
+# emitting full ORIGINS (scheme, host and port) instead of bare hosts.
+#
+# Two functions rather than one, because their consumers want opposite things.
+# style_asset_hosts feeds the privacy page's service table, which reads better
+# as "tiles.openfreemap.org" than as "https://tiles.openfreemap.org". A CSP
+# host-source is not so forgiving: with no port it matches only the scheme's
+# default port, and with no scheme only the document's own scheme. So a
+# tileserver on :8080, or one reached over http from an https-served page, is
+# BLOCKED by a policy built from bare hosts — the map goes blank on a
+# deployment whose configuration we understood perfectly.
+#
+# Note the character class here includes ':' where the other one does not.
+# That single omission is what dropped the port before anything else saw it.
+style_asset_origins() {
+    case "$1" in
+        /*) _f="${WEBROOT}$1" ;;
+        *) return ;;                 # remote style: its own origin already counts
+    esac
+    [ -f "$_f" ] || return
+    grep -o 'https\?://[A-Za-z0-9._:-]*' "$_f" 2>/dev/null \
+        | sed -e 's#/*$##' | sort -u | tr '\n' ' '
 }
 
 # Attribution is a licence obligation, not decoration. Showing the built-in
@@ -311,12 +359,20 @@ fi
 #            "no third party contacted".
 BASEMAP_TILE_PROVIDER_HOST=""
 BASEMAP_TILE_PROVIDER_STATE="none"
+# The same set of places, expressed as CSP sources: full origins, scheme and
+# port intact. Computed here rather than derived from
+# BASEMAP_TILE_PROVIDER_HOST, because that value has already lost both.
+BASEMAP_CSP_SOURCES=""
 if [ -z "$BASEMAP_PROXY_ENABLED" ]; then
     # SAFE_BASEMAP_STYLE_URL is always set by this point (operator-set, or
     # defaulted to the bundled style above, or the entrypoint has already died),
     # so there is no "nothing configured" case left to handle here.
     _basemap_effective="${SAFE_BASEMAP_STYLE_URL:-$SAFE_BASEMAP_URL}"
     BASEMAP_TILE_PROVIDER_HOST=$(host_of "$_basemap_effective")
+    # An XYZ template can carry a {a-d} subdomain group, which origin_of does
+    # not strip because it is not a URL feature. host_of does strip it, so the
+    # group is removed before the origin is taken.
+    BASEMAP_CSP_SOURCES=$(origin_of "$(printf '%s' "$_basemap_effective" | sed -e 's#\({[a-z0-9-]*}\)\.##')")
     if [ -n "$BASEMAP_TILE_PROVIDER_HOST" ]; then
         BASEMAP_TILE_PROVIDER_STATE="hosts"
     elif [ -n "$SAFE_BASEMAP_STYLE_URL" ]; then
@@ -326,6 +382,7 @@ if [ -z "$BASEMAP_PROXY_ENABLED" ]; then
         _style_file="${WEBROOT}${SAFE_BASEMAP_STYLE_URL%%\?*}"
         if [ -f "$_style_file" ]; then
             BASEMAP_TILE_PROVIDER_HOST=$(style_asset_hosts "$SAFE_BASEMAP_STYLE_URL" | sed 's/ *$//')
+            BASEMAP_CSP_SOURCES=$(style_asset_origins "$SAFE_BASEMAP_STYLE_URL" | sed 's/ *$//')
             if [ -n "$BASEMAP_TILE_PROVIDER_HOST" ]; then
                 BASEMAP_TILE_PROVIDER_STATE="hosts"
             fi
@@ -1157,30 +1214,6 @@ _csp_append() {
     esac
 }
 
-# origin_of <url> — "scheme://host[:port]" for an absolute URL, "host[:port]"
-# for a scheme-relative one, empty for a same-origin path.
-#
-# Deliberately NOT host_of(), whose consumer is the human-readable privacy page
-# and which drops both scheme and port. Both matter here and in opposite
-# directions: a CSP host-source with no port matches only the scheme's default
-# port, and one with no scheme matches only the document's own scheme. So
-# reducing http://lab.internal:3000 to lab.internal yields a policy that blocks
-# the backend it was added for twice over — wrong port, and no http on an
-# https-served page.
-origin_of() {
-    case "$1" in
-        # //host must be tested BEFORE /path. A `case` takes the first match, so
-        # with /* first the //* branch is unreachable and a scheme-relative URL
-        # is misread as same-origin — the same trap host_of() documents, and one
-        # this function reintroduced on its first draft.
-        //*) _o=${1#//}; _o=${_o%%/*}; _o=${_o##*@}; printf '%s' "$_o" ;;
-        ''|/*) ;;                       # same-origin: 'self' already covers it
-        *://*) _o=${1#*://}; _o=${_o%%/*}; _o=${_o##*@}
-               printf '%s://%s' "${1%%://*}" "$_o" ;;
-        *) _o=${1%%/*}; _o=${_o##*@}; printf '%s' "$_o" ;;
-    esac
-}
-
 # registry_hosts — the backend origins hub mode connects to. The registry is
 # operator-supplied and not known at build time, so it is read here.
 #
@@ -1254,15 +1287,10 @@ fi
 # that half-renders.
 case "$BASEMAP_TILE_PROVIDER_STATE" in
     hosts)
-        # These come from host_of/style_asset_hosts, which drop BOTH scheme and
-        # port because their other consumer is the human-readable privacy page.
-        # A bare host-source matches only the document's own scheme (plus the
-        # http->https upgrade allowance) and only that scheme's default port, so
-        # a tileserver on a non-default port, or one served over http behind an
-        # https instance, needs its origin adding via CSP_IMG_EXTRA *and*
-        # CSP_CONNECT_EXTRA. Harmless while the narrowed policy is report-only;
-        # resolve before the enforcing swap.
-        for _bmh in $BASEMAP_TILE_PROVIDER_HOST; do
+        # BASEMAP_CSP_SOURCES, not BASEMAP_TILE_PROVIDER_HOST: these carry the
+        # scheme and the port, which a CSP host-source needs and the
+        # privacy-page host list has already discarded. See style_asset_origins.
+        for _bmh in $BASEMAP_CSP_SOURCES; do
             [ -n "$_bmh" ] || continue
             _csp_img=$(_csp_append     "$_csp_img"     "$_bmh")
             _csp_connect=$(_csp_append "$_csp_connect" "$_bmh")
