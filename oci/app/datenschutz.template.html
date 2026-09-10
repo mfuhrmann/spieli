@@ -58,7 +58,7 @@
       <tr>
         <td><a href="https://mangrove.reviews/" target="_blank" rel="noopener">Mangrove Reviews</a><br><code>api.mangrove.reviews</code></td>
         <td>Abruf und Abgabe von Bewertungen</td>
-        <td>Beim Auswählen eines Spielplatzes; zusätzlich beim Absenden einer Bewertung</td>
+        <td>Erst wenn Sie den Abschnitt „Bewertungen“ ausklappen; danach einmal je weiterem Spielplatz, den Sie bei ausgeklapptem Abschnitt auswählen. Nicht beim bloßen Auswählen eines Spielplatzes. Zusätzlich beim Absenden einer Bewertung</td>
         <td>IP-Adresse, User-Agent, Referer, Koordinaten des Spielplatzes. Beim Absenden zusätzlich Ihre Bewertung, ein optionaler Kommentar und Ihr öffentlicher Schlüssel (siehe „Lokale Speicherung“)</td>
       </tr>
     </tbody>
@@ -68,7 +68,7 @@
 
 {{BASEMAP_PRIVACY_SECTION}}
   <h2>Übermittlung in Drittländer</h2>
-  <p>Einzelne der oben genannten Dienste haben ihren Sitz beziehungsweise ihre Infrastruktur ganz oder teilweise außerhalb der Europäischen Union; das betrifft insbesondere Wikimedia (Wikimedia Foundation, USA) und Mangrove Reviews. Beim Auswählen eines Spielplatzes werden die oben genannten Daten daher unter Umständen auch in Drittländer übermittelt, für die kein Angemessenheitsbeschluss der Europäischen Kommission vorliegt.</p>
+  <p>Einzelne der oben genannten Dienste haben ihren Sitz beziehungsweise ihre Infrastruktur ganz oder teilweise außerhalb der Europäischen Union; das betrifft insbesondere Wikimedia (Wikimedia Foundation, USA) und Mangrove Reviews. Sobald einer dieser Dienste nach der Tabelle oben angefragt wird, werden die dort genannten Daten daher unter Umständen auch in Drittländer übermittelt, für die kein Angemessenheitsbeschluss der Europäischen Kommission vorliegt.</p>
 
   <h2>Lokale Speicherung</h2>
   <p>Wenn Sie zum ersten Mal eine Bewertung absenden, wird dafür in Ihrem Browser ein kryptografisches Schlüsselpaar erzeugt und dort dauerhaft gespeichert (<code>localStorage</code>, Schlüssel <code>spieli-mangrove-keypair</code>). Der öffentliche Teil wird mit jeder Bewertung übertragen und dient als pseudonyme Kennung, über die Ihre Bewertungen einander zugeordnet werden können. Es handelt sich damit um einen dauerhaften pseudonymen Wiedererkennungswert. Er entsteht erst beim Absenden einer Bewertung, nicht beim bloßen Betrachten der Karte, und Sie können ihn jederzeit durch Löschen der Websitedaten in Ihrem Browser entfernen. Damit verlieren Sie allerdings die Möglichkeit, zuvor abgegebene Bewertungen zu ändern. Weitere lokal gespeicherte Werte betreffen ausschließlich Bedienzustände der Oberfläche und verlassen Ihr Gerät nicht.</p>

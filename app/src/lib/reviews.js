@@ -75,9 +75,42 @@ export async function fetchReviews(lat, lon, osmId, signal) {
     const sub = mangroveSubject(lat, lon, osmId);
     const url = `${MANGROVE_API}/reviews?sub=${encodeURIComponent(sub)}&latest_edits_only=true`;
     const res = await fetch(url, { signal });
-    if (!res.ok) return [];
+    // A subject with no reviews answers 200 with an empty list, so a non-OK
+    // status is always a real failure. Returning [] here instead would render
+    // an outage as "no reviews yet — be the first!", and would let the session
+    // cache below pin that wrong answer for the rest of the page's life.
+    if (!res.ok) throw new Error(`Mangrove responded ${res.status}`);
     const data = await res.json();
     return (data.reviews ?? []).filter(r => !r.payload?.action);
+}
+
+// ── Session cache ──────────────────────────────────────────────────────────
+// The reviews section is a collapsed accordion, so ReviewsPanel is created on
+// expand and DESTROYED on collapse. Any cache held inside the component dies
+// with it, and every re-expand of the same playground is another request to a
+// free non-profit API for an answer we already have.
+//
+// Keyed on the Mangrove subject URI, not the OSM id alone: that URI is what
+// the request is addressed to, and it also carries the coordinates.
+// Deliberately in memory and not localStorage — this exists to avoid a repeat
+// request during one page's life, not to persist other people's review text on
+// the visitor's disk with no expiry story.
+const sessionCache = new Map();
+
+export async function fetchReviewsCached(lat, lon, osmId, signal) {
+    const key = mangroveSubject(lat, lon, osmId);
+    if (sessionCache.has(key)) return sessionCache.get(key);
+    // Only a successful response is cached: fetchReviews throws on failure and
+    // on abort, so neither is stored and the next expand retries.
+    const reviews = await fetchReviews(lat, lon, osmId, signal);
+    sessionCache.set(key, reviews);
+    return reviews;
+}
+
+// Drop one subject's cached list — called after a successful submission, so the
+// visitor sees their own review rather than the pre-submission list.
+export function invalidateReviews(lat, lon, osmId) {
+    sessionCache.delete(mangroveSubject(lat, lon, osmId));
 }
 
 // ── Submit review ──────────────────────────────────────────────────────────

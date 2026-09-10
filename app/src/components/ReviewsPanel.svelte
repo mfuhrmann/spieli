@@ -1,5 +1,5 @@
 <script>
-  import { fetchReviews, submitReview, starsHtml, relativeDate } from '../lib/reviews.js';
+  import { fetchReviewsCached, invalidateReviews, submitReview, starsHtml, relativeDate } from '../lib/reviews.js';
   import { _ } from 'svelte-i18n';
 
   /** @type {number} Playground centre latitude (WGS84) */
@@ -22,6 +22,12 @@
 
   let abortCtrl = null;
 
+  // This component is mounted by a collapsed accordion section in
+  // PlaygroundPanel, so it exists only once the visitor has expanded reviews.
+  // The section then stays open across selections, which is why this reacts to
+  // osmId: the open panel must show the selected playground's reviews, not the
+  // previous one's. fetchReviewsCached makes a return to an already-seen
+  // playground free rather than another request.
   $: if (osmId) loadReviews();
 
   async function loadReviews() {
@@ -30,7 +36,7 @@
     loading = true;
     error = false;
     try {
-      reviews = await fetchReviews(lat, lon, osmId, abortCtrl.signal);
+      reviews = await fetchReviewsCached(lat, lon, osmId, abortCtrl.signal);
     } catch (e) {
       if (e?.name !== 'AbortError') error = true;
     } finally {
@@ -48,6 +54,9 @@
         submitStatus = 'success';
         selectedRating = null;
         opinion = '';
+        // Without this the refresh below is served from the session cache and
+        // the visitor never sees the review they just submitted.
+        invalidateReviews(lat, lon, osmId);
         setTimeout(() => loadReviews(), 1500);
       } else {
         submitStatus = 'error';

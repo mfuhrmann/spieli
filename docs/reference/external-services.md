@@ -13,7 +13,7 @@ The "Also receives" column lists what is sent on top of that.
 | [Nominatim](https://nominatim.openstreetmap.org) | `nominatim.openstreetmap.org` | Location search, region-URL resolution | On a search query, and on loading a region URL such as `/fulda` | The search term |
 | [Panoramax](https://panoramax.xyz) | `api.panoramax.xyz` | Street-level photos | Selecting a playground that has photos | The requested photo UUID. The viewer is embedded in an `<iframe>`, so Panoramax runs in its own browsing context and can set its own storage there |
 | [Wikimedia Commons](https://commons.wikimedia.org) | `commons.wikimedia.org`, `upload.wikimedia.org` | Playground photos from `wikimedia_commons` / `image` tags | Selecting a playground carrying either tag | The requested file name |
-| [Mangrove.reviews](https://mangrove.reviews) | `api.mangrove.reviews` | Pseudonymous community reviews | Selecting any playground; again on submitting a review | Playground coordinates. On submit: the rating, optional comment, and the browser-held public key |
+| [Mangrove.reviews](https://mangrove.reviews) | `api.mangrove.reviews` | Pseudonymous community reviews | Only after the visitor expands the "Reviews" section: once for that playground, then once per further playground selected while the section stays expanded. Never on selection alone, and never before the section is opened. Again on submitting a review | Playground coordinates. On submit: the rating, optional comment, and the browser-held public key |
 
 Playground data itself is served by the instance's own PostgREST, so it never leaves the operator's server.
 
@@ -21,6 +21,8 @@ Two consequences worth being explicit about:
 
 - **The basemap is not in this table, and that is the point.** It used to be the largest entry in it, contacted by every visitor on every map movement. It is now fetched server-side and cached, so the browser only ever talks to the instance itself. See the next section.
 - **Reviews create a persistent pseudonymous identifier.** `app/src/lib/reviews.js` generates a P-256 keypair on the first review submission and stores it in `localStorage` under `spieli-mangrove-keypair`. It is not created by merely viewing the map.
+- **A panel section that is collapsed by default contacts nothing.** `PlaygroundPanel.svelte` mounts each accordion section's component only while that section is open (`openSections`, default `['photos', 'equipment', 'pois']`), so a closed section's fetch code never runs. Reviews are closed by default and are therefore not contacted on selection, even though `ReviewsPanel` fetches on mount. Reading the fetch call alone gives the wrong answer — check the section's default state too. Conversely, photos *are* open by default, which is why Panoramax and Commons are contacted on selection.
+- **A re-opened section does not re-fetch.** `fetchReviewsCached` in `app/src/lib/reviews.js` holds a per-page in-memory cache keyed on the Mangrove subject URI, so collapsing and re-expanding, or returning to a playground already seen, issues no further request. It is dropped after a submission so the visitor sees their own review, and it is deliberately not `localStorage`.
 
 Operators must disclose all of the above.
 `oci/app/datenschutz.template.html` ships a service table that already does; keep the two in sync when a service is added or removed.
