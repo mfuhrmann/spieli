@@ -87,46 +87,50 @@ CREATE OR REPLACE VIEW public.playground_equipment_src AS
      OR leisure IN ('picnic_table', 'pitch', 'fitness_station');
 
 -- =========================================================================
+-- Indexes on the osm2pgsql tables (idempotent).
+--
+-- These are created *before* the playground_stats build, not after it: the
+-- build does spatial containment and proximity joins against planet_osm_*,
+-- so running it first means the single longest statement of the apply runs
+-- against whatever indexes happen to exist. On a fresh import that is the
+-- osm2pgsql defaults only, and the missing attribute indexes below cost
+-- minutes of extra rebuild time — time the API used to spend erroring
+-- (#720).
+--
+-- Every statement is IF NOT EXISTS, so a re-apply on a populated database
+-- is a no-op and the ordering costs nothing there.
+-- =========================================================================
+CREATE INDEX IF NOT EXISTS idx_osm_polygon_way   ON planet_osm_polygon USING GIST (way);
+CREATE INDEX IF NOT EXISTS idx_osm_point_way     ON planet_osm_point   USING GIST (way);
+CREATE INDEX IF NOT EXISTS idx_osm_polygon_lei   ON planet_osm_polygon (leisure)   WHERE leisure   IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_osm_point_lei     ON planet_osm_point   (leisure)   WHERE leisure   IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_osm_point_amenity ON planet_osm_point   (amenity)   WHERE amenity   IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_osm_point_shop    ON planet_osm_point   (shop)      WHERE shop      IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_osm_point_highway ON planet_osm_point   (highway)   WHERE highway   IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_osm_point_natural ON planet_osm_point   ("natural") WHERE "natural" IS NOT NULL;
+
+-- =========================================================================
 -- playground_stats — materialized view pre-computing per-playground stats.
 -- Rebuilt on every import / db-apply so get_playgrounds is a plain lookup.
+--
+-- The rebuild is a build-then-swap, not a DROP followed by a CREATE. The
+-- build takes ~9 min on a Bundesland-sized region; with the DROP first, the
+-- matview is absent for that entire window and every reader of it —
+-- get_meta, the cluster tier, the polygon tier — fails with
+-- `relation "public.playground_stats" does not exist`. Because the daemon
+-- importer re-applies this file on every container start, that turned any
+-- routine restart (reboot, Watchtower update, `up -d`) into a multi-minute
+-- API outage (#720).
+--
+-- Building under a staging name leaves the live view untouched for the
+-- whole expensive part. Readers switch over when the swap transaction
+-- commits, which takes milliseconds.
 -- =========================================================================
 
--- Terminate PostgREST connections that hold (or could re-acquire) locks on
--- playground_stats so the subsequent DROP does not block on
--- AccessExclusiveLock. We target *all* PostgREST connection states (active,
--- idle, idle in transaction) because:
---   - 'active' / 'idle in transaction' actually hold the AccessShareLock
---     that blocks the DROP — these are the ones that matter.
---   - 'idle' connections can reconnect and re-acquire the lock between our
---     terminate and the DROP, so killing them too closes the race window.
--- We scope by application_name='PostgREST' (PostgREST sets this by default)
--- so admin shells / monitoring / replication helpers are not collateral.
--- pg_terminate_backend requires superuser or pg_signal_backend membership;
--- the DO block fails loudly if the role lacks that privilege rather than
--- silently leaving the DROP to block.
-DO $playground_stats_unblock$
-DECLARE
-  failed int;
-BEGIN
-  SELECT COUNT(*) INTO failed FROM (
-    SELECT NOT pg_terminate_backend(pid) AS still_alive
-    FROM   pg_stat_activity
-    WHERE  datname          = current_database()
-      AND  application_name = 'PostgREST'
-      AND  state            IN ('active', 'idle', 'idle in transaction')
-      AND  pid             <> pg_backend_pid()
-  ) t WHERE still_alive;
-  IF failed > 0 THEN
-    RAISE EXCEPTION
-      'Could not terminate % PostgREST connection(s) — current role lacks pg_signal_backend?',
-      failed;
-  END IF;
-END
-$playground_stats_unblock$;
+-- Left behind only if a previous apply died between the CREATE and the swap.
+DROP MATERIALIZED VIEW IF EXISTS public.playground_stats_new CASCADE;
 
-DROP MATERIALIZED VIEW IF EXISTS public.playground_stats CASCADE;
-
-CREATE MATERIALIZED VIEW public.playground_stats AS
+CREATE MATERIALIZED VIEW public.playground_stats_new AS
   WITH all_playgrounds AS (
     -- osm2pgsql can emit multiple rows per relation for multipolygon
     -- playgrounds (one row per outer ring). Without dedup, the MV would
@@ -348,8 +352,78 @@ CREATE MATERIALIZED VIEW public.playground_stats AS
   LEFT JOIN equip_stats        es ON es.osm_id = pl.osm_id AND es.osm_type = pl.osm_type
   LEFT JOIN completeness_attrs ca ON ca.osm_id = pl.osm_id AND ca.osm_type = pl.osm_type;
 
-CREATE UNIQUE INDEX ON public.playground_stats (osm_id, osm_type);
-CREATE INDEX        ON public.playground_stats USING GIST (centroid_3857);
+-- Indexed before the swap, so the view is fully indexed the moment it
+-- becomes visible — no window where readers hit an unindexed sequential
+-- scan. Named explicitly (the pre-swap statements relied on auto-naming)
+-- so the swap can move them onto stable names the old view has released.
+CREATE UNIQUE INDEX playground_stats_new_osm_idx      ON public.playground_stats_new (osm_id, osm_type);
+CREATE INDEX        playground_stats_new_centroid_idx ON public.playground_stats_new USING GIST (centroid_3857);
+
+-- The swap. Readers see either the old view or the new one, never the gap
+-- between them.
+--
+-- A DO block rather than a literal BEGIN/COMMIT pair, because this file is
+-- fed to psql two different ways: `import.sh` runs it with plain `-f`
+-- (autocommit, where a bare DROP would commit on its own and open exactly
+-- the window this change closes), while `make db-apply` runs it with
+-- --single-transaction (where a literal COMMIT would end that transaction
+-- mid-file and leave the rest of the apply non-atomic). A DO block is one
+-- statement, so it is atomic under both.
+--
+-- The PostgREST terminate is part of *this* transaction rather than a
+-- statement ahead of it. Terminating in its own statement commits, and
+-- PostgREST reconnects on its own, so a fresh connection can take an
+-- AccessShareLock in the gap before the DROP asks for AccessExclusiveLock.
+-- A pending exclusive lock queues ahead of every later reader, so that gap
+-- does not merely delay the swap — it stalls all API traffic behind it for
+-- as long as the straggling query runs. Issuing the terminate and the DROP
+-- in one transaction leaves no such gap: any connection arriving after the
+-- terminate queues behind our own lock request instead of in front of it.
+--
+-- We target *all* PostgREST connection states (active, idle, idle in
+-- transaction) because:
+--   - 'active' / 'idle in transaction' actually hold the AccessShareLock
+--     that blocks the DROP — these are the ones that matter.
+--   - 'idle' connections can reconnect and re-acquire the lock between our
+--     terminate and the DROP, so killing them too closes the race window.
+-- We scope by application_name='PostgREST' (PostgREST sets this by default)
+-- so admin shells / monitoring / replication helpers are not collateral.
+-- pg_terminate_backend requires superuser or pg_signal_backend membership;
+-- the block fails loudly if the role lacks that privilege rather than
+-- silently leaving the DROP to block.
+--
+-- The whole thing sits after the build rather than before it: the build no
+-- longer needs a lock on the live view, so there is no reason to drop the
+-- API's connections minutes ahead of the moment that needs it.
+--
+-- CASCADE is retained from the previous in-place drop: nothing currently
+-- depends on the view — the api functions are LANGUAGE sql/plpgsql with
+-- quoted bodies, which record no dependency — but a future dependent object
+-- must not silently block the apply.
+DO $playground_stats_swap$
+DECLARE
+  failed int;
+BEGIN
+  SELECT COUNT(*) INTO failed FROM (
+    SELECT NOT pg_terminate_backend(pid) AS still_alive
+    FROM   pg_stat_activity
+    WHERE  datname          = current_database()
+      AND  application_name = 'PostgREST'
+      AND  state            IN ('active', 'idle', 'idle in transaction')
+      AND  pid             <> pg_backend_pid()
+  ) t WHERE still_alive;
+  IF failed > 0 THEN
+    RAISE EXCEPTION
+      'Could not terminate % PostgREST connection(s) — current role lacks pg_signal_backend?',
+      failed;
+  END IF;
+
+  DROP MATERIALIZED VIEW IF EXISTS public.playground_stats CASCADE;
+  ALTER MATERIALIZED VIEW public.playground_stats_new RENAME TO playground_stats;
+  ALTER INDEX public.playground_stats_new_osm_idx      RENAME TO playground_stats_osm_idx;
+  ALTER INDEX public.playground_stats_new_centroid_idx RENAME TO playground_stats_centroid_idx;
+END
+$playground_stats_swap$;
 
 -- =========================================================================
 -- 1. get_playgrounds(relation_id)
@@ -1411,9 +1485,6 @@ $$;
 
 GRANT EXECUTE ON FUNCTION api.get_legal(text) TO web_anon;
 
-CREATE INDEX IF NOT EXISTS idx_osm_point_natural ON planet_osm_point ("natural") WHERE "natural" IS NOT NULL;
-
--- Spatial indexes to speed up bbox and radius queries (idempotent)
 -- =========================================================================
 -- 6. get_nearest_playgrounds(lat, lon, relation_id, max_results)
 --    Returns the nearest playgrounds to a given WGS84 point,
@@ -1491,10 +1562,5 @@ $$;
 
 GRANT EXECUTE ON FUNCTION api.get_nearest_playgrounds(float8, float8, bigint, int) TO web_anon;
 
-CREATE INDEX IF NOT EXISTS idx_osm_polygon_way  ON planet_osm_polygon USING GIST (way);
-CREATE INDEX IF NOT EXISTS idx_osm_point_way    ON planet_osm_point   USING GIST (way);
-CREATE INDEX IF NOT EXISTS idx_osm_polygon_lei  ON planet_osm_polygon (leisure) WHERE leisure IS NOT NULL;
-CREATE INDEX IF NOT EXISTS idx_osm_point_lei    ON planet_osm_point   (leisure) WHERE leisure IS NOT NULL;
-CREATE INDEX IF NOT EXISTS idx_osm_point_amenity ON planet_osm_point  (amenity) WHERE amenity IS NOT NULL;
-CREATE INDEX IF NOT EXISTS idx_osm_point_shop    ON planet_osm_point  (shop)    WHERE shop    IS NOT NULL;
-CREATE INDEX IF NOT EXISTS idx_osm_point_highway ON planet_osm_point  (highway) WHERE highway IS NOT NULL;
+-- The planet_osm_* indexes that used to live here now sit above the
+-- playground_stats build, which is the statement that needs them (#720).
