@@ -784,6 +784,12 @@ if [ -z "${PRIVACY_URL:-}" ]; then
         # empty list means two opposite things.
         BM_ROW_FILE=$(mktemp)
         BM_SECTION_FILE=$(mktemp)
+        # The Grundsatz paragraph is about what third parties receive, so its
+        # tile-coordinate clause has to follow the delivery mode too. Left
+        # unconditional it contradicts the Hintergrundkarte section below in
+        # the default same-origin mode, which is the one claim on this page a
+        # visitor is most likely to check.
+        BM_INTRO_FILE=$(mktemp)
         case "$BASEMAP_TILE_PROVIDER_STATE" in
             hosts)
                 # The operator opted out to a third party. Name it: this is the
@@ -804,6 +810,9 @@ BMROW
   <p>Diese Instanz ist so konfiguriert, dass die Hintergrundkarte direkt von einem externen Anbieter geladen wird. Ihr Browser nimmt dabei bei jeder Kartenbewegung selbst Verbindung zu diesem Anbieter auf; der Anbieter ist in der Tabelle oben aufgef&uuml;hrt.</p>
 
 BMSEC
+                cat > "$BM_INTRO_FILE" <<'BMINTRO'
+  Bei Kartenkacheln kommen die angefragten Kachelkoordinaten hinzu, aus denen sich ableiten l&auml;sst, welchen Kartenausschnitt Sie betrachten.
+BMINTRO
                 ;;
             unknown)
                 cat > "$BM_ROW_FILE" <<'BMROW'
@@ -819,12 +828,20 @@ BMROW
   <p>Diese Instanz verwendet ein eigens konfiguriertes Kartenstil-Dokument, dessen Inhalt hier nicht ausgewertet werden konnte. Es ist daher nicht sichergestellt, dass keine Verbindung zu Dritten aufgebaut wird. Der Betreiber sollte diesen Abschnitt pr&uuml;fen und erg&auml;nzen.</p>
 
 BMSEC
+                # Cannot rule out a third-party tile fetch, so keep the clause:
+                # over-disclosing here is the safe direction.
+                cat > "$BM_INTRO_FILE" <<'BMINTRO'
+  Bei Kartenkacheln kommen unter Umst&auml;nden die angefragten Kachelkoordinaten hinzu, aus denen sich ableiten l&auml;sst, welchen Kartenausschnitt Sie betrachten.
+BMINTRO
                 ;;
             *)
                 # none: the browser only ever talks to this instance. Say so
                 # plainly rather than hedging it, because it is the strongest
                 # statement on this page and it is true.
                 : > "$BM_ROW_FILE"
+                # No third party receives tile coordinates, so the Grundsatz
+                # clause saying otherwise is dropped entirely.
+                : > "$BM_INTRO_FILE"
                 cat > "$BM_SECTION_FILE" <<'BMSEC'
   <h2>Hintergrundkarte</h2>
   <p>Die Hintergrundkarte wird vollst&auml;ndig von dieser Instanz ausgeliefert. Kartenkacheln, Symbole und Schriften holt der Server selbst und speichert sie zwischen; Ihr Browser nimmt daf&uuml;r zu keinem Dritten Verbindung auf. Es wird deshalb auch nicht protokolliert, welchen Kartenausschnitt Sie betrachten.</p>
@@ -847,7 +864,8 @@ HUB_HTML
             -e "s/{{IMPRESSUM_EMAIL}}/$SAFE_IMP_EMAIL_FOR_SED/g" \
             /datenschutz.template.html | \
         awk -v hubfile="$HUB_SECTION_FILE" \
-            -v bmrowfile="$BM_ROW_FILE" -v bmsecfile="$BM_SECTION_FILE" '
+            -v bmrowfile="$BM_ROW_FILE" -v bmsecfile="$BM_SECTION_FILE" \
+            -v bmintrofile="$BM_INTRO_FILE" '
             function inline(f) {
                 while ((getline line < f) > 0) print line
                 close(f)
@@ -855,9 +873,10 @@ HUB_HTML
             /\{\{HUB_PRIVACY_SECTION\}\}/    { inline(hubfile);   next }
             /\{\{BASEMAP_SERVICE_ROW\}\}/    { inline(bmrowfile); next }
             /\{\{BASEMAP_PRIVACY_SECTION\}\}/ { inline(bmsecfile); next }
+            /\{\{BASEMAP_INTRO_CLAUSE\}\}/   { inline(bmintrofile); next }
             { print }
         ' > "$WEBROOT/datenschutz.html"
-        rm -f "$HUB_SECTION_FILE" "$BM_ROW_FILE" "$BM_SECTION_FILE"
+        rm -f "$HUB_SECTION_FILE" "$BM_ROW_FILE" "$BM_SECTION_FILE" "$BM_INTRO_FILE"
     else
         {
             printf '<!DOCTYPE html>\n<html lang="de">\n<head>\n'

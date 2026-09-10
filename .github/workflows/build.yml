@@ -109,6 +109,104 @@ jobs:
             -e BASEMAP_STYLE_URL=/basemap/style.json \
             -e BASEMAP_ATTRIBUTION='(c) Example'
 
+      - name: Privacy page must follow the delivery mode
+        run: |
+          set -eu
+          # The Datenschutzerklärung is a legal statement, so every claim on it
+          # has to track the delivery mode. Two ways it goes wrong silently: a
+          # leftover {{PLACEHOLDER}} ships as literal text, and a clause about
+          # what third parties receive stays on the page when no third party is
+          # contacted at all. Neither is visible to `nginx -t`.
+          render() {
+            # Poll for the closing </html>, not for a non-empty file: the page
+            # is written by `sed | awk > file`, whose stdout is block-buffered,
+            # so the file goes non-empty at the first flush with kilobytes
+            # still to come. A `cat` that wins that race truncates the page
+            # mid-document, which fails the positive assertions and — worse —
+            # passes the "no leftover placeholder" ones vacuously.
+            # Only the entrypoint's stdout is dropped; stderr carries its `die`
+            # messages and must reach the step log.
+            docker run --rm --entrypoint sh \
+              -e IMPRESSUM_NAME='Max Mustermann' \
+              -e IMPRESSUM_EMAIL='kontakt@example.com' \
+              "$@" spieli-app:citest -c '
+                /docker-entrypoint.sh >/dev/null &
+                i=0
+                until grep -q "</html>" /usr/share/nginx/html/datenschutz.html 2>/dev/null; do
+                  i=$((i+1))
+                  [ "$i" -gt 100 ] && { echo "entrypoint did not finish" >&2; exit 1; }
+                  sleep 0.2
+                done
+                cat /usr/share/nginx/html/datenschutz.html
+              '
+          }
+
+          fail=0
+
+          # Same-origin (the default): no tile provider named, and no clause
+          # claiming a third party receives tile coordinates.
+          printf '\n── same-origin (defaults)\n'
+          page=$(render -e APP_MODE=standalone)
+          case "$page" in
+            *'{{'*) echo "FAIL: leftover placeholder in same-origin mode"; fail=1 ;;
+            *) echo "ok: no leftover placeholder" ;;
+          esac
+          case "$page" in
+            *Kachelkoordinaten*)
+              echo "FAIL: page mentions tile coordinates going to a third party,"
+              echo "      but the browser only ever talks to this instance"
+              fail=1 ;;
+            *) echo "ok: no third-party tile-coordinate claim" ;;
+          esac
+          case "$page" in
+            *'vollst&auml;ndig von dieser Instanz'*) echo "ok: states tiles are served locally" ;;
+            *) echo "FAIL: same-origin delivery is not stated on the page"; fail=1 ;;
+          esac
+
+          # Third-party opt-out: the provider must be named, and the clause the
+          # same-origin case drops must come back.
+          printf '\n── third-party style URL\n'
+          page=$(render -e APP_MODE=standalone \
+            -e BASEMAP_STYLE_URL='https://tiles.example.org/styles/bright' \
+            -e BASEMAP_ATTRIBUTION='(c) Example')
+          case "$page" in
+            *'{{'*) echo "FAIL: leftover placeholder in third-party mode"; fail=1 ;;
+            *) echo "ok: no leftover placeholder" ;;
+          esac
+          case "$page" in
+            *tiles.example.org*) echo "ok: provider host named" ;;
+            *) echo "FAIL: configured tile provider is not named on the page"; fail=1 ;;
+          esac
+          case "$page" in
+            *Kachelkoordinaten*) echo "ok: tile-coordinate disclosure present" ;;
+            *) echo "FAIL: third-party tile delivery is not disclosed"; fail=1 ;;
+          esac
+
+          # Style set to a same-origin path with no file behind it: the
+          # entrypoint cannot read the asset hosts, so it must hedge rather
+          # than claim either way. This is the branch where being wrong is a
+          # legal problem, because the reassuring answer is the unsafe one.
+          printf '\n── style present but not evaluable\n'
+          page=$(render -e APP_MODE=standalone \
+            -e BASEMAP_STYLE_URL=/basemap/does-not-exist.json \
+            -e BASEMAP_ATTRIBUTION='(c) Example')
+          case "$page" in
+            *'{{'*) echo "FAIL: leftover placeholder in unknown-provider mode"; fail=1 ;;
+            *) echo "ok: no leftover placeholder" ;;
+          esac
+          case "$page" in
+            *'unter Umst&auml;nden'*) echo "ok: disclosure is hedged, not asserted either way" ;;
+            *) echo "FAIL: an unevaluable style must hedge the tile disclosure"; fail=1 ;;
+          esac
+          case "$page" in
+            *'vollst&auml;ndig von dieser Instanz'*)
+              echo "FAIL: claims same-origin delivery for a style it could not read"
+              fail=1 ;;
+            *) echo "ok: does not claim same-origin delivery" ;;
+          esac
+
+          exit "$fail"
+
       - name: Basemap assets must actually resolve, not just parse
         run: |
           set -eu
