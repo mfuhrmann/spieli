@@ -212,6 +212,19 @@ Translations live in `locales/*.json` and are loaded by `lib/i18n.js` using svel
 
 Add new keys to `locales/en.json` and `locales/de.json`. Translation to other languages happens via [Weblate](translation-guide.md).
 
+## The search combobox
+
+`SearchBar.svelte` implements the [ARIA 1.2 combobox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/combobox/) over the Nominatim suggestion list. If you touch it, keep these invariants:
+
+- **The input owns the list.** `role="combobox"` + `aria-autocomplete="list"` + `aria-controls` pointing at the results container's `id`, `aria-expanded` mirroring list visibility, `aria-busy` mirroring the in-flight request. Ids come from a module-scoped counter (`searchbar-<n>-…`) — the component is in Svelte legacy mode, so `$props.id()` is unavailable.
+- **DOM focus never leaves the input.** Arrow keys move an `activeIndex` exposed via `aria-activedescendant`; options are not tab stops (`tabindex="-1"`). Roving tabindex would break continued typing. The tab order is input → clear button → out of the card.
+- **Options stay real `<button>`s.** Touch screen readers (TalkBack, VoiceOver) navigate with a virtual cursor that ignores `aria-activedescendant` and activates elements in place, so options must be natively activatable. `role="option"` overrides the button role without conflict.
+- **Dismissal is focus containment, never a timer.** `focusout` on `.search-card` tests `currentTarget.contains(e.relatedTarget)`. The old 200 ms hide timer raced both a mouse click in Safari and a touch scroll inside the list on iOS.
+- **`mousedown`, not `pointerdown`, is prevented** on the results container. `mousedown` is synthesised after a tap completes, so suppressing it cannot break scrolling; `pointerdown` fires at touch start and would.
+- **One highlight only.** `mousemove` writes `activeIndex` and only `.active` is styled — a separate `:hover` rule would let the pointer highlight a different row than the one `aria-activedescendant` announces. `activeIndex` resets on every reassignment of `results` (search, clear, error path), since the 450 ms debounce can swap the result set under a stale index.
+
+Regression coverage: `tests/searchbar-a11y.spec.js` (stubs Nominatim via `page.route`). Safari mouse selection, iOS scroll-in-list, and TalkBack navigation are manual-only — Playwright's Chromium does not reproduce those quirks.
+
 ## Playground themes
 
 `playground:theme=*` (OSM) is meant to describe a whole playground's motto — a ship, castle, or octopus playground. The tag reaches the frontend on both the playground polygon and equipment features via the `hstore_to_jsonb(tags)` merge in `api.sql` (it is not an osm2pgsql column, so it is not stripped).
