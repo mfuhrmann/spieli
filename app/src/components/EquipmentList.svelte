@@ -223,7 +223,7 @@
                   <div class="device-detail">
                     {#if detail.panoramaxUuid}
                       <button type="button" class="photo-thumb-btn" onclick={() => modalUuid = detail.panoramaxUuid} title={$_('popup.devicePhoto')}>
-                        <img src={thumbUrl(detail.panoramaxUuid)} alt={$_('modal.streetPhoto')} class="photo-thumb" />
+                        <img src={thumbUrl(detail.panoramaxUuid)} alt={$_('modal.streetPhoto')} referrerpolicy="no-referrer" class="photo-thumb" />
                         <span class="photo-label"><span class="bi bi-camera"></span> {$_('popup.devicePhoto')}</span>
                       </button>
                     {:else}
@@ -286,7 +286,7 @@
                   <div class="device-detail">
                     {#if detail.panoramaxUuid}
                       <button type="button" class="photo-thumb-btn" onclick={() => modalUuid = detail.panoramaxUuid} title={$_('popup.devicePhoto')}>
-                        <img src={thumbUrl(detail.panoramaxUuid)} alt={$_('modal.streetPhoto')} class="photo-thumb" />
+                        <img src={thumbUrl(detail.panoramaxUuid)} alt={$_('modal.streetPhoto')} referrerpolicy="no-referrer" class="photo-thumb" />
                         <span class="photo-label"><span class="bi bi-camera"></span> {$_('popup.devicePhoto')}</span>
                       </button>
                     {:else}
@@ -331,7 +331,7 @@
                   </span>
                   {#if detail.panoramaxUuid}
                     <button type="button" class="pitch-photo-btn" onclick={() => modalUuid = detail.panoramaxUuid} title={$_('popup.devicePhoto')}>
-                      <img src={thumbUrl(detail.panoramaxUuid)} alt={$_('modal.streetPhoto')} class="pitch-photo-thumb" />
+                      <img src={thumbUrl(detail.panoramaxUuid)} alt={$_('modal.streetPhoto')} referrerpolicy="no-referrer" class="pitch-photo-thumb" />
                     </button>
                   {/if}
                 </li>

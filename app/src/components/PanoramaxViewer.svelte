@@ -19,6 +19,21 @@
   let fullscreen = $state(false);
   let modalIndex = $state(0);
   let selectedIndex = $state(0);
+  let thumbFailed = $state(false);
+
+  // The component instance is REUSED across playgrounds: PlaygroundPanel keeps
+  // rendering it as long as the photos section is open, so selecting a
+  // playground with one photo after one with three left selectedIndex at 2 and
+  // uuids[2] undefined — a broken preview, a junk request for
+  // /api/pictures/undefined/thumb.jpg, and a modal headed "3 / 1". Reset when
+  // the photo set changes rather than clamping, so the visitor always starts
+  // on the first photo of the playground they just selected.
+  $effect(() => {
+    uuids;                     // tracked: re-run whenever the photo set changes
+    selectedIndex = 0;
+    modalIndex = 0;
+    thumbFailed = false;
+  });
 
   function openModal(i) {
     modalIndex = i;
@@ -80,11 +95,23 @@
           aria-label={$_('panoramax.loadViewer')}
           title={$_('panoramax.loadViewerHint')}
   >
-    <img
-      src={thumbUrl(uuids[selectedIndex])}
-      alt={$_('modal.streetPhoto')}
-      style="width:100%; height:240px; object-fit:cover; border:none; border-radius:4px; display:block;"
-    />
+    {#if thumbFailed}
+      <!-- A UUID can be present in OSM and gone upstream. Without this the
+           visitor gets the browser's broken-image glyph under a play button
+           whose label promises a photo; the old iframe at least rendered the
+           provider's own error state. -->
+      <div class="panoramax-thumb-missing">
+        <span class="bi bi-camera" aria-hidden="true"></span>
+      </div>
+    {:else}
+      <img
+        src={thumbUrl(uuids[selectedIndex])}
+        alt={$_('modal.streetPhoto')}
+        onerror={() => thumbFailed = true}
+        referrerpolicy="no-referrer"
+        style="width:100%; height:240px; object-fit:cover; border:none; border-radius:4px; display:block;"
+      />
+    {/if}
     <div class="panoramax-overlay">
       <span class="bi bi-play-fill panoramax-play" aria-hidden="true"></span>
       <span class="bi bi-fullscreen panoramax-expand" aria-hidden="true"></span>
@@ -99,6 +126,7 @@
                 onclick={() => selectedIndex = i}
                 title={$_('photos.thumbnailTitle', { values: { n: i + 1, total: uuids.length } })}>
           <img src={thumbUrl(uuid)} alt={$_('photos.thumbnail', { values: { n: i + 1 } })}
+               referrerpolicy="no-referrer"
                style="width:52px; height:36px; object-fit:cover; border-radius:3px;" />
         </button>
       {/each}
@@ -197,6 +225,15 @@
   }
   .panoramax-preview:hover .panoramax-play {
     background: rgba(0, 0, 0, 0.72);
+  }
+  .panoramax-thumb-missing {
+    height: 240px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f3f4f6;
+    color: #d1d5db;
+    font-size: 2.2rem;
   }
   .panoramax-expand {
     position: absolute;

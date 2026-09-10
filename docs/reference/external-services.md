@@ -22,9 +22,11 @@ Selecting a playground that has street-level photos fetches the **thumbnail** �
 
 This matters more than the thumbnail does. An iframe gets its own browsing context on `api.panoramax.xyz`, with cookies, `localStorage` and whatever script the provider runs there; probing the live viewer shows it attempting to set a Matomo `_pk_id` analytics cookie. That is persistent identification rather than an address in a log, and it is the strongest capability any third party has on this page.
 
-When it is created, the iframe carries `referrerpolicy="no-referrer"` and `sandbox="allow-scripts allow-same-origin"`. That token set was established by probing the live viewer, not assumed: with `allow-scripts` alone it renders nothing at all, and adding `allow-same-origin` makes it behave identically to an unsandboxed frame. Combining those two tokens is safe here specifically because the framed document is cross-origin — the usual warning about that pair applies when the frame is same-origin with the embedder, which this never is.
+When it is created, the iframe carries `referrerpolicy="no-referrer"` and `sandbox="allow-scripts allow-same-origin"`. That token set was established by probing the live viewer, not assumed: with `allow-scripts` alone the viewer renders nothing at all.
 
-Closing the viewer destroys the iframe, so the browsing context does not outlive the visitor's interest in it.
+**Be clear about what that sandbox does and does not do.** `allow-same-origin` gives the frame its real origin back, which is what the viewer needs to work — and which means cookies and `localStorage`, including the Matomo cookie above, behave exactly as they would unsandboxed. The sandbox is not what protects the visitor from that. What it still withholds is popups, form submission, top-level navigation and downloads, so a share or "open in Panoramax" link inside the viewer will not work.
+
+**The click gate is the control.** It is what stops that browsing context existing at all unless the visitor asks for it, and closing the viewer destroys the iframe again, so it does not outlive their interest. Dropping `allow-same-origin` would block the cookie but leaves nothing rendered, which is not a trade worth making silently.
 
 ### Proxied by default
 

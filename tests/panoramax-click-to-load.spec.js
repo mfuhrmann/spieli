@@ -16,12 +16,20 @@ import fixture from './fixtures/playground.json' assert { type: 'json' };
 const OSM_ID = fixture.features[0].properties.osm_id;
 const UUID = '11111111-2222-3333-4444-555555555555';
 
+// A real 1x1 PNG. An empty body would fail to decode, fire the <img> onerror
+// and swap in the missing-photo placeholder — so the stub has to be a valid
+// image or the tests below would be asserting against the failure path.
+const PNG_1x1 = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFAAH/q842iQAAAABJRU5ErkJggg==',
+  'base64',
+);
+
 /** Fixture playground carrying a Panoramax photo, with the host stubbed out. */
 async function loadWithPhoto(page) {
   const panoramaxHits = [];
   await page.route('**://api.panoramax.xyz/**', route => {
     panoramaxHits.push(route.request().url());
-    return route.fulfill({ status: 200, contentType: 'image/jpeg', body: '' });
+    return route.fulfill({ status: 200, contentType: 'image/png', body: PNG_1x1 });
   });
 
   await injectApiConfig(page);
@@ -82,6 +90,30 @@ test.describe('The Panoramax viewer waits to be asked', () => {
     await expect(btn).toHaveAttribute('aria-label', /.+/);
     await page.keyboard.press('Enter');
     await expect(page.locator('.panoramax-modal iframe')).toHaveCount(1);
+  });
+
+  test('the thumbnail sends no Referer either', async ({ page }) => {
+    // The gated iframe got referrerpolicy; the thumbnail loads on selection
+    // with no activation at all, so leaving it out would make the always-on
+    // request the leakier of the two.
+    await loadWithPhoto(page);
+    const img = preview(page).locator('img');
+    await expect(img).toHaveAttribute('referrerpolicy', 'no-referrer');
+  });
+
+  test('a thumbnail that fails degrades to a placeholder, not a broken image', async ({ page }) => {
+    // A UUID can be present in OSM and gone upstream. The browser's
+    // broken-image glyph under a play button promising a photo is worse than
+    // the provider's own error page that the old iframe showed.
+    await page.route('**://api.panoramax.xyz/**', route => route.fulfill({ status: 404 }));
+    await injectApiConfig(page);
+    const fc = structuredClone(fixture);
+    fc.features[0].properties.panoramax = UUID;
+    await stubApiRoutes(page, fc);
+    await page.goto(`/#W${OSM_ID}`);
+    await expect(page.locator('aside.info-panel')).toBeVisible({ timeout: 8000 });
+    await expect(preview(page).locator('.panoramax-thumb-missing')).toBeVisible({ timeout: 5000 });
+    await expect(preview(page).locator('img')).toHaveCount(0);
   });
 
   test('closing the modal destroys the iframe again', async ({ page }) => {

@@ -1541,15 +1541,17 @@ EXTROW_COM_PARTIAL
       </tr>
 EXTROW_MG
         fi
-        # Two distinct Panoramax rows. The thumbnail is an image and is proxied
-        # like anything else; the viewer is an iframe and never is. Only the
-        # thumbnail half disappears when the proxy is enabled.
+        # Two distinct Panoramax rows, both unconditional. Neither is proxied:
+        # the thumbnail endpoint redirects to a per-instance derivative host
+        # nginx cannot follow, and the viewer is an iframe that must not be
+        # served from this origin. They differ in WHEN they are contacted --
+        # the thumbnail on selection, the viewer only on activation (#852).
         cat >> "$EXT_ROWS_FILE" <<'EXTROW_PXTHUMB'
       <tr>
         <td><a href="https://panoramax.xyz/" target="_blank" rel="noopener">Panoramax</a><br><code>api.panoramax.xyz</code></td>
         <td>Vorschaubilder der Fotos auf Straßenebene</td>
         <td>Beim Auswählen eines Spielplatzes, zu dem Fotos vorliegen</td>
-        <td>IP-Adresse, User-Agent, Referer, Kennung des abgerufenen Fotos</td>
+        <td>IP-Adresse, User-Agent, Kennung des abgerufenen Fotos. Ein Referer wird nicht übertragen (<code>referrerpolicy="no-referrer"</code>)</td>
       </tr>
 EXTROW_PXTHUMB
         cat >> "$EXT_ROWS_FILE" <<'EXTROW_PXVIEWER'
@@ -1557,7 +1559,7 @@ EXTROW_PXTHUMB
         <td><a href="https://panoramax.xyz/" target="_blank" rel="noopener">Panoramax</a> — Betrachter<br><code>api.panoramax.xyz</code></td>
         <td>Anzeige der Fotos auf Straßenebene</td>
         <td>Erst wenn Sie die Vorschau ausdrücklich aktivieren. Beim bloßen Auswählen eines Spielplatzes wird nur das Vorschaubild geladen, nicht der Betrachter</td>
-        <td>IP-Adresse, User-Agent, Referer, Kennung des abgerufenen Fotos. Der Betrachter wird als <code>&lt;iframe&gt;</code> eingebettet, Panoramax erhält damit einen eigenen Browser-Kontext auf dieser Seite und kann dort eigene Daten speichern. Dieser Betrachter wird bewusst nicht über diese Instanz ausgeliefert: eine vollständige fremde Anwendung von dieser Herkunft auszuliefern würde ihr Zugriff auf die Daten dieser Website geben</td>
+        <td>IP-Adresse, User-Agent, Kennung des abgerufenen Fotos. Ein Referer wird nicht übertragen (<code>referrerpolicy="no-referrer"</code>). Der Betrachter wird als <code>&lt;iframe&gt;</code> eingebettet, Panoramax erhält damit einen eigenen Browser-Kontext auf dieser Seite und kann dort eigene Daten speichern. Dieser Betrachter wird bewusst nicht über diese Instanz ausgeliefert: eine vollständige fremde Anwendung von dieser Herkunft auszuliefern würde ihr Zugriff auf die Daten dieser Website geben</td>
       </tr>
 EXTROW_PXVIEWER
 
