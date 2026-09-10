@@ -96,6 +96,13 @@ docker compose --profile <mode> up -d --force-recreate importer
 
 `--force-recreate` matters. A plain `up -d importer` **restarts the existing container**, which leaves the daemon on the *old* image — and since its startup path applies `api.sql`, the old image then becomes the last writer and quietly restores the old schema. That is what happened during the v0.9.0 sweep ([#800](https://github.com/mfuhrmann/spieli/issues/800)): the stack ran the new app against the old schema, with two filters silently wrong while `get_meta` and row counts looked healthy.
 
+!!! warning "The API is unavailable for a few minutes after this step"
+    The freshly recreated daemon applies `api.sql` again on startup. That drops and rebuilds `playground_stats`, which takes minutes on a large region, and terminates PostgREST's connections while it runs. During that window `get_meta` answers 5xx or reports a missing relation. **This is expected**, and it is why the verification below polls instead of being run once. Watch the importer log and wait for the apply to finish before concluding anything:
+
+    ```bash
+    docker compose --profile <mode> logs -f importer
+    ```
+
 **Step 5 — Restart the app container**
 
 ```bash
@@ -111,11 +118,18 @@ curl -sf http://localhost:<port>/api/rpc/get_meta | \
 
 Both `version` and `playground_count` should be non-zero. If `playground_count` is 0, see [If playground_count is zero after upgrade](#if-playground_count-is-zero-after-upgrade) below.
 
-Verifying **after** step 4 is deliberate: verifying before it checks a stack whose last writer may still be the old image, and the old schema is internally consistent enough to pass. If you want to confirm the schema is actually the new one, check for a column the new release added, for example:
+Retry it for a few minutes if it fails: the daemon's startup apply from step 4 has to finish first, and until it does the API is legitimately unavailable.
+
+Verifying **after** step 4 is deliberate. Verifying before it checks a stack whose last writer may still be the old image, and the old schema is internally consistent enough to pass.
+
+To confirm the schema really is the new one, compare the **version** `get_meta` reports against the release you just installed:
 
 ```bash
-docker compose exec db psql -U osm -d osm -c "\d public.playground_stats" | grep has_theme
+curl -sf http://localhost:<port>/api/rpc/get_meta | \
+  python3 -c "import sys,json; print(json.load(sys.stdin)['version'])"
 ```
+
+`version` comes from the image that last applied `api.sql`, so it is the one field that distinguishes "the new schema is in place" from "an older image applied last". Do **not** check for the presence of a column instead: a column added in an earlier release is present in both schemas, so the check passes on the old one and gives false assurance in exactly the failure mode #800 is about.
 
 
 ---

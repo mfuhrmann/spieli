@@ -19,15 +19,31 @@
 --
 -- The lock lives here rather than in the shell, because the shell cannot
 -- order every writer: upgrade-stacks.sh, `make db-apply`, a manual
--- `run --rm -e API_ONLY=1 importer`, a Watchtower-triggered daemon restart
--- and the daemon's own reimport cycle all apply this file. Anything that
--- runs it takes the lock.
+-- `run --rm -e API_ONLY=1 importer` and a Watchtower-triggered daemon
+-- restart all apply this file. Anything that runs it takes the lock.
 --
--- SESSION level, not transaction level: psql runs each statement in its own
--- transaction, so a transaction-scoped lock would be released immediately
--- and guard nothing. A session lock is held for the whole script and is
--- released automatically when psql disconnects, including on failure, so a
--- crashed apply cannot leave the lock stuck.
+-- SCOPE, stated precisely so it is not over-trusted: this guards the api.sql
+-- APPLY, and nothing else. It does NOT cover the osm2pgsql phase of a full
+-- import, which runs before run_import's own apply. A `make db-apply`
+-- starting while osm2pgsql is rewriting planet_osm_* takes this lock
+-- unopposed and builds playground_stats against tables being dropped and
+-- recreated underneath it — the same class of corruption, still open.
+-- Widening the lock to the whole import means taking it in import.sh before
+-- osm2pgsql; that is a separate change.
+--
+-- SESSION level, not transaction level. A transaction-scoped lock would be
+-- released at the first COMMIT, and both apply paths would then be
+-- unguarded for most of the script: the importer runs `psql -f` with
+-- autocommit, so each statement commits as it goes, while `make db-apply`
+-- wraps the second half in --single-transaction and would drop the lock at
+-- its single commit. A session lock is held for the whole script either way.
+--
+-- Release: psql drops the lock when it disconnects, including after a
+-- failure, so an aborted apply cannot wedge it. The one exception is an
+-- INTERACTIVE session — `\i api.sql` inside `make db-shell` — where an abort
+-- skips the unlock at the bottom and the lock survives until that shell is
+-- closed, because a session lock is not released by rollback. If a later
+-- apply sits waiting, look for a stray psql before assuming a deadlock.
 --
 -- The key is arbitrary but FIXED. The only requirement is that every writer
 -- uses the same number, which is why it is a literal here rather than
@@ -1609,9 +1625,10 @@ GRANT EXECUTE ON FUNCTION api.get_nearest_playgrounds(float8, float8, bigint, in
 -- playground_stats build, which is the statement that needs them (#720).
 
 -- =========================================================================
--- Release the apply lock (#800). Belt and braces: psql drops it on
--- disconnect anyway, but releasing explicitly means a long-lived session
--- (an operator with an interactive psql, say) does not hold it after the
--- script has finished.
+-- Release the apply lock (#800). psql drops it on disconnect anyway, so this
+-- matters only for a session that outlives the script — an operator running
+-- `\i api.sql` from `make db-shell`. Note this line is SKIPPED on an abort,
+-- so an interactive session that fails mid-file keeps the lock until it
+-- disconnects; see the note at the top.
 -- =========================================================================
 SELECT pg_advisory_unlock(800800800);
