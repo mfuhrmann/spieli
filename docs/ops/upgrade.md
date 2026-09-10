@@ -64,11 +64,13 @@ Replace `<mode>` with your `DEPLOY_MODE` and `<port>` with your `APP_PORT`.
 docker compose pull
 ```
 
-**Step 2 — Restart the app container**
+**Step 2 — Stop the daemon importer**
 
 ```bash
-docker compose --profile <mode> up -d app
+docker compose --profile <mode> stop importer
 ```
+
+This is not optional, and it is not the same as "the daemon is idle". The daemon applies `api.sql` on **container startup**, so anything that restarts it — a reboot, Watchtower, `up -d` — makes it a second writer against the same schema. Stopping it removes that possibility for the duration of the apply.
 
 **Step 3 — Apply schema changes (API_ONLY)**
 
@@ -76,15 +78,31 @@ docker compose --profile <mode> up -d app
 docker compose --profile <mode> run --rm -e API_ONLY=1 importer
 ```
 
-This updates all PostgREST functions and the version number reported by `get_meta`. It runs as a one-shot container — the daemon importer is not affected.
+This updates all PostgREST functions and the version number reported by `get_meta`. It runs as a one-shot container, and with the daemon stopped it is the only writer.
 
-!!! warning "Run API_ONLY=1 before restarting the daemon"
-    The daemon importer also applies `api.sql` on container startup, so restarting it and running `API_ONLY=1` at the same time means two concurrent applies. Since v0.10.0 the `playground_stats` rebuild is an atomic swap, so this no longer takes the API offline or leaves a half-built view — but the last writer still wins, and if that is the daemon on its *old* image, the stack ends up serving the old schema while reporting healthy. Always complete step 3 and verify (step 4) before starting the daemon (step 5).
+!!! info "Concurrent applies queue rather than race"
+    `api.sql` takes a session-level advisory lock, so if something applies the schema at the same time — a manual `make db-apply`, a Watchtower-triggered restart — the second one waits instead of corrupting the first.
+
+    That is a safety net, not a substitute for step 2. **The last writer still wins**, and the lock cannot tell an old image from a new one: if the daemon on its *previous* image applies last, the stack ends up serving the old schema while reporting healthy. Stopping it first is what prevents that.
 
 !!! info "If API_ONLY=1 fails mid-run"
     Since v0.10.0 the API stays up: `playground_stats` is built under a staging name and swapped in, so a crash before the swap leaves the previous view serving traffic. Re-run `API_ONLY=1` after fixing the cause — the staging view is dropped and rebuilt on the next attempt. On v0.9.0 and earlier the view was dropped first, and a crash partway through left it gone, with PostgREST logging `relation "public.playground_stats" does not exist`; recovery there is a full re-import.
 
-**Step 4 — Verify**
+**Step 4 — Recreate the daemon importer on the new image**
+
+```bash
+docker compose --profile <mode> up -d --force-recreate importer
+```
+
+`--force-recreate` matters. A plain `up -d importer` **restarts the existing container**, which leaves the daemon on the *old* image — and since its startup path applies `api.sql`, the old image then becomes the last writer and quietly restores the old schema. That is what happened during the v0.9.0 sweep ([#800](https://github.com/mfuhrmann/spieli/issues/800)): the stack ran the new app against the old schema, with two filters silently wrong while `get_meta` and row counts looked healthy.
+
+**Step 5 — Restart the app container**
+
+```bash
+docker compose --profile <mode> up -d app
+```
+
+**Step 6 — Verify**
 
 ```bash
 curl -sf http://localhost:<port>/api/rpc/get_meta | \
@@ -93,11 +111,12 @@ curl -sf http://localhost:<port>/api/rpc/get_meta | \
 
 Both `version` and `playground_count` should be non-zero. If `playground_count` is 0, see [If playground_count is zero after upgrade](#if-playground_count-is-zero-after-upgrade) below.
 
-**Step 5 — Restart the daemon importer on the new image**
+Verifying **after** step 4 is deliberate: verifying before it checks a stack whose last writer may still be the old image, and the old schema is internally consistent enough to pass. If you want to confirm the schema is actually the new one, check for a column the new release added, for example:
 
 ```bash
-docker compose --profile <mode> up -d importer
+docker compose exec db psql -U osm -d osm -c "\d public.playground_stats" | grep has_theme
 ```
+
 
 ---
 

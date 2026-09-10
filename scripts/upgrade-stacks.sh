@@ -145,20 +145,46 @@ for entry in "${STACKS[@]}"; do
   docker compose "${profile_flags[@]}" pull \
     || fail "docker compose pull failed for $name — later stacks were NOT upgraded, re-run after fixing"
 
-  echo "→ Restarting app container..."
-  docker compose "${profile_flags[@]}" up -d app
-
   # Pure hub stacks (DEPLOY_MODE=ui) have no importer — skip importer steps.
   if [[ "$profiles" == *"data-node"* ]]; then
+    # The order below is load-bearing, and the previous order corrupted a stack
+    # during the v0.9.0 sweep (#800). What went wrong:
+    #
+    #   * The daemon importer was never stopped, and its STARTUP path applies
+    #     api.sql. Nothing prevented it restarting mid-apply, so two sessions
+    #     raced on the DROP/CREATE of playground_stats. The old guard argued the
+    #     daemon is "idle between reimport cycles" — but idleness is not
+    #     exclusivity.
+    #   * The daemon was then brought onto the new image with a plain
+    #     `up -d importer`, which RESTARTS the existing container rather than
+    #     recreating it, so it stayed on the old image.
+    #   * Verification ran before that step, so it checked a stack whose last
+    #     writer was the old image. The old schema is internally consistent, so
+    #     get_meta and row counts looked healthy while two filters were wrong.
+    #
+    # Hence: remove the second writer, apply with the new image as sole writer,
+    # put the daemon on the new image with --force-recreate, and only then
+    # verify. api.sql also takes an advisory lock now (#800), which covers the
+    # writers this script cannot order — Watchtower, `make db-apply`, a manual
+    # API_ONLY run — but ordering here is what makes the sweep deterministic.
+    echo "→ Stopping daemon importer so it cannot race the schema apply..."
+    docker compose "${profile_flags[@]}" stop importer \
+      || fail "could not stop the importer for $name — refusing to apply the schema with a second writer running"
+
     echo "→ Applying api.sql (one-shot, never triggers full reimport)..."
-    # Run API_ONLY=1 before restarting the daemon. The daemon only runs api.sql
-    # on container startup; while it is idle between reimport cycles it won't
-    # touch playground_stats. Running both concurrently races on the DROP/CREATE
-    # of that materialized view and reliably fails on large datasets.
     docker compose "${profile_flags[@]}" run --rm -e API_ONLY=1 importer
+
+    echo "→ Recreating daemon importer on the new image..."
+    # --force-recreate, NOT a plain `up -d`: the latter restarts the existing
+    # container, which is how the daemon stayed on the old image and became the
+    # last writer.
+    docker compose "${profile_flags[@]}" up -d --force-recreate importer
   else
     echo "→ Pure hub — no importer, skipping api.sql step."
   fi
+
+  echo "→ Restarting app container..."
+  docker compose "${profile_flags[@]}" up -d app
 
   echo "→ Verifying..."
   sleep 3
@@ -215,11 +241,9 @@ for entry in "${STACKS[@]}"; do
   rm -f "$body"
 
   if [[ "$profiles" == *"data-node"* ]]; then
-    echo "→ Restarting daemon importer on new image..."
-    # Restart after verify so the daemon's api.sql startup run does not race
-    # with the API_ONLY=1 container above.
-    docker compose "${profile_flags[@]}" up -d importer
-
+    # The daemon was recreated on the new image BEFORE verification, so there is
+    # no restart to do here any more (#800). Verification therefore reflects the
+    # image the stack will actually keep running.
     if [[ "$playground_count" -eq 0 ]]; then
       logfile="/tmp/${name}-reimport.log"
       echo "→ No playgrounds found — triggering forced reimport in background (log: $logfile)"

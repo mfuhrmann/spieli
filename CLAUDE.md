@@ -317,7 +317,7 @@ This catches ordering bugs (e.g. a function referencing a table defined later in
 
 | Script | Purpose |
 |---|---|
-| `upgrade-stacks.sh` | Sequential upgrade of all spieli stacks on a single VPS. Edit the `STACKS` array at the top. For data-node stacks: runs `API_ONLY=1` first, verifies `get_meta`, then restarts the daemon importer. Pure hub stacks skip the `API_ONLY` step. |
+| `upgrade-stacks.sh` | Sequential upgrade of all spieli stacks on a single VPS. Edit the `STACKS` array at the top. For data-node stacks the order is load-bearing (#800): **stop** the importer, `API_ONLY=1` with the new image as sole writer, `up -d --force-recreate importer`, then the app, then verify. A plain `up -d importer` restarts the old container, which then re-applies the *old* schema on startup and becomes the last writer — the v0.9.0 sweep left a stack running the new app against the old schema that way, with two filters silently wrong. `api.sql` also takes an advisory lock, which covers the writers this script cannot order (Watchtower, `make db-apply`, a manual API_ONLY run). Pure hub stacks skip every importer step. |
 | `setup-germany-backends.sh` | Bootstraps all 15 non-Hessen German Bundesland data-node stacks and wires them into a hub with Traefik. One-time setup script. |
 | `migrate-hub-hessen.sh` | Splits a combined hub+Hessen stack into a pure hub (`DEPLOY_MODE=ui`) and a dedicated Hessen data-node. Two-phase: Phase 1 creates `~/spieli-hessen` and runs the first import; Phase 2 (`--convert`) updates `registry.json`, switches hub to ui-only, and removes orphaned volumes. |
 

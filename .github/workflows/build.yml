@@ -56,6 +56,47 @@ jobs:
       # against the live Commons and OSM wiki APIs, which would make this job
       # slow and dependent on someone else's uptime. These are the properties
       # that can be checked offline, and they are the ones that regressed.
+      # api.sql is a destructive writer: it drops and rebuilds
+      # playground_stats. Two concurrent applies corrupted a stack during the
+      # v0.9.0 sweep (#800), so the advisory lock that serialises them must not
+      # be removed or reordered. CI has no database, so this is a static check;
+      # the locking behaviour itself was verified against PostgreSQL 16
+      # (serialisation, lock_timeout on an advisory wait, and release on a
+      # failed apply) and is recorded in #800.
+      - name: api.sql must serialise concurrent applies
+        run: |
+          set -eu
+          # The lock has to be taken BEFORE the destructive DROP, or it guards
+          # nothing that matters.
+          # Comment lines are excluded, or the prose explaining the race
+          # matches before the statement it describes does — which is exactly
+          # what happened when this check was written.
+          sql() { grep -vE '^[[:space:]]*--' importer/api.sql | grep -nE "$1" | head -1 | cut -d: -f1; }
+          sql_last() { grep -vE '^[[:space:]]*--' importer/api.sql | grep -nE "$1" | tail -1 | cut -d: -f1; }
+          lock=$(sql 'pg_advisory_lock\(')
+          drop=$(sql 'DROP MATERIALIZED VIEW')
+          unlock=$(sql_last 'pg_advisory_unlock\(')
+          [ -n "$lock" ]   || { echo 'api.sql no longer takes an advisory lock — see #800' >&2; exit 1; }
+          [ -n "$unlock" ] || { echo 'api.sql no longer releases its advisory lock — see #800' >&2; exit 1; }
+          [ "$lock" -lt "$drop" ] \
+            || { echo "the advisory lock (line $lock) must be taken before the matview DROP (line $drop)" >&2; exit 1; }
+          [ "$unlock" -gt "$drop" ] \
+            || { echo "the advisory unlock (line $unlock) must come after the matview rebuild" >&2; exit 1; }
+          # Same key both ends, or the unlock is a no-op and warns.
+          lk=$(grep -o 'pg_advisory_lock([0-9]*)' importer/api.sql | head -1 | tr -cd '0-9')
+          uk=$(grep -o 'pg_advisory_unlock([0-9]*)' importer/api.sql | tail -1 | tr -cd '0-9')
+          [ "$lk" = "$uk" ] || { echo "lock key $lk does not match unlock key $uk" >&2; exit 1; }
+          echo "  ok  api.sql takes advisory lock $lk before the DROP and releases it after"
+
+          # The sweep must not leave a second writer running, and must put the
+          # daemon on the new image with --force-recreate rather than a plain
+          # `up -d`, which restarts the old container (#800).
+          grep -q 'stop importer' scripts/upgrade-stacks.sh \
+            || { echo 'upgrade-stacks.sh no longer stops the importer before applying the schema — see #800' >&2; exit 1; }
+          grep -q 'up -d --force-recreate importer' scripts/upgrade-stacks.sh \
+            || { echo 'upgrade-stacks.sh must --force-recreate the importer, not restart it — see #800' >&2; exit 1; }
+          echo '  ok  upgrade-stacks.sh removes the second writer and recreates the daemon'
+
       - name: Equipment illustrations must not be fetched from a third party
         run: |
           set -eu
