@@ -71,6 +71,20 @@ test.describe('Mangrove is not contacted until the visitor asks', () => {
     expect(urls).toHaveLength(1);
   });
 
+  test('a failed read still leaves the visitor able to submit', async ({ page }) => {
+    // Submitting is a separate request that may succeed while the read path is
+    // rate limited or down, so the error must not take the form with it.
+    await page.route('https://api.mangrove.reviews/**', route =>
+      route.fulfill({ status: 503, contentType: 'application/json', body: '{}' })
+    );
+    await loadWithSelection(page);
+    await reviewsToggle(page).click();
+
+    const panel = page.locator('aside.info-panel');
+    await expect(panel.locator('.review-form')).toBeVisible({ timeout: 5000 });
+    await expect(panel.locator('.star-btn').first()).toBeVisible();
+  });
+
   test('the collapsed section header shows no review count', async ({ page }) => {
     await stubMangrove(page);
     await loadWithSelection(page);

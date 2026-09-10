@@ -74,6 +74,40 @@ const ok = (reviews) => () => ({ ok: true, json: async () => ({ reviews }) });
     assert.deepEqual(second, first);
 }
 
+// --- two callers while the first request is in flight share it -------------
+// A fast collapse-and-re-expand mounts a second component before the first
+// response lands. Caching the resolved value would miss here and issue a
+// second request, so the cache holds the promise.
+{
+    reset();
+    const id = 9031;
+    let release;
+    respond = () => new Promise(res => { release = () => res({ ok: true, json: async () => ({ reviews: [{ payload: { rating: 80 } }] }) }); });
+
+    const a = fetchReviewsCached(LAT, LON, id);
+    const b = fetchReviewsCached(LAT, LON, id);
+    assert.equal(calls.length, 1, 'a concurrent caller must join the in-flight request');
+    release();
+    assert.deepEqual(await a, await b);
+    assert.equal(calls.length, 1);
+}
+
+// --- a rejected in-flight promise is not left in the cache -----------------
+{
+    reset();
+    const id = 9032;
+    let fail;
+    respond = () => new Promise((_, rej) => { fail = () => rej(new Error('Mangrove responded 503')); });
+
+    const pending = fetchReviewsCached(LAT, LON, id);
+    fail();
+    await assert.rejects(() => pending, /503/);
+
+    respond = ok([{ payload: { rating: 60 } }]);
+    assert.equal((await fetchReviewsCached(LAT, LON, id)).length, 1, 'a rejected promise must not be replayed');
+    assert.equal(calls.length, 2);
+}
+
 // --- a different playground is a different key -----------------------------
 {
     reset();
