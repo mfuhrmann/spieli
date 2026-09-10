@@ -1631,6 +1631,34 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Contacted by the visitor&#39;s browser">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#proxied-by-default" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Proxied by default
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-the-proxies-do-and-do-not-do" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What the proxies do and do not do
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1916,6 +1944,34 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Contacted by the visitor&#39;s browser">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#proxied-by-default" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Proxied by default
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-the-proxies-do-and-do-not-do" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What the proxies do and do not do
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1978,58 +2034,85 @@
 
 <h1 id="external-services">External Services<a class="headerlink" href="#external-services" title="Permanent link">&para;</a></h1>
 <p>spieli integrates with the following free external services.
-They fall into three groups, and the distinction matters for privacy: only the first group is contacted by the visitor's browser.</p>
+They fall into groups, and the distinction matters for privacy: what the visitor's browser contacts directly, what it contacts only on a click, and what only this server ever contacts.</p>
 <h2 id="contacted-by-the-visitors-browser">Contacted by the visitor's browser<a class="headerlink" href="#contacted-by-the-visitors-browser" title="Permanent link">&para;</a></h2>
-<p>Each of these receives the visitor's IP address, User-Agent and <code>Referer</code> by construction, because the browser connects to them directly.
-The "Also receives" column lists what is sent on top of that.</p>
+<p>Most of what used to be here is gone: geocoding, the Commons API, the playground photo bytes and reviews are all fetched <strong>server-side</strong> through a cache on this instance, so the browser only connects to the instance itself.</p>
+<p>Two things still reach a third party directly, and both are deliberate rather than unfinished.</p>
 <table>
 <thead>
 <tr>
 <th>Service</th>
 <th>Host</th>
-<th>Purpose</th>
-<th>Contacted when</th>
-<th>Also receives</th>
+<th>What still goes direct</th>
+<th>Why it is not proxied</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://panoramax.xyz">Panoramax</a></td>
+<td><code>api.panoramax.xyz</code></td>
+<td>Street-level photo <strong>thumbnails</strong> and the <strong>viewer</strong></td>
+<td>The thumbnail endpoint answers <code>308</code> with a <code>Location</code> on a per-instance derivative host (<code>panoramax.openstreetmap.fr</code> for the flagship). nginx cannot follow a redirect, and Panoramax is a federation whose derivative hosts are not ours to enumerate. The viewer is an <code>&lt;iframe&gt;</code>: serving a whole interactive application from this origin would grant it same-origin privileges here</td>
+</tr>
+<tr>
+<td><a href="https://commons.wikimedia.org">Wikimedia Commons</a></td>
+<td><code>commons.wikimedia.org</code></td>
+<td>Illustrations of individual <strong>equipment attributes</strong></td>
+<td><code>app/src/lib/equipmentAttributes.js</code> renders them from <code>Special:FilePath</code>, which answers with a redirect chain. Following it would mean allowing <code>/w/index.php</code> — a full MediaWiki entry point — through the proxy</td>
+</tr>
+</tbody>
+</table>
+<p>Both are named in the generated Content Security Policy and both keep a row on the generated privacy page. The playground photo <strong>gallery</strong> is proxied; only these equipment illustrations are not.</p>
+<h3 id="proxied-by-default">Proxied by default<a class="headerlink" href="#proxied-by-default" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Service</th>
+<th>Host</th>
+<th>Same-origin path</th>
+<th>Opt out with</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><a href="https://nominatim.openstreetmap.org">Nominatim</a></td>
 <td><code>nominatim.openstreetmap.org</code></td>
-<td>Location search, region-URL resolution</td>
-<td>On a search query, and on loading a region URL such as <code>/fulda</code></td>
-<td>The search term</td>
-</tr>
-<tr>
-<td><a href="https://panoramax.xyz">Panoramax</a></td>
-<td><code>api.panoramax.xyz</code></td>
-<td>Street-level photos</td>
-<td>Selecting a playground that has photos</td>
-<td>The requested photo UUID. The viewer is embedded in an <code>&lt;iframe&gt;</code>, so Panoramax runs in its own browsing context and can set its own storage there</td>
+<td><code>/ext/nominatim/</code></td>
+<td><code>PROXY_NOMINATIM=false</code></td>
 </tr>
 <tr>
 <td><a href="https://commons.wikimedia.org">Wikimedia Commons</a></td>
-<td><code>commons.wikimedia.org</code>, <code>upload.wikimedia.org</code></td>
-<td>Playground photos from <code>wikimedia_commons</code> / <code>image</code> tags</td>
-<td>Selecting a playground carrying either tag</td>
-<td>The requested file name</td>
+<td><code>commons.wikimedia.org</code> (API), <code>upload.wikimedia.org</code> and <code>thumb.wikimedia.org</code> (files)</td>
+<td><code>/ext/commons/</code>, <code>/ext/wikimedia/&lt;host&gt;/</code></td>
+<td><code>PROXY_COMMONS=false</code></td>
 </tr>
 <tr>
 <td><a href="https://mangrove.reviews">Mangrove.reviews</a></td>
 <td><code>api.mangrove.reviews</code></td>
-<td>Pseudonymous community reviews</td>
-<td>Only after the visitor expands the "Reviews" section: once for that playground, then once per further playground selected while the section stays expanded. Never on selection alone, and never before the section is opened. Again on submitting a review</td>
-<td>Playground coordinates. On submit: the rating, optional comment, and the browser-held public key</td>
+<td><code>/ext/mangrove/</code></td>
+<td><code>PROXY_MANGROVE=false</code></td>
 </tr>
 </tbody>
 </table>
-<p>Playground data itself is served by the instance's own PostgREST, so it never leaves the operator's server.</p>
-<p>Two consequences worth being explicit about:</p>
+<p>Opting a service out restores the old behaviour for it: the browser contacts that host directly, the generated CSP names it, and the privacy page grows its row back. See <a href="../../ops/security/#nginx-security-headers">Security Hardening</a>.</p>
+<h3 id="what-the-proxies-do-and-do-not-do">What the proxies do and do not do<a class="headerlink" href="#what-the-proxies-do-and-do-not-do" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>The basemap is not in this table, and that is the point.</strong> It used to be the largest entry in it, contacted by every visitor on every map movement. It is now fetched server-side and cached, so the browser only ever talks to the instance itself. See the next section.</li>
-<li><strong>Reviews create a persistent pseudonymous identifier.</strong> <code>app/src/lib/reviews.js</code> generates a P-256 keypair on the first review submission and stores it in <code>localStorage</code> under <code>spieli-mangrove-keypair</code>. It is not created by merely viewing the map.</li>
-<li><strong>A panel section that is collapsed by default contacts nothing.</strong> <code>PlaygroundPanel.svelte</code> mounts each accordion section's component only while that section is open (<code>openSections</code>, default <code>['photos', 'equipment', 'pois']</code>), so a closed section's fetch code never runs. Reviews are closed by default and are therefore not contacted on selection, even though <code>ReviewsPanel</code> fetches on mount. Reading the fetch call alone gives the wrong answer — check the section's default state too. Conversely, photos <em>are</em> open by default, which is why Panoramax and Commons are contacted on selection.</li>
-<li><strong>A re-opened section does not re-fetch.</strong> <code>fetchReviewsCached</code> in <code>app/src/lib/reviews.js</code> holds a per-page in-memory cache keyed on the Mangrove subject URI, so collapsing and re-expanding, or returning to a playground already seen, issues no further request. It is dropped after a submission so the visitor sees their own review, and it is deliberately not <code>localStorage</code>.</li>
+<li><strong>Nothing is logged.</strong> Every proxy location sets <code>access_log off</code>. This is a correctness property, not a tuning choice: proxying moves the visitor's request stream onto the operator's disk, and recording it would rebuild the per-visitor trail this design exists to remove — leaving the operator as controller of something worse than what was replaced. Errors are still logged.</li>
+<li><strong>The visitor is not identified upstream.</strong> <code>Cookie</code>, <code>Referer</code>, <code>Accept-Language</code>, <code>X-Forwarded-For</code> and <code>X-Real-IP</code> are cleared on the outbound request, and the <code>User-Agent</code> identifies spieli and the instance rather than the visitor's browser.</li>
+<li><strong>There is no fallback to direct delivery.</strong> If an upstream is unreachable the feature fails. A fallback would disclose exactly the addresses the proxy protects, at the moment something is already wrong, and would do it invisibly.</li>
+<li><strong>Nominatim is rate-limited by construction.</strong> The OSMF usage policy is an absolute 1 request per second. The limiter sits on an internal loopback server so that only cache <em>misses</em> reach it — on the visitor-facing location it would shed requests that were already cached, because <code>limit_req</code> runs before the cache lookup. When it does shed, a stale cached answer is served if one is held.</li>
+<li><strong>Reviews still verify.</strong> The Mangrove submit path is a <code>PUT</code> whose signature covers the JWT's own claims, so the proxy is transparent to verification. Submission through the proxy is accepted by Mangrove exactly as a direct one is.</li>
+</ul>
+<p>Three consequences worth being explicit about:</p>
+<ul>
+<li><strong>The basemap is not in the browser-contacted group, and that is the point.</strong> It used to be the largest entry in it, contacted by every visitor on every map movement. It is now fetched server-side and cached. See <a href="../../ops/configuration/#basemap">Basemap</a>.</li>
+<li><strong>Reviews create a persistent pseudonymous identifier.</strong> <code>app/src/lib/reviews.js</code> generates a P-256 keypair on the first review submission and stores it in <code>localStorage</code> under <code>spieli-mangrove-keypair</code>. It is not created by merely viewing the map. Proxying does not change this: the keypair is the visitor's identity to Mangrove, not an address.</li>
+<li><strong>A panel section that is collapsed by default contacts nothing.</strong> <code>PlaygroundPanel.svelte</code> mounts each accordion section's component only while that section is open (<code>openSections</code>, default <code>['photos', 'equipment', 'pois']</code>), so a closed section's fetch code never runs. Reviews are closed by default; photos are open. Reading a fetch call alone gives the wrong answer — check the section's default state too.</li>
+</ul>
+<p>Two things that are fine and worth recording so they are not re-investigated:</p>
+<ul>
+<li><strong>Commons URLs from OSM tags are host-validated</strong> in <code>app/src/lib/commons.js</code> before rendering, so a crafted <code>image</code> tag cannot point the browser at an arbitrary host. The Content Security Policy is a second line behind that check, not a replacement for it. Both are tested: <code>tests/hostile-image-tag.spec.js</code> and the <code>CSP must follow the configuration</code> CI job.</li>
+<li><strong>Which Wikimedia host serves a file is not fixed.</strong> The imageinfo API currently returns thumbnails on <code>thumb.wikimedia.org</code> and originals on <code>upload.wikimedia.org</code>. <code>proxiedImageUrl</code> therefore carries the original host in the proxy path rather than assuming one; a rewrite pinned to a single host silently sends every thumbnail straight to Wikimedia while appearing to work.</li>
 </ul>
 <p>Operators must disclose all of the above.
 <code>oci/app/datenschutz.template.html</code> ships a service table that already does; keep the two in sync when a service is added or removed.</p>
@@ -2080,9 +2163,9 @@ The "Also receives" column lists what is sent on top of that.</p>
 </table>
 <h2 id="on-tracking">On tracking<a class="headerlink" href="#on-tracking" title="Permanent link">&para;</a></h2>
 <p>All map data comes from OpenStreetMap or the free services listed above, and there is no proprietary data and there are no user accounts.</p>
-<p>spieli itself sets no cookies, runs no analytics and profiles no one.
-That is a statement about spieli's own code, not about the assembled page: the third-party services in the first table each receive the visitor's IP address, and spieli has no control over what they do with it.
-Claiming outright that spieli "does not track users" overstates this, so do not write that.</p>
+<p>spieli itself sets no cookies, runs no analytics and profiles no one.</p>
+<p>That has historically been a statement about spieli's own code rather than about the assembled page, because the third-party services were contacted directly by the browser and each received the visitor's IP address. Since #853 they are fetched server-side, so in a default deployment the only third party the browser reaches is a Panoramax viewer iframe on a playground that has street-level photos.</p>
+<p>Even so, do not write that spieli "does not track users" as a claim of fact. It is a statement about design posture: it depends on the deployment's configuration, an operator can opt any proxy out, and the iframe above is a real exception. Describe what the code does and let the reader draw the conclusion.</p>
 
 
 

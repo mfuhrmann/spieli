@@ -1282,6 +1282,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#photos-search-or-reviews-stopped-working-after-an-upgrade" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Photos, search or reviews stopped working after an upgrade
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2315,6 +2326,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#photos-search-or-reviews-stopped-working-after-an-upgrade" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Photos, search or reviews stopped working after an upgrade
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2647,6 +2669,21 @@
 <a id="__codelineno-34-6" name="__codelineno-34-6" href="#__codelineno-34-6"></a><span class="w">  </span><span class="nt">basemap_cache</span><span class="p">:</span>
 </code></pre></div>
 <p>This matters most for an upgrade sweep across several stacks, which would otherwise send every one of them at the public tile server cold at the same time.</p>
+<h2 id="photos-search-or-reviews-stopped-working-after-an-upgrade">Photos, search or reviews stopped working after an upgrade<a class="headerlink" href="#photos-search-or-reviews-stopped-working-after-an-upgrade" title="Permanent link">&para;</a></h2>
+<p>Since the external-service proxies landed, these features are served through <code>/ext/</code> paths on your own instance rather than fetched from the third party by the browser. Three things go wrong quietly.</p>
+<p><strong>A cold cache after a rebuild.</strong> <code>make docker-build</code> replaces the container, and a cache on the writable layer goes with it. <code>compose.yml</code> mounts a named volume (<code>ext_cache</code>) so this should not happen — check it is actually mounted:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a>docker<span class="w"> </span>compose<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>app<span class="w"> </span>du<span class="w"> </span>-sh<span class="w"> </span>/var/cache/nginx/ext
+<a id="__codelineno-35-2" name="__codelineno-35-2" href="#__codelineno-35-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>config<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-A2<span class="w"> </span>ext_cache
+</code></pre></div>
+<p><strong>Search returns nothing under load.</strong> The Nominatim proxy shares the OSMF limit of 1 request per second across the whole instance, and sheds beyond it rather than exceeding the policy. Cached queries are unaffected — the limiter only sees misses — so this shows up as unusual free-text searches failing while region URLs keep working. Look for <code>limiting requests</code> in the error log:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-36-1" name="__codelineno-36-1" href="#__codelineno-36-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>logs<span class="w"> </span>app<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="s2">"limiting requests"</span>
+</code></pre></div>
+<p>If you see it routinely, your instance is busy enough to want its own Nominatim; point the frontend at it by setting <code>PROXY_NOMINATIM=false</code> and running one on your own network.</p>
+<p><strong>Images render as broken.</strong> Check whether the request 404s at your instance or at Wikimedia:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-37-1" name="__codelineno-37-1" href="#__codelineno-37-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>logs<span class="w"> </span>app<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-i<span class="w"> </span><span class="s2">"ext/wikimedia"</span>
+</code></pre></div>
+<p><code>/ext/</code> locations are deliberately not access-logged, so a successful request leaves no trace by design — only errors appear. A 404 from the instance itself means the path did not match the allowlist; the most likely cause is Wikimedia serving files from a host the proxy does not know about. The proxy accepts any <code>*.wikimedia.org</code> host, so this should be rare, but it is the first thing to check if thumbnails break after a Wikimedia change.</p>
+<p>To rule the proxies out entirely, set <code>PROXY_COMMONS=false</code> and restart: the browser then fetches from Wikimedia directly, as it did before.</p>
 
 
 
