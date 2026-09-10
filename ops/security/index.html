@@ -2371,7 +2371,7 @@ Both are tested: <code>tests/hostile-image-tag.spec.js</code> covers the code ch
 </tr>
 </tbody>
 </table>
-<p>A self-hosted tileserver on a <strong>non-default port</strong> currently needs both, because the host list feeding the policy drops the port (it is shared with the human-readable privacy page). Harmless while the narrowed policy is report-only; it will be fixed before the enforcing swap.</p>
+<p>A self-hosted tileserver does <strong>not</strong> need either of these, whatever port or scheme it uses: the basemap host is derived as a full origin, scheme and port intact, precisely because a CSP host-source with no port matches only the scheme's default port and one with no scheme matches only the document's own scheme. The privacy page's service table still shows the bare host, which is what reads well there.</p>
 <h2 id="external-service-dependencies">External service dependencies<a class="headerlink" href="#external-service-dependencies" title="Permanent link">&para;</a></h2>
 <p>spieli calls several third-party services at runtime, and by default it calls them <strong>from the server</strong>, not from the visitor's browser:</p>
 <table>
