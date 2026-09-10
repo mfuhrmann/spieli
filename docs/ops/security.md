@@ -102,8 +102,8 @@ There is deliberately **no `report-uri`**. It would collect a per-visitor record
 
 ### What the narrowed policy allows, and why
 
-- `img-src 'self' data: https://*.wikimedia.org https://wikimedia.org https://*.wikipedia.org https://wikipedia.org https://api.panoramax.xyz` — playground photos and street-level thumbnails. The Wikimedia entries are wildcards because `app/src/lib/commons.js` accepts an OSM `image` tag on any `*.wikimedia.org` or `*.wikipedia.org` host; pinning this to `upload.` and `commons.` would silently stop rendering valid tags. The apex domains are listed separately because `*.example.org` does not match `example.org` in CSP.
-- `connect-src 'self' https://nominatim.openstreetmap.org https://commons.wikimedia.org https://api.mangrove.reviews` — search and region-URL resolution, the Commons API, and reviews. Three more origins are added automatically when your configuration calls for them:
+- `img-src 'self' data:` — in a default deployment, nothing more, for the same reason. With `PROXY_COMMONS=false` the Wikimedia sources come back as wildcards (`https://*.wikimedia.org https://wikimedia.org https://*.wikipedia.org https://wikipedia.org`), because `app/src/lib/commons.js` accepts an OSM `image` tag on any of those hosts; pinning it to `upload.` and `commons.` would silently stop rendering valid tags, and which host serves a file is not fixed — the API currently returns thumbnails on `thumb.wikimedia.org`. The apex domains are listed separately because `*.example.org` does not match `example.org` in CSP. With `PROXY_PANORAMAX=false`, `https://api.panoramax.xyz` comes back too.
+- `connect-src 'self'` — in a default deployment, nothing more. Since the external services are fetched server-side (see [External-service proxies](configuration.md#external-service-proxies)), the browser has nothing third-party to connect to. Opting a proxy out with `PROXY_NOMINATIM=false` and friends adds that service's host back. Three further origins are added automatically when your configuration calls for them:
     - **A remote `API_BASE_URL`.** A `DEPLOY_MODE=ui` stack points at PostgREST on another host, and every data call goes to `${API_BASE_URL}/rpc/…`. Its origin is added, scheme and port included.
     - **Your hub backends.** Read from the `url` fields of `registry.json` when the registry is a same-origin file the entrypoint can read. Only `url` values are used — a `website` or docs link elsewhere in the registry does not widen the policy. If your registry is fetched from a URL at runtime, use `CSP_CONNECT_EXTRA`.
     - **Your basemap host**, if you opted out of same-origin delivery.
@@ -128,15 +128,19 @@ A self-hosted tileserver on a **non-default port** currently needs both, because
 
 ## External service dependencies
 
-spieli calls several third-party services at runtime. Your users' browsers make direct requests to:
+spieli calls several third-party services at runtime, and by default it calls them **from the server**, not from the visitor's browser:
 
-| Service | What is sent |
+| Service | What the browser sends, by default |
 |---|---|
-| Nominatim | Search query text, IP address |
-| Basemap provider — **nothing by default**, see below | Map tile coordinates, IP address (only if you configure a third-party basemap) |
-| Panoramax | Photo UUID, IP address (if photos viewed) |
-| Mangrove.reviews | Playground osm_id (if reviews opened) |
+| Nominatim | **Nothing** — fetched server-side through `/ext/nominatim/` |
+| Wikimedia Commons | **Nothing** — fetched server-side through `/ext/commons/` and `/ext/wikimedia/` |
+| Mangrove.reviews | **Nothing** — fetched server-side through `/ext/mangrove/` |
+| Panoramax thumbnails | **Nothing** — fetched server-side through `/ext/panoramax/` |
+| Panoramax **viewer** | Photo UUID, IP address, and its own browsing context. An `<iframe>`, deliberately not proxied |
+| Basemap provider | **Nothing** — fetched server-side and cached, unless you opt out with `BASEMAP_URL` / `BASEMAP_STYLE_URL` |
 | Geofabrik | Nothing — server-side download only |
+
+Opting any `PROXY_*` variable out moves that service back into the browser. The generated CSP and the generated Datenschutzerklärung both follow that choice automatically.
 
 No personal data, user accounts, or tracking pixels are added by spieli itself. See [External Services](../reference/external-services.md) for the full list.
 

@@ -158,7 +158,7 @@ jobs:
             :
           }
 
-          printf '\n── default: no wildcard, no third-party tile host\n'
+          printf '\n── default: no wildcard, and nothing third-party at all\n'
           P=$(csp -e APP_MODE=standalone)
           # The whole point of the change: neither directive may fall back to
           # "any host". Anchored on the delimiter that actually follows each
@@ -168,9 +168,20 @@ jobs:
           # nothing.
           reject "img-src 'self' data: https:;" "$P"
           reject "connect-src 'self' https:\"" "$P"
+          # Since #853 the default proxies every service, so the directives
+          # reduce all the way to 'self'. The per-service host lists are
+          # asserted in the "External-service proxies" step, which opts each
+          # one out in turn.
+          want "img-src 'self' data:; connect-src 'self'\"" "$P"
+
+          printf '\n── with the proxies off, each host is named\n'
+          P=$(csp -e APP_MODE=standalone -e PROXY_NOMINATIM=false \
+                -e PROXY_COMMONS=false -e PROXY_MANGROVE=false -e PROXY_PANORAMAX=false)
           want "https://nominatim.openstreetmap.org" "$P"
           want "https://api.mangrove.reviews" "$P"
           want "https://*.wikimedia.org" "$P"
+          want "https://api.panoramax.xyz" "$P"
+          reject "img-src 'self' data: https:;" "$P"
 
           printf '\n── raster opt-out: the configured provider is named\n'
           P=$(csp -e APP_MODE=standalone \
@@ -178,9 +189,10 @@ jobs:
                 -e BASEMAP_ATTRIBUTION='(c) Example')
           # A raster tile is an image and a vector style is a fetch, so a
           # basemap host has to reach both directives; naming only one
-          # half-renders the map.
-          want "data: https://*.wikimedia.org https://wikimedia.org https://*.wikipedia.org https://wikipedia.org https://api.panoramax.xyz tiles.example.org" "$P"
-          want "api.mangrove.reviews tiles.example.org" "$P"
+          # half-renders the map. With every service proxied it is the only
+          # host in either list, which makes that easy to see.
+          want "img-src 'self' data: tiles.example.org;" "$P"
+          want "connect-src 'self' tiles.example.org\"" "$P"
 
           printf '\n── proxied: the browser talks only to this origin\n'
           P=$(csp -e APP_MODE=standalone \
@@ -228,8 +240,8 @@ jobs:
                 -e BASEMAP_ATTRIBUTION='(c) Example')
           # Anchored for the same reason as the reject above: 'https:' alone is
           # always present via frame-ancestors.
-          want "https://api.panoramax.xyz https:;" "$P"
-          want "https://api.mangrove.reviews https:\"" "$P"
+          want "img-src 'self' data: https:;" "$P"
+          want "connect-src 'self' https:\"" "$P"
 
           printf '\n── a mangled extra origin fails closed\n'
           docker run --rm --entrypoint sh -e CSP_CONNECT_EXTRA='https://bad;evil' \
@@ -237,6 +249,97 @@ jobs:
             || { echo 'a mangled CSP_CONNECT_EXTRA was accepted' >&2; exit 1; }
 
           printf '\nall CSP assertions passed\n'
+
+      - name: External-service proxies
+        run: |
+          set -eu
+          # The /ext/ proxies are the fix that actually removes the exposure, so
+          # the properties asserted here are the ones that make them worth
+          # having: nothing third-party in the delivered CSP, no request stream
+          # on the operator's disk, no relay for arbitrary upstream paths, and
+          # the rate limiter actually enforcing.
+          ext() {
+            docker run --rm --entrypoint sh "$@" spieli-app:citest -c '
+              /docker-entrypoint.sh >/dev/null 2>&1 &
+              i=0
+              while [ ! -s /etc/nginx/csp.conf ]; do
+                i=$((i+1)); [ "$i" -gt 100 ] && { echo "entrypoint did not finish" >&2; exit 1; }
+                sleep 0.2
+              done
+              nginx -t >/dev/null 2>&1 || { nginx -t; exit 1; }
+              # Every grep here is a diagnostic dump, so a legitimately empty
+              # file (all proxies disabled) must not fail the container and
+              # abort the caller mid-assertion.
+              echo "=== config.js"; grep -E "nominatimBaseUrl|commonsApiUrl|commonsFileBase|mangroveApiUrl|panoramaxApiUrl" /usr/share/nginx/html/config.js || true
+              echo "=== csp"; grep -A1 Content-Security-Policy-Report-Only /etc/nginx/csp.conf | tail -1
+              echo "=== locations"; grep -E "^location" /etc/nginx/ext-locations.conf || true
+              echo "=== access_log"; grep -c "access_log off;" /etc/nginx/ext-locations.conf || true
+              echo "=== limiter"; grep -E "server_name ext-nominatim-internal|limit_req zone=ext_nominatim" /etc/nginx/conf.d/11-ext-cache.conf || true
+            '
+          }
+          want() {
+            printf '%s' "$2" | grep -qF -- "$1" \
+              || { printf 'expected %s in:\n%s\n' "$1" "$2" >&2; exit 1; }
+          }
+          reject() {
+            printf '%s' "$2" | grep -qF -- "$1" \
+              && { printf 'did NOT expect %s in:\n%s\n' "$1" "$2" >&2; exit 1; }
+            :
+          }
+
+          printf '\n── default: everything proxied, CSP collapses to self\n'
+          O=$(ext -e APP_MODE=standalone)
+          want "nominatimBaseUrl:           '/ext/nominatim'" "$O"
+          want "commonsFileBase:            '/ext/wikimedia'" "$O"
+          want "mangroveApiUrl:             '/ext/mangrove'" "$O"
+          # The end state the whole epic is aiming at. Anchored on the closing
+          # quote so a trailing host cannot slip in unnoticed.
+          want "img-src 'self' data:; connect-src 'self'\"" "$O"
+          # The viewer iframe is never proxied, so its host must remain framed.
+          want "frame-src https://panoramax.xyz https://api.panoramax.xyz" "$O"
+
+          printf '\n── every proxy location suppresses request logging\n'
+          # Not a tuning choice: proxying moves the visitor's request stream
+          # onto the operator's disk, and logging it is worse than the exposure
+          # being removed. One per location, plus the catch-all.
+          want "=== access_log
+6" "$O"
+
+          printf '\n── the rate limiter is on the loopback server and has a non-empty key\n'
+          # nginx silently skips limit_req when its key is empty, and
+          # $server_name is empty in a server block that does not set one — a
+          # limiter that parses and enforces nothing. This asserts both halves.
+          want "server_name ext-nominatim-internal;" "$O"
+          want "limit_req zone=ext_nominatim" "$O"
+
+          printf '\n── opting one service out names it in the CSP again\n'
+          O=$(ext -e APP_MODE=standalone -e PROXY_MANGROVE=false)
+          want "mangroveApiUrl:             'https://api.mangrove.reviews'" "$O"
+          want "https://api.mangrove.reviews" "$O"
+          # The others stay proxied.
+          want "nominatimBaseUrl:           '/ext/nominatim'" "$O"
+
+          printf '\n── opting Commons out restores the Wikimedia image sources\n'
+          O=$(ext -e APP_MODE=standalone -e PROXY_COMMONS=false)
+          want "commonsFileBase:            ''" "$O"
+          want "https://*.wikimedia.org" "$O"
+
+          printf '\n── all proxies off: no locations, no cache zone\n'
+          O=$(ext -e APP_MODE=standalone -e PROXY_NOMINATIM=false -e PROXY_COMMONS=false \
+                -e PROXY_MANGROVE=false -e PROXY_PANORAMAX=false)
+          reject "location ^~ /ext/nominatim/" "$O"
+          want "https://nominatim.openstreetmap.org" "$O"
+
+          printf '\n── a bad boolean and a bad cache size both fail closed\n'
+          docker run --rm --entrypoint sh -e PROXY_COMMONS=flase spieli-app:citest \
+            -c '/docker-entrypoint.sh 2>&1' | grep -q 'FATAL: PROXY_COMMONS' \
+            || { echo 'a bad PROXY_COMMONS was accepted' >&2; exit 1; }
+          # 4.5g must be rejected, not silently read as 45g.
+          docker run --rm --entrypoint sh -e EXT_CACHE_MAX_SIZE=4.5g spieli-app:citest \
+            -c '/docker-entrypoint.sh 2>&1' | grep -q 'FATAL: EXT_CACHE_MAX_SIZE' \
+            || { echo 'a malformed EXT_CACHE_MAX_SIZE was accepted' >&2; exit 1; }
+
+          printf '\nall external-service proxy assertions passed\n'
 
       - name: Privacy page must follow the delivery mode
         run: |

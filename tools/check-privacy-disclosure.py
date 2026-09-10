@@ -9,8 +9,14 @@ also created an undisclosed third-country transfer is not. This turns that from
 something a reviewer has to remember into a build failure.
 
 The rule is one-directional: every host the frontend can contact must appear in
-`oci/app/datenschutz.template.html`. The page may name MORE than this finds (the
-basemap row is generated at runtime and depends on the operator's config).
+the shipped privacy page. That page is part template and part generated — the
+basemap row and the external-service rows are emitted by
+`oci/app/docker-entrypoint.sh` and depend on the operator's config — so both
+files count as disclosure. The page may name MORE than this finds.
+
+A host being proxied by default is NOT an exemption. `PROXY_*=false` sends the
+browser straight to it, and the generated page grows the matching row, so the
+row's text still has to exist somewhere in the repo for this check to find.
 
 Hosts reached only by a link the visitor clicks are exempt, because nothing is
 transferred until they choose to go there. That list is explicit rather than
@@ -31,6 +37,9 @@ import sys
 
 SRC_DIR = 'app/src'
 TEMPLATE = 'oci/app/datenschutz.template.html'
+# The privacy page's service rows are generated here, conditional on which
+# proxies are enabled, so this file is the other half of the disclosure.
+ENTRYPOINT = 'oci/app/docker-entrypoint.sh'
 DOCS = 'docs/reference/external-services.md'
 
 # Reached only when the visitor clicks. No request is made until they do, so
@@ -70,6 +79,11 @@ RUNTIME_DERIVED = {
     # Image URLs come from the Commons API response and from OSM `image` tags,
     # so the host never appears as a literal outside tests.
     'upload.wikimedia.org': 'image URLs returned by the Commons API / OSM tags',
+    # Wikimedia serves thumbnails from a different host than originals, and
+    # which one is their business — the imageinfo API returns thumbnails here.
+    # Found the hard way: a rewrite that assumed one host sent every thumbnail
+    # straight to Wikimedia while appearing to work.
+    'thumb.wikimedia.org': 'thumbnail URLs returned by the Commons API',
 }
 
 HOST_RE = re.compile(r'https?://([A-Za-z0-9][A-Za-z0-9.-]*\.[A-Za-z]{2,})')
@@ -103,6 +117,13 @@ def main():
 
     with open(TEMPLATE, encoding='utf-8') as fh:
         template = fh.read()
+    # Only the generated HTML is disclosure. Scanning the whole entrypoint
+    # would let a passing mention in a shell COMMENT satisfy the check —
+    # verified: deleting a host from its table row still passed, because the
+    # host was named in a comment a few lines above.
+    with open(ENTRYPOINT, encoding='utf-8') as fh:
+        template += ''.join(line for line in fh
+                            if '<td>' in line or '<p>' in line or '<code>' in line)
     with open(DOCS, encoding='utf-8') as fh:
         docs = fh.read()
 
@@ -115,7 +136,7 @@ def main():
         for host in sorted(set(missing_template) | set(missing_docs)):
             where = []
             if host in missing_template:
-                where.append(TEMPLATE)
+                where.append(f'{TEMPLATE} / {ENTRYPOINT}')
             if host in missing_docs:
                 where.append(DOCS)
             print(f'    {host}', file=sys.stderr)

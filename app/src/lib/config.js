@@ -166,3 +166,29 @@ export const clusterMaxZoom = c.clusterMaxZoom ?? 13;
 //   macroMaxZoom < zoom ≤ clusterMaxZoom → cluster tier fan-out
 //   zoom >  clusterMaxZoom            → polygon tier fan-out
 export const macroMaxZoom = c.macroMaxZoom ?? 7;
+
+// --- External-service delivery (#853) ---
+//
+// Each of these is either a third-party origin the visitor's browser contacts
+// directly, or a same-origin /ext/ path this instance proxies and caches. The
+// container defaults to the proxied form; the checked-in defaults below are the
+// DIRECT hosts, because `make dev` has no nginx to proxy through — the same
+// split as basemap style.json vs style.local.json.
+//
+// Whoever adds a service here: the privacy page and
+// docs/reference/external-services.md both describe this list, and
+// tools/check-privacy-disclosure.py fails the build if a host appears in the
+// frontend and not on the page.
+export const nominatimBaseUrl = c.nominatimBaseUrl || 'https://nominatim.openstreetmap.org';
+export const commonsApiUrl    = c.commonsApiUrl    || 'https://commons.wikimedia.org/w/api.php';
+// Same-origin prefix for Wikimedia *file* bytes, or '' to fetch them directly.
+// Proxying the API alone is not enough: it answers with absolute file URLs, so
+// the browser would still go to Wikimedia for every image. commons.js rewrites
+// those onto this base, keeping the original host as the first path segment —
+// see proxiedImageUrl for why the host cannot be assumed.
+export const commonsFileBase = c.commonsFileBase || '';
+export const mangroveApiUrl   = c.mangroveApiUrl   || 'https://api.mangrove.reviews';
+// Thumbnails only. The viewer is an iframe and is deliberately NOT proxied: a
+// same-origin proxy of a whole interactive application would grant it
+// same-origin privileges on this instance, which is worse than the iframe.
+export const panoramaxApiUrl  = c.panoramaxApiUrl  || 'https://api.panoramax.xyz';

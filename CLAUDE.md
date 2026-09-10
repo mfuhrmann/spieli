@@ -133,6 +133,35 @@ The proxying half is only generated when the effective style routes the browser 
 
 `make basemap-style` builds **both** style variants from a single upstream fetch — `style.json` (upstream URLs, for `make dev`, which has no nginx) and `style.local.json` (all assets under `/basemap/`, what the container serves). `make basemap-fonts` vendors the webfonts and fails if the style asks for a weight it did not vendor, because that failure is otherwise invisible: a system-font fallback plus an upstream request on every page load.
 
+### External-service delivery (`/ext/`)
+
+Same-origin by default, like the basemap. `docker-entrypoint.sh` generates `/etc/nginx/ext-locations.conf` (the prefix/regex locations) and `/etc/nginx/conf.d/11-ext-cache.conf` (the shared `ext` cache zone, the `limit_req_zone`, and an internal loopback server on `127.0.0.1:8091`).
+
+| Path | Upstream | Notes |
+|---|---|---|
+| `/ext/nominatim/` | `nominatim.openstreetmap.org` | `search`/`lookup`/`reverse` only. Proxies to the **loopback server**, which carries the rate limiter |
+| `/ext/commons/` | `commons.wikimedia.org` | `/w/api.php` only |
+| `/ext/wikimedia/<host>/<path>` | any `*.wikimedia.org` | Image bytes. A **regex** location, so its include must stay above the `~* \.(js|css|png…)$` static block |
+| `/ext/mangrove/` | `api.mangrove.reviews` | `reviews` (GET) and `submit/<jwt>` (**PUT**) |
+| `/ext/panoramax/` | `api.panoramax.xyz` | Thumbnails only |
+
+Four things here are load-bearing and were each found the hard way:
+
+- **`access_log off` in every location.** Proxying moves the visitor's request stream onto the operator's disk; logging it is worse than the exposure it replaced. Emitted from `_ext_common` so a call site cannot forget it.
+- **The rate limiter lives on the loopback server, not the visitor-facing location.** `limit_req` runs in the preaccess phase, *before* the cache lookup, so on the outer location it sheds requests that were already cached — two simultaneous visitors were enough to break search. Only misses reach the loopback hop; a shed request falls back to stale via `proxy_cache_use_stale … http_503`.
+- **That loopback server needs a `server_name`.** The limiter is keyed on `$server_name`, and nginx *silently skips* `limit_req` when its key is empty — a limiter that parses and enforces nothing.
+- **The Wikimedia host is carried in the path, not assumed.** The imageinfo API returns thumbnails on `thumb.wikimedia.org` and originals on `upload.wikimedia.org`; a rewrite pinned to one host sends every thumbnail straight to Wikimedia while appearing to work. `proxiedImageUrl` in `app/src/lib/commons.js` does the rewrite (validate host first, rewrite second) and preserves the `?utm_*` query the API attaches.
+
+The **Panoramax viewer iframe is never proxied**, by design: serving a whole interactive third-party application from this origin would grant it same-origin privileges here, which is worse than the cross-origin iframe. Only its thumbnails are.
+
+Per-service opt-out via `PROXY_NOMINATIM` / `PROXY_COMMONS` / `PROXY_MANGROVE` / `PROXY_PANORAMAX` (default on). Opting one out routes the browser directly *and* adds its host to the generated CSP and to the generated privacy-page table — both follow the configuration, neither is hardcoded.
+
+### Content Security Policy
+
+Generated into `/etc/nginx/csp.conf` and included by `nginx.conf`; not a literal, because hub `connect-src` origins come from an operator-supplied `registry.json`, a remote `API_BASE_URL` is another origin, and a basemap opt-out adds a tile host. Written to a temp file and `mv`d, so it is never read half-written.
+
+Two policies ship together for one release: the old wildcard one **enforced**, and the narrowed one **report-only**. A too-tight CSP fails silently, so the swap waits for a clean observation period. No `report-uri` — it would rebuild the per-visitor trail on the operator's disk. `CSP_CONNECT_EXTRA` / `CSP_IMG_EXTRA` cover origins the generator cannot discover.
+
 ## Key frontend architecture
 
 ### Stores (`app/src/stores/`)

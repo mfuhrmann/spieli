@@ -1,4 +1,5 @@
-const BASE_URL = 'https://nominatim.openstreetmap.org';
+import { nominatimBaseUrl } from './config.js';
+
 const DEFAULT_TIMEOUT_MS = 3000;
 
 function getAcceptLanguage() {
@@ -9,7 +10,12 @@ function getAcceptLanguage() {
 }
 
 export async function nominatimFetch(path, params = {}, { timeout = DEFAULT_TIMEOUT_MS, signal } = {}) {
-  const url = new URL(path, BASE_URL);
+  // The base is an absolute third-party origin OR a same-origin path such as
+  // /ext/nominatim when this instance proxies. `new URL(path, base)` cannot
+  // take a relative base, so the two are concatenated and resolved against the
+  // page origin; an absolute base simply wins over that second argument.
+  const url = new URL(`${nominatimBaseUrl}${path}`,
+                      globalThis.location?.origin ?? 'http://localhost');
   for (const [k, v] of Object.entries(params)) {
     if (v != null) url.searchParams.set(k, String(v));
   }
