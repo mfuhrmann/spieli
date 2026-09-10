@@ -2,6 +2,73 @@
 -- Called by import.sh after each osm2pgsql run.
 -- All functions live in the "api" schema and are exposed via PostgREST /rpc/<name>.
 --
+
+-- =========================================================================
+-- Serialise concurrent applies (#800).
+--
+-- This script is a WRITER with a destructive step: it drops and rebuilds
+-- public.playground_stats. Two sessions running it at once corrupt each
+-- other, and it has happened in production: during the v0.9.0 sweep the
+-- one-shot API_ONLY container was indexing the matview when the daemon
+-- importer restarted and ran its own startup apply, whose
+-- DROP MATERIALIZED VIEW ... CASCADE removed the matview mid-index. The
+-- one-shot failed at "CREATE INDEX ... USING GIST", the daemon ran to
+-- completion, and the stack was left on the OLD schema definition — with
+-- get_meta and row counts looking perfectly healthy while two filters were
+-- silently wrong.
+--
+-- Since #720 the rebuild builds under a staging name and swaps it in, so the
+-- live view is no longer absent for minutes — but this lock is not made
+-- redundant by that, only redirected. Two concurrent applies now collide on
+-- `DROP MATERIALIZED VIEW IF EXISTS public.playground_stats_new` instead: the
+-- second one removes the first's staging view mid-build, and the first fails
+-- when it tries to index or rename something that is gone. Same corruption,
+-- one name along.
+--
+-- The lock lives here rather than in the shell, because the shell cannot
+-- order every writer: upgrade-stacks.sh, `make db-apply`, a manual
+-- `run --rm -e API_ONLY=1 importer` and a Watchtower-triggered daemon
+-- restart all apply this file. Anything that runs it takes the lock.
+--
+-- SCOPE, stated precisely so it is not over-trusted: this guards the api.sql
+-- APPLY, and nothing else. It does NOT cover the osm2pgsql phase of a full
+-- import, which runs before run_import's own apply. A `make db-apply`
+-- starting while osm2pgsql is rewriting planet_osm_* takes this lock
+-- unopposed and builds playground_stats against tables being dropped and
+-- recreated underneath it — the same class of corruption, still open.
+-- Widening the lock to the whole import means taking it in import.sh before
+-- osm2pgsql; that is a separate change.
+--
+-- SESSION level, not transaction level. A transaction-scoped lock would be
+-- released at the first COMMIT, and both apply paths would then be
+-- unguarded for most of the script: the importer runs `psql -f` with
+-- autocommit, so each statement commits as it goes, while `make db-apply`
+-- wraps the second half in --single-transaction and would drop the lock at
+-- its single commit. A session lock is held for the whole script either way.
+--
+-- Release: psql drops the lock when it disconnects, including after a
+-- failure, so an aborted apply cannot wedge it. The one exception is an
+-- INTERACTIVE session — `\i api.sql` inside `make db-shell` — where an abort
+-- skips the unlock at the bottom and the lock survives until that shell is
+-- closed, because a session lock is not released by rollback. If a later
+-- apply sits waiting, look for a stray psql before assuming a deadlock.
+--
+-- The key is arbitrary but FIXED. The only requirement is that every writer
+-- uses the same number, which is why it is a literal here rather than
+-- hashtext() of a string: hashtext is undocumented and its value is not
+-- guaranteed stable across major versions.
+--
+-- lock_timeout turns "queue" into "queue, but do not hang a sweep forever".
+-- A matview rebuild on a full Bundesland takes minutes (#720), so the
+-- timeout is generous. On expiry ON_ERROR_STOP aborts with a clear message
+-- rather than proceeding into a race; the daemon's startup call site treats
+-- a failed apply as non-fatal and carries on to the import, which re-applies.
+-- =========================================================================
+\echo '[api.sql] acquiring apply lock — a concurrent apply will queue, not race'
+SET lock_timeout = '30min';
+SELECT pg_advisory_lock(800800800);
+SET lock_timeout = 0;
+--
 -- osm2pgsql (classic schema) geometry notes:
 --   - All geometries are stored in EPSG:3857 (Web Mercator)
 --   - planet_osm_point  → nodes
@@ -1564,3 +1631,12 @@ GRANT EXECUTE ON FUNCTION api.get_nearest_playgrounds(float8, float8, bigint, in
 
 -- The planet_osm_* indexes that used to live here now sit above the
 -- playground_stats build, which is the statement that needs them (#720).
+
+-- =========================================================================
+-- Release the apply lock (#800). psql drops it on disconnect anyway, so this
+-- matters only for a session that outlives the script — an operator running
+-- `\i api.sql` from `make db-shell`. Note this line is SKIPPED on an abort,
+-- so an interactive session that fails mid-file keeps the lock until it
+-- disconnects; see the note at the top.
+-- =========================================================================
+SELECT pg_advisory_unlock(800800800);
