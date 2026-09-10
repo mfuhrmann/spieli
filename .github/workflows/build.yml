@@ -273,7 +273,7 @@ jobs:
               echo "=== config.js"; grep -E "nominatimBaseUrl|commonsApiUrl|commonsFileBase|mangroveApiUrl|panoramaxApiUrl" /usr/share/nginx/html/config.js || true
               echo "=== csp"; grep -A1 Content-Security-Policy-Report-Only /etc/nginx/csp.conf | tail -1
               echo "=== locations"; grep -E "^location" /etc/nginx/ext-locations.conf || true
-              echo "=== access_log"; grep -c "access_log off;" /etc/nginx/ext-locations.conf || true
+              echo "=== access_log_count=$(grep -c access_log /etc/nginx/ext-locations.conf || echo 0)"
               echo "=== limiter"; grep -E "server_name ext-nominatim-internal|limit_req zone=ext_nominatim" /etc/nginx/conf.d/11-ext-cache.conf || true
             '
           }
@@ -311,8 +311,7 @@ jobs:
           # Not a tuning choice: proxying moves the visitor's request stream
           # onto the operator's disk, and logging it is worse than the exposure
           # being removed. One per location, plus the catch-all.
-          want "=== access_log
-5" "$O"
+          want "access_log_count=5" "$O"
 
           printf '\n── the rate limiter is on the loopback server and has a non-empty key\n'
           # nginx silently skips limit_req when its key is empty, and
