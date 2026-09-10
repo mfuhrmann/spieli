@@ -690,6 +690,164 @@ else
 fi
 
 
+# ── Content Security Policy ───────────────────────────────────────────────────
+# The policy used to be a literal in nginx.conf with `img-src ... https:` and
+# `connect-src 'self' https:` — effectively "any host". It is generated here
+# instead, because two parts of the correct answer are only knowable at runtime:
+# hub mode connects to backends listed in an operator-supplied registry, and a
+# basemap opt-out puts a third-party tile host back in the browser. A literal
+# wide enough for every deployment is a literal that protects none of them.
+#
+# The narrowed policy ships as REPORT-ONLY alongside the still-enforced old one.
+# A too-tight CSP fails silently — photos simply do not appear, with nothing but
+# a console message — so the class of bug this would otherwise introduce is "a
+# rarely-taken path breaks in production". One release of observation first.
+
+# _csp_append <list> <token> — appends once, so a host that arrives from two
+# sources (a basemap host that is also a registry host) is not listed twice.
+_csp_append() {
+    case " $1 " in
+        *" $2 "*) printf '%s' "$1" ;;
+        *) if [ -n "$1" ]; then printf '%s %s' "$1" "$2"; else printf '%s' "$2"; fi ;;
+    esac
+}
+
+# Hosts are emitted WITHOUT a scheme where the scheme is not ours to assume: a
+# bare host-source matches the document's own scheme, so it covers an operator
+# running an http backend or tileserver in a lab. The fixed third-party
+# services below are pinned to https:// because that is what the frontend
+# builds and there is no reason to accept a downgrade.
+
+# registry_hosts — the backend origins hub mode connects to. The registry is
+# operator-supplied and not known at build time, so it is read here.
+# Text scan rather than a JSON parse for the same reason as style_asset_hosts:
+# there is no jq in the runtime image, and any http(s) URL in the document is
+# somewhere the browser will be sent.
+# The PORT is deliberately kept, unlike host_of() which drops it for the
+# human-readable privacy page. A CSP host-source with no port matches only the
+# scheme's default port, so reducing http://lab.internal:3000 to lab.internal
+# produces a policy that blocks the backend it was added for.
+registry_hosts() {
+    case "$1" in
+        ''|/*) ;;                       # same-origin path: read it below
+        *)  _rh=${1#*://}               # remote registry: its own origin counts,
+            _rh=${_rh%%/*}              # and its contents cannot be read here
+            _rh=${_rh##*@}
+            printf '%s' "$_rh"; return ;;
+    esac
+    _rf="${WEBROOT}${1%%\?*}"
+    [ -f "$_rf" ] || return
+    grep -o 'https\?://[A-Za-z0-9._:-]*' "$_rf" 2>/dev/null \
+        | sed -e 's#^https\?://##' | sort -u | tr '\n' ' '
+}
+
+# img-src. The Wikimedia entries are wildcards on purpose: app/src/lib/commons.js
+# accepts an OSM `image` tag on ANY *.wikimedia.org or *.wikipedia.org host
+# (isSafeImageUrl -> isWikimediaHost), so pinning this to upload. and commons.
+# as #854 proposed would silently stop rendering valid tags on the other hosts.
+# The apex domains are listed separately because `*.example.org` does not match
+# `example.org` in CSP. Narrowing the code's accepted host set is a separate
+# decision; the policy matches what the code permits today.
+_csp_img="https://*.wikimedia.org https://wikimedia.org https://*.wikipedia.org https://wikipedia.org https://api.panoramax.xyz"
+
+# connect-src. Nominatim (search and region URLs), the Commons API, and the
+# Mangrove read and submit paths. All three collapse to 'self' once #853 lands.
+_csp_connect="https://nominatim.openstreetmap.org https://commons.wikimedia.org https://api.mangrove.reviews"
+
+# Basemap hosts belong in BOTH directives, which is easy to get wrong: raster
+# tiles and a vector style's sprite sheet are images, while the style document
+# and its vector tiles are fetches. Getting only one of the two produces a map
+# that half-renders.
+case "$BASEMAP_TILE_PROVIDER_STATE" in
+    hosts)
+        # Note: this list comes from host_of/style_asset_hosts, which drop the
+        # port because their other consumer is the human-readable privacy page.
+        # A tileserver on a non-default port therefore needs its origin adding
+        # via CSP_IMG_EXTRA *and* CSP_CONNECT_EXTRA. Harmless while the
+        # narrowed policy is report-only; resolve before the enforcing swap.
+        for _bmh in $BASEMAP_TILE_PROVIDER_HOST; do
+            [ -n "$_bmh" ] || continue
+            _csp_img=$(_csp_append     "$_csp_img"     "$_bmh")
+            _csp_connect=$(_csp_append "$_csp_connect" "$_bmh")
+        done
+        ;;
+    unknown)
+        # A style is configured but its document could not be read, so where it
+        # sends the browser is genuinely unknown. Emitting a narrow list here
+        # would blank the basemap of a deployment whose config we failed to
+        # understand, so this one state stays wide and says so. It is also why
+        # BASEMAP_TILE_PROVIDER_STATE must be read before the host list — an
+        # empty list means "nobody" in the 'none' state and "unreadable" here.
+        _csp_img=$(_csp_append     "$_csp_img"     "https:")
+        _csp_connect=$(_csp_append "$_csp_connect" "https:")
+        ;;
+    # none: default and proxied delivery. The browser only talks to this
+    # origin for the basemap, so 'self' already covers it.
+esac
+
+# Hub backends.
+if [ "$APP_MODE" = "hub" ]; then
+    for _rh in $(registry_hosts "$SAFE_REGISTRY_URL"); do
+        [ -n "$_rh" ] || continue
+        _csp_connect=$(_csp_append "$_csp_connect" "$_rh")
+    done
+fi
+
+# CSP_CONNECT_EXTRA / CSP_IMG_EXTRA — the documented escape hatches. The
+# connect one is also the answer for a hub whose registry is fetched at runtime
+# rather than baked into the image, where the file above does not exist to be
+# read. Both take space-separated hosts or origins, and both exist because a
+# third party can be either fetched from or rendered from: a tileserver on a
+# non-default port needs to appear in BOTH directives, so one variable would
+# have been an escape hatch that only half works.
+#
+# Validated, not stripped: a mangled host silently produces a policy that
+# blocks the very origin it was added for.
+# Validated in the loop rather than in a helper called through $( ): `die` runs
+# `exit 1`, which inside a command substitution ends only the subshell, and
+# `set -e` does not reliably abort on a failed substitution in a `for` word
+# list. The check would have looked present and validated nothing.
+for _ce in ${CSP_CONNECT_EXTRA:-}; do
+    case "$_ce" in
+        *[!A-Za-z0-9.:/*_-]*) die "CSP_CONNECT_EXTRA contains characters that are not valid in a host or origin, got: $_ce" ;;
+    esac
+    _csp_connect=$(_csp_append "$_csp_connect" "$_ce")
+done
+for _ce in ${CSP_IMG_EXTRA:-}; do
+    case "$_ce" in
+        *[!A-Za-z0-9.:/*_-]*) die "CSP_IMG_EXTRA contains characters that are not valid in a host or origin, got: $_ce" ;;
+    esac
+    _csp_img=$(_csp_append "$_csp_img" "$_ce")
+done
+
+# frame-ancestors keeps its https: wildcard: it governs who may embed spieli,
+# not what spieli discloses, and the hub embeds standalone instances. Narrowing
+# it is a separate decision about embedding (see #855).
+_csp_common="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; frame-src https://panoramax.xyz https://api.panoramax.xyz; frame-ancestors 'self' https:"
+
+cat > /etc/nginx/csp.conf <<CSPEOF
+# Generated by docker-entrypoint.sh — rewritten on every start, do not edit.
+#
+# TWO policies ship together on purpose. The first is the long-standing
+# wildcard policy and is ENFORCED. The second is the narrowed host list and is
+# REPORT-ONLY: violations appear in the browser console (and as
+# securitypolicyviolation events, which is how CI asserts on them) but nothing
+# is blocked. When the report set has been confirmed empty across both app
+# modes and both basemap postures, the report-only header becomes the enforced
+# one and the wildcard policy is deleted. See docs/ops/security.md.
+#
+# There is deliberately no report-uri: it would collect a per-visitor record of
+# what the visitor's browser tried to load, on the operator's disk, which is
+# the exact shape of trail #855 exists to remove.
+add_header Content-Security-Policy
+    "${_csp_common}; img-src 'self' data: https:; connect-src 'self' https:"
+    always;
+add_header Content-Security-Policy-Report-Only
+    "${_csp_common}; img-src 'self' data: ${_csp_img}; connect-src 'self' ${_csp_connect}"
+    always;
+CSPEOF
+
+
 # js_or_null <value> — emits a JS string literal or null.
 js_or_null() { [ -n "$1" ] && printf "'%s'" "$1" || printf 'null'; }
 

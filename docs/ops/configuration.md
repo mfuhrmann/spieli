@@ -26,6 +26,8 @@ All variables are set in `.env` (copy from `.env.example`). The installer genera
 | `BASEMAP_CACHE_MAX_SIZE` | `4g` | ui, data-node-ui | Disk ceiling per cache zone. The basemap cache always exists; enabling `BASEMAP_PROXY` adds a second zone sized from the same value, so the on-disk total can be twice this. |
 | `BASEMAP_CACHE_KEYS_ZONE` | `64m` | ui, data-node-ui | nginx cache key zone. Holds roughly 8000 keys per MB and **binds before disk does** — a large `BASEMAP_CACHE_MAX_SIZE` behind a small keys zone yields a cache that stays almost empty. |
 | `BASEMAP_CACHE_INACTIVE` | `90d` | ui, data-node-ui | How long an unrequested tile survives. nginx defaults to 10 minutes, which evicts tiles regardless of free space — far too short for basemap tiles. |
+| `CSP_CONNECT_EXTRA` | *(unset)* | ui, data-node-ui | Extra origins for the generated `connect-src`, space-separated. Needed when a hub fetches `registry.json` from a URL at runtime, so the entrypoint cannot read it to discover backends. Rejected at startup if malformed. See [Content Security Policy](security.md#nginx-security-headers). |
+| `CSP_IMG_EXTRA` | *(unset)* | ui, data-node-ui | Extra origins for the generated `img-src`, space-separated. Needed when images are rendered from an origin the generator cannot discover. Rejected at startup if malformed. |
 | `PARENT_ORIGIN` | *(own origin)* | data-node-ui | Allowed origin for `postMessage` events — set to the Hub's full origin when embedding in a Hub |
 | `APP_PORT` | `8080` | ui, data-node-ui | Host port the app is exposed on |
 | `POSTGRES_PASSWORD` | `change-me` | data-node, data-node-ui | Database password — **change in production** |

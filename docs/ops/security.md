@@ -65,20 +65,63 @@ The `db` and `postgrest` services should show no host port bindings. If you see 
 
 ## nginx security headers
 
-The bundled `oci/app/nginx.conf` includes a Content Security Policy and several other security headers:
+The bundled `oci/app/nginx.conf` sets several security headers:
 
 ```
 X-Content-Type-Options: nosniff
 Referrer-Policy: strict-origin-when-cross-origin
 Permissions-Policy: geolocation=(self)
-Content-Security-Policy: default-src 'self'; script-src 'self'; …
 ```
 
-Review these headers against your deployment's needs. The CSP allows:
-- `img-src: self data: https:` — required for OpenLayers tile loading and wiki images
-- `connect-src: self https:` — required for Overpass, Nominatim, Panoramax, Mangrove
-- `frame-src panoramax.xyz api.panoramax.xyz` — required for Panoramax photo embedding
-- `frame-ancestors: self https:` — allows the app to be embedded in a Hub over HTTPS
+The Content Security Policy is **generated at container startup** by `oci/app/docker-entrypoint.sh` into `/etc/nginx/csp.conf`, which `nginx.conf` includes.
+It is not a literal, because two parts of the correct policy are only knowable at runtime: in hub mode the browser connects to backends listed in an operator-supplied `registry.json`, and a basemap opt-out puts a third-party tile host back in the browser.
+A literal wide enough for every deployment is a literal that protects none of them.
+
+To see the policy your instance actually serves:
+
+```bash
+docker compose exec app cat /etc/nginx/csp.conf
+```
+
+### Two policies ship together, on purpose
+
+During the current release the container sends **both** of these:
+
+| Header | Host lists | Status |
+|---|---|---|
+| `Content-Security-Policy` | `img-src`/`connect-src` still `https:` | **Enforced** |
+| `Content-Security-Policy-Report-Only` | narrowed to the hosts actually used | **Observed only** |
+
+The narrowed policy is delivered in report-only form first because the failure mode of an over-tight CSP is silent: photos simply do not appear, with nothing but a browser console message.
+The path most likely to break is therefore a rarely-taken one, in production.
+Once the report set has been confirmed empty across both app modes and both basemap postures, the report-only policy becomes the enforced one and the wildcard policy is deleted.
+
+If you see console messages beginning `Content Security Policy` while running this release, nothing is being blocked — but please report them, because they are exactly what the observation period is for.
+
+There is deliberately **no `report-uri`**. It would collect a per-visitor record of what each browser tried to load, on your disk, which is the same shape of trail that [serving the basemap yourself](#the-basemap-is-same-origin-by-default) exists to remove.
+
+### What the narrowed policy allows, and why
+
+- `img-src 'self' data: https://*.wikimedia.org https://wikimedia.org https://*.wikipedia.org https://wikipedia.org https://api.panoramax.xyz` — playground photos and street-level thumbnails. The Wikimedia entries are wildcards because `app/src/lib/commons.js` accepts an OSM `image` tag on any `*.wikimedia.org` or `*.wikipedia.org` host; pinning this to `upload.` and `commons.` would silently stop rendering valid tags. The apex domains are listed separately because `*.example.org` does not match `example.org` in CSP.
+- `connect-src 'self' https://nominatim.openstreetmap.org https://commons.wikimedia.org https://api.mangrove.reviews` — search and region-URL resolution, the Commons API, and reviews. Plus your hub backends, and your basemap host if you opted out.
+- `frame-src https://panoramax.xyz https://api.panoramax.xyz` — the street-level photo viewer. Already narrow, and the model the rest of the policy now follows.
+- `frame-ancestors 'self' https:` — **still a wildcard, deliberately.** It governs who may embed spieli, not what spieli discloses, and a hub embeds standalone instances.
+
+Why narrow `img-src` and `connect-src` at all, given the services above are all wanted: the values that reach the URL builders come from OSM tags, which are arbitrary attacker-editable strings.
+`commons.js` validates that an `image` tag points at a Wikimedia host before rendering it, and with a `https:` wildcard that code check is the *only* thing between a crafted tag and a visitor's browser fetching from a host of the tagger's choosing.
+The policy is the second line behind that check.
+Both are tested: `tests/hostile-image-tag.spec.js` covers the code check, and the `CSP must follow the configuration` CI job covers the generated policy.
+
+### Escape hatches
+
+Two variables add origins the generator cannot discover. Both take a space-separated list of hosts or origins, and both reject a malformed value at startup rather than emitting a policy that blocks the origin it was meant to allow.
+
+| Variable | Adds to | Use when |
+|---|---|---|
+| `CSP_CONNECT_EXTRA` | `connect-src` | Your hub fetches `registry.json` from a URL at runtime, so the entrypoint cannot read it to discover backends |
+| `CSP_IMG_EXTRA` | `img-src` | You render images from an origin the generator does not know about |
+
+A self-hosted tileserver on a **non-default port** currently needs both, because the host list feeding the policy drops the port (it is shared with the human-readable privacy page). Harmless while the narrowed policy is report-only; it will be fixed before the enforcing swap.
 
 ## External service dependencies
 

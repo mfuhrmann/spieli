@@ -109,6 +109,108 @@ jobs:
             -e BASEMAP_STYLE_URL=/basemap/style.json \
             -e BASEMAP_ATTRIBUTION='(c) Example'
 
+      - name: CSP must follow the configuration
+        run: |
+          set -eu
+          # The narrowed policy names hosts instead of a wildcard, and two parts
+          # of it are only knowable at runtime: hub backends come from an
+          # operator-supplied registry, and a basemap opt-out puts a tile host
+          # back in the browser. Both failure directions are silent — a policy
+          # left wide protects nothing, and a policy missing a host blanks a
+          # feature with only a console message — so both are asserted here.
+          cat > /tmp/registry.json <<'JSON'
+          {"instances":[
+            {"name":"Hessen","apiBaseUrl":"https://hessen.example.org/api"},
+            {"name":"Lab","apiBaseUrl":"http://lab.internal:3000/api"}
+          ]}
+          JSON
+          csp() {
+            docker run --rm --entrypoint sh "$@" spieli-app:citest -c '
+              /docker-entrypoint.sh >/dev/null 2>&1 &
+              i=0
+              while [ ! -s /etc/nginx/csp.conf ]; do
+                i=$((i+1)); [ "$i" -gt 100 ] && { echo "entrypoint did not finish" >&2; exit 1; }
+                sleep 0.2
+              done
+              nginx -t >/dev/null 2>&1 || { echo "generated config is invalid" >&2; exit 1; }
+              # Only the report-only line: the enforced one still carries the
+              # old wildcards by design during the observation release.
+              grep -A1 Content-Security-Policy-Report-Only /etc/nginx/csp.conf | tail -1
+            '
+          }
+          want() {
+            printf '%s' "$2" | grep -qF -- "$1" \
+              || { printf 'expected %s in the report-only policy:\n%s\n' "$1" "$2" >&2; exit 1; }
+          }
+          reject() {
+            printf '%s' "$2" | grep -qF -- "$1" \
+              && { printf 'did NOT expect %s in the report-only policy:\n%s\n' "$1" "$2" >&2; exit 1; }
+            :
+          }
+
+          printf '\n── default: no wildcard, no third-party tile host\n'
+          P=$(csp -e APP_MODE=standalone)
+          # The whole point of the change: neither directive may fall back to
+          # "any host". Anchored on the delimiter that actually follows each
+          # one — img-src is followed by ';' because connect-src comes after it,
+          # connect-src by the closing quote. A bare 'https:' search would match
+          # the frame-ancestors wildcard, which stays deliberately, and assert
+          # nothing.
+          reject "img-src 'self' data: https:;" "$P"
+          reject "connect-src 'self' https:\"" "$P"
+          want "https://nominatim.openstreetmap.org" "$P"
+          want "https://api.mangrove.reviews" "$P"
+          want "https://*.wikimedia.org" "$P"
+
+          printf '\n── raster opt-out: the configured provider is named\n'
+          P=$(csp -e APP_MODE=standalone \
+                -e BASEMAP_URL='https://tiles.example.org/{z}/{y}/{x}.png' \
+                -e BASEMAP_ATTRIBUTION='(c) Example')
+          # A raster tile is an image and a vector style is a fetch, so a
+          # basemap host has to reach both directives; naming only one
+          # half-renders the map.
+          want "data: https://*.wikimedia.org https://wikimedia.org https://*.wikipedia.org https://wikipedia.org https://api.panoramax.xyz tiles.example.org" "$P"
+          want "api.mangrove.reviews tiles.example.org" "$P"
+
+          printf '\n── proxied: the browser talks only to this origin\n'
+          P=$(csp -e APP_MODE=standalone \
+                -e BASEMAP_URL='https://tiles.example.org/a/{z}/{x}/{y}.png' \
+                -e BASEMAP_ATTRIBUTION='(c) Example' -e BASEMAP_PROXY=true)
+          reject "tiles.example.org" "$P"
+
+          printf '\n── hub: registry backends are named, with their ports\n'
+          P=$(csp -v /tmp/registry.json:/usr/share/nginx/html/registry.json:ro \
+                -e APP_MODE=hub -e REGISTRY_URL=/registry.json)
+          want "hessen.example.org" "$P"
+          # A CSP host-source with no port matches only the scheme's default
+          # port, so a stripped port is a policy that blocks the backend it was
+          # added for.
+          want "lab.internal:3000" "$P"
+
+          printf '\n── runtime registry: CSP_CONNECT_EXTRA covers what cannot be read\n'
+          P=$(csp -e APP_MODE=hub -e REGISTRY_URL='https://hub.example.org/registry.json' \
+                -e CSP_CONNECT_EXTRA='https://b1.example.org')
+          want "hub.example.org" "$P"
+          want "https://b1.example.org" "$P"
+
+          printf '\n── an unreadable style stays wide, and says so\n'
+          # The one state that must NOT be narrow: a style is configured but
+          # could not be read, so where it sends the browser is unknown and a
+          # guess would blank the basemap.
+          P=$(csp -e APP_MODE=standalone -e BASEMAP_STYLE_URL=/basemap/nope.json \
+                -e BASEMAP_ATTRIBUTION='(c) Example')
+          # Anchored for the same reason as the reject above: 'https:' alone is
+          # always present via frame-ancestors.
+          want "https://api.panoramax.xyz https:;" "$P"
+          want "https://api.mangrove.reviews https:\"" "$P"
+
+          printf '\n── a mangled extra origin fails closed\n'
+          docker run --rm --entrypoint sh -e CSP_CONNECT_EXTRA='https://bad;evil' \
+            spieli-app:citest -c '/docker-entrypoint.sh 2>&1' | grep -q 'FATAL: CSP_CONNECT_EXTRA' \
+            || { echo 'a mangled CSP_CONNECT_EXTRA was accepted' >&2; exit 1; }
+
+          printf '\nall CSP assertions passed\n'
+
       - name: Privacy page must follow the delivery mode
         run: |
           set -eu
