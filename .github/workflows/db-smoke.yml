@@ -27,7 +27,13 @@ jobs:
 
       - name: Wait for database
         run: |
-          until docker compose exec -T db pg_isready -U osm -d osm; do
+          # pg_isready is NOT enough, and both jobs in this file failed on it:
+          # "FATAL: database osm does not exist" at the very next step. The
+          # postgres entrypoint runs initdb and the init scripts against a
+          # temporary server on the unix socket, and pg_isready reports that
+          # server ready — so it succeeds before POSTGRES_DB has been created.
+          # Wait for a real connection to the database instead.
+          until docker compose exec -T db psql -U osm -d osm -c 'SELECT 1' >/dev/null 2>&1; do
             sleep 1
           done
         timeout-minutes: 2
@@ -80,7 +86,13 @@ jobs:
 
       - name: Wait for database
         run: |
-          until docker compose exec -T db pg_isready -U osm -d osm; do
+          # pg_isready is NOT enough, and both jobs in this file failed on it:
+          # "FATAL: database osm does not exist" at the very next step. The
+          # postgres entrypoint runs initdb and the init scripts against a
+          # temporary server on the unix socket, and pg_isready reports that
+          # server ready — so it succeeds before POSTGRES_DB has been created.
+          # Wait for a real connection to the database instead.
+          until docker compose exec -T db psql -U osm -d osm -c 'SELECT 1' >/dev/null 2>&1; do
             sleep 1
           done
         timeout-minutes: 2
