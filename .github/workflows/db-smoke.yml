@@ -8,6 +8,11 @@ on:
       - 'importer/api.sql'
       - 'db/init.sql'
       - 'importer/import.sh'
+      # The workflow itself, so a change to these jobs is exercised by them.
+      # Without this the file could not validate its own fix: this very
+      # commit's PR ran none of the jobs it edits.
+      - '.github/workflows/db-smoke.yml'
+      - 'dev/ci/planet-osm-tables.sql'
 
 jobs:
   db-smoke:
