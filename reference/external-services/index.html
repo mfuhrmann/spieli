@@ -1635,6 +1635,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#the-panoramax-viewer-waits-to-be-asked" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Panoramax viewer waits to be asked
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#proxied-by-default" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1948,6 +1959,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#the-panoramax-viewer-waits-to-be-asked" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Panoramax viewer waits to be asked
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#proxied-by-default" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2051,7 +2073,7 @@ They fall into groups, and the distinction matters for privacy: what the visitor
 <tr>
 <td><a href="https://panoramax.xyz">Panoramax</a></td>
 <td><code>api.panoramax.xyz</code></td>
-<td>Street-level photo <strong>thumbnails</strong> and the <strong>viewer</strong></td>
+<td>Street-level photo <strong>thumbnails</strong> always; the <strong>viewer</strong> only after the visitor activates it</td>
 <td>The thumbnail endpoint answers <code>308</code> with a <code>Location</code> on a per-instance derivative host (<code>panoramax.openstreetmap.fr</code> for the flagship). nginx cannot follow a redirect, and Panoramax is a federation whose derivative hosts are not ours to enumerate. The viewer is an <code>&lt;iframe&gt;</code>: serving a whole interactive application from this origin would grant it same-origin privileges here</td>
 </tr>
 <tr>
@@ -2063,6 +2085,12 @@ They fall into groups, and the distinction matters for privacy: what the visitor
 </tbody>
 </table>
 <p>Both are named in the generated Content Security Policy and both keep a row on the generated privacy page. The playground photo <strong>gallery</strong> is proxied; only these equipment illustrations are not.</p>
+<h3 id="the-panoramax-viewer-waits-to-be-asked">The Panoramax viewer waits to be asked<a class="headerlink" href="#the-panoramax-viewer-waits-to-be-asked" title="Permanent link">&para;</a></h3>
+<p>Selecting a playground that has street-level photos fetches the <strong>thumbnail</strong> — a plain image request — and nothing else. The viewer <code>&lt;iframe&gt;</code> is created only when the visitor activates the preview.</p>
+<p>This matters more than the thumbnail does. An iframe gets its own browsing context on <code>api.panoramax.xyz</code>, with cookies, <code>localStorage</code> and whatever script the provider runs there; probing the live viewer shows it attempting to set a Matomo <code>_pk_id</code> analytics cookie. That is persistent identification rather than an address in a log, and it is the strongest capability any third party has on this page.</p>
+<p>When it is created, the iframe carries <code>referrerpolicy="no-referrer"</code> and <code>sandbox="allow-scripts allow-same-origin"</code>. That token set was established by probing the live viewer, not assumed: with <code>allow-scripts</code> alone the viewer renders nothing at all.</p>
+<p><strong>Be clear about what that sandbox does and does not do.</strong> <code>allow-same-origin</code> gives the frame its real origin back, which is what the viewer needs to work — and which means cookies and <code>localStorage</code>, including the Matomo cookie above, behave exactly as they would unsandboxed. The sandbox is not what protects the visitor from that. What it still withholds is popups, form submission, top-level navigation and downloads, so a share or "open in Panoramax" link inside the viewer will not work.</p>
+<p><strong>The click gate is the control.</strong> It is what stops that browsing context existing at all unless the visitor asks for it, and closing the viewer destroys the iframe again, so it does not outlive their interest. Dropping <code>allow-same-origin</code> would block the cookie but leaves nothing rendered, which is not a trade worth making silently.</p>
 <h3 id="proxied-by-default">Proxied by default<a class="headerlink" href="#proxied-by-default" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
