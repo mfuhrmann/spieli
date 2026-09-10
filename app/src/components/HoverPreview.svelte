@@ -15,7 +15,10 @@
   $: isWater = attr?.is_water;
   $: hasTrees = attr?.tree_count > 0;
   $: forBaby = attr?.for_baby;
-  $: isWheelchair = attr?.wheelchair === 'yes' || attr?.wheelchair === 'limited';
+  // Server-computed play-equipment accessibility, not the area's own wheelchair
+  // tag. The raw tag describes site access, which barely separates playgrounds —
+  // it disagreed with the wheelchair filter on 67 of 69 hover icons (#777).
+  $: isWheelchair = attr?.for_wheelchair;
   $: isRestricted = attr?.access === 'private' || attr?.access === 'customers';
   $: area = attr?.area > 0 ? `${Math.round(attr.area / 10) * 10 || attr.area} m²` : null;
 
@@ -65,7 +68,11 @@
           {/if}
           {#if isWheelchair}
             <span class="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full" style="background:rgba(99,102,241,.1);color:#6366f1;">
-              <Accessibility class="h-3 w-3" />{$_('hover.tagAccessible')}
+              <!-- Short form, like hover.tagBaby beside details.forBaby: these chips
+                   sit in a 280px card and the neighbours are one word each. The full
+                   wording lives in details.wheelchairPlay (panel) and
+                   filter.labels.wheelchair — change all three together. -->
+              <Accessibility class="h-3 w-3" />{$_('hover.tagWheelchair')}
             </span>
           {/if}
           {#if isRestricted}

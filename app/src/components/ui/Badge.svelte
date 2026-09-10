@@ -1,7 +1,7 @@
 <script>
   import { cn } from '../../lib/utils.js';
 
-  /** @type {'default' | 'secondary' | 'destructive' | 'outline' | 'success' | 'warning' | 'info' | 'successSoft' | 'dangerSoft'} */
+  /** @type {'default' | 'secondary' | 'destructive' | 'outline' | 'success' | 'warning' | 'info' | 'successSoft' | 'dangerSoft' | 'neutralSoft'} */
   export let variant = 'default';
   let className = '';
   export { className as class };
@@ -19,6 +19,9 @@
     info: 'py-[3px] cursor-default border-[rgba(59,130,246,0.3)] bg-[#eff6ff] text-[#1e40af]',
     successSoft: 'py-[3px] border-[rgba(16,185,129,0.4)] bg-[#ecfdf5] text-[#065f46]',
     dangerSoft: 'py-[3px] border-[rgba(239,68,68,0.4)] bg-[#fef2f2] text-[#b91c1c]',
+    // Slate, deliberately not dangerSoft: used for surveyed-but-absent facts,
+    // which are information rather than a problem with the playground.
+    neutralSoft: 'py-[3px] border-[rgba(100,116,139,0.35)] bg-[#f1f5f9] text-[#475569]',
   };
 
   $: classes = cn(baseStyles, variants[variant], className);

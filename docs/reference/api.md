@@ -99,9 +99,11 @@ Polygon-tier RPC. Returns the same `FeatureCollection` shape as the legacy regio
 |---|---|---|
 | `min_lon`, `min_lat`, `max_lon`, `max_lat` | `float8` | WGS84 bounding box |
 
-**Response** — GeoJSON `FeatureCollection`. Each feature's `properties` include `osm_id`, `osm_type` (`R`, `W`, or `N`), `name`, `leisure`, `operator`, `access`, `surface`, `area`, the playground-stats counts (`tree_count`, `bench_count`, etc.), and the per-equipment booleans (`is_water`, `for_baby`, `for_toddler`, `for_wheelchair`, `has_soccer`, `has_basketball`, `has_fence`, `has_dogs`, `has_theme`, `has_shade`). The original tag hstore is spread on top so any OSM tag is reachable. Node playgrounds (`osm_type = 'N'`) are returned as small circular polygons (5 m radius buffer around the node point).
+**Response** — GeoJSON `FeatureCollection`. Each feature's `properties` include `osm_id`, `osm_type` (`R`, `W`, or `N`), `name`, `leisure`, `operator`, `access`, `surface`, `area`, the playground-stats counts (`tree_count`, `bench_count`, etc.), and the per-equipment booleans (`is_water`, `for_baby`, `for_toddler`, `for_wheelchair`, `has_soccer`, `has_basketball`, `has_fence`, `has_dogs`, `has_theme`, `has_shade`), plus the tri-state `wheelchair_play` (`'yes'` | `'no'` | `null`). The original tag hstore is spread on top so any OSM tag is reachable. Node playgrounds (`osm_type = 'N'`) are returned as small circular polygons (5 m radius buffer around the node point).
 
 The equipment booleans are aggregated across all equipment within the playground polygon. `for_baby` is `true` when any equipment has `baby=yes`, `capacity:baby` set, or `playground` ∈ `baby_swing`, `basketswing`, `sandpit`, `springy`. See [Import Pipeline — filter flags](../contributing/import-pipeline.md#filter-flags-for_baby-for_toddler-is_water) for the full trigger list.
+
+`for_wheelchair` is the boolean projection of `wheelchair_play`, which is derived from play devices only — the playground area's own `wheelchair` tag is not an input, and street furniture and pitches cannot set it. `wheelchair_play = 'no'` means accessibility was surveyed and nothing qualified; `null` means nobody recorded it either way. The tri-state is carried by the per-feature RPCs only, not by the cluster, centroid or meta aggregates.
 
 > Note: the polygon RPC names the water flag `is_water` (legacy from the materialised-view column). The centroid RPC's `filter_attrs` payload (below) renames it to `has_water` for consistency with the other client-side filter keys (`for_baby`, `has_soccer`, …). Same boolean, different key.
 
@@ -129,7 +131,8 @@ The equipment booleans are aggregated across all equipment within the playground
         "has_theme":          false,
         "has_shade":          true,  // true | false | null (untagged)
         "is_water":           true,
-        "for_wheelchair":     false
+        "for_wheelchair":     false,
+        "wheelchair_play":    null   // 'yes' | 'no' | null (never surveyed)
       }
     }
   ]
