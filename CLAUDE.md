@@ -163,6 +163,8 @@ Generated into `/etc/nginx/csp.conf` and included by `nginx.conf`; not a literal
 
 Two policies ship together for one release: the old wildcard one **enforced**, and the narrowed one **report-only**. A too-tight CSP fails silently, so the swap waits for a clean observation period. No `report-uri` — it would rebuild the per-visitor trail on the operator's disk. `CSP_CONNECT_EXTRA` / `CSP_IMG_EXTRA` cover origins the generator cannot discover.
 
+**Hosts reach the policy as full origins, scheme and port intact.** There are deliberately two derivations of the same set: `host_of` / `style_asset_hosts` produce bare hosts for the privacy page's service table, and `origin_of` / `style_asset_origins` produce origins for the CSP. A CSP host-source with no port matches only the scheme's default port, and one with no scheme only the document's own scheme, so a policy built from the display list blanks the basemap of a tileserver on `:8443` or one reached over `http`. The `:` missing from one `grep` character class is all it took.
+
 ## Key frontend architecture
 
 ### Stores (`app/src/stores/`)

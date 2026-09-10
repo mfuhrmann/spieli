@@ -190,8 +190,34 @@ jobs:
           # basemap host has to reach both directives; naming only one
           # half-renders the map. With every service proxied it is the only
           # host in either list, which makes that easy to see.
-          want "tiles.example.org;" "$P"
-          want "connect-src 'self' tiles.example.org\"" "$P"
+          # A full origin now, not a bare host: see the port/scheme cases below.
+          want "https://tiles.example.org;" "$P"
+          want "connect-src 'self' https://tiles.example.org\"" "$P"
+
+          printf '\n── a tileserver on a non-default port keeps its port\n'
+          # A CSP host-source with no port matches ONLY the scheme's default
+          # port, so a policy built from bare hosts blanks the basemap of a
+          # deployment we understood perfectly. The privacy page still wants the
+          # bare host, which is why there are two derivations.
+          P=$(csp -e APP_MODE=standalone \
+                -e BASEMAP_URL='https://tiles.example.org:8443/{z}/{x}/{y}.png' \
+                -e BASEMAP_ATTRIBUTION='(c) Example')
+          want "https://tiles.example.org:8443" "$P"
+
+          printf '\n── an http upstream keeps its scheme\n'
+          # With no scheme a host-source matches only the DOCUMENT's scheme, so
+          # a bare host does not cover http behind an https-served page.
+          P=$(csp -e APP_MODE=standalone \
+                -e BASEMAP_URL='http://lab.internal:8080/{z}/{x}/{y}.png' \
+                -e BASEMAP_ATTRIBUTION='(c) Example')
+          want "http://lab.internal:8080" "$P"
+
+          printf '\n── an {a-d} subdomain group is not a host\n'
+          P=$(csp -e APP_MODE=standalone \
+                -e BASEMAP_URL='https://{a-d}.tiles.example.org/{z}/{x}/{y}.png' \
+                -e BASEMAP_ATTRIBUTION='(c) Example')
+          want "https://tiles.example.org" "$P"
+          reject "a-d" "$P"
 
           printf '\n── proxied: the browser talks only to this origin\n'
           P=$(csp -e APP_MODE=standalone \

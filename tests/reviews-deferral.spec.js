@@ -81,7 +81,18 @@ test.describe('Mangrove is not contacted until the visitor asks', () => {
     await reviewsToggle(page).click();
 
     const panel = page.locator('aside.info-panel');
-    await expect(panel.locator('.review-form')).toBeVisible({ timeout: 5000 });
+    // Wait on the error notice first: it is the precondition under test (the
+    // read failed) and it appears in the same render as the form. Asserting
+    // the form alone raced the fetch settling — with the whole suite competing
+    // for one preview server, a bare 5s was marginal and this flaked roughly
+    // one run in three. The 15s matches the panel wait in loadWithSelection
+    // rather than being a number picked to make a failure go away.
+    // Matched on text, not on `small.text-muted`: three elements in this panel
+    // carry that class ("No equipment mapped", "No nearby facilities", and this
+    // one), so a class selector is a strict-mode violation rather than a wait.
+    await expect(panel.getByText(/could not be loaded|konnten nicht/i))
+      .toBeVisible({ timeout: 15000 });
+    await expect(panel.locator('.review-form')).toBeVisible({ timeout: 15000 });
     await expect(panel.locator('.star-btn').first()).toBeVisible();
   });
 
