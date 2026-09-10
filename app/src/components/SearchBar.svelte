@@ -1,5 +1,6 @@
 <script>
   import { fromLonLat } from 'ol/proj';
+  import { tick } from 'svelte';
   import { mapStore } from '../stores/map.js';
   import { nominatimFetch } from '../lib/nominatim.js';
   import { Search, Loader2, X } from 'lucide-svelte';
@@ -16,6 +17,31 @@
   let results = [];
   let showResults = false;
   let inputEl;
+  let cardEl;
+
+  // Index of the keyboard/mouse-highlighted option, or -1 for none. Exposed
+  // via aria-activedescendant per the WAI-ARIA combobox pattern - DOM focus
+  // deliberately stays on the input the whole time, only the referenced
+  // "active" option moves.
+  let activeIndex = -1;
+
+  // Stable ids for the ARIA relationship between the input and its listbox.
+  // Svelte 5 legacy mode ($props.id() isn't available), so a module-scoped
+  // counter gives each SearchBar instance its own id namespace.
+  const instanceId = instanceCounter++;
+  const listboxId = `searchbar-listbox-${instanceId}`;
+  function optionId(i) {
+    return `searchbar-option-${instanceId}-${i}`;
+  }
+
+  // Moves the active option and scrolls it into view - used for keyboard
+  // navigation only. Mouse hover sets activeIndex directly without
+  // scrolling, since the pointer is already at that position.
+  async function activateAndScroll(i) {
+    activeIndex = i;
+    await tick();
+    document.getElementById(optionId(i))?.scrollIntoView({ block: 'nearest' });
+  }
 
   async function search() {
     const q = query.trim();
@@ -51,10 +77,14 @@
       }
       results = hits.slice(0, 5);
       showResults = results.length > 0;
+      // The debounce below is 450ms, so a stale index from the previous
+      // result set would otherwise point at (and announce) the wrong row.
+      activeIndex = -1;
     } catch (err) {
       console.error('Search failed:', err);
       results = [];
       showResults = false;
+      activeIndex = -1;
     } finally {
       searching = false;
     }
@@ -67,14 +97,45 @@
     $mapStore?.getView().animate({ center: coord, zoom: 17 });
     query = result.display_name.split(',')[0];
     showResults = false;
+    activeIndex = -1;
     if (onlocation) onlocation(lat, lon);
   }
 
   function onKeydown(e) {
-    if (e.key === 'Enter') search();
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (results.length === 0) return;
+      if (!showResults) {
+        // A closed list with cached results (e.g. re-focused after
+        // Escape) reopens on ArrowDown rather than requiring a fresh
+        // search.
+        showResults = true;
+        activateAndScroll(0);
+      } else {
+        activateAndScroll(Math.min(activeIndex + 1, results.length - 1));
+      }
+      return;
+    }
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (results.length === 0) return;
+      activateAndScroll(Math.max(activeIndex - 1, 0));
+      return;
+    }
+    if (e.key === 'Enter') {
+      if (activeIndex >= 0 && results[activeIndex]) {
+        selectResult(results[activeIndex]);
+      } else {
+        search();
+      }
+      return;
+    }
     if (e.key === 'Escape') {
+      // Deliberately no inputEl.blur() here - Escape closes the list
+      // without moving focus out of the input, matching the combobox
+      // pattern (the user is still typing).
       showResults = false;
-      inputEl?.blur();
+      activeIndex = -1;
     }
   }
 
@@ -91,6 +152,7 @@
     query = '';
     results = [];
     showResults = false;
+    activeIndex = -1;
     inputEl?.focus();
     if (onlocation) onlocation(null, null);
   }
@@ -99,15 +161,32 @@
     if (results.length > 0) showResults = true;
   }
 
-  function onBlur(e) {
-    // Delay hiding to allow click on results
-    setTimeout(() => {
-      showResults = false;
-    }, 200);
+  // Replaces a setTimeout-after-blur approach, which had two real bugs:
+  // clicking a result raced the 200ms timer in Safari (mousedown there
+  // doesn't always focus the button, so relatedTarget on the input's own
+  // blur came back null), and scrolling the results list on iOS drops
+  // input focus mid-scroll, hiding the list under the user's thumb.
+  // focusout bubbles (unlike blur), so one handler on the whole card
+  // catches focus leaving to anywhere outside it - including the clear
+  // button, which the previous version's tab order broke.
+  function onFocusout(e) {
+    if (cardEl && e.relatedTarget && cardEl.contains(e.relatedTarget)) return;
+    showResults = false;
+    activeIndex = -1;
+  }
+
+  // Deliberately mousedown, not pointerdown: mousedown is synthetic on
+  // touch and fires after the tap completes, so preventing it can't
+  // interfere with scrolling the results list. Preventing pointerdown
+  // would break that scroll. This keeps the input focused when a result
+  // is clicked, so onFocusout above doesn't fire (and hide the list)
+  // before the click handler runs.
+  function onResultsMousedown(e) {
+    e.preventDefault();
   }
 </script>
 
-<div class="search-card">
+<div class="search-card" bind:this={cardEl} onfocusout={onFocusout}>
   <div class="search-input-wrapper">
     <div class="search-icon">
       {#if searching}
@@ -125,8 +204,13 @@
       onkeydown={onKeydown}
       oninput={onInput}
       onfocus={onFocus}
-      onblur={onBlur}
       aria-label={$_('search.ariaLabel')}
+      role="combobox"
+      aria-expanded={showResults && results.length > 0}
+      aria-autocomplete="list"
+      aria-controls={listboxId}
+      aria-activedescendant={activeIndex >= 0 ? optionId(activeIndex) : undefined}
+      aria-busy={searching}
     />
     {#if query}
       <button class="clear-btn" onclick={clearSearch} aria-label={$_('search.clearLabel')}>
@@ -136,9 +220,24 @@
   </div>
 
   {#if showResults && results.length > 0}
-    <div class="search-results">
-      {#each results as result}
-        <button class="result-item" onclick={() => selectResult(result)}>
+    <div
+      class="search-results"
+      role="listbox"
+      id={listboxId}
+      tabindex="-1"
+      onmousedown={onResultsMousedown}
+    >
+      {#each results as result, i}
+        <button
+          class="result-item"
+          class:active={i === activeIndex}
+          role="option"
+          id={optionId(i)}
+          aria-selected={i === activeIndex}
+          tabindex="-1"
+          onclick={() => selectResult(result)}
+          onmousemove={() => { activeIndex = i; }}
+        >
           <MapPin class="h-4 w-4 text-gray-400 shrink-0" />
           <span class="result-text">{result.display_name}</span>
         </button>
@@ -149,6 +248,7 @@
 
 <script context="module">
   import { MapPin } from 'lucide-svelte';
+  let instanceCounter = 0;
 </script>
 
 <style>
@@ -228,7 +328,10 @@
     transition: background 0.15s;
   }
 
-  .result-item:hover {
+  /* .active (not :hover) is the single highlight source of truth, driven
+     by mousemove as well as keyboard nav - having both would let pointer
+     and keyboard produce two different-looking highlighted rows at once. */
+  .result-item.active {
     background: #f1f3f4;
   }
 
@@ -238,5 +341,19 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  @media (max-width: 1023px) {
+    /* The search card is narrowed further on mobile to clear the
+       top-right controls (see AppShell.svelte), so long Nominatim
+       display_name values need room to wrap rather than clipping to an
+       even shorter single line. */
+    .result-text {
+      white-space: normal;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
   }
 </style>
