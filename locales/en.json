@@ -56,7 +56,9 @@
   },
   "panoramax": {
     "noPhotos": "No photos yet.",
-    "fullscreen": "Show fullscreen"
+    "fullscreen": "Show fullscreen",
+    "loadViewer": "Show street-level photo",
+    "loadViewerHint": "Loads the photo from Panoramax"
   },
   "search": {
     "placeholder": "Search …",

@@ -195,7 +195,7 @@ Two policies ship together for one release: the old wildcard one **enforced**, a
 | `NearbyPlaygrounds.svelte` | Shows nearest playgrounds to the selected one; hydrates polygon source on demand |
 | `POIPanel.svelte` | Nearby POI list (cafés, toilets, etc.) shown inside PlaygroundPanel |
 | `ReviewsPanel.svelte` | Community reviews for a selected playground (fetch + submit) |
-| `PanoramaxViewer.svelte` | Embeds a Panoramax street-level photo viewer for a playground |
+| `PanoramaxViewer.svelte` | Street-level photos for a playground. Shows the **thumbnail** on selection and creates the viewer `<iframe>` only when the visitor activates it (#852) — an iframe gets its own browsing context on the provider's origin, with cookies and its own analytics, so it must not load on plain map use. The iframe carries `referrerpolicy="no-referrer"` and `sandbox="allow-scripts allow-same-origin"`, which is the narrowest set the viewer actually works under (probed: `allow-scripts` alone renders nothing) |
 | `CommonsGallery.svelte` | Inline Wikimedia Commons photo gallery for a playground (from `wikimedia_commons` / `image` tags); thumbnails → fullscreen lightbox with CC attribution. Fetch + URL-safety logic in `app/src/lib/commons.js` |
 | `HoverPreview.svelte` | Floating card on playground hover (desktop only) |
 | `EquipmentTooltip.svelte` | Tooltip on equipment/pitch hover |

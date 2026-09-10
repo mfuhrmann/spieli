@@ -135,7 +135,8 @@ spieli calls several third-party services at runtime, and by default it calls th
 | Nominatim | **Nothing** — fetched server-side through `/ext/nominatim/` |
 | Wikimedia Commons — playground photos | **Nothing** — fetched server-side through `/ext/commons/` and `/ext/wikimedia/` |
 | Mangrove.reviews | **Nothing** — fetched server-side through `/ext/mangrove/` |
-| Panoramax (thumbnails **and** viewer) | Photo UUID, IP address. Not proxied: the thumbnail endpoint redirects to a per-instance derivative host, and the viewer is an `<iframe>` that must not be served from this origin |
+| Panoramax thumbnails | Photo UUID, IP address. Not proxied: the endpoint redirects to a per-instance derivative host nginx cannot follow |
+| Panoramax **viewer** | Nothing until the visitor activates the preview. Then its own browsing context, sandboxed to `allow-scripts allow-same-origin` with `referrerpolicy="no-referrer"` |
 | Wikimedia Commons — equipment illustrations | Image file name, IP address. Rendered from `Special:FilePath`, which cannot be proxied without opening `/w/index.php` as a relay |
 | Basemap provider | **Nothing** — fetched server-side and cached, unless you opt out with `BASEMAP_URL` / `BASEMAP_STYLE_URL` |
 | Geofabrik | Nothing — server-side download only |

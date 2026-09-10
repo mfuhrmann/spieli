@@ -371,10 +371,14 @@
         <span class="photo-modal-title">{$_('popup.devicePhoto')}</span>
         <button type="button" class="btn-close" onclick={() => modalUuid = null} aria-label={$_('info.closeBtn')}></button>
       </div>
+      <!-- Same sandbox floor as PanoramaxViewer; see the comment there. This
+           iframe was already behind a click, so only the hardening is new. -->
       <iframe
         src={viewerUrl(modalUuid)}
         style="width:100%; flex:1; border:none;"
         title={$_('popup.devicePhoto')}
+        referrerpolicy="no-referrer"
+        sandbox="allow-scripts allow-same-origin"
         allowfullscreen
       ></iframe>
     </div>

@@ -11,10 +11,20 @@ Two things still reach a third party directly, and both are deliberate rather th
 
 | Service | Host | What still goes direct | Why it is not proxied |
 |---|---|---|---|
-| [Panoramax](https://panoramax.xyz) | `api.panoramax.xyz` | Street-level photo **thumbnails** and the **viewer** | The thumbnail endpoint answers `308` with a `Location` on a per-instance derivative host (`panoramax.openstreetmap.fr` for the flagship). nginx cannot follow a redirect, and Panoramax is a federation whose derivative hosts are not ours to enumerate. The viewer is an `<iframe>`: serving a whole interactive application from this origin would grant it same-origin privileges here |
+| [Panoramax](https://panoramax.xyz) | `api.panoramax.xyz` | Street-level photo **thumbnails** always; the **viewer** only after the visitor activates it | The thumbnail endpoint answers `308` with a `Location` on a per-instance derivative host (`panoramax.openstreetmap.fr` for the flagship). nginx cannot follow a redirect, and Panoramax is a federation whose derivative hosts are not ours to enumerate. The viewer is an `<iframe>`: serving a whole interactive application from this origin would grant it same-origin privileges here |
 | [Wikimedia Commons](https://commons.wikimedia.org) | `commons.wikimedia.org` | Illustrations of individual **equipment attributes** | `app/src/lib/equipmentAttributes.js` renders them from `Special:FilePath`, which answers with a redirect chain. Following it would mean allowing `/w/index.php` — a full MediaWiki entry point — through the proxy |
 
 Both are named in the generated Content Security Policy and both keep a row on the generated privacy page. The playground photo **gallery** is proxied; only these equipment illustrations are not.
+
+### The Panoramax viewer waits to be asked
+
+Selecting a playground that has street-level photos fetches the **thumbnail** — a plain image request — and nothing else. The viewer `<iframe>` is created only when the visitor activates the preview.
+
+This matters more than the thumbnail does. An iframe gets its own browsing context on `api.panoramax.xyz`, with cookies, `localStorage` and whatever script the provider runs there; probing the live viewer shows it attempting to set a Matomo `_pk_id` analytics cookie. That is persistent identification rather than an address in a log, and it is the strongest capability any third party has on this page.
+
+When it is created, the iframe carries `referrerpolicy="no-referrer"` and `sandbox="allow-scripts allow-same-origin"`. That token set was established by probing the live viewer, not assumed: with `allow-scripts` alone it renders nothing at all, and adding `allow-same-origin` makes it behave identically to an unsandboxed frame. Combining those two tokens is safe here specifically because the framed document is cross-origin — the usual warning about that pair applies when the frame is same-origin with the embedder, which this never is.
+
+Closing the viewer destroys the iframe, so the browsing context does not outlive the visitor's interest in it.
 
 ### Proxied by default
 

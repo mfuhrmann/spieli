@@ -1556,7 +1556,7 @@ EXTROW_PXTHUMB
       <tr>
         <td><a href="https://panoramax.xyz/" target="_blank" rel="noopener">Panoramax</a> — Betrachter<br><code>api.panoramax.xyz</code></td>
         <td>Anzeige der Fotos auf Straßenebene</td>
-        <td>Beim Auswählen eines Spielplatzes, zu dem Fotos vorliegen</td>
+        <td>Erst wenn Sie die Vorschau ausdrücklich aktivieren. Beim bloßen Auswählen eines Spielplatzes wird nur das Vorschaubild geladen, nicht der Betrachter</td>
         <td>IP-Adresse, User-Agent, Referer, Kennung des abgerufenen Fotos. Der Betrachter wird als <code>&lt;iframe&gt;</code> eingebettet, Panoramax erhält damit einen eigenen Browser-Kontext auf dieser Seite und kann dort eigene Daten speichern. Dieser Betrachter wird bewusst nicht über diese Instanz ausgeliefert: eine vollständige fremde Anwendung von dieser Herkunft auszuliefern würde ihr Zugriff auf die Daten dieser Website geben</td>
       </tr>
 EXTROW_PXVIEWER

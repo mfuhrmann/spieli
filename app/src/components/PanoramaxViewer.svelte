@@ -66,22 +66,30 @@
     <MapCompleteLink href={mcUrl} label={$_('popup.addPhoto')} />
   </div>
 {:else}
-  <!-- Inline viewer: selected photo as clickable iframe -->
-  <div class="panoramax-preview" role="button" tabindex="0"
-       onclick={() => openModal(selectedIndex)}
-       onkeydown={e => e.key === 'Enter' && openModal(selectedIndex)}
-       title={$_('panoramax.fullscreen')}
+  <!-- Inline preview: the THUMBNAIL, not the viewer.
+       This used to be an <iframe> loaded as soon as a playground with photos
+       was selected. An iframe is not an image: it gets its own browsing
+       context on the provider's origin, with cookies, localStorage and
+       whatever script runs there — measured, the viewer attempts to set a
+       Matomo `_pk_id` cookie. That is the strongest third-party capability on
+       the page, and it was activating without the visitor asking to see a
+       photo. The thumbnail is a plain image request, and the iframe is now
+       created only by openModal(). -->
+  <button type="button" class="panoramax-preview"
+          onclick={() => openModal(selectedIndex)}
+          aria-label={$_('panoramax.loadViewer')}
+          title={$_('panoramax.loadViewerHint')}
   >
-    <iframe
-      src={viewerUrl(uuids[selectedIndex])}
-      style="width:100%; height:240px; border:none; border-radius:4px; pointer-events:none;"
-      title={$_('modal.streetPhoto')}
-      allowfullscreen
-    ></iframe>
+    <img
+      src={thumbUrl(uuids[selectedIndex])}
+      alt={$_('modal.streetPhoto')}
+      style="width:100%; height:240px; object-fit:cover; border:none; border-radius:4px; display:block;"
+    />
     <div class="panoramax-overlay">
-      <span class="bi bi-fullscreen panoramax-expand"></span>
+      <span class="bi bi-play-fill panoramax-play" aria-hidden="true"></span>
+      <span class="bi bi-fullscreen panoramax-expand" aria-hidden="true"></span>
     </div>
-  </div>
+  </button>
 
   <!-- Thumbnail strip for multiple photos -->
   {#if uuids.length > 1}
@@ -127,10 +135,19 @@
           &#10005;
         </button>
       </div>
+      <!-- The narrowest sandbox the viewer actually works under, established by
+           probing the live viewer rather than assumed: with allow-scripts
+           alone it renders nothing (no canvas), and adding allow-same-origin
+           makes it identical to an unsandboxed frame. Combining those two is
+           safe here specifically because the framed document is cross-origin —
+           the usual warning applies when it is same-origin with the embedder,
+           which this never is. -->
       <iframe
         src={viewerUrl(uuids[modalIndex])}
         style="width:100%; flex:1; border:none;"
         title={$_('photos.thumbnailTitle', { values: { n: modalIndex + 1, total: uuids.length } })}
+        referrerpolicy="no-referrer"
+        sandbox="allow-scripts allow-same-origin"
         allowfullscreen
       ></iframe>
     </div>
@@ -138,17 +155,48 @@
 {/if}
 
 <style>
+  /* A real <button> now, so the browser gives it keyboard activation and a
+     focus ring for free; the reset below is what a button needs to look like
+     the image container it replaced. */
   .panoramax-preview {
     position: relative;
+    display: block;
+    width: 100%;
+    padding: 0;
+    border: none;
+    background: #f3f4f6;
     cursor: pointer;
     border-radius: 4px;
     overflow: hidden;
+  }
+  .panoramax-preview:focus-visible {
+    outline: 2px solid #0d6efd;
+    outline-offset: 2px;
   }
   .panoramax-overlay {
     position: absolute;
     inset: 0;
     z-index: 1;
     border-radius: 4px;
+  }
+  /* Says "this will play something" rather than "this is a photo", so the
+     visitor knows an activation is what loads the viewer. */
+  .panoramax-play {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.55);
+    color: #fff;
+    border-radius: 50%;
+    width: 48px; height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    pointer-events: none;
+  }
+  .panoramax-preview:hover .panoramax-play {
+    background: rgba(0, 0, 0, 0.72);
   }
   .panoramax-expand {
     position: absolute;
