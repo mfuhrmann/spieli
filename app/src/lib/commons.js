@@ -6,7 +6,45 @@
 // unstructured photo bag, so we never try to match photos to individual
 // devices. See issue #650.
 
-const API = 'https://commons.wikimedia.org/w/api.php';
+import { commonsApiUrl as API, commonsFileBase } from './config.js';
+
+// Rewrite a Wikimedia file URL onto this instance, so the image bytes come
+// from here rather than from Wikimedia.
+//
+// Necessary because proxying the API is not enough on its own: the imageinfo
+// response carries ABSOLUTE file URLs, so a browser handed those goes to
+// Wikimedia for every image and the proxy achieves nothing — the same trap the
+// basemap TileJSON needed a sub_filter for.
+//
+// The original host is preserved as the first path segment instead of being
+// assumed. Which host serves a file is Wikimedia's business and it changes:
+// the API currently returns thumbnails on thumb.wikimedia.org and originals on
+// upload.wikimedia.org, so a rewrite hard-coded to one of them silently sends
+// every thumbnail straight to Wikimedia while appearing to work.
+//
+// Called on values that have already passed isSafeImageUrl, or that come from
+// the API's own imageinfo, or that come from the build-time equipment-image map
+// (#862) — and it re-checks the host itself either way, so it can never be the
+// thing that launders a hostile tag into a same-origin path.
+//
+// Note the accepted host set is WIDER than isSafeImageUrl's: it includes
+// wiki.openstreetmap.org, which isSafeImageUrl rejects. That is deliberate —
+// the OSM wiki hosts 14 equipment illustrations, whose names come from our own
+// tables rather than from an OSM tag — but it means the two are not
+// interchangeable, and a new call site must not assume isSafeImageUrl has
+// already vetted whatever it passes here.
+// Hosts whose image bytes the /ext/wikimedia/ proxy will serve. The OSM wiki
+// is here because 14 equipment illustrations exist only there; it is a plain
+// MediaWiki file host like the others, and keeping the list in one place is
+// what stops the frontend rewriting a URL the proxy will then refuse.
+const isProxiableImageHost = h => isWikimediaHost(h) || h === 'wiki.openstreetmap.org';
+
+export function proxiedImageUrl(url) {
+    if (!commonsFileBase) return url;               // not proxied
+    const u = parseUrl(url);
+    if (!u || !isProxiableImageHost(u.hostname)) return url;
+    return `${commonsFileBase}/${u.hostname}${u.pathname}${u.search}`;
+}
 
 function parseUrl(url) {
     if (!url || typeof url !== 'string') return null;
@@ -124,8 +162,11 @@ async function fetchImageInfo(titles, thumbWidth, signal) {
             const meta = ii.extmetadata ?? {};
             byTitle[page.title] = {
                 title: page.title,
-                thumb: ii.thumburl || ii.url,
-                full: ii.url,
+                // thumb/full are fetched as image bytes, so they route through
+                // the proxy. descUrl stays direct: it is a link the visitor
+                // clicks, and it transfers nothing until they do.
+                thumb: proxiedImageUrl(ii.thumburl || ii.url),
+                full: proxiedImageUrl(ii.url),
                 descUrl: ii.descriptionurl || null,
                 artist: stripHtml(meta.Artist?.value),
                 license: stripHtml(meta.LicenseShortName?.value || meta.License?.value),
@@ -156,10 +197,19 @@ export async function fetchPlaygroundPhotos(commonsTag, imageUrl, opts = {}) {
         if (imageFile) {
             titles.push(imageFile);
         } else if (isSafeImageUrl(imageUrl)) {
-            photos.push({ title: imageUrl, thumb: imageUrl, full: imageUrl, descUrl: imageUrl, artist: null, license: null });
+            // isSafeImageUrl has already vetted the host; only then is it
+            // rewritten onto the proxy. Dedup below still keys on the original
+            // URL, which is what the API's ii.url would collide with.
+            const proxied = proxiedImageUrl(imageUrl);
+            photos.push({ title: imageUrl, thumb: proxied, full: proxied, descUrl: imageUrl, artist: null, license: null });
             // Seed dedup with the direct image's URL so the same file arriving
             // via the category (resolved to the same ii.url) isn't shown twice.
+            // BOTH forms are seeded: the imageinfo branch compares against its
+            // own `full`, which is proxied, so seeding only the raw URL would
+            // stop matching the moment a proxy is configured and show the
+            // photo twice.
             seen.add(imageUrl);
+            seen.add(proxied);
         }
 
         const parsed = parseCommonsTag(commonsTag);

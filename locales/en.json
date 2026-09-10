@@ -1,4 +1,7 @@
 {
+  "basemap": {
+    "outsideCoverage": "No detailed map data for this area."
+  },
   "appTitle": "{regionName} Playground Map",
   "locate": {
     "title": "Show my location",
@@ -53,7 +56,9 @@
   },
   "panoramax": {
     "noPhotos": "No photos yet.",
-    "fullscreen": "Show fullscreen"
+    "fullscreen": "Show fullscreen",
+    "loadViewer": "Show street-level photo",
+    "loadViewerHint": "Opens the interactive Panoramax viewer, which sets its own cookies"
   },
   "search": {
     "placeholder": "Search …",
@@ -365,7 +370,7 @@
       },
       "project": {
         "label": "The project",
-        "text": "The playground map is a free, interactive web map based on {osmLink} data. It contains no proprietary data, requires no login and does not track users. Anyone who improves playground data in OSM automatically improves this map.",
+        "text": "The playground map is a free, interactive web map based on {osmLink} data. It contains no proprietary data, requires no login, sets no cookies and runs no analytics. The background map is served by this site itself. Photos and reviews are loaded directly from third-party services, which receive your IP address in the process; the privacy policy lists every one of them. Anyone who improves playground data in OSM automatically improves this map.",
         "osmWikiUrl": "https://en.wikipedia.org/wiki/OpenStreetMap"
       },
       "source": {

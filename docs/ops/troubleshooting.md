@@ -1,5 +1,50 @@
 # Troubleshooting
 
+## A stack serves the old schema after an upgrade
+
+**Symptom:** Nothing looks wrong. `get_meta` answers, row counts are plausible, the UI loads — but a filter added in the new release returns nothing, or returns the pre-release answer.
+
+**Cause:** Two sessions applied `api.sql` around the same time, and the one that finished last came from the **older image**. The daemon importer applies the schema on container startup, so any restart of it during an upgrade makes it a second writer; and a plain `docker compose up -d importer` *restarts* the existing container rather than recreating it, so that writer is still running the previous image. The old schema is internally consistent, so every health check passes ([#800](https://github.com/mfuhrmann/spieli/issues/800)).
+
+This is what happened sweeping v0.9.0: a stack ran the v0.9.0 app against the v0.8.0 matview, with `has_theme` missing and `has_fence` still matching `barrier=fence` only.
+
+**Diagnose** by comparing the version `get_meta` reports against the release you installed:
+
+```bash
+curl -sf http://localhost:<port>/api/rpc/get_meta | \
+  python3 -c "import sys,json; print(json.load(sys.stdin)['version'])"
+```
+
+That field comes from the image that last applied `api.sql`, which is exactly the question. Do **not** check for the presence of a column instead: a column added in an earlier release exists in both schemas, so the check passes on the old one.
+
+**Fix** by recreating the daemon importer on the new image, then re-checking:
+
+```bash
+docker compose --profile <mode> up -d --force-recreate importer
+docker compose logs -f importer   # wait for "Done. PostgREST schema reloaded."
+```
+
+`--force-recreate` is the point: a plain `up -d` restarts the container from the image it was created with.
+
+**Prevention.** From v0.10.0 `api.sql` takes a session-level advisory lock, so concurrent applies queue instead of corrupting each other, and `scripts/upgrade-stacks.sh` stops the importer before applying and recreates it afterwards. The lock cannot tell an old image from a new one, though — it prevents corruption, not a stale last writer — so the stop/recreate ordering still matters when upgrading by hand. See [Upgrading](upgrade.md).
+
+---
+
+## Schema apply fails with `relation "public.playground_stats" does not exist`
+
+**Symptom:** An `API_ONLY=1` run dies partway through:
+
+```
+psql:/tmp/tmp.XXXXXX:352: ERROR:  relation "public.playground_stats" does not exist
+```
+
+**Cause:** Two concurrent applies, as above — on **v0.9.0 and earlier**, where `api.sql` dropped the matview and rebuilt it in place, so the second session's `DROP` removed it while the first was still indexing.
+
+**This should no longer happen.** From v0.10.0 the rebuild builds under a staging name and swaps it in ([#720](https://github.com/mfuhrmann/spieli/issues/720)), and the advisory lock serialises applies ([#800](https://github.com/mfuhrmann/spieli/issues/800)). If you still see it, check whether something is applying an older `api.sql` — a stack that has not been upgraded, or an importer container still on a previous image.
+
+**Recovery on v0.9.0 and earlier:** re-run `API_ONLY=1`. If the matview is gone entirely, a full re-import recreates everything.
+
+---
 ## Port 8080 is already in use
 
 **Symptom:** `docker compose up` fails with `address already in use` or `port is already allocated`.
@@ -417,3 +462,97 @@ docker compose -f compose.yml --profile <mode> run --rm importer
 ```
 
 This re-applies `api.sql` (recreating `playground_stats`) and re-imports OSM data. It takes longer than `API_ONLY=1` but is always safe.
+
+## The map renders, but labels or icons are missing
+
+**Symptom:** the basemap draws roads, water and landcover, but place names are missing, or they render in a system font that looks wrong next to the rest of the UI.
+
+**Cause:** the webfonts the style asks for are not vendored in the image. Labels are drawn from `/basemap/fonts/<family>/<weight>.css`, not from the style's `glyphs` endpoint, and a missing weight fails silently: MapLibre falls back to a system font and the map still renders. It also puts a request the tile server cannot answer on every page load.
+
+**Fix:** check which weights the style asks for and re-vendor them.
+
+```bash
+# Lists the style's font stacks and fails if one has no vendored file
+make basemap-fonts
+# What is actually in the image:
+docker compose exec app ls /usr/share/nginx/html/basemap/fonts/noto-sans/
+```
+
+`Noto Sans Bold` needs `700.css`, `Noto Sans Italic` needs `400-italic.css`, and so on. `make basemap-fonts` fetches all of them and then asserts the coverage, so a green run means every stack in the style resolves.
+
+Missing *icons* rather than labels point at the sprite sheet instead: check that `/basemap/sprites/…` returns 200 and not 404.
+
+```bash
+curl -sI http://localhost:8080/basemap/sprites/ofm_f384/ofm.png | head -1
+```
+
+A 404 there usually means an nginx location-precedence problem — regex locations are matched before plain prefixes, so a `~* \.png$` block can claim these paths unless the `/basemap/` location uses `^~`.
+
+---
+
+## Container refuses to start: `style.local.json is missing from the image`
+
+**Symptom:** the app container exits immediately with
+
+```
+[spieli] FATAL: app/public/basemap/style.local.json is missing from the image.
+```
+
+**Cause:** `style.local.json` is a build artefact, not a checked-in-by-hand file, and the build did not produce it. This is deliberate: the entrypoint refuses to fall back to `style.json`, whose assets point at the public tile server, because that would silently send every visitor to a third party while the docs promise the opposite.
+
+**Fix:** regenerate both style variants and rebuild.
+
+```bash
+make basemap-style     # writes style.json and style.local.json from one fetch
+make docker-build
+```
+
+---
+
+## Basemap tiles are slow or fail after an upgrade
+
+**Symptom:** the map is sluggish or patchy for a while after `make docker-build`, then recovers.
+
+**Cause:** the tile cache lives at `/var/cache/nginx/basemap`. Without a volume it sits on the container's writable layer and is discarded on every rebuild, so the next visitors refill it from the upstream one tile at a time.
+
+**Fix:** mount a volume so it survives rebuilds. `compose.yml` ships one (`basemap_cache`); if you deploy from `compose.prod.yml` or a hand-written file, add the equivalent:
+
+```yaml
+services:
+  app:
+    volumes:
+      - basemap_cache:/var/cache/nginx/basemap
+volumes:
+  basemap_cache:
+```
+
+This matters most for an upgrade sweep across several stacks, which would otherwise send every one of them at the public tile server cold at the same time.
+
+## Photos, search or reviews stopped working after an upgrade
+
+Since the external-service proxies landed, these features are served through `/ext/` paths on your own instance rather than fetched from the third party by the browser. Three things go wrong quietly.
+
+**A cold cache after a rebuild.** `make docker-build` replaces the container, and a cache on the writable layer goes with it. `compose.yml` mounts a named volume (`ext_cache`) so this should not happen — check it is actually mounted:
+
+```bash
+docker compose exec app du -sh /var/cache/nginx/ext
+docker compose config | grep -A2 ext_cache
+```
+
+**Search returns nothing under load.** The Nominatim proxy shares the OSMF limit of 1 request per second across the whole instance, and sheds beyond it rather than exceeding the policy. Cached queries are unaffected — the limiter only sees misses — so this shows up as unusual free-text searches failing while region URLs keep working. Look for `limiting requests` in the error log:
+
+```bash
+docker compose logs app | grep "limiting requests"
+```
+
+If you see it routinely, your instance is busy enough to want its own Nominatim; point the frontend at it by setting `PROXY_NOMINATIM=false` and running one on your own network.
+
+**Images render as broken.** Check whether the request 404s at your instance or at Wikimedia:
+
+```bash
+docker compose logs app | grep -i "ext/wikimedia"
+```
+
+`/ext/` locations are deliberately not access-logged, so a successful request leaves no trace by design — only errors appear. A 404 from the instance itself means the path did not match the allowlist; the most likely cause is Wikimedia serving files from a host the proxy does not know about. The proxy accepts any `*.wikimedia.org` host, so this should be rare, but it is the first thing to check if thumbnails break after a Wikimedia change.
+
+To rule the proxies out entirely, set `PROXY_COMMONS=false` and restart: the browser then fetches from Wikimedia directly, as it did before.

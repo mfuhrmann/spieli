@@ -2,7 +2,50 @@
 // Ported from js/popup.js → getEquipmentAttributes / getEquipmentAttributesFromProps.
 
 import { objDevices } from './objPlaygroundEquipment.js';
+import { proxiedImageUrl } from './commons.js';
+// `with { type: 'json' }` is required by Node, which refuses a bare JSON
+// import, and accepted by Vite — so this module stays unit-testable outside a
+// bundler instead of only being reachable through the browser build.
+import equipmentImages from './equipmentImages.generated.json' with { type: 'json' };
 import { escapeHtml, tl } from './utils.js';
+
+// Resolve a `File:` name to a same-origin image URL, or null.
+//
+// The names come from our own device and pitch tables, and the map is built by
+// tools/build-equipment-images.py, which follows the Special:FilePath redirect
+// chain ONCE at build time. Doing it here at runtime is what forced the
+// browser to contact commons.wikimedia.org directly, then fall back to
+// wiki.openstreetmap.org on a 404 — a host no disclosure named and no CSP
+// allowed — and to make two failing requests for the 14 names that exist on
+// neither wiki.
+//
+// Returning null for an unknown name is the point: nothing is rendered, so a
+// missing illustration costs no request and shows no broken image. The build
+// fails on a name that resolves nowhere, so the map cannot silently rot.
+// Attribution for one illustration.
+//
+// Serving these bytes through our own origin makes us the distributor, so the
+// CC obligation is ours rather than Commons'. Naming the author in plain text
+// is not enough for BY/BY-SA: the source has to be identifiable, so the credit
+// links the file page. That link is available for every entry, including the
+// 14 on the OSM wiki whose API returns no extmetadata and therefore no author
+// or licence — those still credit a source rather than nothing.
+//
+// A link, not a fetch: nothing is requested until the visitor clicks it.
+function imageCredit(img) {
+    const text = [img.artist, img.license].filter(Boolean).join(', ');
+    if (!img.source) return text ? ` · ${escapeHtml(text)}` : '';
+    const label = text || 'Wikimedia Commons / OpenStreetMap-Wiki';
+    return ` · <a href="${escapeHtml(img.source)}" target="_blank" rel="noopener noreferrer"`
+        + ` class="link-secondary">${escapeHtml(label)}</a>`;
+}
+
+function resolvedImage(fileName) {
+    const entry = equipmentImages.images[fileName];
+    if (!entry) return null;
+    const url = proxiedImageUrl(`https://${entry.host}${entry.path}`);
+    return { url, license: entry.license, artist: entry.artist, source: entry.source };
+}
 
 const pitchImages = {
     soccer:'File:Association football pitch imperial.svg',
@@ -132,23 +175,35 @@ export function getEquipmentAttributesFromProps(props, t) {
 
     // Fallback image when no panoramax photo and no attributes
     if (!html && !panoramaxUuid) {
-        const onerror = `if(this.dataset.fallback){this.src=this.dataset.fallback;delete this.dataset.fallback}else{this.parentElement.style.display='none'}`;
         const deviceKey = g('playground');
         const sportRaw  = g('sport');
+        // The onerror no longer FALLS BACK to a second host — that was the
+        // undisclosed request — but it still hides the wrapper. The build
+        // established that the URL resolved when it ran; a file renamed
+        // upstream since then would otherwise leave a broken-image icon
+        // captioned "Symbolbild", which is worse than showing nothing.
+        const onerror = "this.closest('.device-img-wrap').style.display='none'";
         if (deviceKey && objDevices[deviceKey]?.image) {
-            const imgFile = objDevices[deviceKey].image.replace(/^File:/, '').replace(/ /g, '_');
-            const altText = tl(t, `equipment.devices.${deviceKey}`, objDevices[deviceKey].name_de ?? deviceKey);
-            html = `<div class="device-img-wrap">` +
-                `<img src="https://commons.wikimedia.org/wiki/Special:FilePath/${imgFile}?width=800"` +
-                ` data-fallback="https://wiki.openstreetmap.org/wiki/Special:FilePath/${imgFile}"` +
-                ` alt="${escapeHtml(altText)}" style="object-fit:contain;width:100%" onerror="${onerror}">` +
-                `<p class="mb-0 text-muted" style="font-size:0.75rem;"><span class="bi bi-image"></span> ${escapeHtml(t('popup.deviceSymbol'))}</p></div>`;
+            const img = resolvedImage(objDevices[deviceKey].image);
+            if (img) {
+                const altText = tl(t, `equipment.devices.${deviceKey}`, objDevices[deviceKey].name_de ?? deviceKey);
+                html = `<div class="device-img-wrap">` +
+                    `<img src="${escapeHtml(img.url)}"` +
+                    ` alt="${escapeHtml(altText)}" loading="lazy" referrerpolicy="no-referrer"` +
+                    ` onerror="${onerror}" style="object-fit:contain;width:100%">` +
+                    `<p class="mb-0 text-muted" style="font-size:0.75rem;"><span class="bi bi-image"></span> ` +
+                    `${escapeHtml(t('popup.deviceSymbol'))}${imageCredit(img)}</p></div>`;
+            }
         } else if (leisure === 'pitch' && sportRaw && pitchImages[sportRaw]) {
-            const imgFile = pitchImages[sportRaw].replace(/^File:/, '').replace(/ /g, '_');
-            html = `<div class="device-img-wrap">` +
-                `<img src="https://commons.wikimedia.org/wiki/Special:FilePath/${imgFile}?width=800"` +
-                ` data-fallback="https://wiki.openstreetmap.org/wiki/Special:FilePath/${imgFile}"` +
-                ` alt="${escapeHtml(sportRaw)}" style="object-fit:contain;width:100%" onerror="${onerror}"></div>`;
+            const img = resolvedImage(pitchImages[sportRaw]);
+            if (img) {
+                html = `<div class="device-img-wrap">` +
+                    `<img src="${escapeHtml(img.url)}"` +
+                    ` alt="${escapeHtml(sportRaw)}" loading="lazy" referrerpolicy="no-referrer"` +
+                    ` onerror="${onerror}" style="object-fit:contain;width:100%">` +
+                    (imageCredit(img) ? `<p class="mb-0 text-muted" style="font-size:0.7rem;">${imageCredit(img).trim()}</p>` : '') +
+                    `</div>`;
+            }
         }
     }
 

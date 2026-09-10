@@ -19,6 +19,7 @@ playwright-report/
 # AI tools
 _bmad-output/
 _bmad/
+openspec/
 docs/project-scan-report.json
 
 # Claude Code — per-user overlays

@@ -47,6 +47,7 @@ upgraded=()        # stacks that finished every step
 verify_failed=()   # stacks upgraded, but whose post-upgrade check was inconclusive
 current=""         # stack being processed right now
 reimport_pids=()   # "name:pid" for forced reimports launched in the background
+schema_skipped=()  # stacks whose schema apply was skipped (import in progress)
 
 # $1 = exit code, rest = reason.
 report_abort() {
@@ -145,23 +146,100 @@ for entry in "${STACKS[@]}"; do
   docker compose "${profile_flags[@]}" pull \
     || fail "docker compose pull failed for $name — later stacks were NOT upgraded, re-run after fixing"
 
-  echo "→ Restarting app container..."
-  docker compose "${profile_flags[@]}" up -d app
-
   # Pure hub stacks (DEPLOY_MODE=ui) have no importer — skip importer steps.
   if [[ "$profiles" == *"data-node"* ]]; then
-    echo "→ Applying api.sql (one-shot, never triggers full reimport)..."
-    # Run API_ONLY=1 before restarting the daemon. The daemon only runs api.sql
-    # on container startup; while it is idle between reimport cycles it won't
-    # touch playground_stats. Running both concurrently races on the DROP/CREATE
-    # of that materialized view and reliably fails on large datasets.
-    docker compose "${profile_flags[@]}" run --rm -e API_ONLY=1 importer
+    # The order below is load-bearing, and the previous order corrupted a stack
+    # during the v0.9.0 sweep (#800). What went wrong:
+    #
+    #   * The daemon importer was never stopped, and its STARTUP path applies
+    #     api.sql. Nothing prevented it restarting mid-apply, so two sessions
+    #     raced on the DROP/CREATE of playground_stats. The old guard argued the
+    #     daemon is "idle between reimport cycles" — but idleness is not
+    #     exclusivity.
+    #   * The daemon was then brought onto the new image with a plain
+    #     `up -d importer`, which RESTARTS the existing container rather than
+    #     recreating it, so it stayed on the old image.
+    #   * Verification ran before that step, so it checked a stack whose last
+    #     writer was the old image. The old schema is internally consistent, so
+    #     get_meta and row counts looked healthy while two filters were wrong.
+    #
+    # Hence: remove the second writer, apply with the new image as sole writer,
+    # put the daemon on the new image with --force-recreate, and only then
+    # verify. api.sql also takes an advisory lock now (#800), which covers the
+    # writers this script cannot order — Watchtower, `make db-apply`, a manual
+    # API_ONLY run — but ordering here is what makes the sweep deterministic.
+    # Never stop a daemon that is mid-import. `docker compose stop` allows 10s
+    # then SIGKILLs, and killing osm2pgsql (--slim --drop) leaves the database
+    # partially imported with the `importing` flag stuck true. The schema apply
+    # would then build playground_stats over partial data, verification would
+    # report 0 playgrounds, and the zero-playground branch below would launch a
+    # reimport alongside the freshly recreated daemon's own — two concurrent
+    # importers, which is precisely what the 404 branch warns against.
+    importing=$(curl -s --max-time 10 "http://localhost:${port}/api/rpc/get_meta" \
+      | python3 -c "import sys,json
+try:
+    d=json.load(sys.stdin)
+    d=d[0] if isinstance(d,list) and d else d
+    print('true' if (isinstance(d,dict) and d.get('importing')) else 'false')
+except Exception:
+    print('unknown')" 2>/dev/null) || importing=unknown
+
+    if [[ "$importing" == "true" ]]; then
+      echo "  SKIPPING the schema apply: an import is in progress on this stack."
+      echo "  Stopping the importer now would SIGKILL osm2pgsql and leave the"
+      echo "  database partially imported. The app was upgraded; re-run the sweep"
+      echo "  for this stack once the import has finished."
+      schema_skipped+=("$name (import in progress)")
+    else
+      echo "→ Stopping daemon importer so it cannot race the schema apply..."
+      docker compose "${profile_flags[@]}" stop importer \
+        || fail "could not stop the importer for $name — refusing to apply the schema with a second writer running"
+
+      echo "→ Applying api.sql (one-shot, never triggers full reimport)..."
+      # On failure the daemon is brought back before aborting. Without this the
+      # sweep exits with that stack's importer left STOPPED, so its periodic
+      # reimports silently cease and nothing in the abort report says so.
+      if ! docker compose "${profile_flags[@]}" run --rm -e API_ONLY=1 importer; then
+        echo "  schema apply failed — restarting the daemon importer before aborting" >&2
+        docker compose "${profile_flags[@]}" up -d --force-recreate importer || true
+        fail "api.sql apply failed for $name — later stacks were NOT upgraded"
+      fi
+
+      echo "→ Recreating daemon importer on the new image..."
+      # --force-recreate, NOT a plain `up -d`: the latter restarts the existing
+      # container, which is how the daemon stayed on the old image and became the
+      # last writer.
+      docker compose "${profile_flags[@]}" up -d --force-recreate importer
+    fi
   else
     echo "→ Pure hub — no importer, skipping api.sql step."
   fi
 
+  echo "→ Restarting app container..."
+  docker compose "${profile_flags[@]}" up -d app
+
   echo "→ Verifying..."
-  sleep 3
+  # NOT a fixed sleep. Three things have just moved underneath this check: the
+  # app container was recreated (nginx, which fronts /api/), the daemon was
+  # recreated and applies api.sql on startup, and that apply terminates
+  # PostgREST's connections when it swaps playground_stats in. Any of them can
+  # make one immediate curl answer 5xx or 000.
+  #
+  # A `sleep 3` and a single curl would then mark a healthy stack as failed,
+  # print the misleading "most likely never completed an import", and set
+  # playground_count=-1 — which disables the zero-playground reimport safety
+  # net below. So poll, and treat only a settled answer as an answer:
+  #   200      -> done
+  #   404      -> also terminal (no api schema: this stack has never imported)
+  #   5xx/000  -> restarting or reconnecting; wait
+  #
+  # Since #720 the rebuild is a build-then-swap, so the wait is seconds rather
+  # than the minutes it would have been while playground_stats was dropped and
+  # recreated in place: the old view keeps serving readers for the whole build,
+  # and only the swap itself is disruptive. The ceiling is still well above
+  # that, and progress is printed so a wait does not read as a hang.
+  verify_deadline=$(( $(date +%s) + 180 ))
+  verify_waited=0
   # Verification is deliberately NOT fatal to the sweep. By this point the images
   # are pulled and the containers restarted, so the upgrade itself succeeded; only
   # the check is inconclusive. Aborting here would leave every later stack on the
@@ -178,9 +256,19 @@ for entry in "${STACKS[@]}"; do
     # `|| true` then a separate emptiness check: curl already reports 000 in
     # %{http_code} when it never got a response, so overwriting a code it did
     # print would throw away the 404-vs-unreachable distinction this relies on.
-    code=$(curl -s -o "$body" -w '%{http_code}' \
-      "http://localhost:${port}/api/rpc/get_meta") || true
-    [[ -n "$code" ]] || code=000
+    while :; do
+      code=$(curl -s -o "$body" -w '%{http_code}' \
+        "http://localhost:${port}/api/rpc/get_meta") || true
+      [[ -n "$code" ]] || code=000
+      # 200 and 404 are both settled verdicts; anything else means "not yet".
+      [[ "$code" == "200" || "$code" == "404" ]] && break
+      (( $(date +%s) >= verify_deadline )) && break
+      if (( verify_waited % 30 == 0 )); then
+        echo "  waiting for the API to come back (HTTP $code, ${verify_waited}s elapsed)..."
+      fi
+      sleep 5
+      verify_waited=$(( verify_waited + 5 ))
+    done
     if [[ "$code" == "200" ]]; then
       result=$(python3 -c "import sys,json; d=json.load(sys.stdin); print('version:', d.get('version','?'), ' playgrounds:', d.get('playground_count','?'))" < "$body")
       playground_count=$(python3 -c "import sys,json; print(json.load(sys.stdin).get('playground_count', 0))" < "$body")
@@ -202,8 +290,14 @@ for entry in "${STACKS[@]}"; do
     fi
   else
     # Pure hub has no PostgREST — verify the app is serving HTTP instead.
-    code=$(curl -s -o "$body" -w '%{http_code}' "http://localhost:${port}/") || true
-    [[ -n "$code" ]] || code=000
+    # No importer here, so nothing rebuilds a schema — but nginx still needs a
+    # moment after `up -d`, which the removed `sleep 3` used to cover.
+    for _ in 1 2 3 4 5 6; do
+      code=$(curl -s -o "$body" -w '%{http_code}' "http://localhost:${port}/") || true
+      [[ -n "$code" ]] || code=000
+      [[ "$code" == "200" ]] && break
+      sleep 5
+    done
     if [[ "$code" == "200" ]]; then
       echo "  app responding on port ${port}"
     else
@@ -215,11 +309,9 @@ for entry in "${STACKS[@]}"; do
   rm -f "$body"
 
   if [[ "$profiles" == *"data-node"* ]]; then
-    echo "→ Restarting daemon importer on new image..."
-    # Restart after verify so the daemon's api.sql startup run does not race
-    # with the API_ONLY=1 container above.
-    docker compose "${profile_flags[@]}" up -d importer
-
+    # The daemon was recreated on the new image BEFORE verification, so there is
+    # no restart to do here any more (#800). Verification therefore reflects the
+    # image the stack will actually keep running.
     if [[ "$playground_count" -eq 0 ]]; then
       logfile="/tmp/${name}-reimport.log"
       echo "→ No playgrounds found — triggering forced reimport in background (log: $logfile)"
@@ -241,15 +333,26 @@ done
 current=""
 
 echo ""
-if [[ ${#verify_failed[@]} -gt 0 ]]; then
-  echo "All ${#upgraded[@]} stacks upgraded, but verification was inconclusive for:"
-  for v in "${verify_failed[@]}"; do
+if [[ ${#schema_skipped[@]} -gt 0 ]]; then
+  echo "The schema apply was SKIPPED for these stacks, so they are running the new"
+  echo "app against the previous schema. Re-run the sweep for them once their import"
+  echo "has finished:"
+  for v in "${schema_skipped[@]}"; do
     echo "  - $v"
   done
   echo ""
-  echo "Every stack's image was pulled and its containers restarted. A fresh data-node"
-  echo "with no completed import is expected to show HTTP 404 until its first import"
-  echo "finishes — check the daemon importer's log for those."
+fi
+if [[ ${#verify_failed[@]} -gt 0 || ${#schema_skipped[@]} -gt 0 ]]; then
+  if [[ ${#verify_failed[@]} -gt 0 ]]; then
+    echo "All ${#upgraded[@]} stacks upgraded, but verification was inconclusive for:"
+    for v in "${verify_failed[@]}"; do
+      echo "  - $v"
+    done
+    echo ""
+    echo "Every stack's image was pulled and its containers restarted. A fresh data-node"
+    echo "with no completed import is expected to show HTTP 404 until its first import"
+    echo "finishes — check the daemon importer's log for those."
+  fi
   exit 1
 fi
 echo "All ${#upgraded[@]} stacks upgraded."

@@ -1,0 +1,115 @@
+# Shared basemap tile cache — one per HOST, not one per stack.
+#
+# Rendered from this template by the nginx image's own entrypoint, which runs
+# envsubst over ${...} placeholders for variables that exist in the environment
+# and leaves bare nginx variables ($uri, $status, …) alone. Write nginx
+# variables WITHOUT braces here or they will be substituted away.
+#
+# Every spieli stack on this host points BASEMAP_UPSTREAM at this service, so
+# the public tile server sees one client for the whole host instead of one per
+# stack. The visitor's browser never talks to this container: it only ever
+# talks to its own stack's nginx, which fetches through here server-side.
+
+proxy_cache_path /var/cache/nginx/basemap levels=2:2
+                 keys_zone=shared_basemap:${BASEMAP_CACHE_KEYS_ZONE}
+                 max_size=${BASEMAP_CACHE_MAX_SIZE}
+                 inactive=${BASEMAP_CACHE_INACTIVE}
+                 use_temp_path=off;
+
+# The stacks ask for the TileJSON document uncompressed so sub_filter can read
+# it. Pass that intent upstream rather than requesting gzip and failing to
+# rewrite: a sub_filter that silently does not run looks exactly like one that
+# did. Keyed on $request_uri because the location rewrites $uri.
+map $http_accept_encoding $bmc_accept_encoding {
+    default  "gzip";
+    ""       "";
+}
+
+server {
+    listen 80;
+    server_name _;
+
+    # The z/x/y stream is a per-visitor record of what someone looked at. It is
+    # not written to a third party, and it is not written here either — that
+    # was the whole point of moving it off the browser. error_log still records
+    # a failing URI, which is what keeps outages diagnosable.
+    access_log off;
+
+    # No visitor ever reaches this container; only the stacks do. Answer
+    # anything else with a 404 rather than a default nginx page, so a
+    # misconfiguration is obvious instead of looking like a working service.
+    location = /healthz {
+        access_log off;
+        return 200 "ok\n";
+    }
+
+    location / {
+        # Defence in depth. Each stack already constrains the shape before it
+        # gets here, but this container must not become a general relay for the
+        # upstream origin if one of them is misconfigured or compromised.
+        # Spaces are in the class because MapLibre glyph fontstacks contain
+        # them ("Noto Sans Regular") and nginx percent-DECODES $uri.
+        if ($uri !~ "^/(?:[A-Za-z0-9 /_.@,+%~-]+\.(?:pbf|mvt|png|jpg|jpeg|webp|avif|json)|[A-Za-z0-9_.@~-]+)$") { return 404; }
+        # Args are in no asset the style asks for but DO enter the default
+        # proxy_cache_key, so they are an unbounded cache-fill vector.
+        if ($is_args) { return 404; }
+        limit_except GET { deny all; }
+
+        resolver ${BASEMAP_CACHE_RESOLVER} valid=30s ipv6=off;
+        set $bmc_upstream ${BASEMAP_UPSTREAM};
+        proxy_pass $bmc_upstream;
+
+        proxy_http_version 1.1;
+        proxy_ssl_server_name on;
+        proxy_ssl_name $proxy_host;
+
+        # One identifiable client for the whole host, which is the point of
+        # this container existing.
+        proxy_set_header User-Agent      "${BASEMAP_CACHE_UA}";
+        proxy_set_header Host            $proxy_host;
+        proxy_set_header Referer         "";
+        proxy_set_header Cookie          "";
+        proxy_set_header Accept-Language "";
+        proxy_set_header X-Forwarded-For "";
+        proxy_set_header Accept-Encoding $bmc_accept_encoding;
+
+        # THE LOAD-BEARING PART. The TileJSON document carries ABSOLUTE
+        # upstream tile URLs. Rewriting them here rather than in each stack is
+        # what makes a shared cache possible at all: the stacks' own sub_filter
+        # looks for their configured upstream, which is now THIS container, so
+        # it would find nothing and hand the browser tiles.openfreemap.org URLs
+        # directly — silently undoing the same-origin property.
+        #
+        # "/basemap/" is a same-origin PATH, not a host, so one rewrite is
+        # correct for every stack regardless of its domain.
+        sub_filter_types application/json text/plain;
+        sub_filter_once off;
+        sub_filter "${BASEMAP_UPSTREAM}/" "/basemap/";
+        sub_filter "//${BASEMAP_UPSTREAM_HOST}/" "/basemap/";
+
+        proxy_cache shared_basemap;
+        # A floor, not a policy: a response's own Cache-Control takes priority
+        # over proxy_cache_valid in nginx, and the default upstream sends one on
+        # everything. Upstream freshness headers are passed through untouched,
+        # because each stack's own cache and its visitor-facing headers are
+        # derived from them.
+        proxy_cache_valid 200 30d;
+        proxy_cache_valid 404 5m;
+        proxy_cache_revalidate on;
+        proxy_ignore_headers Set-Cookie Vary;
+        # Fifteen stacks starting at once is exactly the thundering herd this
+        # collapses into a single upstream request.
+        proxy_cache_lock on;
+        proxy_cache_lock_timeout 20s;
+        proxy_cache_use_stale error timeout updating http_500 http_502 http_503 http_504;
+        proxy_cache_background_update on;
+        add_header X-Basemap-Cache $upstream_cache_status always;
+
+        proxy_connect_timeout 5s;
+        proxy_read_timeout   20s;
+
+        # A redirect would hand the stack an absolute upstream URL, which it
+        # would then pass to the browser.
+        proxy_redirect ~^https?://[^/]+/(.*)$ /$1;
+    }
+}

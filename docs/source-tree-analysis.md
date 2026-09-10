@@ -178,4 +178,4 @@ spieli/                            ← Monorepo root
 | Frontend | Nominatim | HTTPS REST (search) |
 | Frontend | Panoramax | HTTPS iframe + API |
 | Frontend | Mangrove.reviews | HTTPS REST (reviews) |
-| Frontend | CartoDB | HTTPS (map tiles) |
+| Frontend | Basemap provider (configurable) | HTTPS (map tiles) |

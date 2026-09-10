@@ -1,5 +1,6 @@
 <script>
   import { objDevices, objFitnessStation } from '../lib/objPlaygroundEquipment.js';
+  import { panoramaxThumbUrl, panoramaxViewerUrl } from '../lib/panoramax.js';
   import { objColors } from '../lib/vectorStyles.js';
   import { getEquipmentAttributesFromProps } from '../lib/equipmentAttributes.js';
   import { themeOf, themeIcon, themeName } from '../lib/playgroundThemes.js';
@@ -103,8 +104,8 @@
 
   // Panoramax fullscreen modal for device photos
   let modalUuid = null;
-  const thumbUrl  = uuid => `https://api.panoramax.xyz/api/pictures/${uuid}/thumb.jpg`;
-  const viewerUrl = uuid => `https://api.panoramax.xyz/?pic=${uuid}&nav=none&focus=pic`;
+  const thumbUrl  = panoramaxThumbUrl;
+  const viewerUrl = panoramaxViewerUrl;
 </script>
 
 {#if features.length === 0 && groups.length === 0 && Object.keys(fallbackCounts).length === 0}
@@ -222,7 +223,7 @@
                   <div class="device-detail">
                     {#if detail.panoramaxUuid}
                       <button type="button" class="photo-thumb-btn" onclick={() => modalUuid = detail.panoramaxUuid} title={$_('popup.devicePhoto')}>
-                        <img src={thumbUrl(detail.panoramaxUuid)} alt={$_('modal.streetPhoto')} class="photo-thumb" />
+                        <img src={thumbUrl(detail.panoramaxUuid)} alt={$_('modal.streetPhoto')} referrerpolicy="no-referrer" class="photo-thumb" />
                         <span class="photo-label"><span class="bi bi-camera"></span> {$_('popup.devicePhoto')}</span>
                       </button>
                     {:else}
@@ -285,7 +286,7 @@
                   <div class="device-detail">
                     {#if detail.panoramaxUuid}
                       <button type="button" class="photo-thumb-btn" onclick={() => modalUuid = detail.panoramaxUuid} title={$_('popup.devicePhoto')}>
-                        <img src={thumbUrl(detail.panoramaxUuid)} alt={$_('modal.streetPhoto')} class="photo-thumb" />
+                        <img src={thumbUrl(detail.panoramaxUuid)} alt={$_('modal.streetPhoto')} referrerpolicy="no-referrer" class="photo-thumb" />
                         <span class="photo-label"><span class="bi bi-camera"></span> {$_('popup.devicePhoto')}</span>
                       </button>
                     {:else}
@@ -330,7 +331,7 @@
                   </span>
                   {#if detail.panoramaxUuid}
                     <button type="button" class="pitch-photo-btn" onclick={() => modalUuid = detail.panoramaxUuid} title={$_('popup.devicePhoto')}>
-                      <img src={thumbUrl(detail.panoramaxUuid)} alt={$_('modal.streetPhoto')} class="pitch-photo-thumb" />
+                      <img src={thumbUrl(detail.panoramaxUuid)} alt={$_('modal.streetPhoto')} referrerpolicy="no-referrer" class="pitch-photo-thumb" />
                     </button>
                   {/if}
                 </li>
@@ -370,10 +371,14 @@
         <span class="photo-modal-title">{$_('popup.devicePhoto')}</span>
         <button type="button" class="btn-close" onclick={() => modalUuid = null} aria-label={$_('info.closeBtn')}></button>
       </div>
+      <!-- Same sandbox floor as PanoramaxViewer; see the comment there. This
+           iframe was already behind a click, so only the hardening is new. -->
       <iframe
         src={viewerUrl(modalUuid)}
         style="width:100%; flex:1; border:none;"
         title={$_('popup.devicePhoto')}
+        referrerpolicy="no-referrer"
+        sandbox="allow-scripts allow-same-origin"
         allowfullscreen
       ></iframe>
     </div>
