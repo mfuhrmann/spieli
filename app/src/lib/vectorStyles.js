@@ -7,7 +7,7 @@ import Stroke from 'ol/style/Stroke.js';
 import Circle from 'ol/style/Circle.js';
 
 import { objDevices, objFeatures } from './objPlaygroundEquipment.js';
-import { playgroundCompleteness } from './completeness.js';
+import { playgroundCompleteness, hasPhotoSignal } from './completeness.js';
 
 // ── Playground completeness colours ──────────────────────────────────────────
 
@@ -70,14 +70,60 @@ function isRestrictedAccess(props) {
     return props.access === 'private' || props.access === 'customers';
 }
 
+
+// ── Photo marker ─────────────────────────────────────────────────────────────
+//
+// A photo is additive information, so it gets an additive glyph rather than a
+// place in the mapping-detail ramp. It used to be a gate on the top bucket,
+// which pinned whole regions out of it (#733); having one is now a bonus and
+// not having one costs nothing.
+//
+// The glyph needs an explicit geometry function. OL's renderPolygonGeometry
+// only handles fill, stroke and text — an `image` style attached to a Polygon
+// is silently dropped, never drawn and never warned about. Pointing the style
+// at the polygon's interior point turns it into a point render, which does
+// draw images.
+
+const CAMERA_SVG =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24">' +
+    '<path d="M9 3.5h6L16.5 6H21a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h4.5L9 3.5z" ' +
+    'fill="#ffffff" stroke="#14532d" stroke-width="2" stroke-linejoin="round"/>' +
+    '<circle cx="12" cy="13" r="3.6" fill="none" stroke="#14532d" stroke-width="2"/>' +
+    '</svg>';
+
+let _photoStyle = null;
+function getPhotoStyle() {
+    if (!_photoStyle) {
+        _photoStyle = new Style({
+            image: new Icon({
+                src: 'data:image/svg+xml;utf8,' + encodeURIComponent(CAMERA_SVG),
+                scale: 0.8,
+                opacity: 0.95,
+            }),
+            geometry: (feature) => {
+                const g = feature.getGeometry();
+                if (!g) return null;
+                const type = g.getType();
+                if (type === 'Polygon')      return g.getInteriorPoint();
+                if (type === 'MultiPolygon') return g.getInteriorPoints();
+                return g;
+            },
+            // Above the polygon fill, below selection.
+            zIndex: 1,
+        });
+    }
+    return _photoStyle;
+}
+
 /** Style function for the playground polygon layer. */
 export function playgroundStyleFn(feature) {
     const props = feature.getProperties();
     const c = playgroundCompleteness(props);
-    if (isRestrictedAccess(props)) return makeHatchStyle(c);
-    if (c === 'complete') return _styleComplete;
-    if (c === 'partial')  return _stylePartial;
-    return _styleMissing;
+    const base = isRestrictedAccess(props) ? makeHatchStyle(c)
+        : c === 'complete' ? _styleComplete
+        : c === 'partial'  ? _stylePartial
+        : _styleMissing;
+    return hasPhotoSignal(props) ? [base, getPhotoStyle()] : base;
 }
 
 // ── Selected playground highlight ────────────────────────────────────────────
