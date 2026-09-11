@@ -144,4 +144,43 @@ const supported = JSON.parse(
     }
 }
 
+// --- locale resolution ----------------------------------------------------
+// The checks above are static: they read i18n.js as text and never run it.
+// These call the real resolver, because the locale it returns is not only the
+// UI language — svelte-i18n mirrors it onto document.documentElement.lang, so
+// it also decides which speech synthesiser a screen reader picks for the whole
+// page (WCAG 3.1.1). That mirroring is asserted end to end in
+// tests/document-language.spec.js; what is asserted here is the value being
+// mirrored. The static half above cannot see a regression in either.
+//
+// Importing i18n.js pulls in svelte-i18n and config.js, which the static half
+// deliberately avoids. Verified to work under plain `node` — no
+// --conditions=node needed in the test:unit script.
+{
+    const { pickLocale } = await import('./i18n.js');
+
+    assert.equal(pickLocale('en', 'de-DE'), 'en',
+        'a configured default beats the browser language');
+    assert.equal(pickLocale('', 'de-DE'), 'de',
+        'the browser language is used when no default is configured, stripped to its base tag');
+    assert.equal(pickLocale('', 'de'), 'de',
+        'a browser language with no region subtag works unchanged');
+    assert.equal(pickLocale('', 'ja-JP'), 'en',
+        'an unsupported browser language falls back to en');
+    assert.equal(pickLocale('ja', 'de-DE'), 'de',
+        'an unsupported configured locale falls through to a supported browser language');
+    assert.equal(pickLocale('ja', 'fr-FR'), 'en',
+        'unsupported on both counts falls back to en');
+    assert.equal(pickLocale('', null), 'en',
+        'no browser language at all falls back to en');
+
+    // Resolution must agree with the SUPPORTED list the static half parsed,
+    // rather than with a second hardcoded copy of it — otherwise graduating a
+    // locale passes every assertion here while never actually being selectable.
+    for (const lang of supported) {
+        assert.equal(pickLocale(lang, 'ja-JP'), lang,
+            `${lang} is in SUPPORTED but pickLocale will not select it`);
+    }
+}
+
 console.log('i18n.test.js: all assertions passed');

@@ -1,9 +1,10 @@
 <script>
   import OpeningHours from 'opening_hours';
   import { cn } from '../lib/utils.js';
-  import { getPlaygroundTitle } from '../lib/playgroundHelpers.js';
+  import { getPlaygroundTitle, hasOsmName } from '../lib/playgroundHelpers.js';
+  import { regionLang, openingHoursAddress } from '../lib/config.js';
   import { MapPin, Droplets, Baby, TreeDeciduous, Accessibility, Clock, LockKeyhole } from 'lucide-svelte';
-  import { _ } from 'svelte-i18n';
+  import { _, locale } from 'svelte-i18n';
 
   /** @type {{ x: number, y: number } | null} */
   export let position = null;
@@ -12,6 +13,10 @@
 
   $: attr = feature?.getProperties() ?? null;
   $: title = attr ? getPlaygroundTitle(attr, $_) : '';
+  // OSM names are proper nouns in the region's language; the placeholder is
+  // interface text. `hyphens: auto` on the heading needs the right dictionary
+  // for either one.
+  $: titleLang = hasOsmName(attr) ? regionLang : $locale;
   $: isWater = attr?.is_water;
   $: hasTrees = attr?.tree_count > 0;
   $: forBaby = attr?.for_baby;
@@ -26,7 +31,7 @@
   $: ohOpen = (() => {
     if (!attr?.opening_hours || attr.opening_hours === '24/7') return null;
     try {
-      return new OpeningHours(attr.opening_hours, { address: { country_code: 'de' } }).getState(new Date());
+      return new OpeningHours(attr.opening_hours, { address: openingHoursAddress }).getState(new Date());
     } catch { return null; }
   })();
 
@@ -42,7 +47,7 @@
       <div class="hover-card rounded-lg shadow-lg border p-3 min-w-[180px] max-w-[280px]">
 
         <!-- Title -->
-        <h4 class="font-semibold text-sm leading-tight mb-1.5 line-clamp-2" style="color: #1f2937; hyphens: auto;" lang="de">
+        <h4 class="font-semibold text-sm leading-tight mb-1.5 line-clamp-2" style="color: #1f2937; hyphens: auto;" lang={titleLang}>
           {title}
         </h4>
 

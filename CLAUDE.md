@@ -166,6 +166,8 @@ Two policies ship together for one release: the old wildcard one **enforced**, a
 
 **Hosts reach the policy as full origins, scheme and port intact.** There are deliberately two derivations of the same set: `host_of` / `style_asset_hosts` produce bare hosts for the privacy page's service table, and `origin_of` / `style_asset_origins` produce origins for the CSP. A CSP host-source with no port matches only the scheme's default port, and one with no scheme only the document's own scheme, so a policy built from the display list blanks the basemap of a tileserver on `:8443` or one reached over `http`. The `:` missing from one `grep` character class is all it took.
 
+**Region metadata vs UI locale.** `defaultLocale` is the interface language; `regionLang` (default `'de'`) is the language the served OSM data is *named* in, and the two are configured independently. OSM-derived text carries `lang={regionLang}`; interface text inherits `document.documentElement.lang`, which `setupI18n()` writes from the resolved locale. `regionCountry` / `regionState` resolve public holidays in `opening_hours`; every call site takes the derived `openingHoursAddress` export rather than a literal. See [`docs/contributing/frontend-guide.md`](docs/contributing/frontend-guide.md#language-attributes).
+
 ## Key frontend architecture
 
 ### Stores (`app/src/stores/`)

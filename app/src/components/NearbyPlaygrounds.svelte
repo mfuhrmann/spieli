@@ -6,8 +6,9 @@
   import { mapStore } from '../stores/map.js';
   import { playgroundCompleteness } from '../lib/completeness.js';
   import { fetchPlaygroundByOsmId } from '../lib/api.js';
-  import { _ } from 'svelte-i18n';
+  import { _, locale } from 'svelte-i18n';
   import { fitViewToSelection } from '../lib/playgroundHelpers.js';
+  import { regionLang } from '../lib/config.js';
 
   export let lat;
   export let lon;
@@ -122,7 +123,10 @@
         <li>
           <button class="nearby-item" onclick={() => selectSuggestion(item)}>
             <span class="dot {completenessClass(item.tags)}"></span>
-            <span class="nearby-name">{item.name || $_('nearby.unknownName')}</span>
+            <!-- OSM name → region language; the placeholder is interface text. -->
+            <span class="nearby-name" lang={item.name ? regionLang : $locale}>
+              {item.name || $_('nearby.unknownName')}
+            </span>
             <span class="nearby-dist">{formatDistance(item.distance_m)}</span>
           </button>
         </li>

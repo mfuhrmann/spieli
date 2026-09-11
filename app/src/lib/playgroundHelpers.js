@@ -3,17 +3,32 @@
 
 import { clusterMaxZoom, mapMaxZoom } from './config.js';
 
+/** OSM tags {@link getPlaygroundTitle} builds a title from, in priority order. */
+const OSM_NAME_TAGS = ['name', 'alt_name', 'loc_name', 'official_name', 'old_name', 'short_name'];
+
 /**
  * Build a display title from OSM name tags.
  * @param {Object} attr - feature properties
  * @param {Function} t - svelte-i18n translate function (optional)
  */
 export function getPlaygroundTitle(attr, t) {
-    const parts = [attr.name, attr.alt_name, attr.loc_name, attr.official_name, attr.old_name, attr.short_name]
-        .filter(Boolean);
+    const parts = OSM_NAME_TAGS.map(k => attr[k]).filter(Boolean);
     if (!parts.length) return t ? t('nearby.defaultName') : 'Spielplatz';
     if (parts.length === 1) return parts[0];
     return `${parts[0]} (${parts.slice(1).join(', ')})`;
+}
+
+/**
+ * Whether {@link getPlaygroundTitle} would return OSM data rather than the
+ * translated placeholder. The two need different `lang` attributes — an OSM
+ * name is in the region's language, the placeholder is in the interface
+ * language — and the title itself is a plain string that cannot carry that
+ * distinction. Callers that render the title into the DOM ask here.
+ *
+ * @param {Object} attr - feature properties
+ */
+export function hasOsmName(attr) {
+    return !!attr && OSM_NAME_TAGS.some(k => attr[k]);
 }
 
 /** Build a human-readable location hint from nearest_highway or in_site tags. */

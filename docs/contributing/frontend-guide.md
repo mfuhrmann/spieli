@@ -100,6 +100,11 @@ Config constants used across the codebase:
 | `osmRelationId` | `62700` | Fulda (dev default) |
 | `clusterMaxZoom` | `13` | Zoom threshold for tier switch |
 | `macroMaxZoom` | `7` | Hub macro view threshold |
+| `defaultLocale` | `''` | UI language; empty → browser language → `en` |
+| `regionLang` | `'de'` | Language the served OSM data is named in |
+| `regionCountry` | `'de'` | Country for `opening_hours` holiday resolution |
+| `regionState` | `''` | Optional state refinement; empty → library default |
+| `openingHoursAddress` | derived | `{ country_code, state? }` for the `opening_hours` constructor — use this, never a literal |
 
 ## The tiered orchestrator
 
@@ -211,6 +216,32 @@ Translations live in `locales/*.json` and are loaded by `lib/i18n.js` using svel
 ```
 
 Add new keys to `locales/en.json` and `locales/de.json`. Translation to other languages happens via [Weblate](translation-guide.md).
+
+### Language attributes
+
+Two languages coexist on the page, and mixing them up is a WCAG failure:
+
+- **Interface text** is in the UI locale. `setupI18n()` writes it to
+  `document.documentElement.lang`, so translated strings need no `lang` of
+  their own — they inherit the right one. (`index.html` still ships a static
+  `lang="de"`; it is overwritten during init, before anything renders.)
+- **OSM-derived text** — playground names, and anything else read straight
+  from a tag — is in the region's language, not the interface's. Every
+  element rendering it carries `lang={regionLang}`.
+
+The rule matters most where the two meet. `getPlaygroundTitle()` returns
+either OSM name tags *or* the translated `nearby.defaultName` placeholder,
+and the returned string cannot tell you which. Ask `hasOsmName(attr)`:
+
+```svelte
+$: titleLang = hasOsmName(attr) ? regionLang : $locale;
+…
+<h2 lang={titleLang}>{getPlaygroundTitle(attr, $_)}</h2>
+```
+
+Current name render sites: `HoverPreview`, `PlaygroundPanel` (both header
+variants), `NearbyPlaygrounds`. If you add another, annotate it — an
+unannotated name silently inherits the interface language.
 
 ## Playground themes
 

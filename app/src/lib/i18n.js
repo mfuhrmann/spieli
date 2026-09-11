@@ -32,21 +32,54 @@ register('de', () => import('../../../locales/de.json'));
 register('en', () => import('../../../locales/en.json'));
 register('sk', () => import('../../../locales/sk.json'));
 
-// Resolve the locale to use:
-// 1. Deployment-configured default (APP_CONFIG.defaultLocale)
-// 2. Browser language (navigator.language, stripped to base tag)
-// 3. Fallback to 'en'
-function resolveLocale() {
-    if (configuredLocale && SUPPORTED.includes(configuredLocale)) {
-        return configuredLocale;
+/**
+ * Resolve the locale to use, in order:
+ * 1. Deployment-configured default (APP_CONFIG.defaultLocale)
+ * 2. Browser language, stripped to its base tag
+ * 3. Fallback to 'en'
+ *
+ * Kept free of module state so it is testable without stubbing globals — the
+ * value it returns is also the document language, so it is worth pinning down.
+ *
+ * @param {string} configured  APP_CONFIG.defaultLocale, possibly empty
+ * @param {string|null} browserLanguage  e.g. 'de-DE'
+ */
+export function pickLocale(configured, browserLanguage) {
+    if (configured && SUPPORTED.includes(configured)) {
+        return configured;
     }
-    const browser = getLocaleFromNavigator()?.split('-')[0];
+    const browser = browserLanguage?.split('-')[0];
     if (browser && SUPPORTED.includes(browser)) {
         return browser;
     }
     return 'en';
 }
 
+function resolveLocale() {
+    return pickLocale(configuredLocale, getLocaleFromNavigator());
+}
+
+// The page language (WCAG 3.1.1) is NOT set here, and that is deliberate.
+// svelte-i18n's runtime subscribes to its own locale store and does it for us:
+//
+//   internalLocale.subscribe((newLocale) => {
+//     if (typeof window !== "undefined" && newLocale != null) {
+//       document.documentElement.setAttribute("lang", newLocale);
+//     }
+//   });                       -- svelte-i18n 4.0.1, dist/runtime.js:313
+//
+// So `<html lang>` already follows whatever init() resolves to, and the
+// explicit assignment #754 proposed would have been a second writer of the
+// same attribute with no observable effect. The issue grepped this repo, found
+// nothing writing it, and concluded the attribute was never updated — true of
+// our code, false of the running page.
+//
+// What we do NOT have is a guarantee: this is inherited library behaviour that
+// a minor upgrade could drop silently, and a screen reader announcing every
+// label with the wrong phonetics is invisible to everyone not using one. That
+// is what tests/document-language.spec.js pins down. If those page-language
+// tests ever fail after a dependency bump, the fix is to reinstate the
+// assignment here.
 export async function setupI18n() {
     await init({
         fallbackLocale: 'en',
