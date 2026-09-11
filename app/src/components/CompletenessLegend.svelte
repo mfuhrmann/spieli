@@ -4,11 +4,11 @@
 </script>
 
 <aside class="legend">
-  <p class="legend-title">{$_('completeness.legendTitle')}</p>
+  <p class="legend-title">{$_('mappingDetail.legendTitle')}</p>
   <div class="legend-chips">
-    <Badge variant="success">{$_('completeness.complete')}</Badge>
-    <Badge variant="warning">{$_('completeness.partial')}</Badge>
-    <Badge variant="destructive">{$_('completeness.missing')}</Badge>
+    <Badge variant="success">{$_('mappingDetail.detailed')}</Badge>
+    <Badge variant="warning">{$_('mappingDetail.basic')}</Badge>
+    <Badge variant="destructive">{$_('mappingDetail.noDetails')}</Badge>
   </div>
 </aside>
 
