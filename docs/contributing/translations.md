@@ -128,15 +128,22 @@ Lock state is not in `wlc show` — use `wlc lock-status`, which reads `GET /api
 
 ## Language graduation
 
-Weblate collects translations for every registered language, but the app loads only the languages listed in `SUPPORTED` in `app/src/lib/i18n.js` — today that is `de` and `en`. There is no automatic threshold: reaching 100% in Weblate does not by itself make a language visible. Until a maintainer registers it, the locale file sits in the repo and users with that browser language fall back to English.
+Weblate collects translations for every registered language, but the app loads only the languages listed in `SUPPORTED` in `app/src/lib/i18n.js` — today that is `de`, `en` and `sk`. There is no automatic threshold: reaching 100% in Weblate does not by itself make a language visible. Until a maintainer registers it, the locale file sits in the repo and users with that browser language fall back to English.
 
 **≥ 80% completion** is the bar a maintainer uses to decide a language is ready to activate. When a language crosses it:
 
 1. Open a PR editing `app/src/lib/i18n.js`:
     - Add the language code to the `SUPPORTED` array
     - Add a `register()` call: `register('<lang>', () => import('../../../locales/<lang>.json'));`
+
 2. Title the PR: `feat(i18n): add <Language> language support`
 3. After merging, run `make docker-build` — users with that browser language now see the app in their language
+
+`app/src/lib/i18n.test.js` enforces both halves of that: a `register()` call without a `SUPPORTED` entry (or the reverse) fails the build, because either on its own is a silent no-op — the locale is simply never selected, with nothing logged. That is how Slovak sat complete and unreachable for weeks ([#814](https://github.com/mfuhrmann/spieli/issues/814)).
+
+The same test refuses to let a language graduate while it still carries strings `intl-messageformat` cannot parse. The i18next-style `{{placeholder}}` form **throws at render** rather than degrading, so one bad string breaks whichever view uses it — see [#751](https://github.com/mfuhrmann/spieli/issues/751). `es` and `fr` are otherwise complete and are blocked only on that.
+
+It also asserts the *reason* each unregistered language is excluded, so a language that becomes complete and clean fails the build until someone registers it. The exclusion stays a decision rather than decaying into an oversight.
 
 ## Adding new UI strings (developer workflow)
 

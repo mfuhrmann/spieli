@@ -5,7 +5,7 @@ For Copilot users: open this file manually — `.github/copilot-instructions.md`
 
 ## What this project is
 
-spieli is an interactive web map for exploring playgrounds based on OpenStreetMap data. It is deployable per-region (e.g. Fulda) by setting environment variables. The UI is fully internationalised via svelte-i18n; de, en, fr, and es include complete device name translations. `name_de` in `objPlaygroundEquipment.js` is a fallback for locales that do not yet have translations.
+spieli is an interactive web map for exploring playgrounds based on OpenStreetMap data. It is deployable per-region (e.g. Fulda) by setting environment variables. The UI is fully internationalised via svelte-i18n. **A locale file in `locales/` is not live until it is registered** in `app/src/lib/i18n.js` *and* listed in `SUPPORTED` there — `de`, `en` and `sk` today; the other ten files are unreachable at runtime, silently (#814). `app/src/lib/i18n.test.js` enforces that pairing and refuses to graduate a locale whose strings `intl-messageformat` cannot parse (`fr`/`es` are complete but blocked on #751). Separately, de, en, fr and es include complete device name translations. `name_de` in `objPlaygroundEquipment.js` is a fallback for locales that do not yet have translations.
 
 **Locale file ownership** — new UI strings go into `locales/en.json` (Weblate's source template) plus `locales/de.json`, in the same commit. **Never edit any other locale file by hand**; they belong to Weblate translators, and editing them directly breaks Weblate's rebase onto `main`. The `i18n Guard` CI job enforces this. See [`docs/contributing/translations.md`](docs/contributing/translations.md).
 
