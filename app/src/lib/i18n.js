@@ -21,8 +21,10 @@ import { defaultLocale as configuredLocale } from './config.js';
 // the build if a registered locale stops parsing):
 //
 //   de, en, sk  registered — complete and ICU-clean
-//   fr, es      ~96% complete but 20 malformed placeholders each; blocked on
-//               #751, and they are the only two worth graduating after it
+//   fr, es      ~96% complete but carrying strings the formatter cannot
+//               parse (14 and 12 respectively); blocked on #751, and #752 is
+//               the graduation task once it lands. They are the only two
+//               worth graduating: the rest are nowhere near the bar.
 //   others      ~20% translated, so placeholders are not what holds them back
 const SUPPORTED = ['de', 'en', 'sk'];
 
