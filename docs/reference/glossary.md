@@ -26,19 +26,25 @@ More: [osm2pgsql.org](https://osm2pgsql.org)
 
 More: [postgrest.org](https://postgrest.org)
 
-## Data Quality indicator
+## Mapping detail indicator
 
-Each playground carries a **Data Quality** badge whose colour reflects how completely it has been mapped in OpenStreetMap:
+Each playground carries a **Mapping detail** badge whose colour reflects how much of it has been mapped in OpenStreetMap:
 
 | Colour | Legend label | Meaning |
 |--------|-------------|---------|
-| Green  | hoch / high   | Photos, a name, and at least one detail (equipment, surface, …) are present |
-| Yellow | mittel / medium | At least one of the above is present, but not all |
-| Red    | niedrig / low  | None of the above — the playground exists in OSM but has no additional data |
+| Bright green | detailliert / detailed | Play infrastructure **and** at least one detail (surface, opening hours, or a non-trivial access value) |
+| Dark green   | grundlegend / basic | One of the two, not both |
+| Slate blue-grey | keine Details / no details yet | Neither — the playground exists in OSM but carries nothing else |
 
-The map legend is headed "Datenqualität" / "Data Quality" and uses short scale labels (hoch / mittel / niedrig). The panel badge also reads "Datenqualität" / "Data Quality" in the matching colour. The same three-state breakdown is used in cluster rings and the federation macro view.
+"Play infrastructure" means `playground=*` objects and soccer / basketball / table-tennis pitches. Benches, shelters and picnic tables do not count — a lone bench must not carry an otherwise unmapped playground.
 
-Internally, the three states are referred to as `complete`, `partial`, and `missing`. These values appear in the API responses (see [`api.md`](api.md)) and in the database (`playground_stats` materialised view). The display label is intentionally kept neutral — it describes *what* is shown, not a judgement.
+A photo is **not** part of the rating. It is shown separately as a camera glyph on the map.
+
+The map legend is headed "Erfasste Details" / "Mapping detail". The same three-state breakdown is used in cluster rings, the federation macro view and the hub instance drawer, all reading the same palette (`app/src/lib/completenessPalette.js`).
+
+The scale is a green-to-slate ramp rather than a traffic light: it measures how much of the map is filled in, not how good the playground is. The slate step means "nobody has mapped this yet — help out", not "bad playground". A plain grey was tried first and lost against the basemap, which draws residential landuse and buildings in warm greys of its own.
+
+Internally, the three states are referred to as `complete`, `partial`, and `missing`. These values appear in the API responses (see [`api.md`](api.md)) and in the database (`playground_stats` materialised view). They are deliberately *not* renamed to match the labels — federation between backends on different versions depends on them. Full rule in [`completeness.md`](completeness.md).
 
 ## Overpass Turbo
 

@@ -14,7 +14,7 @@
   //
   // Pre-P1 backends ship `get_meta` without the `complete/partial/missing`
   // extension. Their entries arrive with `completeness: null`; we render
-  // those as a flat gray ring (everything in the "restricted" segment) so
+  // those as a flat violet ring (everything in the "restricted" segment) so
   // the operator sees "data quality unknown" rather than a misleading
   // healthy-but-empty zero ring.
   //
