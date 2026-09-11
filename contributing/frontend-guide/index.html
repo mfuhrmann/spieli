@@ -1352,6 +1352,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Internationalisation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#language-attributes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Language attributes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -2215,6 +2232,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Internationalisation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#language-attributes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Language attributes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -2472,6 +2506,31 @@
 <td><code>7</code></td>
 <td>Hub macro view threshold</td>
 </tr>
+<tr>
+<td><code>defaultLocale</code></td>
+<td><code>''</code></td>
+<td>UI language; empty → browser language → <code>en</code></td>
+</tr>
+<tr>
+<td><code>regionLang</code></td>
+<td><code>'de'</code></td>
+<td>Language the served OSM data is named in</td>
+</tr>
+<tr>
+<td><code>regionCountry</code></td>
+<td><code>'de'</code></td>
+<td>Country for <code>opening_hours</code> holiday resolution</td>
+</tr>
+<tr>
+<td><code>regionState</code></td>
+<td><code>''</code></td>
+<td>Optional state refinement; empty → library default</td>
+</tr>
+<tr>
+<td><code>openingHoursAddress</code></td>
+<td>derived</td>
+<td><code>{ country_code, state? }</code> for the <code>opening_hours</code> constructor — use this, never a literal</td>
+</tr>
 </tbody>
 </table>
 <h2 id="the-tiered-orchestrator">The tiered orchestrator<a class="headerlink" href="#the-tiered-orchestrator" title="Permanent link">&para;</a></h2>
@@ -2583,6 +2642,27 @@
 <a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>&lt;p&gt;{$t('myKey')}&lt;/p&gt;
 </code></pre></div>
 <p>Add new keys to <code>locales/en.json</code> and <code>locales/de.json</code>. Translation to other languages happens via <a href="../translation-guide/">Weblate</a>.</p>
+<h3 id="language-attributes">Language attributes<a class="headerlink" href="#language-attributes" title="Permanent link">&para;</a></h3>
+<p>Two languages coexist on the page, and mixing them up is a WCAG failure:</p>
+<ul>
+<li><strong>Interface text</strong> is in the UI locale. <code>setupI18n()</code> writes it to
+  <code>document.documentElement.lang</code>, so translated strings need no <code>lang</code> of
+  their own — they inherit the right one. (<code>index.html</code> still ships a static
+  <code>lang="de"</code>; it is overwritten during init, before anything renders.)</li>
+<li><strong>OSM-derived text</strong> — playground names, and anything else read straight
+  from a tag — is in the region's language, not the interface's. Every
+  element rendering it carries <code>lang={regionLang}</code>.</li>
+</ul>
+<p>The rule matters most where the two meet. <code>getPlaygroundTitle()</code> returns
+either OSM name tags <em>or</em> the translated <code>nearby.defaultName</code> placeholder,
+and the returned string cannot tell you which. Ask <code>hasOsmName(attr)</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>$: titleLang = hasOsmName(attr) ? regionLang : $locale;
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>…
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>&lt;h2 lang={titleLang}&gt;{getPlaygroundTitle(attr, $_)}&lt;/h2&gt;
+</code></pre></div>
+<p>Current name render sites: <code>HoverPreview</code>, <code>PlaygroundPanel</code> (both header
+variants), <code>NearbyPlaygrounds</code>. If you add another, annotate it — an
+unannotated name silently inherits the interface language.</p>
 <h2 id="playground-themes">Playground themes<a class="headerlink" href="#playground-themes" title="Permanent link">&para;</a></h2>
 <p><code>playground:theme=*</code> (OSM) is meant to describe a whole playground's motto — a ship, castle, or octopus playground. The tag reaches the frontend on both the playground polygon and equipment features via the <code>hstore_to_jsonb(tags)</code> merge in <code>api.sql</code> (it is not an osm2pgsql column, so it is not stripped).</p>
 <p>In practice the key is dominated by two kinds of non-theme usage: tagging noise (<code>playground</code>/<code>play</code> are ~53% of all uses) and <strong>device-shape values</strong> — <code>horse</code>, <code>duck</code>, <code>elephant</code>, … tagged on a single <code>playground=springy</code> rider to describe its shape, not a playground theme. A springy can be shaped as anything, so those values are noise for our purposes. We therefore honour only an <strong>allowlist</strong> of documented whole-playground themes (<code>SUPPORTED_THEMES</code> in <code>lib/playgroundThemes.js</code>: ship, castle, spiderweb, water, adventure, rocket, dragon, octopus, circus). Everything else is dropped at the single <code>splitThemes</code> choke point, so it never reaches any consumer. Extend the allowlist by adding an entry to <code>THEME_ICONS</code> (the icon map <em>is</em> the allowlist) plus an <code>equipAttr.themes.*</code> label in each locale.</p>
