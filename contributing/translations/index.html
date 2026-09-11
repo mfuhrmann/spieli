@@ -2203,17 +2203,24 @@ things stand.</p>
 </table>
 <p>Lock state is not in <code>wlc show</code> — use <code>wlc lock-status</code>, which reads <code>GET /api/components/spieli/ui-strings/lock/</code>.</p>
 <h2 id="language-graduation">Language graduation<a class="headerlink" href="#language-graduation" title="Permanent link">&para;</a></h2>
-<p>Weblate collects translations for every registered language, but the app loads only the languages listed in <code>SUPPORTED</code> in <code>app/src/lib/i18n.js</code> — today that is <code>de</code> and <code>en</code>. There is no automatic threshold: reaching 100% in Weblate does not by itself make a language visible. Until a maintainer registers it, the locale file sits in the repo and users with that browser language fall back to English.</p>
+<p>Weblate collects translations for every registered language, but the app loads only the languages listed in <code>SUPPORTED</code> in <code>app/src/lib/i18n.js</code> — today that is <code>de</code>, <code>en</code> and <code>sk</code>. There is no automatic threshold: reaching 100% in Weblate does not by itself make a language visible. Until a maintainer registers it, the locale file sits in the repo and users with that browser language fall back to English.</p>
 <p><strong>≥ 80% completion</strong> is the bar a maintainer uses to decide a language is ready to activate. When a language crosses it:</p>
 <ol>
-<li>Open a PR editing <code>app/src/lib/i18n.js</code>:<ul>
+<li>
+<p>Open a PR editing <code>app/src/lib/i18n.js</code>:</p>
+<ul>
 <li>Add the language code to the <code>SUPPORTED</code> array</li>
 <li>Add a <code>register()</code> call: <code>register('&lt;lang&gt;', () =&gt; import('../../../locales/&lt;lang&gt;.json'));</code></li>
 </ul>
 </li>
-<li>Title the PR: <code>feat(i18n): add &lt;Language&gt; language support</code></li>
+<li>
+<p>Title the PR: <code>feat(i18n): add &lt;Language&gt; language support</code></p>
+</li>
 <li>After merging, run <code>make docker-build</code> — users with that browser language now see the app in their language</li>
 </ol>
+<p><code>app/src/lib/i18n.test.js</code> enforces both halves of that: a <code>register()</code> call without a <code>SUPPORTED</code> entry (or the reverse) fails the build, because either on its own is a silent no-op — the locale is simply never selected, with nothing logged. That is how Slovak sat complete and unreachable for weeks (<a href="https://github.com/mfuhrmann/spieli/issues/814">#814</a>).</p>
+<p>The same test refuses to let a language graduate while it still carries strings <code>intl-messageformat</code> cannot parse. The i18next-style <code>{{placeholder}}</code> form <strong>throws at render</strong> rather than degrading, so one bad string breaks whichever view uses it — see <a href="https://github.com/mfuhrmann/spieli/issues/751">#751</a>. <code>es</code> and <code>fr</code> are otherwise complete and are blocked only on that.</p>
+<p>It also asserts the <em>reason</em> each unregistered language is excluded, so a language that becomes complete and clean fails the build until someone registers it. The exclusion stays a decision rather than decaying into an oversight.</p>
 <h2 id="adding-new-ui-strings-developer-workflow">Adding new UI strings (developer workflow)<a class="headerlink" href="#adding-new-ui-strings-developer-workflow" title="Permanent link">&para;</a></h2>
 <p>New translatable strings <strong>must</strong> be added to <code>locales/en.json</code> first. <code>locales/de.json</code> must be updated in the <strong>same commit</strong>. Adding a key only to <code>de.json</code> breaks Weblate — it uses <code>locales/en.json</code> as the source template and won't surface keys that are absent from it.</p>
 <p><strong>Never edit the other locale files by hand.</strong> <code>es.json</code>, <code>fr.json</code>, <code>sk.json</code> and the rest are owned by Weblate. Editing one directly collides with whatever a translator has pending for that same file, and Weblate's rebase onto <code>main</code> breaks — which is exactly how the component sat in a merge-conflict error state from May to July 2026, blocking every translation from reaching the repo.</p>
