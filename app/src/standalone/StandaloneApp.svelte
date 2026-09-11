@@ -94,6 +94,18 @@
       detachMapSub?.();
       detachMapSub = null;
 
+      // Test hook: expose the OL map so the E2E suite can assert where the
+      // view came to rest (e.g. a deeplink frames the linked playground
+      // rather than the region). HubApp publishes the same property; without
+      // it here, the standalone deeplink test could only assert that a panel
+      // opened, which it does whether or not the map was moved away
+      // afterwards — which is how #774 stayed invisible.
+      // Namespaced under `__spieli` so it does not collide with anything else.
+      if (typeof window !== 'undefined') {
+        window.__spieli = window.__spieli ?? {};
+        window.__spieli.map = map;
+      }
+
       // Region fit via Nominatim bbox. The deeplink hash (if any) is read
       // BEFORE the await so the decision can't be invalidated by anything
       // that mutates window.location.hash while we're waiting on Nominatim.
@@ -128,12 +140,39 @@
           // so we don't fit eagerly. But if AppShell.tryRestoreFromHash
           // can't deliver (osm_id 404, hydration error, unknown slug, etc.)
           // no fit ever happens and the user lands on the OL default view.
-          // Fall back to the region view after a short delay if no moveend
-          // has fired — the deeplink-restore success path always fires one.
+          // Fall back to the region after a short delay if nothing was
+          // restored.
+          //
+          // The success signal is the `selection` store, not a `moveend`
+          // (#774). Two separate defects came from using the event:
+          //
+          //  1. A map event is edge-triggered: it exists only at the instant
+          //     it fires. This watcher was armed AFTER awaiting Nominatim, so
+          //     a slow lookup meant the restore's moveend had already passed
+          //     with nothing listening — the fallback then fired and threw
+          //     away the framing the restore had just done. Arming earlier
+          //     would only have shrunk that window. Subscribing to a store
+          //     removes it: a store replays its current value on subscribe,
+          //     so a restore that already happened is still observed.
+          //
+          //  2. `moveend` means "the map moved", not "the deeplink restored".
+          //     Any movement during load — a pan, auto-locate centring on a
+          //     GPS fix — satisfied it, suppressing a fallback that should
+          //     have run and stranding the visitor on the default extent.
+          //
+          // `restored` latches, and that is load-bearing rather than
+          // incidental: the question is "did a restore ever deliver", not
+          // "is something selected right now". Two paths clear the selection
+          // well inside 1500 ms — the tier deselect above (zoom out past
+          // clusterMaxZoom) and AppShell's mobile "back to map" — and reading
+          // the store live at timer time treats either as "nothing was
+          // restored", yanking the view to the region on top of a deliberate
+          // user action. The old moveend flag latched too, which is why it
+          // never showed this.
           let restored = false;
-          const onMove = () => { restored = true; };
-          map.once('moveend', onMove);
-          detachRegionFitWatcher = () => map.un('moveend', onMove);
+          detachRegionFitWatcher = selection.subscribe(sel => {
+            if (sel.feature) restored = true;
+          });
           regionFitTimer = setTimeout(() => {
             regionFitTimer = null;
             detachRegionFitWatcher?.();
