@@ -24,6 +24,16 @@ Each criterion is satisfied by the presence of **any** qualifying tag — `hasIn
 | `partial` | At least one criterion satisfied | Orange |
 | `missing` | No criteria satisfied | Red |
 
+## Colours
+
+The palette is a **single-hue green ramp ending in a cool slate**, not a traffic light. A diverging red/amber/green scale encodes "good versus bad", which reads as a verdict on the playground. This one encodes "more versus less", which is what the value measures.
+
+Ordering is by **visual weight**, not lightness: the brightest, most saturated green marks the most detailed playgrounds, so the map draws the eye to them rather than to the middle state. The trade-off is that `partial` is darker than both its neighbours, so the ramp is not monotonic in lightness and viewers with deuteranopia or protanopia cannot recover the full ordering from lightness alone. Green-versus-slate still separates cleanly, which is what the contribution prompt depends on.
+
+`complete` uses a higher fill alpha than the others (0.28 vs 0.22) — bright green at 0.22 over a light basemap barely registers. `missing` sits at 0.24 with a dark stroke: it covers most of the map (625 of 926 playgrounds in Fulda), so the outline carries "there is a playground here" while the fill stays out of the way. A plain grey was tried first at 0.18 and disappeared against the basemap, which draws residential landuse (`#e0dfdf`) and buildings (`#d9d0c9`) in warm greys of its own.
+
+All colours come from **`app/src/lib/completenessPalette.js`**, which documents which field each surface must use (`base` for anything opaque, `fill` only for shapes the basemap shows through or backgrounds carrying text). Every consumer reads from it: playground polygons, cluster rings, hub macro rings, the legend, the detail-panel badge dot, the filter dots, the nearby-playgrounds list and the hub instance drawer. Nothing may hardcode these values — picking the wrong field or a stale hex fails silently, with two surfaces simply disagreeing.
+
 ## Implementation
 
 The logic is maintained in two mirrored places that must stay in sync:

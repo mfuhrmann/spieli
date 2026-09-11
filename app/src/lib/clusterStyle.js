@@ -8,15 +8,11 @@
 // rounded to tenths → ~400 distinct shapes at the upper bound.
 
 import Style from 'ol/style/Style.js';
+import { COMPLETENESS_BASE } from './completenessPalette.js';
 
-// Ring segment colours match the CompletenessLegend fill palette
-// (vectorStyles.js fills) so the ring visually echoes the legend swatches
-// rather than the darker polygon strokes.
-const COLOR = {
-  complete: '#228b22', // rgb(34, 139, 34)  — legend "complete" fill base
-  partial:  '#eab308', // rgb(234, 179, 8)  — legend "partial"  fill base
-  missing:  '#ef4444', // rgb(239, 68, 68)  — legend "missing"  fill base
-};
+// Ring segment colours come from the shared mapping-detail palette, so the
+// ring, the polygons and the legend swatches cannot drift apart.
+const COLOR = COMPLETENESS_BASE;
 const CENTER_FILL   = 'rgba(255, 255, 255, 0.94)';
 const CENTER_STROKE = '#1f2937';
 const CENTER_TEXT   = '#1f2937';

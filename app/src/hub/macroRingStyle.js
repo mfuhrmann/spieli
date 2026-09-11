@@ -21,17 +21,29 @@
 
 import Style from 'ol/style/Style.js';
 import { radiusForCount } from '../lib/clusterStyle.js';
+import { COMPLETENESS_BASE } from '../lib/completenessPalette.js';
 
+// Mapping-detail segments come from the shared palette (see
+// lib/completenessPalette.js) so macro rings, cluster rings, polygons and the
+// legend cannot drift apart.
+//
+// `restricted` is a different axis — access, not mapping detail — and is drawn
+// as a fourth arc right next to `missing`, so the two must stay clearly apart.
+// It has moved twice for that reason: originally grey, which collided when
+// `missing` became grey; then slate-600, which collided again when `missing`
+// moved to slate-500. Violet settles it by leaving the neutral range
+// altogether, and reads as "different kind of thing" rather than "even less
+// mapped" — which is right, since restricted is about access.
 const COLOR = {
-  complete:   '#228b22', // legend "complete"  fill base
-  partial:    '#eab308', // legend "partial"   fill base
-  missing:    '#ef4444', // legend "missing"   fill base
-  restricted: '#9ca3af', // tailwind gray-400 — also used for unknown-completeness rings
+  ...COMPLETENESS_BASE,
+  restricted: '#7c3aed', // tailwind violet-600 — also used for unknown-completeness rings
 };
 const RING_WIDTH      = 14; // slightly thicker than cluster (12) for country-scale prominence
 const CENTER_FILL     = 'rgba(255, 255, 255, 0.95)';
 const CENTER_STROKE   = '#1f2937';
 const CENTER_TEXT     = '#1f2937';
+// gray-400. Free of the mapping-detail palette again since `missing` moved to
+// slate-500 — offline and no-match rings are the only plain greys left.
 const OFFLINE_STROKE   = '#9ca3af';
 const OFFLINE_FILL     = 'rgba(255, 255, 255, 0.85)';
 const OFFLINE_TEXT     = '#6b7280';
