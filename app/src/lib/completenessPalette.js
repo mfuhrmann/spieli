@@ -13,17 +13,44 @@
 // "more vs less", which is what the value actually measures: how much of this
 // playground has been mapped.
 //
-// Ordering is by VISUAL WEIGHT, not by lightness: the brightest, most
-// saturated green marks the most detailed playgrounds, so the map draws the
-// eye to them rather than to the middle state. An earlier revision ran
-// dark → light instead, which was monotonic in lightness but made the middle
-// state the loudest thing on the screen.
+// Ordering WAS by visual weight: `complete` was the brightest, most saturated
+// green (#4ade80), so the map drew the eye to well-mapped playgrounds rather
+// than to the middle state. That does not survive the basemap.
 //
-// Known trade-off: because `partial` is darker than both its neighbours, the
-// ramp is not monotonic in lightness, so viewers with deuteranopia or
-// protanopia cannot recover the full ordering from lightness alone. They can
-// still separate "green of some kind" from "slate", which is the distinction
-// that carries the contribution call to action.
+// `base` is drawn OPAQUE — cluster and macro ring arcs. Against the
+// OpenFreeMap Bright style the app now ships (desaturated, every landcover
+// surface between L* 87 and L* 96), #4ade80 measured 1.59:1 on the basemap
+// background, 1.35:1 over grass and 1.06:1 over water, against a 3:1 floor
+// for a graphical object. It also sat at 1.74:1 against the white separator
+// stroke the ring renderer draws between arcs, so the segment boundaries
+// disappeared along with the arc. The brightest colour in the ramp was the
+// least visible thing on the map — the intent inverted.
+//
+// On a near-light ground "brighter" and "≥ 3:1" pull in opposite directions,
+// so this cannot be fixed by retuning one hex: a search of the green space
+// returns nothing above 3:1 lighter than L* 31, which is darker than `partial`
+// was. The ramp therefore moves down a step — `complete` takes the green-700
+// that `partial` held, `partial` drops to a near-black green:
+//
+//     complete  #4ade80 → #15803d    worst-case contrast 1.06 → 3.06
+//     partial   #15803d → #052e16    worst-case contrast 3.06 → 9.10
+//
+// Both greens now clear 3:1 on every basemap surface except `complete` over
+// water, which is 3.06 and rare under a playground polygon.
+//
+// COST, recorded rather than solved — pick this up before merge:
+//   1. The ramp has lost its bright end. `complete` no longer pulls the eye by
+//      brightness, only by hue against slate. If that pull matters more than
+//      the contrast floor, the real fix is a thin dark casing on the arcs in
+//      stackedRingRenderer, which frees the palette to be bright again.
+//   2. `complete` (L* 47) and `missing` (L* 48) are now near-identical in
+//      lightness, separated by hue alone, so deuteranopic and protanopic
+//      viewers still cannot recover the ordering. The trade-off this comment
+//      used to describe has moved, not gone.
+//   3. `base` moved but `fill` did not — `complete` polygons are still mint
+//      while `complete` rings are green-700. The fills measured well over this
+//      basemap (ΔE 19.3–20.9) so there was no contrast reason to move them,
+//      but the two surfaces now disagree and must be reconciled.
 //
 // The zero case is a cool slate blue-grey, not a plain grey. A neutral colour
 // is right — it reads as "nothing here yet" rather than "bad playground",
@@ -69,13 +96,13 @@
  */
 export const COMPLETENESS_PALETTE = {
     complete: {
-        base:   '#4ade80',
+        base:   '#15803d',
         fill:   'rgba(74, 222, 128, 0.28)',
         stroke: '#15803d',
         hatch:  { stroke: 'rgba(22, 163, 74, 0.55)',  bg: 'rgba(74, 222, 128, 0.08)' },
     },
     partial: {
-        base:   '#15803d',
+        base:   '#052e16',
         fill:   'rgba(21, 128, 61, 0.22)',
         stroke: '#14532d',
         hatch:  { stroke: 'rgba(21, 128, 61, 0.55)',  bg: 'rgba(21, 128, 61, 0.08)' },
