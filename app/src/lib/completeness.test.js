@@ -164,4 +164,37 @@ import { playgroundCompleteness, hasPhotoSignal } from './completeness.js';
   assert.equal(hasPhotoSignal({ device_count: 3, surface: 'sand' }), false);
 }
 
+// --- the shared truth table ---
+
+// 17. f(hasEquipment, hasInfo) over all four combinations.
+//
+// THE TRUTH TABLE. The SQL side asserts the identical four rows in the
+// "Assert JS/SQL rule parity" step of .github/workflows/db-smoke.yml, which
+// names this case. Edit both or neither — a rule that holds on one side only
+// puts the same playground in different buckets depending on whether it came
+// from Overpass or PostgREST.
+{
+  const truthTable = [
+    // hasEquipment, hasInfo, expected
+    [false, false, 'missing'],
+    [false, true,  'partial'],
+    [true,  false, 'partial'],
+    [true,  true,  'complete'],
+  ];
+  // device_count carries hasEquipment, surface carries hasInfo — both are
+  // plain inputs to the respective flag, so the case exercises the rule
+  // rather than the flag derivation (cases 1-13 cover that).
+  for (const [hasEquipment, hasInfo, expected] of truthTable) {
+    const attr = {
+      ...(hasEquipment ? { device_count: 1 } : {}),
+      ...(hasInfo ? { surface: 'sand' } : {}),
+    };
+    assert.equal(
+      playgroundCompleteness(attr),
+      expected,
+      `hasEquipment=${hasEquipment} hasInfo=${hasInfo} should be ${expected}`,
+    );
+  }
+}
+
 console.log('All completeness tests passed.');

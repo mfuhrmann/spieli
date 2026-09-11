@@ -62,7 +62,7 @@ The rule is maintained in two mirrored places that must stay in sync:
 - **Frontend**: `app/src/lib/completeness.js` — `playgroundCompleteness(props)` and `hasPhotoSignal(props)`
 - **Database**: `importer/api.sql`, CTE `completeness_attrs` feeding the `playground_stats` materialized view
 
-Both are pinned to the same truth table: case 18 in `app/src/lib/completeness.test.js` on the JS side, and the "Assert JS/SQL rule parity" step in `.github/workflows/db-smoke.yml` on the SQL side. That step also asserts the live view definition still carries the rule, so an edit to one side without the other fails CI.
+Both are pinned to the same truth table: case 17 in `app/src/lib/completeness.test.js` on the JS side, and the "Assert JS/SQL rule parity" step in `.github/workflows/db-smoke.yml` on the SQL side. That step also asserts the live view definition still carries the rule, so an edit to one side without the other fails CI.
 
 Run `make db-apply` after changing the SQL definition to rebuild the materialized view. No re-import is needed — the view is derived.
 
