@@ -47,12 +47,13 @@
 //      brightness, only by hue against slate. If that pull matters more than
 //      the contrast floor, the real fix is a thin dark casing on the arcs in
 //      stackedRingRenderer, which frees the palette to be bright again.
-//   2. `complete` (L* 47) and `missing` (L* 48) are now near-identical in
-//      lightness, separated by hue alone, so deuteranopic and protanopic
-//      viewers still cannot recover the ordering. The trade-off this comment
-//      used to describe has moved, not gone.
-//   3. `missing` measures 2.91:1 over water — still under the 3:1 floor the
-//      greens were moved to clear.
+//   2. The ramp is still not monotonic in lightness. `missing` now sits
+//      BETWEEN the two greens (complete L* 47, missing L* 36, partial L* 16),
+//      so all three are separable by lightness, but the order reads
+//      complete > missing > partial rather than complete > partial > missing.
+//      Workable — hue carries the categorical split (green = mapped, slate =
+//      not), lightness orders the two green steps — but it is not the clean
+//      sequential ramp the module claims above.
 //
 // (A fourth — `base` moving while `fill` stayed behind — is fixed: every
 // surface colour is now derived from one `base` per bucket, below, so the two
@@ -64,6 +65,13 @@
 // low alpha disappeared into the basemap, which renders residential landuse
 // (#e0dfdf) and buildings (#d9d0c9) in warm greys of its own. The slight blue
 // cast separates it from those without making it look like a judgement.
+//
+// It sits at slate-600 (#475569), not slate-500. Slate-500 measured 2.91:1
+// over water — under the same 3:1 floor for a graphical object that moved the
+// greens down a step, so it failed the rule the rest of the ramp was rebuilt
+// to satisfy. Slate-600 is 4.63:1 worst case. The move also pulls `missing`
+// (L* 36) clear of `complete` (L* 47), which had collided at L* 48 and left
+// the two indistinguishable by lightness.
 //
 // This bucket covers most of the map — 625 of 926 playgrounds in Fulda — so it
 // has to stay quiet while remaining findable. Its fill sits at 0.24 with a
@@ -114,7 +122,7 @@
 const BASE = {
     complete: '#15803d',
     partial:  '#052e16',
-    missing:  '#64748b',
+    missing:  '#475569',
 };
 
 /** Outline colour. Not derived: it is chosen for contrast against the fill. */
