@@ -36,8 +36,9 @@ Four consequences are recorded in `app/src/lib/completenessPalette.js` and **not
 
 1. The ramp has lost its bright end — `complete` no longer pulls the eye by brightness, only by hue against slate.
 2. `complete` (L\* 47) and `missing` (L\* 48) are near-identical in lightness, so deuteranopic and protanopic viewers cannot recover the ordering.
-3. `base` moved but `fill` did not, so `complete` polygons are still mint while `complete` rings and legend swatches are green-700.
-4. `missing` measures 2.91:1 over water — still under the floor the greens were moved to clear.
+3. `missing` measures 2.91:1 over water — still under the floor the greens were moved to clear.
+
+A fourth — `base` moving while the polygon `fill` stayed behind — is resolved: `fill`, `hatch` and the ring colour are all derived from a single `base` per bucket, at one shared alpha, so they cannot drift apart again. Note that the polygon tier is inherently a weaker signal than the legend implies: as opaque ring arcs `complete` and `partial` are ΔE 42 apart, but as translucent fills over a near-white basemap they are ΔE 12.
 
 All colours come from **`app/src/lib/completenessPalette.js`**, which documents which field each surface must use (`base` for anything opaque, `fill` only for shapes the basemap shows through or backgrounds carrying text). Every consumer reads from it: playground polygons, cluster rings, hub macro rings, the legend, the detail-panel badge, the filter dots, the nearby-playgrounds list and the hub instance drawer. Nothing may hardcode these values — picking the wrong field or a stale hex fails silently, with two surfaces simply disagreeing.
 
