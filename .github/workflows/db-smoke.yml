@@ -13,6 +13,10 @@ on:
       # commit's PR ran none of the jobs it edits.
       - '.github/workflows/db-smoke.yml'
       - 'dev/ci/planet-osm-tables.sql'
+      # The JS half of the mirrored mapping-detail rule. Without this a change
+      # to completeness.js alone never runs the parity check below — which is
+      # precisely the drift direction it exists to catch.
+      - 'app/src/lib/completeness.js'
 
 jobs:
   db-smoke:
@@ -68,6 +72,108 @@ jobs:
           IMPRESSUM_URL: ""
           PRIVACY_URL: ""
           SITE_URL: http://localhost:8080
+
+      - name: Assert JS/SQL rule parity
+        # The mapping-detail rule is implemented twice — here in the
+        # playground_stats CASE, and in app/src/lib/completeness.js. If they
+        # drift, a feature classified from Overpass data lands in a different
+        # bucket than the same feature from PostgREST.
+        #
+        # The truth table below is the same one asserted on the JS side by
+        # case 17 in app/src/lib/completeness.test.js. Edit both or neither.
+        #
+        # Extracts the CASE straight out of the live view definition rather
+        # than restating it, so a change to api.sql that is not reflected here
+        # fails instead of silently passing.
+        #
+        # Failure is signalled with RAISE EXCEPTION, not a `1/0` in a CASE
+        # branch: `1/0` is a constant subexpression, so PostgreSQL folds it at
+        # planning time and raises division_by_zero whether or not the branch
+        # is reached. (It appears to work when the WHEN condition is also
+        # constant — the planner then discards the whole CASE.)
+        run: |
+          set -eu
+          docker compose exec -T db psql -U osm -d osm -v ON_ERROR_STOP=1 <<'SQL'
+          DO $parity$
+          DECLARE
+            viewdef  text;
+            equipdef text;
+            col      text;
+          BEGIN
+            -- 1. What has_equipment is MADE OF, read out of the live view.
+            --
+            -- The CASE shape checked below stays valid no matter what feeds
+            -- has_equipment, so pinning the shape alone would let the #776
+            -- regression back in: re-add COALESCE(es.bench_count, 0) > 0 to
+            -- the completeness_attrs CTE and a lone bench once again carries
+            -- an otherwise unmapped playground to 'complete'. The CASE would
+            -- not change by one character.
+            --
+            -- pg_get_viewdef renames the join alias (es -> es_1), so the
+            -- pattern matches any es/es_N.
+            --
+            -- Both quantifiers are non-greedy on purpose. In Postgres the
+            -- overall greediness of an RE is decided by its FIRST quantifier,
+            -- so a greedy [_0-9]* makes the trailing .*? greedy too — the
+            -- match then runs past this expression to the outer SELECT's
+            -- `COALESCE(ca.has_equipment, false) AS has_equipment`, 1600
+            -- characters later, dragging the whole column list in with it.
+            -- That sweeps up `bench_count` and fails on a correct tree.
+            viewdef := pg_get_viewdef('public.playground_stats'::regclass);
+
+            equipdef := substring(viewdef from '\(\(COALESCE\(es[_0-9]*?\.device_count.*?AS has_equipment');
+            IF equipdef IS NULL THEN
+              RAISE EXCEPTION
+                'could not locate the has_equipment expression in playground_stats — '
+                'the CTE was restructured; update this check with it';
+            END IF;
+
+            FOREACH col IN ARRAY ARRAY['device_count','table_tennis_count','has_soccer','has_basketball'] LOOP
+              IF position(col IN equipdef) = 0 THEN
+                RAISE EXCEPTION
+                  'has_equipment no longer counts %, but completeness.js still does', col;
+              END IF;
+            END LOOP;
+
+            -- Street furniture and the flags derived from equipment tags are
+            -- deliberately excluded (#733, #776). A bench is not something to
+            -- play on, and for_wheelchair can be set by a bench carrying
+            -- wheelchair=yes.
+            FOREACH col IN ARRAY ARRAY['bench_count','shelter_count','picnic_count',
+                                       'is_water','for_baby','for_toddler','for_wheelchair'] LOOP
+              IF position(col IN equipdef) > 0 THEN
+                RAISE EXCEPTION
+                  'has_equipment counts % again — street furniture and derived flags '
+                  'must not carry a playground (#776)', col;
+              END IF;
+            END LOOP;
+            RAISE NOTICE 'OK: has_equipment counts play infrastructure only';
+
+            -- 2. The live matview must actually carry that rule, and must not
+            --    have has_photo back in the classification.
+            --
+            -- pg_get_viewdef normalises: it parenthesises the condition and
+            -- casts the literals, so the stored text reads
+            --   WHEN (ca.has_equipment AND ca.has_info) THEN 'complete'::text
+            -- The parens and cast are optional in the pattern so a future
+            -- formatting change in PostgreSQL doesn't fail this check
+            -- spuriously.
+            IF viewdef !~ 'WHEN \(?ca\.has_equipment AND ca\.has_info\)? THEN ''complete''' THEN
+              RAISE EXCEPTION
+                'playground_stats no longer classifies on has_equipment AND has_info — '
+                'api.sql and completeness.js have drifted apart';
+            END IF;
+
+            IF viewdef ~ 'has_photo AND' THEN
+              RAISE EXCEPTION
+                'playground_stats has has_photo back in the completeness CASE — '
+                'the photo is an additive marker, not a rating input (#733)';
+            END IF;
+            RAISE NOTICE 'OK: playground_stats carries the equipment/info rule';
+          END
+          $parity$;
+          SQL
+        timeout-minutes: 2
 
   daemon-bootstrap:
     name: Daemon mode bootstraps a fresh database

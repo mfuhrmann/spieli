@@ -108,15 +108,18 @@ The completeness logic in `api.sql` must stay in sync with `app/src/lib/complete
 
 | Criterion | SQL (api.sql) | JS (completeness.js) |
 |---|---|---|
-| Has photo | `tags` contains key `panoramax` or a key starting with `panoramax:` | `Object.keys(props).some(k => k.startsWith('panoramax'))` |
-| Has name | `name IS NOT NULL` (`name` is a dedicated column) | `!!props.name` |
-| Has info | `surface` set, or `access` set and not `'yes'`, or `opening_hours` set | `!!(props.surface \|\| …)` |
+| Has equipment | a `playground=*` object inside the area, or a soccer / basketball / table-tennis pitch | `device_count > 0 \|\| table_tennis_count > 0 \|\| has_soccer \|\| has_basketball` |
+| Has info | `surface` set, or `access` set and not `'yes'`, or `opening_hours` set | `!!(props.opening_hours \|\| props.surface \|\| (props.access && props.access !== 'yes'))` |
 
-Note: `operator` is present in the JS completeness check but intentionally absent from the SQL criterion — the SQL view was narrowed to attributes that directly inform a parent's visit decision.
+- `complete` = both present
+- `partial` = exactly one present
+- `missing` = neither
 
-- `complete` = all three present
-- `partial` = at least one present
-- `missing` = none present
+**Street furniture does not count as equipment.** Benches, shelters and picnic tables are often mapped inside a playground area by someone who never mapped the play equipment, so counting them lifts playgrounds that have nothing to play on. The flags derived from equipment tags (`is_water`, `for_baby`, `for_toddler`, `for_wheelchair`) are excluded for the same reason — a bench carrying `wheelchair=yes` is the same false signal through a side door ([#776](https://github.com/mfuhrmann/spieli/issues/776)).
+
+**A photo is not a criterion.** Photo tags are rare in OSM, so requiring one for the top bucket gated whole regions out of it. Availability is still derived — `has_photo` on `playground_stats`, `hasPhotoSignal()` in JS — but only to drive an additive marker, never the rating. `name` and `operator` are not criteria either: administrative data, not useful to a parent choosing a playground.
+
+Full rationale in [`../reference/completeness.md`](../reference/completeness.md).
 
 **If you change the completeness criteria**, update both files and rebuild the materialised view with `make db-apply`.
 
