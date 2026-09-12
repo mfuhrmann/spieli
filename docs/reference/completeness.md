@@ -96,4 +96,4 @@ All UI strings live under the `mappingDetail.*` namespace in `locales/de.json` a
 
 `completeness.restrictedHint` stays in its old namespace — access restriction is a separate axis from mapping detail.
 
-The filter labels under `filter.completeness.*` use the same wording (`detailliert` / `grundlegend` / `keine Details`); the filter keys themselves (`showComplete`, `showPartial`, `showMissing`) keep the identifier naming.
+The filter labels under `filter.mappingDetail.*` use the same wording (`detailliert` / `grundlegend` / `keine Details`); the filter keys themselves (`showComplete`, `showPartial`, `showMissing`) keep the identifier naming.
