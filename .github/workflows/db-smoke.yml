@@ -32,31 +32,55 @@ jobs:
 
       - name: Wait for database
         run: |
-          # pg_isready is NOT enough, and both jobs in this file failed on it:
-          # "FATAL: database osm does not exist" at the very next step. The
-          # postgres entrypoint runs initdb and the init scripts against a
-          # temporary server on the unix socket, and pg_isready reports that
-          # server ready — so it succeeds before POSTGRES_DB has been created.
-          # Wait for a real connection to the database instead.
-          until docker compose exec -T db psql -U osm -d osm -c 'SELECT 1' >/dev/null 2>&1; do
+          # Connect over TCP, not the unix socket, and not pg_isready.
+          #
+          # The postgres entrypoint runs initdb and everything in
+          # /docker-entrypoint-initdb.d against a TEMPORARY server, then shuts
+          # it down and starts the real one. That temporary server sets
+          # listen_addresses='' — it answers on the unix socket ONLY. So both
+          # pg_isready and a socket `psql -c 'SELECT 1'` go green partway
+          # through init, before db/init.sql has created the hstore extension
+          # and the api schema.
+          #
+          # Measured against this compose file, polling once a second:
+          #
+          #   probe4   socket=UP  tcp=--  hstore=0   <- old loop exited HERE
+          #   probe5   socket=UP  tcp=--  hstore=1
+          #   probe11  socket=--  tcp=--             <- temp server shut down
+          #   probe14  socket=--  tcp=UP  hstore=1   <- real server
+          #
+          # Exiting at probe4 is what made every later step run against a
+          # database with no hstore and no api schema.
+          until docker compose exec -T db sh -c \
+                'PGPASSWORD="$POSTGRES_PASSWORD" psql -h 127.0.0.1 -U osm -d osm -c "SELECT 1"' \
+                >/dev/null 2>&1; do
             sleep 1
           done
         timeout-minutes: 2
 
       - name: Load osm2pgsql table stubs
-        run: docker compose exec -T db psql -U osm -d osm < dev/ci/planet-osm-tables.sql
+        # ON_ERROR_STOP, or psql reports success after every statement failed.
+        run: |
+          set -euo pipefail
+          docker compose exec -T db psql -U osm -d osm -v ON_ERROR_STOP=1 \
+            < dev/ci/planet-osm-tables.sql
 
       - name: Apply api.sql on blank DB
         # Mirrors the two-pass logic in `make db-apply`:
         # ALTER SYSTEM runs outside a transaction; everything else in one.
         run: |
+          # ON_ERROR_STOP is load-bearing: without it psql exits 0 after
+          # rolling back a --single-transaction batch, so a wholesale failure
+          # of api.sql reported as a passing step. pipefail is needed too —
+          # the exit status of `envsubst | grep | psql` is psql's alone.
+          set -euo pipefail
           SUBST_VARS='$OSM_RELATION_ID $PG_MAX_PARALLEL_WORKERS $PG_MAX_PARALLEL_WORKERS_PER_GATHER $PG_MAX_PARALLEL_MAINTENANCE_WORKERS $PG_MAINTENANCE_WORK_MEM $PG_WORK_MEM $SPIELI_VERSION $IMPRESSUM_URL $PRIVACY_URL $SITE_URL'
           envsubst "$SUBST_VARS" < importer/api.sql \
             | grep -E '^ALTER SYSTEM' \
-            | docker compose exec -T db psql -U osm -d osm
+            | docker compose exec -T db psql -U osm -d osm -v ON_ERROR_STOP=1
           envsubst "$SUBST_VARS" < importer/api.sql \
             | grep -v '^ALTER SYSTEM' \
-            | docker compose exec -T db psql -U osm -d osm --single-transaction
+            | docker compose exec -T db psql -U osm -d osm -v ON_ERROR_STOP=1 --single-transaction
         env:
           OSM_RELATION_ID: 62700
           PG_MAX_PARALLEL_WORKERS: 2
@@ -91,13 +115,28 @@ jobs:
 
       - name: Wait for database
         run: |
-          # pg_isready is NOT enough, and both jobs in this file failed on it:
-          # "FATAL: database osm does not exist" at the very next step. The
-          # postgres entrypoint runs initdb and the init scripts against a
-          # temporary server on the unix socket, and pg_isready reports that
-          # server ready — so it succeeds before POSTGRES_DB has been created.
-          # Wait for a real connection to the database instead.
-          until docker compose exec -T db psql -U osm -d osm -c 'SELECT 1' >/dev/null 2>&1; do
+          # Connect over TCP, not the unix socket, and not pg_isready.
+          #
+          # The postgres entrypoint runs initdb and everything in
+          # /docker-entrypoint-initdb.d against a TEMPORARY server, then shuts
+          # it down and starts the real one. That temporary server sets
+          # listen_addresses='' — it answers on the unix socket ONLY. So both
+          # pg_isready and a socket `psql -c 'SELECT 1'` go green partway
+          # through init, before db/init.sql has created the hstore extension
+          # and the api schema.
+          #
+          # Measured against this compose file, polling once a second:
+          #
+          #   probe4   socket=UP  tcp=--  hstore=0   <- old loop exited HERE
+          #   probe5   socket=UP  tcp=--  hstore=1
+          #   probe11  socket=--  tcp=--             <- temp server shut down
+          #   probe14  socket=--  tcp=UP  hstore=1   <- real server
+          #
+          # Exiting at probe4 is what made every later step run against a
+          # database with no hstore and no api schema.
+          until docker compose exec -T db sh -c \
+                'PGPASSWORD="$POSTGRES_PASSWORD" psql -h 127.0.0.1 -U osm -d osm -c "SELECT 1"' \
+                >/dev/null 2>&1; do
             sleep 1
           done
         timeout-minutes: 2
