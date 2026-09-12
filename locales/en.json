@@ -33,7 +33,7 @@
       "theme": "Themed",
       "shade": "With shade"
     },
-    "completeness": {
+    "mappingDetail": {
       "title": "Mapping detail",
       "showComplete": "detailed",
       "showPartial": "basic",
@@ -98,7 +98,7 @@
     "shadow": "Shade",
     "surroundings": "Surroundings",
     "reviews": "Reviews",
-    "completeness": "Mapping detail"
+    "mappingDetail": "Mapping detail"
   },
   "location": {
     "btn": "My location",

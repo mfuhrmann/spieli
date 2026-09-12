@@ -33,7 +33,7 @@
       "theme": "Mit Thema",
       "shade": "Mit Schatten"
     },
-    "completeness": {
+    "mappingDetail": {
       "title": "Erfasste Details",
       "showComplete": "detailliert",
       "showPartial": "grundlegend",
@@ -98,7 +98,7 @@
     "shadow": "Schattigkeit",
     "surroundings": "Umfeld",
     "reviews": "Bewertungen",
-    "completeness": "Erfasste Details"
+    "mappingDetail": "Erfasste Details"
   },
   "location": {
     "btn": "Standort verfolgen",

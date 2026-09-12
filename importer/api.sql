@@ -433,7 +433,7 @@ CREATE MATERIALIZED VIEW public.playground_stats_new AS
     -- separate marker.
     --
     -- These values are wire identifiers, not labels. 'complete' is displayed
-    -- as "detailed", 'partial' as "basic", 'missing' as "not mapped yet"
+    -- as "detailed", 'partial' as "basic", 'missing' as "no details yet"
     -- (locales/*.json, `mappingDetail.*`). Renaming them would break
     -- mixed-version federation.
     CASE
