@@ -56,7 +56,7 @@ The rule is maintained in two mirrored places that must stay in sync:
 - **Frontend**: `app/src/lib/completeness.js` — `playgroundCompleteness(props)` and `hasPhotoSignal(props)`
 - **Database**: `importer/api.sql`, CTE `completeness_attrs` feeding the `playground_stats` materialized view
 
-Both are pinned to the same truth table: case 17 in `app/src/lib/completeness.test.js` on the JS side, and the "Assert JS/SQL rule parity" step in `.github/workflows/db-smoke.yml` on the SQL side. That step also asserts the live view definition still carries the rule, so an edit to one side without the other fails CI.
+Both sides are guarded. Case 17 in `app/src/lib/completeness.test.js` walks the truth table in JS. The "Assert JS/SQL rule parity" step in `.github/workflows/db-smoke.yml` does the SQL side by reading the live view definition rather than restating it: it extracts the `has_equipment` expression and fails if it stops counting any of `device_count` / `table_tennis_count` / `has_soccer` / `has_basketball`, or if it starts counting street furniture or a derived flag again ([#776](https://github.com/mfuhrmann/spieli/issues/776)). It then checks the classification `CASE` still reads `has_equipment AND has_info` and has not taken `has_photo` back as an input. `app/src/lib/completeness.js` is one of the workflow's path triggers, so a change to the JS half alone still runs it.
 
 Run `make db-apply` after changing the SQL definition to rebuild the materialized view. No re-import is needed — the view is derived.
 
