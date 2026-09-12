@@ -21,6 +21,7 @@
   import { overlayFeaturesStore } from '../stores/overlayLayer.js';
   import { groupEquipment } from '../lib/equipmentGrouping.js';
   import { playgroundCompleteness } from '../lib/completeness.js';
+  import { COMPLETENESS_PALETTE } from '../lib/completenessPalette.js';
   import { poiRadiusM, appMode, mapMinZoom, regionLang, openingHoursAddress } from '../lib/config.js';
   import { getPlaygroundTitle, getPlaygroundLocation, hasOsmName } from '../lib/playgroundHelpers.js';
   import { aggregatePlaygroundThemes, areaThemesOf, themeIcon, themeName } from '../lib/playgroundThemes.js';
@@ -337,20 +338,28 @@
     closeDataAgePopover();
   });
 
-  // ── Completeness badge ────────────────────────────────────────────────────
-  const COMPLETENESS_VARIANT = {
-    complete: 'success',
-    partial:  'warning',
-    missing:  'destructive',
-  };
-  const COMPLETENESS_KEY = {
+  // ── Mapping-detail badge ──────────────────────────────────────────────────
+  // Tinted from the shared map palette rather than a semantic Badge variant,
+  // so the badge colour always equals the polygon the user just tapped. The
+  // old success/warning/destructive variants encoded a verdict ("this one is
+  // bad"), which is exactly the reading being removed (#733).
+  const MAPPING_DETAIL_KEY = {
     complete: 'completeness.badgeComplete',
     partial:  'completeness.badgePartial',
     missing:  'completeness.badgeMissing',
   };
   $: completenessLevel = attr ? playgroundCompleteness(attr) : null;
   $: completeness = completenessLevel
-    ? { variant: COMPLETENESS_VARIANT[completenessLevel], key: COMPLETENESS_KEY[completenessLevel] }
+    ? {
+        key: MAPPING_DETAIL_KEY[completenessLevel],
+        // Tinted background rather than the solid base: dark text on solid
+        // #15803d is unreadable. The dot carries the identity colour, so the
+        // badge still ties visually to the legend swatches and ring segments.
+        style: `background: ${COMPLETENESS_PALETTE[completenessLevel].fill};`
+             + `border-color: ${COMPLETENESS_PALETTE[completenessLevel].stroke};`
+             + 'color: #1f2937;',
+        dot: COMPLETENESS_PALETTE[completenessLevel].base,
+      }
     : null;
 
   // ── Opening hours ─────────────────────────────────────────────────────────
@@ -568,11 +577,14 @@
         <p class="text-sm text-muted-foreground italic mb-3">{part}</p>
       {/each}
 
-      <!-- Data Quality + Data Age -->
+      <!-- Mapping detail + data age -->
       {#if completeness || dataAgeFormatted}
         <div class="status-row mb-4">
           {#if completeness}
-            <Badge variant={completeness.variant}>{$_(completeness.key)}</Badge>
+            <Badge variant="outline" class="gap-1.5" style={completeness.style}>
+              <span class="detail-dot" style="background: {completeness.dot};" aria-hidden="true"></span>
+              {$_(completeness.key)}
+            </Badge>
           {/if}
           {#if dataAgeFormatted}
             <button
@@ -1190,6 +1202,14 @@
   }
 
   /* ── Data-age chip + fixed popover ──────────────────────────────────── */
+  .detail-dot {
+    display: inline-block;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
   .data-age-chip {
     display: inline-flex;
     align-items: center;

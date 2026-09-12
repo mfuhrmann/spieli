@@ -263,6 +263,21 @@ Themes are panel-only — no map symbols (discovery is deferred).
 
 The app uses Bootstrap 5 (component classes) and Tailwind CSS 4 (utility classes) side by side. The design system primitives in `src/components/ui/` (`Badge`, `Button`, `Card`, etc.) wrap Bootstrap with Tailwind utilities. Prefer these over raw Bootstrap classes in new components.
 
+### The mapping-detail palette
+
+`src/lib/completenessPalette.js` is the single source of truth for the three mapping-detail colours (`complete` / `partial` / `missing`). **Never hardcode these values anywhere else.**
+
+Each bucket exposes `base`, `fill`, `stroke` and `hatch`. The module documents which surface uses which field; the short version is that anything opaque takes `base`, and only shapes the basemap shows through — or backgrounds carrying text — take `fill`. Getting this wrong is silent: nothing errors, two surfaces simply render the same bucket in different colours.
+
+Consumers today: `vectorStyles.js` (polygons), `clusterStyle.js`, `hub/macroRingStyle.js`, `CompletenessLegend.svelte`, `PlaygroundPanel.svelte`, `FilterPanel.svelte`, `NearbyPlaygrounds.svelte`, `hub/InstancePanelDrawer.svelte`.
+
+Svelte `<style>` blocks cannot import, so components that colour elements via CSS classes read the palette in `<script>` and expose it as custom properties (`--detail-complete` and friends) on the wrapping element. `FilterPanel`, `NearbyPlaygrounds` and `InstancePanelDrawer` all follow that pattern — copy it rather than reintroducing literals.
+
+Two rendering traps worth knowing:
+
+- OpenLayers' `renderPolygonGeometry` handles fill, stroke and text only. An `image` style attached to a Polygon is **silently dropped** — no render, no warning. Give it a `geometry` function returning the polygon's interior point.
+- `hub/macroRingStyle.js` colours `restricted` (violet-600) on a different axis from the mapping-detail buckets — access, not detail. `deriveMacroRing` sets `restricted: 0` whenever a backend reports completeness and routes the whole count into it only when completeness is unknown, so `restricted` and `missing` never share a ring. They do sit side by side as separate rings on the same macro view, which is why the two colours still have to stay apart.
+
 ## See also
 
 - [Local Development](local-dev.md) — dev server setup

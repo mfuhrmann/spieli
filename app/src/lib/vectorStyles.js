@@ -8,6 +8,7 @@ import Circle from 'ol/style/Circle.js';
 
 import { objDevices, objFeatures } from './objPlaygroundEquipment.js';
 import { playgroundCompleteness } from './completeness.js';
+import { COMPLETENESS_PALETTE, COMPLETENESS_ORDER } from './completenessPalette.js';
 
 // ── Playground completeness colours ──────────────────────────────────────────
 
@@ -28,41 +29,43 @@ function makeHatchPattern(color, bgColor) {
     return ctx.createPattern(canvas, 'repeat');
 }
 
-// Lazily initialised — canvas only available in browser context
-let _hatchComplete, _hatchPartial, _hatchMissing;
+// Lazily initialised — canvas only available in browser context.
+//
+// Built into a local and assigned only once complete: assigning the cache
+// before filling it would satisfy the guard even if makeHatchPattern threw
+// partway through (getContext('2d') returns null outside a browser, so the
+// next line throws). The first restricted polygon would take the error and
+// every later one would silently get `new Fill({ color: undefined })` and
+// render unfilled. Assigning at the end keeps the null guard meaningful, so
+// a failed attempt is simply retried on the next call.
+let _hatchCache = null;
 function getHatch(type) {
-    if (!_hatchComplete) {
-        _hatchComplete = makeHatchPattern('rgba(34,139,34,0.55)',  'rgba(34,139,34,0.08)');
-        _hatchPartial  = makeHatchPattern('rgba(180,130,0,0.55)',  'rgba(234,179,8,0.08)');
-        _hatchMissing  = makeHatchPattern('rgba(200,50,50,0.55)',  'rgba(239,68,68,0.06)');
+    if (!_hatchCache) {
+        const cache = {};
+        for (const key of COMPLETENESS_ORDER) {
+            const { hatch } = COMPLETENESS_PALETTE[key];
+            cache[key] = makeHatchPattern(hatch.stroke, hatch.bg);
+        }
+        _hatchCache = cache;
     }
-    return type === 'complete' ? _hatchComplete
-         : type === 'partial'  ? _hatchPartial
-         : _hatchMissing;
+    return _hatchCache[type] ?? _hatchCache.missing;
 }
 
-const _styleComplete = new Style({
-    fill: new Fill({ color: 'rgba(34, 139, 34, 0.22)' }),
-    stroke: new Stroke({ color: '#155215', width: 1.5 })
-});
-const _stylePartial = new Style({
-    fill: new Fill({ color: 'rgba(234, 179, 8, 0.22)' }),
-    stroke: new Stroke({ color: '#92400e', width: 1.5 })
-});
-const _styleMissing = new Style({
-    fill: new Fill({ color: 'rgba(239, 68, 68, 0.18)' }),
-    stroke: new Stroke({ color: '#991b1b', width: 1.5 })
-});
+const _polygonStyles = Object.fromEntries(
+    COMPLETENESS_ORDER.map(key => [key, new Style({
+        fill: new Fill({ color: COMPLETENESS_PALETTE[key].fill }),
+        stroke: new Stroke({ color: COMPLETENESS_PALETTE[key].stroke, width: 1.5 })
+    })])
+);
 
 function makeHatchStyle(type) {
-    const colors = {
-        complete: { stroke: '#155215' },
-        partial:  { stroke: '#92400e' },
-        missing:  { stroke: '#991b1b' },
-    };
     return new Style({
         fill: new Fill({ color: getHatch(type) }),
-        stroke: new Stroke({ color: colors[type].stroke, width: 1.5, lineDash: [6, 3] })
+        stroke: new Stroke({
+            color: (COMPLETENESS_PALETTE[type] ?? COMPLETENESS_PALETTE.missing).stroke,
+            width: 1.5,
+            lineDash: [6, 3]
+        })
     });
 }
 
@@ -75,9 +78,7 @@ export function playgroundStyleFn(feature) {
     const props = feature.getProperties();
     const c = playgroundCompleteness(props);
     if (isRestrictedAccess(props)) return makeHatchStyle(c);
-    if (c === 'complete') return _styleComplete;
-    if (c === 'partial')  return _stylePartial;
-    return _styleMissing;
+    return _polygonStyles[c] ?? _polygonStyles.missing;
 }
 
 // ── Selected playground highlight ────────────────────────────────────────────

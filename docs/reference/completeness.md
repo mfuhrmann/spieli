@@ -18,11 +18,28 @@ Each criterion is satisfied by the presence of **any** qualifying tag — `hasIn
 
 ## States
 
-| State | Rule | Color |
+| State | Rule | Colour |
 |---|---|---|
-| `complete` | All three criteria satisfied | Green |
-| `partial` | At least one criterion satisfied | Orange |
-| `missing` | No criteria satisfied | Red |
+| `complete` | All three criteria satisfied | Green (`#15803d`) |
+| `partial` | At least one criterion satisfied | Dark green (`#052e16`) |
+| `missing` | No criteria satisfied | Slate blue-grey (`#475569`) |
+
+## Colours
+
+The palette is a **single-hue green ramp ending in a cool slate**, not a traffic light. A diverging red/amber/green scale encodes "good versus bad", which reads as a verdict on the playground. This one encodes "more versus less", which is what the value measures.
+
+The zero case is a cool slate rather than a plain grey: neutral enough to read as "nothing here yet" instead of "bad", but with enough blue cast to stay off the basemap's own warm greys (residential `#e0dfdf`, buildings `#d9d0c9`), which a plain grey at low alpha disappeared into. It covers most of the map — 625 of 926 playgrounds in Fulda — so it sits at 0.24 alpha with a dark stroke: the outline carries "there is a playground here" while the fill stays out of the way.
+
+The ramp originally led with the brightest, most saturated green so the map drew the eye to the best-mapped playgrounds. That did not survive the basemap. `base` is drawn opaque for cluster and macro ring arcs, and against the OpenFreeMap Bright style `#4ade80` measures 1.59:1 on the background, 1.35:1 over grass and 1.06:1 over water — against a 3:1 floor for a graphical object. The brightest colour in the ramp was the least visible thing on the map. Since no green above 3:1 exists lighter than L\* 31, the ramp moved down a step instead: `complete` took the green-700 `partial` held, and `partial` dropped to a near-black green.
+
+Two consequences are recorded in `app/src/lib/completenessPalette.js` and **not yet settled**:
+
+1. The ramp has lost its bright end — `complete` no longer pulls the eye by brightness, only by hue against slate.
+2. The ramp is still not monotonic in lightness. `missing` now sits *between* the two greens (`complete` L\* 47, `missing` L\* 36, `partial` L\* 16), so all three separate by lightness, but the order reads complete > missing > partial. Hue carries the categorical split (green = mapped, slate = not) and lightness orders the two green steps, which works — but it is not the clean sequential ramp described above.
+
+Two others are resolved. `missing` was slate-500 and measured 2.91:1 over water, failing the same 3:1 floor that moved the greens; it is now slate-600 at 4.63:1, which also pulls it clear of `complete` in lightness. And `base` moving while the polygon `fill` stayed behind is fixed: `fill`, `hatch` and the ring colour are all derived from a single `base` per bucket, at one shared alpha, so they cannot drift apart again. Note that the polygon tier is inherently a weaker signal than the legend implies: as opaque ring arcs `complete` and `partial` are ΔE 42 apart, but as translucent fills over a near-white basemap they are ΔE 12.
+
+All colours come from **`app/src/lib/completenessPalette.js`**, which documents which field each surface must use (`base` for anything opaque, `fill` only for shapes the basemap shows through or backgrounds carrying text). Every consumer reads from it: playground polygons, cluster rings, hub macro rings, the legend, the detail-panel badge, the filter dots, the nearby-playgrounds list and the hub instance drawer. Nothing may hardcode these values — picking the wrong field or a stale hex fails silently, with two surfaces simply disagreeing.
 
 ## Implementation
 

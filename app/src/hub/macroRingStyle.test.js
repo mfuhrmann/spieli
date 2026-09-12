@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { macroRingStyleFn } from './macroRingStyle.js';
+import { macroRingStyleFn, quantiseSegments } from './macroRingStyle.js';
 
 // Fake OL feature: only `.get(key)` is consulted by macroRingStyleFn.
 const feat = (props) => ({ get: (k) => props[k] });
@@ -66,6 +66,47 @@ const healthy       = macroRingStyleFn(feat({}));
     'importing must win over cantFilter',
   );
   assert.notEqual(cantFilter, healthy, 'cantFilter must differ from healthy');
+}
+
+
+// ── quantiseSegments ────────────────────────────────────────────────────────
+
+// The four arcs must always sum to exactly ten tenths: fewer leaves a gap,
+// more wraps the last arc over the first.
+{
+  const cases = [
+    [33, 33, 34, 0],
+    [25, 25, 50, 0],
+    [1, 1, 1, 0],
+    [0, 0, 1, 0],
+    [7, 11, 13, 5],
+    [0, 0, 0, 0],
+    [1, 0, 0, 0],
+  ];
+  for (const [c, p, m, r] of cases) {
+    const seg = quantiseSegments(c, p, m, r);
+    assert.equal(
+      seg.reduce((a, b) => a + b, 0), 10,
+      `segments for ${c}/${p}/${m}/${r} sum to ${seg} instead of 10`,
+    );
+    assert.ok(seg.every(v => v >= 0), `negative segment in ${seg}`);
+  }
+}
+
+// A backend with no access-restricted playgrounds must never get a restricted
+// arc. The residual used to be dumped here, inventing a violet wedge out of
+// rounding error alone.
+{
+  for (const [c, p, m] of [[33, 33, 34], [1, 1, 1], [5, 5, 5], [2, 3, 4]]) {
+    const [, , , r10] = quantiseSegments(c, p, m, 0);
+    assert.equal(r10, 0, `restricted arc ${r10} invented for ${c}/${p}/${m} with restricted=0`);
+  }
+}
+
+// A real restricted count still gets its arc.
+{
+  const [, , , r10] = quantiseSegments(0, 0, 0, 9);
+  assert.equal(r10, 10);
 }
 
 console.log('macroRingStyle.test.js OK');

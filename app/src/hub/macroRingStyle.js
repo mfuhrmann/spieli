@@ -21,17 +21,49 @@
 
 import Style from 'ol/style/Style.js';
 import { radiusForCount } from '../lib/clusterStyle.js';
+import { COMPLETENESS_BASE } from '../lib/completenessPalette.js';
 
+// Mapping-detail segments come from the shared palette (see
+// lib/completenessPalette.js) so macro rings, cluster rings, polygons and the
+// legend cannot drift apart.
+//
+// `restricted` is a different axis — access, not mapping detail. It has moved
+// twice to stay clear of `missing`: originally grey, which collided when
+// `missing` became grey; then slate-600, which collided again when `missing`
+// moved to slate-500. Violet leaves the neutral range altogether and reads as
+// "different kind of thing" rather than "even less mapped", which is right.
+//
+// Note what this colour actually paints, because an earlier version of this
+// comment had it wrong. deriveMacroRing (hub/macroAggregate.js) sets
+// restricted: 0 whenever a backend reports completeness, and routes the WHOLE
+// count into restricted only when completeness is unknown — a pre-P1 backend.
+// So `restricted` and `missing` never share a ring; the separation that
+// matters is between two rings sitting side by side on the same macro view,
+// not between adjacent arcs.
+//
+// A consequence worth stating: violet-600 paints the ENTIRE ring for those
+// backends, so the ones we know least about are the loudest thing on the macro
+// view. That was reviewed against the rendered map and kept deliberately. The
+// macro view is largely an operator surface — it sits beside the InstancePanel
+// health list — and a conspicuous ring over a backend that has not been
+// upgraded is a useful "go fix that stack" signal rather than noise. Contrast
+// is 5.21:1 against the basemap, the highest in the set.
+//
+// Note also that the slot is named `restricted` but, in the macro view, only
+// ever carries "completeness unknown": deriveMacroRing zeroes it whenever a
+// backend reports completeness, and the cluster ring renders no restricted
+// segment at all. The name is historical; the colour has exactly one meaning
+// on screen.
 const COLOR = {
-  complete:   '#228b22', // legend "complete"  fill base
-  partial:    '#eab308', // legend "partial"   fill base
-  missing:    '#ef4444', // legend "missing"   fill base
-  restricted: '#9ca3af', // tailwind gray-400 — also used for unknown-completeness rings
+  ...COMPLETENESS_BASE,
+  restricted: '#7c3aed', // tailwind violet-600 — also used for unknown-completeness rings
 };
 const RING_WIDTH      = 14; // slightly thicker than cluster (12) for country-scale prominence
 const CENTER_FILL     = 'rgba(255, 255, 255, 0.95)';
 const CENTER_STROKE   = '#1f2937';
 const CENTER_TEXT     = '#1f2937';
+// gray-400. Free of the mapping-detail palette again since `missing` moved to
+// slate-500 — offline and no-match rings are the only plain greys left.
 const OFFLINE_STROKE   = '#9ca3af';
 const OFFLINE_FILL     = 'rgba(255, 255, 255, 0.85)';
 const OFFLINE_TEXT     = '#6b7280';
@@ -49,15 +81,29 @@ const CANTFILTER_TEXT  = '#6b7280'; // gray-500
 const COUNT_FONT      = 'bold 22px ui-monospace, "SF Mono", Menlo, system-ui, -apple-system, sans-serif';
 const LABEL_FONT      = '600 11px system-ui, -apple-system, "Helvetica Neue", sans-serif';
 
-function quantiseSegments(complete, partial, missing, restricted) {
+// Each segment is rounded independently, then the residual is applied to the
+// LARGEST segment, exactly as clusterStyle.quantise does.
+//
+// The residual used to be dumped into `restricted`, which invented data: with
+// complete/partial/missing = 33/33/34 every segment rounds to 3, leaving a
+// residual of 1 that painted a 36-degree "access restricted" wedge on a
+// backend with no restricted playgrounds at all. Overshoot was clamped to 0
+// without rescaling the rest, so 25/25/50 produced 3+3+5 = 11 tenths and the
+// last arc wrapped past twelve o'clock over the start of the first.
+export function quantiseSegments(complete, partial, missing, restricted) {
   const total = complete + partial + missing + restricted || 1;
-  const c10 = Math.round((complete   / total) * 10);
-  const p10 = Math.round((partial    / total) * 10);
-  const m10 = Math.round((missing    / total) * 10);
-  // Rounding can over- or under-shoot 10; clamp the residual into the
-  // restricted bucket so the four arcs always sum to a full circle.
-  const r10 = Math.max(0, 10 - c10 - p10 - m10);
-  return [c10, p10, m10, r10];
+  const seg = [complete, partial, missing, restricted]
+    .map(v => Math.round((v / total) * 10));
+
+  const residual = 10 - seg.reduce((a, b) => a + b, 0);
+  if (residual !== 0) {
+    let largest = 0;
+    for (let i = 1; i < seg.length; i++) {
+      if (seg[i] > seg[largest]) largest = i;
+    }
+    seg[largest] = Math.max(0, seg[largest] + residual);
+  }
+  return seg;
 }
 
 function renderHealthyMacroRing(pixelCoords, state) {
