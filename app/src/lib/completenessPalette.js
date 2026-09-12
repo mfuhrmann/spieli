@@ -42,7 +42,7 @@
 // Both greens now clear 3:1 on every basemap surface except `complete` over
 // water, which is 3.06 and rare under a playground polygon.
 //
-// COST, recorded rather than solved — pick this up before merge:
+// COST, recorded rather than solved:
 //   1. The ramp has lost its bright end. `complete` no longer pulls the eye by
 //      brightness, only by hue against slate. If that pull matters more than
 //      the contrast floor, the real fix is a thin dark casing on the arcs in
@@ -51,10 +51,12 @@
 //      lightness, separated by hue alone, so deuteranopic and protanopic
 //      viewers still cannot recover the ordering. The trade-off this comment
 //      used to describe has moved, not gone.
-//   3. `base` moved but `fill` did not — `complete` polygons are still mint
-//      while `complete` rings are green-700. The fills measured well over this
-//      basemap (ΔE 19.3–20.9) so there was no contrast reason to move them,
-//      but the two surfaces now disagree and must be reconciled.
+//   3. `missing` measures 2.91:1 over water — still under the 3:1 floor the
+//      greens were moved to clear.
+//
+// (A fourth — `base` moving while `fill` stayed behind — is fixed: every
+// surface colour is now derived from one `base` per bucket, below, so the two
+// cannot drift apart again.)
 //
 // The zero case is a cool slate blue-grey, not a plain grey. A neutral colour
 // is right — it reads as "nothing here yet" rather than "bad playground",
@@ -98,26 +100,65 @@
  * Rule of thumb: anything opaque uses `base`; only shapes the basemap shows
  * through, or backgrounds carrying text, use `fill`.
  */
-export const COMPLETENESS_PALETTE = {
-    complete: {
-        base:   '#15803d',
-        fill:   'rgba(74, 222, 128, 0.28)',
-        stroke: '#15803d',
-        hatch:  { stroke: 'rgba(22, 163, 74, 0.55)',  bg: 'rgba(74, 222, 128, 0.08)' },
-    },
-    partial: {
-        base:   '#052e16',
-        fill:   'rgba(21, 128, 61, 0.22)',
-        stroke: '#14532d',
-        hatch:  { stroke: 'rgba(21, 128, 61, 0.55)',  bg: 'rgba(21, 128, 61, 0.08)' },
-    },
-    missing: {
-        base:   '#64748b',
-        fill:   'rgba(100, 116, 139, 0.24)',
-        stroke: '#334155',
-        hatch:  { stroke: 'rgba(51, 65, 85, 0.55)',   bg: 'rgba(100, 116, 139, 0.08)' },
-    },
+/**
+ * Per-bucket identity colour. Everything else is derived from it, so `base`
+ * and the polygon fill cannot drift apart again.
+ *
+ * They had. When the ramp moved down a step to clear the contrast floor, only
+ * `base` moved: `complete` rings became green-700 while `complete` polygons
+ * stayed mint, so one playground changed colour crossing clusterMaxZoom. Worse,
+ * `partial`'s hand-written fill was built from #15803d — the hex that is now
+ * `complete`'s ring — so the same colour meant "basic" as a polygon and
+ * "detailed" as an arc.
+ */
+const BASE = {
+    complete: '#15803d',
+    partial:  '#052e16',
+    missing:  '#64748b',
 };
+
+/** Outline colour. Not derived: it is chosen for contrast against the fill. */
+const STROKE = {
+    complete: '#15803d',
+    partial:  '#14532d',
+    missing:  '#334155',
+};
+
+function withAlpha(hex, alpha) {
+    const n = parseInt(hex.slice(1), 16);
+    return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
+}
+
+// One alpha for all three buckets, not three hand-tuned ones.
+//
+// Measured over the basemap background (#f8f4f0), pairwise CIE dE between the
+// three composited fills:
+//
+//   today, hand-written fills          complete-partial 10.6   partial-missing 12.7
+//   derived, today's mixed alphas      complete-partial 11.5   partial-missing  8.0
+//   derived, uniform 0.30              complete-partial 12.0   partial-missing 11.8
+//   derived, uniform 0.38              complete-partial 15.5   partial-missing 15.5
+//
+// Mixed alphas would have regressed partial-vs-missing to 8.0. 0.38 separates
+// best but puts real weight on a layer that is 67% `missing` in Fulda and may
+// yet become opt-in, so 0.30 takes parity with today at the lower weight.
+//
+// Note these are all far below the ring separation (complete-vs-partial is
+// dE 42 as opaque arcs). Translucent fills over a near-white ground wash
+// toward each other; the polygon tier is inherently a weaker signal than the
+// legend, which shows `base`, implies.
+const FILL_ALPHA  = 0.30;
+const HATCH_LINE  = 0.55;
+const HATCH_WASH  = 0.08;
+
+export const COMPLETENESS_PALETTE = Object.fromEntries(
+    Object.entries(BASE).map(([key, base]) => [key, {
+        base,
+        fill:   withAlpha(base, FILL_ALPHA),
+        stroke: STROKE[key],
+        hatch:  { stroke: withAlpha(base, HATCH_LINE), bg: withAlpha(base, HATCH_WASH) },
+    }])
+);
 
 /** Bucket keys in ramp order (most mapped → least). Drives legend order. */
 export const COMPLETENESS_ORDER = ['complete', 'partial', 'missing'];
