@@ -29,15 +29,24 @@ function makeHatchPattern(color, bgColor) {
     return ctx.createPattern(canvas, 'repeat');
 }
 
-// Lazily initialised — canvas only available in browser context
+// Lazily initialised — canvas only available in browser context.
+//
+// Built into a local and assigned only once complete: assigning the cache
+// before filling it would satisfy the guard even if makeHatchPattern threw
+// partway through (getContext('2d') returns null outside a browser, so the
+// next line throws). The first restricted polygon would take the error and
+// every later one would silently get `new Fill({ color: undefined })` and
+// render unfilled. Assigning at the end keeps the null guard meaningful, so
+// a failed attempt is simply retried on the next call.
 let _hatchCache = null;
 function getHatch(type) {
     if (!_hatchCache) {
-        _hatchCache = {};
+        const cache = {};
         for (const key of COMPLETENESS_ORDER) {
             const { hatch } = COMPLETENESS_PALETTE[key];
-            _hatchCache[key] = makeHatchPattern(hatch.stroke, hatch.bg);
+            cache[key] = makeHatchPattern(hatch.stroke, hatch.bg);
         }
+        _hatchCache = cache;
     }
     return _hatchCache[type] ?? _hatchCache.missing;
 }

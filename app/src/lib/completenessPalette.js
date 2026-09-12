@@ -21,10 +21,14 @@
 // OpenFreeMap Bright style the app now ships (desaturated, every landcover
 // surface between L* 87 and L* 96), #4ade80 measured 1.59:1 on the basemap
 // background, 1.35:1 over grass and 1.06:1 over water, against a 3:1 floor
-// for a graphical object. It also sat at 1.74:1 against the white separator
-// stroke the ring renderer draws between arcs, so the segment boundaries
-// disappeared along with the arc. The brightest colour in the ramp was the
-// least visible thing on the map — the intent inverted.
+// for a graphical object. The brightest colour in the ramp was the least
+// visible thing on the map — the intent inverted.
+//
+// (An earlier version of this note also cited 1.74:1 against "the white
+// separator stroke the ring renderer draws between arcs". No such stroke
+// exists: neither drawStackedRing nor renderHealthyMacroRing draws one, and
+// the only white stroke in either renderer is on the single-child dot. The
+// basemap measurements above are the whole case.)
 //
 // On a near-light ground "brighter" and "≥ 3:1" pull in opposite directions,
 // so this cannot be fixed by retuning one hex: a search of the green space
