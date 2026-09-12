@@ -18,21 +18,28 @@ Each criterion is satisfied by the presence of **any** qualifying tag — `hasIn
 
 ## States
 
-| State | Rule | Color |
+| State | Rule | Colour |
 |---|---|---|
-| `complete` | All three criteria satisfied | Green |
-| `partial` | At least one criterion satisfied | Orange |
-| `missing` | No criteria satisfied | Red |
+| `complete` | All three criteria satisfied | Green (`#15803d`) |
+| `partial` | At least one criterion satisfied | Dark green (`#052e16`) |
+| `missing` | No criteria satisfied | Slate blue-grey (`#64748b`) |
 
 ## Colours
 
 The palette is a **single-hue green ramp ending in a cool slate**, not a traffic light. A diverging red/amber/green scale encodes "good versus bad", which reads as a verdict on the playground. This one encodes "more versus less", which is what the value measures.
 
-Ordering is by **visual weight**, not lightness: the brightest, most saturated green marks the most detailed playgrounds, so the map draws the eye to them rather than to the middle state. The trade-off is that `partial` is darker than both its neighbours, so the ramp is not monotonic in lightness and viewers with deuteranopia or protanopia cannot recover the full ordering from lightness alone. Green-versus-slate still separates cleanly, which is what the contribution prompt depends on.
+The zero case is a cool slate rather than a plain grey: neutral enough to read as "nothing here yet" instead of "bad", but with enough blue cast to stay off the basemap's own warm greys (residential `#e0dfdf`, buildings `#d9d0c9`), which a plain grey at low alpha disappeared into. It covers most of the map — 625 of 926 playgrounds in Fulda — so it sits at 0.24 alpha with a dark stroke: the outline carries "there is a playground here" while the fill stays out of the way.
 
-`complete` uses a higher fill alpha than the others (0.28 vs 0.22) — bright green at 0.22 over a light basemap barely registers. `missing` sits at 0.24 with a dark stroke: it covers most of the map (625 of 926 playgrounds in Fulda), so the outline carries "there is a playground here" while the fill stays out of the way. A plain grey was tried first at 0.18 and disappeared against the basemap, which draws residential landuse (`#e0dfdf`) and buildings (`#d9d0c9`) in warm greys of its own.
+The ramp originally led with the brightest, most saturated green so the map drew the eye to the best-mapped playgrounds. That did not survive the basemap. `base` is drawn opaque for cluster and macro ring arcs, and against the OpenFreeMap Bright style `#4ade80` measures 1.59:1 on the background, 1.35:1 over grass and 1.06:1 over water — against a 3:1 floor for a graphical object. The brightest colour in the ramp was the least visible thing on the map. Since no green above 3:1 exists lighter than L\* 31, the ramp moved down a step instead: `complete` took the green-700 `partial` held, and `partial` dropped to a near-black green.
 
-All colours come from **`app/src/lib/completenessPalette.js`**, which documents which field each surface must use (`base` for anything opaque, `fill` only for shapes the basemap shows through or backgrounds carrying text). Every consumer reads from it: playground polygons, cluster rings, hub macro rings, the legend, the detail-panel badge dot, the filter dots, the nearby-playgrounds list and the hub instance drawer. Nothing may hardcode these values — picking the wrong field or a stale hex fails silently, with two surfaces simply disagreeing.
+Four consequences are recorded in `app/src/lib/completenessPalette.js` and **not yet settled**:
+
+1. The ramp has lost its bright end — `complete` no longer pulls the eye by brightness, only by hue against slate.
+2. `complete` (L\* 47) and `missing` (L\* 48) are near-identical in lightness, so deuteranopic and protanopic viewers cannot recover the ordering.
+3. `base` moved but `fill` did not, so `complete` polygons are still mint while `complete` rings and legend swatches are green-700.
+4. `missing` measures 2.91:1 over water — still under the floor the greens were moved to clear.
+
+All colours come from **`app/src/lib/completenessPalette.js`**, which documents which field each surface must use (`base` for anything opaque, `fill` only for shapes the basemap shows through or backgrounds carrying text). Every consumer reads from it: playground polygons, cluster rings, hub macro rings, the legend, the detail-panel badge, the filter dots, the nearby-playgrounds list and the hub instance drawer. Nothing may hardcode these values — picking the wrong field or a stale hex fails silently, with two surfaces simply disagreeing.
 
 ## Implementation
 
