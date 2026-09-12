@@ -41,10 +41,19 @@ import { COMPLETENESS_BASE } from '../lib/completenessPalette.js';
 // matters is between two rings sitting side by side on the same macro view,
 // not between adjacent arcs.
 //
-// OPEN: that also means violet-600 paints the entire ring for the backends we
-// know least about, which makes them the loudest thing on the macro view when
-// the intent (MacroView.svelte) is "mapping detail unknown". A quieter violet
-// would serve that better. Left as-is pending a decision on the ramp overall.
+// A consequence worth stating: violet-600 paints the ENTIRE ring for those
+// backends, so the ones we know least about are the loudest thing on the macro
+// view. That was reviewed against the rendered map and kept deliberately. The
+// macro view is largely an operator surface — it sits beside the InstancePanel
+// health list — and a conspicuous ring over a backend that has not been
+// upgraded is a useful "go fix that stack" signal rather than noise. Contrast
+// is 5.21:1 against the basemap, the highest in the set.
+//
+// Note also that the slot is named `restricted` but, in the macro view, only
+// ever carries "completeness unknown": deriveMacroRing zeroes it whenever a
+// backend reports completeness, and the cluster ring renders no restricted
+// segment at all. The name is historical; the colour has exactly one meaning
+// on screen.
 const COLOR = {
   ...COMPLETENESS_BASE,
   restricted: '#7c3aed', // tailwind violet-600 — also used for unknown-completeness rings
