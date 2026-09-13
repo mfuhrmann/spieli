@@ -20,18 +20,12 @@
     "closeBtn": "Sluiten",
     "backToMap": "Terug naar kaart"
   },
-  "completeness": {
-    "complete": "Foto's, naam & details beschikbaar",
-    "partial": "Gedeeltelijk in kaart gebracht",
-    "missing": "Nog geen gegevens"
-  },
   "accordion": {
     "photos": "Foto's",
     "equipment": "Speeltoestellen",
     "shadow": "Schaduw",
     "surroundings": "Omgeving",
-    "reviews": "Beoordelingen",
-    "completeness": "Volledigheid van gegevens"
+    "reviews": "Beoordelingen"
   },
   "location": {
     "btn": "Mijn locatie",

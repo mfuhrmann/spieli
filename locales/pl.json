@@ -20,18 +20,12 @@
     "closeBtn": "Zamknij",
     "backToMap": "Powrót do mapy"
   },
-  "completeness": {
-    "complete": "Zdjęcia, nazwa i szczegóły dostępne",
-    "partial": "Częściowo zmapowane",
-    "missing": "Brak danych"
-  },
   "accordion": {
     "photos": "Zdjęcia",
     "equipment": "Wyposażenie",
     "shadow": "Cień",
     "surroundings": "Okolica",
-    "reviews": "Recenzje",
-    "completeness": "Kompletność danych"
+    "reviews": "Recenzje"
   },
   "location": {
     "btn": "Moja lokalizacja",

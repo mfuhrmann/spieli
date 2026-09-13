@@ -20,18 +20,12 @@
     "closeBtn": "Stäng",
     "backToMap": "Tillbaka till kartan"
   },
-  "completeness": {
-    "complete": "Foton, namn och detaljer tillgängliga",
-    "partial": "Delvis kartlagd",
-    "missing": "Ingen data"
-  },
   "accordion": {
     "photos": "Foton",
     "equipment": "Utrustning",
     "shadow": "Skugga",
     "surroundings": "Omgivning",
-    "reviews": "Recensioner",
-    "completeness": "Datakomplettering"
+    "reviews": "Recensioner"
   },
   "location": {
     "btn": "Min plats",
