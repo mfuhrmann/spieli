@@ -21,7 +21,7 @@
     
     
       
-        <title>Data quality (Datenqualität) - spieli</title>
+        <title>Mapping detail (Erfasste Details) - spieli</title>
       
     
     
@@ -72,7 +72,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#data-quality-datenqualitat" class="md-skip">
+        <a href="#mapping-detail-erfasste-details" class="md-skip">
           Skip to content
         </a>
       
@@ -106,7 +106,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Data quality (Datenqualität)
+              Mapping detail (Erfasste Details)
             
           </span>
         </div>
@@ -1814,6 +1814,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Criteria">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-does-not-count-as-equipment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What does not count as equipment
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1828,6 +1845,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#photos-are-not-a-criterion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Photos are not a criterion
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#implementation" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1835,6 +1863,23 @@
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Implementation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#persisted-criterion-columns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Persisted criterion columns
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1874,11 +1919,11 @@
   
 
 
-<h1 id="data-quality-datenqualitat">Data quality (Datenqualität)<a class="headerlink" href="#data-quality-datenqualitat" title="Permanent link">&para;</a></h1>
-<p>Every playground is assigned one of three data-quality states based on how thoroughly it is documented in OpenStreetMap. The state is computed from a fixed set of OSM tag criteria — it is not a universal mapping standard but a practical indicator for the tags that make a playground entry most useful to visitors.</p>
-<p>The label key <code>completeness.label</code> (<code>"Datenqualität"</code> / <code>"Data quality"</code>) can be used wherever the concept needs a heading.</p>
+<h1 id="mapping-detail-erfasste-details">Mapping detail (Erfasste Details)<a class="headerlink" href="#mapping-detail-erfasste-details" title="Permanent link">&para;</a></h1>
+<p>Every playground is assigned one of three mapping-detail states, based on how much of it has been mapped in OpenStreetMap. The state describes <strong>the map, not the playground</strong> — a playground in the lowest state is not a bad playground, it is one nobody has written up yet.</p>
+<p>The label key <code>mappingDetail.legendTitle</code> (<code>"Erfasste Details"</code> / <code>"Mapping detail"</code>) can be used wherever the concept needs a heading.</p>
 <h2 id="criteria">Criteria<a class="headerlink" href="#criteria" title="Permanent link">&para;</a></h2>
-<p>Three independent criteria are evaluated per playground:</p>
+<p>Two criteria are evaluated per playground:</p>
 <table>
 <thead>
 <tr>
@@ -1888,12 +1933,8 @@
 </thead>
 <tbody>
 <tr>
-<td><strong>hasPhoto</strong></td>
-<td>At least one <code>panoramax</code> / <code>panoramax:*</code> tag, a <code>wikimedia_commons</code> tag, or an <code>image</code> link on a Wikimedia/Wikipedia host is present (off-Wikimedia <code>image</code> URLs the gallery can't render do not count)</td>
-</tr>
-<tr>
 <td><strong>hasEquipment</strong></td>
-<td>At least one mapped piece of equipment exists inside the playground (devices, benches, pitches, fitness stations, etc.)</td>
+<td>Play infrastructure exists inside the playground: any object tagged <code>playground=*</code>, or a <code>leisure=pitch</code> for soccer, basketball or table tennis</td>
 </tr>
 <tr>
 <td><strong>hasInfo</strong></td>
@@ -1902,42 +1943,87 @@
 </tbody>
 </table>
 <p>Each criterion is satisfied by the presence of <strong>any</strong> qualifying tag — <code>hasInfo</code> does not require all three tags.</p>
+<h3 id="what-does-not-count-as-equipment">What does not count as equipment<a class="headerlink" href="#what-does-not-count-as-equipment" title="Permanent link">&para;</a></h3>
+<p><strong>Street furniture</strong> — <code>amenity=bench</code>, <code>amenity=shelter</code>, <code>leisure=picnic_table</code> — is excluded. These are frequently mapped inside a playground area by someone who never mapped the play equipment itself, so counting them lifted playgrounds that have nothing to play on. In Fulda, 63 of 221 playgrounds registering as "has equipment" were carried by furniture alone.</p>
+<p>Pitches <em>do</em> count: a bolzplatz or basketball hoop is real play infrastructure, merely tagged <code>leisure=pitch</code> rather than <code>playground=*</code>.</p>
+<p><strong>Derived flags</strong> — <code>is_water</code>, <code>for_baby</code>, <code>for_toddler</code>, <code>for_wheelchair</code> — are also excluded. A genuine playground device already satisfies the <code>playground=*</code> test, so they add nothing there; on their own they can be set by a bench tagged <code>wheelchair=yes</code>, which is the same false signal (<a href="https://github.com/mfuhrmann/spieli/issues/776">#776</a>). They remain available as filter flags, they just do not feed the rating.</p>
 <h2 id="states">States<a class="headerlink" href="#states" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
-<th>State</th>
+<th>State (identifier)</th>
+<th>Label</th>
 <th>Rule</th>
-<th>Color</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><code>complete</code></td>
-<td>All three criteria satisfied</td>
-<td>Green</td>
+<td>detailed</td>
+<td>Both criteria satisfied</td>
 </tr>
 <tr>
 <td><code>partial</code></td>
-<td>At least one criterion satisfied</td>
-<td>Orange</td>
+<td>basic</td>
+<td>Exactly one satisfied</td>
 </tr>
 <tr>
 <td><code>missing</code></td>
-<td>No criteria satisfied</td>
-<td>Red</td>
+<td>no details yet</td>
+<td>Neither satisfied</td>
 </tr>
 </tbody>
 </table>
+<p>The identifiers <code>complete</code> / <code>partial</code> / <code>missing</code> are wire and storage values — they appear in API responses, in <code>playground_stats</code>, and in the <code>filterStore</code> keys. They deliberately differ from the labels shown to users; renaming them would break federation between backends on different versions.</p>
+<p>How the three states are coloured is a separate concern; see the map legend and <code>app/src/lib/vectorStyles.js</code>.</p>
+<h2 id="photos-are-not-a-criterion">Photos are not a criterion<a class="headerlink" href="#photos-are-not-a-criterion" title="Permanent link">&para;</a></h2>
+<p>A photo (<code>panoramax</code> / <code>panoramax:*</code>, <code>wikimedia_commons</code>, or an <code>image</code> link on a Wikimedia/Wikipedia host) is <strong>not</strong> an input to the state.</p>
+<p>It used to be: the old rule required all three of photo, equipment and info for the top state. Photo tags are rare in OSM, so that gated entire regions out of it — Hessen sat at 87 of 8802 playgrounds (1.0%) in the top bucket, while a well-photographed region reached 8.0% under the identical rule. A playground with twelve mapped devices plus surface and access stayed in the middle state indefinitely because nobody had uploaded a picture, which judged the mapper rather than the map (<a href="https://github.com/mfuhrmann/spieli/issues/733">#733</a>).</p>
+<p>Photo availability is still surfaced, as an <strong>additive marker</strong>: a camera glyph drawn at the playground's interior point, driven by <code>hasPhotoSignal()</code>. Having a photo is a bonus; not having one is not a penalty.</p>
+<p>The marker lives on the map only. There is no photo badge in the detail panel — by the time the panel is open the photos themselves are visible in it, so a chip announcing them would be redundant. On the map it is the only way to see which playgrounds have pictures without opening each one.</p>
+<p>Implementation note: the glyph needs an explicit <code>geometry</code> function pointing at the polygon's interior point. OpenLayers' <code>renderPolygonGeometry</code> handles fill, stroke and text only — an <code>image</code> style attached to a Polygon is silently dropped, with no warning.</p>
+<p>An off-Wikimedia <code>image</code> URL does not count — the gallery cannot render it.</p>
 <h2 id="implementation">Implementation<a class="headerlink" href="#implementation" title="Permanent link">&para;</a></h2>
-<p>The logic is maintained in two mirrored places that must stay in sync:</p>
+<p>The rule is maintained in two mirrored places that must stay in sync:</p>
 <ul>
-<li><strong>Frontend</strong>: <code>app/src/lib/completeness.js</code> — <code>playgroundCompleteness(props)</code></li>
-<li><strong>Database</strong>: <code>importer/api.sql</code>, CTE <code>completeness_attrs</code> (around line 110) — used to populate the <code>playground_stats</code> materialized view</li>
+<li><strong>Frontend</strong>: <code>app/src/lib/completeness.js</code> — <code>playgroundCompleteness(props)</code> and <code>hasPhotoSignal(props)</code></li>
+<li><strong>Database</strong>: <code>importer/api.sql</code>, CTE <code>completeness_attrs</code> feeding the <code>playground_stats</code> materialized view</li>
 </ul>
-<p>Run <code>make db-apply</code> after changing the SQL definition to rebuild the materialized view.</p>
+<p>Both sides are guarded. Case 17 in <code>app/src/lib/completeness.test.js</code> walks the truth table in JS. The "Assert JS/SQL rule parity" step in <code>.github/workflows/db-smoke.yml</code> does the SQL side by reading the live view definition rather than restating it: it extracts the <code>has_equipment</code> expression and fails if it stops counting any of <code>device_count</code> / <code>table_tennis_count</code> / <code>has_soccer</code> / <code>has_basketball</code>, or if it starts counting street furniture or a derived flag again (<a href="https://github.com/mfuhrmann/spieli/issues/776">#776</a>). It then checks the classification <code>CASE</code> still reads <code>has_equipment AND has_info</code> and has not taken <code>has_photo</code> back as an input. <code>app/src/lib/completeness.js</code> is one of the workflow's path triggers, so a change to the JS half alone still runs it.</p>
+<p>Run <code>make db-apply</code> after changing the SQL definition to rebuild the materialized view. No re-import is needed — the view is derived.</p>
+<h3 id="persisted-criterion-columns">Persisted criterion columns<a class="headerlink" href="#persisted-criterion-columns" title="Permanent link">&para;</a></h3>
+<p><code>playground_stats</code> stores the criteria alongside the derived state, as non-null booleans:</p>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Criterion</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>has_photo</code></td>
+<td>photo signal (not a state input; drives the marker)</td>
+</tr>
+<tr>
+<td><code>has_equipment</code></td>
+<td><strong>hasEquipment</strong> above</td>
+</tr>
+<tr>
+<td><code>has_info</code></td>
+<td><strong>hasInfo</strong> above</td>
+</tr>
+</tbody>
+</table>
+<p>They are not exposed through any API function — they exist so the composition of each state can be measured directly instead of re-derived:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">completeness</span><span class="p">,</span><span class="w"> </span><span class="n">has_equipment</span><span class="p">,</span><span class="w"> </span><span class="n">has_info</span><span class="p">,</span><span class="w"> </span><span class="n">has_photo</span><span class="p">,</span><span class="w"> </span><span class="k">count</span><span class="p">(</span><span class="o">*</span><span class="p">)</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="k">FROM</span><span class="w"> </span><span class="n">playground_stats</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="mi">5</span><span class="w"> </span><span class="k">DESC</span><span class="p">;</span>
+</code></pre></div>
+<p>This is the query to run before and after any change to the criteria, to see which criterion is actually gating a state.</p>
 <h2 id="locale-keys">Locale keys<a class="headerlink" href="#locale-keys" title="Permanent link">&para;</a></h2>
-<p>All UI strings live under the <code>completeness.*</code> namespace in <code>locales/de.json</code> and <code>locales/en.json</code> (repo root).</p>
+<p>All UI strings live under the <code>mappingDetail.*</code> namespace in <code>locales/de.json</code> and <code>locales/en.json</code> (repo root).</p>
 <table>
 <thead>
 <tr>
@@ -1948,39 +2034,29 @@
 </thead>
 <tbody>
 <tr>
-<td><code>completeness.legendTitle</code></td>
-<td>Datenqualität</td>
-<td>Data Quality</td>
+<td><code>mappingDetail.legendTitle</code></td>
+<td>Erfasste Details</td>
+<td>Mapping detail</td>
 </tr>
 <tr>
-<td><code>completeness.complete</code></td>
-<td>hoch</td>
-<td>high</td>
+<td><code>mappingDetail.detailed</code></td>
+<td>detailliert</td>
+<td>detailed</td>
 </tr>
 <tr>
-<td><code>completeness.partial</code></td>
-<td>mittel</td>
-<td>medium</td>
+<td><code>mappingDetail.basic</code></td>
+<td>grundlegend</td>
+<td>basic</td>
 </tr>
 <tr>
-<td><code>completeness.missing</code></td>
-<td>niedrig</td>
-<td>low</td>
+<td><code>mappingDetail.noDetails</code></td>
+<td>keine Details</td>
+<td>no details yet</td>
 </tr>
 <tr>
-<td><code>completeness.dotComplete</code></td>
-<td>Daten vollständig</td>
-<td>Data complete</td>
-</tr>
-<tr>
-<td><code>completeness.dotPartial</code></td>
-<td>Teilweise erfasst</td>
-<td>Partially mapped</td>
-</tr>
-<tr>
-<td><code>completeness.dotMissing</code></td>
-<td>Daten fehlen</td>
-<td>No data</td>
+<td><code>mappingDetail.hasPhoto</code></td>
+<td>hat ein Foto</td>
+<td>has a photo</td>
 </tr>
 <tr>
 <td><code>completeness.restrictedHint</code></td>
@@ -1989,6 +2065,8 @@
 </tr>
 </tbody>
 </table>
+<p><code>completeness.restrictedHint</code> stays in its old namespace — access restriction is a separate axis from mapping detail.</p>
+<p>The filter labels under <code>filter.mappingDetail.*</code> use the same wording (<code>detailliert</code> / <code>grundlegend</code> / <code>keine Details</code>); the filter keys themselves (<code>showComplete</code>, <code>showPartial</code>, <code>showMissing</code>) keep the identifier naming.</p>
 
 
 

@@ -2258,7 +2258,7 @@
 </tr>
 </tbody>
 </table>
-<p>CORS is enabled on <code>/api/</code> so the Hub can query instances cross-origin from the browser. Backends running pre-P1 releases (no tier RPCs, no completeness extension to <code>get_meta</code>) still join successfully — the macro view shows them as "data quality unknown" (flat gray ring) and the cluster tier silently skips them rather than burning bandwidth on a region-wide legacy fetch that would be discarded.</p>
+<p>CORS is enabled on <code>/api/</code> so the Hub can query instances cross-origin from the browser. Backends running pre-P1 releases (no tier RPCs, no completeness extension to <code>get_meta</code>) still join successfully — the macro view shows them as "mapping detail unknown" (flat gray ring) and the cluster tier silently skips them rather than burning bandwidth on a region-wide legacy fetch that would be discarded.</p>
 <h2 id="registry">Registry<a class="headerlink" href="#registry" title="Permanent link">&para;</a></h2>
 <p>The Hub discovers instances from a <code>registry.json</code> file — see the <a href="../registry-json/"><code>registry.json</code> reference</a> for schema, slug rules, and the derived aggregate behaviours (aggregated bounding box, multi-backend nearest search).</p>
 <h2 id="hub-ui">Hub UI<a class="headerlink" href="#hub-ui" title="Permanent link">&para;</a></h2>
@@ -2361,7 +2361,7 @@
 </tr>
 </tbody>
 </table>
-<p>Pre-P1 backends that omit the completeness fields from <code>get_meta</code> render as a flat gray ring (all count mapped into the "restricted / unknown" segment) so the operator sees "data quality unknown" rather than a misleading all-zero healthy ring.</p>
+<p>Pre-P1 backends that omit the completeness fields from <code>get_meta</code> render as a flat gray ring (all count mapped into the "restricted / unknown" segment) so the operator sees "mapping detail unknown" rather than a misleading all-zero healthy ring.</p>
 <h3 id="architecture-flow">Architecture flow<a class="headerlink" href="#architecture-flow" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>flowchart LR
 <a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    user[User pans / zooms map] --&gt; moveend[Debounced moveend&lt;br/&gt;300 ms]

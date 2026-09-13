@@ -1723,10 +1723,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#data-quality-indicator" class="md-nav__link">
+  <a href="#mapping-detail-indicator" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Data Quality indicator
+        Mapping detail indicator
       
     </span>
   </a>
@@ -1974,10 +1974,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#data-quality-indicator" class="md-nav__link">
+  <a href="#mapping-detail-indicator" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Data Quality indicator
+        Mapping detail indicator
       
     </span>
   </a>
@@ -2034,8 +2034,8 @@
 <h2 id="postgrest">PostgREST<a class="headerlink" href="#postgrest" title="Permanent link">&para;</a></h2>
 <p><strong>PostgREST</strong> is a server that automatically turns a PostgreSQL database into a REST API. Instead of writing server-side code, you write SQL functions and PostgREST exposes them as HTTP endpoints. spieli's entire API layer is PostgREST — there is no custom backend application server.</p>
 <p>More: <a href="https://postgrest.org">postgrest.org</a></p>
-<h2 id="data-quality-indicator">Data Quality indicator<a class="headerlink" href="#data-quality-indicator" title="Permanent link">&para;</a></h2>
-<p>Each playground carries a <strong>Data Quality</strong> badge whose colour reflects how completely it has been mapped in OpenStreetMap:</p>
+<h2 id="mapping-detail-indicator">Mapping detail indicator<a class="headerlink" href="#mapping-detail-indicator" title="Permanent link">&para;</a></h2>
+<p>Each playground carries a <strong>Mapping detail</strong> badge whose colour reflects how much of it has been mapped in OpenStreetMap:</p>
 <table>
 <thead>
 <tr>
@@ -2047,23 +2047,26 @@
 <tbody>
 <tr>
 <td>Green</td>
-<td>hoch / high</td>
-<td>Photos, a name, and at least one detail (equipment, surface, …) are present</td>
+<td>detailliert / detailed</td>
+<td>Play infrastructure <strong>and</strong> at least one detail (surface, opening hours, or a non-trivial access value)</td>
 </tr>
 <tr>
 <td>Yellow</td>
-<td>mittel / medium</td>
-<td>At least one of the above is present, but not all</td>
+<td>grundlegend / basic</td>
+<td>One of the two, not both</td>
 </tr>
 <tr>
 <td>Red</td>
-<td>niedrig / low</td>
-<td>None of the above — the playground exists in OSM but has no additional data</td>
+<td>keine Details / no details yet</td>
+<td>Neither — the playground exists in OSM but carries nothing else</td>
 </tr>
 </tbody>
 </table>
-<p>The map legend is headed "Datenqualität" / "Data Quality" and uses short scale labels (hoch / mittel / niedrig). The panel badge also reads "Datenqualität" / "Data Quality" in the matching colour. The same three-state breakdown is used in cluster rings and the federation macro view.</p>
-<p>Internally, the three states are referred to as <code>complete</code>, <code>partial</code>, and <code>missing</code>. These values appear in the API responses (see <a href="../api/"><code>api.md</code></a>) and in the database (<code>playground_stats</code> materialised view). The display label is intentionally kept neutral — it describes <em>what</em> is shown, not a judgement.</p>
+<p>"Play infrastructure" means <code>playground=*</code> objects and soccer / basketball / table-tennis pitches. Benches, shelters and picnic tables do not count — a lone bench must not carry an otherwise unmapped playground.</p>
+<p>A photo is <strong>not</strong> part of the rating. It is shown separately as a camera glyph on the map.</p>
+<p>The map legend is headed "Erfasste Details" / "Mapping detail". The same three-state breakdown is used in cluster rings, the federation macro view and the hub instance drawer.</p>
+<p>The scale measures how much of the map is filled in, not how good the playground is. The lowest step means "nobody has mapped this yet — help out", not "bad playground".</p>
+<p>Internally, the three states are referred to as <code>complete</code>, <code>partial</code>, and <code>missing</code>. These values appear in the API responses (see <a href="../api/"><code>api.md</code></a>) and in the database (<code>playground_stats</code> materialised view). They are deliberately <em>not</em> renamed to match the labels — federation between backends on different versions depends on them. Full rule in <a href="../completeness/"><code>completeness.md</code></a>.</p>
 <h2 id="overpass-turbo">Overpass Turbo<a class="headerlink" href="#overpass-turbo" title="Permanent link">&para;</a></h2>
 <p><strong>Overpass Turbo</strong> (<a href="https://overpass-turbo.eu">overpass-turbo.eu</a>) is a web tool for running ad-hoc queries against live OpenStreetMap data. It is useful when adding support for a new device type — you can search for <code>playground=&lt;tag&gt;</code> to find real playgrounds that have the device mapped and use them for testing.</p>
 

@@ -505,10 +505,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#data-quality-colours" class="md-nav__link">
+  <a href="#mapping-detail-colours" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Data quality colours
+        Mapping detail colours
       
     </span>
   </a>
@@ -539,10 +539,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#data-quality-filter" class="md-nav__link">
+  <a href="#mapping-detail-filter" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Data quality filter
+        Mapping detail filter
       
     </span>
   </a>
@@ -2008,10 +2008,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#data-quality-colours" class="md-nav__link">
+  <a href="#mapping-detail-colours" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Data quality colours
+        Mapping detail colours
       
     </span>
   </a>
@@ -2042,10 +2042,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#data-quality-filter" class="md-nav__link">
+  <a href="#mapping-detail-filter" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Data quality filter
+        Mapping detail filter
       
     </span>
   </a>
@@ -2164,12 +2164,12 @@
 <h2 id="navigating-the-map">Navigating the map<a class="headerlink" href="#navigating-the-map" title="Permanent link">&para;</a></h2>
 <p>Use your mouse (desktop) or fingers (mobile) to pan and zoom. The map shows:</p>
 <ul>
-<li><strong>Playground polygons</strong> — coloured outlines of playground areas, colour-coded by data quality (see below)</li>
+<li><strong>Playground polygons</strong> — coloured outlines of playground areas, colour-coded by mapping detail (see below)</li>
 <li><strong>Cluster rings</strong> — at lower zoom levels, nearby playgrounds are grouped into ring indicators showing counts</li>
 </ul>
 <p>Click or tap any playground to open its detail panel.</p>
-<h2 id="data-quality-colours">Data quality colours<a class="headerlink" href="#data-quality-colours" title="Permanent link">&para;</a></h2>
-<p>Each playground is colour-coded to show how completely it has been mapped in OpenStreetMap:</p>
+<h2 id="mapping-detail-colours">Mapping detail colours<a class="headerlink" href="#mapping-detail-colours" title="Permanent link">&para;</a></h2>
+<p>Each playground is colour-coded to show how much of it has been mapped in OpenStreetMap:</p>
 <table>
 <thead>
 <tr>
@@ -2180,19 +2180,21 @@
 <tbody>
 <tr>
 <td>Green</td>
-<td>Well-mapped — has a photo, mapped equipment, and at least one detail (surface, opening hours, or access)</td>
+<td>Detailed — mapped play equipment <strong>and</strong> at least one detail (surface, opening hours, or access)</td>
 </tr>
 <tr>
 <td>Orange</td>
-<td>Partially mapped — at least one of photo, equipment, or detail is present</td>
+<td>Basic — one of the two, not both</td>
 </tr>
 <tr>
 <td>Red</td>
-<td>Barely mapped — the playground exists in OSM but has no photo, no mapped equipment, and no details</td>
+<td>No details yet — the playground exists in OSM but carries no equipment and no details</td>
 </tr>
 </tbody>
 </table>
-<p>The colours reflect the OSM data, not the real-world quality of the playground.</p>
+<p>Play equipment means slides, swings, climbing frames and the like, plus ball courts. A bench or picnic table on its own does not make a playground "basic" — those are useful to know about, but they say nothing about whether there is anything to play on.</p>
+<p>A camera glyph marks playgrounds that also have a photo. Photos are a bonus, not part of the rating — a playground with everything mapped except a picture still counts as detailed.</p>
+<p>The colours describe the OSM data, not the real-world quality of the playground. The lowest step means nobody has mapped it yet, which is an invitation to help rather than a warning.</p>
 <h2 id="finding-playgrounds">Finding playgrounds<a class="headerlink" href="#finding-playgrounds" title="Permanent link">&para;</a></h2>
 <p><strong>Search:</strong> Type a place name, street, or city into the search box (top bar). The map moves to the matching location.</p>
 <p><strong>My location:</strong> Tap the location button to centre the map on your current position. Your position is shown as a pulsing blue dot; at high zoom a translucent circle indicates the GPS accuracy. If your browser already granted location permission, spieli auto-locates on page load (unless you opened a deeplink or region link).</p>
@@ -2273,8 +2275,8 @@
 </tbody>
 </table>
 <p>Active filters appear as chips below the search bar. Click a chip to remove that filter.</p>
-<h3 id="data-quality-filter">Data quality filter<a class="headerlink" href="#data-quality-filter" title="Permanent link">&para;</a></h3>
-<p>The <strong>Datenqualität</strong> section lets you show or hide playgrounds by their OSM data completeness:</p>
+<h3 id="mapping-detail-filter">Mapping detail filter<a class="headerlink" href="#mapping-detail-filter" title="Permanent link">&para;</a></h3>
+<p>The <strong>Erfasste Details</strong> section lets you show or hide playgrounds by how much of them is mapped:</p>
 <table>
 <thead>
 <tr>
@@ -2284,16 +2286,16 @@
 </thead>
 <tbody>
 <tr>
-<td><strong>Complete</strong> (green)</td>
-<td>Has photo, mapped equipment, and at least one detail (surface, opening hours, or access)</td>
+<td><strong>detailliert</strong> (green)</td>
+<td>Mapped play equipment <strong>and</strong> at least one detail (surface, opening hours, or access)</td>
 </tr>
 <tr>
-<td><strong>Partial</strong> (amber)</td>
-<td>Has at least one of the above</td>
+<td><strong>grundlegend</strong> (orange)</td>
+<td>One of the two, not both</td>
 </tr>
 <tr>
-<td><strong>Missing</strong> (red)</td>
-<td>No mapped data at all</td>
+<td><strong>keine Details</strong> (red)</td>
+<td>Neither</td>
 </tr>
 </tbody>
 </table>

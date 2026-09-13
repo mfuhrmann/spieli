@@ -2225,28 +2225,25 @@
 </thead>
 <tbody>
 <tr>
-<td>Has photo</td>
-<td><code>tags</code> contains key <code>panoramax</code> or a key starting with <code>panoramax:</code></td>
-<td><code>Object.keys(props).some(k =&gt; k.startsWith('panoramax'))</code></td>
-</tr>
-<tr>
-<td>Has name</td>
-<td><code>name IS NOT NULL</code> (<code>name</code> is a dedicated column)</td>
-<td><code>!!props.name</code></td>
+<td>Has equipment</td>
+<td>a <code>playground=*</code> object inside the area, or a soccer / basketball / table-tennis pitch</td>
+<td><code>device_count &gt; 0 \|\| table_tennis_count &gt; 0 \|\| has_soccer \|\| has_basketball</code></td>
 </tr>
 <tr>
 <td>Has info</td>
 <td><code>surface</code> set, or <code>access</code> set and not <code>'yes'</code>, or <code>opening_hours</code> set</td>
-<td><code>!!(props.surface \|\| …)</code></td>
+<td><code>!!(props.opening_hours \|\| props.surface \|\| (props.access &amp;&amp; props.access !== 'yes'))</code></td>
 </tr>
 </tbody>
 </table>
-<p>Note: <code>operator</code> is present in the JS completeness check but intentionally absent from the SQL criterion — the SQL view was narrowed to attributes that directly inform a parent's visit decision.</p>
 <ul>
-<li><code>complete</code> = all three present</li>
-<li><code>partial</code> = at least one present</li>
-<li><code>missing</code> = none present</li>
+<li><code>complete</code> = both present</li>
+<li><code>partial</code> = exactly one present</li>
+<li><code>missing</code> = neither</li>
 </ul>
+<p><strong>Street furniture does not count as equipment.</strong> Benches, shelters and picnic tables are often mapped inside a playground area by someone who never mapped the play equipment, so counting them lifts playgrounds that have nothing to play on. The flags derived from equipment tags (<code>is_water</code>, <code>for_baby</code>, <code>for_toddler</code>, <code>for_wheelchair</code>) are excluded for the same reason — a bench carrying <code>wheelchair=yes</code> is the same false signal through a side door (<a href="https://github.com/mfuhrmann/spieli/issues/776">#776</a>).</p>
+<p><strong>A photo is not a criterion.</strong> Photo tags are rare in OSM, so requiring one for the top bucket gated whole regions out of it. Availability is still derived — <code>has_photo</code> on <code>playground_stats</code>, <code>hasPhotoSignal()</code> in JS — but only to drive an additive marker, never the rating. <code>name</code> and <code>operator</code> are not criteria either: administrative data, not useful to a parent choosing a playground.</p>
+<p>Full rationale in <a href="../../reference/completeness/"><code>../reference/completeness.md</code></a>.</p>
 <p><strong>If you change the completeness criteria</strong>, update both files and rebuild the materialised view with <code>make db-apply</code>.</p>
 <h2 id="filter-flags-for_baby-for_toddler-is_water">Filter flags (<code>for_baby</code>, <code>for_toddler</code>, <code>is_water</code>, …)<a class="headerlink" href="#filter-flags-for_baby-for_toddler-is_water" title="Permanent link">&para;</a></h2>
 <p>Several boolean columns in <code>playground_stats</code> are computed from equipment found inside each playground polygon. They drive both the filter UI and the <code>filter_attrs</code> payload in the cluster RPC.</p>
