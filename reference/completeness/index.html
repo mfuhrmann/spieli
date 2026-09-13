@@ -1856,6 +1856,34 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#colours" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Colours
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Colours">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#why-the-arcs-are-cased" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why the arcs are cased
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#implementation" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1975,7 +2003,7 @@
 </tbody>
 </table>
 <p>The identifiers <code>complete</code> / <code>partial</code> / <code>missing</code> are wire and storage values — they appear in API responses, in <code>playground_stats</code>, and in the <code>filterStore</code> keys. They deliberately differ from the labels shown to users; renaming them would break federation between backends on different versions.</p>
-<p>How the three states are coloured is a separate concern; see the map legend and <code>app/src/lib/vectorStyles.js</code>.</p>
+<p>How the three states are coloured is described in <a href="#colours">Colours</a> below; every surface reads the same palette module, so the legend, the polygons and the ring arcs cannot disagree.</p>
 <h2 id="photos-are-not-a-criterion">Photos are not a criterion<a class="headerlink" href="#photos-are-not-a-criterion" title="Permanent link">&para;</a></h2>
 <p>A photo (<code>panoramax</code> / <code>panoramax:*</code>, <code>wikimedia_commons</code>, or an <code>image</code> link on a Wikimedia/Wikipedia host) is <strong>not</strong> an input to the state.</p>
 <p>It used to be: the old rule required all three of photo, equipment and info for the top state. Photo tags are rare in OSM, so that gated entire regions out of it — Hessen sat at 87 of 8802 playgrounds (1.0%) in the top bucket, while a well-photographed region reached 8.0% under the identical rule. A playground with twelve mapped devices plus surface and access stayed in the middle state indefinitely because nobody had uploaded a picture, which judged the mapper rather than the map (<a href="https://github.com/mfuhrmann/spieli/issues/733">#733</a>).</p>
@@ -1983,6 +2011,16 @@
 <p>The marker lives on the map only. There is no photo badge in the detail panel — by the time the panel is open the photos themselves are visible in it, so a chip announcing them would be redundant. On the map it is the only way to see which playgrounds have pictures without opening each one.</p>
 <p>Implementation note: the glyph needs an explicit <code>geometry</code> function pointing at the polygon's interior point. OpenLayers' <code>renderPolygonGeometry</code> handles fill, stroke and text only — an <code>image</code> style attached to a Polygon is silently dropped, with no warning.</p>
 <p>An off-Wikimedia <code>image</code> URL does not count — the gallery cannot render it.</p>
+<h2 id="colours">Colours<a class="headerlink" href="#colours" title="Permanent link">&para;</a></h2>
+<p>The palette is a <strong>single-hue green ramp ending in a cool slate</strong>, not a traffic light. A diverging red/amber/green scale encodes "good versus bad", which reads as a verdict on the playground. This one encodes "more versus less", which is what the value measures.</p>
+<p>Ordering is by <strong>lightness, and monotonic</strong>: <code>complete</code> L* 79, <code>partial</code> L* 47, <code>missing</code> L* 36. The brightest step marks the best-mapped playgrounds, and a viewer with deuteranopia or protanopia can recover the ordering without relying on the green-versus-slate hue split.</p>
+<p>The zero case is a cool slate rather than a plain grey: neutral enough to read as "nothing here yet" instead of "bad", but with enough blue cast to stay off the basemap's own warm greys (residential <code>#e0dfdf</code>, buildings <code>#d9d0c9</code>), which a plain grey at low alpha disappeared into.</p>
+<h3 id="why-the-arcs-are-cased">Why the arcs are cased<a class="headerlink" href="#why-the-arcs-are-cased" title="Permanent link">&para;</a></h3>
+<p><code>base</code> is drawn opaque for cluster and macro ring arcs, and bright green cannot carry contrast on its own against this basemap: <code>#4ade80</code> measures 1.59:1 on the background, 1.35:1 over grass and 1.06:1 over water, against a 3:1 floor for a graphical object. No green above 3:1 exists lighter than L* 31.</p>
+<p>Moving the whole ramp down a step was tried first and cost more than it bought — the bright end disappeared, the ramp stopped being monotonic, and on the polygon tier <code>partial</code> and <code>missing</code> collapsed to ΔE 9.7, making the two lower buckets hard to separate.</p>
+<p>Instead each arc is drawn over a dark casing one pixel proud on each side (<code>RING_CASING</code>), so the <em>edge</em> carries the contrast and the fill is free to be chosen for meaning. That is how road casings work in cartography. With the ramp restored, the same polygon pair is ΔE 20.2.</p>
+<p><strong>Known cost:</strong> the rings read heavier. <code>missing</code> is the dominant bucket — 625 of 926 playgrounds in Fulda — and slate-600 against a dark casing makes a mostly-unmapped cluster read as a near-black disc at low zoom. Kept for now. The levers are a lighter or thinner casing, or lightening <code>missing</code>, which the casing makes possible again. Note the tension there: monotonic lightness wants <code>missing</code> darkest, while "the least-mapped state should stay quiet" wants it lightest. This palette currently chooses the ordering.</p>
+<p>All colours come from <strong><code>app/src/lib/completenessPalette.js</code></strong>, which documents which field each surface must use (<code>base</code> for anything opaque, <code>fill</code> only for shapes the basemap shows through or backgrounds carrying text). Every consumer reads from it: playground polygons, cluster rings, hub macro rings, the legend, the detail-panel badge, the filter dots, the nearby-playgrounds list and the hub instance drawer. Nothing may hardcode these values — picking the wrong field or a stale hex fails silently, with two surfaces simply disagreeing.</p>
 <h2 id="implementation">Implementation<a class="headerlink" href="#implementation" title="Permanent link">&para;</a></h2>
 <p>The rule is maintained in two mirrored places that must stay in sync:</p>
 <ul>
