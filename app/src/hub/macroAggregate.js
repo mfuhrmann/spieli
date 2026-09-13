@@ -56,7 +56,7 @@ export function deriveMacroRing(backend, filtered = null) {
   const offline   = !isBackendHealthy(backend);
   const importing = !offline && (backend.importing ?? false);
   // Pre-P1 backends ship no `complete/partial/missing` extension; their count
-  // maps into the `restricted` bucket so the renderer draws a flat gray ring.
+  // maps into the `restricted` bucket so the renderer draws a flat violet ring.
   const c     = backend.completeness;
   const count = filtered ? filtered.count : (backend.playgroundCount ?? 0);
   // "No match" (filteredEmpty) only applies when the backend actually HAS

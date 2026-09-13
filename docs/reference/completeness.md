@@ -33,7 +33,7 @@ Pitches *do* count: a bolzplatz or basketball hoop is real play infrastructure, 
 
 The identifiers `complete` / `partial` / `missing` are wire and storage values — they appear in API responses, in `playground_stats`, and in the `filterStore` keys. They deliberately differ from the labels shown to users; renaming them would break federation between backends on different versions.
 
-How the three states are coloured is a separate concern; see the map legend and `app/src/lib/vectorStyles.js`.
+How the three states are coloured is described in [Colours](#colours) below; every surface reads the same palette module, so the legend, the polygons and the ring arcs cannot disagree.
 
 ## Photos are not a criterion
 
@@ -48,6 +48,26 @@ The marker lives on the map only. There is no photo badge in the detail panel �
 Implementation note: the glyph needs an explicit `geometry` function pointing at the polygon's interior point. OpenLayers' `renderPolygonGeometry` handles fill, stroke and text only — an `image` style attached to a Polygon is silently dropped, with no warning.
 
 An off-Wikimedia `image` URL does not count — the gallery cannot render it.
+
+## Colours
+
+The palette is a **single-hue green ramp ending in a cool slate**, not a traffic light. A diverging red/amber/green scale encodes "good versus bad", which reads as a verdict on the playground. This one encodes "more versus less", which is what the value measures.
+
+Ordering is by **lightness, and monotonic**: `complete` L\* 79, `partial` L\* 47, `missing` L\* 36. The brightest step marks the best-mapped playgrounds, and a viewer with deuteranopia or protanopia can recover the ordering without relying on the green-versus-slate hue split.
+
+The zero case is a cool slate rather than a plain grey: neutral enough to read as "nothing here yet" instead of "bad", but with enough blue cast to stay off the basemap's own warm greys (residential `#e0dfdf`, buildings `#d9d0c9`), which a plain grey at low alpha disappeared into.
+
+### Why the arcs are cased
+
+`base` is drawn opaque for cluster and macro ring arcs, and bright green cannot carry contrast on its own against this basemap: `#4ade80` measures 1.59:1 on the background, 1.35:1 over grass and 1.06:1 over water, against a 3:1 floor for a graphical object. No green above 3:1 exists lighter than L\* 31.
+
+Moving the whole ramp down a step was tried first and cost more than it bought — the bright end disappeared, the ramp stopped being monotonic, and on the polygon tier `partial` and `missing` collapsed to ΔE 9.7, making the two lower buckets hard to separate.
+
+Instead each arc is drawn over a dark casing one pixel proud on each side (`RING_CASING`), so the *edge* carries the contrast and the fill is free to be chosen for meaning. That is how road casings work in cartography. With the ramp restored, the same polygon pair is ΔE 20.2.
+
+**Known cost:** the rings read heavier. `missing` is the dominant bucket — 625 of 926 playgrounds in Fulda — and slate-600 against a dark casing makes a mostly-unmapped cluster read as a near-black disc at low zoom. Kept for now. The levers are a lighter or thinner casing, or lightening `missing`, which the casing makes possible again. Note the tension there: monotonic lightness wants `missing` darkest, while "the least-mapped state should stay quiet" wants it lightest. This palette currently chooses the ordering.
+
+All colours come from **`app/src/lib/completenessPalette.js`**, which documents which field each surface must use (`base` for anything opaque, `fill` only for shapes the basemap shows through or backgrounds carrying text). Every consumer reads from it: playground polygons, cluster rings, hub macro rings, the legend, the detail-panel badge, the filter dots, the nearby-playgrounds list and the hub instance drawer. Nothing may hardcode these values — picking the wrong field or a stale hex fails silently, with two surfaces simply disagreeing.
 
 ## Implementation
 
