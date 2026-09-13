@@ -337,16 +337,21 @@
     closeDataAgePopover();
   });
 
-  // ── Completeness badge ────────────────────────────────────────────────────
+  // ── Mapping-detail badge ──────────────────────────────────────────────────
+  // The value describes how much of the playground has been MAPPED, not how
+  // good it is, so the labels moved to the `mappingDetail.*` namespace
+  // ("detailed" / "basic" / "no details yet") — see locales/en.json and #733.
+  // The badge variants are unchanged here; recolouring the three buckets is a
+  // separate change.
   const COMPLETENESS_VARIANT = {
     complete: 'success',
     partial:  'warning',
     missing:  'destructive',
   };
   const COMPLETENESS_KEY = {
-    complete: 'completeness.badgeComplete',
-    partial:  'completeness.badgePartial',
-    missing:  'completeness.badgeMissing',
+    complete: 'mappingDetail.detailed',
+    partial:  'mappingDetail.basic',
+    missing:  'mappingDetail.noDetails',
   };
   $: completenessLevel = attr ? playgroundCompleteness(attr) : null;
   $: completeness = completenessLevel

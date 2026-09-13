@@ -209,9 +209,9 @@
               {@const { complete, partial, missing } = b.completeness}
               {@const total = complete + partial + missing}
               <div class="instance-completeness">
-                <span class="cdot cdot--complete"></span>{complete} {$_('completeness.complete')}
-                <span class="cdot cdot--partial"></span>{partial} {$_('completeness.partial')}
-                <span class="cdot cdot--missing"></span>{missing} {$_('completeness.missing')}
+                <span class="cdot cdot--complete"></span>{complete} {$_('mappingDetail.detailed')}
+                <span class="cdot cdot--partial"></span>{partial} {$_('mappingDetail.basic')}
+                <span class="cdot cdot--missing"></span>{missing} {$_('mappingDetail.noDetails')}
               </div>
               {#if total > 0}
                 {@const pct = Math.round(complete / total * 100)}

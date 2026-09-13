@@ -91,7 +91,7 @@
       </div>
 
       <div class="completeness-section">
-        <span class="layer-title"><BarChart3 class="h-3 w-3" /> {$_('filter.completeness.title')}</span>
+        <span class="layer-title"><BarChart3 class="h-3 w-3" /> {$_('filter.mappingDetail.title')}</span>
         {#each COMPLETENESS_STATES as key}
           <label class="filter-item" class:completeness-hidden={!$filterStore[key]}>
             <input
@@ -100,7 +100,7 @@
               onchange={() => toggle(key)}
             />
             <span class="completeness-dot {key}-dot"></span>
-            <span>{$_('filter.completeness.' + key)}</span>
+            <span>{$_('filter.mappingDetail.' + key)}</span>
           </label>
         {/each}
       </div>
