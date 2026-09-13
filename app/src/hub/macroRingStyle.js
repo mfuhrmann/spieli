@@ -21,7 +21,7 @@
 
 import Style from 'ol/style/Style.js';
 import { radiusForCount } from '../lib/clusterStyle.js';
-import { COMPLETENESS_BASE } from '../lib/completenessPalette.js';
+import { COMPLETENESS_BASE, RING_CASING } from '../lib/completenessPalette.js';
 
 // Mapping-detail segments come from the shared palette (see
 // lib/completenessPalette.js) so macro rings, cluster rings, polygons and the
@@ -119,6 +119,17 @@ function renderHealthyMacroRing(pixelCoords, state) {
 
   const tenths = quantiseSegments(complete, partial, missing, restricted);
   const colors = [COLOR.complete, COLOR.partial, COLOR.missing, COLOR.restricted];
+
+  // Casing: one dark ring a pixel proud on each side, under the coloured
+  // arcs. It carries the ring's edge against the basemap so the segment
+  // colours are free to follow the ramp rather than a contrast ratio. One
+  // full circle rather than per-arc, so adjoining segments share a casing and
+  // show no seam. See RING_CASING in lib/completenessPalette.js.
+  ctx.beginPath();
+  ctx.arc(x, y, radius, 0, Math.PI * 2);
+  ctx.strokeStyle = RING_CASING;
+  ctx.lineWidth   = RING_WIDTH + 2;
+  ctx.stroke();
 
   ctx.lineWidth = RING_WIDTH;
   ctx.lineCap   = 'butt';
@@ -263,6 +274,17 @@ function renderCantFilterMacroRing(pixelCoords, state) {
 
   const tenths = quantiseSegments(complete, partial, missing, restricted);
   const colors = [COLOR.complete, COLOR.partial, COLOR.missing, COLOR.restricted];
+  // Casing: one dark ring a pixel proud on each side, under the coloured
+  // arcs. It carries the ring's edge against the basemap so the segment
+  // colours are free to follow the ramp rather than a contrast ratio. One
+  // full circle rather than per-arc, so adjoining segments share a casing and
+  // show no seam. See RING_CASING in lib/completenessPalette.js.
+  ctx.beginPath();
+  ctx.arc(x, y, radius, 0, Math.PI * 2);
+  ctx.strokeStyle = RING_CASING;
+  ctx.lineWidth   = RING_WIDTH + 2;
+  ctx.stroke();
+
   ctx.lineWidth = RING_WIDTH;
   ctx.lineCap   = 'butt';
   let start = -Math.PI / 2;

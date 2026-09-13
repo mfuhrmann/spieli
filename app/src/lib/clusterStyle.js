@@ -8,7 +8,7 @@
 // rounded to tenths → ~400 distinct shapes at the upper bound.
 
 import Style from 'ol/style/Style.js';
-import { COMPLETENESS_BASE } from './completenessPalette.js';
+import { COMPLETENESS_BASE, RING_CASING } from './completenessPalette.js';
 
 // Ring segment colours come from the shared mapping-detail palette, so the
 // ring, the polygons and the legend swatches cannot drift apart.
@@ -76,8 +76,20 @@ function drawStackedRing(canvas, count, c10, p10, m10, pixelRatio) {
 
   const ctx = canvas.getContext('2d');
   ctx.scale(pixelRatio, pixelRatio);
+  ctx.lineCap = 'butt';
+
+  // Casing: one dark ring a pixel proud on each side, drawn before the
+  // coloured arcs. It is what gives the ring its edge against the basemap, so
+  // the segment colours are free to be chosen for the ramp rather than for
+  // contrast. Drawn as a single full circle rather than per-arc so that
+  // adjoining segments share one casing and no seam appears between them.
+  ctx.beginPath();
+  ctx.arc(centre, centre, radius, 0, Math.PI * 2);
+  ctx.strokeStyle = RING_CASING;
+  ctx.lineWidth   = RING_WIDTH + 2;
+  ctx.stroke();
+
   ctx.lineWidth = RING_WIDTH;
-  ctx.lineCap   = 'butt';
 
   const segments = [
     { tenths: c10, stroke: COLOR.complete },

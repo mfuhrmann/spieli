@@ -13,51 +13,52 @@
 // "more vs less", which is what the value actually measures: how much of this
 // playground has been mapped.
 //
-// Ordering WAS by visual weight: `complete` was the brightest, most saturated
-// green (#4ade80), so the map drew the eye to well-mapped playgrounds rather
-// than to the middle state. That does not survive the basemap.
+// Ordering is by LIGHTNESS, and monotonic: `complete` is the brightest step
+// (#4ade80, L* 79), `partial` a mid green (#15803d, L* 47), `missing` a cool
+// slate (#475569, L* 36). So the map draws the eye to well-mapped playgrounds,
+// and a viewer with deuteranopia or protanopia can recover the ordering from
+// lightness alone, without relying on the green/slate hue split.
 //
-// `base` is drawn OPAQUE — cluster and macro ring arcs. Against the
-// OpenFreeMap Bright style the app now ships (desaturated, every landcover
-// surface between L* 87 and L* 96), #4ade80 measured 1.59:1 on the basemap
-// background, 1.35:1 over grass and 1.06:1 over water, against a 3:1 floor
-// for a graphical object. The brightest colour in the ramp was the least
-// visible thing on the map — the intent inverted.
+// That ordering only works because of the casing. `base` is drawn OPAQUE on
+// cluster and macro ring arcs, and against the OpenFreeMap Bright style the
+// app ships (desaturated, every landcover surface between L* 87 and L* 96)
+// #4ade80 measures 1.59:1 on the basemap background, 1.35:1 over grass and
+// 1.06:1 over water — against a 3:1 floor for a graphical object. On a
+// near-light ground "brighter" and ">= 3:1" pull in opposite directions, and a
+// search of the green space returns nothing above 3:1 lighter than L* 31.
 //
-// (An earlier version of this note also cited 1.74:1 against "the white
-// separator stroke the ring renderer draws between arcs". No such stroke
-// exists: neither drawStackedRing nor renderHealthyMacroRing draws one, and
-// the only white stroke in either renderer is on the single-child dot. The
-// basemap measurements above are the whole case.)
+// The first attempt moved the whole ramp down a step instead: `complete` took
+// green-700, `partial` dropped to a near-black #052e16. It cleared the floor
+// and cost more than it bought. The bright end was gone, so the top bucket no
+// longer pulled the eye; the ramp stopped being monotonic; and on the polygon
+// tier, where the fills are translucent over a near-white basemap, `partial`
+// and `missing` collapsed to dE 9.7 — the two lower buckets became hard to
+// tell apart, which is the distinction the contribution prompt hangs on.
 //
-// On a near-light ground "brighter" and "≥ 3:1" pull in opposite directions,
-// so this cannot be fixed by retuning one hex: a search of the green space
-// returns nothing above 3:1 lighter than L* 31, which is darker than `partial`
-// was. The ramp therefore moves down a step — `complete` takes the green-700
-// that `partial` held, `partial` drops to a near-black green:
+// Drawing a dark casing under each arc (RING_CASING, below) moves the contrast
+// requirement off the fill and onto the edge, which is what road casings do in
+// cartography. The ramp is then free to be chosen for meaning rather than for
+// a ratio. Same polygon pair with the ramp restored: dE 9.7 -> 20.2.
 //
-//     complete  #4ade80 → #15803d    worst-case contrast 1.06 → 3.06
-//     partial   #15803d → #052e16    worst-case contrast 3.06 → 9.10
-//
-// Both greens now clear 3:1 on every basemap surface except `complete` over
-// water, which is 3.06 and rare under a playground polygon.
+// (An earlier version of this note cited 1.74:1 against "the white separator
+// stroke the ring renderer draws between arcs". No such stroke exists:
+// neither drawStackedRing nor renderHealthyMacroRing draws one, and the only
+// white stroke in either renderer is on the single-child dot. The basemap
+// measurements above are the whole case.)
 //
 // COST, recorded rather than solved:
-//   1. The ramp has lost its bright end. `complete` no longer pulls the eye by
-//      brightness, only by hue against slate. If that pull matters more than
-//      the contrast floor, the real fix is a thin dark casing on the arcs in
-//      stackedRingRenderer, which frees the palette to be bright again.
-//   2. The ramp is still not monotonic in lightness. `missing` now sits
-//      BETWEEN the two greens (complete L* 47, missing L* 36, partial L* 16),
-//      so all three are separable by lightness, but the order reads
-//      complete > missing > partial rather than complete > partial > missing.
-//      Workable — hue carries the categorical split (green = mapped, slate =
-//      not), lightness orders the two green steps — but it is not the clean
-//      sequential ramp the module claims above.
+//   The rings read heavier than they did. `missing` is the dominant bucket —
+//   625 of 926 playgrounds in Fulda — and slate-600 sitting directly against a
+//   dark casing makes a mostly-unmapped cluster read as a near-black disc at
+//   low zoom. Reviewed on screen and kept for now; the levers if it needs
+//   fixing are a lighter casing, a 1px casing instead of 2px, or lightening
+//   `missing` (which the casing has made possible again, since `missing` only
+//   went to slate-600 to clear the floor on its own).
 //
-// (A fourth — `base` moving while `fill` stayed behind — is fixed: every
-// surface colour is now derived from one `base` per bucket, below, so the two
-// cannot drift apart again.)
+//   Note the tension that sits under that last option: monotonic lightness
+//   wants `missing` darkest, while "the least-mapped state should be quiet"
+//   wants it lightest. Those are incompatible, and this palette currently
+//   chooses the ordering.
 //
 // The zero case is a cool slate blue-grey, not a plain grey. A neutral colour
 // is right — it reads as "nothing here yet" rather than "bad playground",
@@ -120,10 +121,22 @@
  * "detailed" as an arc.
  */
 const BASE = {
-    complete: '#15803d',
-    partial:  '#052e16',
+    complete: '#4ade80',
+    partial:  '#15803d',
     missing:  '#475569',
 };
+
+/**
+ * Casing drawn under each ring arc, one pixel proud on each side.
+ *
+ * This is what meets the 3:1 floor for the ring, so `base` does not have to.
+ * Without it the brightest step in the ramp was the least visible thing on the
+ * map: opaque #4ade80 measures 1.06:1 over water. A dark casing gives every
+ * arc a hard edge against the basemap regardless of its fill, which is how
+ * road casings work in cartography, and frees the ramp to be ordered by
+ * lightness instead of by what happens to clear a contrast ratio.
+ */
+export const RING_CASING = '#1f2937';
 
 /** Outline colour. Not derived: it is chosen for contrast against the fill. */
 const STROKE = {
@@ -155,7 +168,7 @@ function withAlpha(hex, alpha) {
 // dE 42 as opaque arcs). Translucent fills over a near-white ground wash
 // toward each other; the polygon tier is inherently a weaker signal than the
 // legend, which shows `base`, implies.
-const FILL_ALPHA  = 0.30;
+const FILL_ALPHA  = 0.34;
 const HATCH_LINE  = 0.55;
 const HATCH_WASH  = 0.08;
 
