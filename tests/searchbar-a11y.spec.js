@@ -198,6 +198,49 @@ test.describe('SearchBar combobox a11y', () => {
     await expect(page.locator('.search-results [aria-selected="true"]')).toHaveCount(1);
   });
 
+  test('editing the query clears the active option immediately', async ({ page }) => {
+    // Regression: `search()` is gated on a two-character query, so shrinking
+    // the query below the threshold never reassigned `results` and never ran
+    // D7's reset. The cached list stayed open with a stale active row, and
+    // Enter navigated to a suggestion for a query that had been deleted.
+    const input = await openSuggestions(page);
+    await input.press('ArrowDown');
+    await expect(input).toHaveAttribute('aria-activedescendant', /./);
+
+    await input.fill('F');
+    await expect(input).not.toHaveAttribute('aria-activedescendant', /./);
+  });
+
+  test('a query below the search threshold closes the list', async ({ page }) => {
+    const input = await openSuggestions(page);
+    await expect(page.locator('.search-results')).toBeVisible();
+
+    await input.fill('F');
+    // aria-expanded must describe a popup that is relevant to the input;
+    // cached hits for "Fulda" are not suggestions for "F".
+    await expect(page.locator('.search-results')).toBeHidden();
+    await expect(input).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  test('arrow keys keep native caret movement when no list is open', async ({ page }) => {
+    // In a single-line input ArrowUp/ArrowDown jump the caret to the start and
+    // end of the value. preventDefault must only run when the key actually
+    // drives the listbox, or a keyboard user loses that while editing.
+    const input = page.locator('.search-input');
+    await input.click();
+    await input.fill('Fulda Marktplatz');
+    await input.press('Escape');
+    await expect(page.locator('.search-results')).toBeHidden();
+
+    await input.press('ArrowUp');
+    const atStart = await input.evaluate(el => el.selectionStart);
+    expect(atStart).toBe(0);
+
+    await input.press('ArrowDown');
+    const atEnd = await input.evaluate(el => el.selectionStart);
+    expect(atEnd).toBe('Fulda Marktplatz'.length);
+  });
+
   test('a new result set clears the active option', async ({ page }) => {
     const input = await openSuggestions(page);
     await input.press('ArrowDown');

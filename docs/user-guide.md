@@ -31,6 +31,8 @@ The colours describe the OSM data, not the real-world quality of the playground.
 
 **Search:** Type a place name, street, or city into the search box (top bar). The map moves to the matching location.
 
+Suggestions appear once you have typed two characters. You can work the list entirely from the keyboard — **↓** and **↑** move through the suggestions, **Enter** jumps to the highlighted one (or runs a plain search if none is highlighted), and **Esc** closes the list without leaving the box. Screen readers announce the list, your position in it, and whether a search is still running.
+
 **My location:** Tap the location button to centre the map on your current position. Your position is shown as a pulsing blue dot; at high zoom a translucent circle indicates the GPS accuracy. If your browser already granted location permission, spieli auto-locates on page load (unless you opened a deeplink or region link).
 
 > **Note:** Geolocation requires HTTPS and your browser's permission. If the button does nothing, check your browser's location settings.

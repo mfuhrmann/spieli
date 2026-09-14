@@ -47,8 +47,12 @@ Paired with `preventDefault()` on the results' `mousedown`, which stops the inpu
 **D6 — `mousemove` sets `activeIndex`; `:hover` stops being the highlight.**
 With both a `:hover` rule (L231) and a keyboard active class, pointing at one row while arrowing to another yields two highlights and no single source of truth. Letting `mousemove` write `activeIndex` and styling only `.active` keeps exactly one highlighted row, which is also what `aria-activedescendant` reports.
 
-**D7 — Reset `activeIndex` on every `results` reassignment.**
+**D7 — Reset `activeIndex` whenever the query changes, not only when `results` does.**
 The input debounce is 450 ms (L85). Arrowing to option 3 and continuing to type swaps the result set underneath a stale index, so `aria-activedescendant` would name the wrong row. Reset on assignment in `search()`, `clearSearch()`, and the error path.
+
+Reassignment alone is not enough, which review caught. `search()` is gated on a two-character query, so shrinking the query *below* the threshold reassigns nothing and the reset never runs: typing "Fulda", arrowing to a suggestion and backspacing to "F" left the cached list open with row 0 still active, and Enter navigated to a suggestion for a query the user had already deleted. `onInput` therefore clears `activeIndex` on every keystroke — the highlight is invalid the moment the query changes, not 450 ms later when new results land.
+
+The same path also closes the list below the threshold. `aria-expanded` has to describe a popup that is relevant to the current input, and cached hits for "Fulda" are not suggestions for "F".
 
 **D8 — Two-line result text below the mobile breakpoint.**
 `.result-text` is `white-space: nowrap; text-overflow: ellipsis` (L235-241). Nominatim `display_name` values are long, and on mobile `.search-area` is further narrowed to dodge the top-right controls (`AppShell.svelte:733-738`). The visible text degrades to "Fulda, Landkreis F…", making multiple results hard to tell apart — screen readers get the full string, sighted users with magnification do not. Two lines via line-clamp at the existing 1023px breakpoint, which is a CSS-only change.
@@ -68,3 +72,6 @@ The input debounce is 450 ms (L85). Arrowing to option 3 and continuing to type 
 ## Migration Plan
 
 None. Single component, no persisted state, no API surface, no configuration.
+
+**D9 — `preventDefault()` only once an arrow key is consumed.**
+In a single-line text input `ArrowUp`/`ArrowDown` natively move the caret to the start and end of the value. Calling `preventDefault()` before the "is there a list?" guard swallowed them unconditionally, so after `Escape` — or with no results — a keyboard user editing a long query lost caret movement, in a change whose whole purpose is keyboard access. The guards now run first.

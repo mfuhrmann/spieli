@@ -56,6 +56,24 @@ Arrow keys SHALL move an active option while DOM focus remains in the input, exp
 - **WHEN** the list is closed, previous results are still cached, and the user presses `ArrowDown`
 - **THEN** the list reopens
 
+#### Scenario: Editing the query clears the active option
+
+- **WHEN** the user changes the query while an option is active
+- **THEN** the input has no `aria-activedescendant` attribute
+- **AND** `Enter` runs a fresh search rather than selecting a suggestion for the previous query
+
+#### Scenario: A query below the search threshold closes the list
+
+- **WHEN** the query falls below the two-character search threshold
+- **THEN** the list closes and `aria-expanded` is `false`
+- **AND** cached results from the longer query are discarded
+
+#### Scenario: Arrow keys leave caret movement alone when no list is open
+
+- **WHEN** no list is open and the user presses `ArrowUp` or `ArrowDown`
+- **THEN** the key is not consumed
+- **AND** the caret moves to the start or end of the query, as it natively would
+
 #### Scenario: Enter selects the active option
 
 - **WHEN** an option is active and the user presses `Enter`

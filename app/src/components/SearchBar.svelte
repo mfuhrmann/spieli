@@ -95,8 +95,12 @@
 
   function onKeydown(e) {
     if (e.key === 'ArrowDown') {
-      e.preventDefault();
+      // preventDefault only once the key is actually consumed. In a
+      // single-line input ArrowUp/ArrowDown natively jump the caret to the
+      // start/end of the value; swallowing them with no list open would take
+      // that away from a keyboard user editing a long query.
       if (results.length === 0) return;
+      e.preventDefault();
       // Reopen a list that was dismissed while its results are still cached.
       if (!showResults) {
         showResults = true;
@@ -106,8 +110,8 @@
       return;
     }
     if (e.key === 'ArrowUp') {
+      if (!listOpen) return;   // see ArrowDown: leave the caret keys alone
       e.preventDefault();
-      if (!listOpen) return;
       activeIndex = activeIndex <= 0 ? results.length - 1 : activeIndex - 1;
       return;
     }
@@ -130,6 +134,23 @@
   }
 
   function onInput() {
+    // Editing the query invalidates the highlighted option immediately, not
+    // 450 ms later when the new results land. D7 resets `activeIndex` on every
+    // reassignment of `results`, but `search()` is gated on a two-character
+    // query, so that reset never fires on the way back down: typing "Fulda",
+    // arrowing to a suggestion and backspacing to "F" left the cached list
+    // open with row 0 still active, and Enter then navigated to a suggestion
+    // for a query the user had already deleted.
+    activeIndex = -1;
+
+    // Below the search threshold there is nothing the cached list can be
+    // suggestions *for*, so it must not keep claiming to be — `aria-expanded`
+    // has to describe the popup that is actually relevant to the input.
+    if (query.length < 2) {
+      results = [];
+      showResults = false;
+    }
+
     clearTimeout(searchTimeout);
     searchTimeout = setTimeout(() => {
       if (query.length >= 2) search();

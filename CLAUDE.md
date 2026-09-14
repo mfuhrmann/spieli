@@ -347,6 +347,7 @@ When adding or changing something covered by the `docs/` structure, update the r
 - New config env var → `docs/ops/configuration.md`
 - New OSM tag / import rule → `docs/contributing/import-pipeline.md`
 - New frontend store or component → `docs/contributing/frontend-guide.md`
+- New accessibility invariant (ARIA pattern, keyboard contract, `lang` handling) → `docs/contributing/frontend-guide.md`, and say what a user can now *do* in `docs/user-guide.md` — an a11y feature nobody is told about helps nobody
 - New make target or dev workflow step → `docs/contributing/local-dev.md`
 - New troubleshooting scenario → `docs/ops/troubleshooting.md`
 
