@@ -56,6 +56,12 @@ Arrow keys SHALL move an active option while DOM focus remains in the input, exp
 - **WHEN** the list is closed, previous results are still cached, and the user presses `ArrowDown`
 - **THEN** the list reopens
 
+#### Scenario: Selecting a suggestion discards the result set
+
+- **WHEN** the user selects a suggestion
+- **THEN** the list closes and the cached hits are discarded
+- **AND** returning focus to the input does not reopen them
+
 #### Scenario: Editing the query clears the active option
 
 - **WHEN** the user changes the query while an option is active

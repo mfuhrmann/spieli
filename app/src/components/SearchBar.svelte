@@ -89,7 +89,28 @@
     $mapStore?.getView().animate({ center: coord, zoom: 17 });
     query = result.display_name.split(',')[0];
     showResults = false;
+    // Discard the hits, don't just hide them. `onFocus` reopens the list
+    // whenever `results` is non-empty, and selecting never moves DOM focus out
+    // of the input (see onResultsMousedown), so merely hiding left the list
+    // free to spring straight back — observed on Android: tap a suggestion,
+    // the map zooms, the list is still sitting there. They are also stale by
+    // then: `query` has been replaced with the chosen name, so they are no
+    // longer suggestions for what the input says.
+    results = [];
     activeIndex = -1;
+
+    // Drop the on-screen keyboard on touch. Keeping DOM focus in the input is
+    // right on desktop — it is the whole reason onResultsMousedown suppresses
+    // the blur — but on a phone a focused input means the keyboard covers the
+    // lower half of the screen, hiding the place the map has just flown to.
+    //
+    // TRADE-OFF: the APG combobox pattern says focus should stay on the input
+    // after selection, and a touch screen-reader user loses their position in
+    // the page when it does not. Weighed against every sighted touch user
+    // having to dismiss a keyboard by hand on every search, and resolved in
+    // their favour. Revisit if it proves the wrong call.
+    if (window.matchMedia?.('(pointer: coarse)').matches) inputEl?.blur();
+
     if (onlocation) onlocation(lat, lon);
   }
 

@@ -75,3 +75,11 @@ None. Single component, no persisted state, no API surface, no configuration.
 
 **D9 — `preventDefault()` only once an arrow key is consumed.**
 In a single-line text input `ArrowUp`/`ArrowDown` natively move the caret to the start and end of the value. Calling `preventDefault()` before the "is there a list?" guard swallowed them unconditionally, so after `Escape` — or with no results — a keyboard user editing a long query lost caret movement, in a change whose whole purpose is keyboard access. The guards now run first.
+
+**D10 — Selection discards the hits, and drops the keyboard on touch.**
+`onFocus` reopens the list whenever `results` is non-empty, and selection deliberately never moves DOM focus out of the input (D3), so hiding the list without clearing `results` left it free to spring back. Observed on Android: tap a suggestion, the map zooms, the suggestion list is still sitting there over it. The hits are stale by then anyway — `query` has been replaced with the chosen name.
+
+Selection also blurs the input when `matchMedia('(pointer: coarse)')` matches. Keeping focus is right on desktop and is the entire reason `onResultsMousedown` suppresses the blur, but on a phone a focused input means the on-screen keyboard covers the lower half of the screen — including the location the map has just flown to.
+
+Trade-off, taken deliberately: APG says focus should stay on the combobox input after selection, and a touch screen-reader user loses their position in the page when it does not. Weighed against every sighted touch user dismissing a keyboard by hand after every search. Revisit if it proves the wrong call.
+

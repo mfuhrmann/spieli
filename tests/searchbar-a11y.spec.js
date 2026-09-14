@@ -198,6 +198,25 @@ test.describe('SearchBar combobox a11y', () => {
     await expect(page.locator('.search-results [aria-selected="true"]')).toHaveCount(1);
   });
 
+  test('selecting a suggestion discards the hits so the list cannot reopen', async ({ page }) => {
+    // Regression: selectResult hid the list but kept `results`, and onFocus
+    // reopens whenever `results` is non-empty. Since selection deliberately
+    // never moves focus out of the input, the list sprang straight back —
+    // observed on Android as "zoomed in, but the suggestions are still there".
+    const input = await openSuggestions(page);
+    await page.locator('.search-results [role="option"]').first().click();
+    await expect(page.locator('.search-results')).toBeHidden();
+
+    // The reopen path is `onFocus`, which fires only when focus actually
+    // re-enters the input. On desktop selection never moves focus out, so
+    // drive it explicitly — this is what the touch tap does implicitly, and
+    // what made the list spring back on Android.
+    await input.evaluate(el => el.blur());
+    await input.click();
+    await expect(page.locator('.search-results')).toBeHidden();
+    await expect(input).toHaveAttribute('aria-expanded', 'false');
+  });
+
   test('editing the query clears the active option immediately', async ({ page }) => {
     // Regression: `search()` is gated on a two-character query, so shrinking
     // the query below the threshold never reassigned `results` and never ran
