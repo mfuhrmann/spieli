@@ -1372,6 +1372,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#the-search-combobox" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The search combobox
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#playground-themes" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2297,6 +2308,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#the-search-combobox" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The search combobox
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#playground-themes" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2725,6 +2747,17 @@ and the returned string cannot tell you which. Ask <code>hasOsmName(attr)</code>
 <p>Current name render sites: <code>HoverPreview</code>, <code>PlaygroundPanel</code> (both header
 variants), <code>NearbyPlaygrounds</code>. If you add another, annotate it — an
 unannotated name silently inherits the interface language.</p>
+<h2 id="the-search-combobox">The search combobox<a class="headerlink" href="#the-search-combobox" title="Permanent link">&para;</a></h2>
+<p><code>SearchBar.svelte</code> implements the <a href="https://www.w3.org/WAI/ARIA/apg/patterns/combobox/">ARIA 1.2 combobox pattern</a> over the Nominatim suggestion list. If you touch it, keep these invariants:</p>
+<ul>
+<li><strong>The input owns the list.</strong> <code>role="combobox"</code> + <code>aria-autocomplete="list"</code> + <code>aria-controls</code> pointing at the results container's <code>id</code>, <code>aria-expanded</code> mirroring list visibility, <code>aria-busy</code> mirroring the in-flight request. Ids come from a module-scoped counter (<code>searchbar-&lt;n&gt;-…</code>) — the component is in Svelte legacy mode, so <code>$props.id()</code> is unavailable.</li>
+<li><strong>DOM focus never leaves the input.</strong> Arrow keys move an <code>activeIndex</code> exposed via <code>aria-activedescendant</code>; options are not tab stops (<code>tabindex="-1"</code>). Roving tabindex would break continued typing. The tab order is input → clear button → out of the card.</li>
+<li><strong>Options stay real <code>&lt;button&gt;</code>s.</strong> Touch screen readers (TalkBack, VoiceOver) navigate with a virtual cursor that ignores <code>aria-activedescendant</code> and activates elements in place, so options must be natively activatable. <code>role="option"</code> overrides the button role without conflict.</li>
+<li><strong>Dismissal is focus containment, never a timer.</strong> <code>focusout</code> on <code>.search-card</code> tests <code>currentTarget.contains(e.relatedTarget)</code>. The old 200 ms hide timer raced both a mouse click in Safari and a touch scroll inside the list on iOS.</li>
+<li><strong><code>mousedown</code>, not <code>pointerdown</code>, is prevented</strong> on the results container. <code>mousedown</code> is synthesised after a tap completes, so suppressing it cannot break scrolling; <code>pointerdown</code> fires at touch start and would.</li>
+<li><strong>One highlight only.</strong> <code>mousemove</code> writes <code>activeIndex</code> and only <code>.active</code> is styled — a separate <code>:hover</code> rule would let the pointer highlight a different row than the one <code>aria-activedescendant</code> announces. <code>activeIndex</code> resets on every reassignment of <code>results</code> (search, clear, error path), since the 450 ms debounce can swap the result set under a stale index.</li>
+</ul>
+<p>Regression coverage: <code>tests/searchbar-a11y.spec.js</code> (stubs Nominatim via <code>page.route</code>). Safari mouse selection, iOS scroll-in-list, and TalkBack navigation are manual-only — Playwright's Chromium does not reproduce those quirks.</p>
 <h2 id="playground-themes">Playground themes<a class="headerlink" href="#playground-themes" title="Permanent link">&para;</a></h2>
 <p><code>playground:theme=*</code> (OSM) is meant to describe a whole playground's motto — a ship, castle, or octopus playground. The tag reaches the frontend on both the playground polygon and equipment features via the <code>hstore_to_jsonb(tags)</code> merge in <code>api.sql</code> (it is not an osm2pgsql column, so it is not stripped).</p>
 <p>In practice the key is dominated by two kinds of non-theme usage: tagging noise (<code>playground</code>/<code>play</code> are ~53% of all uses) and <strong>device-shape values</strong> — <code>horse</code>, <code>duck</code>, <code>elephant</code>, … tagged on a single <code>playground=springy</code> rider to describe its shape, not a playground theme. A springy can be shaped as anything, so those values are noise for our purposes. We therefore honour only an <strong>allowlist</strong> of documented whole-playground themes (<code>SUPPORTED_THEMES</code> in <code>lib/playgroundThemes.js</code>: ship, castle, spiderweb, water, adventure, rocket, dragon, octopus, circus). Everything else is dropped at the single <code>splitThemes</code> choke point, so it never reaches any consumer. Extend the allowlist by adding an entry to <code>THEME_ICONS</code> (the icon map <em>is</em> the allowlist) plus an <code>equipAttr.themes.*</code> label in each locale.</p>
