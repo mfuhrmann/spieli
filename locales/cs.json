@@ -20,18 +20,12 @@
     "closeBtn": "Zavřít",
     "backToMap": "Zpět na mapu"
   },
-  "completeness": {
-    "complete": "Fotografie, název a podrobnosti k dispozici",
-    "partial": "Částečně zmapováno",
-    "missing": "Žádná data"
-  },
   "accordion": {
     "photos": "Fotografie",
     "equipment": "Vybavení",
     "shadow": "Stín",
     "surroundings": "Okolí",
-    "reviews": "Recenze",
-    "completeness": "Úplnost dat"
+    "reviews": "Recenze"
   },
   "location": {
     "btn": "Moje poloha",

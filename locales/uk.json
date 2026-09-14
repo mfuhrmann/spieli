@@ -20,18 +20,12 @@
     "closeBtn": "Закрити",
     "backToMap": "Назад до карти"
   },
-  "completeness": {
-    "complete": "Фотографії, назва та деталі доступні",
-    "partial": "Частково нанесено на карту",
-    "missing": "Немає даних"
-  },
   "accordion": {
     "photos": "Фотографії",
     "equipment": "Обладнання",
     "shadow": "Тінь",
     "surroundings": "Околиці",
-    "reviews": "Відгуки",
-    "completeness": "Повнота даних"
+    "reviews": "Відгуки"
   },
   "location": {
     "btn": "Моє місцезнаходження",

@@ -20,18 +20,12 @@
     "closeBtn": "Fechar",
     "backToMap": "Voltar ao mapa"
   },
-  "completeness": {
-    "complete": "Fotos, nome e detalhes disponíveis",
-    "partial": "Parcialmente mapeado",
-    "missing": "Sem dados"
-  },
   "accordion": {
     "photos": "Fotos",
     "equipment": "Equipamentos",
     "shadow": "Sombra",
     "surroundings": "Arredores",
-    "reviews": "Avaliações",
-    "completeness": "Completude dos dados"
+    "reviews": "Avaliações"
   },
   "location": {
     "btn": "Minha localização",

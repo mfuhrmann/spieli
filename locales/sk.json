@@ -29,12 +29,6 @@
       "hasDogs": "Psy povolené",
       "shade": "S tieňom",
       "theme": "Tematické"
-    },
-    "completeness": {
-      "title": "Kvalita dát",
-      "showComplete": "vysoká",
-      "showPartial": "stredná",
-      "showMissing": "nízka"
     }
   },
   "hover": {
@@ -75,16 +69,6 @@
     "navigateHere": "Poďme tam"
   },
   "completeness": {
-    "legendTitle": "Kvalita údajov",
-    "complete": "vysoká",
-    "partial": "stredná",
-    "missing": "nízka",
-    "dotComplete": "Kompletné údaje",
-    "dotPartial": "Čiastočne zmapované",
-    "dotMissing": "Žiadne údaje",
-    "badgeComplete": "Kvalita údajov",
-    "badgePartial": "Kvalita údajov",
-    "badgeMissing": "Kvalita údajov",
     "restrictedHint": "nie verejné"
   },
   "accordion": {
@@ -92,8 +76,7 @@
     "equipment": "Výbava",
     "shadow": "Tieň",
     "surroundings": "Okolie",
-    "reviews": "Hodnotenia",
-    "completeness": "Kompletnosť údajov"
+    "reviews": "Hodnotenia"
   },
   "location": {
     "btn": "Moja poloha",

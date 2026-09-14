@@ -20,18 +20,12 @@
     "closeBtn": "閉じる",
     "backToMap": "地図に戻る"
   },
-  "completeness": {
-    "complete": "写真・名称・詳細あり",
-    "partial": "一部マッピング済み",
-    "missing": "データなし"
-  },
   "accordion": {
     "photos": "写真",
     "equipment": "遊具",
     "shadow": "日陰",
     "surroundings": "周辺",
-    "reviews": "レビュー",
-    "completeness": "データの完成度"
+    "reviews": "レビュー"
   },
   "location": {
     "btn": "現在地",

@@ -28,12 +28,6 @@
       "fence": "Vallado",
       "hasDogs": "Perros permitidos",
       "shade": "Con sombra"
-    },
-    "completeness": {
-      "title": "Calidad de datos",
-      "showComplete": "Completo",
-      "showPartial": "Parcial",
-      "showMissing": "Incompleto"
     }
   },
   "hover": {
@@ -74,16 +68,6 @@
     "navigateHere": "Llévame aquí"
   },
   "completeness": {
-    "legendTitle": "Calidad de datos",
-    "complete": "Fotos, nombre y detalles disponibles",
-    "partial": "Parcialmente mapeado",
-    "missing": "Sin datos aún",
-    "dotComplete": "Datos completos",
-    "dotPartial": "Parcialmente mapeado",
-    "dotMissing": "Sin datos",
-    "badgeComplete": "Calidad de datos",
-    "badgePartial": "Calidad de datos",
-    "badgeMissing": "Calidad de datos",
     "restrictedHint": "no público"
   },
   "accordion": {
@@ -91,8 +75,7 @@
     "equipment": "Equipamiento",
     "shadow": "Sombra",
     "surroundings": "Entorno",
-    "reviews": "Reseñas",
-    "completeness": "Completitud de datos"
+    "reviews": "Reseñas"
   },
   "location": {
     "btn": "Mi ubicación",
