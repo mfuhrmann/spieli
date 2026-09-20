@@ -324,22 +324,45 @@ CREATE MATERIALIZED VIEW public.playground_stats_new AS
       -- teenshelter, one through a pitch. Same false signal that took the derived
       -- flags out of has_equipment (#776).
       --
-      -- Sandpits are excluded for the same reason as the area tag: an adult can
-      -- lift a child into essentially any sandpit, so `wheelchair` on one does
-      -- not separate playgrounds. Purpose-built roll-under sand tables do exist
-      -- and would be a real signal, but the tagging cannot express the
-      -- difference — none of the 40 wheelchair-tagged sandpits in Fulda carries
-      -- a `height` or description tag. Revisit if that ever becomes
-      -- distinguishable.
+      -- Sandpits count, but only on `wheelchair=yes`.
+      --
+      -- An earlier version of this predicate excluded them outright, arguing
+      -- that an adult can lift a child into essentially any sandpit so the tag
+      -- separates nothing. That reads `wheelchair` on a sandpit as a statement
+      -- about reaching its edge. It is not: Key:playground documents 87 values
+      -- and none of them expresses a raised, roll-under sand table, while the
+      -- same page tells mappers to record equipment accessibility as
+      -- `wheelchair=yes/no/limited` — "if the equipment can be used by
+      -- wheelchair users". A mapper standing in front of a sand table has
+      -- `playground=sandpit` + `wheelchair=yes` and nothing else, and the wiki
+      -- points them at it. Discarding that throws away the only expression the
+      -- vocabulary allows.
+      --
+      -- `limited` and `no` on a sandpit stay out, and out of the survey
+      -- predicate below too. There the ambiguity is real — it may mean "sand
+      -- table, usable with help" or "you can get to the rim" — and treating it
+      -- as surveyed would turn an unclear tag into a *negative* finding, which
+      -- is the one reading it cannot support. Ignored entirely, such a
+      -- playground falls through to NULL: unknown, which is honest.
       BOOL_OR(e.tags ? 'playground'
-              AND e.tags->'playground' <> 'sandpit'
-              AND e.tags->'wheelchair' IN ('yes','limited','designated'))       AS wheelchair_play_yes,
+              AND e.tags->'wheelchair' IN ('yes','limited','designated')
+              AND (e.tags->'playground' <> 'sandpit' OR e.tags->'wheelchair' = 'yes'))
+                                                                               AS wheelchair_play_yes,
       -- Was accessibility surveyed here at all? Mappers record `wheelchair=no`
       -- far more often than any positive value (602 devices against 39 in
       -- Fulda). Keeping that lets the panel separate "someone checked and there
       -- is nothing suitable" from "nobody ever looked" — opposite answers for a
       -- parent planning a trip, indistinguishable before this change.
-      BOOL_OR(e.tags ? 'playground' AND e.tags ? 'wheelchair')                  AS wheelchair_surveyed,
+      --
+      -- Sandpits are admitted here only on the value that also counts above, so
+      -- the two predicates treat them identically. Letting a sandpit count as
+      -- surveyed while it cannot count as suitable produced a false 'no': one
+      -- Fulda playground whose only wheelchair-tagged device is a sandpit was
+      -- reported as "surveyed, nothing suitable" on the strength of a tag that
+      -- says the opposite.
+      BOOL_OR(e.tags ? 'playground' AND e.tags ? 'wheelchair'
+              AND (e.tags->'playground' <> 'sandpit' OR e.tags->'wheelchair' = 'yes'))
+                                                                               AS wheelchair_surveyed,
       BOOL_OR(pl.tags->'enclosed' = 'yes' OR pl.barrier = 'fence')            AS has_fence,
       BOOL_OR(pl.tags->'dog' = 'yes')                                        AS has_dogs,
       -- has_theme: any allowlisted playground:theme on the area tag OR on a
