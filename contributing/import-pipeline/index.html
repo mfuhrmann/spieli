@@ -2297,7 +2297,11 @@
 </tr>
 <tr>
 <td><code>for_wheelchair</code></td>
-<td><code>wheelchair=yes</code> on any equipment</td>
+<td>boolean projection of <code>wheelchair_play = 'yes'</code> (see below)</td>
+</tr>
+<tr>
+<td><code>wheelchair_play</code></td>
+<td>Tri-state, derived from <strong>play devices only</strong> (<code>playground=*</code>). <code>'yes'</code> when one is tagged <code>wheelchair</code> ∈ <code>yes</code>, <code>limited</code>, <code>designated</code>; <code>'no'</code> when devices carry a <code>wheelchair</code> tag but none qualifies; <code>NULL</code> when none carries one. A <code>playground=sandpit</code> counts only on <code>wheelchair=yes</code> — the wiki documents no value for a roll-under sand table, so that tag is a mapper's only way to record one; <code>limited</code>/<code>no</code> on a sandpit is too ambiguous to support a negative finding and is ignored on both sides. The playground area's own <code>wheelchair</code> tag is deliberately <strong>not</strong> an input — it describes site access, which barely separates playgrounds, whereas the equipment tag is what the audience is asking about. Street furniture and pitches cannot set it either. See <a href="../../user-guide/#wheelchair-accessibility"><code>docs/user-guide.md</code></a> for the user-facing wording</td>
 </tr>
 <tr>
 <td><code>has_soccer</code> / <code>has_basketball</code></td>

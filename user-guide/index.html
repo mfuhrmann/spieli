@@ -539,6 +539,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#wheelchair-accessibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Wheelchair accessibility
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#mapping-detail-filter" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2070,6 +2081,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#wheelchair-accessibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Wheelchair accessibility
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#mapping-detail-filter" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2254,8 +2276,8 @@
 <td>Equipment suitable for toddlers</td>
 </tr>
 <tr>
-<td>Wheelchair</td>
-<td>Wheelchair-accessible equipment or surface</td>
+<td>Wheelchair-friendly</td>
+<td>At least one piece of <em>play equipment</em> tagged wheelchair-accessible — see <a href="#wheelchair-accessibility">Wheelchair accessibility</a></td>
 </tr>
 <tr>
 <td>Bench</td>
@@ -2304,6 +2326,36 @@
 </tbody>
 </table>
 <p>Active filters appear as chips below the search bar. Click a chip to remove that filter.</p>
+<h3 id="wheelchair-accessibility">Wheelchair accessibility<a class="headerlink" href="#wheelchair-accessibility" title="Permanent link">&para;</a></h3>
+<p>This one deserves its own explanation, because it deliberately measures something narrower than the word suggests.</p>
+<p><strong>It describes the equipment, not the site.</strong> The filter, the map hover icon and the detail panel all answer one question: <em>is there something here a wheelchair-using child can play on?</em> They do not tell you whether the site can be entered or crossed.</p>
+<p>That is a deliberate choice. With an accompanying adult, nearly every playground can be entered with a wheelchair, and playgrounds serve roughly ages 0–14 — so the entrance rarely decides anything, while the equipment always does. A playground whose <em>area</em> is tagged as accessible but whose equipment is not will therefore <strong>not</strong> match this filter.</p>
+<p><strong>"Usable with help" counts.</strong> Where a piece of equipment is tagged as partially accessible (<code>wheelchair=limited</code>), spieli treats it as suitable. On the objects that actually carry that value — spring riders, seesaws, swings, roundabouts — it means a transfer with assistance, which for this age group is the ordinary way a playground gets used.</p>
+<p><strong>A missing badge does not mean "not accessible".</strong> The detail panel distinguishes three states, and only two of them are statements:</p>
+<table>
+<thead>
+<tr>
+<th>What you see</th>
+<th>What it means</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Wheelchair-friendly</strong></td>
+<td>Someone tagged at least one device as accessible</td>
+</tr>
+<tr>
+<td><strong>No wheelchair equipment</strong></td>
+<td>Someone surveyed the equipment here and none of it is tagged accessible</td>
+</tr>
+<tr>
+<td><em>(nothing)</em></td>
+<td>Nobody has recorded accessibility for this playground either way — unknown, not negative</td>
+</tr>
+</tbody>
+</table>
+<p>The third row is by far the most common. Accessibility tagging is patchy in OpenStreetMap and tends to exist only where a mapper has walked the site with it in mind, so entire regions can show nothing at all. That is a gap in the map, not a finding about the playgrounds.</p>
+<p><strong>Please check before relying on it.</strong> Everything above reflects what mappers recorded. It is not a substitute for looking at the playground, and "usable with assistance" covers a wide range of ability. If you find a playground tagged wrongly — in either direction — the <strong>Edit on MapComplete</strong> link in the detail panel opens the playground in an editor.</p>
 <h3 id="mapping-detail-filter">Mapping detail filter<a class="headerlink" href="#mapping-detail-filter" title="Permanent link">&para;</a></h3>
 <p>The <strong>Erfasste Details</strong> section lets you show or hide playgrounds by how much of them is mapped:</p>
 <table>
@@ -2334,7 +2386,7 @@
 <ul>
 <li>Name, operator, opening hours (when mapped)</li>
 <li>Surface type and size</li>
-<li>Status pills — completeness, data age, and (when tagged) a shade pill (Shaded / No shade) plus baby / toddler suitability</li>
+<li>Status pills — completeness, data age, and (when tagged) a shade pill (Shaded / No shade), baby / toddler suitability, and wheelchair-friendly equipment (see <a href="#wheelchair-accessibility">Wheelchair accessibility</a>)</li>
 <li>Theme highlight — a symbol for playgrounds with a theme, such as a ship or castle (see <a href="#playground-themes">Playground themes</a>)</li>
 <li>Equipment list — devices, pitches, benches, and their sub-attributes, including each item's surface when tagged</li>
 <li>Street-level photos (from Panoramax, when available)</li>
