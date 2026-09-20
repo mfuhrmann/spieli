@@ -6,6 +6,13 @@ import { readFileSync, readdirSync } from 'node:fs';
 // wrong import.
 import { IntlMessageFormat } from 'intl-messageformat';
 
+// NOTE: this must stay on the same major as the parser svelte-i18n actually
+// runs (it pins intl-messageformat ^10.5.3). If the devDependency drifts ahead,
+// npm nests a second copy and this guard starts validating against a parser the
+// app never uses — it would pass strings that break at runtime, and fail ones
+// that work, both without a word. Dependabot is told to hold the major in
+// .github/dependabot.yml; lift that together with svelte-i18n, not before.
+
 // The guard that #814 needed and did not have.
 //
 // A locale file being present in locales/ does not make it reachable: it has
