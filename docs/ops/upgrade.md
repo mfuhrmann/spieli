@@ -196,7 +196,40 @@ Run:
 bash ~/upgrade-stacks.sh
 ```
 
-The script pulls images, restarts each app container, runs `API_ONLY=1` for data-nodes, verifies `get_meta`, restarts the daemon importer, and moves to the next stack. The hub entry skips the importer steps automatically.
+Per stack, in this order — the order is the point, and it is not the one an
+earlier version of this page described:
+
+1. **Pull images.**
+2. **Stop the daemon importer** (data-nodes only), so it cannot race the schema
+   apply. The manual procedure above calls this not optional; the script does
+   it for you.
+3. **Apply `api.sql`** via a one-shot `API_ONLY=1` importer, which never
+   triggers a full reimport. If it fails, the daemon importer is brought back
+   up *before* the sweep aborts, so a failed run never leaves a stack with its
+   importer stopped.
+4. **Recreate the daemon importer** with `up -d --force-recreate`. The plain
+   restart form is what left daemons running the old image during the v0.9.0
+   sweep.
+5. **Restart the app container** — last, so it never serves against a schema
+   the database does not have yet.
+6. **Verify** by polling `get_meta` for up to 180 s, treating only `200` and
+   `404` as settled. Verifying before step 4 is precisely what made [#800]
+   invisible: the old schema is internally consistent enough to pass.
+
+[#800]: https://github.com/mfuhrmann/spieli/issues/800
+
+The hub entry skips steps 2–4 automatically.
+
+**A stack that is mid-import is skipped, not forced.** If `get_meta` reports
+`importing: true`, the script leaves the schema alone and says so: stopping the
+importer there would SIGKILL `osm2pgsql` after 10 s and leave the database
+partially imported. The app is still upgraded, and the stack is listed
+separately at the end — re-run the sweep for it once the import has finished.
+
+> **The script does not touch `.env` or `compose.yml`.** A release labelled
+> `requires-env-update` or `requires-compose-update` needs those applied to
+> every stack **before** the sweep. It is easy to miss, because the script
+> otherwise looks like the whole federation procedure.
 
 **Verification is not fatal to the sweep.** By the time a stack is verified its images are already pulled and its containers restarted, so a failed check means the upgrade worked but the stack is not serving data yet. The script records the stack, carries on with the rest, and exits non-zero at the end listing every inconclusive one. A data-node that has never completed an import answers `404` on `get_meta` and is called out as such — expected until its first import finishes.
 
