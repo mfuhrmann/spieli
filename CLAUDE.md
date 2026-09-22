@@ -194,7 +194,7 @@ Two policies ship together for one release: the old wildcard one **enforced**, a
 | Component | Role |
 |---|---|
 | `Map.svelte` | OL map, all layers, click/hover handlers, standalone pitch layer (moveend) |
-| `AppShell.svelte` | Top-level shell used by both modes: mounts Map, manages deeplink restore, wires keyboard shortcuts |
+| `AppShell.svelte` | Top-level shell used by both modes: mounts Map, manages deeplink restore. **No keyboard handling** — there is no shortcut infrastructure here to extend. Global `keydown` listeners live in the components that own the thing being dismissed: `BottomSheet`, `Sheet`, `LegalContentModal`, `DataContributionModal` and `Map` (Escape closes the hub backend popup), plus `SearchBar`'s own combobox key handling |
 | `PlaygroundPanel.svelte` | Fetches and displays equipment/trees/POIs for selected playground; writes to `overlayFeaturesStore`; includes "Take me there" navigation button (geo: URL on mobile, OSM directions on desktop) |
 | `EquipmentList.svelte` | Renders device/fitness/pitch/bench lists inside PlaygroundPanel |
 | `NearbyPlaygrounds.svelte` | Shows nearest playgrounds to the selected one; hydrates polygon source on demand |
