@@ -2432,7 +2432,38 @@
 <p>Run:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>bash<span class="w"> </span>~/upgrade-stacks.sh
 </code></pre></div>
-<p>The script pulls images, restarts each app container, runs <code>API_ONLY=1</code> for data-nodes, verifies <code>get_meta</code>, restarts the daemon importer, and moves to the next stack. The hub entry skips the importer steps automatically.</p>
+<p>Per stack, in this order — the order is the point, and it is not the one an
+earlier version of this page described:</p>
+<ol>
+<li><strong>Pull images.</strong></li>
+<li><strong>Stop the daemon importer</strong> (data-nodes only), so it cannot race the schema
+   apply. The manual procedure above calls this not optional; the script does
+   it for you.</li>
+<li><strong>Apply <code>api.sql</code></strong> via a one-shot <code>API_ONLY=1</code> importer, which never
+   triggers a full reimport. If it fails, the daemon importer is brought back
+   up <em>before</em> the sweep aborts, so a failed run never leaves a stack with its
+   importer stopped.</li>
+<li><strong>Recreate the daemon importer</strong> with <code>up -d --force-recreate</code>. The plain
+   restart form is what left daemons running the old image during the v0.9.0
+   sweep.</li>
+<li><strong>Restart the app container</strong> — last, so it never serves against a schema
+   the database does not have yet.</li>
+<li><strong>Verify</strong> by polling <code>get_meta</code> for up to 180 s, treating only <code>200</code> and
+   <code>404</code> as settled. Verifying before step 4 is precisely what made <a href="https://github.com/mfuhrmann/spieli/issues/800">#800</a>
+   invisible: the old schema is internally consistent enough to pass.</li>
+</ol>
+<p>The hub entry skips steps 2–4 automatically.</p>
+<p><strong>A stack that is mid-import is skipped, not forced.</strong> If <code>get_meta</code> reports
+<code>importing: true</code>, the script leaves the schema alone and says so: stopping the
+importer there would SIGKILL <code>osm2pgsql</code> after 10 s and leave the database
+partially imported. The app is still upgraded, and the stack is listed
+separately at the end — re-run the sweep for it once the import has finished.</p>
+<blockquote>
+<p><strong>The script does not touch <code>.env</code> or <code>compose.yml</code>.</strong> A release labelled
+<code>requires-env-update</code> or <code>requires-compose-update</code> needs those applied to
+every stack <strong>before</strong> the sweep. It is easy to miss, because the script
+otherwise looks like the whole federation procedure.</p>
+</blockquote>
 <p><strong>Verification is not fatal to the sweep.</strong> By the time a stack is verified its images are already pulled and its containers restarted, so a failed check means the upgrade worked but the stack is not serving data yet. The script records the stack, carries on with the rest, and exits non-zero at the end listing every inconclusive one. A data-node that has never completed an import answers <code>404</code> on <code>get_meta</code> and is called out as such — expected until its first import finishes.</p>
 <p>If the sweep does abort — a failed image pull or container start — it prints which stacks were upgraded, which one it stopped on, and that everything from there onward was not reached. Completed stacks are idempotent, so re-run after fixing the cause. One caveat it will warn you about: if a forced reimport was launched in the background before the abort, wait for it to finish first, or the next run's <code>API_ONLY=1</code> step races it on the <code>playground_stats</code> rebuild.</p>
 <div class="admonition note">
