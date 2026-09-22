@@ -18,7 +18,7 @@
     "fetch-jsonp": "1.4.0",
     "lucide-svelte": "^1.0.1",
     "ol": "10.10.0",
-    "ol-mapbox-style": "^13.5.0",
+    "ol-mapbox-style": "^13.5.1",
     "opening_hours": "^3.14.0",
     "supercluster": "^9.1.0",
     "svelte": "^5.57.0",
