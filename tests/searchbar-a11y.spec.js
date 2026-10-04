@@ -250,6 +250,10 @@ test.describe('SearchBar combobox a11y', () => {
     await input.fill('Fulda Marktplatz');
     await input.press('Escape');
     await expect(page.locator('.search-results')).toBeHidden();
+    // Outlast the 450 ms debounce: before #908 the pending search fired here,
+    // reopened the list, and ArrowDown went to the listbox instead of the caret.
+    await page.waitForTimeout(700);
+    await expect(page.locator('.search-results')).toBeHidden();
 
     await input.press('ArrowUp');
     const atStart = await input.evaluate(el => el.selectionStart);

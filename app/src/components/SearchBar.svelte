@@ -16,6 +16,9 @@
   let searching = false;
   let results = [];
   let showResults = false;
+  // Set by Escape, cleared by the next edit: a search that lands after the
+  // visitor dismissed the list fills the cache but must not reopen it.
+  let dismissed = false;
   let inputEl;
   let resultsEl;
 
@@ -71,7 +74,7 @@
       }
       results = hits.slice(0, 5);
       activeIndex = -1;
-      showResults = results.length > 0;
+      showResults = results.length > 0 && !dismissed;
     } catch (err) {
       console.error('Search failed:', err);
       results = [];
@@ -149,6 +152,10 @@
       // Keep focus in the input, and keep the window-level Escape handlers
       // (PlaygroundPanel close, Map popup) from also firing on this press.
       if (listOpen) e.stopPropagation();
+      // A search still waiting out the debounce would otherwise reopen the
+      // list on its own half a second later (#908).
+      clearTimeout(searchTimeout);
+      dismissed = true;
       showResults = false;
       activeIndex = -1;
     }
@@ -163,6 +170,7 @@
     // open with row 0 still active, and Enter then navigated to a suggestion
     // for a query the user had already deleted.
     activeIndex = -1;
+    dismissed = false;
 
     // Below the search threshold there is nothing the cached list can be
     // suggestions *for*, so it must not keep claiming to be — `aria-expanded`
