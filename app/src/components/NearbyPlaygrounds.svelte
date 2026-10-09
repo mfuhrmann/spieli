@@ -4,7 +4,7 @@
   import { playgroundSourceStore } from '../stores/playgroundSource.js';
   import { selection } from '../stores/selection.js';
   import { mapStore } from '../stores/map.js';
-  import { playgroundCompleteness } from '../lib/completeness.js';
+  import { nearbyItemCompleteness } from '../lib/completeness.js';
   import { COMPLETENESS_BASE } from '../lib/completenessPalette.js';
 
   const detailVars =
@@ -65,13 +65,6 @@
     return `${(m / 1000).toFixed(1).replace('.', ',')} km`;
   }
 
-  function completenessClass(tags) {
-    const c = playgroundCompleteness(tags);
-    if (c === 'complete') return 'dot-complete';
-    if (c === 'partial')  return 'dot-partial';
-    return 'dot-missing';
-  }
-
   async function selectSuggestion(item) {
     if (selectAbort) selectAbort.abort();
     selectAbort = new AbortController();
@@ -126,9 +119,14 @@
   {:else}
     <ul class="nearby-list" style={detailVars}>
       {#each items.slice(0, 5) as item}
+        {@const detail = nearbyItemCompleteness(item)}
         <li>
           <button class="nearby-item" onclick={() => selectSuggestion(item)}>
-            <span class="dot {completenessClass(item.tags)}"></span>
+            <!-- No class when the backend sent no value: the dot keeps its
+                 space but stays blank rather than showing a guess. -->
+            <span class="dot" class:dot-complete={detail === 'complete'}
+                  class:dot-partial={detail === 'partial'}
+                  class:dot-missing={detail === 'missing'}></span>
             <!-- OSM name → region language; the placeholder is interface text. -->
             <span class="nearby-name" lang={item.name ? regionLang : $locale}>
               {item.name || $_('nearby.unknownName')}

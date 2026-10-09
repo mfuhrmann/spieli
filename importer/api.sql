@@ -1676,12 +1676,14 @@ AS $$
     SELECT ST_Union(way) AS way FROM planet_osm_polygon WHERE osm_id = -relation_id
   ),
   pg_candidates AS (
-    SELECT p.osm_id, p.name, p.operator, p.access, p.surface, p.tags, p.way
+    SELECT p.osm_id, CASE WHEN p.osm_id < 0 THEN 'R' ELSE 'W' END AS osm_type,
+           p.name, p.operator, p.access, p.surface, p.tags, p.way
     FROM planet_osm_polygon p, region r
     WHERE p.leisure = 'playground'
       AND ST_Within(p.way, r.way)
     UNION ALL
-    SELECT p.osm_id, p.name, p.operator, p.access, p.surface, p.tags, p.way
+    SELECT p.osm_id, 'N'::text AS osm_type,
+           p.name, p.operator, p.access, p.surface, p.tags, p.way
     FROM planet_osm_point p, region r
     WHERE p.leisure = 'playground'
       AND ST_Within(p.way, r.way)
@@ -1689,6 +1691,7 @@ AS $$
   nearest AS (
     SELECT
       cand.osm_id,
+      cand.osm_type,
       cand.name,
       cand.operator,
       cand.access,
@@ -1704,11 +1707,15 @@ AS $$
   SELECT COALESCE(
     json_agg(
       json_build_object(
-        'osm_id',      abs(osm_id),
+        'osm_id',      abs(nearest.osm_id),
         'name',        name,
         'lat',         centroid_lat,
         'lon',         centroid_lon,
         'distance_m',  round(distance_m::numeric),
+        -- Server-side mapping detail. The tags below carry no equipment
+        -- counts, so a client deriving it from them never sees hasEquipment
+        -- and puts every playground with devices one step too low (#916).
+        'completeness', s.completeness,
         'tags', (
           jsonb_build_object(
             'name',          name,
@@ -1722,7 +1729,9 @@ AS $$
     ),
     '[]'::json
   )
-  FROM nearest;
+  FROM nearest
+  LEFT JOIN public.playground_stats s
+    ON s.osm_id = nearest.osm_id AND s.osm_type = nearest.osm_type;
 $$;
 
 GRANT EXECUTE ON FUNCTION api.get_nearest_playgrounds(float8, float8, bigint, int) TO web_anon;
