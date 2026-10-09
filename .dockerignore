@@ -1,5 +1,8 @@
-node_modules
-dist
+# `**/` so these also match below the context root: the app Dockerfile runs
+# `npm ci` and then `COPY app/ ./`, and a bare `node_modules` would let the
+# host's app/node_modules (glibc native bindings) overwrite the Alpine install.
+**/node_modules
+**/dist
 .git
 .github
 .idea
