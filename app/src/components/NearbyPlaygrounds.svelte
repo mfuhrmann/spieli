@@ -65,13 +65,6 @@
     return `${(m / 1000).toFixed(1).replace('.', ',')} km`;
   }
 
-  function completenessClass(item) {
-    const c = nearbyItemCompleteness(item);
-    if (c === 'complete') return 'dot-complete';
-    if (c === 'partial')  return 'dot-partial';
-    return 'dot-missing';
-  }
-
   async function selectSuggestion(item) {
     if (selectAbort) selectAbort.abort();
     selectAbort = new AbortController();
@@ -126,9 +119,14 @@
   {:else}
     <ul class="nearby-list" style={detailVars}>
       {#each items.slice(0, 5) as item}
+        {@const detail = nearbyItemCompleteness(item)}
         <li>
           <button class="nearby-item" onclick={() => selectSuggestion(item)}>
-            <span class="dot {completenessClass(item)}"></span>
+            <!-- No class when the backend sent no value: the dot keeps its
+                 space but stays blank rather than showing a guess. -->
+            <span class="dot" class:dot-complete={detail === 'complete'}
+                  class:dot-partial={detail === 'partial'}
+                  class:dot-missing={detail === 'missing'}></span>
             <!-- OSM name → region language; the placeholder is interface text. -->
             <span class="nearby-name" lang={item.name ? regionLang : $locale}>
               {item.name || $_('nearby.unknownName')}

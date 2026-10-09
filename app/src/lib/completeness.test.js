@@ -197,26 +197,21 @@ import { playgroundCompleteness, hasPhotoSignal, nearbyItemCompleteness } from '
   }
 }
 
-// nearbyItemCompleteness — get_nearest_playgrounds items (#916). The tags
-// carry no equipment counts, so the server value must win; the tag fallback
-// is only for backends that predate the column.
+// nearbyItemCompleteness — get_nearest_playgrounds items (#916). Only the
+// server value counts: the tags carry no equipment counts, so deriving from
+// them is the bug being fixed, not a fallback.
 {
-  // Equipment + info on the server, but tags alone can only see the info.
+  // Equipment + info on the server; tags alone can only see the info.
   const item = { completeness: 'complete', tags: { surface: 'sand' } };
   assert.equal(playgroundCompleteness(item.tags), 'partial');
   assert.equal(nearbyItemCompleteness(item), 'complete');
+  assert.equal(nearbyItemCompleteness({ completeness: 'missing' }), 'missing');
 
-  // Older backend: no column → derived from tags.
-  assert.equal(nearbyItemCompleteness({ tags: { surface: 'sand' } }), 'partial');
-  assert.equal(nearbyItemCompleteness({ tags: {} }), 'missing');
-
-  // NULL (no playground_stats row) or an unknown value → tag fallback, not
-  // a dot class nobody styles.
-  assert.equal(nearbyItemCompleteness({ completeness: null, tags: { surface: 'sand' } }), 'partial');
-  assert.equal(nearbyItemCompleteness({ completeness: 'bogus', tags: {} }), 'missing');
-
-  // No tags at all must not throw.
-  assert.equal(nearbyItemCompleteness({}), 'missing');
+  // Older backend (no field), NULL, or an unknown value → null, never a
+  // tag-derived guess.
+  assert.equal(nearbyItemCompleteness({ tags: { surface: 'sand' } }), null);
+  assert.equal(nearbyItemCompleteness({ completeness: null }), null);
+  assert.equal(nearbyItemCompleteness({ completeness: 'bogus' }), null);
 }
 
 console.log('All completeness tests passed.');
