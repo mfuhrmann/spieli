@@ -434,8 +434,8 @@ Returns the nearest playgrounds to a WGS84 point, ordered by distance ascending.
 |---|---|---|---|
 | `lat` | `float8` | — | WGS84 latitude |
 | `lon` | `float8` | — | WGS84 longitude |
-| `relation_id` | `bigint` | `OSM_RELATION_ID` | Scope to this region |
-| `max_results` | `int` | `5` | Maximum results |
+| `relation_id` | `bigint` | `OSM_RELATION_ID` | Unused; kept for API compatibility. Like `playground_stats`, the search covers every playground the instance imported, not only those inside the boundary polygon |
+| `max_results` | `int` | `5` | Maximum results, clamped to 1–50 |
 
 **Response** — JSON array:
 
@@ -443,14 +443,20 @@ Returns the nearest playgrounds to a WGS84 point, ordered by distance ascending.
 [
   {
     "osm_id":     37808214,
+    "osm_type":   "W",
     "name":       "Grezzbachpark",
     "lat":        50.5438,
     "lon":        9.7096,
     "distance_m": 342,
+    "completeness": "partial",
     "tags":       { "name": "Grezzbachpark", "operator": "…", "access": "yes" }
   }
 ]
 ```
+
+`completeness` (`complete` \| `partial` \| `missing`) is the server-side mapping detail from `playground_stats`, the same value `get_playground_centroids` ships. Clients should prefer it over deriving one from `tags`: the tags carry no equipment counts, so a tag-derived value never sees mapped devices. Backends older than this field omit it.
+
+`osm_type` (`N` \| `W` \| `R`) disambiguates `osm_id`, which is shown as an absolute value: node, way and relation ids are separate number spaces. Each playground appears once, also when it is a multipolygon relation with several outer rings. `distance_m` is measured to the playground's edge (`0` when the point is inside it); playgrounds mapped as a node are measured to the node.
 
 **Example**
 

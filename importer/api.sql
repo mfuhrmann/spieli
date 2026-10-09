@@ -1654,6 +1654,20 @@ GRANT EXECUTE ON FUNCTION api.get_legal(text) TO web_anon;
 -- 6. get_nearest_playgrounds(lat, lon, relation_id, max_results)
 --    Returns the nearest playgrounds to a given WGS84 point,
 --    ordered by distance ascending.
+--
+--    Candidates are NOT clipped to the region boundary (#922), the same as
+--    playground_stats: some states' boundaries (Brandenburg) never assemble
+--    into a polygon, so a ST_Within against it returned nothing, and
+--    elsewhere it skipped playgrounds whose area crosses the boundary.
+--    relation_id is kept in the signature for API compatibility and unused.
+--
+--    Selection is a KNN on the playground geometry itself, so a large area
+--    the visitor stands in is never displaced by smaller ones whose
+--    centroids are nearer. osm2pgsql emits one row per outer ring of a
+--    multipolygon, so the KNN takes a margin of rows and the result is
+--    merged per (osm_id, osm_type) before the final LIMIT.
+--
+--    max_results is clamped: it is caller-controlled through PostgREST.
 -- =========================================================================
 DROP FUNCTION IF EXISTS api.get_nearest_playgrounds(float8, float8, bigint, int);
 
@@ -1667,62 +1681,81 @@ RETURNS json
 LANGUAGE sql STABLE SECURITY DEFINER
 SET search_path = public, api
 AS $$
-  WITH center AS (
+  WITH params AS (
     SELECT
       ST_Transform(ST_SetSRID(ST_MakePoint(lon, lat), 4326), 3857)  AS geom_3857,
-      ST_SetSRID(ST_MakePoint(lon, lat), 4326)::geography            AS geog_4326
+      ST_SetSRID(ST_MakePoint(lon, lat), 4326)::geography            AS geog_4326,
+      LEAST(GREATEST(COALESCE(max_results, 5), 1), 50)               AS n
   ),
-  region AS (
-    SELECT ST_Union(way) AS way FROM planet_osm_polygon WHERE osm_id = -relation_id
-  ),
-  pg_candidates AS (
-    SELECT p.osm_id, p.name, p.operator, p.access, p.surface, p.tags, p.way
-    FROM planet_osm_polygon p, region r
-    WHERE p.leisure = 'playground'
-      AND ST_Within(p.way, r.way)
+  rings AS (
+    (SELECT p.osm_id, CASE WHEN p.osm_id < 0 THEN 'R' ELSE 'W' END AS osm_type,
+            p.name, p.operator, p.access, p.surface, p.tags, p.way
+     FROM planet_osm_polygon p, params c
+     WHERE p.leisure = 'playground'
+     ORDER BY p.way <-> c.geom_3857
+     LIMIT (SELECT n * 4 FROM params))
     UNION ALL
-    SELECT p.osm_id, p.name, p.operator, p.access, p.surface, p.tags, p.way
-    FROM planet_osm_point p, region r
-    WHERE p.leisure = 'playground'
-      AND ST_Within(p.way, r.way)
+    (SELECT p.osm_id, 'N'::text,
+            p.name, p.operator, p.access, p.surface, p.tags, p.way
+     FROM planet_osm_point p, params c
+     WHERE p.leisure = 'playground'
+     ORDER BY p.way <-> c.geom_3857
+     LIMIT (SELECT n * 4 FROM params))
+  ),
+  merged AS (
+    -- One row per playground; distance is to the nearest of its rings.
+    SELECT
+      r.osm_id,
+      r.osm_type,
+      MAX(r.name)                                          AS name,
+      MAX(r.operator)                                      AS operator,
+      MAX(r.access)                                        AS access,
+      MAX(r.surface)                                       AS surface,
+      (array_agg(r.tags ORDER BY ST_Area(r.way) DESC))[1] AS tags,
+      MIN(ST_Distance(ST_Transform(r.way, 4326)::geography, c.geog_4326)) AS distance_m,
+      ST_Centroid(ST_Union(r.way))                         AS centroid_3857
+    FROM rings r, params c
+    GROUP BY r.osm_id, r.osm_type
   ),
   nearest AS (
-    SELECT
-      cand.osm_id,
-      cand.name,
-      cand.operator,
-      cand.access,
-      cand.surface,
-      cand.tags,
-      ST_Distance(ST_Transform(cand.way, 4326)::geography, c.geog_4326) AS distance_m,
-      ST_Y(ST_Transform(ST_Centroid(cand.way), 4326))                   AS centroid_lat,
-      ST_X(ST_Transform(ST_Centroid(cand.way), 4326))                   AS centroid_lon
-    FROM pg_candidates cand, center c
-    ORDER BY cand.way <-> c.geom_3857
-    LIMIT max_results
+    SELECT m.*
+    FROM merged m
+    ORDER BY m.distance_m, m.osm_type, m.osm_id
+    LIMIT (SELECT n FROM params)
   )
   SELECT COALESCE(
     json_agg(
       json_build_object(
-        'osm_id',      abs(osm_id),
-        'name',        name,
-        'lat',         centroid_lat,
-        'lon',         centroid_lon,
-        'distance_m',  round(distance_m::numeric),
+        'osm_id',      abs(nearest.osm_id),
+        -- Node, way and relation ids are separate spaces; without the type a
+        -- node and a way with the same id are indistinguishable (#922).
+        'osm_type',    nearest.osm_type,
+        'name',        nearest.name,
+        -- playground_stats' centroid when present: it is built from every
+        -- ring, while `nearest` only saw the rings the KNN returned.
+        'lat',         ST_Y(ST_Transform(COALESCE(s.centroid_3857, nearest.centroid_3857), 4326)),
+        'lon',         ST_X(ST_Transform(COALESCE(s.centroid_3857, nearest.centroid_3857), 4326)),
+        'distance_m',  round(nearest.distance_m::numeric),
+        -- Server-side mapping detail. The tags below carry no equipment
+        -- counts, so a client deriving it from them never sees hasEquipment
+        -- and puts every playground with devices one step too low (#916).
+        'completeness', s.completeness,
         'tags', (
           jsonb_build_object(
-            'name',          name,
-            'operator',      operator,
-            'access',        access,
-            'surface',       surface
-          ) || COALESCE(hstore_to_jsonb(tags), '{}'::jsonb)
+            'name',          nearest.name,
+            'operator',      nearest.operator,
+            'access',        nearest.access,
+            'surface',       nearest.surface
+          ) || COALESCE(hstore_to_jsonb(nearest.tags), '{}'::jsonb)
         )
       )
-      ORDER BY distance_m
+      ORDER BY nearest.distance_m, nearest.osm_type, nearest.osm_id
     ),
     '[]'::json
   )
-  FROM nearest;
+  FROM nearest
+  LEFT JOIN public.playground_stats s
+    ON s.osm_id = nearest.osm_id AND s.osm_type = nearest.osm_type;
 $$;
 
 GRANT EXECUTE ON FUNCTION api.get_nearest_playgrounds(float8, float8, bigint, int) TO web_anon;

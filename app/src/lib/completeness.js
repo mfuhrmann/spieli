@@ -1,4 +1,5 @@
 import { isWikimediaImageTag } from './commons.js';
+import { COMPLETENESS_ORDER } from './completenessPalette.js';
 
 // Shared mapping-detail logic for playground features.
 // Returns 'complete' | 'partial' | 'missing'
@@ -79,4 +80,18 @@ export function playgroundCompleteness(props) {
     if (hasEquipment && hasInfo) return 'complete';
     if (hasEquipment || hasInfo) return 'partial';
     return 'missing';
+}
+
+/**
+ * Mapping detail for a get_nearest_playgrounds item: the server's
+ * `completeness` (from playground_stats), or null when the backend predates
+ * that field.
+ *
+ * Deliberately no fallback to the item's tags. They carry no equipment
+ * counts, so a tag-derived value never sees hasEquipment and puts every
+ * playground with devices one step too low — the bug this replaces (#916).
+ * No dot is better than a wrong one.
+ */
+export function nearbyItemCompleteness(item) {
+    return COMPLETENESS_ORDER.includes(item.completeness) ? item.completeness : null;
 }

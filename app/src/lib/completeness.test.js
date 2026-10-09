@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { playgroundCompleteness, hasPhotoSignal } from './completeness.js';
+import { playgroundCompleteness, hasPhotoSignal, nearbyItemCompleteness } from './completeness.js';
 
 // mapping detail = f(hasEquipment, hasInfo):
 //   complete = both present
@@ -195,6 +195,23 @@ import { playgroundCompleteness, hasPhotoSignal } from './completeness.js';
       `hasEquipment=${hasEquipment} hasInfo=${hasInfo} should be ${expected}`,
     );
   }
+}
+
+// nearbyItemCompleteness — get_nearest_playgrounds items (#916). Only the
+// server value counts: the tags carry no equipment counts, so deriving from
+// them is the bug being fixed, not a fallback.
+{
+  // Equipment + info on the server; tags alone can only see the info.
+  const item = { completeness: 'complete', tags: { surface: 'sand' } };
+  assert.equal(playgroundCompleteness(item.tags), 'partial');
+  assert.equal(nearbyItemCompleteness(item), 'complete');
+  assert.equal(nearbyItemCompleteness({ completeness: 'missing' }), 'missing');
+
+  // Older backend (no field), NULL, or an unknown value → null, never a
+  // tag-derived guess.
+  assert.equal(nearbyItemCompleteness({ tags: { surface: 'sand' } }), null);
+  assert.equal(nearbyItemCompleteness({ completeness: null }), null);
+  assert.equal(nearbyItemCompleteness({ completeness: 'bogus' }), null);
 }
 
 console.log('All completeness tests passed.');
