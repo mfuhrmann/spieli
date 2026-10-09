@@ -447,10 +447,13 @@ Returns the nearest playgrounds to a WGS84 point, ordered by distance ascending.
     "lat":        50.5438,
     "lon":        9.7096,
     "distance_m": 342,
+    "completeness": "partial",
     "tags":       { "name": "Grezzbachpark", "operator": "…", "access": "yes" }
   }
 ]
 ```
+
+`completeness` (`complete` \| `partial` \| `missing`) is the server-side mapping detail from `playground_stats`, the same value `get_playground_centroids` ships. Clients should prefer it over deriving one from `tags`: the tags carry no equipment counts, so a tag-derived value never sees mapped devices. Backends older than this field omit it.
 
 **Example**
 

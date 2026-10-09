@@ -80,3 +80,17 @@ export function playgroundCompleteness(props) {
     if (hasEquipment || hasInfo) return 'partial';
     return 'missing';
 }
+
+const BUCKETS = new Set(['complete', 'partial', 'missing']);
+
+/**
+ * Mapping detail for a get_nearest_playgrounds item. Prefers the server's
+ * `completeness` (from playground_stats): the item's tags carry no equipment
+ * counts, so deriving it from them never sees hasEquipment and puts every
+ * playground with devices one step too low (#916). Falls back to the tags
+ * for backends older than that column — mixed versions in a hub.
+ */
+export function nearbyItemCompleteness(item) {
+    if (BUCKETS.has(item.completeness)) return item.completeness;
+    return playgroundCompleteness(item.tags ?? {});
+}

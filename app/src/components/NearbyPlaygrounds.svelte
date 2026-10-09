@@ -4,7 +4,7 @@
   import { playgroundSourceStore } from '../stores/playgroundSource.js';
   import { selection } from '../stores/selection.js';
   import { mapStore } from '../stores/map.js';
-  import { playgroundCompleteness } from '../lib/completeness.js';
+  import { nearbyItemCompleteness } from '../lib/completeness.js';
   import { COMPLETENESS_BASE } from '../lib/completenessPalette.js';
 
   const detailVars =
@@ -65,8 +65,8 @@
     return `${(m / 1000).toFixed(1).replace('.', ',')} km`;
   }
 
-  function completenessClass(tags) {
-    const c = playgroundCompleteness(tags);
+  function completenessClass(item) {
+    const c = nearbyItemCompleteness(item);
     if (c === 'complete') return 'dot-complete';
     if (c === 'partial')  return 'dot-partial';
     return 'dot-missing';
@@ -128,7 +128,7 @@
       {#each items.slice(0, 5) as item}
         <li>
           <button class="nearby-item" onclick={() => selectSuggestion(item)}>
-            <span class="dot {completenessClass(item.tags)}"></span>
+            <span class="dot {completenessClass(item)}"></span>
             <!-- OSM name → region language; the placeholder is interface text. -->
             <span class="nearby-name" lang={item.name ? regionLang : $locale}>
               {item.name || $_('nearby.unknownName')}

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { playgroundCompleteness, hasPhotoSignal } from './completeness.js';
+import { playgroundCompleteness, hasPhotoSignal, nearbyItemCompleteness } from './completeness.js';
 
 // mapping detail = f(hasEquipment, hasInfo):
 //   complete = both present
@@ -195,6 +195,28 @@ import { playgroundCompleteness, hasPhotoSignal } from './completeness.js';
       `hasEquipment=${hasEquipment} hasInfo=${hasInfo} should be ${expected}`,
     );
   }
+}
+
+// nearbyItemCompleteness — get_nearest_playgrounds items (#916). The tags
+// carry no equipment counts, so the server value must win; the tag fallback
+// is only for backends that predate the column.
+{
+  // Equipment + info on the server, but tags alone can only see the info.
+  const item = { completeness: 'complete', tags: { surface: 'sand' } };
+  assert.equal(playgroundCompleteness(item.tags), 'partial');
+  assert.equal(nearbyItemCompleteness(item), 'complete');
+
+  // Older backend: no column → derived from tags.
+  assert.equal(nearbyItemCompleteness({ tags: { surface: 'sand' } }), 'partial');
+  assert.equal(nearbyItemCompleteness({ tags: {} }), 'missing');
+
+  // NULL (no playground_stats row) or an unknown value → tag fallback, not
+  // a dot class nobody styles.
+  assert.equal(nearbyItemCompleteness({ completeness: null, tags: { surface: 'sand' } }), 'partial');
+  assert.equal(nearbyItemCompleteness({ completeness: 'bogus', tags: {} }), 'missing');
+
+  // No tags at all must not throw.
+  assert.equal(nearbyItemCompleteness({}), 'missing');
 }
 
 console.log('All completeness tests passed.');
