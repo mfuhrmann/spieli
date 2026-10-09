@@ -85,3 +85,41 @@ Rough — Hessen's equipment and info coverage may differ from Fulda's, and only
 **Passed.** The original hypothesis was aimed at the right target. The precise wording in `design.md` ("the majority of `partial` is equipment ✓ + info ✓ + photo ✗") is still unverified and false for Fulda, but the underlying claim — the photo axis is the binding constraint on the top bucket — holds decisively for Hessen, which is the deployment the issue is about.
 
 Note that D2 leaves `missing` untouched at ~62%. That bucket is an import-coverage problem, not a rating problem, and is out of scope here.
+
+## Run 3 — Hessen, after deployment (v0.11.0), 2026-10-04
+
+Measured on the production Hessen data node after the v0.11.0 sweep (`API_ONLY=1`, `get_meta` reporting `version: 0.11.0`, `importing: false`). Same query as Run 1. This is the deployed rule — D2 *and* the #776 narrowing of `has_equipment` to play infrastructure, which the Run 2 estimate did not model.
+
+| completeness | has_equipment | has_info | has_photo | count |
+|---|---|---|---|---|
+| missing | f | f | f | 5836 |
+| partial | f | t | f | 1536 |
+| partial | t | f | f | 920 |
+| complete | t | t | f | **451** |
+| complete | t | t | t | 88 |
+| partial | f | t | t | 6 |
+| partial | t | f | t | 4 |
+| missing | f | f | t | 1 |
+
+Totals of 8842: `complete` 539 (6.1%), `partial` 2466 (27.9%), `missing` 5837 (66.0%). Inputs: `has_equipment` 1463 (16.5%), `has_info` 2081 (23.5%), `has_photo` 99 (1.1%).
+
+### Against the Run 2 baseline and estimate
+
+| Bucket | Before (Run 2) | Estimated | **Measured** |
+|---|---|---|---|
+| `complete` | 87 (1.0%) | ~1215 (14%) | **539 (6.1%)** — ~6× |
+| `partial` | 3231 (36.7%) | ~2100 | **2466 (27.9%)** |
+| `missing` | 5484 (62.3%) | ~5490 | **5837 (66.0%)** |
+
+### What it confirms
+
+- **The photo gate was the binding constraint.** 451 of the 539 `complete` playgrounds (84%) have equipment and info but no photo — exactly the case the old rule held at `partial`. Only 99 playgrounds in Hessen carry a photo tag at all (1.1%, against Fulda's 8.4%), which settles Run 2's "an order of magnitude lower" inference with a direct count.
+- **The old top bucket survived intact.** `complete` with a photo is 88, against 87 `complete` under the old rule — the playgrounds that were already top-rated still are.
+- **Photo is no longer an input.** The one photo-only playground is `missing`, as D2 specifies.
+
+### Where the estimate missed
+
+- **`complete` is less than half the estimate.** The estimate applied Fulda's equipment-and-info rate (13.8%) to Hessen; the measured rate is 6.1%. Fulda is better surveyed on every axis, not only photos — the caveat in Run 2 is what bit.
+- **`missing` rose by 353, not ~0**, while the region grew by only 40 playgrounds. That is consistent with #776 removing benches, shelters and picnic tables from `has_equipment`: a playground whose only mapped "equipment" was street furniture drops from `partial` to `missing`. Consistent with, not measured — the pre-deployment breakdown was never taken, so the move cannot be attributed row by row.
+
+The closing note of Run 2 stands, now more firmly: two thirds of Hessen is bare `leisure=playground` geometry, and no rating rule moves that bucket.
