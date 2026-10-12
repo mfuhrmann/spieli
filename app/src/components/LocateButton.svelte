@@ -4,7 +4,9 @@
   // remounts every time the panel closes. Without this flag each remount re-ran
   // auto-locate: the map jumped back to the GPS fix and the nearby list
   // reopened, even when the user had been browsing another town (#925).
-  let autoLocated = false;
+  // Set before the permission check, so a permission granted later in the
+  // session (via this button) does not arm auto-locate on the next remount.
+  let autoLocateAttempted = false;
 </script>
 
 <script>
@@ -25,6 +27,7 @@
   let locating = false;
   let error = '';
   let watchId = null;
+  let destroyed = false;
 
   function locate({ centerMap = true } = {}) {
     if (!navigator.geolocation) {
@@ -62,6 +65,10 @@
 
   // Keep the location store fresh without touching the view.
   function startWatch() {
+    // A fix can land after this instance was unmounted (the mobile controls
+    // are torn down while a deeplinked playground opens). A watch started then
+    // would never be cleared; the next mount resumes it instead.
+    if (destroyed) return;
     if (watchId) navigator.geolocation.clearWatch(watchId);
     watchId = navigator.geolocation.watchPosition(
       pos => {
@@ -97,13 +104,16 @@
   }
 
   onMount(async () => {
+    // Remount after the page-load attempt: only resume the watch that onDestroy
+    // cleared, and only if a fix exists, so the location dot keeps updating.
+    if (autoLocateAttempted) {
+      if (get(location) && navigator.geolocation) startWatch();
+      return;
+    }
+    autoLocateAttempted = true;
     try {
       const perm = await navigator.permissions.query({ name: 'geolocation' });
       if (perm.state !== 'granted') return;
-      // Remount after the page-load auto-locate: only resume the watch that
-      // onDestroy cleared, so the location dot keeps updating.
-      if (autoLocated) { startWatch(); return; }
-      autoLocated = true;
       // Explicit URL framing — a deeplink hash or a *resolved* region path
       // (e.g. /Frankfurt) — expresses where the user wants the map, so don't
       // pan over it with the GPS fix. The location dot still shows. A region
@@ -122,6 +132,7 @@
   });
 
   onDestroy(() => {
+    destroyed = true;
     if (watchId) {
       navigator.geolocation.clearWatch(watchId);
     }

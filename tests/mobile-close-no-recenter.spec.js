@@ -51,3 +51,29 @@ test('closing the mobile detail panel does not recentre on the GPS fix', async (
   expect(Math.abs(lon - PLAYGROUND_CENTRE.lon), `lon ${lon} should stay near the playground`).toBeLessThan(0.1);
   expect(Math.abs(lat - PLAYGROUND_CENTRE.lat), `lat ${lat} should stay near the playground`).toBeLessThan(0.1);
 });
+
+// A first-time visitor has no permission at page load and grants it later (in
+// production via the Locate button). The first fix kept the "already
+// auto-located" flag behind the permission check, so the remount on close saw
+// "granted", ran auto-locate for the first time and centred on the fix.
+test('a permission granted after page load does not recentre on close', async ({ page, context }) => {
+  await injectApiConfig(page);
+  await stubApiRoutes(page);
+
+  await page.goto(`/#W${OSM_ID}`);
+  const back = page.locator('.mobile-back-btn');
+  await expect(back).toBeVisible({ timeout: 8000 });
+
+  await context.grantPermissions(['geolocation']);
+  await context.setGeolocation(GPS);
+
+  await back.click();
+  await expect(back).toBeHidden();
+  await page.waitForTimeout(1500);
+
+  const center = await page.evaluate(() => window.__spieli?.map?.getView().getCenter() ?? null);
+  expect(center).not.toBeNull();
+  const { lon, lat } = toLonLat(center);
+  expect(Math.abs(lon - PLAYGROUND_CENTRE.lon), `lon ${lon} should stay near the playground`).toBeLessThan(0.1);
+  expect(Math.abs(lat - PLAYGROUND_CENTRE.lat), `lat ${lat} should stay near the playground`).toBeLessThan(0.1);
+});
