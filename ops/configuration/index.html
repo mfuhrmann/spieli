@@ -2494,6 +2494,12 @@
 <td>Community chat link shown in the "Contribute data" modal; leave empty to hide the button. In hub mode this is the hub operator's own channel — backends do not contribute one.</td>
 </tr>
 <tr>
+<td><code>APP_NAME</code></td>
+<td><code>spieli</code></td>
+<td>ui, data-node-ui, hub</td>
+<td>Name of the installed app (Chrome/Edge "Install app", Safari "Add to Dock", iOS "Add to Home Screen") — what the Dock, start menu and home screen show. Each stack installs as its own app, so give each region its own, e.g. <code>spieli Fulda</code>. Written into <code>/manifest.webmanifest</code> at container start.</td>
+</tr>
+<tr>
 <td><code>DEFAULT_LOCALE</code></td>
 <td><em>(browser)</em></td>
 <td>ui, data-node-ui, hub</td>
