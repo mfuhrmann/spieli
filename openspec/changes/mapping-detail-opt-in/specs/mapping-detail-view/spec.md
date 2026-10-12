@@ -110,6 +110,12 @@ While mapping detail is off, playgrounds SHALL be drawn without any completeness
 - **WHEN** mapping detail is off and a playground has a photo signal
 - **THEN** its pin carries the camera glyph
 
+#### Scenario: Non-public playground carries a lock
+
+- **WHEN** mapping detail is off and a playground's `access` is `private` or `customers` (the same rule as the hatched polygons with mapping detail on)
+- **THEN** its pin carries a lock badge at its upper right, in addition to any photo glyph
+- **AND** a single-playground cluster pin carries no lock, because cluster buckets have no access information
+
 #### Scenario: Selected playground shows its extent
 
 - **WHEN** mapping detail is off and a playground is selected

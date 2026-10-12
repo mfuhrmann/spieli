@@ -6,6 +6,8 @@
 //                  completeness rings; a cluster of one is a pin
 //   polygon tier   a pin per playground at its interior point, no polygon
 //   selection      the selected playground's polygon outlined under its pin
+//   not public     a lock badge on the pin (access=private/customers) — the
+//                  same rule as mapping detail's hatched polygons
 //
 // The pin is the disc with a pointer merged into its bottom, anchored at the
 // pointer's tip, so a single playground looks the same on both sides of the
@@ -21,6 +23,7 @@ import Fill from 'ol/style/Fill.js';
 import Stroke from 'ol/style/Stroke.js';
 import { radiusForCount, countBucket } from './clusterStyle.js';
 import { hasPhotoSignal } from './completeness.js';
+import { isRestrictedAccess } from './vectorStyles.js';
 import { FINDER } from './completenessPalette.js';
 
 // Disc outer radius matches the completeness ring's outer edge (radius + half
@@ -88,17 +91,41 @@ function discBitmap(count, pixelRatio) {
 // ── Pin ──────────────────────────────────────────────────────────────────────
 
 const pinCache = new Map();
-const PIN_W = (PIN_RADIUS + PAD) * 2;
-const PIN_H = PAD + PIN_RADIUS * 2 + PIN_POINTER + PAD;
+const BADGE_PAD = 5;  // room above and right of the disc for the lock badge
 const PIN_CX = PIN_RADIUS + PAD;
-const PIN_CY = PIN_RADIUS + PAD;
+const PIN_CY = BADGE_PAD + PIN_RADIUS + PAD;
+const PIN_W = PIN_CX + PIN_RADIUS + PAD + BADGE_PAD;
+const PIN_H = PIN_CY + PIN_RADIUS + PIN_POINTER + PAD;
 const PIN_TIP_Y = PIN_CY + PIN_RADIUS + PIN_POINTER;
 
 // Same camera outline as the mapping-detail glyph (vectorStyles CAMERA_SVG),
 // in its 24-unit viewBox.
 const CAMERA_BODY = 'M9 3.5h6L16.5 6H21a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h4.5L9 3.5z';
 
-function drawPin(canvas, photo, pixelRatio) {
+// Lock badge: a dark disc overlapping the pin's upper right, so it reads as
+// "not public" without hiding the photo glyph. BADGE_PAD gives it room in
+// the bitmap; the anchor still sits on the pointer's tip.
+const LOCK_BADGE = '#374151'; // gray-700 — neutral, not a mapping-detail colour
+
+function drawLockBadge(ctx) {
+  const bx = PIN_CX + 9, by = PIN_CY - 9, r = 7.5;
+  ctx.beginPath();
+  ctx.arc(bx, by, r, 0, Math.PI * 2);
+  ctx.fillStyle = LOCK_BADGE;
+  ctx.fill();
+  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = FINDER.border;
+  ctx.stroke();
+  // Shackle, then body.
+  ctx.beginPath();
+  ctx.arc(bx, by - 1, 2.4, Math.PI, 0);
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  ctx.fillStyle = FINDER.border;
+  ctx.fillRect(bx - 3.5, by - 1, 7, 5);
+}
+
+function drawPin(canvas, photo, restricted, pixelRatio) {
   const ctx = prepareCanvas(canvas, PIN_W, PIN_H, pixelRatio);
   const down = Math.PI / 2;
   paintShape(ctx, () => {
@@ -126,22 +153,24 @@ function drawPin(canvas, photo, pixelRatio) {
     ctx.fillStyle = FINDER.border;
     ctx.fill();
   }
+
+  if (restricted) drawLockBadge(ctx);
 }
 
-function pinBitmap(photo, pixelRatio) {
-  const key = `${photo ? 1 : 0}@${pixelRatio}`;
+function pinBitmap(photo, restricted, pixelRatio) {
+  const key = `${photo ? 1 : 0}${restricted ? 1 : 0}@${pixelRatio}`;
   let canvas = pinCache.get(key);
   if (!canvas) {
     canvas = document.createElement('canvas');
-    drawPin(canvas, photo, pixelRatio);
+    drawPin(canvas, photo, restricted, pixelRatio);
     pinCache.set(key, canvas);
   }
   return canvas;
 }
 
-function drawPinAt(ctx, [x, y], photo, pixelRatio) {
+function drawPinAt(ctx, [x, y], photo, restricted, pixelRatio) {
   // Anchor the pointer's tip on the coordinate.
-  ctx.drawImage(pinBitmap(photo, pixelRatio), x - PIN_CX, y - PIN_TIP_Y, PIN_W, PIN_H);
+  ctx.drawImage(pinBitmap(photo, restricted, pixelRatio), x - PIN_CX, y - PIN_TIP_Y, PIN_W, PIN_H);
 }
 
 // ── Styles ───────────────────────────────────────────────────────────────────
@@ -149,8 +178,10 @@ function drawPinAt(ctx, [x, y], photo, pixelRatio) {
 function renderFinderCluster(pixelCoords, state) {
   const pixelRatio = state.pixelRatio || 1;
   const count = state.feature.get('count') ?? 0;
+  // Cluster buckets carry no access information, so a cluster of one cannot
+  // show the lock; it appears once the polygon tier draws the playground.
   if (count <= 1) {
-    drawPinAt(state.context, pixelCoords, false, pixelRatio);
+    drawPinAt(state.context, pixelCoords, false, false, pixelRatio);
     return;
   }
   const bitmap = discBitmap(count, pixelRatio);
@@ -177,11 +208,13 @@ function interiorPoints(feature) {
 
 function renderPlaygroundPin(pixelCoords, state) {
   const pixelRatio = state.pixelRatio || 1;
-  const photo = hasPhotoSignal(state.feature.getProperties());
+  const props = state.feature.getProperties();
+  const photo = hasPhotoSignal(props);
+  const restricted = isRestrictedAccess(props);
   // A MultiPolygon yields a MultiPoint: one pin per part, as the photo glyph
   // already does in mapping-detail mode.
   const points = Array.isArray(pixelCoords[0]) ? pixelCoords : [pixelCoords];
-  for (const p of points) drawPinAt(state.context, p, photo, pixelRatio);
+  for (const p of points) drawPinAt(state.context, p, photo, restricted, pixelRatio);
 }
 
 const pinStyle = new Style({ geometry: interiorPoints, renderer: renderPlaygroundPin, zIndex: 2 });

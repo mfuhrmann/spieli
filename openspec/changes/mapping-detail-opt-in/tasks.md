@@ -36,6 +36,7 @@
 - [x] 5.6 Keyboard: popover opens/closes with Enter/Space, Escape closes and returns focus to the button
 
 - [x] 5.7 Hide the panel's mapping-detail badge and use the finder colour for the nearby-list dots while mapping detail is off (found in live review)
+- [x] 5.8 Lock badge on pins of non-public playgrounds (access=private/customers), requested in live review
 
 ## 6. End-to-end tests
 

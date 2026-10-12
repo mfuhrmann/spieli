@@ -69,7 +69,7 @@ function makeHatchStyle(type) {
     });
 }
 
-function isRestrictedAccess(props) {
+export function isRestrictedAccess(props) {
     return props.access === 'private' || props.access === 'customers';
 }
 
