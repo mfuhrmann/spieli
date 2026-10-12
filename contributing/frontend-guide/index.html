@@ -1406,6 +1406,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#accent-colour" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Accent colour
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#the-mapping-detail-palette" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2342,6 +2353,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#accent-colour" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Accent colour
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#the-mapping-detail-palette" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2772,6 +2794,35 @@ unannotated name silently inherits the interface language.</p>
 <p>Themes are panel-only — no map symbols (discovery is deferred).</p>
 <h2 id="style-system">Style system<a class="headerlink" href="#style-system" title="Permanent link">&para;</a></h2>
 <p>The app uses Bootstrap 5 (component classes) and Tailwind CSS 4 (utility classes) side by side. The design system primitives in <code>src/components/ui/</code> (<code>Badge</code>, <code>Button</code>, <code>Card</code>, etc.) wrap Bootstrap with Tailwind utilities. Prefer these over raw Bootstrap classes in new components.</p>
+<h3 id="accent-colour">Accent colour<a class="headerlink" href="#accent-colour" title="Permanent link">&para;</a></h3>
+<p>The UI accent is one emerald family, defined once as theme tokens in <code>src/styles/app.css</code> (#930):</p>
+<table>
+<thead>
+<tr>
+<th>Token</th>
+<th>Value</th>
+<th>Use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--color-primary</code></td>
+<td><code>#047857</code></td>
+<td>buttons with text, links, accent text, active control icons, badges (Tailwind: <code>bg-primary</code>, <code>text-primary</code>)</td>
+</tr>
+<tr>
+<td><code>--color-primary-hover</code></td>
+<td><code>#065f46</code></td>
+<td>hover / pressed</td>
+</tr>
+<tr>
+<td><code>--color-primary-soft</code></td>
+<td><code>#ecfdf5</code></td>
+<td>background of an active control or checked row</td>
+</tr>
+</tbody>
+</table>
+<p>Reference them with <code>var(--color-primary)</code> and friends, never as literals. The lighter emerald-500 (<code>#10b981</code>) the app used before is only 2.54:1 behind white text — every accent pair here clears 4.5:1. Map markers are the exception: canvas renderers cannot read CSS variables, so their colours live in <code>completenessPalette.js</code>.</p>
 <h3 id="the-mapping-detail-palette">The mapping-detail palette<a class="headerlink" href="#the-mapping-detail-palette" title="Permanent link">&para;</a></h3>
 <p><code>src/lib/completenessPalette.js</code> is the single source of truth for the three mapping-detail colours (<code>complete</code> / <code>partial</code> / <code>missing</code>). <strong>Never hardcode these values anywhere else.</strong></p>
 <p>Each bucket exposes <code>base</code>, <code>fill</code>, <code>stroke</code> and <code>hatch</code>. The module documents which surface uses which field; the short version is that anything opaque takes <code>base</code>, and only shapes the basemap shows through — or backgrounds carrying text — take <code>fill</code>. Getting this wrong is silent: nothing errors, two surfaces simply render the same bucket in different colours.</p>
