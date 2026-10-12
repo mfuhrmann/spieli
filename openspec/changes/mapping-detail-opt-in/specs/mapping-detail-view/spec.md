@@ -4,6 +4,11 @@
 
 The map SHALL offer a mapping-detail toggle control placed next to the Info and Filter buttons, in both standalone and hub mode. Mapping detail SHALL be off by default. The toggle state SHALL be persisted per viewer in browser storage and restored on the next visit; when storage is unavailable or throws, the map SHALL render with mapping detail off and the toggle SHALL still work for the session.
 
+#### Scenario: Same control on phones and desktop
+
+- **WHEN** the map is shown at a phone viewport (< 1024 px) or a desktop viewport
+- **THEN** the mapping-detail control is present next to the Info and Filter buttons in both
+
 #### Scenario: First visit shows the finder map
 
 - **WHEN** a visitor opens the map with no stored preference
@@ -21,6 +26,34 @@ The map SHALL offer a mapping-detail toggle control placed next to the Info and 
 - **WHEN** reading or writing browser storage throws
 - **THEN** the map renders with mapping detail off
 - **AND** switching it on changes the rendering for the current session without an error
+
+### Requirement: Link parameter opens the map with mapping detail on or off
+
+A `detail` query parameter SHALL set mapping detail for the page load: `detail=1` on, `detail=0` off, any other value ignored. It SHALL override the stored preference without overwriting it, and SHALL compose with region paths and deeplink hashes. Toggling the control SHALL persist the new preference and update the parameter in the address bar without a reload. While mapping detail is on, the playground share link SHALL include `detail=1`.
+
+#### Scenario: Contributor link turns detail on
+
+- **WHEN** a visitor with no stored preference opens `/fulda?detail=1#W123`
+- **THEN** mapping detail is on, the region framing and the deeplink selection both apply
+- **AND** after removing the parameter and reloading, mapping detail is off again (the stored preference was not changed)
+
+#### Scenario: Parameter overrides a stored preference
+
+- **WHEN** the stored preference is on and the visitor opens a URL with `detail=0`
+- **THEN** mapping detail is off for that page load
+
+#### Scenario: Toggling updates the address bar
+
+- **WHEN** the page was opened with `detail=1` and the visitor switches mapping detail off
+- **THEN** the address bar shows `detail=0` without a page reload
+- **AND** the stored preference is off
+
+#### Scenario: Share link carries the view
+
+- **WHEN** mapping detail is on and the visitor uses the share button on a playground
+- **THEN** the shared URL contains `detail=1` and the playground hash
+- **WHEN** mapping detail is off
+- **THEN** the shared URL contains no `detail` parameter
 
 ### Requirement: Mapping-detail filters and legend live in the toggle control
 

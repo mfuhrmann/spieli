@@ -22,7 +22,6 @@ Above `clusterMaxZoom` playgrounds are polygons only; small ones are hard to see
 - Changing the completeness rule, wire values or any RPC.
 - Server-side clustering changes. Pins are drawn from the polygon features the client already has.
 - Replacing the GPS dot, equipment, tree or pitch layers.
-- A URL parameter for the toggle (can follow later if contributors want shareable links).
 
 ## Decisions
 
@@ -67,13 +66,25 @@ New `MappingDetailControl.svelte`, a `control-btn` placed in `controls-row` betw
 2. the three detailed/basic/no-details filter rows (moved from FilterPanel), disabled while the switch is off;
 3. the `CompletenessLegend` content.
 
-The button shows a pressed state (`aria-pressed`) while detail is on. The "Mapping detail" section is removed from `FilterPanel`; `AppShell` mounts `CompletenessLegend` on the map only when detail is on (today's behaviour), never when off.
+The same button sits in the same place on phones and desktop — `controls-row` is already shared by both layouts (on mobile it stacks Info above Filter; the new button joins that column). The button shows a pressed state (`aria-pressed`) while detail is on. The "Mapping detail" section is removed from `FilterPanel`; `AppShell` mounts `CompletenessLegend` on the map only when detail is on (today's behaviour), never when off.
 
 `FilterChips` hides completeness chips while off (they come from `effectiveFilterStore`, so this falls out of decision 1).
 
 ### 8. Hub macro tier
 
 `MacroView` passes the mode to the macro ring style: neutral filled discs with the backend's total count. Offline backends keep their "outlined, muted, offline label" treatment in both modes — that is health, not mapping detail. `macroFiltered` / `macroCoverage` see effective filters, so turning detail off cannot leave a stale completeness-filtered aggregate on the rings.
+
+### 9. Link parameter `?detail=1`
+
+Contributors can share a link that opens with mapping detail on, e.g. `https://spieli.eu/fulda?detail=1#W123`.
+
+- **Query, not hash.** The hash is owned by deeplinks (`#W123`, `#slug/W123`) and the pathname by region URLs (`/fulda`); a query parameter composes with both without touching `deeplink.js` or `regionUrl.js`. `selection.js` already preserves `location.search` when it clears the hash.
+- **Read once at startup** in `stores/mappingDetail.js`: `detail=1` → on, `detail=0` → off, anything else ignored. The parameter **overrides** the stored preference for that page load but does **not** write it — opening a contributor's link must not permanently change a parent's map.
+- **Toggling by hand** writes the preference as usual and rewrites the parameter with `history.replaceState` (set to the new value), so a reload shows what the visitor last chose and the address bar never contradicts the map.
+- **Share button** (`PlaygroundPanel.sharePlayground`) appends `?detail=1` while detail is on, so a contributor sharing a playground shares the view they are looking at. With detail off the shared link stays as today (no parameter).
+- Hub and standalone both get it, since the store is shared.
+
+*Alternative:* a `#…;detail` hash suffix — rejected, every hash parser (standalone, hub slug form) would need to learn it.
 
 ## Risks / Trade-offs
 
@@ -82,6 +93,7 @@ The button shows a pressed state (`aria-pressed`) while detail is on. The "Mappi
 - [Polygon area no longer clickable in finder mode] → the pin is the target; hover preview on desktop still triggers on the pin. Covered by an E2E test that clicks a pin.
 - [Server filter params silently stale after toggling] → refetch subscriptions read `effectiveFilterStore`, which emits on toggle; E2E asserts the cluster request drops `filter_missing` when switching off.
 - [localStorage unavailable] → default off, wrapped in try/catch; the control still works for the session.
+- [`?detail=` reaches the server logs / caches] → it is a static flag, carries nothing about the visitor; nginx serves `index.html` for any query, so no config change.
 
 ## Migration Plan
 
@@ -89,5 +101,4 @@ Frontend-only, no labels required. Rollback = revert the PR; the stored `spieli.
 
 ## Open Questions
 
-- Should the switch also appear in the mobile layout's filter area, or is the top-right button enough on phones? (Default: same button on both.)
-- Is a shareable URL parameter for contributor links wanted later?
+None. Resolved 2026-10-12: the button ships on phones and desktop alike; the `?detail=1` link parameter is in scope (decision 9).
