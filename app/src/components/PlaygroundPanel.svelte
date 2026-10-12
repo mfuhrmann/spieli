@@ -496,26 +496,25 @@
     }
   }
 
-  // ── Navigation button ────────────────────────────────────────────────────
-  function navigateToPlayground() {
-    if (!attr || !Number.isFinite(centerLat) || !Number.isFinite(centerLon)) return;
-    const title = getPlaygroundTitle(attr, $_);
-    // Mobile: geo: URL opens native navigation app
-    // Desktop: OSM directions with stored GPS fix as origin (falls back to empty origin
-    // when location was never granted — OSM then prompts the user for a starting point).
-    // Note: origin may be stale if the user moved since the last watchPosition update.
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(navigator.userAgent);
-    const loc = $location;
-    const origin = loc ? `${loc.lat},${loc.lon}` : '';
-    const url = isMobile
-      ? `geo:${centerLat},${centerLon}?q=${centerLat},${centerLon}(${encodeURIComponent(title)})`
-      : `https://www.openstreetmap.org/directions?engine=fossgis_osrm_foot&route=${origin};${centerLat},${centerLon}`;
-    
-    const win = window.open(url, '_blank');
-    if (!win) {
-      console.warn('Navigation popup was blocked');
+  // ── Navigation link ──────────────────────────────────────────────────────
+  // Mobile: geo: URL opens native navigation app
+  // Desktop: OSM directions with stored GPS fix as origin (falls back to empty origin
+  // when location was never granted — OSM then prompts the user for a starting point).
+  // Note: origin may be stale if the user moved since the last watchPosition update.
+  //
+  // Rendered as a plain <a href>, not window.open(): iOS Safari silently drops a
+  // geo: URL opened via window.open(url, '_blank'), while the same URL as a
+  // same-tab link hands off to the maps app — as POIPanel's rows already did (#926).
+  const navIsMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(navigator.userAgent);
+  $: navigationUrl = (() => {
+    if (!attr || !Number.isFinite(centerLat) || !Number.isFinite(centerLon)) return null;
+    if (navIsMobile) {
+      const title = getPlaygroundTitle(attr, $_);
+      return `geo:${centerLat},${centerLon}?q=${centerLat},${centerLon}(${encodeURIComponent(title)})`;
     }
-  }
+    const origin = $location ? `${$location.lat},${$location.lon}` : '';
+    return `https://www.openstreetmap.org/directions?engine=fossgis_osrm_foot&route=${origin};${centerLat},${centerLon}`;
+  })();
 </script>
 
 {#if feature && attr}
@@ -536,7 +535,14 @@
           {/if}
         </div>
         <div class="flex items-center gap-1 shrink-0">
-          <button class="navigate-btn" onclick={navigateToPlayground} aria-label={$_('info.navigateHere')}>{$_('info.navigateHere')}</button>
+          {#if navigationUrl}
+            <a
+              class="navigate-btn"
+              href={navigationUrl}
+              target={navIsMobile ? undefined : '_blank'}
+              rel={navIsMobile ? undefined : 'noopener'}
+            >{$_('info.navigateHere')}</a>
+          {/if}
           <button class="panel-icon-btn" onclick={closePanel} aria-label={$_('info.closeBtn')}>
             <X class="h-5 w-5" />
           </button>
@@ -555,7 +561,14 @@
           {/if}
         </div>
         <div class="flex items-center gap-1">
-          <button class="navigate-btn" onclick={navigateToPlayground} aria-label={$_('info.navigateHere')}>{$_('info.navigateHere')}</button>
+          {#if navigationUrl}
+            <a
+              class="navigate-btn"
+              href={navigationUrl}
+              target={navIsMobile ? undefined : '_blank'}
+              rel={navIsMobile ? undefined : 'noopener'}
+            >{$_('info.navigateHere')}</a>
+          {/if}
           <button class="panel-icon-btn shrink-0" onclick={sharePlayground} aria-label={$_('info.copyLink')}>
             {#if shareConfirmed}
               <Check class="h-5 w-5 text-green-600" />
@@ -1293,9 +1306,11 @@
     font-weight: 600;
     cursor: pointer;
     white-space: nowrap;
+    text-decoration: none;
     transition: background 0.15s;
   }
   .navigate-btn:hover {
     background: #059669;
+    color: #ffffff;
   }
 </style>
