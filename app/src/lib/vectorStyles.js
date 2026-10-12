@@ -135,6 +135,14 @@ export const selectionStyle = new Style({
     stroke: new Stroke({ color: '#ff0000', width: 3 })
 });
 
+// Outline of the selected standalone pitch (#934), drawn over its own fill.
+// The accent emerald, so it reads as "selected", not as a pitch category.
+export const selectedPitchStyle = new Style({
+    fill: new Fill({ color: 'rgba(4, 120, 87, 0.12)' }),
+    stroke: new Stroke({ color: '#047857', width: 3 }),
+    zIndex: 1,
+});
+
 // ── Equipment point / polygon styles ─────────────────────────────────────────
 
 const circleRadius = 3.5;

@@ -174,7 +174,7 @@ Two policies ship together for one release: the old wildcard one **enforced**, a
 
 | Store | Role |
 |---|---|
-| `selection.js` | Currently selected playground feature + backend URL |
+| `selection.js` | Current selection — `{ feature, backendUrl, kind }`, `kind` `'playground'` or (standalone) `'pitch'` (#934). `hasSelection` = anything open; `selectedKind`; `selectedOsmId` is playground-only. Readers that only make sense for playgrounds must check `kind` |
 | `filters.js` | Active filter state (playground filters + `standalonePitches` layer toggle) |
 | `overlayLayer.js` | Bridge between PlaygroundPanel and Map — carries `{ equipment[], trees[] }` |
 | `map.js` | OL map instance reference |
@@ -195,6 +195,7 @@ Two policies ship together for one release: the old wildcard one **enforced**, a
 |---|---|
 | `Map.svelte` | OL map, all layers, click/hover handlers, standalone pitch layer (moveend) |
 | `AppShell.svelte` | Top-level shell used by both modes: mounts Map, manages deeplink restore. **No keyboard handling** — there is no shortcut infrastructure here to extend. Global `keydown` listeners live in the components that own the thing being dismissed: `BottomSheet`, `Sheet`, `LegalContentModal`, `DataContributionModal` and `Map` (Escape closes the hub backend popup), plus `SearchBar`'s own combobox key handling |
+| `PitchPanel.svelte` | Detail panel for a selected standalone pitch (#934), in the playground panel's slot (side panel / `embedded` on phones): sport chips with the pin glyphs, surface, lighting, access/fee/booking, opening hours, hoops, wheelchair, operator, photos, Take me there, share (`#P<id>`), MapComplete. Display rules in `lib/pitchInfo.js` — every fact only when tagged |
 | `PlaygroundPanel.svelte` | Fetches and displays equipment/trees/POIs for selected playground; writes to `overlayFeaturesStore`; includes "Take me there" navigation button (geo: URL on mobile, OSM directions on desktop) |
 | `EquipmentList.svelte` | Renders device/fitness/pitch/bench lists inside PlaygroundPanel |
 | `NearbyPlaygrounds.svelte` | Shows nearest playgrounds to the selected one; hydrates polygon source on demand |
@@ -276,6 +277,7 @@ All PostgREST calls. Key functions:
 - `fetchPlaygroundClusters(zoom, extent, baseUrl, signal)` — cluster tier (zoom ≤ 13)
 - `fetchPlaygroundsBbox(extent, baseUrl, signal)` — polygon tier (zoom > 13)
 - `fetchPlaygroundByOsmId(osmId, baseUrl, signal)` — single-feature hydration; throws on non-OK, returns `null` on legitimate miss
+- `fetchPitchByOsmId(osmId, baseUrl, signal)` — standalone pitch for `#P` links; like the above, but a 404 (pre-`get_pitch` backend) resolves to `null` with one warning
 - `fetchPlaygroundCentroids(extent, baseUrl, signal)` — server-shipped, client unused in P1 (kept for federation)
 - `fetchPlaygroundEquipment(extentEPSG3857, osmId, baseUrl)` — equipment within a playground's bbox
 - `fetchStandaloneEquipment(extentEPSG3857, baseUrl)` — pitches + equipment NOT within any playground
@@ -292,7 +294,8 @@ All PostgREST-exposed functions live in the `api` schema. See [`docs/reference/a
 - `get_playground_centroids(bbox)` — lightweight per-feature rows (federation-ready, client unused in P1)
 - `get_meta()` — federation discovery; returns `{relation_id, name, playground_count, complete, partial, missing, bbox}`
 - `get_equipment(bbox)` — equipment within a bounding box (used per selected playground)
-- `get_standalone_equipment(bbox)` — pitches + equipment outside any playground polygon
+- `get_standalone_equipment(bbox)` — pitches + equipment outside any playground polygon; properties carry every OSM tag plus the `access`/`operator` columns
+- `get_pitch(osm_id)` — single standalone pitch (same shape, same not-in-a-playground rule) for `#P` links; `null` otherwise
 - `get_trees(bbox)`, `get_pois(lat, lon, radius_m)`, `get_nearest_playgrounds(lat, lon)`
 - `get_legal(type)` — imprint / legal text fetched from the `legal_content` table
 - `get_playgrounds(relation_id)` — **deprecated** region-scoped variant; SQL `COMMENT` flags it for removal

@@ -1222,6 +1222,8 @@ AS $$
       p.leisure,
       p.sport,
       p.surface,
+      p.access,
+      p.operator,
       p.tags,
       ST_Transform(p.way, 4326) AS geom
     FROM planet_osm_polygon p, bbox b
@@ -1243,6 +1245,8 @@ AS $$
       p.leisure,
       p.sport,
       p.surface,
+      p.access,
+      p.operator,
       p.tags,
       ST_Transform(p.way, 4326) AS geom
     FROM planet_osm_point p, bbox b
@@ -1264,6 +1268,8 @@ AS $$
       p.leisure,
       p.sport,
       p.surface,
+      p.access,
+      p.operator,
       p.tags,
       ST_Transform(p.way, 4326) AS geom
     FROM planet_osm_point p
@@ -1294,7 +1300,11 @@ AS $$
               'amenity',  amenity,
               'leisure',  leisure,
               'sport',    sport,
-              'surface',  surface
+              'surface',  surface,
+              -- osm2pgsql columns, so not in the merged hstore tags below;
+              -- the pitch panel shows them (#934).
+              'access',   access,
+              'operator', operator
             ) || COALESCE(hstore_to_jsonb(tags), '{}'::jsonb)
           )
         )
@@ -1306,6 +1316,72 @@ AS $$
 $$;
 
 GRANT EXECUTE ON FUNCTION api.get_standalone_equipment(float8, float8, float8, float8) TO web_anon;
+
+-- ---------------------------------------------------------------------------
+-- get_pitch(osm_id)
+-- ---------------------------------------------------------------------------
+-- Single standalone pitch for deeplink hydration (#934): the same property
+-- shape as get_standalone_equipment, and the same "not part of a playground"
+-- rule, so a `#P<osm_id>` link resolves exactly the pitches the pitch layer
+-- shows. Prefers the polygon over a node with the same numeric id. NULL when
+-- there is no such standalone pitch.
+CREATE OR REPLACE FUNCTION api.get_pitch(osm_id bigint)
+RETURNS json
+LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path = public, api
+AS $$
+  WITH candidates AS (
+    SELECT
+      p.osm_id,
+      CASE WHEN p.osm_id < 0 THEN 'R' ELSE 'W' END AS osm_type,
+      p.name, p.amenity, p.leisure, p.sport, p.surface, p.access, p.operator, p.tags,
+      ST_Transform(p.way, 4326) AS geom,
+      1 AS priority
+    FROM planet_osm_polygon p
+    WHERE p.leisure = 'pitch'
+      AND abs(p.osm_id) = abs($1)
+      AND NOT EXISTS (
+        SELECT 1 FROM planet_osm_polygon pg
+        WHERE pg.leisure = 'playground'
+          AND ST_Intersects(p.way, pg.way)
+      )
+    UNION ALL
+    SELECT
+      p.osm_id,
+      'N'::text AS osm_type,
+      p.name, p.amenity, p.leisure, p.sport, p.surface, p.access, p.operator, p.tags,
+      ST_Transform(p.way, 4326) AS geom,
+      2 AS priority
+    FROM planet_osm_point p
+    WHERE p.leisure = 'pitch'
+      AND p.osm_id = abs($1)
+      AND NOT EXISTS (
+        SELECT 1 FROM planet_osm_polygon pg
+        WHERE pg.leisure = 'playground'
+          AND ST_Within(p.way, pg.way)
+      )
+  )
+  SELECT json_build_object(
+    'type', 'Feature',
+    'geometry', ST_AsGeoJSON(geom)::json,
+    'properties', jsonb_build_object(
+      'osm_id',   abs(osm_id),
+      'osm_type', osm_type,
+      'name',     name,
+      'amenity',  amenity,
+      'leisure',  leisure,
+      'sport',    sport,
+      'surface',  surface,
+      'access',   access,
+      'operator', operator
+    ) || COALESCE(hstore_to_jsonb(tags), '{}'::jsonb)
+  )
+  FROM candidates
+  ORDER BY priority
+  LIMIT 1;
+$$;
+
+GRANT EXECUTE ON FUNCTION api.get_pitch(bigint) TO web_anon;
 
 -- =========================================================================
 -- 4. get_pois(lat, lon, radius_m)

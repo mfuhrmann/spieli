@@ -9,7 +9,6 @@
 
 <script>
   import { onMount, onDestroy } from 'svelte';
-  import OpeningHours from 'opening_hours';
   import { transform } from 'ol/proj';
   import { X, Share2, Check, ChevronDown, ChevronUp, ChevronRight, Image, Package, Navigation, Star, Info, Phone, Mail, Accessibility } from 'lucide-svelte';
   import { _, locale } from 'svelte-i18n';
@@ -21,8 +20,10 @@
   import { overlayFeaturesStore } from '../stores/overlayLayer.js';
   import { groupEquipment } from '../lib/equipmentGrouping.js';
   import { playgroundCompleteness } from '../lib/completeness.js';
+  import { openingHoursState } from '../lib/openingHours.js';
+  import { litInfo } from '../lib/pitchInfo.js';
   import { COMPLETENESS_PALETTE } from '../lib/completenessPalette.js';
-  import { poiRadiusM, appMode, mapMinZoom, regionLang, openingHoursAddress } from '../lib/config.js';
+  import { poiRadiusM, appMode, mapMinZoom, regionLang } from '../lib/config.js';
   import { getPlaygroundTitle, getPlaygroundLocation, hasOsmName } from '../lib/playgroundHelpers.js';
   import { aggregatePlaygroundThemes, areaThemesOf, themeIcon, themeName } from '../lib/playgroundThemes.js';
   import { summarizeEquipment } from '../lib/equipmentSummary.js';
@@ -40,7 +41,9 @@
   export let embedded = false;
 
   // ── Derived state from selection store ────────────────────────────────────
-  $: feature     = $selection.feature;
+  // Playgrounds only: a selected pitch has its own panel (#934), and loading
+  // equipment, trees and reviews for it would be wrong.
+  $: feature     = $selection.kind === 'playground' ? $selection.feature : null;
   $: backendUrl  = $selection.backendUrl;
   $: attr        = feature ? feature.getProperties() : null;
   // An OSM name is a proper noun in the region's language; the `nearby.defaultName`
@@ -367,38 +370,6 @@
     : null;
 
   // ── Opening hours ─────────────────────────────────────────────────────────
-  function openingHoursState(ohStr, t) {
-    const fmt = d => d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
-    const dayLabel = (d, now) => {
-      if (d.toDateString() === now.toDateString()) return t('poi.today');
-      const tomorrow = new Date(now); tomorrow.setDate(now.getDate() + 1);
-      if (d.toDateString() === tomorrow.toDateString()) return t('poi.tomorrow');
-      const diff = Math.round((d - now) / 86400000);
-      if (diff <= 6) return d.toLocaleDateString(undefined, { weekday: 'long' });
-      return d.toLocaleDateString(undefined, { weekday: 'short', day: '2-digit', month: '2-digit' });
-    };
-    try {
-      const oh = new OpeningHours(ohStr, { address: openingHoursAddress });
-      const now = new Date();
-      const isOpen = oh.getState(now);
-      const next = oh.getNextChange(now);
-      if (ohStr.trim() === '24/7') return { open: true, text: t('poi.alwaysOpen') };
-      if (isOpen) {
-        const label = next
-          ? t('poi.openUntil', { values: { time: fmt(next) } })
-          : t('poi.open');
-        return { open: true, text: label };
-      }
-      if (next) return {
-        open: false,
-        text: t('poi.opensAt', { values: { day: dayLabel(next, now), time: fmt(next) } }),
-      };
-      return { open: false, text: t('poi.closed') };
-    } catch {
-      return { open: null, text: ohStr };
-    }
-  }
-
   $: openingHoursInfo = attr?.opening_hours ? openingHoursState(attr.opening_hours, $_) : null;
 
   // ── Attribute helpers ─────────────────────────────────────────────────────
@@ -411,6 +382,8 @@
     const access = attr.access ?? 'unknown';
     return $_('details.access.' + access, { default: $_('details.access.unknown') });
   })();
+
+  $: litFact = attr ? litInfo(attr.lit) : null;
 
   $: surfaceLabel = attr?.surface
     ? attr.surface.split(';').map(s => $_('details.surfaceValues.' + s.trim(), { default: s.trim() })).join(' / ')
@@ -674,6 +647,15 @@
           <div class="fact-item">
             <span class="info-label">{$_('details.surfaceLabel')}</span>
             <span class="fact-value">{surfaceLabel}</span>
+          </div>
+        {/if}
+
+        <!-- Only when tagged: 53 of 733 Fulda playgrounds carry `lit`, so
+             "unknown" must stay silent rather than read as "not lit" (#934). -->
+        {#if litFact}
+          <div class="fact-item" data-fact="lit">
+            <span class="info-label">{$_('pitch.lightingLabel')}</span>
+            <span class="fact-value">{$_(litFact.key, litFact.values ? { values: litFact.values } : undefined)}</span>
           </div>
         {/if}
 

@@ -769,5 +769,78 @@
   },
   "commons": {
     "viewSource": "Auf Wikimedia Commons ansehen"
+  },
+  "pitch": {
+    "label": "Sportplatz",
+    "sportsLabel": "Sportarten",
+    "lightingLabel": "Beleuchtung",
+    "accessLabel": "Zugang",
+    "titles": {
+      "soccer": "Fußballplatz",
+      "basketball": "Basketballplatz",
+      "tennis": "Tennisplatz",
+      "table_tennis": "Tischtennisplatte",
+      "volleyball": "Volleyballfeld",
+      "beachvolleyball": "Beachvolleyballfeld",
+      "skateboard": "Skatepark",
+      "equestrian": "Reitplatz",
+      "athletics": "Leichtathletikanlage",
+      "boules": "Boulebahn",
+      "chess": "Freiluftschach",
+      "baseball": "Baseballfeld",
+      "multi": "Mehrzweckplatz",
+      "generic": "Sportplatz"
+    },
+    "sports": {
+      "soccer": "Fußball",
+      "basketball": "Basketball",
+      "tennis": "Tennis",
+      "table_tennis": "Tischtennis",
+      "volleyball": "Volleyball",
+      "beachvolleyball": "Beachvolleyball",
+      "skateboard": "Skaten",
+      "roller_skating": "Rollschuh",
+      "inlinehockey": "Inlinehockey",
+      "equestrian": "Reiten",
+      "athletics": "Leichtathletik",
+      "boules": "Boule",
+      "chess": "Schach",
+      "baseball": "Baseball",
+      "multi": "Mehrzweck",
+      "cycling": "Radfahren",
+      "bmx": "BMX",
+      "archery": "Bogenschießen",
+      "shooting": "Schießen",
+      "handball": "Handball",
+      "ice_stock": "Eisstockschießen",
+      "kick_scooter": "Tretroller"
+    },
+    "lit": {
+      "yes": "Beleuchtet",
+      "no": "Nicht beleuchtet",
+      "limited": "Teilweise beleuchtet",
+      "times": "Beleuchtet {times}"
+    },
+    "access": {
+      "public": "Öffentlich",
+      "customers": "Nur für Kunden",
+      "members": "Nur für Mitglieder",
+      "private": "Privat"
+    },
+    "fee": {
+      "yes": "Kostenpflichtig",
+      "no": "Kostenlos"
+    },
+    "reservation": {
+      "required": "Buchung erforderlich",
+      "recommended": "Buchung empfohlen"
+    },
+    "hoops": "{count, plural, one {# Korb} other {# Körbe}}",
+    "wheelchair": {
+      "yes": "Rollstuhlgerecht",
+      "limited": "Eingeschränkt rollstuhlgerecht",
+      "no": "Nicht rollstuhlgerecht"
+    },
+    "addDetails": "Etwas fehlt? Belag, Beleuchtung oder Fotos kannst du in MapComplete ergänzen."
   }
 }

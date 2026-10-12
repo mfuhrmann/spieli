@@ -102,7 +102,7 @@ All three states are shown by default. Deactivate a state to hide those playgrou
 Click any playground to open its detail panel. The panel shows:
 
 - Name, operator, opening hours (when mapped)
-- Surface type and size
+- Surface type and size, and lighting when it is mapped (most playgrounds do not record it yet, so nothing is shown then)
 - Status pills — completeness, data age, and (when tagged) a shade pill (Shaded / No shade), baby / toddler suitability, and wheelchair-friendly equipment (see [Wheelchair accessibility](#wheelchair-accessibility))
 - Theme highlight — a symbol for playgrounds with a theme, such as a ship or castle (see [Playground themes](#playground-themes))
 - Equipment list — devices, pitches, benches, and their sub-attributes, including each item's surface when tagged
@@ -126,6 +126,8 @@ Themes come straight from the `playground:theme` tag in OpenStreetMap — you ca
 ## Standalone pitches layer
 
 Enable "Standalone pitches" in the filter panel's Layers section to see sports pitches that are not part of any playground (football fields, basketball courts, skate parks, etc.).
+
+Click or tap a pitch to open its panel — in the same place as a playground's. It shows the pitch's sports and, where they are mapped, its surface, whether it is lit (and when), whether you can just walk in (public, members, fee, booking), opening hours, basketball hoops, wheelchair access, the operator and photos, plus "Take me there", a share link and a link to add missing details in MapComplete. Nothing is shown for what has not been mapped. A shared pitch link looks like `…/#P123456` and opens the map with the pitch layer switched on.
 
 ## Deeplinks
 

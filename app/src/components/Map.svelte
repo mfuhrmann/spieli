@@ -435,6 +435,23 @@
         });
         return;
       }
+      // Standalone pitches (#934): only layers the shell marks `selectable`
+      // (the pitch layer, not the equipment overlay of a selected
+      // playground), and only the pitch itself, not benches on that layer.
+      // After the playground test, so a playground keeps its clicks.
+      const pitchHit = olMap.forEachFeatureAtPixel(
+        evt.pixel,
+        (f) => (f.get('leisure') === 'pitch' ? f : undefined),
+        { layerFilter: (l) => l.get('selectable') === true },
+      );
+      if (pitchHit) {
+        selection.select(pitchHit, defaultBackendUrl, 'pitch');
+        selectionZoom = null;
+        fitViewToSelection(view, pitchHit.getGeometry().getExtent(), (v) => {
+          selectionZoom = v.getZoom();
+        });
+        return;
+      }
       const clusterHit = olMap.forEachFeatureAtPixel(evt.pixel, (f) => f, {
         layerFilter: (l) => l === clusterLayer,
       });

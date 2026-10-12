@@ -22,7 +22,7 @@
   import { parseHash } from '../lib/deeplink.js';
   import { attachTieredOrchestrator } from '../lib/tieredOrchestrator.js';
   import { regionFitPadding } from '../lib/playgroundHelpers.js';
-  import { equipmentLayerStyleFn } from '../lib/vectorStyles.js';
+  import { equipmentLayerStyleFn, selectedPitchStyle } from '../lib/vectorStyles.js';
   import { debounce } from '../lib/utils.js';
   import { mapStore } from '../stores/map.js';
   import { filterStore } from '../stores/filters.js';
@@ -201,7 +201,9 @@
         source: pitchSource,
         zIndex: 9,
         style: equipmentLayerStyleFn,
-        properties: { kind: 'overlay' },
+        // `selectable`: Map's click handler may select pitches on this layer
+        // (#934); the equipment overlay of a selected playground is not.
+        properties: { kind: 'overlay', selectable: true },
       });
       map.addLayer(pitchLayer);
 
@@ -265,6 +267,19 @@
 
   // Toggle pitch-layer visibility from the filter store.
   $: if (pitchLayer) pitchLayer.setVisible($filterStore.standalonePitches);
+
+  // Outline the selected pitch, matched by osm_id: a deeplinked pitch is not
+  // in this layer's source until the layer loads its area.
+  $: selectedPitchId = $selection.feature && $selection.kind === 'pitch'
+    ? $selection.feature.get('osm_id') : null;
+  $: if (pitchLayer) {
+    const id = selectedPitchId;
+    pitchLayer.setStyle(feature => {
+      const base = equipmentLayerStyleFn(feature);
+      if (id == null || feature.get('leisure') !== 'pitch' || feature.get('osm_id') !== id) return base;
+      return base ? [base, selectedPitchStyle] : selectedPitchStyle;
+    });
+  }
 
   onDestroy(() => {
     detachTierDeselect();

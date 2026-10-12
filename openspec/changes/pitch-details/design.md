@@ -38,7 +38,7 @@ Restore (standalone): `fetchPitchByOsmId` → new `api.get_pitch(osm_id)` (same 
 
 ### 4. `PitchPanel.svelte`, sharing building blocks with the playground panel
 
-Same header pattern (title, "Take me there", share/close), same body sections where they apply. Reused as-is: `PanoramaxViewer`, `CommonsGallery`, `MapCompleteLink`, the navigation link and share logic. To avoid copying them, the navigation-URL and share-URL builders move from `PlaygroundPanel` into `lib/playgroundHelpers.js` (pure, unit-tested) and both panels call them.
+Same header pattern (title, "Take me there", share/close), same body sections where they apply. Reused as-is: `PanoramaxViewer`, `CommonsGallery`, `MapCompleteLink`; opening hours via `lib/openingHours.js` (extracted from `PlaygroundPanel`, which now uses it too). The navigation-URL builder is a pure `navigationUrl` in `lib/playgroundHelpers.js` (unit-tested), rendered as an `<a href>` (the iOS-safe form from #926). *Implementation note:* `PlaygroundPanel` keeps its own navigation code for now — PR #928 rewrites exactly that function, so switching it to the helper waits until #928 lands, to avoid a conflict.
 
 Display rules live in `lib/pitchInfo.js` (pure, unit-tested), not in the component:
 
