@@ -167,7 +167,7 @@
       class="btn btn-sm btn-primary w-100"
       onclick={submit}
       disabled={!selectedRating || submitting}
-      style="font-size:12px; background:#10b981; border-color:#10b981;"
+      style="font-size:12px; background:var(--color-primary); border-color:var(--color-primary);"
     >
       {#if submitting}
         <span class="spinner-border spinner-border-sm me-1" role="status"></span>

@@ -183,7 +183,8 @@ const noFilters = {
 // 19. Any regular filter true → true
 {
   assert.equal(hasActiveFilters({ ...noFilters, water: true }), true);
-  assert.equal(hasActiveFilters({ ...noFilters, standalonePitches: true }), true);
+  // The pitch layer is a layer toggle, not a filter (#932).
+  assert.equal(hasActiveFilters({ ...noFilters, standalonePitches: true }), false);
   assert.equal(hasActiveFilters({ ...noFilters, basketball: true }), true);
   assert.equal(hasActiveFilters({ ...noFilters, fence: true }), true);
   assert.equal(hasActiveFilters({ ...noFilters, hasDogs: true }), true);

@@ -20,8 +20,8 @@
 // cost <1 ms and the cache key complexity isn't worth it.
 
 import Style from 'ol/style/Style.js';
-import { radiusForCount } from '../lib/clusterStyle.js';
 import { hidpiStyleOptions } from '../lib/hidpiRenderer.js';
+import { radiusForCount } from '../lib/clusterStyle.js';
 import { COMPLETENESS_BASE, RING_CASING, FINDER } from '../lib/completenessPalette.js';
 
 // Mapping-detail segments come from the shared palette (see
@@ -430,12 +430,12 @@ function renderFinderCantFilterMacro(pixelCoords, state) {
   ctx.fillText('unfiltered', x, y + 11);
 }
 
-const healthyStyle       = new Style({ renderer: renderHealthyMacroRing });
-const offlineStyle       = new Style({ renderer: renderOfflineMacroRing });
-const degradedStyle      = new Style({ renderer: renderDegradedMacroRing });
-const importingStyle     = new Style({ renderer: renderImportingMacroRing });
-const filteredEmptyStyle = new Style({ renderer: renderFilteredEmptyMacroRing });
-const cantFilterStyle    = new Style({ renderer: renderCantFilterMacroRing });
+const healthyStyle       = new Style(hidpiStyleOptions(renderHealthyMacroRing));
+const offlineStyle       = new Style(hidpiStyleOptions(renderOfflineMacroRing));
+const degradedStyle      = new Style(hidpiStyleOptions(renderDegradedMacroRing));
+const importingStyle     = new Style(hidpiStyleOptions(renderImportingMacroRing));
+const filteredEmptyStyle = new Style(hidpiStyleOptions(renderFilteredEmptyMacroRing));
+const cantFilterStyle    = new Style(hidpiStyleOptions(renderCantFilterMacroRing));
 const finderHealthyStyle    = new Style(hidpiStyleOptions(renderFinderHealthyMacro));
 const finderCantFilterStyle = new Style(hidpiStyleOptions(renderFinderCantFilterMacro));
 

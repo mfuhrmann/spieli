@@ -134,8 +134,8 @@
   }
 
   .control-btn.active {
-    background: #e8f5e9;
-    color: #1b5e20;
+    background: var(--color-primary-soft);
+    color: var(--color-primary);
   }
 
   .badge {
@@ -150,7 +150,7 @@
     padding: 0 5px;
     font-size: 11px;
     font-weight: 600;
-    background: #1b5e20;
+    background: var(--color-primary);
     color: white;
     border-radius: 9px;
   }
@@ -230,7 +230,7 @@
   }
 
   .switch:checked {
-    background: #1b5e20;
+    background: var(--color-primary);
   }
 
   .switch:checked::after {
@@ -300,7 +300,7 @@
   .state-item input[type="checkbox"] {
     width: 18px;
     height: 18px;
-    accent-color: #1b5e20;
+    accent-color: var(--color-primary);
     cursor: inherit;
   }
 

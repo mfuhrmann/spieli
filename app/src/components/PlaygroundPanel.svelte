@@ -564,7 +564,7 @@
           <button class="navigate-btn" onclick={navigateToPlayground} aria-label={$_('info.navigateHere')}>{$_('info.navigateHere')}</button>
           <button class="panel-icon-btn shrink-0" onclick={sharePlayground} aria-label={$_('info.copyLink')}>
             {#if shareConfirmed}
-              <Check class="h-5 w-5 text-green-600" />
+              <Check class="h-5 w-5 text-primary" />
             {:else}
               <Share2 class="h-5 w-5" />
             {/if}
@@ -1060,10 +1060,10 @@
   .action-btn--primary {
     flex: 1;
     padding: 10px 0;
-    background: #10b981;
+    background: var(--color-primary);
     color: #fff;
   }
-  .action-btn--primary:hover { background: #059669; }
+  .action-btn--primary:hover { background: var(--color-primary-hover); }
 
   .action-btn--icon {
     width: 44px;
@@ -1087,7 +1087,7 @@
     align-items: center;
     gap: 4px;
     font-size: 13px;
-    color: #10b981;
+    color: var(--color-primary);
     text-decoration: none;
     min-width: 0;
   }
@@ -1185,7 +1185,7 @@
   .status-dot {
     width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
   }
-  .status-dot--open   { background: #10b981; }
+  .status-dot--open   { background: var(--color-primary); }
   .status-dot--closed { background: #ef4444; }
 
   /* ── Stat cards grid ─────────────────────────────── */
@@ -1291,7 +1291,7 @@
   /* ── Navigation button ────────────────────────────────────────────────── */
   .navigate-btn {
     padding: 6px 12px;
-    background: #10b981;
+    background: var(--color-primary);
     color: #ffffff;
     border: none;
     border-radius: 6px;
@@ -1302,6 +1302,6 @@
     transition: background 0.15s;
   }
   .navigate-btn:hover {
-    background: #059669;
+    background: var(--color-primary-hover);
   }
 </style>

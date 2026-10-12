@@ -283,7 +283,19 @@ The app uses Bootstrap 5 (component classes) and Tailwind CSS 4 (utility classes
 
 ### The finder view (mapping detail off)
 
-Mapping detail is opt-in (#924). With it off, `Map.svelte` swaps the tier styles for the ones in `src/lib/finderStyle.js` (cluster discs, pins at each playground's interior point, the selected playground's outline) and `hub/macroRingStyle.js`'s `finderMacroRingStyleFn` (neutral discs; health variants unchanged). The `FINDER` colours sit in `completenessPalette.js` with their contrast measurements. Style functions take the mode from their caller rather than reading the store, so they stay pure and unit-testable. Pins are hit-tested by drawing, so the existing click/hover path selects them — but a click inside the undrawn polygon off the pin does not.
+Mapping detail is opt-in (#924). With it off, `Map.svelte` swaps the tier styles for the ones in `src/lib/finderStyle.js` (cluster discs, pins at each playground's interior point, the selected playground's outline) and `hub/macroRingStyle.js`'s `finderMacroRingStyleFn` (neutral discs; health variants unchanged). The `FINDER` colours sit in `completenessPalette.js` with their contrast measurements. Style functions take the mode from their caller rather than reading the store, so they stay pure and unit-testable. Canvas markers draw in CSS pixels through `hidpiStyleOptions` (`lib/hidpiRenderer.js`), which also supplies their 1:1 hit-detection renderer, so the existing click/hover path selects pins — but a click inside the undrawn polygon off the pin does not.
+
+### Accent colour
+
+The UI accent is one emerald family, defined once as theme tokens in `src/styles/app.css` (#930):
+
+| Token | Value | Use |
+|---|---|---|
+| `--color-primary` | `#047857` | buttons with text, links, accent text, active control icons, badges (Tailwind: `bg-primary`, `text-primary`) |
+| `--color-primary-hover` | `#065f46` | hover / pressed |
+| `--color-primary-soft` | `#ecfdf5` | background of an active control or checked row |
+
+Reference them with `var(--color-primary)` and friends, never as literals. The lighter emerald-500 (`#10b981`) the app used before is only 2.54:1 behind white text — every accent pair here clears 4.5:1. Map markers are the exception: canvas renderers cannot read CSS variables, so their colours live in `completenessPalette.js`.
 
 ### The mapping-detail palette
 

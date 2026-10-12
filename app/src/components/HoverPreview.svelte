@@ -96,7 +96,7 @@
           {#if ohOpen !== null}
             <div class="flex items-center gap-1.5">
               <Clock class="h-3 w-3 shrink-0" />
-              <span style="color: {ohOpen ? '#16a34a' : '#dc2626'}">
+              <span style="color: {ohOpen ? 'var(--color-primary)' : '#dc2626'}">
                 {ohOpen ? $_('poi.open') : $_('poi.closed')}
               </span>
             </div>
@@ -134,7 +134,7 @@
     --color-muted: #f3f4f6;
     --color-muted-foreground: #6b7280;
     --color-border: #e5e7eb;
-    --color-primary: #10b981;
+    --color-primary: #047857; /* mirrors app.css (#930) */
     --color-water: #3b82f6;
     --color-nature: #22c55e;
   }

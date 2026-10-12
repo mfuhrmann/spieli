@@ -96,4 +96,26 @@ test.describe('FilterPanel', () => {
     await expect(page.locator('.filter-dropdown .completeness-section')).toHaveCount(0);
     await expect(page.locator('.filter-dropdown')).not.toContainText('no details yet');
   });
+
+  // #932 — the dropdown used a fixed 320 px list height whatever the window.
+  test('dropdown uses the window height instead of a fixed list height', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 1000 });
+    await page.locator('.filter-container button').click();
+    const [client, scroll] = await page.locator('.filter-list').evaluate(e => [e.clientHeight, e.scrollHeight]);
+    expect(client, 'list fits without scrolling on a tall window').toBe(scroll);
+  });
+
+  test('dropdown stays inside a short window', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 480 });
+    await page.locator('.filter-container button').click();
+    const box = await page.locator('.filter-dropdown').boundingBox();
+    expect(box.y + box.height).toBeLessThanOrEqual(480);
+  });
+
+  test('the pitch layer alone does not mark the filter button active', async ({ page }) => {
+    await page.locator('.filter-container button').click();
+    await page.locator('.layer-section input[type="checkbox"]').check();
+    await expect(page.locator('.filter-container .badge')).toHaveCount(0);
+    await expect(page.locator('.filter-container .control-btn')).not.toHaveClass(/active/);
+  });
 });
