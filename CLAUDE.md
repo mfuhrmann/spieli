@@ -175,7 +175,8 @@ Two policies ship together for one release: the old wildcard one **enforced**, a
 | Store | Role |
 |---|---|
 | `selection.js` | Currently selected playground feature + backend URL |
-| `filters.js` | Active filter state (playground filters + `standalonePitches` layer toggle) |
+| `filters.js` | Active filter state (playground filters + `standalonePitches` layer toggle). Also exports `effectiveFilterStore` — the filters that actually apply, with the three mapping-detail states forced on while mapping detail is off. **Anything that fetches or draws reads `effectiveFilterStore`**; only the controls that edit filters read `filterStore`. |
+| `mappingDetail.js` | Whether mapping detail is on (#924). Default `false` — the plain "finder" map. Persisted in `localStorage` (`spieli.mappingDetail`, every access in try/catch); `?detail=1\|0` overrides it for one page load without writing it, and a manual toggle rewrites that parameter in place. Read by Map (tier styles), AppShell (legend), PlaygroundPanel (share link carries `?detail=1` while on). |
 | `overlayLayer.js` | Bridge between PlaygroundPanel and Map — carries `{ equipment[], trees[] }` |
 | `map.js` | OL map instance reference |
 | `playgroundSource.js` | Shared OL VectorSource for the polygon tier. Non-null while Map.svelte is mounted; reset to `null` on teardown. Widgets (NearbyPlaygrounds, AppShell deeplink restore) hydrate features into it on demand at any zoom — there is no separate "cluster source" store; the cluster `VectorSource` is owned by `StandaloneApp.svelte` and never published, since no widget consumes it externally. |
@@ -204,11 +205,12 @@ Two policies ship together for one release: the old wildcard one **enforced**, a
 | `CommonsGallery.svelte` | Inline Wikimedia Commons photo gallery for a playground (from `wikimedia_commons` / `image` tags); thumbnails → fullscreen lightbox with CC attribution. Fetch + URL-safety logic in `app/src/lib/commons.js` |
 | `HoverPreview.svelte` | Floating card on playground hover (desktop only) |
 | `EquipmentTooltip.svelte` | Tooltip on equipment/pitch hover |
-| `FilterPanel.svelte` | Filter dropdown; also contains "Ebenen" section for layer toggles |
+| `FilterPanel.svelte` | Filter dropdown; also contains "Ebenen" section for layer toggles. The mapping-detail states are **not** here — see `MappingDetailControl` |
+| `MappingDetailControl.svelte` | Bar-chart button next to Info/Filter (phones and desktop): mapping-detail on/off switch plus the detailed/basic/no-details filters, whose swatches double as the legend |
 | `FilterChips.svelte` | Active-filter chip bar shown below the search bar |
 | `SearchBar.svelte` | Nominatim location search |
 | `BottomSheet.svelte` | Swipeable bottom sheet used on mobile to surface PlaygroundPanel |
-| `CompletenessLegend.svelte` | Map legend explaining the mapping-detail steps and the photo glyph |
+| `CompletenessLegend.svelte` | Map legend explaining the mapping-detail steps and the photo glyph. Mounted only while mapping detail is on |
 | `DataContributionModal.svelte` | Modal prompting users to contribute data via MapComplete |
 | `LegalContentModal.svelte` | Modal for imprint / legal content fetched from `get_legal()` |
 | `LocateButton.svelte` | Button that pans map to user's GPS position; auto-locates on page load when geolocation permission is already granted |
@@ -310,6 +312,10 @@ Run `make db-apply` after modifying `api.sql` to apply changes without a full re
 make down && docker volume rm spieli_pgdata spieli_pgdata2 && make up
 ```
 This catches ordering bugs (e.g. a function referencing a table defined later in the file) that `make db-apply` on an existing volume silently passes.
+
+### Finder view (`app/src/lib/finderStyle.js`)
+
+With mapping detail off (the default, #924) `Map.svelte` swaps every tier's style: `finderClusterStyleFn` (orange discs on the same `radiusForCount` scale; a cluster of one is a pin), `finderPlaygroundStyle(feature, selectedOsmId)` (a tip-anchored pin at each interior point, no polygon, plus the selected playground's outline — matched by `osm_id` because tier refetches replace the feature objects) and `finderMacroRingStyleFn` in `hub/macroRingStyle.js` (health variants unchanged). Colours are `FINDER` in `completenessPalette.js`; the orange fill alone is only 2.0–2.3:1 on buildings and water, so a `#9a3412` casing carries the edge and haloes the white count.
 
 ### Styles (`app/src/lib/vectorStyles.js`)
 

@@ -1,8 +1,7 @@
 <script>
-  import { filterStore, hasActiveFilters, activeFilterCount, defaultFilters } from '../stores/filters.js';
+  import { filterStore, hasActiveFilters, activeFilterCount, defaultFilters, effectiveFilters } from '../stores/filters.js';
   import { _ } from 'svelte-i18n';
-  import { Filter, Droplets, Baby, Accessibility, Armchair, UtensilsCrossed, Home, RectangleHorizontal, Goal, CircleDot, Lock, Layers, BarChart3, ShieldCheck, Dog, Sun, Sparkles } from 'lucide-svelte';
-  import { COMPLETENESS_PALETTE } from '../lib/completenessPalette.js';
+  import { Filter, Droplets, Baby, Accessibility, Armchair, UtensilsCrossed, Home, RectangleHorizontal, Goal, CircleDot, Lock, Layers, ShieldCheck, Dog, Sun, Sparkles } from 'lucide-svelte';
 
   let open = false;
   let wrap;
@@ -35,27 +34,24 @@
     icon,
   }));
 
-  $: active = hasActiveFilters($filterStore);
-  $: activeCount = activeFilterCount($filterStore);
-
-  const COMPLETENESS_STATES = ['showComplete', 'showPartial', 'showMissing'];
-
-  // Filter dots must show the same colours as the map. Exposed as custom
-  // properties because a <style> block can't import the palette module.
-  const detailVars =
-    `--detail-complete: ${COMPLETENESS_PALETTE.complete.base};` +
-    `--detail-partial: ${COMPLETENESS_PALETTE.partial.base};` +
-    `--detail-missing: ${COMPLETENESS_PALETTE.missing.base};` +
-    `--detail-complete-stroke: ${COMPLETENESS_PALETTE.complete.stroke};` +
-    `--detail-partial-stroke: ${COMPLETENESS_PALETTE.partial.stroke};` +
-    `--detail-missing-stroke: ${COMPLETENESS_PALETTE.missing.stroke};`;
+  // The mapping-detail states live in MappingDetailControl, which badges and
+  // resets them itself (#924). This panel counts and clears only its own
+  // filters — the same view as "mapping detail off".
+  $: ownFilters = effectiveFilters($filterStore, false);
+  $: active = hasActiveFilters(ownFilters);
+  $: activeCount = activeFilterCount(ownFilters);
 
   function toggle(key) {
     filterStore.update(f => ({ ...f, [key]: !f[key] }));
   }
 
   function clearAll() {
-    filterStore.set({ ...defaultFilters });
+    filterStore.update(f => ({
+      ...defaultFilters,
+      showComplete: f.showComplete,
+      showPartial:  f.showPartial,
+      showMissing:  f.showMissing,
+    }));
   }
 </script>
 
@@ -97,21 +93,6 @@
             />
             <svelte:component this={f.icon} class="h-4 w-4" />
             <span>{f.label}</span>
-          </label>
-        {/each}
-      </div>
-
-      <div class="completeness-section" style={detailVars}>
-        <span class="layer-title"><BarChart3 class="h-3 w-3" /> {$_('filter.mappingDetail.title')}</span>
-        {#each COMPLETENESS_STATES as key}
-          <label class="filter-item" class:completeness-hidden={!$filterStore[key]}>
-            <input
-              type="checkbox"
-              checked={$filterStore[key]}
-              onchange={() => toggle(key)}
-            />
-            <span class="completeness-dot {key}-dot"></span>
-            <span>{$_('filter.mappingDetail.' + key)}</span>
           </label>
         {/each}
       </div>
@@ -262,31 +243,6 @@
     height: 18px;
     accent-color: #1b5e20;
     cursor: pointer;
-  }
-
-  .completeness-section {
-    border-top: 1px solid #e8eaed;
-    padding-top: 4px;
-  }
-
-  .completeness-dot {
-    width: 12px;
-    height: 12px;
-    border-radius: 2px;
-    border: 2px solid;
-    flex-shrink: 0;
-  }
-
-  /* Colours come from completenessPalette.js via the custom properties set on
-     .completeness-section — a <style> block cannot import. Dots use the opaque
-     `base` so they match the legend swatches and the rings on the map. */
-  .showComplete-dot { border-color: var(--detail-complete-stroke); background: var(--detail-complete); }
-  .showPartial-dot  { border-color: var(--detail-partial-stroke);  background: var(--detail-partial); }
-  .showMissing-dot  { border-color: var(--detail-missing-stroke);  background: var(--detail-missing); }
-
-  .filter-item.completeness-hidden {
-    opacity: 0.5;
-    text-decoration: line-through;
   }
 
   .layer-section {

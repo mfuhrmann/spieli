@@ -6,20 +6,25 @@ spieli is a free, interactive playground map based on OpenStreetMap data. This g
 
 Use your mouse (desktop) or fingers (mobile) to pan and zoom. The map shows:
 
-- **Playground polygons** — coloured outlines of playground areas, colour-coded by mapping detail (see below)
-- **Cluster rings** — at lower zoom levels, nearby playgrounds are grouped into ring indicators showing counts
+- **Orange circles** — at lower zoom levels, nearby playgrounds are grouped into a circle showing how many there are
+- **Orange pins** — zoom in and every playground gets its own pin; a camera on the pin means there is a photo
+- **The selected playground's outline** — once you open a playground, its area is outlined on the map
+
+This is the default view, made for finding a place to play. If you add data to OpenStreetMap, you can switch on [mapping detail](#mapping-detail-colours) instead.
 
 Click or tap any playground to open its detail panel.
 
 ## Mapping detail colours
 
-Each playground is colour-coded to show how much of it has been mapped in OpenStreetMap:
+Mapping detail is off by default. Switch it on with the **bar-chart button** next to the info and filter buttons (on phones and desktop alike) and turn on **Show mapping detail**. The map then shows each playground's area, colour-coded by how much of it has been mapped in OpenStreetMap, and the circles split into coloured segments:
 
 | Colour | What it means |
 |---|---|
-| Green | Detailed — mapped play equipment **and** at least one detail (surface, opening hours, or access) |
-| Orange | Basic — one of the two, not both |
-| Red | No details yet — the playground exists in OSM but carries no equipment and no details |
+| Light green | Detailed — mapped play equipment **and** at least one detail (surface, opening hours, or access) |
+| Dark green | Basic — one of the two, not both |
+| Slate grey | No details yet — the playground exists in OSM but carries no equipment and no details |
+
+Your choice is remembered in this browser. To send someone a link that opens with mapping detail on — say, to a fellow mapper — add `?detail=1` to the address (for example `…/fulda?detail=1`), or use the share button on a playground while mapping detail is on: the link it copies includes it. Opening such a link does not change the other person's own setting; `?detail=0` does the opposite.
 
 Play equipment means slides, swings, climbing frames and the like, plus ball courts. A bench or picnic table on its own does not make a playground "basic" — those are useful to know about, but they say nothing about whether there is anything to play on.
 
@@ -87,15 +92,17 @@ The third row is by far the most common. Accessibility tagging is patchy in Open
 
 ### Mapping detail filter
 
-The **Erfasste Details** section lets you show or hide playgrounds by how much of them is mapped:
+The mapping-detail button (not the filter panel) lets you show or hide playgrounds by how much of them is mapped:
 
 | State | Meaning |
 |---|---|
-| **detailliert** (green) | Mapped play equipment **and** at least one detail (surface, opening hours, or access) |
-| **grundlegend** (orange) | One of the two, not both |
-| **keine Details** (red) | Neither |
+| **detailed** (light green) | Mapped play equipment **and** at least one detail (surface, opening hours, or access) |
+| **basic** (dark green) | One of the two, not both |
+| **no details yet** (slate grey) | Neither |
 
-All three states are shown by default. Deactivate a state to hide those playgrounds — for example, uncheck **Missing** and **Partial** to see only well-documented playgrounds, or uncheck **Complete** and **Partial** to find playgrounds still needing OSM survey work.
+All three states are shown by default. Deactivate a state to hide those playgrounds — for example, uncheck **no details yet** and **basic** to see only well-documented playgrounds, or uncheck **detailed** and **basic** to find playgrounds still needing OSM survey work.
+
+These choices only apply while mapping detail is switched on. Switch it off and every playground is shown again; switch it back on and your choices return.
 
 ## Playground detail panel
 

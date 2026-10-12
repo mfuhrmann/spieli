@@ -41,13 +41,29 @@ test.describe('Hub smoke', () => {
     await expect(page.locator('.controls-top-right')).toBeVisible();
     await expect(page.locator('.controls-bottom-right')).toBeVisible();
 
-    // Filter + contribution buttons in the top-right cluster.
-    await expect(page.locator('.controls-top-right .control-btn')).toHaveCount(2);
+    // Contribution, mapping-detail and filter buttons in the top-right cluster.
+    await expect(page.locator('.controls-top-right .control-btn')).toHaveCount(3);
 
     // Zoom controls.
     await expect(page.locator('.zoom-btn.zoom-in')).toBeVisible();
     await expect(page.locator('.zoom-btn.zoom-out')).toBeVisible();
   });
+
+  // #924: the macro tier has neutral finder discs with mapping detail off and
+  // completeness rings with it on. Both must render without a runtime error.
+  for (const detail of ['0', '1']) {
+    test(`macro tier renders with detail=${detail}`, async ({ page }) => {
+      const errors = [];
+      page.on('pageerror', e => errors.push(e.message));
+      await page.goto(`/?detail=${detail}`);
+      await expect(page.locator('canvas').first()).toBeVisible();
+      await page.evaluate(() => window.__spieli.map.getView().setZoom(3));
+      await page.waitForTimeout(800);
+      expect(errors).toEqual([]);
+      await expect(page.locator('.detail-container > button'))
+        .toHaveAttribute('aria-pressed', detail === '1' ? 'true' : 'false');
+    });
+  }
 
   test('instance pill renders in the bottom-left slot', async ({ page }) => {
     await page.goto('/');

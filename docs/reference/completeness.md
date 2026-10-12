@@ -2,6 +2,8 @@
 
 Every playground is assigned one of three mapping-detail states, based on how much of it has been mapped in OpenStreetMap. The state describes **the map, not the playground** — a playground in the lowest state is not a bad playground, it is one nobody has written up yet.
 
+**Mapping detail is opt-in (#924).** The default map is the neutral "finder" view — orange cluster discs and pins, no completeness colours, no legend. Visitors switch mapping detail on with the control next to the Info and Filter buttons (state in `stores/mappingDetail.js`, persisted in `localStorage`, overridable per page load with `?detail=1|0`). While it is off, the `showComplete` / `showPartial` / `showMissing` filters are ignored everywhere — rendering, cluster request parameters, badges, hub macro aggregates — via `effectiveFilterStore`; their stored values return when it is switched back on. The finder palette (`FINDER`) lives next to the completeness palette in `completenessPalette.js`.
+
 The label key `mappingDetail.legendTitle` (`"Erfasste Details"` / `"Mapping detail"`) can be used wherever the concept needs a heading.
 
 ## Criteria

@@ -25,7 +25,7 @@
   import { equipmentLayerStyleFn } from '../lib/vectorStyles.js';
   import { debounce } from '../lib/utils.js';
   import { mapStore } from '../stores/map.js';
-  import { filterStore } from '../stores/filters.js';
+  import { filterStore, effectiveFilterStore } from '../stores/filters.js';
   import { activeTierStore } from '../stores/tier.js';
   import { selection } from '../stores/selection.js';
 
@@ -249,7 +249,10 @@
         // uncertainty for variables set inside async/nested callbacks.
         // Skip the immediate invocation (filters start all-false, orchestrator just ran).
         let filterSubReady = false;
-        const unsubFilters = filterStore.subscribe(filters => {
+        // effectiveFilterStore, not filterStore: it also emits when mapping
+        // detail is toggled, and never carries hidden completeness states
+        // while it is off (#924).
+        const unsubFilters = effectiveFilterStore.subscribe(filters => {
           const { standalonePitches: _sp, ...cf } = filters;
           clusterFilterFingerprint = JSON.stringify(cf);
           if (!filterSubReady) { filterSubReady = true; return; }

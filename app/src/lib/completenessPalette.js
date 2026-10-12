@@ -190,3 +190,28 @@ export const COMPLETENESS_BASE = {
     partial:  COMPLETENESS_PALETTE.partial.base,
     missing:  COMPLETENESS_PALETTE.missing.base,
 };
+
+// ── Finder palette (mapping detail off, #924) ────────────────────────────────
+//
+// With mapping detail off every playground marker — cluster disc, pin, macro
+// disc, selected outline — is one warm orange. Orange because it is free on
+// this map: not a mapping-detail green, not the slate of `missing`, not the
+// GPS dot's blue (#007aff) and not water.
+//
+// WCAG contrast of the fill alone, measured against the basemap:
+//
+//                 ground #f8f4f0  landuse #e0dfdf  buildings #d9d0c9  water #a0c8f0
+//   #ea580c fill       3.25            2.68             2.34              2.04
+//   #9a3412 casing     6.68            5.49             4.81              4.18
+//
+// The fill clears 3:1 only on open ground, so — as with RING_CASING — a dark
+// casing carries the edge and the fill is free to be the friendly colour.
+// White count text on the fill is 3.56:1, short of 4.5:1 for 16px bold, so the
+// count gets a casing-coloured halo (white on #9a3412 is 7.31:1).
+export const FINDER = {
+    fill:         '#ea580c', // orange-600
+    casing:       '#9a3412', // orange-800
+    border:       '#ffffff',
+    text:         '#ffffff',
+    selectedFill: 'rgba(234, 88, 12, 0.12)',
+};

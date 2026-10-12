@@ -36,7 +36,7 @@ export function radiusForCount(count) {
 
 // Buckets count into a small set of representative values so visual size
 // jumps are coarse but bitmap keys are few.
-function countBucket(count) {
+export function countBucket(count) {
   if (count <   10) return count;              // 1..9 exact
   if (count <  100) return Math.round(count / 10) * 10;
   if (count < 1000) return Math.round(count / 100) * 100;

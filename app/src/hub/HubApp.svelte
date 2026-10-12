@@ -16,7 +16,7 @@
   import { attachHubOrchestrator } from './hubOrchestrator.js';
   import { mapStore } from '../stores/map.js';
   import { selection } from '../stores/selection.js';
-  import { filterStore } from '../stores/filters.js';
+  import { effectiveFilterStore } from '../stores/filters.js';
   import { macroFilteredStore } from '../stores/macroFiltered.js';
   import { macroCoverageStore } from '../stores/macroCoverage.js';
   import { activeTierStore } from '../stores/tier.js';
@@ -307,7 +307,9 @@
         getFilters: () => clusterFilterFingerprint ? JSON.parse(clusterFilterFingerprint) : null,
       });
       let filterSubReady = false;
-      const unsubFilters = filterStore.subscribe(filters => {
+      // Effective filters: completeness states are ignored while mapping
+      // detail is off, and toggling it re-derives the macro aggregates (#924).
+      const unsubFilters = effectiveFilterStore.subscribe(filters => {
         const { standalonePitches: _sp, ...cf } = filters;
         clusterFilterFingerprint = JSON.stringify(cf);
         if (!filterSubReady) { filterSubReady = true; return; }

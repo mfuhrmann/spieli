@@ -1,5 +1,5 @@
 <script>
-  import { filterStore, hasActiveFilters, defaultFilters } from '../stores/filters.js';
+  import { filterStore, effectiveFilterStore, hasActiveFilters } from '../stores/filters.js';
   import { _ } from 'svelte-i18n';
   import { X } from 'lucide-svelte';
 
@@ -13,22 +13,25 @@
     'fence', 'hasDogs', 'theme', 'shade',
   ]);
 
-  $: activeFilters = Object.entries($filterStore)
+  $: activeFilters = Object.entries($effectiveFilterStore)
     .filter(([key, active]) => active && FILTER_KEYS.has(key))
     .map(([key]) => ({ key, label: $_('filter.labels.' + key) }));
 
-  $: hasFilters = hasActiveFilters($filterStore);
+  $: hasFilters = hasActiveFilters($effectiveFilterStore);
 
   function removeFilter(key) {
     filterStore.update(f => ({ ...f, [key]: false }));
   }
 
   function clearAll() {
-    // Reset to defaults rather than setting every key false: the completeness
-    // toggles (showComplete/showPartial/showMissing) default true, and forcing
-    // them false would hide *all* playgrounds at every tier (and render a grey
-    // "no match" macro ring) instead of clearing the active filters.
-    filterStore.set({ ...defaultFilters });
+    // Clear only the chip filters. The completeness states belong to the
+    // mapping-detail control and are reset there (#924); clearing them here
+    // would wipe a contributor's choice they cannot see while detail is off.
+    filterStore.update(f => {
+      const next = { ...f };
+      for (const key of FILTER_KEYS) next[key] = false;
+      return next;
+    });
   }
 </script>
 
