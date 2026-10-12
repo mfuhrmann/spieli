@@ -30,7 +30,9 @@
     locationDotStyleFn,
     locationAccuracyStyle,
   } from '../lib/vectorStyles.js';
-  import { macroRingStyleFn } from '../hub/macroRingStyle.js';
+  import { macroRingStyleFn, finderMacroRingStyleFn } from '../hub/macroRingStyle.js';
+  import { finderClusterStyleFn, finderPlaygroundStyle } from '../lib/finderStyle.js';
+  import { mappingDetail } from '../stores/mappingDetail.js';
   import { selection } from '../stores/selection.js';
   import { mapStore } from '../stores/map.js';
   import { location } from '../stores/location.js';
@@ -38,7 +40,7 @@
   import { activeTierStore } from '../stores/tier.js';
   import { outsideBasemapCoverage } from '../stores/basemapCoverage.js';
   import { isOutsideCoverage } from '../lib/basemapCoverage.js';
-  import { filterStore, matchesFilters } from '../stores/filters.js';
+  import { effectiveFilterStore, matchesFilters } from '../stores/filters.js';
   import { overlayFeaturesStore } from '../stores/overlayLayer.js';
   import { debounce } from '../lib/utils.js';
   import { fitViewToSelection } from '../lib/playgroundHelpers.js';
@@ -643,14 +645,25 @@
     playgroundSourceStore.set(null);
   });
 
-  // Re-style the playground layer whenever filters change.
+  // Re-style the playground layer whenever filters, mapping detail or (in
+  // finder mode, which outlines the selected polygon) the selection change.
+  // Playgrounds only: a selected pitch (#934) may share its numeric osm_id
+  // with a playground, which would then be outlined instead.
+  $: selectedOsmId = $selection.kind === 'playground' ? ($selection.feature?.get('osm_id') ?? null) : null;
   $: if (playgroundLayer) {
-    const filters = $filterStore;
+    const filters = $effectiveFilterStore;
+    const detail = $mappingDetail;
+    const selectedId = selectedOsmId;
     playgroundLayer.setStyle(feature => {
       if (!matchesFilters(feature.getProperties(), filters)) return null;
-      return playgroundStyleFn(feature);
+      return detail ? playgroundStyleFn(feature) : finderPlaygroundStyle(feature, selectedId);
     });
   }
+
+  // Cluster and macro tiers: completeness rings with mapping detail on, the
+  // neutral finder markers with it off (#924).
+  $: if (clusterLayer) clusterLayer.setStyle($mappingDetail ? clusterTierStyleFn : finderClusterStyleFn);
+  $: if (macroLayer) macroLayer.setStyle($mappingDetail ? macroRingStyleFn : finderMacroRingStyleFn);
 </script>
 
 <svelte:window on:keydown={(e) => { if (e.key === 'Escape' && backendPopup) backendPopup = null; }} />

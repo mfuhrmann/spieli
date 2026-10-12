@@ -87,7 +87,11 @@
     "detailed": "detailed",
     "basic": "basic",
     "noDetails": "no details yet",
-    "hasPhoto": "has a photo"
+    "hasPhoto": "has a photo",
+    "toggle": "Mapping detail",
+    "show": "Show mapping detail",
+    "hint": "Colours playgrounds by how completely they are mapped in OpenStreetMap — useful if you add data to OSM.",
+    "filterTitle": "Show"
   },
   "completeness": {
     "restrictedHint": "not public"

@@ -16,6 +16,7 @@
   import { selection } from '../stores/selection.js';
   import { mapStore } from '../stores/map.js';
   import { location } from '../stores/location.js';
+  import { mappingDetail, DETAIL_PARAM } from '../stores/mappingDetail.js';
   import { fetchPlaygroundEquipment, fetchNearbyPOIs, fetchTrees, fetchMeta } from '../lib/api.js';
   import { overlayFeaturesStore } from '../stores/overlayLayer.js';
   import { groupEquipment } from '../lib/equipmentGrouping.js';
@@ -355,7 +356,9 @@
     partial:  'mappingDetail.basic',
     missing:  'mappingDetail.noDetails',
   };
-  $: completenessLevel = attr ? playgroundCompleteness(attr) : null;
+  // Only while mapping detail is on: in the finder view the badge would bring
+  // back exactly the data-quality reading the view leaves out (#924).
+  $: completenessLevel = attr && $mappingDetail ? playgroundCompleteness(attr) : null;
   $: completeness = completenessLevel
     ? {
         key: MAPPING_DETAIL_KEY[completenessLevel],
@@ -443,7 +446,10 @@
 
   async function sharePlayground() {
     if (!attr) return;
-    const url = `${window.location.origin}${window.location.pathname}#${attr.osm_type}${attr.osm_id}`;
+    // Carry mapping detail only while it is on, so a contributor shares the
+    // view they are looking at and everyone else's links stay as before (#924).
+    const detail = $mappingDetail ? `?${DETAIL_PARAM}=1` : '';
+    const url = `${window.location.origin}${window.location.pathname}${detail}#${attr.osm_type}${attr.osm_id}`;
     try {
       if (navigator.share) {
         await navigator.share({ title: getPlaygroundTitle(attr, $_), url });
@@ -531,7 +537,7 @@
           <button class="navigate-btn" onclick={navigateToPlayground} aria-label={$_('info.navigateHere')}>{$_('info.navigateHere')}</button>
           <button class="panel-icon-btn shrink-0" onclick={sharePlayground} aria-label={$_('info.copyLink')}>
             {#if shareConfirmed}
-              <Check class="h-5 w-5 text-green-600" />
+              <Check class="h-5 w-5 text-primary" />
             {:else}
               <Share2 class="h-5 w-5" />
             {/if}
@@ -1042,10 +1048,10 @@
   .action-btn--primary {
     flex: 1;
     padding: 10px 0;
-    background: #10b981;
+    background: var(--color-primary);
     color: #fff;
   }
-  .action-btn--primary:hover { background: #059669; }
+  .action-btn--primary:hover { background: var(--color-primary-hover); }
 
   .action-btn--icon {
     width: 44px;
@@ -1069,7 +1075,7 @@
     align-items: center;
     gap: 4px;
     font-size: 13px;
-    color: #10b981;
+    color: var(--color-primary);
     text-decoration: none;
     min-width: 0;
   }
@@ -1167,7 +1173,7 @@
   .status-dot {
     width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
   }
-  .status-dot--open   { background: #10b981; }
+  .status-dot--open   { background: var(--color-primary); }
   .status-dot--closed { background: #ef4444; }
 
   /* ── Stat cards grid ─────────────────────────────── */
@@ -1273,7 +1279,7 @@
   /* ── Navigation button ────────────────────────────────────────────────── */
   .navigate-btn {
     padding: 6px 12px;
-    background: #10b981;
+    background: var(--color-primary);
     color: #ffffff;
     border: none;
     border-radius: 6px;
@@ -1284,6 +1290,6 @@
     transition: background 0.15s;
   }
   .navigate-btn:hover {
-    background: #059669;
+    background: var(--color-primary-hover);
   }
 </style>

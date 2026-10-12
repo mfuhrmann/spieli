@@ -280,7 +280,7 @@
 
   .navigate-btn {
     padding: 6px 12px;
-    background: #10b981;
+    background: var(--color-primary);
     color: #ffffff;
     border-radius: 6px;
     font-size: 13px;
@@ -288,7 +288,7 @@
     white-space: nowrap;
     text-decoration: none;
   }
-  .navigate-btn:hover { background: #059669; color: #ffffff; }
+  .navigate-btn:hover { background: var(--color-primary-hover); color: #ffffff; }
 
   .panel-icon-btn {
     display: inline-flex;
@@ -319,8 +319,8 @@
     padding: 4px 10px;
     border-radius: 999px;
     border: 1px solid #a7f3d0;
-    background: #ecfdf5;
-    color: #065f46;
+    background: var(--color-primary-soft);
+    color: var(--color-primary);
     font-size: 13px;
     font-weight: 500;
   }

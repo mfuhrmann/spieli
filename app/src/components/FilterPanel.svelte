@@ -1,11 +1,26 @@
 <script>
-  import { filterStore, hasActiveFilters, activeFilterCount, defaultFilters } from '../stores/filters.js';
+  import { filterStore, hasActiveFilters, activeFilterCount, defaultFilters, effectiveFilters } from '../stores/filters.js';
   import { _ } from 'svelte-i18n';
-  import { Filter, Droplets, Baby, Accessibility, Armchair, UtensilsCrossed, Home, RectangleHorizontal, Goal, CircleDot, Lock, Layers, BarChart3, ShieldCheck, Dog, Sun, Sparkles } from 'lucide-svelte';
-  import { COMPLETENESS_PALETTE } from '../lib/completenessPalette.js';
+  import { Filter, Droplets, Baby, Accessibility, Armchair, UtensilsCrossed, Home, RectangleHorizontal, Goal, CircleDot, Lock, Layers, ShieldCheck, Dog, Sun, Sparkles } from 'lucide-svelte';
+
+  import { tick } from 'svelte';
 
   let open = false;
   let wrap;
+  let dropdown;
+  let maxHeight = null;
+
+  // Fill the space between the button and the bottom of the window instead
+  // of a fixed list height, so the list only scrolls when it really does not
+  // fit (#932). Measured, not hardcoded: the button sits at a different
+  // height on phones, where the controls stack.
+  async function fitToViewport() {
+    await tick();
+    if (!dropdown) return;
+    const top = dropdown.getBoundingClientRect().top;
+    maxHeight = Math.max(160, window.innerHeight - top - 16);
+  }
+  $: if (open) fitToViewport();
 
   function onWindowClick(e) {
     if (open && wrap && !e.composedPath().includes(wrap)) open = false;
@@ -35,31 +50,28 @@
     icon,
   }));
 
-  $: active = hasActiveFilters($filterStore);
-  $: activeCount = activeFilterCount($filterStore);
-
-  const COMPLETENESS_STATES = ['showComplete', 'showPartial', 'showMissing'];
-
-  // Filter dots must show the same colours as the map. Exposed as custom
-  // properties because a <style> block can't import the palette module.
-  const detailVars =
-    `--detail-complete: ${COMPLETENESS_PALETTE.complete.base};` +
-    `--detail-partial: ${COMPLETENESS_PALETTE.partial.base};` +
-    `--detail-missing: ${COMPLETENESS_PALETTE.missing.base};` +
-    `--detail-complete-stroke: ${COMPLETENESS_PALETTE.complete.stroke};` +
-    `--detail-partial-stroke: ${COMPLETENESS_PALETTE.partial.stroke};` +
-    `--detail-missing-stroke: ${COMPLETENESS_PALETTE.missing.stroke};`;
+  // The mapping-detail states live in MappingDetailControl, which badges and
+  // resets them itself (#924). This panel counts and clears only its own
+  // filters — the same view as "mapping detail off".
+  $: ownFilters = effectiveFilters($filterStore, false);
+  $: active = hasActiveFilters(ownFilters);
+  $: activeCount = activeFilterCount(ownFilters);
 
   function toggle(key) {
     filterStore.update(f => ({ ...f, [key]: !f[key] }));
   }
 
   function clearAll() {
-    filterStore.set({ ...defaultFilters });
+    filterStore.update(f => ({
+      ...defaultFilters,
+      showComplete: f.showComplete,
+      showPartial:  f.showPartial,
+      showMissing:  f.showMissing,
+    }));
   }
 </script>
 
-<svelte:window onclick={onWindowClick} />
+<svelte:window onclick={onWindowClick} onresize={() => open && fitToViewport()} />
 
 <div class="filter-container" bind:this={wrap}>
   <button
@@ -77,7 +89,7 @@
   </button>
 
   {#if open}
-    <div class="filter-dropdown">
+    <div class="filter-dropdown" bind:this={dropdown} style={maxHeight ? `max-height: ${maxHeight}px` : ''}>
       <div class="dropdown-header">
         <span class="dropdown-title">{$_('filter.title')}</span>
         {#if active}
@@ -97,21 +109,6 @@
             />
             <svelte:component this={f.icon} class="h-4 w-4" />
             <span>{f.label}</span>
-          </label>
-        {/each}
-      </div>
-
-      <div class="completeness-section" style={detailVars}>
-        <span class="layer-title"><BarChart3 class="h-3 w-3" /> {$_('filter.mappingDetail.title')}</span>
-        {#each COMPLETENESS_STATES as key}
-          <label class="filter-item" class:completeness-hidden={!$filterStore[key]}>
-            <input
-              type="checkbox"
-              checked={$filterStore[key]}
-              onchange={() => toggle(key)}
-            />
-            <span class="completeness-dot {key}-dot"></span>
-            <span>{$_('filter.mappingDetail.' + key)}</span>
           </label>
         {/each}
       </div>
@@ -159,8 +156,8 @@
   }
 
   .control-btn.active {
-    background: #e8f5e9;
-    color: #1b5e20;
+    background: var(--color-primary-soft);
+    color: var(--color-primary);
   }
 
   .badge {
@@ -175,7 +172,7 @@
     padding: 0 5px;
     font-size: 11px;
     font-weight: 600;
-    background: #1b5e20;
+    background: var(--color-primary);
     color: white;
     border-radius: 9px;
   }
@@ -191,6 +188,8 @@
     z-index: 300;
     animation: fadeIn 0.15s ease-out;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
   }
 
   @keyframes fadeIn {
@@ -202,6 +201,12 @@
       opacity: 1;
       transform: translateY(0);
     }
+  }
+
+  .dropdown-header,
+  .completeness-section,
+  .layer-section {
+    flex-shrink: 0;
   }
 
   .dropdown-header {
@@ -233,7 +238,8 @@
 
   .filter-list {
     padding: 8px 0;
-    max-height: 320px;
+    flex: 1 1 auto;
+    min-height: 0;
     overflow-y: auto;
   }
 
@@ -253,40 +259,15 @@
   }
 
   .filter-item.checked {
-    background: #e8f5e9;
-    color: #1b5e20;
+    background: var(--color-primary-soft);
+    color: var(--color-primary);
   }
 
   .filter-item input[type="checkbox"] {
     width: 18px;
     height: 18px;
-    accent-color: #1b5e20;
+    accent-color: var(--color-primary);
     cursor: pointer;
-  }
-
-  .completeness-section {
-    border-top: 1px solid #e8eaed;
-    padding-top: 4px;
-  }
-
-  .completeness-dot {
-    width: 12px;
-    height: 12px;
-    border-radius: 2px;
-    border: 2px solid;
-    flex-shrink: 0;
-  }
-
-  /* Colours come from completenessPalette.js via the custom properties set on
-     .completeness-section — a <style> block cannot import. Dots use the opaque
-     `base` so they match the legend swatches and the rings on the map. */
-  .showComplete-dot { border-color: var(--detail-complete-stroke); background: var(--detail-complete); }
-  .showPartial-dot  { border-color: var(--detail-partial-stroke);  background: var(--detail-partial); }
-  .showMissing-dot  { border-color: var(--detail-missing-stroke);  background: var(--detail-missing); }
-
-  .filter-item.completeness-hidden {
-    opacity: 0.5;
-    text-decoration: line-through;
   }
 
   .layer-section {

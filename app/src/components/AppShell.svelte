@@ -12,6 +12,8 @@
   import NearbyPlaygrounds from './NearbyPlaygrounds.svelte';
   import DataContributionModal from './DataContributionModal.svelte';
   import CompletenessLegend from './CompletenessLegend.svelte';
+  import MappingDetailControl from './MappingDetailControl.svelte';
+  import { mappingDetail } from '../stores/mappingDetail.js';
   import BasemapCoverageNotice from './BasemapCoverageNotice.svelte';
   import { onDestroy, onMount } from 'svelte';
   import { Info, Plus, Minus, ArrowLeft } from 'lucide-svelte';
@@ -482,7 +484,7 @@
           ondismiss={dismissNearby}
         />
       {/if}
-      {#if !isMobile && !$hasSelection}
+      {#if $mappingDetail && !isMobile && !$hasSelection}
         <CompletenessLegend />
       {/if}
     </div>
@@ -498,6 +500,7 @@
         >
           <Info class="h-5 w-5" />
         </button>
+        <MappingDetailControl />
         <FilterPanel />
       </div>
       <FilterChips />
@@ -525,7 +528,7 @@
       </div>
     </div>
 
-    {#if isMobile && !$hasSelection}
+    {#if $mappingDetail && isMobile && !$hasSelection}
       <div class="legend-mobile">
         <CompletenessLegend />
       </div>

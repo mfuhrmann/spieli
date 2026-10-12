@@ -87,7 +87,11 @@
     "detailed": "detailliert",
     "basic": "grundlegend",
     "noDetails": "keine Details",
-    "hasPhoto": "hat ein Foto"
+    "hasPhoto": "hat ein Foto",
+    "toggle": "Erfasste Details",
+    "show": "Erfasste Details anzeigen",
+    "hint": "Färbt Spielplätze danach, wie vollständig sie in OpenStreetMap erfasst sind – nützlich, wenn du Daten in OSM einträgst.",
+    "filterTitle": "Anzeigen"
   },
   "completeness": {
     "restrictedHint": "nicht öffentlich"

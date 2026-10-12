@@ -23,9 +23,11 @@
   import { attachTieredOrchestrator } from '../lib/tieredOrchestrator.js';
   import { regionFitPadding } from '../lib/playgroundHelpers.js';
   import { equipmentLayerStyleFn, selectedPitchStyle } from '../lib/vectorStyles.js';
+  import { pitchPinFor } from '../lib/finderStyle.js';
+  import { mappingDetail } from '../stores/mappingDetail.js';
   import { debounce } from '../lib/utils.js';
   import { mapStore } from '../stores/map.js';
-  import { filterStore } from '../stores/filters.js';
+  import { filterStore, effectiveFilterStore } from '../stores/filters.js';
   import { activeTierStore } from '../stores/tier.js';
   import { selection } from '../stores/selection.js';
 
@@ -200,7 +202,7 @@
       pitchLayer = new VectorLayer({
         source: pitchSource,
         zIndex: 9,
-        style: equipmentLayerStyleFn,
+        style: pitchLayerStyle(get(mappingDetail), null),
         // `selectable`: Map's click handler may select pitches on this layer
         // (#934); the equipment overlay of a selected playground is not.
         properties: { kind: 'overlay', selectable: true },
@@ -251,10 +253,18 @@
         // uncertainty for variables set inside async/nested callbacks.
         // Skip the immediate invocation (filters start all-false, orchestrator just ran).
         let filterSubReady = false;
-        const unsubFilters = filterStore.subscribe(filters => {
+        // effectiveFilterStore, not filterStore: it also emits when mapping
+        // detail is toggled, and never carries hidden completeness states
+        // while it is off (#924).
+        const unsubFilters = effectiveFilterStore.subscribe(filters => {
           const { standalonePitches: _sp, ...cf } = filters;
-          clusterFilterFingerprint = JSON.stringify(cf);
+          const fingerprint = JSON.stringify(cf);
+          // Only refetch when the filters that reach the server changed: toggling
+          // mapping detail with nothing hidden, or the pitch layer, emits here too.
+          const changed = fingerprint !== clusterFilterFingerprint;
+          clusterFilterFingerprint = fingerprint;
           if (!filterSubReady) { filterSubReady = true; return; }
+          if (!changed) return;
           if (get(activeTierStore) === 'cluster') orchestrator.rerun();
         });
         const baseDetach = orchestrator.detach;
@@ -268,18 +278,24 @@
   // Toggle pitch-layer visibility from the filter store.
   $: if (pitchLayer) pitchLayer.setVisible($filterStore.standalonePitches);
 
-  // Outline the selected pitch, matched by osm_id: a deeplinked pitch is not
-  // in this layer's source until the layer loads its area.
+  // Pitches get a sport pin so they are findable before their polygon is big
+  // enough to spot. With mapping detail on the polygon stays underneath; in
+  // the finder view the pin alone stands for the pitch, like playgrounds
+  // (#924). The selected pitch is outlined in both modes (#934), matched by
+  // osm_id: a deeplinked pitch is not in this layer's source until the layer
+  // loads its area.
+  function pitchLayerStyle(detail, selectedId) {
+    return feature => {
+      const pin = pitchPinFor(feature);
+      const selected = pin != null && selectedId != null && feature.get('osm_id') === selectedId;
+      const base = pin && !detail ? null : equipmentLayerStyleFn(feature);
+      const styles = [base, selected ? selectedPitchStyle : null, pin].filter(Boolean);
+      return styles.length > 1 ? styles : (styles[0] ?? null);
+    };
+  }
   $: selectedPitchId = $selection.feature && $selection.kind === 'pitch'
     ? $selection.feature.get('osm_id') : null;
-  $: if (pitchLayer) {
-    const id = selectedPitchId;
-    pitchLayer.setStyle(feature => {
-      const base = equipmentLayerStyleFn(feature);
-      if (id == null || feature.get('leisure') !== 'pitch' || feature.get('osm_id') !== id) return base;
-      return base ? [base, selectedPitchStyle] : selectedPitchStyle;
-    });
-  }
+  $: if (pitchLayer) pitchLayer.setStyle(pitchLayerStyle($mappingDetail, selectedPitchId));
 
   onDestroy(() => {
     detachTierDeselect();

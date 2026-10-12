@@ -23,7 +23,9 @@ The app uses Svelte writable stores (`src/stores/`). Components import stores di
 | Store | Shape | Who writes | Who reads |
 |---|---|---|---|
 | `selection` | `{ feature: OlFeature\|null, backendUrl: string }` | Map.svelte (click), AppShell (deeplink restore) | PlaygroundPanel, NearbyPlaygrounds |
-| `filterStore` | `{ private: bool, water: bool, baby: bool, … }` | FilterPanel | Map.svelte (polygon visibility), api.js (cluster params) |
+| `filterStore` | `{ private: bool, water: bool, baby: bool, … }` | FilterPanel, MappingDetailControl, FilterChips | the popovers' own checkboxes — everything else reads `effectiveFilterStore` |
+| `effectiveFilterStore` | derived from `filterStore` + `mappingDetail` | — | Map.svelte (polygon visibility), StandaloneApp/HubApp (tier refetch → cluster params, macro aggregates), FilterChips |
+| `mappingDetail` | `boolean` (default `false`; `localStorage` + `?detail=1\|0`) | MappingDetailControl | Map.svelte (cluster/polygon/macro style), AppShell (legend), PlaygroundPanel (share link), `effectiveFilterStore` |
 | `activeTierStore` | `null \| 'cluster' \| 'polygon' \| 'macro'` | tieredOrchestrator | Map.svelte (layer visibility) |
 | `overlayFeaturesStore` | `{ equipment: [], trees: [] }` | PlaygroundPanel | Map.svelte (equipment/tree layers) |
 | `playgroundSourceStore` | OL VectorSource \| null | Map.svelte | NearbyPlaygrounds, AppShell |
@@ -59,10 +61,11 @@ Map.svelte subscribes to overlayFeaturesStore
 ### Filter flow
 
 ```
-User toggles filter in FilterPanel
+User toggles filter in FilterPanel / MappingDetailControl
         │
         ▼
-filterStore updated
+filterStore updated ──► effectiveFilterStore (completeness states forced on
+        │                while mapping detail is off)
         │
         ├──► Map.svelte: polygon layer re-renders
         │    (matchesFilters() hides non-matching polygons)
@@ -182,13 +185,15 @@ const clusterFilterMap = {
 
 Use this pattern when users toggle which _categories_ to show rather than requiring a feature. Example: the completeness filter (`showComplete/showPartial/showMissing`).
 
+**Rule: anything that affects what is fetched or drawn reads `effectiveFilterStore`, never `filterStore`.** The completeness states are only in force while mapping detail is on (#924); `effectiveFilterStore` forces them to `true` otherwise, and it also emits when mapping detail is toggled, so subscribers refetch. Only the controls that *edit* filters read `filterStore`.
+
 Key differences from the standard pattern:
 
 - Default value is `true` (show all); deactivating hides a category.
 - `matchesFilters()` checks the prop and returns `false` to hide.
 - `hasActiveFilters()` detects activity via `!filters.myVisibilityKey`.
 - `activeFilterCount()` increments when `false`, not `true`.
-- `clearAll()` uses `filterStore.set({ ...defaultFilters })` — already resets visibility filters to `true` automatically.
+- Each popover resets only its own keys: FilterPanel's and FilterChips' "clear all" leave the completeness states alone, and MappingDetailControl resets only those.
 - Cluster RPC params default `true`; pass `'false'` only when deactivated:
 
 ```js
@@ -278,15 +283,31 @@ Themes are panel-only — no map symbols (discovery is deferred).
 
 The app uses Bootstrap 5 (component classes) and Tailwind CSS 4 (utility classes) side by side. The design system primitives in `src/components/ui/` (`Badge`, `Button`, `Card`, etc.) wrap Bootstrap with Tailwind utilities. Prefer these over raw Bootstrap classes in new components.
 
+### The finder view (mapping detail off)
+
+Mapping detail is opt-in (#924). With it off, `Map.svelte` swaps the tier styles for the ones in `src/lib/finderStyle.js` (cluster discs, pins at each playground's interior point, the selected playground's outline) and `hub/macroRingStyle.js`'s `finderMacroRingStyleFn` (neutral discs; health variants unchanged). The `FINDER` colours sit in `completenessPalette.js` with their contrast measurements. Style functions take the mode from their caller rather than reading the store, so they stay pure and unit-testable. Canvas markers draw in CSS pixels through `hidpiStyleOptions` (`lib/hidpiRenderer.js`), which also supplies their 1:1 hit-detection renderer, so the existing click/hover path selects pins — but a click inside the undrawn polygon off the pin does not.
+
+### Accent colour
+
+The UI accent is one emerald family, defined once as theme tokens in `src/styles/app.css` (#930):
+
+| Token | Value | Use |
+|---|---|---|
+| `--color-primary` | `#047857` | buttons with text, links, accent text, active control icons, badges (Tailwind: `bg-primary`, `text-primary`) |
+| `--color-primary-hover` | `#065f46` | hover / pressed |
+| `--color-primary-soft` | `#ecfdf5` | background of an active control or checked row |
+
+Reference them with `var(--color-primary)` and friends, never as literals. The lighter emerald-500 (`#10b981`) the app used before is only 2.54:1 behind white text — every accent pair here clears 4.5:1. Map markers are the exception: canvas renderers cannot read CSS variables, so their colours live in `completenessPalette.js`.
+
 ### The mapping-detail palette
 
 `src/lib/completenessPalette.js` is the single source of truth for the three mapping-detail colours (`complete` / `partial` / `missing`). **Never hardcode these values anywhere else.**
 
 Each bucket exposes `base`, `fill`, `stroke` and `hatch`. The module documents which surface uses which field; the short version is that anything opaque takes `base`, and only shapes the basemap shows through — or backgrounds carrying text — take `fill`. Getting this wrong is silent: nothing errors, two surfaces simply render the same bucket in different colours.
 
-Consumers today: `vectorStyles.js` (polygons), `clusterStyle.js`, `hub/macroRingStyle.js`, `CompletenessLegend.svelte`, `PlaygroundPanel.svelte`, `FilterPanel.svelte`, `NearbyPlaygrounds.svelte`, `hub/InstancePanelDrawer.svelte`.
+Consumers today: `vectorStyles.js` (polygons), `clusterStyle.js`, `hub/macroRingStyle.js`, `CompletenessLegend.svelte`, `PlaygroundPanel.svelte`, `MappingDetailControl.svelte`, `NearbyPlaygrounds.svelte`, `hub/InstancePanelDrawer.svelte`.
 
-Svelte `<style>` blocks cannot import, so components that colour elements via CSS classes read the palette in `<script>` and expose it as custom properties (`--detail-complete` and friends) on the wrapping element. `FilterPanel`, `NearbyPlaygrounds` and `InstancePanelDrawer` all follow that pattern — copy it rather than reintroducing literals.
+Svelte `<style>` blocks cannot import, so components that colour elements via CSS classes read the palette in `<script>` and expose it as custom properties (`--detail-complete` and friends) on the wrapping element. `NearbyPlaygrounds` and `InstancePanelDrawer` follow that pattern — copy it rather than reintroducing literals.
 
 Two rendering traps worth knowing:
 
