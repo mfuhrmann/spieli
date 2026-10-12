@@ -37,6 +37,19 @@ The identifiers `complete` / `partial` / `missing` are wire and storage values �
 
 How the three states are coloured is described in [Colours](#colours) below; every surface reads the same palette module, so the legend, the polygons and the ring arcs cannot disagree.
 
+## Hints in the panel
+
+With mapping detail on, `PlaygroundPanel` shows a line under the badge naming the missing input (#919), from `mappingDetailHintKey()` in `completeness.js`, which reads the same `mappingDetailInputs()` the rule does — the hint and the badge cannot disagree:
+
+| Badge | Missing | Hint (`mappingDetail.nextStep.*`) |
+|---|---|---|
+| no details yet | both | One piece of play equipment or the surface makes it "basic", both make it "detailed". |
+| basic | equipment | Only the play equipment is missing for "detailed". |
+| basic | info | Only the surface or the opening hours are missing for "detailed". |
+| detailed | – | *(none)* |
+
+Each is followed by a link to this playground in MapComplete. Surface is named before opening hours on purpose: it can be checked on site and is unambiguous, while many playgrounds legitimately have no opening hours — the hint must not invite invented ones. By the rule's design, once one device is mapped there is no equipment hint even if more are missing, and "detailed" does not mean complete.
+
 ## Photos are not a criterion
 
 A photo (`panoramax` / `panoramax:*`, `wikimedia_commons`, or an `image` link on a Wikimedia/Wikipedia host) is **not** an input to the state.

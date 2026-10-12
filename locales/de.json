@@ -91,7 +91,13 @@
     "toggle": "Erfasste Details",
     "show": "Erfasste Details anzeigen",
     "hint": "Färbt Spielplätze danach, wie vollständig sie in OpenStreetMap erfasst sind – nützlich, wenn du Daten in OSM einträgst.",
-    "filterTitle": "Anzeigen"
+    "filterTitle": "Anzeigen",
+    "nextStep": {
+      "noInfo": "Für „{detailed}“ fehlt nur noch der Bodenbelag oder die Öffnungszeiten.",
+      "noEquipment": "Für „{detailed}“ fehlen nur noch die Spielgeräte.",
+      "noDetails": "Ein Spielgerät oder der Bodenbelag macht ihn „{basic}“, beides „{detailed}“.",
+      "action": "In MapComplete ergänzen"
+    }
   },
   "completeness": {
     "restrictedHint": "nicht öffentlich"

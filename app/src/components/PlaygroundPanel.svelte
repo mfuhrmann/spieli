@@ -20,7 +20,7 @@
   import { fetchPlaygroundEquipment, fetchNearbyPOIs, fetchTrees, fetchMeta } from '../lib/api.js';
   import { overlayFeaturesStore } from '../stores/overlayLayer.js';
   import { groupEquipment } from '../lib/equipmentGrouping.js';
-  import { playgroundCompleteness } from '../lib/completeness.js';
+  import { playgroundCompleteness, mappingDetailHintKey } from '../lib/completeness.js';
   import { openingHoursState } from '../lib/openingHours.js';
   import { litInfo } from '../lib/pitchInfo.js';
   import { COMPLETENESS_PALETTE } from '../lib/completenessPalette.js';
@@ -359,6 +359,12 @@
   // Only while mapping detail is on: in the finder view the badge would bring
   // back exactly the data-quality reading the view leaves out (#924).
   $: completenessLevel = attr && $mappingDetail ? playgroundCompleteness(attr) : null;
+
+  // Under the badge: which of the rule's two inputs is missing, with a link to
+  // this playground in MapComplete — so "basic" or "no details yet" reads as
+  // an invitation, not a grade (#919). Same condition as the badge: only with
+  // mapping detail on; nothing for "detailed".
+  $: detailHintKey = completenessLevel ? mappingDetailHintKey(attr) : null;
   $: completeness = completenessLevel
     ? {
         key: MAPPING_DETAIL_KEY[completenessLevel],
@@ -603,6 +609,12 @@
             </button>
           {/if}
         </div>
+        {#if detailHintKey && mcUrl}
+          <p class="detail-hint" data-testid="mapping-detail-hint">
+            {$_(detailHintKey, { values: { detailed: $_('mappingDetail.detailed'), basic: $_('mappingDetail.basic') } })}
+            <a href={mcUrl} target="_blank" rel="noopener">{$_('mappingDetail.nextStep.action')}</a>
+          </p>
+        {/if}
       {/if}
 
       <!-- Status pills: opening hours, baby/toddler, shade -->
@@ -1239,6 +1251,21 @@
     border-radius: 50%;
     flex-shrink: 0;
   }
+
+  /* Pulled up against the status row's mb-4 so it reads as the badge's
+     caption, not as a separate section. */
+  .detail-hint {
+    margin: -0.5rem 0 1rem;
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    color: #4b5563;
+  }
+  .detail-hint a {
+    color: var(--color-primary);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .detail-hint a:hover { text-decoration: underline; }
 
   .data-age-chip {
     display: inline-flex;

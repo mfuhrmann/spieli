@@ -69,13 +69,39 @@ export function hasPhotoSignal(props) {
         || isWikimediaImageTag(props.image);
 }
 
-export function playgroundCompleteness(props) {
-    const hasEquipment = (props.device_count > 0)
+/**
+ * The two inputs of the mapping-detail rule, exposed separately so the panel
+ * can say WHICH one is missing instead of only showing the bucket (#919).
+ * Strict booleans: an `undefined` leaking through would make a `!hasX` check
+ * pass for the wrong reason.
+ */
+export function mappingDetailInputs(props) {
+    const hasEquipment = !!((props.device_count > 0)
         || (props.table_tennis_count > 0)
         || props.has_soccer
-        || props.has_basketball;
+        || props.has_basketball);
     const hasInfo = !!(props.opening_hours || props.surface ||
                        (props.access && props.access !== 'yes'));
+    return { hasEquipment, hasInfo };
+}
+
+/**
+ * The i18n key of the hint that says what is missing for the next step, or
+ * null when nothing is (complete). Surface is named before opening hours on
+ * purpose: it can be checked on site and is unambiguous, while many
+ * playgrounds legitimately have no opening hours — the hint must not invite
+ * invented ones.
+ */
+export function mappingDetailHintKey(props) {
+    const { hasEquipment, hasInfo } = mappingDetailInputs(props);
+    if (!hasEquipment && !hasInfo) return 'mappingDetail.nextStep.noDetails';
+    if (!hasEquipment) return 'mappingDetail.nextStep.noEquipment';
+    if (!hasInfo) return 'mappingDetail.nextStep.noInfo';
+    return null;
+}
+
+export function playgroundCompleteness(props) {
+    const { hasEquipment, hasInfo } = mappingDetailInputs(props);
 
     if (hasEquipment && hasInfo) return 'complete';
     if (hasEquipment || hasInfo) return 'partial';

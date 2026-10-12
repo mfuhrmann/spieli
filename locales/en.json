@@ -91,7 +91,13 @@
     "toggle": "Mapping detail",
     "show": "Show mapping detail",
     "hint": "Colours playgrounds by how completely they are mapped in OpenStreetMap — useful if you add data to OSM.",
-    "filterTitle": "Show"
+    "filterTitle": "Show",
+    "nextStep": {
+      "noInfo": "Only the surface or the opening hours are missing for “{detailed}”.",
+      "noEquipment": "Only the play equipment is missing for “{detailed}”.",
+      "noDetails": "One piece of play equipment or the surface makes it “{basic}”, both make it “{detailed}”.",
+      "action": "Add it in MapComplete"
+    }
   },
   "completeness": {
     "restrictedHint": "not public"

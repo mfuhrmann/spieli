@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { playgroundCompleteness, hasPhotoSignal, nearbyItemCompleteness } from './completeness.js';
+import { playgroundCompleteness, hasPhotoSignal, nearbyItemCompleteness, mappingDetailInputs, mappingDetailHintKey } from './completeness.js';
 
 // mapping detail = f(hasEquipment, hasInfo):
 //   complete = both present
@@ -212,6 +212,28 @@ import { playgroundCompleteness, hasPhotoSignal, nearbyItemCompleteness } from '
   assert.equal(nearbyItemCompleteness({ tags: { surface: 'sand' } }), null);
   assert.equal(nearbyItemCompleteness({ completeness: null }), null);
   assert.equal(nearbyItemCompleteness({ completeness: 'bogus' }), null);
+}
+
+// mappingDetailInputs: the two flags the panel hint is keyed on, strict booleans.
+{
+  assert.deepEqual(mappingDetailInputs({}), { hasEquipment: false, hasInfo: false });
+  assert.deepEqual(mappingDetailInputs({ device_count: 3, access: 'yes' }), { hasEquipment: true, hasInfo: false });
+  assert.deepEqual(mappingDetailInputs({ opening_hours: '24/7' }), { hasEquipment: false, hasInfo: true });
+}
+
+// mappingDetailHintKey: one hint per missing input, none when complete, and it
+// agrees with the bucket the badge shows.
+{
+  assert.equal(mappingDetailHintKey({}), 'mappingDetail.nextStep.noDetails');
+  assert.equal(mappingDetailHintKey({ surface: 'sand' }), 'mappingDetail.nextStep.noEquipment');
+  assert.equal(mappingDetailHintKey({ device_count: 2 }), 'mappingDetail.nextStep.noInfo');
+  assert.equal(mappingDetailHintKey({ device_count: 2, surface: 'sand' }), null);
+  for (const p of [{}, { surface: 'sand' }, { has_soccer: true }, { device_count: 1, opening_hours: '24/7' }]) {
+    const bucket = playgroundCompleteness(p);
+    const key = mappingDetailHintKey(p);
+    assert.equal(key === null, bucket === 'complete', JSON.stringify(p));
+    assert.equal(key === 'mappingDetail.nextStep.noDetails', bucket === 'missing', JSON.stringify(p));
+  }
 }
 
 console.log('All completeness tests passed.');

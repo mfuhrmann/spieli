@@ -30,6 +30,8 @@ Your choice is remembered in this browser. To send someone a link that opens wit
 
 Play equipment means slides, swings, climbing frames and the like, plus ball courts. A bench or picnic table on its own does not make a playground "basic" — those are useful to know about, but they say nothing about whether there is anything to play on.
 
+With mapping detail on, a playground's panel also says under its badge what is missing for the next step — for example "Only the play equipment is missing for 'detailed'" — with a link that opens this playground in MapComplete to add it. Detailed playgrounds get no hint.
+
 A camera glyph marks playgrounds that also have a photo. Photos are a bonus, not part of the rating — a playground with everything mapped except a picture still counts as detailed.
 
 The colours describe the OSM data, not the real-world quality of the playground. The lowest step means nobody has mapped it yet, which is an invitation to help rather than a warning.
