@@ -42,6 +42,16 @@ make install
 make dev
 ```
 
+## Changing the app icon
+
+The installable-app icons live in `app/public/icons/` (#939). `icon-192.png` and `icon-512.png` are the free-standing pin; the *maskable* variants that Android launchers and some desktops cut into a circle are generated from `icon-512.png`:
+
+```bash
+make app-icons            # rewrites app/public/icons/icon-maskable-{192,512}.png
+```
+
+Commit the regenerated files. They are served under stable names with a one-day cache, so an installed app picks up a new icon within a day.
+
 ## Adding or changing an equipment illustration
 
 The device and pitch tables (`app/src/lib/objPlaygroundEquipment.js`, `app/src/lib/equipmentAttributes.js`) name illustrations as MediaWiki `File:` titles. Those names are resolved to real file URLs at build time, so after adding or changing one:

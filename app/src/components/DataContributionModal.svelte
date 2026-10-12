@@ -2,6 +2,7 @@
   import { _ , locale } from 'svelte-i18n';
   import { version } from '../../package.json';
   import logoUrl from '../images/spieli_logo.png';
+  import { installPrompt, promptInstall } from '../stores/installPrompt.js';
 
   export let open = false;
   /** Community chat URL; hidden when null/falsy. */
@@ -49,6 +50,14 @@
         </div>
 
         <div class="link-grid">
+          <!-- Only where the browser offers installation (Chromium); see
+               stores/installPrompt.js (#939). -->
+          {#if $installPrompt}
+            <button type="button" class="link-card link-card--button" onclick={promptInstall}>
+              <span class="link-icon">📲</span>
+              <span>{$_('modal.addData.installApp')}</span>
+            </button>
+          {/if}
           <a class="link-card" href={osmWikiUrl} target="_blank" rel="noopener">
             <span class="link-icon">🗺️</span>
             <span>{$_('modal.addData.wikiLinkText')}</span>
@@ -181,6 +190,13 @@
     color: #374151;
     text-decoration: none;
     transition: background 0.12s, border-color 0.12s;
+  }
+  .link-card--button {
+    font: inherit;
+    font-size: 0.8125rem;
+    text-align: left;
+    cursor: pointer;
+    width: 100%;
   }
   .link-card:hover {
     background: #fff3e8;

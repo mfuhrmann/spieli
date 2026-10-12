@@ -144,6 +144,18 @@ Click or tap a pitch to open its panel — in the same place as a playground's. 
 
 Each playground has a unique URL. When you open a playground, the URL bar updates to include a hash like `#W37808214`. Share that URL to link directly to a specific playground.
 
+## Installing spieli as an app
+
+On a phone, spieli can sit on your home screen like an app: one tap opens the map full-screen, without the browser's address bar.
+
+- **iPhone / iPad (Safari):** the share button → *Add to Home Screen*.
+- **Android (Chrome):** **Install as app** in the info dialog (the ⓘ button), or the browser menu → *Install app*.
+- **Android (Firefox):** menu → *Install* (or *Add to Home screen*).
+
+Each spieli region installs as its own app, under its own name — the Fulda map and the all-Germany hub can sit side by side.
+
+On a desktop, Chrome and Edge (install icon in the address bar) and Safari on a Mac (*File → Add to Dock*) can do the same; Firefox on the desktop cannot (only an experimental "Taskbar Tabs" feature on Windows).
+
 ## Adding or improving data
 
 All playground data comes from [OpenStreetMap](https://openstreetmap.org). If a playground is missing, has the wrong location, or lacks details:

@@ -167,6 +167,7 @@ services:
       OSM_RELATION_ID:             ${OSM_RELATION_ID:-62700}
       REGION_PLAYGROUND_WIKI_URL:  ${REGION_PLAYGROUND_WIKI_URL:-}
       REGION_CHAT_URL:             ${REGION_CHAT_URL:-}
+      APP_NAME:                    ${APP_NAME:-}
       DEFAULT_LOCALE:              ${DEFAULT_LOCALE:-}
       REGION_LANG:                 ${REGION_LANG:-de}
       REGION_COUNTRY:              ${REGION_COUNTRY:-de}

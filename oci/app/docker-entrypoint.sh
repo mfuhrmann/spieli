@@ -1491,6 +1491,55 @@ window.APP_CONFIG = {
 JSEOF
 fi
 
+# ── Web app manifest (#939) ──────────────────────────────────────────────────
+# Written per stack so every deployment installs as its own app: the browser
+# scopes the manifest `id` to the origin, and `name` is what the Dock, start
+# menu and home screen show. The container does not know the region's display
+# name — the browser fetches it from Nominatim after load, too late for a file
+# read before installing — so it comes from APP_NAME; without it, "spieli".
+# The static app/public/manifest.webmanifest stays as the `make dev` fallback.
+
+# json_str <value> — a JSON string literal: control characters dropped,
+# backslash and double quote escaped.
+json_str() { printf '"%s"' "$(printf '%s' "$1" | tr -d '\000-\037' | sed 's/\\/\\\\/g; s/"/\\"/g')"; }
+
+MANIFEST_NAME="${APP_NAME:-spieli}"
+MANIFEST_LANG="${SAFE_DEFAULT_LOCALE:-${SAFE_REGION_LANG:-de}}"
+if [ "$APP_MODE" = "hub" ]; then
+    case "$MANIFEST_LANG" in
+        de*) MANIFEST_DESC="Spielplätze aus allen spieli-Regionen auf einer Karte" ;;
+        *)   MANIFEST_DESC="Playgrounds from every spieli region on one map" ;;
+    esac
+else
+    case "$MANIFEST_LANG" in
+        de*) MANIFEST_DESC="Spielplätze auf einer Karte finden" ;;
+        *)   MANIFEST_DESC="Find playgrounds on a map" ;;
+    esac
+fi
+
+cat > "$WEBROOT/manifest.webmanifest.new" << MANIFESTEOF
+{
+  "id": "/",
+  "name": $(json_str "$MANIFEST_NAME"),
+  "short_name": "spieli",
+  "description": $(json_str "$MANIFEST_DESC"),
+  "lang": $(json_str "$MANIFEST_LANG"),
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "theme_color": "#047857",
+  "background_color": "#f8f4f0",
+  "categories": ["maps", "lifestyle"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
+MANIFESTEOF
+mv "$WEBROOT/manifest.webmanifest.new" "$WEBROOT/manifest.webmanifest"
+
 # ── Generate legal pages ───────────────────────────────────────────────────────
 # Sanitize legal contact vars for HTML interpolation (escape < > & ").
 html_escape() { printf '%s' "$1" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g; s/"/\&quot;/g'; }

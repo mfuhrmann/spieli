@@ -15,6 +15,7 @@ All variables are set in `.env` (copy from `.env.example`). The installer genera
 | `API_BASE_URL` | `/api` | ui, data-node-ui | Base URL of the PostgREST API. Set to the remote URL for `ui` mode (e.g. `https://data.example.com/api`). |
 | `REGION_PLAYGROUND_WIKI_URL` | Generic OSM wiki | ui, data-node-ui | Wiki page linked in the "Contribute" modal |
 | `REGION_CHAT_URL` | *(hidden)* | ui, data-node-ui, hub | Community chat link shown in the "Contribute data" modal; leave empty to hide the button. In hub mode this is the hub operator's own channel — backends do not contribute one. |
+| `APP_NAME` | `spieli` | ui, data-node-ui, hub | Name of the installed app (Chrome/Edge "Install app", Safari "Add to Dock", iOS "Add to Home Screen") — what the Dock, start menu and home screen show. Each stack installs as its own app, so give each region its own, e.g. `spieli Fulda`. Written into `/manifest.webmanifest` at container start. |
 | `DEFAULT_LOCALE` | *(browser)* | ui, data-node-ui, hub | UI language. Leave empty to auto-detect from the visitor's browser. Supported: `de`, `en`, `sk`. An unsupported value falls back to `en`. |
 | `REGION_LANG` | `de` | ui, data-node-ui, hub | Language your region's playgrounds are **named** in (BCP 47). Not the same as `DEFAULT_LOCALE` — see [Language settings](#language-settings). |
 | `REGION_COUNTRY` | `de` | ui, data-node-ui, hub | Country whose public-holiday calendar `opening_hours` values are evaluated against (ISO 3166-1 alpha-2). |

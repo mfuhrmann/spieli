@@ -51,6 +51,7 @@ make lan-url      # print LAN IP for mobile testing
 
 make basemap-assets   # regenerate the vendored basemap style + macro world outline
 make equipment-images # re-resolve the equipment illustrations' File: names
+make app-icons        # regenerate the maskable app icons from app/public/icons/icon-512.png
 ```
 
 ## Docker Compose stack
@@ -158,6 +159,10 @@ Six things here are load-bearing and were each found the hard way:
 
 Per-service opt-out via `PROXY_NOMINATIM` / `PROXY_COMMONS` / `PROXY_MANGROVE` (default on). Opting one out routes the browser directly *and* adds its host to the generated CSP and to the generated privacy-page table — both follow the configuration, neither is hardcoded.
 
+### Web app manifest (#939)
+
+`/manifest.webmanifest` is generated per stack by the entrypoint, like `config.js`: `name` from `APP_NAME` (default `spieli`), a hub- or region-specific `description` in `DEFAULT_LOCALE`, icons from `app/public/icons/` (`any` + `maskable`). Every stack serves it from its own origin, so the hub and each backend install as separate apps. The container cannot use the region's display name — the browser fetches that from Nominatim after load, too late for a file read before installing. nginx gives it `application/manifest+json` and `no-cache`, and serves `/icons/` with a one-day cache via a `^~` prefix location: the stable icon names would otherwise fall into the `\.png$` block and be cached as immutable for a year. `app/public/manifest.webmanifest` is the `make dev` fallback. No service worker: Chromium no longer requires one to install, and offline caching is a separate decision.
+
 ### Content Security Policy
 
 Generated into `/etc/nginx/csp.conf` and included by `nginx.conf`; not a literal, because hub `connect-src` origins come from an operator-supplied `registry.json`, a remote `API_BASE_URL` is another origin, and a basemap opt-out adds a tile host. Written to a temp file and `mv`d, so it is never read half-written.
@@ -186,6 +191,7 @@ Two policies ship together for one release: the old wildcard one **enforced**, a
 | `urlFraming.js` | Whether an explicit region-URL framing (e.g. `/Lauterbach`) was applied on load — `null` (undecided / no region path) \| `true` (override resolved & framed) \| `false` (region path present but did not resolve). Written by `StandaloneApp`, read by `LocateButton` so auto-locate only suppresses GPS centering when a region framing actually took effect. On `false`, StandaloneApp skips the configured-region fit and leaves the default extent so the current location (if available) takes over. |
 | `hubLoading.js` | Hub fan-out load progress — `{ loaded, total, settling }`. Written by `hubOrchestrator`, read by the hub UI to show a progress indicator. |
 | `macroFiltered.js` | Per-backend filtered aggregate for the hub macro tier — `Map<backendUrl, {count, complete, partial, missing}> \| null`. `null` = no filter active (macro stays zero-fetch, rings use cached `get_meta`). Written by `hubOrchestrator` when a filter is active (sums each backend's filtered `get_playground_clusters` buckets), read by `MacroView` to override ring props. |
+| `installPrompt.js` | The browser's install offer (#939) — the `beforeinstallprompt` event, kept so the Info dialog can show "Install as app"; `null` where the browser never fires it (Safari, Firefox, already installed). `promptInstall()` hands it back to the browser once. |
 | `macroCoverage.js` | Macro-tier filter coverage — `{ answered, total, cantFilter[], settling } \| null`. `null` = no filter active. Written by `hubOrchestrator` (tracks how many in-scope backends actually applied the active filter; `cantFilter` lists those that couldn't — no bbox or 404; `settling` is true while the fan-out is still in flight so the banner doesn't flash mid-load). Read by `MacroView` (per-backend `_cantFilter` ring flag) and `MacroCoverageBanner` ("filter covers N of M regions" disclosure). |
 
 ### Components
@@ -348,6 +354,7 @@ to a tile server.
 | `build-basemap-style.py` | Rebuilds both style variants: `style.json` (upstream URLs, used by `make dev`) and `style.local.json` (all assets under `/basemap/`, used by the container). Built from an upstream MapLibre style (default OpenFreeMap Bright). Desaturates the green landcover fills and drops the `poi` symbol layers, because spieli encodes completeness in green/amber/red and a green basemap competes with its own data. `--asset-base` rewrites tile/glyph/sprite URLs to a local origin; without it the committed style still fetches tiles, fonts and sprites from the upstream host. |
 | `build-basemap-fonts.py` | Vendors the @fontsource webfonts the style's `text-font` stacks need (`app/public/basemap/fonts/`), latin + latin-ext. `ol-mapbox-style` renders labels from a webfont CSS template, **not** from the style's `glyphs` endpoint, so a missing weight is invisible: labels fall back to a system font and every page load asks the upstream for a file it does not have. The build asserts coverage against the style and fails if a stack has no vendored file. |
 | `build-equipment-images.py` | Resolves the equipment illustrations' `File:` names to real file URLs, writing `app/src/lib/equipmentImages.generated.json`. Run via `make equipment-images`, **not** `make basemap-assets`. Follows the `Special:FilePath` redirect chain once at build time, because that chain cannot be proxied without allowing `/w/index.php` through the cache. Resolves against Commons then the OSM wiki, and **fails on a name that resolves on neither** — 14 currently do not and are pinned in `KNOWN_MISSING`, so a fifteenth is a build failure rather than a silently blank illustration. Also records author, licence and file-page URL, since serving the bytes through our own origin makes the CC attribution obligation ours. |
+| `build-app-icons.py` | Builds `app/public/icons/icon-maskable-{192,512}.png` from the 512 px pin (#939): the pin at two thirds of the canvas on the accent's soft tint, so a launcher's circle/squircle mask cannot crop it. The originals are declared `purpose: any`. Run via `make app-icons`. |
 | `build-macro-outline.py` | Rebuilds `app/public/basemap/world-110m.json` from Natural Earth 1:110m — the world outline shown under the hub macro tier, so areas outside the federation's tileset are not blank. |
 
 ## Documentation

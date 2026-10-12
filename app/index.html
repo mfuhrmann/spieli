@@ -4,10 +4,14 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>spieli</title>
-  <link rel="icon" type="image/png" href="src/images/favicon/favicon-96x96.png" sizes="96x96" />
-  <link rel="apple-touch-icon" sizes="180x180" href="src/images/favicon/apple-touch-icon.png" />
-  <meta name="apple-mobile-web-app-title" content="Spieli" />
-  <link rel="manifest" href="src/images/favicon/site.webmanifest" />
+  <!-- App icons and manifest live in public/ so their URLs are stable: the
+       manifest names its icons by URL, and docker-entrypoint.sh rewrites the
+       manifest per stack at startup (#939). -->
+  <link rel="icon" type="image/png" href="/icons/favicon-96x96.png" sizes="96x96" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-title" content="spieli" />
+  <meta name="theme-color" content="#047857" />
+  <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="me" href="https://hessen.social/@mfuhrmann">
   <link rel="me" href="https://fulda.social/@mfuhrmann">
   <link rel="me" href="https://social.labmonkeys.space/@indigo">

@@ -360,7 +360,8 @@
         "chatLabel": "lokalen OSM-Community-Chat",
         "simpleText": "Fragen und Austausch im",
         "simpleChatLabel": "regionalen Chat"
-      }
+      },
+      "installApp": "Als App installieren"
     },
     "about": {
       "history": {
