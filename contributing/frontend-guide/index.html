@@ -1406,6 +1406,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#the-finder-view-mapping-detail-off" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The finder view (mapping detail off)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#accent-colour" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2353,6 +2364,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#the-finder-view-mapping-detail-off" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The finder view (mapping detail off)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#accent-colour" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2459,8 +2481,20 @@
 <tr>
 <td><code>filterStore</code></td>
 <td><code>{ private: bool, water: bool, baby: bool, … }</code></td>
-<td>FilterPanel</td>
-<td>Map.svelte (polygon visibility), api.js (cluster params)</td>
+<td>FilterPanel, MappingDetailControl, FilterChips</td>
+<td>the popovers' own checkboxes — everything else reads <code>effectiveFilterStore</code></td>
+</tr>
+<tr>
+<td><code>effectiveFilterStore</code></td>
+<td>derived from <code>filterStore</code> + <code>mappingDetail</code></td>
+<td>—</td>
+<td>Map.svelte (polygon visibility), StandaloneApp/HubApp (tier refetch → cluster params, macro aggregates), FilterChips</td>
+</tr>
+<tr>
+<td><code>mappingDetail</code></td>
+<td><code>boolean</code> (default <code>false</code>; <code>localStorage</code> + <code>?detail=1\|0</code>)</td>
+<td>MappingDetailControl</td>
+<td>Map.svelte (cluster/polygon/macro style), AppShell (legend), PlaygroundPanel (share link), <code>effectiveFilterStore</code></td>
 </tr>
 <tr>
 <td><code>activeTierStore</code></td>
@@ -2536,16 +2570,17 @@
 <a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>  → updates equipment and tree OL layers
 </code></pre></div>
 <h3 id="filter-flow">Filter flow<a class="headerlink" href="#filter-flow" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>User toggles filter in FilterPanel
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>User toggles filter in FilterPanel / MappingDetailControl
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>        │
 <a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>        ▼
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>filterStore updated
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>        │
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>        ├──► Map.svelte: polygon layer re-renders
-<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>        │    (matchesFilters() hides non-matching polygons)
-<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>        │
-<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>        └──► tieredOrchestrator.rerun()
-<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>             → re-fetches cluster tier with active filters as query params
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>filterStore updated ──► effectiveFilterStore (completeness states forced on
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>        │                while mapping detail is off)
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>        │
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>        ├──► Map.svelte: polygon layer re-renders
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>        │    (matchesFilters() hides non-matching polygons)
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>        │
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>        └──► tieredOrchestrator.rerun()
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>             → re-fetches cluster tier with active filters as query params
 </code></pre></div>
 <p>Each zoom tier applies filters through a different path:</p>
 <table>
@@ -2719,13 +2754,14 @@
 <p><strong>6. Unit tests</strong> — add cases to <code>app/src/stores/filters.test.js</code>.</p>
 <h3 id="visibility-filter-default-on">Visibility filter (default on)<a class="headerlink" href="#visibility-filter-default-on" title="Permanent link">&para;</a></h3>
 <p>Use this pattern when users toggle which <em>categories</em> to show rather than requiring a feature. Example: the completeness filter (<code>showComplete/showPartial/showMissing</code>).</p>
+<p><strong>Rule: anything that affects what is fetched or drawn reads <code>effectiveFilterStore</code>, never <code>filterStore</code>.</strong> The completeness states are only in force while mapping detail is on (#924); <code>effectiveFilterStore</code> forces them to <code>true</code> otherwise, and it also emits when mapping detail is toggled, so subscribers refetch. Only the controls that <em>edit</em> filters read <code>filterStore</code>.</p>
 <p>Key differences from the standard pattern:</p>
 <ul>
 <li>Default value is <code>true</code> (show all); deactivating hides a category.</li>
 <li><code>matchesFilters()</code> checks the prop and returns <code>false</code> to hide.</li>
 <li><code>hasActiveFilters()</code> detects activity via <code>!filters.myVisibilityKey</code>.</li>
 <li><code>activeFilterCount()</code> increments when <code>false</code>, not <code>true</code>.</li>
-<li><code>clearAll()</code> uses <code>filterStore.set({ ...defaultFilters })</code> — already resets visibility filters to <code>true</code> automatically.</li>
+<li>Each popover resets only its own keys: FilterPanel's and FilterChips' "clear all" leave the completeness states alone, and MappingDetailControl resets only those.</li>
 <li>Cluster RPC params default <code>true</code>; pass <code>'false'</code> only when deactivated:</li>
 </ul>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1">// api.js — in fetchPlaygroundClusters:</span>
@@ -2794,6 +2830,8 @@ unannotated name silently inherits the interface language.</p>
 <p>Themes are panel-only — no map symbols (discovery is deferred).</p>
 <h2 id="style-system">Style system<a class="headerlink" href="#style-system" title="Permanent link">&para;</a></h2>
 <p>The app uses Bootstrap 5 (component classes) and Tailwind CSS 4 (utility classes) side by side. The design system primitives in <code>src/components/ui/</code> (<code>Badge</code>, <code>Button</code>, <code>Card</code>, etc.) wrap Bootstrap with Tailwind utilities. Prefer these over raw Bootstrap classes in new components.</p>
+<h3 id="the-finder-view-mapping-detail-off">The finder view (mapping detail off)<a class="headerlink" href="#the-finder-view-mapping-detail-off" title="Permanent link">&para;</a></h3>
+<p>Mapping detail is opt-in (#924). With it off, <code>Map.svelte</code> swaps the tier styles for the ones in <code>src/lib/finderStyle.js</code> (cluster discs, pins at each playground's interior point, the selected playground's outline) and <code>hub/macroRingStyle.js</code>'s <code>finderMacroRingStyleFn</code> (neutral discs; health variants unchanged). The <code>FINDER</code> colours sit in <code>completenessPalette.js</code> with their contrast measurements. Style functions take the mode from their caller rather than reading the store, so they stay pure and unit-testable. Canvas markers draw in CSS pixels through <code>hidpiStyleOptions</code> (<code>lib/hidpiRenderer.js</code>), which also supplies their 1:1 hit-detection renderer, so the existing click/hover path selects pins — but a click inside the undrawn polygon off the pin does not.</p>
 <h3 id="accent-colour">Accent colour<a class="headerlink" href="#accent-colour" title="Permanent link">&para;</a></h3>
 <p>The UI accent is one emerald family, defined once as theme tokens in <code>src/styles/app.css</code> (#930):</p>
 <table>
@@ -2826,8 +2864,8 @@ unannotated name silently inherits the interface language.</p>
 <h3 id="the-mapping-detail-palette">The mapping-detail palette<a class="headerlink" href="#the-mapping-detail-palette" title="Permanent link">&para;</a></h3>
 <p><code>src/lib/completenessPalette.js</code> is the single source of truth for the three mapping-detail colours (<code>complete</code> / <code>partial</code> / <code>missing</code>). <strong>Never hardcode these values anywhere else.</strong></p>
 <p>Each bucket exposes <code>base</code>, <code>fill</code>, <code>stroke</code> and <code>hatch</code>. The module documents which surface uses which field; the short version is that anything opaque takes <code>base</code>, and only shapes the basemap shows through — or backgrounds carrying text — take <code>fill</code>. Getting this wrong is silent: nothing errors, two surfaces simply render the same bucket in different colours.</p>
-<p>Consumers today: <code>vectorStyles.js</code> (polygons), <code>clusterStyle.js</code>, <code>hub/macroRingStyle.js</code>, <code>CompletenessLegend.svelte</code>, <code>PlaygroundPanel.svelte</code>, <code>FilterPanel.svelte</code>, <code>NearbyPlaygrounds.svelte</code>, <code>hub/InstancePanelDrawer.svelte</code>.</p>
-<p>Svelte <code>&lt;style&gt;</code> blocks cannot import, so components that colour elements via CSS classes read the palette in <code>&lt;script&gt;</code> and expose it as custom properties (<code>--detail-complete</code> and friends) on the wrapping element. <code>FilterPanel</code>, <code>NearbyPlaygrounds</code> and <code>InstancePanelDrawer</code> all follow that pattern — copy it rather than reintroducing literals.</p>
+<p>Consumers today: <code>vectorStyles.js</code> (polygons), <code>clusterStyle.js</code>, <code>hub/macroRingStyle.js</code>, <code>CompletenessLegend.svelte</code>, <code>PlaygroundPanel.svelte</code>, <code>MappingDetailControl.svelte</code>, <code>NearbyPlaygrounds.svelte</code>, <code>hub/InstancePanelDrawer.svelte</code>.</p>
+<p>Svelte <code>&lt;style&gt;</code> blocks cannot import, so components that colour elements via CSS classes read the palette in <code>&lt;script&gt;</code> and expose it as custom properties (<code>--detail-complete</code> and friends) on the wrapping element. <code>NearbyPlaygrounds</code> and <code>InstancePanelDrawer</code> follow that pattern — copy it rather than reintroducing literals.</p>
 <p>Two rendering traps worth knowing:</p>
 <ul>
 <li>OpenLayers' <code>renderPolygonGeometry</code> handles fill, stroke and text only. An <code>image</code> style attached to a Polygon is <strong>silently dropped</strong> — no render, no warning. Give it a <code>geometry</code> function returning the polygon's interior point.</li>

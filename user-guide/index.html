@@ -2214,12 +2214,14 @@
 <h2 id="navigating-the-map">Navigating the map<a class="headerlink" href="#navigating-the-map" title="Permanent link">&para;</a></h2>
 <p>Use your mouse (desktop) or fingers (mobile) to pan and zoom. The map shows:</p>
 <ul>
-<li><strong>Playground polygons</strong> — coloured outlines of playground areas, colour-coded by mapping detail (see below)</li>
-<li><strong>Cluster rings</strong> — at lower zoom levels, nearby playgrounds are grouped into ring indicators showing counts</li>
+<li><strong>Green circles</strong> — at lower zoom levels, nearby playgrounds are grouped into a circle showing how many there are</li>
+<li><strong>Green pins</strong> — zoom in and every playground gets its own pin; a camera on the pin means there is a photo, and a small lock means the playground is not public (private, or for customers only)</li>
+<li><strong>The selected playground's outline</strong> — once you open a playground, its area is outlined on the map</li>
 </ul>
+<p>This is the default view, made for finding a place to play. If you add data to OpenStreetMap, you can switch on <a href="#mapping-detail-colours">mapping detail</a> instead.</p>
 <p>Click or tap any playground to open its detail panel.</p>
 <h2 id="mapping-detail-colours">Mapping detail colours<a class="headerlink" href="#mapping-detail-colours" title="Permanent link">&para;</a></h2>
-<p>Each playground is colour-coded to show how much of it has been mapped in OpenStreetMap:</p>
+<p>Mapping detail is off by default. Switch it on with the <strong>bar-chart button</strong> next to the info and filter buttons (on phones and desktop alike) and turn on <strong>Show mapping detail</strong>. The map then shows each playground's area, colour-coded by how much of it has been mapped in OpenStreetMap, and the circles split into coloured segments:</p>
 <table>
 <thead>
 <tr>
@@ -2229,19 +2231,21 @@
 </thead>
 <tbody>
 <tr>
-<td>Green</td>
+<td>Light green</td>
 <td>Detailed — mapped play equipment <strong>and</strong> at least one detail (surface, opening hours, or access)</td>
 </tr>
 <tr>
-<td>Orange</td>
+<td>Dark green</td>
 <td>Basic — one of the two, not both</td>
 </tr>
 <tr>
-<td>Red</td>
+<td>Slate grey</td>
 <td>No details yet — the playground exists in OSM but carries no equipment and no details</td>
 </tr>
 </tbody>
 </table>
+<p>With mapping detail on, the playground panel also shows the playground's mapping-detail badge, and the nearby list colours its dots by mapping detail; with it off, neither appears.</p>
+<p>Your choice is remembered in this browser. To send someone a link that opens with mapping detail on — say, to a fellow mapper — add <code>?detail=1</code> to the address (for example <code>…/fulda?detail=1</code>), or use the share button on a playground while mapping detail is on: the link it copies includes it. Opening such a link does not change the other person's own setting; <code>?detail=0</code> does the opposite.</p>
 <p>Play equipment means slides, swings, climbing frames and the like, plus ball courts. A bench or picnic table on its own does not make a playground "basic" — those are useful to know about, but they say nothing about whether there is anything to play on.</p>
 <p>A camera glyph marks playgrounds that also have a photo. Photos are a bonus, not part of the rating — a playground with everything mapped except a picture still counts as detailed.</p>
 <p>The colours describe the OSM data, not the real-world quality of the playground. The lowest step means nobody has mapped it yet, which is an invitation to help rather than a warning.</p>
@@ -2357,7 +2361,7 @@
 <p>The third row is by far the most common. Accessibility tagging is patchy in OpenStreetMap and tends to exist only where a mapper has walked the site with it in mind, so entire regions can show nothing at all. That is a gap in the map, not a finding about the playgrounds.</p>
 <p><strong>Please check before relying on it.</strong> Everything above reflects what mappers recorded. It is not a substitute for looking at the playground, and "usable with assistance" covers a wide range of ability. If you find a playground tagged wrongly — in either direction — the <strong>Edit on MapComplete</strong> link in the detail panel opens the playground in an editor.</p>
 <h3 id="mapping-detail-filter">Mapping detail filter<a class="headerlink" href="#mapping-detail-filter" title="Permanent link">&para;</a></h3>
-<p>The <strong>Erfasste Details</strong> section lets you show or hide playgrounds by how much of them is mapped:</p>
+<p>The mapping-detail button (not the filter panel) lets you show or hide playgrounds by how much of them is mapped:</p>
 <table>
 <thead>
 <tr>
@@ -2367,20 +2371,21 @@
 </thead>
 <tbody>
 <tr>
-<td><strong>detailliert</strong> (green)</td>
+<td><strong>detailed</strong> (light green)</td>
 <td>Mapped play equipment <strong>and</strong> at least one detail (surface, opening hours, or access)</td>
 </tr>
 <tr>
-<td><strong>grundlegend</strong> (orange)</td>
+<td><strong>basic</strong> (dark green)</td>
 <td>One of the two, not both</td>
 </tr>
 <tr>
-<td><strong>keine Details</strong> (red)</td>
+<td><strong>no details yet</strong> (slate grey)</td>
 <td>Neither</td>
 </tr>
 </tbody>
 </table>
-<p>All three states are shown by default. Deactivate a state to hide those playgrounds — for example, uncheck <strong>Missing</strong> and <strong>Partial</strong> to see only well-documented playgrounds, or uncheck <strong>Complete</strong> and <strong>Partial</strong> to find playgrounds still needing OSM survey work.</p>
+<p>All three states are shown by default. Deactivate a state to hide those playgrounds — for example, uncheck <strong>no details yet</strong> and <strong>basic</strong> to see only well-documented playgrounds, or uncheck <strong>detailed</strong> and <strong>basic</strong> to find playgrounds still needing OSM survey work.</p>
+<p>These choices only apply while mapping detail is switched on. Switch it off and every playground is shown again; switch it back on and your choices return.</p>
 <h2 id="playground-detail-panel">Playground detail panel<a class="headerlink" href="#playground-detail-panel" title="Permanent link">&para;</a></h2>
 <p>Click any playground to open its detail panel. The panel shows:</p>
 <ul>
@@ -2405,6 +2410,7 @@
 <p>Themes come straight from the <code>playground:theme</code> tag in OpenStreetMap — you can add or correct one via the "Contribute data" link. Themes are shown only in the detail panel, not on the map.</p>
 <h2 id="standalone-pitches-layer">Standalone pitches layer<a class="headerlink" href="#standalone-pitches-layer" title="Permanent link">&para;</a></h2>
 <p>Enable "Standalone pitches" in the filter panel's Layers section to see sports pitches that are not part of any playground (football fields, basketball courts, skate parks, etc.).</p>
+<p>Each pitch gets a white pin with a green rim and a symbol for its sport — football, basketball, tennis, table tennis, volleyball, skating, riding, chess, cycling, archery, athletics, or a generic flag — so pitches are easy to tell apart from the solid green playground pins.</p>
 <h2 id="deeplinks">Deeplinks<a class="headerlink" href="#deeplinks" title="Permanent link">&para;</a></h2>
 <p>Each playground has a unique URL. When you open a playground, the URL bar updates to include a hash like <code>#W37808214</code>. Share that URL to link directly to a specific playground.</p>
 <h2 id="adding-or-improving-data">Adding or improving data<a class="headerlink" href="#adding-or-improving-data" title="Permanent link">&para;</a></h2>
