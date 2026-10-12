@@ -58,9 +58,14 @@ export function matchesFilters(props, filters) {
     return true;
 }
 
-/** Returns true if any filter (including deactivated completeness states) is active. */
+/**
+ * Returns true if any filter (including deactivated completeness states) is
+ * active. `standalonePitches` is a layer toggle, not a filter — it adds a
+ * layer rather than narrowing the playgrounds — so it does not count, the same
+ * as in activeFilterCount (#932).
+ */
 export function hasActiveFilters(filters) {
-    const { showComplete, showPartial, showMissing, ...rest } = filters;
+    const { showComplete, showPartial, showMissing, standalonePitches, ...rest } = filters;
     return Object.values(rest).some(Boolean)
         || !showComplete || !showPartial || !showMissing;
 }

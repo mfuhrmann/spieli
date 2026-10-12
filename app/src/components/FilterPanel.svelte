@@ -4,8 +4,24 @@
   import { Filter, Droplets, Baby, Accessibility, Armchair, UtensilsCrossed, Home, RectangleHorizontal, Goal, CircleDot, Lock, Layers, BarChart3, ShieldCheck, Dog, Sun, Sparkles } from 'lucide-svelte';
   import { COMPLETENESS_PALETTE } from '../lib/completenessPalette.js';
 
+  import { tick } from 'svelte';
+
   let open = false;
   let wrap;
+  let dropdown;
+  let maxHeight = null;
+
+  // Fill the space between the button and the bottom of the window instead
+  // of a fixed list height, so the list only scrolls when it really does not
+  // fit (#932). Measured, not hardcoded: the button sits at a different
+  // height on phones, where the controls stack.
+  async function fitToViewport() {
+    await tick();
+    if (!dropdown) return;
+    const top = dropdown.getBoundingClientRect().top;
+    maxHeight = Math.max(160, window.innerHeight - top - 16);
+  }
+  $: if (open) fitToViewport();
 
   function onWindowClick(e) {
     if (open && wrap && !e.composedPath().includes(wrap)) open = false;
@@ -59,7 +75,7 @@
   }
 </script>
 
-<svelte:window onclick={onWindowClick} />
+<svelte:window onclick={onWindowClick} onresize={() => open && fitToViewport()} />
 
 <div class="filter-container" bind:this={wrap}>
   <button
@@ -77,7 +93,7 @@
   </button>
 
   {#if open}
-    <div class="filter-dropdown">
+    <div class="filter-dropdown" bind:this={dropdown} style={maxHeight ? `max-height: ${maxHeight}px` : ''}>
       <div class="dropdown-header">
         <span class="dropdown-title">{$_('filter.title')}</span>
         {#if active}
@@ -191,6 +207,8 @@
     z-index: 300;
     animation: fadeIn 0.15s ease-out;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
   }
 
   @keyframes fadeIn {
@@ -202,6 +220,12 @@
       opacity: 1;
       transform: translateY(0);
     }
+  }
+
+  .dropdown-header,
+  .completeness-section,
+  .layer-section {
+    flex-shrink: 0;
   }
 
   .dropdown-header {
@@ -233,7 +257,8 @@
 
   .filter-list {
     padding: 8px 0;
-    max-height: 320px;
+    flex: 1 1 auto;
+    min-height: 0;
     overflow-y: auto;
   }
 
