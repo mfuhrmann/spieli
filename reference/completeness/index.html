@@ -1718,6 +1718,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#hints-in-the-panel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hints in the panel
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#photos-are-not-a-criterion" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2048,6 +2059,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#hints-in-the-panel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hints in the panel
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#photos-are-not-a-criterion" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2208,6 +2230,40 @@
 </table>
 <p>The identifiers <code>complete</code> / <code>partial</code> / <code>missing</code> are wire and storage values — they appear in API responses, in <code>playground_stats</code>, and in the <code>filterStore</code> keys. They deliberately differ from the labels shown to users; renaming them would break federation between backends on different versions.</p>
 <p>How the three states are coloured is described in <a href="#colours">Colours</a> below; every surface reads the same palette module, so the legend, the polygons and the ring arcs cannot disagree.</p>
+<h2 id="hints-in-the-panel">Hints in the panel<a class="headerlink" href="#hints-in-the-panel" title="Permanent link">&para;</a></h2>
+<p>With mapping detail on, <code>PlaygroundPanel</code> shows a line under the badge naming the missing input (#919), from <code>mappingDetailHintKey()</code> in <code>completeness.js</code>, which reads the same <code>mappingDetailInputs()</code> the rule does — the hint and the badge cannot disagree:</p>
+<table>
+<thead>
+<tr>
+<th>Badge</th>
+<th>Missing</th>
+<th>Hint (<code>mappingDetail.nextStep.*</code>)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>no details yet</td>
+<td>both</td>
+<td>One piece of play equipment or the surface makes it "basic", both make it "detailed".</td>
+</tr>
+<tr>
+<td>basic</td>
+<td>equipment</td>
+<td>Only the play equipment is missing for "detailed".</td>
+</tr>
+<tr>
+<td>basic</td>
+<td>info</td>
+<td>Only the surface or the opening hours are missing for "detailed".</td>
+</tr>
+<tr>
+<td>detailed</td>
+<td>–</td>
+<td><em>(none)</em></td>
+</tr>
+</tbody>
+</table>
+<p>Each is followed by a link to this playground in MapComplete. Surface is named before opening hours on purpose: it can be checked on site and is unambiguous, while many playgrounds legitimately have no opening hours — the hint must not invite invented ones. By the rule's design, once one device is mapped there is no equipment hint even if more are missing, and "detailed" does not mean complete.</p>
 <h2 id="photos-are-not-a-criterion">Photos are not a criterion<a class="headerlink" href="#photos-are-not-a-criterion" title="Permanent link">&para;</a></h2>
 <p>A photo (<code>panoramax</code> / <code>panoramax:*</code>, <code>wikimedia_commons</code>, or an <code>image</code> link on a Wikimedia/Wikipedia host) is <strong>not</strong> an input to the state.</p>
 <p>It used to be: the old rule required all three of photo, equipment and info for the top state. Photo tags are rare in OSM, so that gated entire regions out of it — Hessen sat at 87 of 8802 playgrounds (1.0%) in the top bucket, while a well-photographed region reached 8.0% under the identical rule. A playground with twelve mapped devices plus surface and access stayed in the middle state indefinitely because nobody had uploaded a picture, which judged the mapper rather than the map (<a href="https://github.com/mfuhrmann/spieli/issues/733">#733</a>).</p>
