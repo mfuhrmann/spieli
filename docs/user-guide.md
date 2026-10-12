@@ -136,6 +136,8 @@ Themes come straight from the `playground:theme` tag in OpenStreetMap — you ca
 
 Enable "Standalone pitches" in the filter panel's Layers section to see sports pitches that are not part of any playground (football fields, basketball courts, skate parks, etc.).
 
+Each pitch gets a white pin with a green rim and a football, so pitches are easy to tell apart from the solid green playground pins.
+
 ## Deeplinks
 
 Each playground has a unique URL. When you open a playground, the URL bar updates to include a hash like `#W37808214`. Share that URL to link directly to a specific playground.

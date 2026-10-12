@@ -23,6 +23,7 @@
   import { attachTieredOrchestrator } from '../lib/tieredOrchestrator.js';
   import { regionFitPadding } from '../lib/playgroundHelpers.js';
   import { equipmentLayerStyleFn } from '../lib/vectorStyles.js';
+  import { pitchPinFor } from '../lib/finderStyle.js';
   import { debounce } from '../lib/utils.js';
   import { mapStore } from '../stores/map.js';
   import { filterStore, effectiveFilterStore } from '../stores/filters.js';
@@ -200,7 +201,13 @@
       pitchLayer = new VectorLayer({
         source: pitchSource,
         zIndex: 9,
-        style: equipmentLayerStyleFn,
+        // The pitch's own shape plus a pin, so a pitch is findable before
+        // its polygon is big enough to spot.
+        style: feature => {
+          const base = equipmentLayerStyleFn(feature);
+          const pin = pitchPinFor(feature);
+          return pin ? (base ? [base, pin] : pin) : base;
+        },
         properties: { kind: 'overlay' },
       });
       map.addLayer(pitchLayer);

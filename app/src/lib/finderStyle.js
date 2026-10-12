@@ -35,13 +35,18 @@ const PIN_POINTER = 8;     // tip distance below the disc's edge
 const PIN_SPREAD  = 0.55;  // half-angle (rad) where the pointer leaves the disc
 const PAD         = 3;     // room for the casing outside the shape
 
-// Casing, then white border, then fill: the fill covers the inner half of
-// both strokes, leaving ~1 px of casing outside ~1.5 px of white.
-function paintShape(ctx, tracePath) {
+// Casing, then border, then fill: the fill covers the inner half of both
+// strokes, leaving ~1 px of casing outside ~1.5 px of border.
+const SOLID   = { casing: FINDER.casing, border: FINDER.border, fill: FINDER.fill };
+// Pitches invert it — white body, emerald rim — so they read as "something
+// else to play on", secondary to the solid playground pins.
+const OUTLINE = { casing: FINDER.casing, border: FINDER.fill, fill: FINDER.border };
+
+function paintShape(ctx, tracePath, colors = SOLID) {
   ctx.lineJoin = 'round';
-  tracePath(); ctx.strokeStyle = FINDER.casing; ctx.lineWidth = 5; ctx.stroke();
-  tracePath(); ctx.strokeStyle = FINDER.border; ctx.lineWidth = 3; ctx.stroke();
-  tracePath(); ctx.fillStyle   = FINDER.fill;   ctx.fill();
+  tracePath(); ctx.strokeStyle = colors.casing; ctx.lineWidth = 5; ctx.stroke();
+  tracePath(); ctx.strokeStyle = colors.border; ctx.lineWidth = 3; ctx.stroke();
+  tracePath(); ctx.fillStyle   = colors.fill;   ctx.fill();
 }
 
 function prepareCanvas(canvas, w, h, pixelRatio) {
@@ -127,13 +132,7 @@ function drawLockBadge(ctx) {
 
 function drawPin(canvas, photo, restricted, pixelRatio) {
   const ctx = prepareCanvas(canvas, PIN_W, PIN_H, pixelRatio);
-  const down = Math.PI / 2;
-  paintShape(ctx, () => {
-    ctx.beginPath();
-    ctx.arc(PIN_CX, PIN_CY, PIN_RADIUS, down + PIN_SPREAD, down - PIN_SPREAD + Math.PI * 2);
-    ctx.lineTo(PIN_CX, PIN_TIP_Y);
-    ctx.closePath();
-  });
+  paintShape(ctx, () => tracePinPath(ctx));
 
   if (photo) {
     const s = 0.58; // 24-unit glyph → ~14 px
@@ -166,6 +165,66 @@ function pinBitmap(photo, restricted, pixelRatio) {
     pinCache.set(key, canvas);
   }
   return canvas;
+}
+
+// ── Pitch pin ────────────────────────────────────────────────────────────────
+// Standalone pitches (the optional "pitches outside playgrounds" layer) get
+// the same pin outline with a ball inside, so they are findable without
+// zooming in to spot a small polygon. The polygon still draws underneath.
+
+let pitchCanvas = null;
+let pitchCanvasRatio = 0;
+
+function tracePinPath(ctx) {
+  const down = Math.PI / 2;
+  ctx.beginPath();
+  ctx.arc(PIN_CX, PIN_CY, PIN_RADIUS, down + PIN_SPREAD, down - PIN_SPREAD + Math.PI * 2);
+  ctx.lineTo(PIN_CX, PIN_TIP_Y);
+  ctx.closePath();
+}
+
+function pitchBitmap(pixelRatio) {
+  if (pitchCanvas && pitchCanvasRatio === pixelRatio) return pitchCanvas;
+  pitchCanvas = document.createElement('canvas');
+  pitchCanvasRatio = pixelRatio;
+  const ctx = prepareCanvas(pitchCanvas, PIN_W, PIN_H, pixelRatio);
+  paintShape(ctx, () => tracePinPath(ctx), OUTLINE);
+  // Football: ring, filled centre pentagon, five seams out to the ring.
+  ctx.strokeStyle = FINDER.fill;
+  ctx.fillStyle   = FINDER.fill;
+  ctx.lineWidth   = 1.4;
+  ctx.beginPath(); ctx.arc(PIN_CX, PIN_CY, 6.5, 0, Math.PI * 2); ctx.stroke();
+  const corner = i => -Math.PI / 2 + i * (Math.PI * 2 / 5);
+  ctx.beginPath();
+  for (let i = 0; i < 5; i++) {
+    const x = PIN_CX + Math.cos(corner(i)) * 2.8, y = PIN_CY + Math.sin(corner(i)) * 2.8;
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+  ctx.fill();
+  for (let i = 0; i < 5; i++) {
+    ctx.beginPath();
+    ctx.moveTo(PIN_CX + Math.cos(corner(i)) * 2.8, PIN_CY + Math.sin(corner(i)) * 2.8);
+    ctx.lineTo(PIN_CX + Math.cos(corner(i)) * 6.5, PIN_CY + Math.sin(corner(i)) * 6.5);
+    ctx.stroke();
+  }
+  return pitchCanvas;
+}
+
+function renderPitchPin(pixelCoords, state) {
+  const pixelRatio = state.pixelRatio || 1;
+  const bitmap = pitchBitmap(pixelRatio);
+  const points = Array.isArray(pixelCoords[0]) ? pixelCoords : [pixelCoords];
+  for (const [x, y] of points) {
+    state.context.drawImage(bitmap, x - PIN_CX, y - PIN_TIP_Y, PIN_W, PIN_H);
+  }
+}
+
+/** Pin for a standalone pitch; null for anything that is not a pitch. */
+export const pitchPinStyle = new Style({ geometry: interiorPoints, renderer: renderPitchPin, zIndex: 2 });
+
+export function pitchPinFor(feature) {
+  return feature.get('leisure') === 'pitch' ? pitchPinStyle : null;
 }
 
 function drawPinAt(ctx, [x, y], photo, restricted, pixelRatio) {

@@ -116,6 +116,12 @@ While mapping detail is off, playgrounds SHALL be drawn without any completeness
 - **THEN** its pin carries a lock badge at its upper right, in addition to any photo glyph
 - **AND** a single-playground cluster pin carries no lock, because cluster buckets have no access information
 
+#### Scenario: Standalone pitches get a pin
+
+- **WHEN** the "pitches outside playgrounds" layer is switched on
+- **THEN** every standalone pitch renders its shape plus a pin at its interior point — the playground pin's outline inverted (white body, emerald rim) with a football glyph — in both modes, since the layer is not a mapping-detail view
+- **AND** non-pitch features of that layer get no pin
+
 #### Scenario: Selected playground shows its extent
 
 - **WHEN** mapping detail is off and a playground is selected

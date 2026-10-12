@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { finderPlaygroundStyle, finderClusterStyleFn } from './finderStyle.js';
+import { finderPlaygroundStyle, finderClusterStyleFn, pitchPinFor, pitchPinStyle } from './finderStyle.js';
 import { clusterRingStyleFn } from './clusterStyle.js';
 
 const feat = (props) => ({ get: (k) => props[k], getProperties: () => props });
@@ -28,6 +28,13 @@ const feat = (props) => ({ get: (k) => props[k], getProperties: () => props });
 // 4. Finder cluster style is distinct from the completeness ring style
 {
   assert.notEqual(finderClusterStyleFn(feat({ count: 5 })), clusterRingStyleFn(feat({ count: 5 })));
+}
+
+// 5. Pitch pins only for pitches
+{
+  assert.equal(pitchPinFor(feat({ leisure: 'pitch' })), pitchPinStyle);
+  assert.equal(pitchPinFor(feat({ leisure: 'fitness_station' })), null);
+  assert.equal(pitchPinFor(feat({ playground: 'swing' })), null);
 }
 
 console.log('finderStyle tests passed.');
