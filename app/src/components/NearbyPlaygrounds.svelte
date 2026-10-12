@@ -5,12 +5,14 @@
   import { selection } from '../stores/selection.js';
   import { mapStore } from '../stores/map.js';
   import { nearbyItemCompleteness } from '../lib/completeness.js';
-  import { COMPLETENESS_BASE } from '../lib/completenessPalette.js';
+  import { COMPLETENESS_BASE, FINDER } from '../lib/completenessPalette.js';
+  import { mappingDetail } from '../stores/mappingDetail.js';
 
   const detailVars =
     `--detail-complete: ${COMPLETENESS_BASE.complete};` +
     `--detail-partial: ${COMPLETENESS_BASE.partial};` +
-    `--detail-missing: ${COMPLETENESS_BASE.missing};`;
+    `--detail-missing: ${COMPLETENESS_BASE.missing};` +
+    `--finder: ${FINDER.fill};`;
   import { fetchPlaygroundByOsmId } from '../lib/api.js';
   import { _, locale } from 'svelte-i18n';
   import { fitViewToSelection } from '../lib/playgroundHelpers.js';
@@ -119,14 +121,17 @@
   {:else}
     <ul class="nearby-list" style={detailVars}>
       {#each items.slice(0, 5) as item}
-        {@const detail = nearbyItemCompleteness(item)}
+        <!-- With mapping detail off the dot takes the map's marker colour
+             instead of a completeness colour (#924). -->
+        {@const detail = $mappingDetail ? nearbyItemCompleteness(item) : 'finder'}
         <li>
           <button class="nearby-item" onclick={() => selectSuggestion(item)}>
             <!-- No class when the backend sent no value: the dot keeps its
                  space but stays blank rather than showing a guess. -->
             <span class="dot" class:dot-complete={detail === 'complete'}
                   class:dot-partial={detail === 'partial'}
-                  class:dot-missing={detail === 'missing'}></span>
+                  class:dot-missing={detail === 'missing'}
+                  class:dot-finder={detail === 'finder'}></span>
             <!-- OSM name → region language; the placeholder is interface text. -->
             <span class="nearby-name" lang={item.name ? regionLang : $locale}>
               {item.name || $_('nearby.unknownName')}
@@ -200,6 +205,7 @@
   .dot-complete { background: var(--detail-complete); }
   .dot-partial  { background: var(--detail-partial); }
   .dot-missing  { background: var(--detail-missing); }
+  .dot-finder   { background: var(--finder); }
 
   .nearby-name {
     flex: 1;

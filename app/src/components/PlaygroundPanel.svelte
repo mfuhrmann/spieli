@@ -353,7 +353,9 @@
     partial:  'mappingDetail.basic',
     missing:  'mappingDetail.noDetails',
   };
-  $: completenessLevel = attr ? playgroundCompleteness(attr) : null;
+  // Only while mapping detail is on: in the finder view the badge would bring
+  // back exactly the data-quality reading the view leaves out (#924).
+  $: completenessLevel = attr && $mappingDetail ? playgroundCompleteness(attr) : null;
   $: completeness = completenessLevel
     ? {
         key: MAPPING_DETAIL_KEY[completenessLevel],

@@ -106,6 +106,17 @@ test.describe('mapping detail control', () => {
   });
 });
 
+test.describe('playground panel', () => {
+  test('mapping-detail badge only with mapping detail on', async ({ page }) => {
+    await load(page, `/#W${OSM_ID}`);
+    const panel = page.locator('aside.info-panel');
+    await expect(panel).toBeVisible({ timeout: 8000 });
+    await expect(panel.locator('.detail-dot')).toHaveCount(0);
+    await switchDetail(page, true);
+    await expect(panel.locator('.detail-dot')).toHaveCount(1);
+  });
+});
+
 test.describe('?detail link parameter', () => {
   test('detail=1 turns it on for the load without changing the stored choice', async ({ page }) => {
     await load(page, `/?detail=1#W${OSM_ID}`);

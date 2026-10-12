@@ -115,6 +115,14 @@ While mapping detail is off, playgrounds SHALL be drawn without any completeness
 - **WHEN** mapping detail is off and a playground is selected
 - **THEN** its polygon is outlined in the neutral palette beneath its pin
 
+#### Scenario: No mapping-detail reading outside the map either
+
+- **WHEN** mapping detail is off and a playground's detail panel is open
+- **THEN** the panel shows no detailed / basic / no-details-yet badge
+- **AND** the nearby-playgrounds list marks entries in the finder colour rather than by completeness
+- **WHEN** mapping detail is on
+- **THEN** the badge and the completeness dots are shown as before
+
 #### Scenario: Mapping detail on is unchanged
 
 - **WHEN** mapping detail is on
