@@ -60,7 +60,7 @@ The pitch panel SHALL show the pitch's title (OSM name, else a label for its spo
 
 ### Requirement: Pitch deeplinks
 
-A selected pitch SHALL be shareable as `#P<osm_id>` in standalone mode. Opening such a link SHALL load the pitch through `get_pitch(osm_id)`, switch the pitch layer on, select the pitch and frame it. In hub mode a `#…/P<osm_id>` hash SHALL be ignored without error.
+A selected pitch SHALL be shareable as `#P<osm_id>` in standalone mode. Opening such a link — or its slug form `#<slug>/P<osm_id>`, accepted like the playground slug form — SHALL load the pitch through `get_pitch(osm_id)`, switch the pitch layer on, select the pitch and frame it. In hub mode a pitch hash SHALL be ignored without error.
 
 #### Scenario: Shared pitch link
 

@@ -164,6 +164,14 @@ test.describe('#P links', () => {
     await expect(page.locator('.layer-section input[type="checkbox"]')).toBeChecked();
   });
 
+  test('the slug form also restores in standalone, like playground links', async ({ page }) => {
+    await injectApiConfig(page);
+    await stubApiRoutes(page);
+    await stubPitches(page);
+    await page.goto('/#irrelevant-slug/P501');
+    await expect(page.locator('aside.pitch-panel')).toBeVisible({ timeout: 8000 });
+  });
+
   test('an unknown pitch opens the map without a panel', async ({ page }) => {
     await injectApiConfig(page);
     await stubApiRoutes(page);

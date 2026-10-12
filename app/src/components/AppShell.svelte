@@ -151,11 +151,12 @@
     const parsed = parseHash(window.location.hash);
     if (!parsed) { hashRestored = true; return; }
 
-    // Pitch links (#934). Only standalone has a pitch layer, so a hub (or a
-    // slugged) pitch link is ignored and the map opens normally.
+    // Pitch links (#934). Only standalone has a pitch layer, so in the hub a
+    // pitch link is ignored and the map opens normally. Standalone accepts the
+    // slug form too, as it does for playgrounds (the slug is not checked).
     if (parsed.kind === 'pitch') {
       hashRestored = true;
-      if (resolveSlugToBackendUrl || parsed.slug) return;
+      if (resolveSlugToBackendUrl) return;
       await restorePitch(parsed.osmId);
       return;
     }
