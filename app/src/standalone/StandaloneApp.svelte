@@ -256,8 +256,13 @@
         // while it is off (#924).
         const unsubFilters = effectiveFilterStore.subscribe(filters => {
           const { standalonePitches: _sp, ...cf } = filters;
-          clusterFilterFingerprint = JSON.stringify(cf);
+          const fingerprint = JSON.stringify(cf);
+          // Only refetch when the filters that reach the server changed: toggling
+          // mapping detail with nothing hidden, or the pitch layer, emits here too.
+          const changed = fingerprint !== clusterFilterFingerprint;
+          clusterFilterFingerprint = fingerprint;
           if (!filterSubReady) { filterSubReady = true; return; }
+          if (!changed) return;
           if (get(activeTierStore) === 'cluster') orchestrator.rerun();
         });
         const baseDetach = orchestrator.detach;

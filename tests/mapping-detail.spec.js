@@ -83,6 +83,19 @@ test.describe('mapping detail control', () => {
     await req;
   });
 
+  test('toggling mapping detail with nothing hidden does not refetch', async ({ page }) => {
+    const first = page.waitForRequest(/\/rpc\/get_playground_clusters/);
+    await load(page, '/', { clusterMaxZoom: 20 });
+    await first;
+    await page.waitForTimeout(600); // let the initial tier fetch settle
+    let refetches = 0;
+    page.on('request', r => { if (r.url().includes('/rpc/get_playground_clusters')) refetches++; });
+    await switchDetail(page, true);
+    await switchDetail(page, false);
+    await page.waitForTimeout(800); // past the orchestrator's 300 ms debounce
+    expect(refetches).toBe(0);
+  });
+
   test('clicking a pin opens the playground', async ({ page }) => {
     await load(page); // polygon tier at every zoom (helpers default)
     // Wait for the polygon source, then click just above the pin's tip,

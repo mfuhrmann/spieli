@@ -311,8 +311,13 @@
       // detail is off, and toggling it re-derives the macro aggregates (#924).
       const unsubFilters = effectiveFilterStore.subscribe(filters => {
         const { standalonePitches: _sp, ...cf } = filters;
-        clusterFilterFingerprint = JSON.stringify(cf);
+        const fingerprint = JSON.stringify(cf);
+        // Only refetch when the filters that reach the server changed: toggling
+        // mapping detail with nothing hidden, or the pitch layer, emits here too.
+        const changed = fingerprint !== clusterFilterFingerprint;
+        clusterFilterFingerprint = fingerprint;
         if (!filterSubReady) { filterSubReady = true; return; }
+        if (!changed) return;
         // Both the cluster and macro tiers re-derive against the active
         // filter — the polygon tier filters client-side and needs no rerun.
         const tier = get(activeTierStore);
