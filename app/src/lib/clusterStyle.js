@@ -8,6 +8,7 @@
 // rounded to tenths → ~400 distinct shapes at the upper bound.
 
 import Style from 'ol/style/Style.js';
+import { hidpiStyleOptions } from './hidpiRenderer.js';
 import { COMPLETENESS_BASE, RING_CASING } from './completenessPalette.js';
 
 // Ring segment colours come from the shared mapping-detail palette, so the
@@ -36,7 +37,7 @@ export function radiusForCount(count) {
 
 // Buckets count into a small set of representative values so visual size
 // jumps are coarse but bitmap keys are few.
-function countBucket(count) {
+export function countBucket(count) {
   if (count <   10) return count;              // 1..9 exact
   if (count <  100) return Math.round(count / 10) * 10;
   if (count < 1000) return Math.round(count / 100) * 100;
@@ -173,7 +174,9 @@ function renderStackedRing(pixelCoords, state) {
 
 // The cluster-tier Style — a single reusable instance; OL invokes the
 // renderer with per-feature state (state.feature) so one Style serves all.
-const clusterStyle = new Style({ renderer: renderStackedRing });
+// The renderer draws in CSS pixels; hidpiStyleOptions scales it for the
+// screen and hit-tests it 1:1 (#935).
+const clusterStyle = new Style(hidpiStyleOptions(renderStackedRing));
 
 export function clusterRingStyleFn(_feature) {
   return clusterStyle;

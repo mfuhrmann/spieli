@@ -87,7 +87,11 @@
     "detailed": "detailed",
     "basic": "basic",
     "noDetails": "no details yet",
-    "hasPhoto": "has a photo"
+    "hasPhoto": "has a photo",
+    "toggle": "Mapping detail",
+    "show": "Show mapping detail",
+    "hint": "Colours playgrounds by how completely they are mapped in OpenStreetMap — useful if you add data to OSM.",
+    "filterTitle": "Show"
   },
   "completeness": {
     "restrictedHint": "not public"
@@ -769,5 +773,78 @@
   },
   "commons": {
     "viewSource": "View on Wikimedia Commons"
+  },
+  "pitch": {
+    "label": "Sports pitch",
+    "sportsLabel": "Sports",
+    "lightingLabel": "Lighting",
+    "accessLabel": "Access",
+    "titles": {
+      "soccer": "Football pitch",
+      "basketball": "Basketball court",
+      "tennis": "Tennis court",
+      "table_tennis": "Table tennis table",
+      "volleyball": "Volleyball court",
+      "beachvolleyball": "Beach volleyball court",
+      "skateboard": "Skate park",
+      "equestrian": "Riding arena",
+      "athletics": "Athletics track",
+      "boules": "Boules court",
+      "chess": "Outdoor chess",
+      "baseball": "Baseball field",
+      "multi": "Multi-sport pitch",
+      "generic": "Sports pitch"
+    },
+    "sports": {
+      "soccer": "Football",
+      "basketball": "Basketball",
+      "tennis": "Tennis",
+      "table_tennis": "Table tennis",
+      "volleyball": "Volleyball",
+      "beachvolleyball": "Beach volleyball",
+      "skateboard": "Skateboarding",
+      "roller_skating": "Roller skating",
+      "inlinehockey": "Inline hockey",
+      "equestrian": "Riding",
+      "athletics": "Athletics",
+      "boules": "Boules",
+      "chess": "Chess",
+      "baseball": "Baseball",
+      "multi": "Multi-sport",
+      "cycling": "Cycling",
+      "bmx": "BMX",
+      "archery": "Archery",
+      "shooting": "Shooting",
+      "handball": "Handball",
+      "ice_stock": "Ice stock sport",
+      "kick_scooter": "Kick scooter"
+    },
+    "lit": {
+      "yes": "Lit",
+      "no": "Not lit",
+      "limited": "Partly lit",
+      "times": "Lit {times}"
+    },
+    "access": {
+      "public": "Public",
+      "customers": "Customers only",
+      "members": "Members only",
+      "private": "Private"
+    },
+    "fee": {
+      "yes": "Fee",
+      "no": "Free"
+    },
+    "reservation": {
+      "required": "Booking required",
+      "recommended": "Booking recommended"
+    },
+    "hoops": "{count, plural, one {# hoop} other {# hoops}}",
+    "wheelchair": {
+      "yes": "Wheelchair accessible",
+      "limited": "Partly wheelchair accessible",
+      "no": "Not wheelchair accessible"
+    },
+    "addDetails": "Missing something? Add surface, lighting or photos in MapComplete."
   }
 }

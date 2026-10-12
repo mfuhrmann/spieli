@@ -1,6 +1,7 @@
 <script>
   import Map from './Map.svelte';
   import PlaygroundPanel from './PlaygroundPanel.svelte';
+  import PitchPanel from './PitchPanel.svelte';
   import SearchBar from './SearchBar.svelte';
   import LocateButton from './LocateButton.svelte';
   import FilterPanel from './FilterPanel.svelte';
@@ -11,16 +12,19 @@
   import NearbyPlaygrounds from './NearbyPlaygrounds.svelte';
   import DataContributionModal from './DataContributionModal.svelte';
   import CompletenessLegend from './CompletenessLegend.svelte';
+  import MappingDetailControl from './MappingDetailControl.svelte';
+  import { mappingDetail } from '../stores/mappingDetail.js';
   import BasemapCoverageNotice from './BasemapCoverageNotice.svelte';
   import { onDestroy, onMount } from 'svelte';
   import { Info, Plus, Minus, ArrowLeft } from 'lucide-svelte';
   import { _ } from 'svelte-i18n';
   import GeoJSON from 'ol/format/GeoJSON.js';
   import { mapStore } from '../stores/map.js';
-  import { selection, hasSelection } from '../stores/selection.js';
+  import { selection, hasSelection, selectedKind } from '../stores/selection.js';
   import { playgroundSourceStore } from '../stores/playgroundSource.js';
   import { parseHash } from '../lib/deeplink.js';
-  import { fetchPlaygroundByOsmId } from '../lib/api.js';
+  import { fetchPlaygroundByOsmId, fetchPitchByOsmId } from '../lib/api.js';
+  import { filterStore } from '../stores/filters.js';
   import { fitViewToSelection } from '../lib/playgroundHelpers.js';
   import { impressumUrl, privacyUrl, mapMinZoom } from '../lib/config.js';
 
@@ -124,10 +128,40 @@
   let warnedHydrationFailed = false;
   const geojsonFormat = new GeoJSON();
 
+  // Load the linked pitch on its own (the pitch layer may be off, or below
+  // its minimum zoom), switch the layer on so its pin and neighbours show,
+  // select it and frame it. A miss or an old backend just leaves the map.
+  async function restorePitch(osmId) {
+    try {
+      const feat = await fetchPitchByOsmId(osmId, defaultBackendUrl);
+      if (!feat) return;
+      const [olFeature] = geojsonFormat.readFeatures(
+        { type: 'FeatureCollection', features: [feat] },
+        { dataProjection: 'EPSG:4326', featureProjection: 'EPSG:3857' },
+      );
+      filterStore.update(f => ({ ...f, standalonePitches: true }));
+      selection.select(olFeature, defaultBackendUrl, 'pitch');
+      const map = $mapStore;
+      if (map) fitViewToSelection(map.getView(), olFeature.getGeometry().getExtent());
+    } catch (err) {
+      console.warn('[deeplink] pitch restore failed:', err);
+    }
+  }
+
   async function tryRestoreFromHash() {
     if (hashRestored) return;
     const parsed = parseHash(window.location.hash);
     if (!parsed) { hashRestored = true; return; }
+
+    // Pitch links (#934). Only standalone has a pitch layer, so in the hub a
+    // pitch link is ignored and the map opens normally. Standalone accepts the
+    // slug form too, as it does for playgrounds (the slug is not checked).
+    if (parsed.kind === 'pitch') {
+      hashRestored = true;
+      if (resolveSlugToBackendUrl) return;
+      await restorePitch(parsed.osmId);
+      return;
+    }
 
     let candidates = playgroundSource.getFeatures();
 
@@ -450,7 +484,7 @@
           ondismiss={dismissNearby}
         />
       {/if}
-      {#if !isMobile && !$hasSelection}
+      {#if $mappingDetail && !isMobile && !$hasSelection}
         <CompletenessLegend />
       {/if}
     </div>
@@ -466,6 +500,7 @@
         >
           <Info class="h-5 w-5" />
         </button>
+        <MappingDetailControl />
         <FilterPanel />
       </div>
       <FilterChips />
@@ -493,7 +528,7 @@
       </div>
     </div>
 
-    {#if isMobile && !$hasSelection}
+    {#if $mappingDetail && isMobile && !$hasSelection}
       <div class="legend-mobile">
         <CompletenessLegend />
       </div>
@@ -509,7 +544,11 @@
 
   {#if !isMobile && $hasSelection}
     <div class="side-panel">
-      <PlaygroundPanel />
+      {#if $selectedKind === 'pitch'}
+        <PitchPanel />
+      {:else}
+        <PlaygroundPanel />
+      {/if}
     </div>
   {/if}
 
@@ -526,7 +565,11 @@
         </button>
       </div>
       <div class="mobile-detail-body" style={panelBlockTouch ? 'pointer-events: none' : ''}>
-        <PlaygroundPanel embedded={true} />
+        {#if $selectedKind === 'pitch'}
+          <PitchPanel embedded={true} />
+        {:else}
+          <PlaygroundPanel embedded={true} />
+        {/if}
       </div>
     </div>
   {/if}

@@ -9,7 +9,6 @@
 
 <script>
   import { onMount, onDestroy } from 'svelte';
-  import OpeningHours from 'opening_hours';
   import { transform } from 'ol/proj';
   import { X, Share2, Check, ChevronDown, ChevronUp, ChevronRight, Image, Package, Navigation, Star, Info, Phone, Mail, Accessibility } from 'lucide-svelte';
   import { _, locale } from 'svelte-i18n';
@@ -17,13 +16,16 @@
   import { selection } from '../stores/selection.js';
   import { mapStore } from '../stores/map.js';
   import { location } from '../stores/location.js';
+  import { mappingDetail, DETAIL_PARAM } from '../stores/mappingDetail.js';
   import { fetchPlaygroundEquipment, fetchNearbyPOIs, fetchTrees, fetchMeta } from '../lib/api.js';
   import { overlayFeaturesStore } from '../stores/overlayLayer.js';
   import { groupEquipment } from '../lib/equipmentGrouping.js';
   import { playgroundCompleteness } from '../lib/completeness.js';
+  import { openingHoursState } from '../lib/openingHours.js';
+  import { litInfo } from '../lib/pitchInfo.js';
   import { COMPLETENESS_PALETTE } from '../lib/completenessPalette.js';
-  import { poiRadiusM, appMode, mapMinZoom, regionLang, openingHoursAddress } from '../lib/config.js';
-  import { getPlaygroundTitle, getPlaygroundLocation, hasOsmName } from '../lib/playgroundHelpers.js';
+  import { poiRadiusM, appMode, mapMinZoom, regionLang } from '../lib/config.js';
+  import { getPlaygroundTitle, getPlaygroundLocation, hasOsmName, navigationUrl, isMobileUserAgent } from '../lib/playgroundHelpers.js';
   import { aggregatePlaygroundThemes, areaThemesOf, themeIcon, themeName } from '../lib/playgroundThemes.js';
   import { summarizeEquipment } from '../lib/equipmentSummary.js';
   import { cn } from '../lib/utils.js';
@@ -40,7 +42,9 @@
   export let embedded = false;
 
   // ── Derived state from selection store ────────────────────────────────────
-  $: feature     = $selection.feature;
+  // Playgrounds only: a selected pitch has its own panel (#934), and loading
+  // equipment, trees and reviews for it would be wrong.
+  $: feature     = $selection.kind === 'playground' ? $selection.feature : null;
   $: backendUrl  = $selection.backendUrl;
   $: attr        = feature ? feature.getProperties() : null;
   // An OSM name is a proper noun in the region's language; the `nearby.defaultName`
@@ -352,7 +356,9 @@
     partial:  'mappingDetail.basic',
     missing:  'mappingDetail.noDetails',
   };
-  $: completenessLevel = attr ? playgroundCompleteness(attr) : null;
+  // Only while mapping detail is on: in the finder view the badge would bring
+  // back exactly the data-quality reading the view leaves out (#924).
+  $: completenessLevel = attr && $mappingDetail ? playgroundCompleteness(attr) : null;
   $: completeness = completenessLevel
     ? {
         key: MAPPING_DETAIL_KEY[completenessLevel],
@@ -367,38 +373,6 @@
     : null;
 
   // ── Opening hours ─────────────────────────────────────────────────────────
-  function openingHoursState(ohStr, t) {
-    const fmt = d => d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
-    const dayLabel = (d, now) => {
-      if (d.toDateString() === now.toDateString()) return t('poi.today');
-      const tomorrow = new Date(now); tomorrow.setDate(now.getDate() + 1);
-      if (d.toDateString() === tomorrow.toDateString()) return t('poi.tomorrow');
-      const diff = Math.round((d - now) / 86400000);
-      if (diff <= 6) return d.toLocaleDateString(undefined, { weekday: 'long' });
-      return d.toLocaleDateString(undefined, { weekday: 'short', day: '2-digit', month: '2-digit' });
-    };
-    try {
-      const oh = new OpeningHours(ohStr, { address: openingHoursAddress });
-      const now = new Date();
-      const isOpen = oh.getState(now);
-      const next = oh.getNextChange(now);
-      if (ohStr.trim() === '24/7') return { open: true, text: t('poi.alwaysOpen') };
-      if (isOpen) {
-        const label = next
-          ? t('poi.openUntil', { values: { time: fmt(next) } })
-          : t('poi.open');
-        return { open: true, text: label };
-      }
-      if (next) return {
-        open: false,
-        text: t('poi.opensAt', { values: { day: dayLabel(next, now), time: fmt(next) } }),
-      };
-      return { open: false, text: t('poi.closed') };
-    } catch {
-      return { open: null, text: ohStr };
-    }
-  }
-
   $: openingHoursInfo = attr?.opening_hours ? openingHoursState(attr.opening_hours, $_) : null;
 
   // ── Attribute helpers ─────────────────────────────────────────────────────
@@ -411,6 +385,8 @@
     const access = attr.access ?? 'unknown';
     return $_('details.access.' + access, { default: $_('details.access.unknown') });
   })();
+
+  $: litFact = attr ? litInfo(attr.lit) : null;
 
   $: surfaceLabel = attr?.surface
     ? attr.surface.split(';').map(s => $_('details.surfaceValues.' + s.trim(), { default: s.trim() })).join(' / ')
@@ -470,7 +446,10 @@
 
   async function sharePlayground() {
     if (!attr) return;
-    const url = `${window.location.origin}${window.location.pathname}#${attr.osm_type}${attr.osm_id}`;
+    // Carry mapping detail only while it is on, so a contributor shares the
+    // view they are looking at and everyone else's links stay as before (#924).
+    const detail = $mappingDetail ? `?${DETAIL_PARAM}=1` : '';
+    const url = `${window.location.origin}${window.location.pathname}${detail}#${attr.osm_type}${attr.osm_id}`;
     try {
       if (navigator.share) {
         await navigator.share({ title: getPlaygroundTitle(attr, $_), url });
@@ -505,16 +484,16 @@
   // Rendered as a plain <a href>, not window.open(): iOS Safari silently drops a
   // geo: URL opened via window.open(url, '_blank'), while the same URL as a
   // same-tab link hands off to the maps app — as POIPanel's rows already did (#926).
-  const navIsMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(navigator.userAgent);
-  $: navigationUrl = (() => {
-    if (!attr || !Number.isFinite(centerLat) || !Number.isFinite(centerLon)) return null;
-    if (navIsMobile) {
-      const title = getPlaygroundTitle(attr, $_);
-      return `geo:${centerLat},${centerLon}?q=${centerLat},${centerLon}(${encodeURIComponent(title)})`;
-    }
-    const origin = $location ? `${$location.lat},${$location.lon}` : '';
-    return `https://www.openstreetmap.org/directions?engine=fossgis_osrm_foot&route=${origin};${centerLat},${centerLon}`;
-  })();
+  // URL rules shared with the pitch panel: lib/playgroundHelpers.js.
+  const navIsMobile = isMobileUserAgent(navigator.userAgent);
+  $: navUrl = attr
+    ? navigationUrl({
+        lat: centerLat, lon: centerLon,
+        title: getPlaygroundTitle(attr, $_),
+        mobile: navIsMobile,
+        origin: $location,
+      })
+    : null;
 </script>
 
 {#if feature && attr}
@@ -535,10 +514,10 @@
           {/if}
         </div>
         <div class="flex items-center gap-1 shrink-0">
-          {#if navigationUrl}
+          {#if navUrl}
             <a
               class="navigate-btn"
-              href={navigationUrl}
+              href={navUrl}
               target={navIsMobile ? undefined : '_blank'}
               rel={navIsMobile ? undefined : 'noopener'}
             >{$_('info.navigateHere')}</a>
@@ -561,17 +540,17 @@
           {/if}
         </div>
         <div class="flex items-center gap-1">
-          {#if navigationUrl}
+          {#if navUrl}
             <a
               class="navigate-btn"
-              href={navigationUrl}
+              href={navUrl}
               target={navIsMobile ? undefined : '_blank'}
               rel={navIsMobile ? undefined : 'noopener'}
             >{$_('info.navigateHere')}</a>
           {/if}
           <button class="panel-icon-btn shrink-0" onclick={sharePlayground} aria-label={$_('info.copyLink')}>
             {#if shareConfirmed}
-              <Check class="h-5 w-5 text-green-600" />
+              <Check class="h-5 w-5 text-primary" />
             {:else}
               <Share2 class="h-5 w-5" />
             {/if}
@@ -687,6 +666,15 @@
           <div class="fact-item">
             <span class="info-label">{$_('details.surfaceLabel')}</span>
             <span class="fact-value">{surfaceLabel}</span>
+          </div>
+        {/if}
+
+        <!-- Only when tagged: 53 of 733 Fulda playgrounds carry `lit`, so
+             "unknown" must stay silent rather than read as "not lit" (#934). -->
+        {#if litFact}
+          <div class="fact-item" data-fact="lit">
+            <span class="info-label">{$_('pitch.lightingLabel')}</span>
+            <span class="fact-value">{$_(litFact.key, litFact.values ? { values: litFact.values } : undefined)}</span>
           </div>
         {/if}
 
@@ -976,6 +964,12 @@
     color: #1f2937;
     line-height: 1.3;
     margin: 0;
+    /* The title shares its row with the action buttons and may shrink to
+       nothing; a single long word ("Mehrzweckplatz" next to "Bring mich
+       hierher") then ran underneath them. Hyphenate where the browser has a
+       dictionary for the element's lang, otherwise break inside the word. */
+    overflow-wrap: break-word;
+    hyphens: auto;
   }
 
 
@@ -1067,10 +1061,10 @@
   .action-btn--primary {
     flex: 1;
     padding: 10px 0;
-    background: #10b981;
+    background: var(--color-primary);
     color: #fff;
   }
-  .action-btn--primary:hover { background: #059669; }
+  .action-btn--primary:hover { background: var(--color-primary-hover); }
 
   .action-btn--icon {
     width: 44px;
@@ -1094,7 +1088,7 @@
     align-items: center;
     gap: 4px;
     font-size: 13px;
-    color: #10b981;
+    color: var(--color-primary);
     text-decoration: none;
     min-width: 0;
   }
@@ -1192,7 +1186,7 @@
   .status-dot {
     width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
   }
-  .status-dot--open   { background: #10b981; }
+  .status-dot--open   { background: var(--color-primary); }
   .status-dot--closed { background: #ef4444; }
 
   /* ── Stat cards grid ─────────────────────────────── */
@@ -1298,7 +1292,7 @@
   /* ── Navigation button ────────────────────────────────────────────────── */
   .navigate-btn {
     padding: 6px 12px;
-    background: #10b981;
+    background: var(--color-primary);
     color: #ffffff;
     border: none;
     border-radius: 6px;
@@ -1310,7 +1304,7 @@
     transition: background 0.15s;
   }
   .navigate-btn:hover {
-    background: #059669;
+    background: var(--color-primary-hover);
     color: #ffffff;
   }
 </style>

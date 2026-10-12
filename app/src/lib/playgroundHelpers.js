@@ -134,3 +134,27 @@ export function fitViewToSelection(view, extent, onComplete) {
         },
     });
 }
+
+const MOBILE_UA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i;
+
+/** True for phone/tablet user agents — where a `geo:` link opens a nav app. */
+export function isMobileUserAgent(ua) {
+    return MOBILE_UA.test(ua ?? '');
+}
+
+/**
+ * "Take me there" target. Mobile: a `geo:` URL the OS hands to a navigation
+ * app — render it as a same-tab `<a href>`, since iOS Safari drops a custom
+ * scheme opened via window.open (#926). Desktop: OSM walking directions, from
+ * `origin` when a GPS fix is known (OSM asks for a start point otherwise).
+ *
+ * @param {{ lat: number, lon: number, title?: string, mobile: boolean,
+ *           origin?: { lat: number, lon: number } | null }} p
+ * @returns {string | null}
+ */
+export function navigationUrl({ lat, lon, title = '', mobile, origin = null }) {
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+    if (mobile) return `geo:${lat},${lon}?q=${lat},${lon}(${encodeURIComponent(title)})`;
+    const from = origin ? `${origin.lat},${origin.lon}` : '';
+    return `https://www.openstreetmap.org/directions?engine=fossgis_osrm_foot&route=${from};${lat},${lon}`;
+}

@@ -174,8 +174,9 @@ Two policies ship together for one release: the old wildcard one **enforced**, a
 
 | Store | Role |
 |---|---|
-| `selection.js` | Currently selected playground feature + backend URL |
-| `filters.js` | Active filter state (playground filters + `standalonePitches` layer toggle) |
+| `selection.js` | Current selection — `{ feature, backendUrl, kind }`, `kind` `'playground'` or (standalone) `'pitch'` (#934). `hasSelection` = anything open; `selectedKind`; `selectedOsmId` is playground-only. Readers that only make sense for playgrounds must check `kind` |
+| `filters.js` | Active filter state (playground filters + `standalonePitches` layer toggle). Also exports `effectiveFilterStore` — the filters that actually apply, with the three mapping-detail states forced on while mapping detail is off. **Anything that fetches or draws reads `effectiveFilterStore`**; only the controls that edit filters read `filterStore`. |
+| `mappingDetail.js` | Whether mapping detail is on (#924). Default `false` — the plain "finder" map. Persisted in `localStorage` (`spieli.mappingDetail`, every access in try/catch); `?detail=1\|0` overrides it for one page load without writing it, and a manual toggle rewrites that parameter in place. Read by Map (tier styles), AppShell (legend), PlaygroundPanel (share link carries `?detail=1` while on). |
 | `overlayLayer.js` | Bridge between PlaygroundPanel and Map — carries `{ equipment[], trees[] }` |
 | `map.js` | OL map instance reference |
 | `playgroundSource.js` | Shared OL VectorSource for the polygon tier. Non-null while Map.svelte is mounted; reset to `null` on teardown. Widgets (NearbyPlaygrounds, AppShell deeplink restore) hydrate features into it on demand at any zoom — there is no separate "cluster source" store; the cluster `VectorSource` is owned by `StandaloneApp.svelte` and never published, since no widget consumes it externally. |
@@ -195,6 +196,7 @@ Two policies ship together for one release: the old wildcard one **enforced**, a
 |---|---|
 | `Map.svelte` | OL map, all layers, click/hover handlers, standalone pitch layer (moveend) |
 | `AppShell.svelte` | Top-level shell used by both modes: mounts Map, manages deeplink restore. **No keyboard handling** — there is no shortcut infrastructure here to extend. Global `keydown` listeners live in the components that own the thing being dismissed: `BottomSheet`, `Sheet`, `LegalContentModal`, `DataContributionModal` and `Map` (Escape closes the hub backend popup), plus `SearchBar`'s own combobox key handling |
+| `PitchPanel.svelte` | Detail panel for a selected standalone pitch (#934), in the playground panel's slot (side panel / `embedded` on phones): sport chips with the pin glyphs, surface, lighting, access/fee/booking, opening hours, hoops, wheelchair, operator, photos, Take me there, share (`#P<id>`), MapComplete. Display rules in `lib/pitchInfo.js` — every fact only when tagged |
 | `PlaygroundPanel.svelte` | Fetches and displays equipment/trees/POIs for selected playground; writes to `overlayFeaturesStore`; includes "Take me there" navigation button (geo: URL on mobile, OSM directions on desktop) |
 | `EquipmentList.svelte` | Renders device/fitness/pitch/bench lists inside PlaygroundPanel |
 | `NearbyPlaygrounds.svelte` | Shows nearest playgrounds to the selected one; hydrates polygon source on demand |
@@ -204,11 +206,12 @@ Two policies ship together for one release: the old wildcard one **enforced**, a
 | `CommonsGallery.svelte` | Inline Wikimedia Commons photo gallery for a playground (from `wikimedia_commons` / `image` tags); thumbnails → fullscreen lightbox with CC attribution. Fetch + URL-safety logic in `app/src/lib/commons.js` |
 | `HoverPreview.svelte` | Floating card on playground hover (desktop only) |
 | `EquipmentTooltip.svelte` | Tooltip on equipment/pitch hover |
-| `FilterPanel.svelte` | Filter dropdown; also contains "Ebenen" section for layer toggles |
+| `FilterPanel.svelte` | Filter dropdown; also contains "Ebenen" section for layer toggles. The mapping-detail states are **not** here — see `MappingDetailControl` |
+| `MappingDetailControl.svelte` | Bar-chart button next to Info/Filter (phones and desktop): mapping-detail on/off switch plus the detailed/basic/no-details filters, whose swatches double as the legend |
 | `FilterChips.svelte` | Active-filter chip bar shown below the search bar |
 | `SearchBar.svelte` | Nominatim location search |
 | `BottomSheet.svelte` | Swipeable bottom sheet used on mobile to surface PlaygroundPanel |
-| `CompletenessLegend.svelte` | Map legend explaining the mapping-detail steps and the photo glyph |
+| `CompletenessLegend.svelte` | Map legend explaining the mapping-detail steps and the photo glyph. Mounted only while mapping detail is on |
 | `DataContributionModal.svelte` | Modal prompting users to contribute data via MapComplete |
 | `LegalContentModal.svelte` | Modal for imprint / legal content fetched from `get_legal()` |
 | `LocateButton.svelte` | Button that pans map to user's GPS position; auto-locates on page load when geolocation permission is already granted |
@@ -276,6 +279,7 @@ All PostgREST calls. Key functions:
 - `fetchPlaygroundClusters(zoom, extent, baseUrl, signal)` — cluster tier (zoom ≤ 13)
 - `fetchPlaygroundsBbox(extent, baseUrl, signal)` — polygon tier (zoom > 13)
 - `fetchPlaygroundByOsmId(osmId, baseUrl, signal)` — single-feature hydration; throws on non-OK, returns `null` on legitimate miss
+- `fetchPitchByOsmId(osmId, baseUrl, signal)` — standalone pitch for `#P` links; like the above, but a 404 (pre-`get_pitch` backend) resolves to `null` with one warning
 - `fetchPlaygroundCentroids(extent, baseUrl, signal)` — server-shipped, client unused in P1 (kept for federation)
 - `fetchPlaygroundEquipment(extentEPSG3857, osmId, baseUrl)` — equipment within a playground's bbox
 - `fetchStandaloneEquipment(extentEPSG3857, baseUrl)` — pitches + equipment NOT within any playground
@@ -292,7 +296,8 @@ All PostgREST-exposed functions live in the `api` schema. See [`docs/reference/a
 - `get_playground_centroids(bbox)` — lightweight per-feature rows (federation-ready, client unused in P1)
 - `get_meta()` — federation discovery; returns `{relation_id, name, playground_count, complete, partial, missing, bbox}`
 - `get_equipment(bbox)` — equipment within a bounding box (used per selected playground)
-- `get_standalone_equipment(bbox)` — pitches + equipment outside any playground polygon
+- `get_standalone_equipment(bbox)` — pitches + equipment outside any playground polygon; properties carry every OSM tag plus the `access`/`operator` columns
+- `get_pitch(osm_id)` — single standalone pitch (same shape, same not-in-a-playground rule) for `#P` links; `null` otherwise
 - `get_trees(bbox)`, `get_pois(lat, lon, radius_m)`, `get_nearest_playgrounds(lat, lon)`
 - `get_legal(type)` — imprint / legal text fetched from the `legal_content` table
 - `get_playgrounds(relation_id)` — **deprecated** region-scoped variant; SQL `COMMENT` flags it for removal
@@ -310,6 +315,10 @@ Run `make db-apply` after modifying `api.sql` to apply changes without a full re
 make down && docker volume rm spieli_pgdata spieli_pgdata2 && make up
 ```
 This catches ordering bugs (e.g. a function referencing a table defined later in the file) that `make db-apply` on an existing volume silently passes.
+
+### Finder view (`app/src/lib/finderStyle.js`)
+
+With mapping detail off (the default, #924) `Map.svelte` swaps every tier's style: `finderClusterStyleFn` (emerald discs on the same `radiusForCount` scale; a cluster of one is a pin), `finderPlaygroundStyle(feature, selectedOsmId)` (a tip-anchored pin at each interior point — with a lock badge when `isRestrictedAccess` (access `private`/`customers`; cluster buckets carry no access, so a cluster-of-one pin never shows it) — no polygon, plus the selected playground's outline — matched by `osm_id` because tier refetches replace the feature objects) and `finderMacroRingStyleFn` in `hub/macroRingStyle.js` (health variants unchanged). `pitchPinFor` gives standalone pitches an outlined pin with a per-sport glyph (`sportGlyphs.js`, Lucide paths where Lucide has the sport) — instead of the polygon in the finder view, on top of it with mapping detail on. Canvas renderers draw in CSS pixels via `hidpiStyleOptions` (`hidpiRenderer.js`): OL hands custom renderers device-pixel coordinates on an unscaled context, but hit-tests them 1:1, so the helper scales for drawing and supplies a separate `hitDetectionRenderer`. Colours are `FINDER` in `completenessPalette.js`; the emerald fill alone is only 2.2–2.5:1 on buildings and water, so a `#065f46` casing carries the edge and haloes the white count.
 
 ### Styles (`app/src/lib/vectorStyles.js`)
 

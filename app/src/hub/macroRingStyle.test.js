@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { macroRingStyleFn, quantiseSegments } from './macroRingStyle.js';
+import { macroRingStyleFn, finderMacroRingStyleFn, quantiseSegments } from './macroRingStyle.js';
 
 // Fake OL feature: only `.get(key)` is consulted by macroRingStyleFn.
 const feat = (props) => ({ get: (k) => props[k] });
@@ -110,3 +110,17 @@ const healthy       = macroRingStyleFn(feat({}));
 }
 
 console.log('macroRingStyle.test.js OK');
+
+// --- Finder mode (mapping detail off, #924) ---
+{
+  // Health variants render the same in both modes…
+  for (const props of [{ _offline: true }, { _importing: true }, { _filteredEmpty: true }, { _degraded: true }]) {
+    assert.equal(finderMacroRingStyleFn(feat(props)), macroRingStyleFn(feat(props)), JSON.stringify(props));
+  }
+  // …healthy and can't-filter get their own neutral styles.
+  assert.notEqual(finderMacroRingStyleFn(feat({})), healthy);
+  assert.notEqual(finderMacroRingStyleFn(feat({ _cantFilter: true })), cantFilter);
+  assert.notEqual(finderMacroRingStyleFn(feat({})), finderMacroRingStyleFn(feat({ _cantFilter: true })));
+  // Precedence still holds: offline beats can't-filter.
+  assert.equal(finderMacroRingStyleFn(feat({ _offline: true, _cantFilter: true })), offline);
+}

@@ -1,3 +1,14 @@
+<script context="module">
+  // Auto-locate is a page-load action, not a mount action. On mobile AppShell
+  // unmounts the map controls while a playground is selected, so this component
+  // remounts every time the panel closes. Without this flag each remount re-ran
+  // auto-locate: the map jumped back to the GPS fix and the nearby list
+  // reopened, even when the user had been browsing another town (#925).
+  // Set before the permission check, so a permission granted later in the
+  // session (via this button) does not arm auto-locate on the next remount.
+  let autoLocateAttempted = false;
+</script>
+
 <script>
   import { fromLonLat } from 'ol/proj';
   import { mapStore } from '../stores/map.js';
@@ -16,6 +27,7 @@
   let locating = false;
   let error = '';
   let watchId = null;
+  let destroyed = false;
 
   function locate({ centerMap = true } = {}) {
     if (!navigator.geolocation) {
@@ -41,21 +53,30 @@
           $mapStore?.getView().animate({ center: coord, zoom: 16 });
         }
         if (onlocation) onlocation(latitude, longitude);
-
-        watchId = navigator.geolocation.watchPosition(
-          pos => {
-            const { latitude, longitude, accuracy } = pos.coords;
-            location.set({ lat: latitude, lon: longitude, accuracy });
-          },
-          err => {},
-          { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
-        );
+        startWatch();
       },
       err => {
         locating = false;
         error = err.code === 1 ? $_('locate.denied') : $_('locate.unavailable');
       },
       { timeout: 10000, maximumAge: 60000, enableHighAccuracy: true }
+    );
+  }
+
+  // Keep the location store fresh without touching the view.
+  function startWatch() {
+    // A fix can land after this instance was unmounted (the mobile controls
+    // are torn down while a deeplinked playground opens). A watch started then
+    // would never be cleared; the next mount resumes it instead.
+    if (destroyed) return;
+    if (watchId) navigator.geolocation.clearWatch(watchId);
+    watchId = navigator.geolocation.watchPosition(
+      pos => {
+        const { latitude, longitude, accuracy } = pos.coords;
+        location.set({ lat: latitude, lon: longitude, accuracy });
+      },
+      err => {},
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
     );
   }
 
@@ -83,6 +104,13 @@
   }
 
   onMount(async () => {
+    // Remount after the page-load attempt: only resume the watch that onDestroy
+    // cleared, and only if a fix exists, so the location dot keeps updating.
+    if (autoLocateAttempted) {
+      if (get(location) && navigator.geolocation) startWatch();
+      return;
+    }
+    autoLocateAttempted = true;
     try {
       const perm = await navigator.permissions.query({ name: 'geolocation' });
       if (perm.state !== 'granted') return;
@@ -104,6 +132,7 @@
   });
 
   onDestroy(() => {
+    destroyed = true;
     if (watchId) {
       navigator.geolocation.clearWatch(watchId);
     }

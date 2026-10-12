@@ -1,5 +1,6 @@
-import { writable } from 'svelte/store';
+import { writable, derived } from 'svelte/store';
 import { playgroundCompleteness } from '../lib/completeness.js';
+import { mappingDetail } from './mappingDetail.js';
 
 // showComplete/showPartial/showMissing default true (show all).
 // Deactivating a state hides playgrounds of that completeness.
@@ -26,6 +27,25 @@ export const defaultFilters = {
 };
 
 export const filterStore = writable({ ...defaultFilters });
+
+/**
+ * The filters that actually apply. While mapping detail is off its three
+ * show* keys are forced to `true`: a filter whose control the visitor cannot
+ * see must never hide playgrounds. The stored values are left alone, so they
+ * take effect again when mapping detail is switched back on.
+ */
+export function effectiveFilters(filters, mappingDetailOn) {
+    if (mappingDetailOn) return filters;
+    return { ...filters, showComplete: true, showPartial: true, showMissing: true };
+}
+
+// Every reader that affects what is fetched or drawn (polygon style, tier
+// refetch, hub fan-out, badge and chips) reads this, not filterStore.
+// Writers keep writing filterStore.
+export const effectiveFilterStore = derived(
+    [filterStore, mappingDetail],
+    ([$filters, $detail]) => effectiveFilters($filters, $detail),
+);
 
 /**
  * Returns true if the feature properties satisfy all active filters.
@@ -58,9 +78,14 @@ export function matchesFilters(props, filters) {
     return true;
 }
 
-/** Returns true if any filter (including deactivated completeness states) is active. */
+/**
+ * Returns true if any filter (including deactivated completeness states) is
+ * active. `standalonePitches` is a layer toggle, not a filter — it adds a
+ * layer rather than narrowing the playgrounds — so it does not count, the same
+ * as in activeFilterCount (#932).
+ */
 export function hasActiveFilters(filters) {
-    const { showComplete, showPartial, showMissing, ...rest } = filters;
+    const { showComplete, showPartial, showMissing, standalonePitches, ...rest } = filters;
     return Object.values(rest).some(Boolean)
         || !showComplete || !showPartial || !showMissing;
 }

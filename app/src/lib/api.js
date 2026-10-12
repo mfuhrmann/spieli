@@ -126,6 +126,26 @@ export async function fetchPlaygroundByOsmId(osmId, baseUrl = defaultApiBaseUrl,
     return json && json.geometry ? json : null;
 }
 
+// Single standalone pitch for a `#P<osm_id>` link (#934). Same contract as
+// fetchPlaygroundByOsmId — throws on non-OK, null on a legitimate miss —
+// except that a 404 (a backend older than get_pitch) also resolves to null,
+// with one warning, so the link just opens the map instead of failing.
+let warnedNoGetPitch = false;
+export async function fetchPitchByOsmId(osmId, baseUrl = defaultApiBaseUrl, signal) {
+    const params = new URLSearchParams({ osm_id: String(osmId) });
+    const res = await fetch(`${baseUrl}/rpc/get_pitch?${params}`, { signal });
+    if (res.status === 404) {
+        if (!warnedNoGetPitch) {
+            warnedNoGetPitch = true;
+            console.warn('[api] get_pitch not available on this backend — pitch links cannot be restored');
+        }
+        return null;
+    }
+    if (!res.ok) throw new Error(`get_pitch failed: ${res.status}`);
+    const json = await res.json();
+    return json && json.geometry ? json : null;
+}
+
 // Equipment and fixtures for a playground (bbox in EPSG:3857).
 // osmId is carried through for future query optimisation but currently unused server-side.
 export async function fetchPlaygroundEquipment(extentEPSG3857, osmId = null, baseUrl = defaultApiBaseUrl) {

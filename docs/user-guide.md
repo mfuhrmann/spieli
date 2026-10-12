@@ -6,20 +6,27 @@ spieli is a free, interactive playground map based on OpenStreetMap data. This g
 
 Use your mouse (desktop) or fingers (mobile) to pan and zoom. The map shows:
 
-- **Playground polygons** — coloured outlines of playground areas, colour-coded by mapping detail (see below)
-- **Cluster rings** — at lower zoom levels, nearby playgrounds are grouped into ring indicators showing counts
+- **Green circles** — at lower zoom levels, nearby playgrounds are grouped into a circle showing how many there are
+- **Green pins** — zoom in and every playground gets its own pin; a camera on the pin means there is a photo, and a small lock means the playground is not public (private, or for customers only)
+- **The selected playground's outline** — once you open a playground, its area is outlined on the map
+
+This is the default view, made for finding a place to play. If you add data to OpenStreetMap, you can switch on [mapping detail](#mapping-detail-colours) instead.
 
 Click or tap any playground to open its detail panel.
 
 ## Mapping detail colours
 
-Each playground is colour-coded to show how much of it has been mapped in OpenStreetMap:
+Mapping detail is off by default. Switch it on with the **bar-chart button** next to the info and filter buttons (on phones and desktop alike) and turn on **Show mapping detail**. The map then shows each playground's area, colour-coded by how much of it has been mapped in OpenStreetMap, and the circles split into coloured segments:
 
 | Colour | What it means |
 |---|---|
-| Green | Detailed — mapped play equipment **and** at least one detail (surface, opening hours, or access) |
-| Orange | Basic — one of the two, not both |
-| Red | No details yet — the playground exists in OSM but carries no equipment and no details |
+| Light green | Detailed — mapped play equipment **and** at least one detail (surface, opening hours, or access) |
+| Dark green | Basic — one of the two, not both |
+| Slate grey | No details yet — the playground exists in OSM but carries no equipment and no details |
+
+With mapping detail on, the playground panel also shows the playground's mapping-detail badge, and the nearby list colours its dots by mapping detail; with it off, neither appears.
+
+Your choice is remembered in this browser. To send someone a link that opens with mapping detail on — say, to a fellow mapper — add `?detail=1` to the address (for example `…/fulda?detail=1`), or use the share button on a playground while mapping detail is on: the link it copies includes it. Opening such a link does not change the other person's own setting; `?detail=0` does the opposite.
 
 Play equipment means slides, swings, climbing frames and the like, plus ball courts. A bench or picnic table on its own does not make a playground "basic" — those are useful to know about, but they say nothing about whether there is anything to play on.
 
@@ -87,22 +94,24 @@ The third row is by far the most common. Accessibility tagging is patchy in Open
 
 ### Mapping detail filter
 
-The **Erfasste Details** section lets you show or hide playgrounds by how much of them is mapped:
+The mapping-detail button (not the filter panel) lets you show or hide playgrounds by how much of them is mapped:
 
 | State | Meaning |
 |---|---|
-| **detailliert** (green) | Mapped play equipment **and** at least one detail (surface, opening hours, or access) |
-| **grundlegend** (orange) | One of the two, not both |
-| **keine Details** (red) | Neither |
+| **detailed** (light green) | Mapped play equipment **and** at least one detail (surface, opening hours, or access) |
+| **basic** (dark green) | One of the two, not both |
+| **no details yet** (slate grey) | Neither |
 
-All three states are shown by default. Deactivate a state to hide those playgrounds — for example, uncheck **Missing** and **Partial** to see only well-documented playgrounds, or uncheck **Complete** and **Partial** to find playgrounds still needing OSM survey work.
+All three states are shown by default. Deactivate a state to hide those playgrounds — for example, uncheck **no details yet** and **basic** to see only well-documented playgrounds, or uncheck **detailed** and **basic** to find playgrounds still needing OSM survey work.
+
+These choices only apply while mapping detail is switched on. Switch it off and every playground is shown again; switch it back on and your choices return.
 
 ## Playground detail panel
 
 Click any playground to open its detail panel. The panel shows:
 
 - Name, operator, opening hours (when mapped)
-- Surface type and size
+- Surface type and size, and lighting when it is mapped (most playgrounds do not record it yet, so nothing is shown then)
 - Status pills — completeness, data age, and (when tagged) a shade pill (Shaded / No shade), baby / toddler suitability, and wheelchair-friendly equipment (see [Wheelchair accessibility](#wheelchair-accessibility))
 - Theme highlight — a symbol for playgrounds with a theme, such as a ship or castle (see [Playground themes](#playground-themes))
 - Equipment list — devices, pitches, benches, and their sub-attributes, including each item's surface when tagged
@@ -126,6 +135,10 @@ Themes come straight from the `playground:theme` tag in OpenStreetMap — you ca
 ## Standalone pitches layer
 
 Enable "Standalone pitches" in the filter panel's Layers section to see sports pitches that are not part of any playground (football fields, basketball courts, skate parks, etc.).
+
+Each pitch gets a white pin with a green rim and a symbol for its sport — football, basketball, tennis, table tennis, volleyball, skating, riding, chess, cycling, archery, athletics, or a generic flag — so pitches are easy to tell apart from the solid green playground pins.
+
+Click or tap a pitch to open its panel — in the same place as a playground's. It shows the pitch's sports and, where they are mapped, its surface, whether it is lit (and when), whether you can just walk in (public, members, fee, booking), opening hours, basketball hoops, wheelchair access, the operator and photos, plus "Take me there", a share link and a link to add missing details in MapComplete. Nothing is shown for what has not been mapped. A shared pitch link looks like `…/#P123456` and opens the map with the pitch layer switched on.
 
 ## Deeplinks
 

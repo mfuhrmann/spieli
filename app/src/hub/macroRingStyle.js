@@ -20,8 +20,9 @@
 // cost <1 ms and the cache key complexity isn't worth it.
 
 import Style from 'ol/style/Style.js';
+import { hidpiStyleOptions } from '../lib/hidpiRenderer.js';
 import { radiusForCount } from '../lib/clusterStyle.js';
-import { COMPLETENESS_BASE, RING_CASING } from '../lib/completenessPalette.js';
+import { COMPLETENESS_BASE, RING_CASING, FINDER } from '../lib/completenessPalette.js';
 
 // Mapping-detail segments come from the shared palette (see
 // lib/completenessPalette.js) so macro rings, cluster rings, polygons and the
@@ -372,12 +373,71 @@ function formatCount(n) {
   return `${Math.round(n / 1000)}k`;
 }
 
-const healthyStyle       = new Style({ renderer: renderHealthyMacroRing });
-const offlineStyle       = new Style({ renderer: renderOfflineMacroRing });
-const degradedStyle      = new Style({ renderer: renderDegradedMacroRing });
-const importingStyle     = new Style({ renderer: renderImportingMacroRing });
-const filteredEmptyStyle = new Style({ renderer: renderFilteredEmptyMacroRing });
-const cantFilterStyle    = new Style({ renderer: renderCantFilterMacroRing });
+// ── Finder variants (mapping detail off, #924) ──────────────────────────────
+// A healthy backend becomes a plain emerald disc with its total; can't-filter
+// keeps its dashed halo and label on top of that disc. The health variants
+// (offline, importing, degraded, no match) are about the backend, not about
+// mapping detail, and render the same in both modes.
+function drawFinderMacroDisc(ctx, x, y, radius) {
+  const r = radius + RING_WIDTH / 2;
+  const trace = () => { ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); };
+  trace(); ctx.strokeStyle = FINDER.casing; ctx.lineWidth = 5; ctx.stroke();
+  trace(); ctx.strokeStyle = FINDER.border; ctx.lineWidth = 3; ctx.stroke();
+  trace(); ctx.fillStyle   = FINDER.fill;   ctx.fill();
+}
+
+function drawFinderMacroCount(ctx, text, x, y) {
+  ctx.font         = COUNT_FONT;
+  if ('fontFeatureSettings' in ctx) ctx.fontFeatureSettings = '"tnum" 1';
+  ctx.textAlign    = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.lineJoin     = 'round';
+  ctx.lineWidth    = 3;
+  ctx.strokeStyle  = FINDER.casing;
+  ctx.strokeText(text, x, y);
+  ctx.fillStyle    = FINDER.text;
+  ctx.fillText(text, x, y);
+}
+
+function renderFinderHealthyMacro(pixelCoords, state) {
+  const [x, y] = pixelCoords;
+  const count  = state.feature.get('count') ?? 0;
+  drawFinderMacroDisc(state.context, x, y, radiusForCount(count));
+  drawFinderMacroCount(state.context, formatCount(count), x, y + 0.5);
+}
+
+function renderFinderCantFilterMacro(pixelCoords, state) {
+  const [x, y] = pixelCoords;
+  const ctx    = state.context;
+  const count  = state.feature.get('count') ?? 0;
+  const radius = radiusForCount(count);
+  drawFinderMacroDisc(ctx, x, y, radius);
+
+  ctx.lineWidth   = 2;
+  ctx.strokeStyle = CANTFILTER_HALO;
+  ctx.setLineDash([6, 4]);
+  ctx.beginPath();
+  ctx.arc(x, y, radius + RING_WIDTH / 2 + 4, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  drawFinderMacroCount(ctx, formatCount(count), x, y - 7);
+  ctx.font      = LABEL_FONT;
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = FINDER.casing;
+  ctx.strokeText('unfiltered', x, y + 11);
+  ctx.fillStyle = FINDER.text;
+  ctx.fillText('unfiltered', x, y + 11);
+}
+
+const healthyStyle       = new Style(hidpiStyleOptions(renderHealthyMacroRing));
+const offlineStyle       = new Style(hidpiStyleOptions(renderOfflineMacroRing));
+const degradedStyle      = new Style(hidpiStyleOptions(renderDegradedMacroRing));
+const importingStyle     = new Style(hidpiStyleOptions(renderImportingMacroRing));
+const filteredEmptyStyle = new Style(hidpiStyleOptions(renderFilteredEmptyMacroRing));
+const cantFilterStyle    = new Style(hidpiStyleOptions(renderCantFilterMacroRing));
+const finderHealthyStyle    = new Style(hidpiStyleOptions(renderFinderHealthyMacro));
+const finderCantFilterStyle = new Style(hidpiStyleOptions(renderFinderCantFilterMacro));
 
 export function macroRingStyleFn(feature) {
   // Priority mirrors "most severe / least filtered dominates": backend-health
@@ -392,4 +452,12 @@ export function macroRingStyleFn(feature) {
   if (feature.get('_filteredEmpty')) return filteredEmptyStyle;
   if (feature.get('_degraded'))      return degradedStyle;
   return healthyStyle;
+}
+
+/** Macro style with mapping detail off: health variants as above, the rest neutral. */
+export function finderMacroRingStyleFn(feature) {
+  const style = macroRingStyleFn(feature);
+  if (style === healthyStyle)    return finderHealthyStyle;
+  if (style === cantFilterStyle) return finderCantFilterStyle;
+  return style;
 }

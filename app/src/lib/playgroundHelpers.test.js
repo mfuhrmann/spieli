@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { getPlaygroundTitle, hasOsmName } from './playgroundHelpers.js';
+import { getPlaygroundTitle, hasOsmName, navigationUrl, isMobileUserAgent } from './playgroundHelpers.js';
 
 // hasOsmName decides which `lang` a rendered title carries: an OSM name is a
 // proper noun in the region's language, the fallback is interface text. The two
@@ -40,5 +40,22 @@ assert.equal(
 const multi = { name: 'Spielplatz Nord', alt_name: 'Bolzplatz' };
 assert.equal(hasOsmName(multi), true);
 assert.equal(getPlaygroundTitle(multi, () => 'PLACEHOLDER'), 'Spielplatz Nord (Bolzplatz)');
+
+// navigationUrl: geo: on mobile, OSM directions on desktop (#934)
+assert.equal(
+  navigationUrl({ lat: 50.5, lon: 9.6, title: 'Bolz platz', mobile: true }),
+  'geo:50.5,9.6?q=50.5,9.6(Bolz%20platz)',
+);
+assert.equal(
+  navigationUrl({ lat: 50.5, lon: 9.6, mobile: false, origin: { lat: 50.1, lon: 9.1 } }),
+  'https://www.openstreetmap.org/directions?engine=fossgis_osrm_foot&route=50.1,9.1;50.5,9.6',
+);
+assert.equal(
+  navigationUrl({ lat: 50.5, lon: 9.6, mobile: false }),
+  'https://www.openstreetmap.org/directions?engine=fossgis_osrm_foot&route=;50.5,9.6',
+);
+assert.equal(navigationUrl({ lat: NaN, lon: 9.6, mobile: true }), null);
+assert.equal(isMobileUserAgent('Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X)'), true);
+assert.equal(isMobileUserAgent('Mozilla/5.0 (X11; Linux x86_64)'), false);
 
 console.log('All playgroundHelpers tests passed.');

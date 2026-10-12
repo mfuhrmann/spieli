@@ -9,8 +9,17 @@
 @theme {
   /* ─── Color Palette ─────────────────────────────────────────────────────── */
   
-  /* Primary - Emerald green for nature/outdoor feel */
-  --color-primary: #10b981;
+  /* Primary - Emerald green for nature/outdoor feel (#930).
+     emerald-700, not the lighter emerald-500 it used to be: white text on
+     #10b981 is 2.54:1 and on #059669 3.77:1, both short of WCAG's 4.5:1 for
+     the 12-14px button labels and links that use it. #047857 is 5.48:1 with
+     white, the hover #065f46 7.68:1, and #047857 on the soft tint 5.21:1.
+     Use these tokens, never literals. The map markers' emerald (#059669) is
+     separate — canvas renderers cannot read CSS variables, and a cased marker
+     is not text. */
+  --color-primary: #047857;
+  --color-primary-hover: #065f46;
+  --color-primary-soft: #ecfdf5;
   --color-primary-foreground: #ffffff;
   
   /* Secondary - Sky blue for water playgrounds */
@@ -44,7 +53,7 @@
   /* Border & Input */
   --color-border: #e5e7eb;
   --color-input: #e5e7eb;
-  --color-ring: #10b981;
+  --color-ring: #047857;
   
   /* ─── Category Colors (for map markers) ──────────────────────────────────── */
   --color-water: #3b82f6;

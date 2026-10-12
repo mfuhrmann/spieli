@@ -88,39 +88,34 @@ test.describe('FilterPanel', () => {
     await expect(pitchToggle).not.toBeChecked();
   });
 
-  test('completeness section is visible with three checked toggles', async ({ page }) => {
+  // The mapping-detail states moved to MappingDetailControl (#924); see
+  // tests/mapping-detail.spec.js.
+  test('filter panel lists no mapping-detail states', async ({ page }) => {
     await page.locator('.filter-container button').click();
-    await expect(page.locator('.completeness-section')).toBeVisible();
-    const checkboxes = page.locator('.completeness-section input[type="checkbox"]');
-    await expect(checkboxes).toHaveCount(3);
-    for (let i = 0; i < 3; i++) {
-      await expect(checkboxes.nth(i)).toBeChecked();
-    }
+    await expect(page.locator('.filter-dropdown')).toBeVisible();
+    await expect(page.locator('.filter-dropdown .completeness-section')).toHaveCount(0);
+    await expect(page.locator('.filter-dropdown')).not.toContainText('no details yet');
   });
 
-  test('no badge shown when all completeness states are on (default)', async ({ page }) => {
-    await expect(page.locator('.filter-container .badge')).not.toBeVisible();
+  // #932 — the dropdown used a fixed 320 px list height whatever the window.
+  test('dropdown uses the window height instead of a fixed list height', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 1000 });
+    await page.locator('.filter-container button').click();
+    const [client, scroll] = await page.locator('.filter-list').evaluate(e => [e.clientHeight, e.scrollHeight]);
+    expect(client, 'list fits without scrolling on a tall window').toBe(scroll);
   });
 
-  test('unchecking a completeness state shows badge and marks row hidden', async ({ page }) => {
+  test('dropdown stays inside a short window', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 480 });
     await page.locator('.filter-container button').click();
-    const first = page.locator('.completeness-section input[type="checkbox"]').first();
-    await first.click();
-    await expect(page.locator('.filter-container .badge')).toBeVisible();
-    await expect(page.locator('.filter-container .badge')).toHaveText('1');
-    await expect(
-      page.locator('.completeness-section .filter-item').first()
-    ).toHaveClass(/completeness-hidden/);
+    const box = await page.locator('.filter-dropdown').boundingBox();
+    expect(box.y + box.height).toBeLessThanOrEqual(480);
   });
 
-  test('clear-all restores all completeness states to checked', async ({ page }) => {
+  test('the pitch layer alone does not mark the filter button active', async ({ page }) => {
     await page.locator('.filter-container button').click();
-    await page.locator('.completeness-section input[type="checkbox"]').first().click();
-    await page.locator('.clear-btn').click();
-    const checkboxes = page.locator('.completeness-section input[type="checkbox"]');
-    for (let i = 0; i < 3; i++) {
-      await expect(checkboxes.nth(i)).toBeChecked();
-    }
-    await expect(page.locator('.filter-container .badge')).not.toBeVisible();
+    await page.locator('.layer-section input[type="checkbox"]').check();
+    await expect(page.locator('.filter-container .badge')).toHaveCount(0);
+    await expect(page.locator('.filter-container .control-btn')).not.toHaveClass(/active/);
   });
 });

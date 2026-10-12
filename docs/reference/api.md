@@ -12,6 +12,7 @@ PostgREST exposes the `api` schema as JSON-RPC endpoints under `/api/rpc/`. All 
 | [`get_playground_centroids`](#get_playground_centroidsbbox-server-only-in-p1) | Federation re-clustering (P2), not consumed by standalone | server-shipped |
 | [`get_equipment`](#get_equipmentbbox) | PlaygroundPanel | devices, pitches, benches within a bbox |
 | [`get_standalone_equipment`](#get_standalone_equipmentbbox) | Standalone pitch layer | pitches/benches outside playgrounds |
+| [`get_pitch`](#get_pitchosm_id) | Pitch deeplink restore (`#P<osm_id>`) | single standalone pitch |
 | [`get_pois`](#get_poislat-lon-radius_m) | PlaygroundPanel | nearby toilets, bus stops, cafés |
 | [`get_trees`](#get_treesbbox) | PlaygroundPanel tree layer | natural=tree nodes and natural=tree_row lines |
 | [`get_meta`](#get_meta) | Hub federation discovery | instance metadata + import freshness |
@@ -270,10 +271,32 @@ Returns pitches, benches, shelters, picnic tables, and fitness stations that do 
 
 Same parameter and response shape as `get_equipment`. Returns an empty `FeatureCollection` when `apiBaseUrl` is empty (Overpass fallback, used in local frontend dev without a database).
 
+Each feature's `properties` carry `osm_id`, `osm_type`, `name`, `amenity`, `leisure`, `sport`, `surface`, `access`, `operator`, plus **every other OSM tag** of the object merged in (`lit`, `panoramax`, `hoops`, `reservation`, `fee`, `opening_hours`, `wheelchair`, …). `access` and `operator` were added for the pitch panel (#934) — they are osm2pgsql columns, so the merged tags never contained them.
+
 **Example**
 
 ```bash
 curl 'https://example.com/api/rpc/get_standalone_equipment?min_lon=9.60&min_lat=50.50&max_lon=9.80&max_lat=50.60'
+```
+
+---
+
+## `get_pitch(osm_id)`
+
+Single standalone pitch, used to restore a `#P<osm_id>` pitch link when the pitch layer has not loaded it yet (#934).
+
+**Parameters**
+
+| Name | Type | Notes |
+|---|---|---|
+| `osm_id` | `bigint` | Magnitude only; a polygon (way or relation) is preferred over a node with the same number |
+
+**Response** — A single GeoJSON `Feature` with the same `properties` shape as a pitch in `get_standalone_equipment`, or JSON `null` when there is no such pitch **or it lies inside a playground** (the same rule the pitch layer applies, so a link resolves exactly the pitches the layer shows).
+
+**Example**
+
+```bash
+curl 'https://example.com/api/rpc/get_pitch?osm_id=923521639'
 ```
 
 ---
