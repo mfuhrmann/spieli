@@ -2553,6 +2553,7 @@
 </tbody>
 </table>
 <h3 id="selection-flow">Selection flow<a class="headerlink" href="#selection-flow" title="Permanent link">&para;</a></h3>
+<p>The selection is a playground <strong>or</strong>, in standalone mode, a standalone pitch (#934): <code>selection.select(feature, backendUrl, kind)</code> with <code>kind</code> <code>'playground'</code> (default) or <code>'pitch'</code>. One store with a kind keeps "only one thing is open" true by construction. <code>hasSelection</code> means "anything is open" (it drives the shared panel slot and the mobile layout); <code>selectedKind</code> says which; <code>selectedOsmId</code> is the selected <em>playground's</em> id only. Anything that only makes sense for a playground — PlaygroundPanel's equipment, trees, POIs and reviews — must check the kind. A pitch is selected by a click on a layer the shell marks <code>selectable</code> (the standalone pitch layer, not a selected playground's equipment overlay), writes <code>#P&lt;osm_id&gt;</code>, and opens <code>PitchPanel</code> in the playground panel's slot; its display rules (every fact only when tagged) live in <code>lib/pitchInfo.js</code>.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>User clicks playground polygon
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>        │
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>        ▼
