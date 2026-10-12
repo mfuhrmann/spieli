@@ -76,7 +76,7 @@ spieli/                            ← Monorepo root
 │       │
 │       └── hub/                   ← Hub mode (APP_MODE=hub)
 │           ├── HubApp.svelte      ★ Hub layout root
-│           ├── hubOrchestrator.js ★ Hub fan-out to all backends, Supercluster merge
+│           ├── hubOrchestrator.js ★ Hub fan-out to all backends, cluster merge
 │           ├── InstancePanel.svelte ← Backend list drawer
 │           ├── InstancePanelDrawer.svelte ← Drawer wrapper
 │           ├── MacroView.svelte   ← Country-level macro ring view (zoom ≤ macroMaxZoom)
@@ -120,7 +120,7 @@ spieli/                            ← Monorepo root
 │   ├── selection.spec.js          ← Playground selection + panel open
 │   ├── hash-restore.spec.js       ← Deeplink URL hash restore
 │   ├── hub-smoke.spec.js          ← Hub mode basic load
-│   ├── hub-multi-backend.spec.js  ← Hub fan-out + Supercluster merge
+│   ├── hub-multi-backend.spec.js  ← Hub fan-out + cluster merge
 │   ├── hub-deeplink.spec.js       ← Hub deeplink with backend slug
 │   ├── hub-pill.spec.js           ← Instance pill count display
 │   ├── hub-federation-health.spec.js ← Federation status polling

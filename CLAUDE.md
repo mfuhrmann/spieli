@@ -261,7 +261,7 @@ Standalone's data path is no longer a one-shot `fetchPlaygrounds` on mount. Inst
 1. Computes the active tier from `view.getZoom()` against `clusterMaxZoom`.
 2. Publishes the tier via `activeTierStore`.
 3. Aborts any in-flight request via `AbortController`.
-4. Fetches the tier's RPC (`fetchPlaygroundClusters` or `fetchPlaygroundsBbox`) and populates the corresponding source.
+4. Fetches the tier's RPC (`fetchPlaygroundClusters` or `fetchPlaygroundsBbox`) and populates the corresponding source. Cluster buckets first go through `mergeOverlappingBuckets` (`lib/clusterMerge.js`, #941): the server's grid cell is about as wide as a marker, so neighbouring buckets are merged where their markers would overlap at the current resolution (counts summed, count-weighted position). The hub orchestrator runs the same merge over all backends' buckets — it replaced Supercluster.
 5. Falls back to the legacy `fetchPlaygrounds(relation_id)` once if a tier RPC 404s (backend skew during a deploy).
 
 Deeplinks at low zoom use the new `fetchPlaygroundByOsmId` (RPC `get_playground(osm_id)`) to hydrate the polygon source on demand without waiting for a polygon-tier moveend.

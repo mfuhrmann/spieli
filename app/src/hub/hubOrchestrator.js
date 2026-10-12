@@ -20,16 +20,15 @@
 // backend requests via the fanOut's plumbing.
 //
 // Cluster and polygon sources are progressively repainted as each backend
-// settles (via fanOut's onResult callback). Cross-backend re-clustering
-// (Supercluster) is §4 — for §3 the cluster source just concatenates
-// every backend's buckets, which can show visible seams at borders. §4
-// fixes that.
+// settles (via fanOut's onResult callback). Cluster buckets from all
+// backends are merged where their markers would overlap
+// (lib/clusterMerge.js), so borders between backends show no seams.
 
 import Feature from 'ol/Feature.js';
 import Point from 'ol/geom/Point.js';
 import GeoJSON from 'ol/format/GeoJSON.js';
 import { transform, transformExtent } from 'ol/proj.js';
-import Supercluster from 'supercluster';
+import { mergeOverlappingBuckets } from '../lib/clusterMerge.js';
 
 import {
   fetchPlaygroundClusters,
@@ -85,7 +84,7 @@ export function attachHubOrchestrator({
   const backendLegacyWarned = new Set();
   // Per-backend "malformed cluster bucket" warning de-dup. A backend returning
   // a bucket with non-finite lon/lat would otherwise place a feature at
-  // [NaN, NaN] (projects to ~0,0) or trip Supercluster's KDBush; we drop
+  // [NaN, NaN] (projects to ~0,0); we drop
   // those buckets and warn at most once per backend per session.
   const backendMalformedBucketWarned = new Set();
   // The debounced orchestrator is referenced from the backends-subscribe
@@ -165,8 +164,8 @@ export function attachHubOrchestrator({
     // incrementally. Avoids N source.clear()+addFeatures cycles per moveend.
     // Polygon tier still uses a first-arrival latch (it appends rather than
     // re-derives on every arrival). Cluster tier doesn't need one — every
-    // arrival re-runs the Supercluster pipeline and clears+adds the full
-    // re-rendered set, so a separate latch would be dead.
+    // arrival re-runs the merge and clears+adds the full re-rendered set,
+    // so a separate latch would be dead.
     let polygonFirstArrival = true;
     // Per-orchestrate-call dedup index: osm_id (string) → winning OL Feature.
     // Created fresh per orchestrate() call so winners from the previous
@@ -176,32 +175,14 @@ export function attachHubOrchestrator({
 
     if (tier === 'cluster') {
       const z = Math.floor(zoom);
-      // §4.1 — cross-backend re-clustering via Supercluster. Each backend's
-      // server-bucketed cells are fed in as weighted points; on each
-      // arrival we load the accumulated set and re-emit the merged
-      // clusters so a viewport spanning two backends shows a single seam-
-      // less ring per cell instead of two overlapping rings at the border.
+      // §4.1 — cross-backend re-clustering. Each backend's server buckets
+      // are merged where their markers would overlap at the current
+      // resolution — the same rule as standalone (#941, lib/clusterMerge.js) —
+      // so a viewport spanning two backends shows one disc per place instead
+      // of two overlapping at the border, and neighbouring grid cells of one
+      // backend do not touch either.
       const accumulated = [];
-      const sc = new Supercluster({
-        radius: 60,
-        // Match the OL tile model (256 px); Supercluster's default extent
-        // is 512 which would effectively double the clustering radius
-        // relative to the server's cell-size table.
-        extent: 256,
-        maxZoom: clusterMaxZoom,
-        map: (p) => ({
-          count:      p.count,
-          complete:   p.complete,
-          partial:    p.partial,
-          missing:    p.missing,
-        }),
-        reduce: (acc, p) => {
-          acc.count      += p.count;
-          acc.complete   += p.complete;
-          acc.partial    += p.partial;
-          acc.missing    += p.missing;
-        },
-      });
+      const resolution = view.getResolution();
       await fanOut({
         fetcher: (url, sig) => clusterFetcherFor(url)(z, extent3857, url, sig, filters),
         backends: selected,
@@ -213,28 +194,25 @@ export function attachHubOrchestrator({
             for (const b of entry.value) {
               // Drop buckets with non-finite coordinates rather than
               // pushing a `[NaN, NaN]` Point that projects to lon=0,lat=0
-              // (Gulf of Guinea) or trips Supercluster's KDBush. Warn
-              // at most once per backend per session.
+              // (Gulf of Guinea). Warn at most once per backend per
+              // session.
               if (!Number.isFinite(b.lon) || !Number.isFinite(b.lat)) {
                 droppedMalformed += 1;
                 continue;
               }
-              accumulated.push(bucketToSuperclusterPoint(b, entry.backendUrl));
+              accumulated.push(bucketToPoint(b, entry.backendUrl));
             }
             if (droppedMalformed > 0 && !backendMalformedBucketWarned.has(entry.backendUrl)) {
               backendMalformedBucketWarned.add(entry.backendUrl);
               console.warn(`[hub-tier] backend ${entry.backendUrl} returned ${droppedMalformed} cluster bucket(s) with non-finite lon/lat — dropped`);
             }
-            // Reload the index with the accumulated set and re-render.
-            // Supercluster's `load` is O(N); for cluster-tier viewport
-            // sizes this is well under a millisecond. The source-clear
-            // here also covers the first-arrival "wipe stale features
-            // from the prior tier" need, so no separate latch is needed
-            // on this branch.
-            sc.load(accumulated);
-            const clusters = sc.getClusters(viewportBbox, z);
+            // Re-merge the accumulated set and re-render. O(n) per pass over
+            // a viewport's buckets; the source-clear here also wipes stale
+            // features from the prior tier on the first arrival, so no
+            // separate latch is needed on this branch.
+            const merged = mergeOverlappingBuckets(accumulated, resolution);
             clusterSource.clear();
-            clusterSource.addFeatures(clusters.map(superclusterFeatureToOl));
+            clusterSource.addFeatures(merged.map(bucketToOlFeature));
           } else if (!entry.ok && isNotFound(entry.error)) {
             markBackendLegacy(entry.backendUrl);
           }
@@ -419,57 +397,34 @@ function isNotFound(err) {
   return typeof err?.message === 'string' && /failed: 404$/.test(err.message);
 }
 
-// Wrap a server cluster bucket in the GeoJSON shape Supercluster expects.
-// All count fields are coerced to 0 if missing — Supercluster's `reduce`
-// callback adds them in place, and a single `undefined` would propagate
-// `NaN` through every downstream cluster's count fields silently.
-// `_backendUrl` is preserved on the singleton case so a cluster of one can
-// still route its cluster-click zoom to the right backend if needed.
-function bucketToSuperclusterPoint(b, backendUrl) {
+// A server cluster bucket as a merge input in EPSG:3857. All count fields are
+// coerced to 0 if missing — the merge sums them, and a single `undefined`
+// would propagate `NaN` through every merged count silently. `_backendUrl`
+// is kept so a bucket that merges with nothing still carries its backend.
+function bucketToPoint(b, backendUrl) {
+  const [x, y] = transform([b.lon, b.lat], 'EPSG:4326', 'EPSG:3857');
   return {
-    type: 'Feature',
-    geometry: { type: 'Point', coordinates: [b.lon, b.lat] },
-    properties: {
-      count:       b.count      ?? 0,
-      complete:    b.complete   ?? 0,
-      partial:     b.partial    ?? 0,
-      missing:     b.missing    ?? 0,
-      _backendUrl: backendUrl,
-    },
+    x, y,
+    count:       b.count      ?? 0,
+    complete:    b.complete   ?? 0,
+    partial:     b.partial    ?? 0,
+    missing:     b.missing    ?? 0,
+    _backendUrl: backendUrl,
   };
 }
 
-// Convert a Supercluster output feature (cluster or singleton) into an
-// OL Feature with the props the existing cluster-style renderer expects.
-function superclusterFeatureToOl(c) {
-  const [lon, lat] = c.geometry.coordinates;
-  const f = new Feature({
-    geometry: new Point(transform([lon, lat], 'EPSG:4326', 'EPSG:3857')),
+// A merged bucket as an OL Feature with the props the cluster renderers
+// read. `_backendUrl` survives only when every member came from one backend.
+function bucketToOlFeature(b) {
+  const f = new Feature({ geometry: new Point([b.x, b.y]) });
+  f.setProperties({
+    _tier:       'cluster',
+    count:       b.count,
+    complete:    b.complete,
+    partial:     b.partial,
+    missing:     b.missing,
+    ...(b._backendUrl ? { _backendUrl: b._backendUrl } : {}),
   });
-  if (c.properties.cluster) {
-    // Multi-bucket merge — the reduce callback summed the per-bucket counts.
-    // We don't expose `cluster_id` here: Supercluster's drill-down APIs
-    // (`getClusterExpansionZoom`, `getLeaves`) need the index instance,
-    // which is local to the orchestrate() call and GC'd when it returns.
-    // Re-introduce only when a future click handler retains the index.
-    f.setProperties({
-      _tier:       'cluster',
-      count:       c.properties.count,
-      complete:    c.properties.complete,
-      partial:     c.properties.partial,
-      missing:     c.properties.missing,
-    });
-  } else {
-    // Singleton — original bucket properties pass through.
-    f.setProperties({
-      _tier:       'cluster',
-      _backendUrl: c.properties._backendUrl,
-      count:       c.properties.count,
-      complete:    c.properties.complete,
-      partial:     c.properties.partial,
-      missing:     c.properties.missing,
-    });
-  }
   return f;
 }
 

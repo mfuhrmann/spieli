@@ -66,7 +66,7 @@ Tests live in `tests/`. Each file covers one area of the app:
 | `selection.spec.js` | Playground click → panel open, hash written |
 | `hash-restore.spec.js` | Deep link restore on page load (`#W<osm_id>`) |
 | `hub-smoke.spec.js` | Hub mode basic page load |
-| `hub-multi-backend.spec.js` | Hub fan-out to multiple backends, Supercluster merge |
+| `hub-multi-backend.spec.js` | Hub fan-out to multiple backends, cross-backend cluster merge |
 | `hub-deeplink.spec.js` | Hub deep link with backend slug (`#<slug>/W<osm_id>`) |
 | `hub-pill.spec.js` | Instance pill count display |
 | `hub-federation-health.spec.js` | federation-status.json polling and stale banner |

@@ -124,7 +124,7 @@ Every moveend constructs a fresh `AbortController` and aborts the previous one, 
 
 ### Cross-backend re-clustering
 
-At the cluster tier, two backends covering adjacent regions both ship their own bucket grids. Without re-clustering, the seam at their shared border shows as two overlapping rings. The Hub feeds each backend's buckets into a per-fan-out [Supercluster](https://github.com/mapbox/supercluster) instance as weighted points and re-emits merged clusters whose `{count, complete, partial, missing, restricted}` totals are the sum of the contributing buckets — a single seamless ring per cell.
+At the cluster tier, two backends covering adjacent regions both ship their own bucket grids. Without re-clustering, the seam at their shared border shows as two overlapping rings. The Hub collects every backend's buckets and merges those whose markers would overlap on screen (`lib/clusterMerge.js`, the same rule the standalone client uses): `{count, complete, partial, missing}` are summed, the position is the count-weighted mean — a single seamless ring where two backends meet.
 
 The polygon tier doesn't re-cluster — every backend's polygons render in a single vector source, each feature tagged with `_backendUrl` so selection routes back to the right backend.
 
@@ -161,7 +161,7 @@ flowchart LR
     bbox --> health[federationHealth.filterHealthy<br/>skip ok=false backends]
     health --> fanout[fanOut<br/>parallel AbortController<br/>per-backend 5 s timeout]
 
-    fanout -- "cluster tier" --> sc[Supercluster<br/>map + reduce per backend bucket]
+    fanout -- "cluster tier" --> sc[clusterMerge<br/>merge overlapping buckets, sum counts]
     fanout -- "polygon tier" --> concat[Concatenate features<br/>stamp _backendUrl]
 
     sc --> render[Repaint clusterSource<br/>incrementally per arrival]

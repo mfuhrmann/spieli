@@ -16,6 +16,7 @@ import Point from 'ol/geom/Point.js';
 import GeoJSON from 'ol/format/GeoJSON.js';
 import { transform } from 'ol/proj.js';
 
+import { mergeOverlappingBuckets } from './clusterMerge.js';
 import {
   fetchPlaygroundClusters,
   fetchPlaygroundsBbox,
@@ -76,7 +77,7 @@ export function attachTieredOrchestrator({
       } else if (tier === 'cluster') {
         const buckets = await fetchPlaygroundClusters(Math.floor(zoom), extent3857, baseUrl, signal, filters);
         if (signal.aborted) return;
-        fillClusterSource(clusterSource, buckets);
+        fillClusterSource(clusterSource, buckets, view.getResolution());
       } else {
         const geojson = await fetchPlaygroundsBbox(extent3857, baseUrl, signal);
         if (signal.aborted) return;
@@ -122,12 +123,17 @@ function isNotFound(err) {
   return typeof err?.message === 'string' && /\b404\b/.test(err.message);
 }
 
-function fillClusterSource(source, buckets) {
+// Buckets are merged where their markers would overlap at the current
+// resolution: the server's grid places neighbouring buckets as close as a
+// marker is wide (#941, lib/clusterMerge.js).
+function fillClusterSource(source, buckets, resolution) {
   source.clear();
-  const features = buckets.map(b => {
-    const f = new Feature({
-      geometry: new Point(transform([b.lon, b.lat], 'EPSG:4326', 'EPSG:3857')),
-    });
+  const points = buckets.map(b => {
+    const [x, y] = transform([b.lon, b.lat], 'EPSG:4326', 'EPSG:3857');
+    return { x, y, count: b.count, complete: b.complete, partial: b.partial, missing: b.missing };
+  });
+  const features = mergeOverlappingBuckets(points, resolution).map(b => {
+    const f = new Feature({ geometry: new Point([b.x, b.y]) });
     f.setProperties({
       _tier:      'cluster',
       count:      b.count,

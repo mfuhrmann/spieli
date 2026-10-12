@@ -182,7 +182,7 @@ Returns lightweight per-playground rows for a bbox — `osm_id`, lon/lat, comple
 ]
 ```
 
-The standalone client doesn't consume this RPC in P1 — the server-bucketed cluster tier covers zoom ≤ 13 directly. The RPC ships now so federated hub clustering (`add-federated-playground-clustering`) and any future "centroid + Supercluster" tier can use it without a schema change.
+The standalone client doesn't consume this RPC in P1 — the server-bucketed cluster tier covers zoom ≤ 13 directly. The RPC ships now so federated hub clustering (`add-federated-playground-clustering`) and any future centroid tier can use it without a schema change.
 
 > Note: the `filter_attrs` object includes `has_fence`, `has_dogs`, `has_theme`, and `has_shade` for the new playground filters. `has_shade` is nullable — `true` when `shade=yes`, `false` when `shade=no`, `null` when untagged.
 
