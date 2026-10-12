@@ -281,14 +281,14 @@
   .navigate-btn {
     padding: 6px 12px;
     background: var(--color-primary);
-    color: #ffffff;
+    color: var(--color-primary-foreground);
     border-radius: 6px;
     font-size: 13px;
     font-weight: 600;
     white-space: nowrap;
     text-decoration: none;
   }
-  .navigate-btn:hover { background: var(--color-primary-hover); color: #ffffff; }
+  .navigate-btn:hover { background: var(--color-primary-hover); color: var(--color-primary-foreground); }
 
   .panel-icon-btn {
     display: inline-flex;

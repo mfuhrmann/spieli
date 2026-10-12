@@ -479,7 +479,8 @@
   // Mobile: geo: URL opens native navigation app
   // Desktop: OSM directions with stored GPS fix as origin (falls back to empty origin
   // when location was never granted — OSM then prompts the user for a starting point).
-  // Note: origin may be stale if the user moved since the last watchPosition update.
+  // The href is reactive on the location store, so the origin follows every
+  // watchPosition update rather than being captured once.
   //
   // Rendered as a plain <a href>, not window.open(): iOS Safari silently drops a
   // geo: URL opened via window.open(url, '_blank'), while the same URL as a
@@ -1293,7 +1294,7 @@
   .navigate-btn {
     padding: 6px 12px;
     background: var(--color-primary);
-    color: #ffffff;
+    color: var(--color-primary-foreground);
     border: none;
     border-radius: 6px;
     font-size: 13px;
@@ -1305,6 +1306,6 @@
   }
   .navigate-btn:hover {
     background: var(--color-primary-hover);
-    color: #ffffff;
+    color: var(--color-primary-foreground);
   }
 </style>

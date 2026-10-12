@@ -24,6 +24,7 @@ test.describe('desktop', () => {
     await expect(link).toBeVisible({ timeout: 8000 });
     await expect(link).toHaveAttribute('href', /^https:\/\/www\.openstreetmap\.org\/directions\?/);
     await expect(link).toHaveAttribute('target', '_blank');
+    await expect(link).toHaveAttribute('rel', 'noopener');
   });
 });
 
@@ -39,5 +40,6 @@ test.describe('iPhone Safari', () => {
     await expect(link).toBeVisible({ timeout: 8000 });
     await expect(link).toHaveAttribute('href', /^geo:-?\d+(\.\d+)?,-?\d+(\.\d+)?\?q=/);
     await expect(link).not.toHaveAttribute('target', /.+/);
+    await expect(link).not.toHaveAttribute('rel', /.+/);
   });
 });
