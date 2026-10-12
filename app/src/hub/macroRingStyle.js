@@ -20,6 +20,7 @@
 // cost <1 ms and the cache key complexity isn't worth it.
 
 import Style from 'ol/style/Style.js';
+import { hidpiStyleOptions } from '../lib/hidpiRenderer.js';
 import { radiusForCount } from '../lib/clusterStyle.js';
 import { COMPLETENESS_BASE, RING_CASING } from '../lib/completenessPalette.js';
 
@@ -372,12 +373,12 @@ function formatCount(n) {
   return `${Math.round(n / 1000)}k`;
 }
 
-const healthyStyle       = new Style({ renderer: renderHealthyMacroRing });
-const offlineStyle       = new Style({ renderer: renderOfflineMacroRing });
-const degradedStyle      = new Style({ renderer: renderDegradedMacroRing });
-const importingStyle     = new Style({ renderer: renderImportingMacroRing });
-const filteredEmptyStyle = new Style({ renderer: renderFilteredEmptyMacroRing });
-const cantFilterStyle    = new Style({ renderer: renderCantFilterMacroRing });
+const healthyStyle       = new Style(hidpiStyleOptions(renderHealthyMacroRing));
+const offlineStyle       = new Style(hidpiStyleOptions(renderOfflineMacroRing));
+const degradedStyle      = new Style(hidpiStyleOptions(renderDegradedMacroRing));
+const importingStyle     = new Style(hidpiStyleOptions(renderImportingMacroRing));
+const filteredEmptyStyle = new Style(hidpiStyleOptions(renderFilteredEmptyMacroRing));
+const cantFilterStyle    = new Style(hidpiStyleOptions(renderCantFilterMacroRing));
 
 export function macroRingStyleFn(feature) {
   // Priority mirrors "most severe / least filtered dominates": backend-health
