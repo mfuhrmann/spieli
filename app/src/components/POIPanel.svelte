@@ -103,7 +103,7 @@
     gap: 0.5rem;
     margin-top: 0.25rem;
     font-size: smaller;
-    color: #10b981;
+    color: var(--color-primary);
     text-decoration: none;
   }
   .poi-row:hover .poi-name { text-decoration: underline; }

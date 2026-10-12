@@ -276,6 +276,18 @@ Themes are panel-only — no map symbols (discovery is deferred).
 
 The app uses Bootstrap 5 (component classes) and Tailwind CSS 4 (utility classes) side by side. The design system primitives in `src/components/ui/` (`Badge`, `Button`, `Card`, etc.) wrap Bootstrap with Tailwind utilities. Prefer these over raw Bootstrap classes in new components.
 
+### Accent colour
+
+The UI accent is one emerald family, defined once as theme tokens in `src/styles/app.css` (#930):
+
+| Token | Value | Use |
+|---|---|---|
+| `--color-primary` | `#047857` | buttons with text, links, accent text, active control icons, badges (Tailwind: `bg-primary`, `text-primary`) |
+| `--color-primary-hover` | `#065f46` | hover / pressed |
+| `--color-primary-soft` | `#ecfdf5` | background of an active control or checked row |
+
+Reference them with `var(--color-primary)` and friends, never as literals. The lighter emerald-500 (`#10b981`) the app used before is only 2.54:1 behind white text — every accent pair here clears 4.5:1. Map markers are the exception: canvas renderers cannot read CSS variables, so their colours live in `completenessPalette.js`.
+
 ### The mapping-detail palette
 
 `src/lib/completenessPalette.js` is the single source of truth for the three mapping-detail colours (`complete` / `partial` / `missing`). **Never hardcode these values anywhere else.**
