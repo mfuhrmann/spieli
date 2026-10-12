@@ -130,6 +130,29 @@ test.describe('phone', () => {
   });
 });
 
+test.describe('German header', () => {
+  test.use({ locale: 'de-DE' });
+
+  // "Mehrzweckplatz" is one long word next to the wider "Bring mich hierher";
+  // the title used to run underneath the button instead of breaking.
+  for (const width of [1280, 360]) {
+    test(`a long one-word title does not run under the actions at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 800 });
+      const multi = pitch(503, { sport: 'multi' });
+      await injectApiConfig(page);
+      await stubApiRoutes(page);
+      await stubPitches(page, [multi]);
+      await page.goto('/#P503');
+      const title = page.locator('.panel-title').filter({ hasText: /Mehrzweck/ });
+      await expect(title).toBeVisible({ timeout: 8000 });
+      // The title block shrinks to share its row with the buttons; the bug
+      // was its text overflowing that box (and running under the button).
+      const [scroll, client] = await title.evaluate(el => [el.scrollWidth, el.clientWidth]);
+      expect(scroll, 'title text overflows its box').toBeLessThanOrEqual(client);
+    });
+  }
+});
+
 test.describe('#P links', () => {
   test('restores the pitch, switches the layer on and frames it', async ({ page }) => {
     await injectApiConfig(page);

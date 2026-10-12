@@ -270,6 +270,12 @@
     color: #1f2937;
     line-height: 1.3;
     margin: 0;
+    /* The title shares its row with the action buttons and may shrink to
+       nothing; a single long word ("Mehrzweckplatz" next to "Bring mich
+       hierher") then ran underneath them. Hyphenate where the browser has a
+       dictionary for the element's lang, otherwise break inside the word. */
+    overflow-wrap: break-word;
+    hyphens: auto;
   }
 
   .navigate-btn {
