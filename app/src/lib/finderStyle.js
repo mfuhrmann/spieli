@@ -13,18 +13,22 @@
 // pointer's tip, so a single playground looks the same on both sides of the
 // cluster/polygon zoom boundary. Bitmaps are cached like clusterStyle's rings.
 //
-// Hit detection needs nothing special: OL hit-tests renderer styles by
-// drawing them, so a click on the pin selects the playground through the
-// existing forEachFeatureAtPixel path. A click inside the (undrawn) polygon
+// Renderers draw in CSS pixels through hidpiStyleOptions (see
+// hidpiRenderer.js), which also supplies the 1:1 hit-detection renderer, so a
+// click on the pin selects the playground through the existing
+// forEachFeatureAtPixel path. A click inside the (undrawn) polygon
 // off the pin does not — in finder mode the pin is the target.
 
 import Style from 'ol/style/Style.js';
+import Icon from 'ol/style/Icon.js';
 import Fill from 'ol/style/Fill.js';
 import Stroke from 'ol/style/Stroke.js';
 import { radiusForCount, countBucket } from './clusterStyle.js';
 import { hasPhotoSignal } from './completeness.js';
 import { isRestrictedAccess } from './vectorStyles.js';
+import { sportKey, sportGlyph } from './sportGlyphs.js';
 import { FINDER } from './completenessPalette.js';
+import { hidpiStyleOptions } from './hidpiRenderer.js';
 
 // Disc outer radius matches the completeness ring's outer edge (radius + half
 // its 8 px stroke), so toggling mapping detail does not resize the clusters.
@@ -169,11 +173,13 @@ function pinBitmap(photo, restricted, pixelRatio) {
 
 // ── Pitch pin ────────────────────────────────────────────────────────────────
 // Standalone pitches (the optional "pitches outside playgrounds" layer) get
-// the same pin outline with a ball inside, so they are findable without
-// zooming in to spot a small polygon. The polygon still draws underneath.
-
-let pitchCanvas = null;
-let pitchCanvasRatio = 0;
+// the playground pin's outline inverted — white body, emerald rim — with a
+// glyph for their sport (sportGlyphs.js), so they read as secondary to the
+// solid playground pins and say what kind of pitch they are.
+//
+// An SVG Icon rather than a canvas renderer: the glyphs are SVG path data,
+// which canvas would have to re-implement. Drawn at 3x and scaled down so it
+// stays crisp on high-DPI screens.
 
 function tracePinPath(ctx) {
   const down = Math.PI / 2;
@@ -183,48 +189,49 @@ function tracePinPath(ctx) {
   ctx.closePath();
 }
 
-function pitchBitmap(pixelRatio) {
-  if (pitchCanvas && pitchCanvasRatio === pixelRatio) return pitchCanvas;
-  pitchCanvas = document.createElement('canvas');
-  pitchCanvasRatio = pixelRatio;
-  const ctx = prepareCanvas(pitchCanvas, PIN_W, PIN_H, pixelRatio);
-  paintShape(ctx, () => tracePinPath(ctx), OUTLINE);
-  // Football: ring, filled centre pentagon, five seams out to the ring.
-  ctx.strokeStyle = FINDER.fill;
-  ctx.fillStyle   = FINDER.fill;
-  ctx.lineWidth   = 1.4;
-  ctx.beginPath(); ctx.arc(PIN_CX, PIN_CY, 6.5, 0, Math.PI * 2); ctx.stroke();
-  const corner = i => -Math.PI / 2 + i * (Math.PI * 2 / 5);
-  ctx.beginPath();
-  for (let i = 0; i < 5; i++) {
-    const x = PIN_CX + Math.cos(corner(i)) * 2.8, y = PIN_CY + Math.sin(corner(i)) * 2.8;
-    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-  }
-  ctx.closePath();
-  ctx.fill();
-  for (let i = 0; i < 5; i++) {
-    ctx.beginPath();
-    ctx.moveTo(PIN_CX + Math.cos(corner(i)) * 2.8, PIN_CY + Math.sin(corner(i)) * 2.8);
-    ctx.lineTo(PIN_CX + Math.cos(corner(i)) * 6.5, PIN_CY + Math.sin(corner(i)) * 6.5);
-    ctx.stroke();
-  }
-  return pitchCanvas;
+function pinPathData() {
+  const a0 = Math.PI / 2 + PIN_SPREAD, a1 = Math.PI / 2 - PIN_SPREAD;
+  const p = a => `${(PIN_CX + PIN_RADIUS * Math.cos(a)).toFixed(2)} ${(PIN_CY + PIN_RADIUS * Math.sin(a)).toFixed(2)}`;
+  return `M${p(a0)}A${PIN_RADIUS} ${PIN_RADIUS} 0 1 1 ${p(a1)}L${PIN_CX} ${PIN_TIP_Y}Z`;
 }
 
-function renderPitchPin(pixelCoords, state) {
-  const pixelRatio = state.pixelRatio || 1;
-  const bitmap = pitchBitmap(pixelRatio);
-  const points = Array.isArray(pixelCoords[0]) ? pixelCoords : [pixelCoords];
-  for (const [x, y] of points) {
-    state.context.drawImage(bitmap, x - PIN_CX, y - PIN_TIP_Y, PIN_W, PIN_H);
-  }
+const PITCH_ICON_SCALE = 3;
+const GLYPH_SCALE = 0.6; // 24-unit glyph → ~14 px inside the 22 px disc
+
+function pitchPinSvg(glyph) {
+  const d = pinPathData();
+  const g0 = 12 * GLYPH_SCALE;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${PIN_W * PITCH_ICON_SCALE}" height="${PIN_H * PITCH_ICON_SCALE}" viewBox="0 0 ${PIN_W} ${PIN_H}">`
+    + `<path d="${d}" fill="none" stroke="${OUTLINE.casing}" stroke-width="5" stroke-linejoin="round"/>`
+    + `<path d="${d}" fill="none" stroke="${OUTLINE.border}" stroke-width="3" stroke-linejoin="round"/>`
+    + `<path d="${d}" fill="${OUTLINE.fill}"/>`
+    + `<g transform="translate(${PIN_CX - g0} ${PIN_CY - g0}) scale(${GLYPH_SCALE})" color="${FINDER.fill}" fill="none" `
+    + `stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">${glyph}</g>`
+    + '</svg>';
 }
 
-/** Pin for a standalone pitch; null for anything that is not a pitch. */
-export const pitchPinStyle = new Style({ geometry: interiorPoints, renderer: renderPitchPin, zIndex: 2 });
+const pitchStyles = new Map();
 
+function pitchPinStyle(key) {
+  let style = pitchStyles.get(key);
+  if (!style) {
+    style = new Style({
+      geometry: interiorPoints,
+      image: new Icon({
+        src: 'data:image/svg+xml;utf8,' + encodeURIComponent(pitchPinSvg(sportGlyph(key))),
+        anchor: [PIN_CX / PIN_W, PIN_TIP_Y / PIN_H],
+        scale: 1 / PITCH_ICON_SCALE,
+      }),
+      zIndex: 2,
+    });
+    pitchStyles.set(key, style);
+  }
+  return style;
+}
+
+/** Pin for a standalone pitch, by sport; null for anything that is not a pitch. */
 export function pitchPinFor(feature) {
-  return feature.get('leisure') === 'pitch' ? pitchPinStyle : null;
+  return feature.get('leisure') === 'pitch' ? pitchPinStyle(sportKey(feature.get('sport'))) : null;
 }
 
 function drawPinAt(ctx, [x, y], photo, restricted, pixelRatio) {
@@ -249,7 +256,7 @@ function renderFinderCluster(pixelCoords, state) {
   state.context.drawImage(bitmap, pixelCoords[0] - w / 2, pixelCoords[1] - h / 2, w, h);
 }
 
-const finderClusterStyle = new Style({ renderer: renderFinderCluster });
+const finderClusterStyle = new Style(hidpiStyleOptions(renderFinderCluster));
 
 /** Cluster-tier style with mapping detail off. */
 export function finderClusterStyleFn(_feature) {
@@ -276,7 +283,7 @@ function renderPlaygroundPin(pixelCoords, state) {
   for (const p of points) drawPinAt(state.context, p, photo, restricted, pixelRatio);
 }
 
-const pinStyle = new Style({ geometry: interiorPoints, renderer: renderPlaygroundPin, zIndex: 2 });
+const pinStyle = new Style({ geometry: interiorPoints, ...hidpiStyleOptions(renderPlaygroundPin), zIndex: 2 });
 
 const selectedOutlineStyle = new Style({
   fill:   new Fill({ color: FINDER.selectedFill }),

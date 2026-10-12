@@ -119,8 +119,14 @@ While mapping detail is off, playgrounds SHALL be drawn without any completeness
 #### Scenario: Standalone pitches get a pin
 
 - **WHEN** the "pitches outside playgrounds" layer is switched on
-- **THEN** every standalone pitch renders its shape plus a pin at its interior point — the playground pin's outline inverted (white body, emerald rim) with a football glyph — in both modes, since the layer is not a mapping-detail view
+- **THEN** every standalone pitch renders a pin at its interior point — the playground pin's outline inverted (white body, emerald rim) with a glyph for its `sport` (first value of a multi-valued tag; a generic glyph for untagged or unknown sports)
+- **AND** with mapping detail off the pin replaces the pitch polygon; with it on, the polygon stays underneath
 - **AND** non-pitch features of that layer get no pin
+
+#### Scenario: Markers keep their size on high-DPI screens
+
+- **WHEN** the map is shown at a device pixel ratio above 1 (phones, HiDPI desktops)
+- **THEN** finder discs and pins render at the same CSS size as at ratio 1, and clicking a pin still selects its playground
 
 #### Scenario: Selected playground shows its extent
 

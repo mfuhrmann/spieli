@@ -136,7 +136,7 @@ Themes come straight from the `playground:theme` tag in OpenStreetMap — you ca
 
 Enable "Standalone pitches" in the filter panel's Layers section to see sports pitches that are not part of any playground (football fields, basketball courts, skate parks, etc.).
 
-Each pitch gets a white pin with a green rim and a football, so pitches are easy to tell apart from the solid green playground pins.
+Each pitch gets a white pin with a green rim and a symbol for its sport — football, basketball, tennis, table tennis, volleyball, skating, riding, chess, cycling, archery, athletics, or a generic flag — so pitches are easy to tell apart from the solid green playground pins.
 
 ## Deeplinks
 

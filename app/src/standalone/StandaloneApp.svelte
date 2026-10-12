@@ -24,6 +24,7 @@
   import { regionFitPadding } from '../lib/playgroundHelpers.js';
   import { equipmentLayerStyleFn } from '../lib/vectorStyles.js';
   import { pitchPinFor } from '../lib/finderStyle.js';
+  import { mappingDetail } from '../stores/mappingDetail.js';
   import { debounce } from '../lib/utils.js';
   import { mapStore } from '../stores/map.js';
   import { filterStore, effectiveFilterStore } from '../stores/filters.js';
@@ -201,13 +202,7 @@
       pitchLayer = new VectorLayer({
         source: pitchSource,
         zIndex: 9,
-        // The pitch's own shape plus a pin, so a pitch is findable before
-        // its polygon is big enough to spot.
-        style: feature => {
-          const base = equipmentLayerStyleFn(feature);
-          const pin = pitchPinFor(feature);
-          return pin ? (base ? [base, pin] : pin) : base;
-        },
+        style: pitchLayerStyle(get(mappingDetail)),
         properties: { kind: 'overlay' },
       });
       map.addLayer(pitchLayer);
@@ -275,6 +270,19 @@
 
   // Toggle pitch-layer visibility from the filter store.
   $: if (pitchLayer) pitchLayer.setVisible($filterStore.standalonePitches);
+
+  // Pitches get a sport pin so they are findable before their polygon is big
+  // enough to spot. With mapping detail on the polygon stays underneath; in
+  // the finder view the pin alone stands for the pitch, like playgrounds (#924).
+  function pitchLayerStyle(detail) {
+    return feature => {
+      const pin = pitchPinFor(feature);
+      if (pin && !detail) return pin;
+      const base = equipmentLayerStyleFn(feature);
+      return pin ? (base ? [base, pin] : pin) : base;
+    };
+  }
+  $: if (pitchLayer) pitchLayer.setStyle(pitchLayerStyle($mappingDetail));
 
   onDestroy(() => {
     detachTierDeselect();

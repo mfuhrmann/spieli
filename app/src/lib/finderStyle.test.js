@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
-import { finderPlaygroundStyle, finderClusterStyleFn, pitchPinFor, pitchPinStyle } from './finderStyle.js';
+import { finderPlaygroundStyle, finderClusterStyleFn, pitchPinFor } from './finderStyle.js';
+import { sportKey } from './sportGlyphs.js';
 import { clusterRingStyleFn } from './clusterStyle.js';
 
 const feat = (props) => ({ get: (k) => props[k], getProperties: () => props });
@@ -32,8 +33,21 @@ const feat = (props) => ({ get: (k) => props[k], getProperties: () => props });
 
 // 5. Pitch pins only for pitches
 {
-  assert.equal(pitchPinFor(feat({ leisure: 'pitch' })), pitchPinStyle);
+  assert.ok(pitchPinFor(feat({ leisure: 'pitch', sport: 'soccer' })));
   assert.equal(pitchPinFor(feat({ leisure: 'fitness_station' })), null);
+  // One cached style per sport; different sports differ.
+  assert.equal(pitchPinFor(feat({ leisure: 'pitch', sport: 'soccer' })), pitchPinFor(feat({ leisure: 'pitch', sport: 'soccer;basketball' })));
+  assert.notEqual(pitchPinFor(feat({ leisure: 'pitch', sport: 'soccer' })), pitchPinFor(feat({ leisure: 'pitch', sport: 'tennis' })));
+  // Untagged and unknown sports share the generic glyph.
+  assert.equal(pitchPinFor(feat({ leisure: 'pitch' })), pitchPinFor(feat({ leisure: 'pitch', sport: 'model_aerodrome' })));
+}
+
+// 6. sportKey: first value of a multi-valued tag, generic fallback
+{
+  assert.equal(sportKey('soccer;basketball'), 'soccer');
+  assert.equal(sportKey(' tennis '), 'tennis');
+  assert.equal(sportKey(undefined), 'generic');
+  assert.equal(sportKey('ice_stock'), 'generic');
   assert.equal(pitchPinFor(feat({ playground: 'swing' })), null);
 }
 

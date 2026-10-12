@@ -106,6 +106,31 @@ test.describe('mapping detail control', () => {
   });
 });
 
+test.describe('high-DPI screen', () => {
+  test.use({ deviceScaleFactor: 2 });
+
+  // Renderers draw in CSS pixels and hit-test 1:1 (hidpiRenderer.js); a click
+  // just above the tip must still land on the pin at devicePixelRatio 2.
+  test('clicking a pin opens the playground', async ({ page }) => {
+    await load(page);
+    const pixel = await page.waitForFunction(() => {
+      const map = window.__spieli?.map;
+      const layer = map?.getLayers().getArray().find(l => l.getZIndex?.() === 10);
+      const f = layer?.getSource()?.getFeatures()[0];
+      if (!f) return null;
+      const g = f.getGeometry();
+      const p = g.getType() === 'MultiPolygon' ? g.getInteriorPoints().getPoint(0) : g.getInteriorPoint();
+      const c = p.getCoordinates().slice(0, 2);
+      map.getView().setCenter(c);
+      map.renderSync();
+      return map.getPixelFromCoordinate(c);
+    }).then(h => h.jsonValue());
+    const box = await page.locator('.map-container').boundingBox();
+    await page.mouse.click(box.x + pixel[0], box.y + pixel[1] - 19);
+    await expect(page.locator('aside.info-panel')).toBeVisible({ timeout: 5000 });
+  });
+});
+
 test.describe('playground panel', () => {
   test('mapping-detail badge only with mapping detail on', async ({ page }) => {
     await load(page, `/#W${OSM_ID}`);

@@ -37,7 +37,8 @@
 
 - [x] 5.7 Hide the panel's mapping-detail badge and use the finder colour for the nearby-list dots while mapping detail is off (found in live review)
 - [x] 5.8 Lock badge on pins of non-public playgrounds (access=private/customers), requested in live review
-- [x] 5.9 Pin (outlined, football glyph) for standalone pitches, requested in live review
+- [x] 5.9 Pin (outlined) for standalone pitches with a per-sport glyph; no pitch polygon in the finder view (live review)
+- [x] 5.10 Draw finder canvas markers in CSS pixels on high-DPI screens (`hidpiRenderer.js`, with a 1:1 hit-detection renderer)
 
 ## 6. End-to-end tests
 

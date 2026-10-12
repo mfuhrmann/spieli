@@ -21,6 +21,7 @@
 
 import Style from 'ol/style/Style.js';
 import { radiusForCount } from '../lib/clusterStyle.js';
+import { hidpiStyleOptions } from '../lib/hidpiRenderer.js';
 import { COMPLETENESS_BASE, RING_CASING, FINDER } from '../lib/completenessPalette.js';
 
 // Mapping-detail segments come from the shared palette (see
@@ -435,8 +436,8 @@ const degradedStyle      = new Style({ renderer: renderDegradedMacroRing });
 const importingStyle     = new Style({ renderer: renderImportingMacroRing });
 const filteredEmptyStyle = new Style({ renderer: renderFilteredEmptyMacroRing });
 const cantFilterStyle    = new Style({ renderer: renderCantFilterMacroRing });
-const finderHealthyStyle    = new Style({ renderer: renderFinderHealthyMacro });
-const finderCantFilterStyle = new Style({ renderer: renderFinderCantFilterMacro });
+const finderHealthyStyle    = new Style(hidpiStyleOptions(renderFinderHealthyMacro));
+const finderCantFilterStyle = new Style(hidpiStyleOptions(renderFinderCantFilterMacro));
 
 export function macroRingStyleFn(feature) {
   // Priority mirrors "most severe / least filtered dominates": backend-health
