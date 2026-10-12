@@ -2,7 +2,7 @@
 
 - [x] 1.1 `get_standalone_equipment`: add `access`, `operator` to the properties
 - [x] 1.2 New `api.get_pitch(osm_id)` (polygon or node, standalone only, same property shape, null when absent); grant to the anon role
-- [ ] 1.3 `make db-apply`, verify both RPCs with curl (done); fresh-volume import check per CLAUDE.md (pending: deletes local volumes, needs the maintainer's go)
+- [x] 1.3 `make db-apply` + curl locally; fresh-database ordering covered by CI on PR #937 ("Fresh-import smoke test", "Daemon mode bootstraps a fresh database")
 - [x] 1.4 `docs/reference/api.md`
 
 ## 2. Selection and deeplinks
