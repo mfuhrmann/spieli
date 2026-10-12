@@ -6,8 +6,8 @@ spieli is a free, interactive playground map based on OpenStreetMap data. This g
 
 Use your mouse (desktop) or fingers (mobile) to pan and zoom. The map shows:
 
-- **Orange circles** — at lower zoom levels, nearby playgrounds are grouped into a circle showing how many there are
-- **Orange pins** — zoom in and every playground gets its own pin; a camera on the pin means there is a photo
+- **Green circles** — at lower zoom levels, nearby playgrounds are grouped into a circle showing how many there are
+- **Green pins** — zoom in and every playground gets its own pin; a camera on the pin means there is a photo
 - **The selected playground's outline** — once you open a playground, its area is outlined on the map
 
 This is the default view, made for finding a place to play. If you add data to OpenStreetMap, you can switch on [mapping detail](#mapping-detail-colours) instead.

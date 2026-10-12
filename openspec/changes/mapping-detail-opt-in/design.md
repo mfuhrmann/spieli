@@ -13,7 +13,7 @@ Above `clusterMaxZoom` playgrounds are polygons only; small ones are hard to see
 ## Goals / Non-Goals
 
 **Goals:**
-- A visitor who never touches the new toggle sees a "finder" map: uniform orange markers at every tier, no data-quality colours, no legend.
+- A visitor who never touches the new toggle sees a "finder" map: uniform emerald markers at every tier, no data-quality colours, no legend.
 - Contributors get the current map back with one toggle, remembered across visits.
 - Mapping-detail filters can never hide playgrounds while their controls are out of sight.
 - With the toggle on, behaviour is byte-for-byte today's.
@@ -43,11 +43,11 @@ Style functions stay pure: `clusterRingStyleFn`, `playgroundStyleFn` and the mac
 
 ### 3. Neutral palette in `completenessPalette.js`
 
-Add `FINDER = { fill: '#ea580c', stroke: '#ffffff', casing: '#9a3412', text: '#ffffff' }` next to the completeness palette, so all neutral colours live in one file with their contrast rationale (orange vs. basemap `#f8f4f0`, desaturated greens, water, and the GPS blue `#007aff`). Exact casing/text values are verified against the basemap during implementation and recorded there, as was done for the completeness palette.
+Add `FINDER = { fill: '#059669', border: '#ffffff', casing: '#065f46', text: '#ffffff' }` (emerald; first proposed as orange `#ea580c`, switched after a side-by-side live review) next to the completeness palette, so all neutral colours live in one file with their contrast rationale (orange vs. basemap `#f8f4f0`, desaturated greens, water, and the GPS blue `#007aff`). Exact casing/text values are verified against the basemap during implementation and recorded there, as was done for the completeness palette.
 
 ### 4. Cluster tier when off: filled circle, same sizes
 
-Same `radiusForCount` scale, same count font. Filled orange disc with a white 2 px border and a dark-orange 1 px casing; count in white. A `count = 1` cluster renders as a **pin** (decision 5), not a dot, so zooming from the cluster tier into the polygon tier does not change the marker's shape.
+Same `radiusForCount` scale, same count font. Filled emerald disc with a white 2 px border and a dark-emerald 1 px casing; count in white. A `count = 1` cluster renders as a **pin** (decision 5), not a dot, so zooming from the cluster tier into the polygon tier does not change the marker's shape.
 
 ### 5. Pin marker
 
@@ -57,7 +57,7 @@ At the polygon tier the style is a `Style` with `geometry: interiorPoint` (the s
 
 ### 6. Selected playground's polygon
 
-When a playground is selected and mapping detail is off, its polygon is drawn as an orange outline with a light orange fill beneath its pin (style function compares against the `selection` store's feature, already available to Map). On mobile the full-screen panel covers the map, so this is effectively desktop-only without a separate branch.
+When a playground is selected and mapping detail is off, its polygon is drawn as an emerald outline with a light emerald fill beneath its pin (style function compares against the `selection` store's feature, already available to Map). On mobile the full-screen panel covers the map, so this is effectively desktop-only without a separate branch.
 
 ### 7. Mapping-detail control
 

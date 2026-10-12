@@ -85,12 +85,12 @@ The detailed / basic / no-details-yet filters and the mapping-detail legend SHAL
 
 ### Requirement: Finder rendering uses one neutral colour at every tier
 
-While mapping detail is off, playgrounds SHALL be drawn without any completeness colour coding, in a single neutral warm-orange palette defined alongside the completeness palette.
+While mapping detail is off, playgrounds SHALL be drawn without any completeness colour coding, in a single neutral emerald palette defined alongside the completeness palette.
 
 #### Scenario: Cluster tier
 
 - **WHEN** mapping detail is off and the cluster tier is active
-- **THEN** each multi-playground cluster is a filled orange disc with a white border and the total count in white, sized by the same count scale as the completeness rings
+- **THEN** each multi-playground cluster is a filled emerald disc with a white border and the total count in white, sized by the same count scale as the completeness rings
 - **AND** no completeness segments are drawn
 
 #### Scenario: Single-playground cluster is a pin

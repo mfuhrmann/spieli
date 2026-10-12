@@ -1,6 +1,6 @@
 // Finder rendering — the map with mapping detail off (#924).
 //
-// One neutral orange at every tier instead of completeness colours:
+// One neutral emerald at every tier instead of completeness colours:
 //
 //   cluster tier   filled disc with the count, same size scale as the
 //                  completeness rings; a cluster of one is a pin

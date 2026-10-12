@@ -8,7 +8,7 @@ The map currently leads with OSM data quality: cluster rings are segmented green
 - A `?detail=1` link parameter opens the map with mapping detail on (without changing the visitor's stored choice); the share button includes it while detail is on.
 - The mapping-detail filters (detailed / basic / no details yet) move out of the Filter panel into the toggle's popover, together with the legend. While mapping detail is off they are **ignored**, so a filter the visitor cannot see never hides playgrounds.
 - With mapping detail **off**:
-  - Cluster rings render as one filled neutral circle (warm orange, white count and border) instead of completeness segments; single-playground clusters render as the pin (below), so the marker keeps its shape across the zoom boundary.
+  - Cluster rings render as one filled neutral circle (emerald, white count and border) instead of completeness segments; single-playground clusters render as the pin (below), so the marker keeps its shape across the zoom boundary.
   - Above `clusterMaxZoom` (polygon tier) each playground is drawn as a **pin** — the round cluster shape with a small pointer at the bottom — at its interior point, instead of a coloured polygon. The photo glyph moves onto the pin.
   - The selected playground's polygon is outlined (desktop panel open), so its extent is still visible.
   - Hub macro rings render neutral too.

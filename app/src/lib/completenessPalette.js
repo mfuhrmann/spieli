@@ -194,24 +194,31 @@ export const COMPLETENESS_BASE = {
 // ── Finder palette (mapping detail off, #924) ────────────────────────────────
 //
 // With mapping detail off every playground marker — cluster disc, pin, macro
-// disc, selected outline — is one warm orange. Orange because it is free on
-// this map: not a mapping-detail green, not the slate of `missing`, not the
-// GPS dot's blue (#007aff) and not water.
+// disc, selected outline — is one emerald. Chosen over a warm orange after a
+// side-by-side live review (2026-10-12): it matches the app's own green
+// controls and reads calmer at the cluster tier. Known costs, accepted:
+//
+//   - It shares a hue family with the mapping-detail greens. That is only a
+//     problem across modes — the two are never on the map together — and the
+//     finder view shows no legend that could suggest a meaning.
+//   - Inside a selected playground it sits among green tree dots, grass and
+//     pitch polygons, so the outline separates less than orange did.
 //
 // WCAG contrast of the fill alone, measured against the basemap:
 //
-//                 ground #f8f4f0  landuse #e0dfdf  buildings #d9d0c9  water #a0c8f0
-//   #ea580c fill       3.25            2.68             2.34              2.04
-//   #9a3412 casing     6.68            5.49             4.81              4.18
+//                 ground   landuse  buildings  water    park
+//                 #f8f4f0  #e0dfdf  #d9d0c9    #a0c8f0  #d8e8c8
+//   #059669 fill    3.44     2.83     2.48       2.16     2.92
+//   #065f46 casing  7.02     5.78     5.06       4.40     5.96
 //
 // The fill clears 3:1 only on open ground, so — as with RING_CASING — a dark
 // casing carries the edge and the fill is free to be the friendly colour.
-// White count text on the fill is 3.56:1, short of 4.5:1 for 16px bold, so the
-// count gets a casing-coloured halo (white on #9a3412 is 7.31:1).
+// White count text on the fill is 3.77:1, short of 4.5:1 for 16px bold, so the
+// count gets a casing-coloured halo (white on #065f46 is 7.68:1).
 export const FINDER = {
-    fill:         '#ea580c', // orange-600
-    casing:       '#9a3412', // orange-800
+    fill:         '#059669', // emerald-600
+    casing:       '#065f46', // emerald-800
     border:       '#ffffff',
     text:         '#ffffff',
-    selectedFill: 'rgba(234, 88, 12, 0.12)',
+    selectedFill: 'rgba(5, 150, 105, 0.12)',
 };

@@ -373,7 +373,7 @@ function formatCount(n) {
 }
 
 // ── Finder variants (mapping detail off, #924) ──────────────────────────────
-// A healthy backend becomes a plain orange disc with its total; can't-filter
+// A healthy backend becomes a plain emerald disc with its total; can't-filter
 // keeps its dashed halo and label on top of that disc. The health variants
 // (offline, importing, degraded, no match) are about the backend, not about
 // mapping detail, and render the same in both modes.

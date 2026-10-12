@@ -315,7 +315,7 @@ This catches ordering bugs (e.g. a function referencing a table defined later in
 
 ### Finder view (`app/src/lib/finderStyle.js`)
 
-With mapping detail off (the default, #924) `Map.svelte` swaps every tier's style: `finderClusterStyleFn` (orange discs on the same `radiusForCount` scale; a cluster of one is a pin), `finderPlaygroundStyle(feature, selectedOsmId)` (a tip-anchored pin at each interior point, no polygon, plus the selected playground's outline — matched by `osm_id` because tier refetches replace the feature objects) and `finderMacroRingStyleFn` in `hub/macroRingStyle.js` (health variants unchanged). Colours are `FINDER` in `completenessPalette.js`; the orange fill alone is only 2.0–2.3:1 on buildings and water, so a `#9a3412` casing carries the edge and haloes the white count.
+With mapping detail off (the default, #924) `Map.svelte` swaps every tier's style: `finderClusterStyleFn` (emerald discs on the same `radiusForCount` scale; a cluster of one is a pin), `finderPlaygroundStyle(feature, selectedOsmId)` (a tip-anchored pin at each interior point, no polygon, plus the selected playground's outline — matched by `osm_id` because tier refetches replace the feature objects) and `finderMacroRingStyleFn` in `hub/macroRingStyle.js` (health variants unchanged). Colours are `FINDER` in `completenessPalette.js`; the emerald fill alone is only 2.2–2.5:1 on buildings and water, so a `#065f46` casing carries the edge and haloes the white count.
 
 ### Styles (`app/src/lib/vectorStyles.js`)
 
