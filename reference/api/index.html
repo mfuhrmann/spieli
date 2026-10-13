@@ -2809,7 +2809,7 @@
 <td><code>radius_m</code></td>
 <td><code>integer</code></td>
 <td><code>500</code></td>
-<td>Search radius in metres (configurable via <code>POI_RADIUS_M</code> env var)</td>
+<td>Search radius in ground metres, capped at 20 000 (the frontend sends <code>POI_RADIUS_M</code>, default 5000). Polygon POIs count when their centroid — the position returned — is in range. Before #954 it was compared in EPSG:3857 units, which made the effective radius <code>radius_m × cos(latitude)</code> — about 3.2 km for 5000 in central Germany</td>
 </tr>
 </tbody>
 </table>
