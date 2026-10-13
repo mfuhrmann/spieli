@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { injectHubConfig, stubHubRegistry, stubFederationStatus, makePlayground } from './helpers.js';
+import { injectHubConfig, stubHubRegistry, stubFederationStatus, makePlayground, waitForHubSettled } from './helpers.js';
 
 const instanceA = {
   slug: 'slug-a',
@@ -35,14 +35,15 @@ test.describe('Hub instance pill + drawer', () => {
   test('pill shows aggregated region + playground counts after load', async ({ page }) => {
     await page.goto('/');
     const pill = page.locator('.instance-slot .pill');
-    await expect(pill).toContainText(/2\s+(Regionen|regions)/, { timeout: 8000 });
+    await waitForHubSettled(page);
+    await expect(pill).toContainText(/2\s+(Regionen|regions)/);
     await expect(pill).toContainText(/3\s+(Spielplätze|playgrounds)/);
   });
 
   test('clicking pill expands drawer with per-backend rows', async ({ page }) => {
     await page.goto('/');
     const pill = page.locator('.instance-slot .pill');
-    await expect(pill).toContainText(/2\s+(Regionen|regions)/, { timeout: 8000 });
+    await waitForHubSettled(page);
 
     await pill.click();
 
@@ -56,7 +57,7 @@ test.describe('Hub instance pill + drawer', () => {
   test('ESC collapses drawer', async ({ page }) => {
     await page.goto('/');
     const pill = page.locator('.instance-slot .pill');
-    await expect(pill).toContainText(/2\s+(Regionen|regions)/, { timeout: 8000 });
+    await waitForHubSettled(page);
 
     await pill.click();
     await expect(page.locator('.drawer[role="dialog"]')).toBeVisible();
@@ -68,7 +69,7 @@ test.describe('Hub instance pill + drawer', () => {
   test('outside click collapses drawer', async ({ page }) => {
     await page.goto('/');
     const pill = page.locator('.instance-slot .pill');
-    await expect(pill).toContainText(/2\s+(Regionen|regions)/, { timeout: 8000 });
+    await waitForHubSettled(page);
 
     await pill.click();
     await expect(page.locator('.drawer[role="dialog"]')).toBeVisible();
@@ -81,7 +82,7 @@ test.describe('Hub instance pill + drawer', () => {
   test('drawer shows version badge when meta includes version', async ({ page }) => {
     await page.goto('/');
     const pill = page.locator('.instance-slot .pill');
-    await expect(pill).toContainText(/2\s+(Regionen|regions)/, { timeout: 8000 });
+    await waitForHubSettled(page);
 
     await pill.click();
 
@@ -100,7 +101,7 @@ test.describe('Hub instance pill + drawer', () => {
 
     await page.goto('/');
     const pill = page.locator('.instance-slot .pill');
-    await expect(pill).toContainText(/2\s+(Regionen|regions)/, { timeout: 8000 });
+    await waitForHubSettled(page);
 
     await pill.click();
 
@@ -127,7 +128,7 @@ test.describe('Hub instance pill + drawer', () => {
 
     await page.goto('/');
     const pill = page.locator('.instance-slot .pill');
-    await expect(pill).toContainText(/2\s+(Regionen|regions)/, { timeout: 8000 });
+    await waitForHubSettled(page);
 
     await pill.click();
 
@@ -159,7 +160,7 @@ test.describe('Hub instance pill + drawer', () => {
 
     await page.goto('/');
     const pill = page.locator('.instance-slot .pill');
-    await expect(pill).toContainText(/2\s+(Regionen|regions)/, { timeout: 8000 });
+    await waitForHubSettled(page);
 
     await pill.click();
     const drawer = page.locator('.drawer[role="dialog"]');
@@ -195,7 +196,7 @@ test.describe('Hub bbox overlap warning', () => {
     await page.goto('/');
 
     const pill = page.locator('.instance-slot .pill');
-    await expect(pill).toContainText(/2\s+(Regionen|regions)/, { timeout: 8000 });
+    await waitForHubSettled(page);
 
     await pill.click();
     const drawer = page.locator('.drawer[role="dialog"]');
@@ -232,7 +233,7 @@ test.describe('Hub bbox overlap warning', () => {
     await page.goto('/');
 
     const pill = page.locator('.instance-slot .pill');
-    await expect(pill).toContainText(/2\s+(Regionen|regions)/, { timeout: 8000 });
+    await waitForHubSettled(page);
 
     await pill.click();
     await expect(page.locator('.drawer[role="dialog"]')).toBeVisible();

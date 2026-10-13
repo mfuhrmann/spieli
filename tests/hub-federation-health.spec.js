@@ -21,6 +21,7 @@ import {
   stubHubRegistry,
   stubFederationStatus,
   makePlayground,
+  waitForHubSettled,
 } from './helpers.js';
 
 const instanceA = {
@@ -57,15 +58,10 @@ const instanceB = {
 
 /**
  * Open the instance drawer by clicking the pill, once the hub has settled on
- * `regions` reachable regions. Matches the settled "N regions · M playgrounds"
- * label (with its separator), never the transient "0/2 regions" progress
- * label — matching that one is how the down-backend test used to pass by
- * accident and fail under load (#810).
+ * `regions` reachable regions (see waitForHubSettled, #810).
  */
 async function openDrawer(page, { regions = 2 } = {}) {
-  const pill = page.locator('.instance-slot .pill');
-  await expect(pill).not.toHaveClass(/pill--loading/, { timeout: 8000 });
-  await expect(pill).toContainText(new RegExp(`(^|\\s)${regions}\\s+(Regionen?|regions?)\\s*·`), { timeout: 8000 });
+  const pill = await waitForHubSettled(page, { regions });
   await pill.click();
   const drawer = page.locator('.drawer[role="dialog"]');
   await expect(drawer).toBeVisible();

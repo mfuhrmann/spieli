@@ -17,6 +17,7 @@ import {
   injectHubConfig,
   stubHubRegistry,
   makePlayground,
+  waitForHubSettled,
 } from './helpers.js';
 
 const SHARED_OSM_ID = 5000;
@@ -96,8 +97,7 @@ test.describe('Hub polygon dedup — cross-backend osm_id', () => {
     await stubHubRegistry(page, { instanceA, instanceB });
     await page.goto('/');
 
-    await expect(page.locator('.instance-slot .pill'))
-      .toContainText(/2\s+(Regionen|regions)/, { timeout: 8000 });
+    await waitForHubSettled(page);
     await waitForPolygonCount(page, SHARED_OSM_ID, 1);
     expect(errors, `unexpected page errors: ${errors.join(', ')}`).toEqual([]);
   });
@@ -116,8 +116,7 @@ test.describe('Hub polygon dedup — cross-backend osm_id', () => {
     await stubHubRegistry(page, { instanceA, instanceB });
     await page.goto('/');
 
-    await expect(page.locator('.instance-slot .pill'))
-      .toContainText(/2\s+(Regionen|regions)/, { timeout: 8000 });
+    await waitForHubSettled(page);
     await expect.poll(() => polygonCalls.a, { timeout: 5000 }).toBeGreaterThanOrEqual(1);
     await expect.poll(() => polygonCalls.b, { timeout: 5000 }).toBeGreaterThanOrEqual(1);
   });
@@ -132,8 +131,7 @@ test.describe('Hub polygon dedup — cross-backend osm_id', () => {
     await stubHubRegistry(page, { instanceA, instanceB });
     await page.goto('/');
 
-    await expect(page.locator('.instance-slot .pill'))
-      .toContainText(/2\s+(Regionen|regions)/, { timeout: 8000 });
+    await waitForHubSettled(page);
     await waitForPolygonCount(page, SHARED_OSM_ID, 1);
 
     const state = await readPolygonSourceFor(page, SHARED_OSM_ID);

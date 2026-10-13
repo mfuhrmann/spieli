@@ -4,7 +4,7 @@
 // behaviour (both backends queried in parallel, results merged).
 
 import { test, expect } from '@playwright/test';
-import { injectHubConfig, stubHubRegistry, makePlayground } from './helpers.js';
+import { injectHubConfig, stubHubRegistry, makePlayground, waitForHubSettled } from './helpers.js';
 
 // Two backend fixture sets:
 //   - `continental` — wide bboxes whose union forces HubApp.tryFit to land in
@@ -69,7 +69,7 @@ test.describe('Hub multi-backend orchestration (P2 §9)', () => {
     // Pill renders the aggregated counts from get_meta — implicit signal
     // that the macro tier loaded correctly.
     const pill = page.locator('.instance-slot .pill');
-    await expect(pill).toContainText(/2\s+(Regionen|regions)/, { timeout: 8000 });
+    await waitForHubSettled(page);
     await expect(pill).toContainText(/300\s+(Spielplätze|playgrounds)/); // 100 + 200
 
     // Give the orchestrator a beat to confirm it really doesn't fan out

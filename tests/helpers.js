@@ -1,5 +1,6 @@
 // Shared test utilities for the spieli Svelte app.
 
+import { expect } from '@playwright/test';
 import fixture from './fixtures/playground.json' assert { type: 'json' };
 
 /**
@@ -278,4 +279,19 @@ export function makePlayground({ osmId, name, lon = 13.404, lat = 52.520 }) {
       area: 450,
     },
   };
+}
+
+/**
+ * Wait until the hub's instance pill has settled — every backend answered or
+ * failed (`aria-busy="false"`) — on `regions` reachable regions, and return
+ * the pill. Gate hub tests on this, not on a "2 regions" text match: that
+ * also matched the transient "0/2 regions" progress label, so a test could
+ * pass the gate before anything had loaded and flake under load (#810).
+ * Locale-independent: it reads the number the label starts with.
+ */
+export async function waitForHubSettled(page, { regions = 2 } = {}) {
+  const pill = page.locator('.instance-slot .pill');
+  await expect(pill).toHaveAttribute('aria-busy', 'false', { timeout: 8000 });
+  await expect(pill.locator('.pill__text--full')).toHaveText(new RegExp(`^\\s*${regions}\\s`), { timeout: 8000 });
+  return pill;
 }
