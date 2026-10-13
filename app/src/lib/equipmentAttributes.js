@@ -81,6 +81,32 @@ function pitchImageFor(sportRaw) {
 }
 
 /**
+ * The example illustration for a pitch's sport, as HTML (image, "example
+ * image" caption, CC credit), or '' when the sport has none. Shared by the
+ * pitch rows inside a playground and the standalone pitch panel (#968).
+ * @param {string|null|undefined} sportRaw - the `sport` tag value
+ * @param {Function} t - svelte-i18n translate function
+ */
+export function pitchIllustrationHtml(sportRaw, t) {
+    if (!sportRaw) return '';
+    const file = pitchImageFor(sportRaw);
+    const img = file ? resolvedImage(file) : null;
+    if (!img) return '';
+    // Alt text in the visitor's language, not the raw tag value.
+    const alt = sportRaw.split(';').map(s => s.trim()).filter(Boolean)
+        .map(s => tl(t, `equipment.pitches.${s}`, s)).join(' / ');
+    // Hides itself if the file has gone since the build, rather than leaving a
+    // broken-image icon captioned "example image".
+    const onerror = "this.closest('.device-img-wrap').style.display='none'";
+    return `<div class="device-img-wrap">` +
+        `<img src="${escapeHtml(img.url)}"` +
+        ` alt="${escapeHtml(alt)}" loading="lazy" referrerpolicy="no-referrer"` +
+        ` onerror="${onerror}" style="object-fit:contain;width:100%">` +
+        `<p class="mb-0 text-muted" style="font-size:0.75rem;"><span class="bi bi-image"></span> ` +
+        `${escapeHtml(t('popup.deviceSymbol'))}${imageCredit(img)}</p></div>`;
+}
+
+/**
  * Returns detail attributes for a single equipment item.
  * @param {Object} props - plain GeoJSON feature properties object
  * @param {Function} t - svelte-i18n translate function
@@ -199,20 +225,7 @@ export function getEquipmentAttributesFromProps(props, t) {
     // attributes rather than instead of them. A pitch almost always carries
     // surface= at least, so the device rule ("only when nothing else is
     // known") would have hidden nearly every pitch illustration (#966).
-    if (leisure === 'pitch' && !panoramaxUuid && sportRaw && pitchImageFor(sportRaw)) {
-        const img = resolvedImage(pitchImageFor(sportRaw));
-        if (img) {
-            // Alt text in the visitor's language, not the raw tag value.
-            const alt = sportRaw.split(';').map(s => s.trim()).filter(Boolean)
-                .map(s => tl(t, `equipment.pitches.${s}`, s)).join(' / ');
-            html += `<div class="device-img-wrap">` +
-                `<img src="${escapeHtml(img.url)}"` +
-                ` alt="${escapeHtml(alt)}" loading="lazy" referrerpolicy="no-referrer"` +
-                ` onerror="${onerror}" style="object-fit:contain;width:100%">` +
-                `<p class="mb-0 text-muted" style="font-size:0.75rem;"><span class="bi bi-image"></span> ` +
-                `${escapeHtml(t('popup.deviceSymbol'))}${imageCredit(img)}</p></div>`;
-        }
-    }
+    if (leisure === 'pitch' && !panoramaxUuid) html += pitchIllustrationHtml(sportRaw, t);
 
     // Fallback image for a device when no panoramax photo and no attributes
     if (!html && !panoramaxUuid) {

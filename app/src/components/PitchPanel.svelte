@@ -25,6 +25,7 @@
   import MapCompleteLink from './MapCompleteLink.svelte';
   import PanoramaxViewer from './PanoramaxViewer.svelte';
   import CommonsGallery from './CommonsGallery.svelte';
+  import { pitchIllustrationHtml } from '../lib/equipmentAttributes.js';
 
   export let embedded = false;
 
@@ -61,6 +62,7 @@
   })();
   $: commonsTag = attr?.wikimedia_commons || '';
   $: imageTag = attr?.image || '';
+  $: illustration = attr ? pitchIllustrationHtml(attr.sport, $_) : '';
   let commonsPhotoCount = 0;
 
   // ── Links ─────────────────────────────────────────────────────────────────
@@ -212,6 +214,13 @@
           {#if panoramaxUuids.length > 0}
             <PanoramaxViewer uuids={panoramaxUuids} {mcUrl} />
           {/if}
+        </section>
+      {:else if illustration}
+        <!-- No photo of this pitch: an example illustration of its sport, as
+             the pitch rows inside a playground show (#968). -->
+        <section class="mb-4 pitch-illustration">
+          <h3 class="section-label"><Image class="h-3 w-3 inline" /> {$_('accordion.photos')}</h3>
+          {@html illustration}
         </section>
       {/if}
 
