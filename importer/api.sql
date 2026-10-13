@@ -154,6 +154,25 @@ CREATE OR REPLACE VIEW public.playground_equipment_src AS
      OR leisure IN ('picnic_table', 'pitch', 'fitness_station');
 
 -- =========================================================================
+-- metres_to_3857(metres, lat)
+--    A ground distance in EPSG:3857 units at the given latitude. Web
+--    Mercator units are stretched by 1/cos(latitude), so a metre value
+--    compared against `way` geometries directly shrinks by cos(lat) — 5 km
+--    became about 3.2 km in Fulda (#954). Scaling the distance, rather than
+--    casting to geography, keeps the GiST index on `way` usable; over a few
+--    km the scale factor barely changes. Latitude is clamped to the
+--    Mercator limit, so a pole or an out-of-range value cannot blow the
+--    distance up or turn it negative. In `public`, not `api`: a helper,
+--    not an RPC.
+-- =========================================================================
+CREATE OR REPLACE FUNCTION public.metres_to_3857(metres float8, lat float8)
+RETURNS float8
+LANGUAGE sql IMMUTABLE PARALLEL SAFE
+AS $$
+  SELECT metres / cos(radians(LEAST(GREATEST(lat, -85.05), 85.05)));
+$$;
+
+-- =========================================================================
 -- Indexes on the osm2pgsql tables (idempotent).
 --
 -- These are created *before* the playground_stats build, not after it: the
@@ -168,6 +187,8 @@ CREATE OR REPLACE VIEW public.playground_equipment_src AS
 -- is a no-op and the ordering costs nothing there.
 -- =========================================================================
 CREATE INDEX IF NOT EXISTS idx_osm_polygon_way   ON planet_osm_polygon USING GIST (way);
+CREATE INDEX IF NOT EXISTS idx_osm_line_way      ON planet_osm_line    USING GIST (way);
+CREATE INDEX IF NOT EXISTS idx_osm_line_fence    ON planet_osm_line    USING GIST (way) WHERE barrier = 'fence';
 CREATE INDEX IF NOT EXISTS idx_osm_point_way     ON planet_osm_point   USING GIST (way);
 CREATE INDEX IF NOT EXISTS idx_osm_polygon_lei   ON planet_osm_polygon (leisure)   WHERE leisure   IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_osm_point_lei     ON planet_osm_point   (leisure)   WHERE leisure   IS NOT NULL;
@@ -267,6 +288,30 @@ CREATE MATERIALIZED VIEW public.playground_stats_new AS
       ON ST_DWithin(t.way, pl.way, 15)
       AND t.natural = 'tree'
     GROUP BY pl.osm_id, pl.osm_type
+  ),
+  -- Fences mapped as their own barrier=fence way around the playground — the
+  -- dominant German pattern, which the playground's own tags never show
+  -- (#773). Share of the outline running within 4 m of such a fence; the
+  -- playground counts as fenced from 75 % (below), so a fence along the road
+  -- side only does not make it "fenced" for a parent who wants to know that
+  -- a child cannot just run off. The ratio of two lengths is unit-free, so
+  -- only the 4 m tolerance needs the Mercator correction. Node playgrounds
+  -- have no outline and are skipped.
+  fence_cover AS (
+    SELECT
+      pl.osm_id,
+      pl.osm_type,
+      ST_Length(ST_Intersection(ST_Boundary(pl.way), ST_Union(ST_Buffer(f.way, tol.d))))
+        / NULLIF(ST_Length(ST_Boundary(pl.way)), 0) AS fenced_share
+    FROM all_playgrounds pl
+    CROSS JOIN LATERAL (
+      SELECT public.metres_to_3857(4, ST_Y(ST_Transform(ST_Centroid(pl.way), 4326))) AS d
+    ) tol
+    JOIN planet_osm_line f
+      ON f.barrier = 'fence'
+      AND ST_DWithin(f.way, pl.way, tol.d)
+    WHERE pl.osm_type <> 'N'
+    GROUP BY pl.osm_id, pl.osm_type, pl.way
   ),
   -- Equipment from all three osm2pgsql tables (incl. planet_osm_line, where
   -- playground=* closed ways land). Shared with api.get_equipment via
@@ -474,7 +519,9 @@ CREATE MATERIALIZED VIEW public.playground_stats_new AS
     -- unaffected: an un-upgraded backend still answers the wheelchair filter,
     -- just with the older, broader predicate.
     COALESCE(es.wheelchair_play_yes, false) AS for_wheelchair,
-    COALESCE(es.has_fence,       false) AS has_fence,
+    -- Own tags (enclosed=yes / barrier=fence on the area) or a separately
+    -- mapped fence along at least three quarters of the outline (#773).
+    (COALESCE(es.has_fence, false) OR COALESCE(fc.fenced_share >= 0.75, false)) AS has_fence,
     COALESCE(es.has_dogs,       false) AS has_dogs,
     COALESCE(es.has_theme,      false) AS has_theme,
     es.has_shade,
@@ -512,7 +559,8 @@ CREATE MATERIALIZED VIEW public.playground_stats_new AS
   FROM all_playgrounds pl
   LEFT JOIN tree_counts        tc ON tc.osm_id = pl.osm_id AND tc.osm_type = pl.osm_type
   LEFT JOIN equip_stats        es ON es.osm_id = pl.osm_id AND es.osm_type = pl.osm_type
-  LEFT JOIN completeness_attrs ca ON ca.osm_id = pl.osm_id AND ca.osm_type = pl.osm_type;
+  LEFT JOIN completeness_attrs ca ON ca.osm_id = pl.osm_id AND ca.osm_type = pl.osm_type
+  LEFT JOIN fence_cover        fc ON fc.osm_id = pl.osm_id AND fc.osm_type = pl.osm_type;
 
 -- Indexed before the swap, so the view is fully indexed the moment it
 -- becomes visible — no window where readers hit an unindexed sequential
@@ -1382,25 +1430,6 @@ AS $$
 $$;
 
 GRANT EXECUTE ON FUNCTION api.get_pitch(bigint) TO web_anon;
-
--- =========================================================================
--- metres_to_3857(metres, lat)
---    A ground distance in EPSG:3857 units at the given latitude. Web
---    Mercator units are stretched by 1/cos(latitude), so a metre value
---    compared against `way` geometries directly shrinks by cos(lat) — 5 km
---    became about 3.2 km in Fulda (#954). Scaling the distance, rather than
---    casting to geography, keeps the GiST index on `way` usable; over a few
---    km the scale factor barely changes. Latitude is clamped to the
---    Mercator limit, so a pole or an out-of-range value cannot blow the
---    distance up or turn it negative. In `public`, not `api`: a helper,
---    not an RPC.
--- =========================================================================
-CREATE OR REPLACE FUNCTION public.metres_to_3857(metres float8, lat float8)
-RETURNS float8
-LANGUAGE sql IMMUTABLE PARALLEL SAFE
-AS $$
-  SELECT metres / cos(radians(LEAST(GREATEST(lat, -85.05), 85.05)));
-$$;
 
 -- =========================================================================
 -- 4. get_pois(lat, lon, radius_m)

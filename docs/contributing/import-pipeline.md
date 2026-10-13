@@ -71,9 +71,12 @@ Before osm2pgsql runs, `osmium tags-filter` keeps only objects with tags the app
 - `amenity=bench`, `amenity=shelter`, `amenity=toilets`, `amenity=ice_cream`, `amenity=cafe`, `amenity=restaurant`
 - `natural=tree`, `natural=tree_row`, `playground=*`
 - `highway=bus_stop`, `shop=chemist/supermarket/convenience`, `emergency=*`
+- `barrier=fence` ways — fences drawn around a playground (#773)
 - `boundary=administrative`, `type=multipolygon`
 
 **If you add a new OSM object type**, add its tag to this filter — otherwise the importer will silently discard those objects.
+
+The list lives in `TAG_FILTERS`, and the tag-filtered extract is cached next to a hash of it (`*_tags.pbf.filter`). Changing the list invalidates the cache on the next import, so the new tags arrive even when the source PBF has not changed. It still needs a full import — `API_ONLY` never runs osmium.
 
 ## The `playground_stats` materialised view
 
@@ -135,7 +138,7 @@ Several boolean columns in `playground_stats` are computed from equipment found 
 | `for_wheelchair` | boolean projection of `wheelchair_play = 'yes'` (see below) |
 | `wheelchair_play` | Tri-state, derived from **play devices only** (`playground=*`). `'yes'` when one is tagged `wheelchair` ∈ `yes`, `limited`, `designated`; `'no'` when devices carry a `wheelchair` tag but none qualifies; `NULL` when none carries one. A `playground=sandpit` counts only on `wheelchair=yes` — the wiki documents no value for a roll-under sand table, so that tag is a mapper's only way to record one; `limited`/`no` on a sandpit is too ambiguous to support a negative finding and is ignored on both sides. The playground area's own `wheelchair` tag is deliberately **not** an input — it describes site access, which barely separates playgrounds, whereas the equipment tag is what the audience is asking about. Street furniture and pitches cannot set it either. See [`docs/user-guide.md`](../user-guide.md#wheelchair-accessibility) for the user-facing wording |
 | `has_soccer` / `has_basketball` | `leisure=pitch` with matching `sport` value |
-| `has_fence` | `enclosed=yes` or `barrier=fence` on playground |
+| `has_fence` | `enclosed=yes` or `barrier=fence` on the playground, **or** separately mapped `barrier=fence` ways (from `planet_osm_line`) within 4 m of at least 75 % of its outline (`fence_cover`, #773) |
 | `has_dogs` | `dog=yes` on playground |
 | `has_theme` | an allowlisted `playground:theme` value on the playground area **or** any device within it (allowlist mirrors `SUPPORTED_THEMES` in `app/src/lib/playgroundThemes.js`) |
 | `has_shade` | `shade` tag on playground — `true` when `shade=yes`, `false` when `shade=no`, `null` when untagged |

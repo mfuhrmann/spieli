@@ -57,7 +57,7 @@ Pre-aggregated cluster buckets for the cluster tier. Each bucket counts playgrou
 | `filter_table_tennis` | `boolean` | `false` | When `true`, include only playgrounds with a table tennis table |
 | `filter_soccer` | `boolean` | `false` | When `true`, include only playgrounds with a football pitch |
 | `filter_basketball` | `boolean` | `false` | When `true`, include only playgrounds with a basketball court |
-| `filter_fence` | `boolean` | `false` | When `true`, include only playgrounds with a fence |
+| `filter_fence` | `boolean` | `false` | When `true`, include only playgrounds with a fence — own tags, or a separate `barrier=fence` way along ≥ 75 % of the outline (#773) |
 | `filter_has_dogs` | `boolean` | `false` | When `true`, include only playgrounds where dogs are allowed |
 | `filter_theme` | `boolean` | `false` | When `true`, include only playgrounds with a recognised `playground:theme` |
 | `filter_shade` | `boolean` | `false` | When `true`, include only playgrounds with shade |

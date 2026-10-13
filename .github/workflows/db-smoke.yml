@@ -69,6 +69,23 @@ jobs:
           docker compose exec -T db psql -U osm -d osm -v ON_ERROR_STOP=1 \
             < dev/ci/planet-osm-tables.sql
 
+      - name: Load fence fixtures
+        # Two playgrounds with a separately mapped barrier=fence way along
+        # their outline (#773): 87.5 % fenced must count, 25 % must not.
+        # Loaded before api.sql so the playground_stats build sees them.
+        run: |
+          set -euo pipefail
+          docker compose exec -T db psql -U osm -d osm -v ON_ERROR_STOP=1 --single-transaction <<'SQL'
+          INSERT INTO planet_osm_polygon (osm_id, leisure, tags, way) VALUES
+            (773001, 'playground', ''::hstore, ST_Transform(ST_MakeEnvelope(9.7000, 50.5000, 9.7006, 50.5004, 4326), 3857)),
+            (773002, 'playground', ''::hstore, ST_Transform(ST_MakeEnvelope(9.7100, 50.5000, 9.7106, 50.5004, 4326), 3857));
+          INSERT INTO planet_osm_line (osm_id, barrier, way)
+          SELECT 773100 + p.osm_id - 773000, 'fence',
+                 ST_LineSubstring(ST_ExteriorRing(p.way), 0, CASE p.osm_id WHEN 773001 THEN 0.875 ELSE 0.25 END)
+          FROM planet_osm_polygon p WHERE p.osm_id IN (773001, 773002);
+          SQL
+        timeout-minutes: 2
+
       - name: Apply api.sql on blank DB
         # Mirrors the two-pass logic in `make db-apply`:
         # ALTER SYSTEM runs outside a transaction; everything else in one.
@@ -196,6 +213,27 @@ jobs:
             RAISE NOTICE 'OK: playground_stats carries the equipment/info rule';
           END
           $parity$;
+          SQL
+        timeout-minutes: 2
+
+      - name: Assert separately mapped fences count (#773)
+        run: |
+          set -euo pipefail
+          docker compose exec -T db psql -U osm -d osm -v ON_ERROR_STOP=1 <<'SQL'
+          DO $fence$
+          DECLARE a boolean; b boolean;
+          BEGIN
+            SELECT has_fence INTO a FROM playground_stats WHERE osm_id = 773001;
+            SELECT has_fence INTO b FROM playground_stats WHERE osm_id = 773002;
+            IF a IS DISTINCT FROM true THEN
+              RAISE EXCEPTION 'playground fenced along 87.5 %% of its outline by a barrier=fence way is not has_fence (got %)', a;
+            END IF;
+            IF b IS DISTINCT FROM false THEN
+              RAISE EXCEPTION 'playground fenced along 25 %% of its outline counts as has_fence (got %)', b;
+            END IF;
+            RAISE NOTICE 'OK: separately mapped fences count from 75 %%';
+          END
+          $fence$;
           SQL
         timeout-minutes: 2
 
