@@ -2,7 +2,6 @@
   import { onMount, onDestroy } from 'svelte';
   import { readable, get } from 'svelte/store';
   import VectorSource from 'ol/source/Vector.js';
-  import { Vector as VectorLayer } from 'ol/layer.js';
   import GeoJSON from 'ol/format/GeoJSON.js';
   import { transformExtent } from 'ol/proj';
 
@@ -22,12 +21,9 @@
   import { parseHash } from '../lib/deeplink.js';
   import { attachTieredOrchestrator } from '../lib/tieredOrchestrator.js';
   import { regionFitPadding } from '../lib/playgroundHelpers.js';
-  import { equipmentLayerStyleFn, selectedPitchStyle } from '../lib/vectorStyles.js';
-  import { pitchPinFor } from '../lib/finderStyle.js';
-  import { mappingDetail } from '../stores/mappingDetail.js';
-  import { debounce } from '../lib/utils.js';
+  import { attachPitchLayer } from '../lib/pitchLayer.js';
   import { mapStore } from '../stores/map.js';
-  import { filterStore, effectiveFilterStore } from '../stores/filters.js';
+  import { effectiveFilterStore } from '../stores/filters.js';
   import { activeTierStore } from '../stores/tier.js';
   import { selection } from '../stores/selection.js';
 
@@ -46,10 +42,8 @@
     prevTier = tier;
   });
 
-  // Standalone pitches (leisure=pitch outside any playground) — own layer,
-  // attached to the map when it becomes available and refreshed on moveend.
-  const PITCH_MIN_ZOOM = 12;
-  let pitchLayer = null;
+  // Standalone pitches (leisure=pitch outside any playground) — attached to
+  // the map when it becomes available (lib/pitchLayer.js).
   let detachPitchLayer = null;
   let detachMapSub = null;
   let regionFitTimer = null;
@@ -197,40 +191,15 @@
         console.warn('Nominatim region fetch failed, using default extent:', err);
       }
 
-      // Standalone pitch layer — viewport-scoped, refreshed on moveend.
-      const pitchSource = new VectorSource();
-      pitchLayer = new VectorLayer({
-        source: pitchSource,
-        zIndex: 9,
-        style: pitchLayerStyle(get(mappingDetail), null),
-        // `selectable`: Map's click handler may select pitches on this layer
-        // (#934); the equipment overlay of a selected playground is not.
-        properties: { kind: 'overlay', selectable: true },
+      // Standalone pitch layer — shared with the hub (lib/pitchLayer.js);
+      // here it loads from this instance's own backend.
+      detachPitchLayer = attachPitchLayer({
+        map,
+        load: async (extent, signal) => new GeoJSON().readFeatures(
+          await fetchStandaloneEquipment(extent, apiBaseUrl, signal),
+          { dataProjection: 'EPSG:4326', featureProjection: 'EPSG:3857' },
+        ),
       });
-      map.addLayer(pitchLayer);
-
-      const reloadPitches = debounce(async () => {
-        const zoom = map.getView().getZoom();
-        if (zoom < PITCH_MIN_ZOOM) { pitchSource.clear(); return; }
-        const extent = map.getView().calculateExtent(map.getSize());
-        try {
-          const geojson = await fetchStandaloneEquipment(extent);
-          const features = new GeoJSON().readFeatures(geojson, {
-            dataProjection: 'EPSG:4326', featureProjection: 'EPSG:3857',
-          });
-          pitchSource.clear();
-          pitchSource.addFeatures(features);
-        } catch (err) {
-          console.warn('Standalone pitch fetch failed:', err);
-        }
-      }, 300);
-
-      map.on('moveend', reloadPitches);
-      detachPitchLayer = () => {
-        map.un('moveend', reloadPitches);
-        map.removeLayer(pitchLayer);
-        pitchLayer = null;
-      };
 
       // Tiered orchestrator: replaces the one-shot region fetch. Picks a
       // tier from the view's zoom on every moveend, fetches the matching
@@ -275,27 +244,7 @@
     });
   });
 
-  // Toggle pitch-layer visibility from the filter store.
-  $: if (pitchLayer) pitchLayer.setVisible($filterStore.standalonePitches);
 
-  // Pitches get a sport pin so they are findable before their polygon is big
-  // enough to spot. With mapping detail on the polygon stays underneath; in
-  // the finder view the pin alone stands for the pitch, like playgrounds
-  // (#924). The selected pitch is outlined in both modes (#934), matched by
-  // osm_id: a deeplinked pitch is not in this layer's source until the layer
-  // loads its area.
-  function pitchLayerStyle(detail, selectedId) {
-    return feature => {
-      const pin = pitchPinFor(feature);
-      const selected = pin != null && selectedId != null && feature.get('osm_id') === selectedId;
-      const base = pin && !detail ? null : equipmentLayerStyleFn(feature);
-      const styles = [base, selected ? selectedPitchStyle : null, pin].filter(Boolean);
-      return styles.length > 1 ? styles : (styles[0] ?? null);
-    };
-  }
-  $: selectedPitchId = $selection.feature && $selection.kind === 'pitch'
-    ? $selection.feature.get('osm_id') : null;
-  $: if (pitchLayer) pitchLayer.setStyle(pitchLayerStyle($mappingDetail, selectedPitchId));
 
   onDestroy(() => {
     detachTierDeselect();

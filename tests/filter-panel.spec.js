@@ -118,4 +118,16 @@ test.describe('FilterPanel', () => {
     await expect(page.locator('.filter-container .badge')).toHaveCount(0);
     await expect(page.locator('.filter-container .control-btn')).not.toHaveClass(/active/);
   });
+
+  // #947 — pitches only load from zoom 12; below it the toggle gave no feedback.
+  test('the pitch toggle says to zoom in when the map is too far out', async ({ page }) => {
+    await page.evaluate(() => window.__spieli.map.getView().setZoom(10));
+    await page.locator('.filter-container button').click();
+    await page.locator('.layer-section input[type="checkbox"]').check();
+    await expect(page.locator('.layer-hint')).toHaveText('Shown when you zoom in further.');
+    await page.locator('.filter-container button').click();
+    await page.evaluate(() => window.__spieli.map.getView().setZoom(14));
+    await page.locator('.filter-container button').click();
+    await expect(page.locator('.layer-hint')).toHaveCount(0);
+  });
 });

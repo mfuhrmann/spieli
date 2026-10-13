@@ -447,7 +447,8 @@
         { layerFilter: (l) => l.get('selectable') === true },
       );
       if (pitchHit) {
-        selection.select(pitchHit, defaultBackendUrl, 'pitch');
+        // Hub pitches carry their backend; standalone ones use this instance's.
+        selection.select(pitchHit, pitchHit.get('_backendUrl') ?? defaultBackendUrl, 'pitch');
         selectionZoom = null;
         fitViewToSelection(view, pitchHit.getGeometry().getExtent(), (v) => {
           selectionZoom = v.getZoom();

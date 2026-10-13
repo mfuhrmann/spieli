@@ -14,6 +14,8 @@
   import { regionFramingApplied } from '../stores/urlFraming.js';
   import { createRegistry } from './registry.js';
   import { attachHubOrchestrator } from './hubOrchestrator.js';
+  import { createHubPitchLoader } from './hubPitchLoader.js';
+  import { attachPitchLayer } from '../lib/pitchLayer.js';
   import { mapStore } from '../stores/map.js';
   import { selection } from '../stores/selection.js';
   import { effectiveFilterStore } from '../stores/filters.js';
@@ -323,7 +325,10 @@
         const tier = get(activeTierStore);
         if (tier === 'cluster' || tier === 'macro') orchestrator.rerun();
       });
-      detachOrchestrator = () => { orchestrator.detach(); unsubFilters(); };
+      // Pitches from every healthy backend in view (#947) — the same layer
+      // and behaviour as standalone, with a federated loader.
+      const detachPitches = attachPitchLayer({ map, load: createHubPitchLoader(backends) });
+      detachOrchestrator = () => { orchestrator.detach(); unsubFilters(); detachPitches(); };
       // Detach asynchronously so we're not unsubscribing while still inside
       // svelte's subscriber dispatch loop.
       queueMicrotask(() => { detachMapAttach?.(); detachMapAttach = null; });

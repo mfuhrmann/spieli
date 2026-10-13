@@ -131,16 +131,23 @@
   // Load the linked pitch on its own (the pitch layer may be off, or below
   // its minimum zoom), switch the layer on so its pin and neighbours show,
   // select it and frame it. A miss or an old backend just leaves the map.
-  async function restorePitch(osmId) {
+  async function restorePitch(osmId, backend = { url: defaultBackendUrl }) {
     try {
-      const feat = await fetchPitchByOsmId(osmId, defaultBackendUrl);
+      const feat = await fetchPitchByOsmId(osmId, backend.url);
       if (!feat) return;
       const [olFeature] = geojsonFormat.readFeatures(
         { type: 'FeatureCollection', features: [feat] },
         { dataProjection: 'EPSG:4326', featureProjection: 'EPSG:3857' },
       );
+      // Hub: tag it like the pitch layer does, so the panel shows the region
+      // and the hash keeps its slug.
+      if (resolveSlugToBackendUrl) {
+        olFeature.set('_backendUrl', backend.url);
+        if (backend.slug) olFeature.set('_backendSlug', backend.slug);
+        if (backend.name) olFeature.set('_backendName', backend.name);
+      }
       filterStore.update(f => ({ ...f, standalonePitches: true }));
-      selection.select(olFeature, defaultBackendUrl, 'pitch');
+      selection.select(olFeature, backend.url, 'pitch');
       const map = $mapStore;
       if (map) fitViewToSelection(map.getView(), olFeature.getGeometry().getExtent());
     } catch (err) {
@@ -157,8 +164,19 @@
     // pitch link is ignored and the map opens normally. Standalone accepts the
     // slug form too, as it does for playgrounds (the slug is not checked).
     if (parsed.kind === 'pitch') {
+      if (resolveSlugToBackendUrl) {
+        // Hub: the slug names the region. Without one the id is ambiguous
+        // across regions, so the map just opens. An unknown slug may be a
+        // registry still loading — retry on the next source change, as the
+        // playground path does.
+        if (!parsed.slug) { hashRestored = true; return; }
+        const resolved = resolveSlugToBackendUrl(parsed.slug);
+        if (!resolved) return;
+        hashRestored = true;
+        await restorePitch(parsed.osmId, { url: resolved.url, slug: parsed.slug, name: resolved.name });
+        return;
+      }
       hashRestored = true;
-      if (resolveSlugToBackendUrl) return;
       await restorePitch(parsed.osmId);
       return;
     }

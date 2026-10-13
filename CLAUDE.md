@@ -200,7 +200,7 @@ Two policies ship together for one release: the old wildcard one **enforced**, a
 
 | Component | Role |
 |---|---|
-| `Map.svelte` | OL map, all layers, click/hover handlers, standalone pitch layer (moveend) |
+| `Map.svelte` | OL map, all layers, click/hover handlers (incl. selecting pitches on layers marked `selectable`) |
 | `AppShell.svelte` | Top-level shell used by both modes: mounts Map, manages deeplink restore. **No keyboard handling** — there is no shortcut infrastructure here to extend. Global `keydown` listeners live in the components that own the thing being dismissed: `BottomSheet`, `Sheet`, `LegalContentModal`, `DataContributionModal` and `Map` (Escape closes the hub backend popup), plus `SearchBar`'s own combobox key handling |
 | `PitchPanel.svelte` | Detail panel for a selected standalone pitch (#934), in the playground panel's slot (side panel / `embedded` on phones): sport chips with the pin glyphs, surface, lighting, access/fee/booking, opening hours, hoops, wheelchair, operator, photos, Take me there, share (`#P<id>`), MapComplete. Display rules in `lib/pitchInfo.js` — every fact only when tagged |
 | `PlaygroundPanel.svelte` | Fetches and displays equipment/trees/POIs for selected playground; writes to `overlayFeaturesStore`; includes "Take me there" navigation button (geo: URL on mobile, OSM directions on desktop) |
@@ -242,6 +242,7 @@ Two policies ship together for one release: the old wildcard one **enforced**, a
 | `hubOrchestrator.js` | Hub-mode tiered orchestrator — fans every tier fetch out across backends via `fanOut`, filtered by viewport and health |
 | `registry.js` | Loads `registry.json`, polls `get_meta` every 5 min, exposes `backends` readable store, provides multi-backend nearest-playground fetcher |
 | `federationHealth.js` | Polls `/federation-status.json` and merges per-backend health into the registry store |
+| `hubPitchLoader.js` | Pitch loader for the shared pitch layer (#947): `get_standalone_equipment` from every healthy backend whose bbox intersects the view, tagged with its backend; hub pitch links are `#<slug>/P<id>` |
 | `fanOut.js` | Invokes a fetcher against every selected backend in parallel; surfaces results progressively via `onResult` callback |
 | `osmIdDedup.js` | Deduplicates polygon-tier features across backends by `osm_id` (keeps the feature with the largest area) |
 
@@ -255,7 +256,7 @@ The map manages the basemap plus six overlay layers. Tiered playground delivery 
 4. **clusterLayer** (zIndex 12) — cluster tier (zoom ≤ `clusterMaxZoom`). Server-bucketed cluster rings + single-child dots rendered via the canvas `stackedRingRenderer` in `app/src/lib/clusterStyle.js`. Visible only when `$activeTierStore === 'cluster'`.
 5. **treeLayer** (zIndex 15) — natural=tree dots, shown when a playground is selected.
 6. **equipmentLayer** (zIndex 20) — playground devices/pitches/benches, shown when a playground is selected.
-7. **pitchLayer** (zIndex 9) — standalone pitches outside any playground, loaded on `moveend` at zoom ≥ 12, visibility controlled by `filterStore.standalonePitches`.
+7. **pitchLayer** (zIndex 9) — pitches outside any playground, in **both** modes (#947): `lib/pitchLayer.js` owns the layer (loads on `moveend` from `PITCH_MIN_ZOOM` = 12 and only while `filterStore.standalonePitches` is on, sport pins, selected-pitch outline); the app passes only a loader — standalone its own `get_standalone_equipment`, the hub `hub/hubPitchLoader.js` (every healthy backend in view, features tagged `_backendUrl`/`_backendSlug`/`_backendName`, duplicates across overlapping regions dropped).
 8. **locationLayer** (zIndex 30) — user's GPS position. Pulsing blue dot (`#007aff`) inside a white ring at lower zoom levels; translucent accuracy circle at high zoom (top 3 levels). Driven by `location` store.
 
 Equipment and tree layers are driven by `overlayFeaturesStore` (written by PlaygroundPanel, read by Map). Cluster vs polygon visibility is driven by `activeTierStore` (written by the orchestrator).

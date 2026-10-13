@@ -4,6 +4,8 @@
   import { Filter, Droplets, Baby, Accessibility, Armchair, UtensilsCrossed, Home, RectangleHorizontal, Goal, CircleDot, Lock, Layers, ShieldCheck, Dog, Sun, Sparkles } from 'lucide-svelte';
 
   import { tick } from 'svelte';
+  import { mapStore } from '../stores/map.js';
+  import { PITCH_MIN_ZOOM } from '../lib/pitchLayer.js';
 
   let open = false;
   let wrap;
@@ -21,6 +23,13 @@
     maxHeight = Math.max(160, window.innerHeight - top - 16);
   }
   $: if (open) fitToViewport();
+
+  // Pitches only load from PITCH_MIN_ZOOM; below it the checkbox gave no
+  // feedback at all (#947). Read when the dropdown opens — it closes on any
+  // map click, so the zoom cannot change underneath it.
+  let zoomAtOpen = null;
+  $: if (open) zoomAtOpen = $mapStore?.getView().getZoom() ?? null;
+  $: pitchesNeedZoom = $filterStore.standalonePitches && zoomAtOpen != null && zoomAtOpen < PITCH_MIN_ZOOM;
 
   function onWindowClick(e) {
     if (open && wrap && !e.composedPath().includes(wrap)) open = false;
@@ -124,6 +133,9 @@
           <Goal class="h-4 w-4" />
           <span>{$_('filter.standalonePitches')}</span>
         </label>
+        {#if pitchesNeedZoom}
+          <p class="layer-hint">{$_('filter.standalonePitchesZoomHint')}</p>
+        {/if}
       </div>
     </div>
   {/if}
@@ -205,6 +217,12 @@
 
   .dropdown-header,
   .completeness-section,
+  .layer-hint {
+    margin: -4px 16px 8px 46px;
+    font-size: 12px;
+    color: #6b7280;
+  }
+
   .layer-section {
     flex-shrink: 0;
   }

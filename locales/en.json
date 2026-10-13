@@ -38,7 +38,8 @@
       "showComplete": "detailed",
       "showPartial": "basic",
       "showMissing": "no details yet"
-    }
+    },
+    "standalonePitchesZoomHint": "Shown when you zoom in further."
   },
   "hover": {
     "tagWater": "Water",

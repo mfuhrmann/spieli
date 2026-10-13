@@ -30,6 +30,8 @@
 
   $: feature = $selection.kind === 'pitch' ? $selection.feature : null;
   $: attr = feature ? feature.getProperties() : null;
+  // Hub: which region the pitch comes from, as the playground panel shows it.
+  $: backendName = feature?.get('_backendName') ?? null;
 
   // ── Title and sports ──────────────────────────────────────────────────────
   $: title = attr ? pitchTitle(attr) : null;
@@ -81,7 +83,7 @@
   async function share() {
     if (!attr) return;
     const url = `${window.location.origin}${window.location.pathname}${window.location.search}`
-      + writeHash({ osmId: attr.osm_id, kind: 'pitch' });
+      + writeHash({ slug: feature.get('_backendSlug') ?? null, osmId: attr.osm_id, kind: 'pitch' });
     try {
       if (navigator.share) {
         await navigator.share({ title: titleText, url });
@@ -118,6 +120,9 @@
       <div class="min-w-0 flex-1">
         <p class="pitch-kicker">{$_('pitch.label')}</p>
         <h2 class="panel-title" lang={titleLang}>{titleText}</h2>
+        {#if backendName}
+          <p class="backend-name">{backendName}</p>
+        {/if}
       </div>
       <div class="flex items-center gap-1 shrink-0">
         {#if navUrl}
@@ -255,6 +260,15 @@
     margin-bottom: 0.75rem;
   }
   .pitch-body { padding: 1rem; }
+  /* Same as PlaygroundPanel's region subtitle. */
+  .backend-name {
+    margin: 0.15rem 0 0;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: #9ca3af;
+  }
 
   .pitch-kicker {
     margin: 0 0 2px;
