@@ -62,9 +62,11 @@ METRICS_LINES=""
 # `{ "instances": [...] }` (canonical, matches `app/src/hub/registry.js:131`)
 # or a bare top-level array; `(.instances // .)[]` handles both.
 # The URL is trimmed and loses trailing slashes exactly as
-# normaliseBackendUrl() does in the browser (#740): the client matches this
-# file's entries by URL string, so the two must normalise identically.
-jq -r '(.instances // .)[] | ((.url // "") | gsub("^\\s+|\\s+$"; "") | sub("/+$"; "")) as $u | (.slug // ($u | gsub("[^a-z0-9]"; "_"))) + "\t" + $u' \
+# normaliseBackendUrl() in app/src/hub/registryEntry.js does in the browser
+# (#740): the client matches this file's entries by URL string, so the two must
+# normalise identically — ASCII whitespace only, the same class on both sides.
+# registryEntry.test.js runs this filter and compares (keep the line intact).
+jq -r '(.instances // .)[] | ((.url // "") | gsub("^[ \t\r\n]+|[ \t\r\n]+$"; "") | sub("/+$"; "")) as $u | (.slug // ($u | gsub("[^a-z0-9]"; "_"))) + "\t" + $u' \
     "$REGISTRY" > "$TMP/backends.tsv" 2>/dev/null || true
 
 while IFS="	" read -r SLUG URL; do

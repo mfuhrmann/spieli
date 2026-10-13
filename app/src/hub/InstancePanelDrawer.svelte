@@ -7,9 +7,14 @@
   // Full country name for the chip's accessible label (#741): the bare code
   // reads as "ess kay". Intl knows every name in every locale, so no strings
   // for Weblate translators to chase; the code is the fallback.
+  // One formatter per locale: the drawer re-renders on every backend patch
+  // and health poll, and constructing DisplayNames is not free.
+  const displayNames = new Map();
   function countryName(code, loc) {
     try {
-      return new Intl.DisplayNames([loc || 'en'], { type: 'region' }).of(code) ?? code;
+      const key = loc || 'en';
+      if (!displayNames.has(key)) displayNames.set(key, new Intl.DisplayNames([key], { type: 'region' }));
+      return displayNames.get(key).of(code) ?? code;
     } catch {
       return code;
     }
@@ -173,10 +178,13 @@
           <div class="instance-row">
             <span class="instance-name">{b.name}</span>
             {#if b.country}
+              {@const country = countryName(b.country, $locale)}
               <!-- Only entries that set `country` get a chip: the federation is
-                   almost all German, so marking the exception says the most. -->
-              <span class="country-chip" title={countryName(b.country, $locale)}
-                    aria-label={countryName(b.country, $locale)}>{b.country}</span>
+                   almost all German, so marking the exception says the most.
+                   aria-label on a role-less span is ignored by screen readers,
+                   so the code is hidden from them and the full name is read
+                   from visually hidden text instead. -->
+              <span class="country-chip" title={country}><span aria-hidden="true">{b.country}</span><span class="visually-hidden">{country}</span></span>
             {/if}
             <div class="instance-row-end">
               <button

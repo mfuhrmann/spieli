@@ -51,7 +51,6 @@ Both forms are supported indefinitely. New registries should prefer the object f
 | `name`     | recommended | Human-readable label. Shown in the instance drawer and — until `get_meta` returns — used as the backend's displayed region name. Technically falls back to `url` if omitted, which gives ugly labels — always set it. |
 | `slug`     | no  | Short stable identifier used in deep-links (`#<slug>/W<osm_id>`). If present, features from this backend round-trip their slug back into the URL hash on selection. See [validation rules](#slug-validation) below. |
 | `centroid` | no  | `[lon, lat]` in WGS84 (e.g. `[9.93, 51.54]`). Sets a fallback position for the macro view ring when the backend has no bbox yet (first import not completed, or import failed). Without this field, a backend with no data is invisible on the macro view map. Once the first import completes, the bbox-derived centroid takes over automatically — no manual update needed. **Note:** When a backend has neither `bbox` nor `centroid`, the instance panel auto-opens to alert operators, showing a "No position set" warning with a link to troubleshooting docs. |
-
 | `country`  | no  | ISO 3166-1 alpha-2 code (e.g. `"SK"`, case-insensitive). Shows a small country chip next to the name in the instance drawer, with the full country name for screen readers and as a tooltip (#741). Set it only where it tells something — on a mostly German federation, only on the non-German entries; entries without it render as before. An invalid value is ignored with a console warning. |
 
 ### Common mistakes
@@ -62,6 +61,7 @@ All three of these happened on one entry, and each one fails without an error in
 |---|---|---|
 | `url` without the `/api` path (`https://hojdy.sk`) | Backend stays "unreachable" — the hub asks `https://hojdy.sk/rpc/get_meta`, which is a 404 | End the URL with the PostgREST path, usually `/api`. Not repaired automatically: path-prefix deployments legitimately use other paths. Check with `curl <url>/rpc/get_meta` |
 | Stray whitespace or a trailing slash | — | Harmless since #740: both are stripped |
+| No `url`, or the same `url` twice | — | Skipped with a console warning naming the entry: an entry without a URL has nothing to ask, and a duplicate would never receive data, since every lookup is by URL |
 | Upper-case `slug` (`"Kosice"`) | Deep links fall back to the bare `#W<id>` form for that backend | Use lower case (`"kosice"`). Not repaired automatically: the slug is part of links people share, so the hub must not serve a different spelling than the registry |
 
 !!! note "Runtime-populated fields"

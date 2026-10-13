@@ -154,6 +154,8 @@ On a phone, spieli can sit on your home screen like an app: one tap opens the ma
 - **Android (Chrome):** **Install as app** in the info dialog (the ⓘ button), or the browser menu → *Install app*.
 - **Android (Firefox):** menu → *Install* (or *Add to Home screen*).
 
+On the all-regions map, the list of regions (the button with the region count) marks regions outside Germany with a country code such as **SK**; screen readers announce the full country name.
+
 Each spieli region installs as its own app, under its own name — the Fulda map and the all-Germany hub can sit side by side.
 
 On a desktop, Chrome and Edge (install icon in the address bar) and Safari on a Mac (*File → Add to Dock*) can do the same; Firefox on the desktop cannot (only an experimental "Taskbar Tabs" feature on Windows).

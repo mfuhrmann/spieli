@@ -10,9 +10,9 @@
 import { readable, writable, derived } from 'svelte/store';
 import { registryUrl, hubPollInterval } from '../lib/config.js';
 import { fetchMeta } from '../lib/api.js';
-import { isValidSlug } from '../lib/deeplink.js';
 import { startFederationHealthPoll, stopFederationHealthPoll } from './federationHealth.js';
-import { parseNominalCentroid, parseCountry, normaliseBackendUrl } from './centroid.js';
+import { parseNominalCentroid } from './centroid.js';
+import { normaliseSlug, parseCountry, usableEntries } from './registryEntry.js';
 import booleanContains from '@turf/boolean-contains';
 
 /**
@@ -21,6 +21,7 @@ import booleanContains from '@turf/boolean-contains';
  *   url: string,
  *   name: string,
  *   slug: string | null,
+ *   country: string | null,                           // ISO 3166-1 alpha-2 from registry.json (#741)
  *   loading: boolean,
  *   error: string | null,
  *   version: string | null,
@@ -124,7 +125,7 @@ export function createRegistry() {
 
         // Support both { instances: [...] } and bare array formats
         const entries = Array.isArray(data) ? data : (data.instances ?? []);
-        backends = entries.map(entry => { const url = normaliseBackendUrl(entry.url); return {
+        backends = usableEntries(entries).map(({ url, entry }) => ({
           url,
           name:             entry.name || url,
           slug:             normaliseSlug(entry.slug, url),
@@ -151,7 +152,7 @@ export function createRegistry() {
           impressumUrl:     null,
           privacyUrl:       null,
           hasLegal:         false,
-        }; });
+        }));
         notify();
 
         await Promise.all(backends.map(b => loadBackend(b)));
@@ -275,13 +276,4 @@ export function createRegistry() {
     aggregatedBbox,
     overlapWarnings,
   };
-}
-
-/** Normalises a slug value from the registry. Invalid slugs log a warning
- *  and are treated as missing, so the rest of the registry entry still works. */
-function normaliseSlug(raw, url) {
-  if (raw === undefined || raw === null || raw === '') return null;
-  if (isValidSlug(raw)) return raw;
-  console.warn(`[registry] invalid slug "${raw}" on backend ${url} — treating as missing`);
-  return null;
 }

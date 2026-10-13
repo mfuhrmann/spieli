@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { parseNominalCentroid, bboxCentroid, parseCountry, normaliseBackendUrl } from './centroid.js';
+import { parseNominalCentroid, bboxCentroid } from './centroid.js';
 
 // --- parseNominalCentroid ---
 
@@ -104,26 +104,3 @@ function selectCentroid(bbox, nominalCentroid) {
   assert.equal(bboxCentroid([8.0, 50.0, 9.0]), null); // wrong length
 }
 
-// --- parseCountry (#741) ---
-{
-  const warns = [];
-  const orig = console.warn; console.warn = (...a) => warns.push(a.join(' '));
-  assert.equal(parseCountry('SK', 'u'), 'SK');
-  assert.equal(parseCountry(' sk ', 'u'), 'SK');
-  assert.equal(parseCountry(undefined, 'u'), null);
-  assert.equal(parseCountry('', 'u'), null);
-  assert.equal(warns.length, 0, 'absent is not a warning');
-  assert.equal(parseCountry('SVK', 'u'), null);
-  assert.equal(parseCountry(42, 'u'), null);
-  assert.equal(warns.length, 2);
-  assert.match(warns[0], /backend u/);
-  console.warn = orig;
-}
-
-// --- normaliseBackendUrl (#740) — must match poll-federation.sh's jq ---
-{
-  assert.equal(normaliseBackendUrl('https://hojdy.sk/api '), 'https://hojdy.sk/api');
-  assert.equal(normaliseBackendUrl('  https://x.de/api//'), 'https://x.de/api');
-  assert.equal(normaliseBackendUrl('/api'), '/api');
-  assert.equal(normaliseBackendUrl(undefined), '');
-}

@@ -240,7 +240,7 @@ Two policies ship together for one release: the old wildcard one **enforced**, a
 | `MacroView.svelte` | Country-level OL layer — one point per backend at its bbox centroid with stacked-ring style |
 | `MacroCoverageBanner.svelte` | Non-alarming "filter covers N of M regions" banner shown at the macro tier when a filter applied to only some backends (reads `macroCoverage`) |
 | `hubOrchestrator.js` | Hub-mode tiered orchestrator — fans every tier fetch out across backends via `fanOut`, filtered by viewport and health |
-| `registry.js` | Loads `registry.json`, polls `get_meta` every 5 min, exposes `backends` readable store. Entry parsing (`url` normalised — mirrored in `poll-federation.sh`, the health merge matches by exact URL; optional `centroid`, `country`) lives in `centroid.js` |
+| `registry.js` | Loads `registry.json`, polls `get_meta` every 5 min, exposes `backends` readable store. Entry parsing lives in `registryEntry.js` (`url` normalised — the same ASCII-only rule as the jq in `poll-federation.sh`, since the health merge matches by exact URL, and `registryEntry.test.js` runs that jq to prove it; slug, `country`, empty/duplicate URLs skipped with a warning); `centroid` in `centroid.js` |
 | `federationHealth.js` | Polls `/federation-status.json` and merges per-backend health into the registry store |
 | `hubPitchLoader.js` | Pitch loader for the shared pitch layer (#947): `get_standalone_equipment` from every healthy backend whose bbox intersects the view, tagged with its backend; hub pitch links are `#<slug>/P<id>` |
 | `backendTag.js` | `tagWithBackend(feature, backend)` — the one rule for stamping `_backendUrl` / `_backendSlug` / `_backendName` on hub features (polygons, pitches, deeplink hydration) |

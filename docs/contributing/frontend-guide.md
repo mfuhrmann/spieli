@@ -224,6 +224,16 @@ Translations live in `locales/*.json` and are loaded by `lib/i18n.js` using svel
 
 Add new keys to `locales/en.json` and `locales/de.json`. Translation to other languages happens via [Weblate](translation-guide.md).
 
+### Codes that must be read as words
+
+A short code shown as text — the hub drawer's country chip (`SK`, #741) — is
+read letter by letter ("ess kay"). `aria-label` cannot fix that on a plain
+`<span>`: ARIA forbids naming the generic role and screen readers ignore it
+there. Hide the code with `aria-hidden="true"` and put the full name next to it
+in a `visually-hidden` span (Bootstrap's class); a `title` can carry the same
+name for mouse users. Get names from `Intl.DisplayNames` in the active locale
+rather than locale keys, so Weblate translators have nothing to chase.
+
 ### Language attributes
 
 Two languages coexist on the page, and mixing them up is a WCAG failure:
