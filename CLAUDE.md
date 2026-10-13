@@ -207,7 +207,7 @@ Two policies ship together for one release: the old wildcard one **enforced**, a
 | `PlaygroundPanel.svelte` | Fetches and displays equipment/trees/POIs for selected playground; writes to `overlayFeaturesStore`; includes "Take me there" navigation button (geo: URL on mobile, OSM directions on desktop) |
 | `EquipmentList.svelte` | Renders device/fitness/pitch/bench lists inside PlaygroundPanel |
 | `POIPanel.svelte` | Nearby POI list (cafés, toilets, etc.) shown inside PlaygroundPanel |
-| `ReviewsPanel.svelte` | Community reviews for a selected playground (fetch + submit) |
+| `ReviewsPanel.svelte` | Community reviews for a selected playground (fetch + submit). Reads every Mangrove `q` label a playground may be filed under (spieli's old `osm_playground_<id>`, `playground`, its name) and merges by signature; writes under the shared label (#914). Subject rules in `lib/reviews.js` |
 | `PanoramaxViewer.svelte` | Street-level photos for a playground. Shows the **thumbnail** on selection and creates the viewer `<iframe>` only when the visitor activates it (#852) — an iframe gets its own browsing context on the provider's origin, with cookies and its own analytics, so it must not load on plain map use. The iframe carries `referrerpolicy="no-referrer"` and `sandbox="allow-scripts allow-same-origin"`, which is the narrowest set the viewer actually works under (probed: `allow-scripts` alone renders nothing) |
 | `CommonsGallery.svelte` | Inline Wikimedia Commons photo gallery for a playground (from `wikimedia_commons` / `image` tags); thumbnails → fullscreen lightbox with CC attribution. Fetch + URL-safety logic in `app/src/lib/commons.js` |
 | `HoverPreview.svelte` | Floating card on playground hover (desktop only) |

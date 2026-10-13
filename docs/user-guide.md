@@ -118,7 +118,7 @@ Click any playground to open its detail panel. The panel shows:
 - Theme highlight — a symbol for playgrounds with a theme, such as a ship or castle (see [Playground themes](#playground-themes))
 - Equipment list — devices, pitches, benches, and their sub-attributes, including each item's surface when tagged
 - Street-level photos (from Panoramax, when available)
-- Community reviews (from Mangrove.reviews, when available)
+- Community reviews (from Mangrove.reviews, when available) — including reviews written in MapComplete or on mangrove.reviews, and yours show up there too
 - Nearby places — toilets, bus stops, ice cream, shops (supermarket, convenience store, bakery), drugstores and emergency care near the playground (within 5 km by default; the site's operator can change the radius)
 - A "Take me there" button that opens navigation to the playground (geo: URL on mobile, OSM directions on desktop)
 - A "Contribute data" link to add or improve information in OpenStreetMap via MapComplete

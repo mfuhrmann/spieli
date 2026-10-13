@@ -3,6 +3,10 @@ import { injectApiConfig, stubApiRoutes } from './helpers.js';
 import fixture from './fixtures/playground.json' assert { type: 'json' };
 
 const OSM_ID = fixture.features[0].properties.osm_id;
+// Reviews are read from one subject per label a playground may be filed under
+// (#914): spieli's old label, `playground`, and the name when it has one.
+const NAME = fixture.features[0].properties.name;
+const SUBJECTS = NAME && NAME.toLowerCase() !== 'playground' ? 3 : 2;
 
 // The audit behind #855 read the fetch call in ReviewsPanel and concluded that
 // selecting a playground contacts Mangrove. It does not: PlaygroundPanel mounts
@@ -46,13 +50,15 @@ test.describe('Mangrove is not contacted until the visitor asks', () => {
     expect(urls).toHaveLength(0);
   });
 
-  test('expanding the reviews section issues exactly one request', async ({ page }) => {
+  test('expanding the reviews section issues one request per subject', async ({ page }) => {
     const urls = await stubMangrove(page);
     await loadWithSelection(page);
     await reviewsToggle(page).click();
-    await expect.poll(() => urls.length, { timeout: 5000 }).toBe(1);
+    await expect.poll(() => urls.length, { timeout: 5000 }).toBe(SUBJECTS);
     await page.waitForTimeout(500);
-    expect(urls).toHaveLength(1);
+    expect(urls).toHaveLength(SUBJECTS);
+    const labels = urls.map(u => decodeURIComponent(new URL(u).searchParams.get('sub')).match(/[?&]q=([^&]*)/)[1]);
+    expect(labels.slice(0, 2)).toEqual([`osm_playground_${OSM_ID}`, 'playground']);
   });
 
   test('collapsing and re-expanding does not re-fetch', async ({ page }) => {
@@ -61,14 +67,14 @@ test.describe('Mangrove is not contacted until the visitor asks', () => {
     const toggle = reviewsToggle(page);
 
     await toggle.click();
-    await expect.poll(() => urls.length, { timeout: 5000 }).toBe(1);
+    await expect.poll(() => urls.length, { timeout: 5000 }).toBe(SUBJECTS);
 
     // Collapsing destroys ReviewsPanel, so the re-mount below would fetch again
     // without the module-level session cache in app/src/lib/reviews.js.
     await toggle.click();
     await toggle.click();
     await page.waitForTimeout(1000);
-    expect(urls).toHaveLength(1);
+    expect(urls).toHaveLength(SUBJECTS);
   });
 
   test('a failed read still leaves the visitor able to submit', async ({ page }) => {

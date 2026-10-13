@@ -7,8 +7,12 @@
   export let lat = 0;
   /** @type {number} Playground centre longitude (WGS84) */
   export let lon = 0;
-  /** @type {string|number|null} OSM ID of the playground — scopes reviews to this specific location. */
+  /** @type {string|number|null} OSM ID of the playground — reads the reviews spieli filed under it before #914. */
   export let osmId = null;
+  /** @type {string|null} Playground name — the label Mangrove clients file named places under. */
+  export let name = null;
+  /** @type {number|null} Playground radius in metres — the subject's uncertainty, like MapComplete's. */
+  export let radiusM = null;
 
   let reviews = [];
   let loading = true;
@@ -40,7 +44,7 @@
     loading = true;
     error = false;
     try {
-      reviews = await fetchReviewsCached(lat, lon, osmId, abortCtrl.signal);
+      reviews = await fetchReviewsCached(lat, lon, osmId, abortCtrl.signal, { name, radiusM });
     } catch (e) {
       if (e?.name !== 'AbortError') error = true;
     } finally {
@@ -56,18 +60,18 @@
     // point at a different playground by the time the await below resolves.
     // Reading them afterwards would invalidate the wrong subject and leave the
     // submitted one holding a stale list for the rest of the page's life.
-    const target = { lat, lon, osmId };
+    const target = { lat, lon, osmId, opts: { name, radiusM } };
     submitting = true;
     submitStatus = '';
     try {
-      const ok = await submitReview(target.lat, target.lon, target.osmId, selectedRating, opinion.trim() || null);
+      const ok = await submitReview(target.lat, target.lon, selectedRating, opinion.trim() || null, target.opts);
       if (ok) {
         submitStatus = 'success';
         selectedRating = null;
         opinion = '';
         // Without this the refresh below is served from the session cache and
         // the visitor never sees the review they just submitted.
-        invalidateReviews(target.lat, target.lon, target.osmId);
+        invalidateReviews(target.lat, target.lon, target.osmId, target.opts);
         clearTimeout(refreshTimer);
         refreshTimer = setTimeout(() => {
           // Only refresh if that playground is still the one on screen.

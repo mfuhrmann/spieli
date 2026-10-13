@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { fetchReviews, fetchReviewsCached, invalidateReviews, mangroveSubject } from './reviews.js';
+import { fetchReviews, fetchReviewsCached, invalidateReviews, readSubjects, writeSubject, reviewRadius } from './reviews.js';
 
 // Reviews live behind a collapsed accordion, so ReviewsPanel is destroyed on
 // collapse and any cache inside it dies with it. These tests cover the
@@ -9,6 +9,9 @@ import { fetchReviews, fetchReviewsCached, invalidateReviews, mangroveSubject } 
 const LAT = 50.5528;
 const LON = 9.6753;
 const OSM = 12345;
+// An unnamed playground is read from two subjects (spieli's old label and
+// `playground`), so one fetch is two requests (#914).
+const PER = 2;
 
 // --- stub harness ----------------------------------------------------------
 
@@ -31,10 +34,10 @@ const ok = (reviews) => () => ({ ok: true, json: async () => ({ reviews }) });
 
 // --- the subject URI is the cache key, and it distinguishes playgrounds -----
 {
-    assert.notEqual(mangroveSubject(LAT, LON, 1), mangroveSubject(LAT, LON, 2));
+    assert.notDeepEqual(readSubjects(LAT, LON, 1), readSubjects(LAT, LON, 2));
     // Same playground, coordinates differing below the 5-decimal rounding →
     // one key, so a re-selection is a cache hit rather than a fresh request.
-    assert.equal(mangroveSubject(LAT, LON, OSM), mangroveSubject(LAT + 0.0000001, LON, OSM));
+    assert.deepEqual(readSubjects(LAT, LON, OSM), readSubjects(LAT + 0.0000001, LON, OSM));
 }
 
 // --- a non-OK response is an error, not an empty review list ---------------
@@ -52,11 +55,11 @@ const ok = (reviews) => () => ({ ok: true, json: async () => ({ reviews }) });
     reset();
     const id = 9002;
     assert.deepEqual(await fetchReviewsCached(LAT, LON, id), []);
-    assert.equal(calls.length, 1);
+    assert.equal(calls.length, PER);
     // The common case is a playground with no reviews; if that were not cached
     // the cache would miss on nearly every re-expand.
     assert.deepEqual(await fetchReviewsCached(LAT, LON, id), []);
-    assert.equal(calls.length, 1);
+    assert.equal(calls.length, PER);
 }
 
 // --- collapse and re-expand does not re-fetch ------------------------------
@@ -66,11 +69,11 @@ const ok = (reviews) => () => ({ ok: true, json: async () => ({ reviews }) });
     respond = ok([{ payload: { rating: 80 } }]);
     const first = await fetchReviewsCached(LAT, LON, id);
     assert.equal(first.length, 1);
-    assert.equal(calls.length, 1);
+    assert.equal(calls.length, PER);
 
     // Re-expanding mounts a fresh component, which calls in again.
     const second = await fetchReviewsCached(LAT, LON, id);
-    assert.equal(calls.length, 1, 're-expand must not issue a second request');
+    assert.equal(calls.length, PER, 're-expand must not issue a second request');
     assert.deepEqual(second, first);
 }
 
@@ -81,23 +84,26 @@ const ok = (reviews) => () => ({ ok: true, json: async () => ({ reviews }) });
 {
     reset();
     const id = 9031;
-    let release;
-    respond = () => new Promise(res => { release = () => res({ ok: true, json: async () => ({ reviews: [{ payload: { rating: 80 } }] }) }); });
+    // One pending response per subject request; release them all at once.
+    const pendingRes = [];
+    const release = () => pendingRes.forEach(r => r());
+    respond = () => new Promise(res => { pendingRes.push(() => res({ ok: true, json: async () => ({ reviews: [{ payload: { rating: 80 } }] }) })); });
 
     const a = fetchReviewsCached(LAT, LON, id);
     const b = fetchReviewsCached(LAT, LON, id);
-    assert.equal(calls.length, 1, 'a concurrent caller must join the in-flight request');
+    assert.equal(calls.length, PER, 'a concurrent caller must join the in-flight request');
     release();
     assert.deepEqual(await a, await b);
-    assert.equal(calls.length, 1);
+    assert.equal(calls.length, PER);
 }
 
 // --- a rejected in-flight promise is not left in the cache -----------------
 {
     reset();
     const id = 9032;
-    let fail;
-    respond = () => new Promise((_, rej) => { fail = () => rej(new Error('Mangrove responded 503')); });
+    const pendingRej = [];
+    const fail = () => pendingRej.forEach(r => r());
+    respond = () => new Promise((_, rej) => { pendingRej.push(() => rej(new Error('Mangrove responded 503'))); });
 
     const pending = fetchReviewsCached(LAT, LON, id);
     fail();
@@ -105,7 +111,7 @@ const ok = (reviews) => () => ({ ok: true, json: async () => ({ reviews }) });
 
     respond = ok([{ payload: { rating: 60 } }]);
     assert.equal((await fetchReviewsCached(LAT, LON, id)).length, 1, 'a rejected promise must not be replayed');
-    assert.equal(calls.length, 2);
+    assert.equal(calls.length, 2 * PER);
 }
 
 // --- a different playground is a different key -----------------------------
@@ -114,7 +120,7 @@ const ok = (reviews) => () => ({ ok: true, json: async () => ({ reviews }) });
     respond = ok([{ payload: { rating: 60 } }]);
     await fetchReviewsCached(LAT, LON, 9004);
     await fetchReviewsCached(LAT, LON, 9005);
-    assert.equal(calls.length, 2);
+    assert.equal(calls.length, 2 * PER);
 }
 
 // --- a failed fetch is not cached, so the next expand retries --------------
@@ -123,12 +129,12 @@ const ok = (reviews) => () => ({ ok: true, json: async () => ({ reviews }) });
     const id = 9006;
     respond = () => ({ ok: false, status: 502, json: async () => ({}) });
     await assert.rejects(() => fetchReviewsCached(LAT, LON, id));
-    assert.equal(calls.length, 1);
+    assert.equal(calls.length, PER);
 
     respond = ok([{ payload: { rating: 100 } }]);
     const retried = await fetchReviewsCached(LAT, LON, id);
     assert.equal(retried.length, 1, 'a failure must not be cached');
-    assert.equal(calls.length, 2);
+    assert.equal(calls.length, 2 * PER);
 }
 
 // --- an aborted fetch is not cached either ---------------------------------
@@ -140,7 +146,7 @@ const ok = (reviews) => () => ({ ok: true, json: async () => ({ reviews }) });
 
     respond = ok([{ payload: { rating: 40 } }]);
     assert.equal((await fetchReviewsCached(LAT, LON, id)).length, 1);
-    assert.equal(calls.length, 2);
+    assert.equal(calls.length, 2 * PER);
 }
 
 // --- submission invalidates that one subject, and only it ------------------
@@ -151,18 +157,18 @@ const ok = (reviews) => () => ({ ok: true, json: async () => ({ reviews }) });
     respond = ok([{ payload: { rating: 20 } }]);
     await fetchReviewsCached(LAT, LON, submitted);
     await fetchReviewsCached(LAT, LON, other);
-    assert.equal(calls.length, 2);
+    assert.equal(calls.length, 2 * PER);
 
     invalidateReviews(LAT, LON, submitted);
 
     respond = ok([{ payload: { rating: 20 } }, { payload: { rating: 100 } }]);
     const after = await fetchReviewsCached(LAT, LON, submitted);
     assert.equal(after.length, 2, 'the visitor must see their own review');
-    assert.equal(calls.length, 3);
+    assert.equal(calls.length, 3 * PER);
 
     // The unrelated playground keeps its cached list.
     await fetchReviewsCached(LAT, LON, other);
-    assert.equal(calls.length, 3);
+    assert.equal(calls.length, 3 * PER);
 }
 
 // --- moderation actions stay filtered out through the cache ----------------
@@ -172,6 +178,51 @@ const ok = (reviews) => () => ({ ok: true, json: async () => ({ reviews }) });
     const list = await fetchReviewsCached(LAT, LON, 9010);
     assert.equal(list.length, 1);
     assert.equal(list[0].payload.rating, 80);
+}
+
+// --- #914: the shared subjects ---------------------------------------------
+// Read: spieli's old label, the generic `playground`, and the name. Write: the
+// name, else `playground` — what MapComplete and mangrove.reviews read.
+{
+    const q = sub => decodeURIComponent(/[?&]q=([^&]*)/.exec(sub)[1]);
+    assert.deepEqual(readSubjects(LAT, LON, OSM).map(q), [`osm_playground_${OSM}`, 'playground']);
+    assert.deepEqual(readSubjects(LAT, LON, OSM, { name: 'Spielplatz Am See' }).map(q),
+        [`osm_playground_${OSM}`, 'playground', 'Spielplatz Am See']);
+    // Percent-encoded like other clients store it; a raw & would cut the label.
+    assert.match(readSubjects(LAT, LON, OSM, { name: 'Sand & Wasser' })[2], /q=Sand%20%26%20Wasser&u=/);
+    // A playground literally named "Playground" is the generic label already.
+    assert.equal(readSubjects(LAT, LON, OSM, { name: 'playground' }).length, 2);
+
+    assert.match(writeSubject(LAT, LON), /\?q=playground&u=50$/);
+    assert.match(writeSubject(LAT, LON, { name: 'Grezzbachpark', radiusM: 37.4 }), /\?q=Grezzbachpark&u=37$/);
+    // The written subject is among the read ones, so a submitted review shows.
+    for (const name of [undefined, 'Grezzbachpark']) {
+        assert.ok(readSubjects(LAT, LON, OSM, { name, radiusM: 30 }).includes(writeSubject(LAT, LON, { name, radiusM: 30 })));
+    }
+
+    assert.equal(reviewRadius(undefined), 50);
+    assert.equal(reviewRadius(3), 10);
+    assert.equal(reviewRadius(400), 100);
+}
+
+// --- one review matching several labels is shown once ----------------------
+{
+    reset();
+    const shared = { signature: 'sig-a', payload: { rating: 100, iat: 2 } };
+    const own = { signature: 'sig-b', payload: { rating: 60, iat: 1 } };
+    respond = ok([shared, own]);
+    const list = await fetchReviews(LAT, LON, 9011, undefined, { name: 'Park' });
+    assert.equal(calls.length, 3, 'one request per subject');
+    assert.deepEqual(list.map(r => r.signature), ['sig-a', 'sig-b'], 'deduplicated, newest first');
+}
+
+// --- one failing subject fails the load, rather than hiding reviews --------
+{
+    reset();
+    let n = 0;
+    respond = () => (++n === 2 ? { ok: false, status: 503, json: async () => ({}) }
+                               : { ok: true, json: async () => ({ reviews: [] }) });
+    await assert.rejects(() => fetchReviews(LAT, LON, 9012), /503/);
 }
 
 console.log('reviews.test.js: all assertions passed');

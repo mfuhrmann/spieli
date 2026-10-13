@@ -208,6 +208,9 @@
 
   // Centre of selected playground in WGS84
   let centerLat = 0, centerLon = 0;
+  // Half the extent's diagonal in ground metres (EPSG:3857 units shrink by
+  // cos(lat)) — the Mangrove subject's radius, as MapComplete derives it (#914).
+  let reviewRadiusM = null;
 
   // Generation counter — incremented on each new selection so stale responses are discarded.
   let loadGen = 0;
@@ -234,6 +237,7 @@
     );
     centerLat = lat;
     centerLon = lon;
+    reviewRadiusM = Math.hypot(ext[2] - ext[0], ext[3] - ext[1]) / 2 * Math.cos(lat * Math.PI / 180);
 
     equipmentLoading = true;
     poisLoading = true;
@@ -887,7 +891,7 @@
           </button>
           {#if openSections.has('reviews')}
             <div class="pb-3">
-              <ReviewsPanel lat={centerLat} lon={centerLon} osmId={attr?.osm_id} />
+              <ReviewsPanel lat={centerLat} lon={centerLon} osmId={attr?.osm_id} name={attr?.name ?? null} radiusM={reviewRadiusM} />
             </div>
           {/if}
         </div>
