@@ -1404,7 +1404,13 @@ AS $$
     SELECT ST_Transform(
       ST_SetSRID(ST_MakePoint(lon, lat), 4326),
       3857
-    ) AS geom
+    ) AS geom,
+    -- radius_m is ground metres, but the geometries are EPSG:3857, whose
+    -- units are stretched by 1/cos(latitude): comparing them directly made
+    -- a 5 km radius about 3.2 km in Fulda (#954). Scaling the radius
+    -- instead of casting to geography keeps the GiST index on `way` usable;
+    -- over a few km the scale factor barely changes.
+    radius_m / cos(radians(lat)) AS radius_3857
   ),
   pois_point AS (
     SELECT
@@ -1417,7 +1423,7 @@ AS $$
       ST_Y(ST_Transform(p.way, 4326)) AS poi_lat,
       ST_X(ST_Transform(p.way, 4326)) AS poi_lon
     FROM planet_osm_point p, center c
-    WHERE ST_DWithin(p.way, c.geom, radius_m)
+    WHERE ST_DWithin(p.way, c.geom, c.radius_3857)
       AND (
         p.amenity IN ('toilets', 'ice_cream')
         OR (p.amenity IN ('cafe', 'restaurant') AND p.tags->'cuisine' ~* 'ice_cream')
@@ -1439,7 +1445,7 @@ AS $$
       ST_Y(ST_Transform(ST_Centroid(p.way), 4326)) AS poi_lat,
       ST_X(ST_Transform(ST_Centroid(p.way), 4326)) AS poi_lon
     FROM planet_osm_polygon p, center c
-    WHERE ST_DWithin(p.way, c.geom, radius_m)
+    WHERE ST_DWithin(p.way, c.geom, c.radius_3857)
       AND (
         p.amenity IN ('toilets', 'ice_cream')
         OR (p.amenity IN ('cafe', 'restaurant') AND p.tags->'cuisine' ~* 'ice_cream')

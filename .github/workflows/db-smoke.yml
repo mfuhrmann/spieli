@@ -199,6 +199,41 @@ jobs:
           SQL
         timeout-minutes: 2
 
+      - name: Assert get_pois measures its radius in ground metres
+        # The geometries are EPSG:3857, whose units are stretched by
+        # 1/cos(latitude); a radius compared in those units silently shrinks
+        # (5 km became ~3.2 km in Fulda, #954). Two stub POIs at known
+        # ground distances pin the behaviour.
+        run: |
+          set -euo pipefail
+          docker compose exec -T db psql -U osm -d osm -v ON_ERROR_STOP=1 --single-transaction <<'SQL'
+          DO $poi$
+          DECLARE
+            centre geography := ST_SetSRID(ST_MakePoint(9.7, 50.5), 4326)::geography;
+            n int;
+          BEGIN
+            -- Two toilets due north of the centre, 4.8 km and 5.3 km away on the
+            -- ground. With radius_m = 5000 exactly the first is in range. Before
+            -- #954 the radius was compared in EPSG:3857 units (stretched by
+            -- 1/cos(50.5°) ≈ 1.57), so neither was found.
+            INSERT INTO planet_osm_point (osm_id, amenity, tags, way) VALUES
+              (-954001, 'toilets', ''::hstore,
+               ST_Transform(ST_Project(centre, 4800, 0)::geometry, 3857)),
+              (-954002, 'toilets', ''::hstore,
+               ST_Transform(ST_Project(centre, 5300, 0)::geometry, 3857));
+            SELECT count(*) INTO n
+            FROM json_array_elements(api.get_pois(50.5, 9.7, 5000)) e
+            WHERE (e->>'osm_id')::bigint IN (954001, 954002);
+            IF n <> 1 THEN
+              RAISE EXCEPTION 'get_pois(radius_m = 5000) returned % of the test POIs at 4.8 / 5.3 km, expected 1 — is the radius measured in ground metres? (#954)', n;
+            END IF;
+            DELETE FROM planet_osm_point WHERE osm_id IN (-954001, -954002);
+            RAISE NOTICE 'OK: get_pois radius is in ground metres';
+          END
+          $poi$;
+          SQL
+        timeout-minutes: 2
+
   daemon-bootstrap:
     name: Daemon mode bootstraps a fresh database
     runs-on: ubuntu-latest

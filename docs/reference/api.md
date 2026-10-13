@@ -311,7 +311,7 @@ Returns nearby points of interest within `radius_m` metres of the given WGS84 po
 |---|---|---|---|
 | `lat` | `float8` | — | WGS84 latitude |
 | `lon` | `float8` | — | WGS84 longitude |
-| `radius_m` | `integer` | `500` | Search radius in metres (configurable via `POI_RADIUS_M` env var) |
+| `radius_m` | `integer` | `500` | Search radius in ground metres (the frontend sends `POI_RADIUS_M`, default 5000). Before #954 it was compared in EPSG:3857 units, which made the effective radius `radius_m × cos(latitude)` — about 3.2 km for 5000 in central Germany |
 
 **POI types returned:**
 
