@@ -1356,6 +1356,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#example-illustrations-and-failed-images" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example illustrations and failed images
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#modal-dialogs" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2336,6 +2347,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#example-illustrations-and-failed-images" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example illustrations and failed images
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#modal-dialogs" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2835,6 +2857,14 @@
 <a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>&lt;p&gt;{$t('myKey')}&lt;/p&gt;
 </code></pre></div>
 <p>Add new keys to <code>locales/en.json</code> and <code>locales/de.json</code>. Translation to other languages happens via <a href="../translation-guide/">Weblate</a>.</p>
+<h3 id="example-illustrations-and-failed-images">Example illustrations and failed images<a class="headerlink" href="#example-illustrations-and-failed-images" title="Permanent link">&para;</a></h3>
+<p>Device and pitch illustrations are HTML strings from <code>lib/equipmentAttributes.js</code>
+(<code>illustrationHtml</code>), rendered with <code>{@html}</code>. They carry <strong>no inline
+<code>onerror</code></strong>: the narrowed CSP (<code>script-src 'self'</code>, #861) blocks inline
+handlers. <code>lib/imageFallback.js</code>, installed once in <code>main.js</code>, listens for
+<code>error</code> in the capture phase and hides a failed image's <code>.device-img-wrap</code> —
+and an enclosing <code>[data-illustration]</code> section, so no empty heading is left.
+New <code>{@html}</code> images should use the same wrapper rather than an inline handler.</p>
 <h3 id="modal-dialogs">Modal dialogs<a class="headerlink" href="#modal-dialogs" title="Permanent link">&para;</a></h3>
 <p>Every <code>role="dialog" aria-modal="true"</code> element carries <code>use:modal</code> from
 <code>stores/modalOpen.js</code> (#758). While it is mounted, everything outside the
