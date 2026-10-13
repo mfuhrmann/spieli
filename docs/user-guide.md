@@ -42,7 +42,7 @@ The colours describe the OSM data, not the real-world quality of the playground.
 
 Suggestions appear once you have typed two characters. You can work the list entirely from the keyboard — **↓** and **↑** move through the suggestions, **Enter** jumps to the highlighted one (or runs a plain search if none is highlighted), and **Esc** closes the list without leaving the box — it also cancels a search you have typed but that has not run yet, so the list does not pop back up a moment later. Screen readers announce the list, your position in it, and whether a search is still running.
 
-While a dialog or a full-screen photo is open, the keyboard stays with it: **Tab** no longer slips onto the map hidden behind it, and the arrow keys cannot move that map. Close the dialog (**Esc** or its close button) to get back to the map.
+While a dialog or a full-screen photo is open, the keyboard stays with it: focus moves into it, **Tab** cycles through its own controls only — not the map, the search or the buttons hidden behind it — and screen readers read only the dialog. Close it with **Esc** or its close button, and focus returns to where you were.
 
 **My location:** Tap the location button to centre the map on your current position. Your position is shown as a pulsing blue dot; at high zoom a translucent circle indicates the GPS accuracy. If your browser already granted location permission, spieli auto-locates on page load (unless you opened a deeplink or region link).
 

@@ -55,7 +55,6 @@ spieli/                            ← Monorepo root
 │       │   ├── EquipmentTooltip.svelte ← Tooltip on equipment hover
 │       │   ├── LocateButton.svelte ← Geolocation button
 │       │   ├── AppShell.svelte    ← Top-level layout shell + deeplink restore
-│       │   ├── BottomSheet.svelte ← Mobile bottom sheet
 │       │   ├── CompletenessLegend.svelte ← Colour legend
 │       │   ├── FilterChips.svelte ← Active filter chip row
 │       │   ├── DataContributionModal.svelte ← "Daten ergänzen" OSM link modal
@@ -68,7 +67,6 @@ spieli/                            ← Monorepo root
 │       │       ├── Button.svelte
 │       │       ├── Card.svelte
 │       │       ├── Input.svelte
-│       │       └── Sheet.svelte
 │       │
 │       ├── standalone/            ← Standalone mode root
 │       │   └── StandaloneApp.svelte ★ Full standalone layout (sidebar, bottom sheet, etc.)

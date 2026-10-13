@@ -192,7 +192,7 @@ Two policies ship together for one release: the old wildcard one **enforced**, a
 | `urlFraming.js` | Whether an explicit region-URL framing (e.g. `/Lauterbach`) was applied on load — `null` (undecided / no region path) \| `true` (override resolved & framed) \| `false` (region path present but did not resolve). Written by `StandaloneApp`, read by `LocateButton` so auto-locate only suppresses GPS centering when a region framing actually took effect. On `false`, StandaloneApp skips the configured-region fit and leaves the default extent so the current location (if available) takes over. |
 | `hubLoading.js` | Hub fan-out load progress — `{ loaded, total, settling }`. Written by `hubOrchestrator`, read by the hub UI to show a progress indicator. |
 | `macroFiltered.js` | Per-backend filtered aggregate for the hub macro tier — `Map<backendUrl, {count, complete, partial, missing}> \| null`. `null` = no filter active (macro stays zero-fetch, rings use cached `get_meta`). Written by `hubOrchestrator` when a filter is active (sums each backend's filtered `get_playground_clusters` buckets), read by `MacroView` to override ring props. |
-| `modalOpen.js` | Whether a modal dialog is open (#758) — a counter behind a boolean, so nested dialogs work. Dialogs register with the `use:modal` action on their `role="dialog" aria-modal="true"` element (count tied to the element's lifetime); `Map.svelte` sets `inert` on the focusable map container while it is true. **A new modal must add `use:modal`**, or Tab escapes it onto the hidden map |
+| `modalOpen.js` | Whether a modal dialog is open (#758) — a counter behind a boolean, so nested dialogs work. Dialogs register with the `use:modal` action on their `role="dialog" aria-modal="true"` element (tied to the element's lifetime): it makes everything outside the dialog `inert`, moves focus in and restores it on close; nested dialogs stack. `modalOpen` lets handlers stand down behind a dialog (Map's Escape). **A new modal must add `use:modal`**, or Tab escapes it onto the page behind |
 | `installPrompt.js` | The browser's install offer (#939) — the `beforeinstallprompt` event, kept so the Info dialog can show "Install as app"; `null` where the browser never fires it (Safari, Firefox, already installed). `promptInstall()` hands it back to the browser once. |
 | `macroCoverage.js` | Macro-tier filter coverage — `{ answered, total, cantFilter[], settling } \| null`. `null` = no filter active. Written by `hubOrchestrator` (tracks how many in-scope backends actually applied the active filter; `cantFilter` lists those that couldn't — no bbox or 404; `settling` is true while the fan-out is still in flight so the banner doesn't flash mid-load). Read by `MacroView` (per-backend `_cantFilter` ring flag) and `MacroCoverageBanner` ("filter covers N of M regions" disclosure). |
 
@@ -203,7 +203,7 @@ Two policies ship together for one release: the old wildcard one **enforced**, a
 | Component | Role |
 |---|---|
 | `Map.svelte` | OL map, all layers, click/hover handlers (incl. selecting pitches on layers marked `selectable`) |
-| `AppShell.svelte` | Top-level shell used by both modes: mounts Map, manages deeplink restore. **No keyboard handling** — there is no shortcut infrastructure here to extend. Global `keydown` listeners live in the components that own the thing being dismissed: `BottomSheet`, `Sheet`, `LegalContentModal`, `DataContributionModal` and `Map` (Escape closes the hub backend popup), plus `SearchBar`'s own combobox key handling |
+| `AppShell.svelte` | Top-level shell used by both modes: mounts Map, manages deeplink restore. **No keyboard handling** — there is no shortcut infrastructure here to extend. Global `keydown` listeners live in the components that own the thing being dismissed: `LegalContentModal`, `DataContributionModal`, the `CommonsGallery` / `PanoramaxViewer` / `EquipmentList` photo dialogs (capture phase, so Esc does not also close the panel) and `Map` (Escape closes the hub backend popup — not while a dialog is open), plus `SearchBar`'s own combobox key handling |
 | `PitchPanel.svelte` | Detail panel for a selected standalone pitch (#934), in the playground panel's slot (side panel / `embedded` on phones): sport chips with the pin glyphs, surface, lighting, access/fee/booking, opening hours, hoops, wheelchair, operator, photos, Take me there, share (`#P<id>`, in the hub `#<slug>/P<id>`), MapComplete. Shows the region name in the hub. Display rules in `lib/pitchInfo.js` — every fact only when tagged |
 | `PlaygroundPanel.svelte` | Fetches and displays equipment/trees/POIs for selected playground; writes to `overlayFeaturesStore`; includes "Take me there" navigation button (geo: URL on mobile, OSM directions on desktop) |
 | `EquipmentList.svelte` | Renders device/fitness/pitch/bench lists inside PlaygroundPanel |
@@ -217,13 +217,12 @@ Two policies ship together for one release: the old wildcard one **enforced**, a
 | `MappingDetailControl.svelte` | Bar-chart button next to Info/Filter (phones and desktop): mapping-detail on/off switch plus the detailed/basic/no-details filters, whose swatches double as the legend |
 | `FilterChips.svelte` | Active-filter chip bar shown below the search bar |
 | `SearchBar.svelte` | Nominatim location search |
-| `BottomSheet.svelte` | Swipeable bottom sheet used on mobile to surface PlaygroundPanel |
 | `CompletenessLegend.svelte` | Map legend explaining the mapping-detail steps and the photo glyph. Mounted only while mapping detail is on |
 | `DataContributionModal.svelte` | Modal prompting users to contribute data via MapComplete |
 | `LegalContentModal.svelte` | Modal for imprint / legal content fetched from `get_legal()` |
 | `LocateButton.svelte` | Button that pans map to user's GPS position; auto-locates on page load when geolocation permission is already granted |
 | `MapCompleteLink.svelte` | Link to MapComplete for the selected playground; renders nothing when URL is falsy |
-| `ui/` | Primitive UI components (Badge, Button, Card, Input, Sheet) |
+| `ui/` | Primitive UI components (Badge, Button, Card, Input) |
 
 #### Standalone mode (`app/src/standalone/`)
 

@@ -24,7 +24,7 @@ The app uses Svelte writable stores (`src/stores/`). Components import stores di
 |---|---|---|---|
 | `selection` | `{ feature: OlFeature\|null, backendUrl: string }` | Map.svelte (click), AppShell (deeplink restore) | PlaygroundPanel |
 | `filterStore` | `{ private: bool, water: bool, baby: bool, … }` | FilterPanel, MappingDetailControl, FilterChips | the popovers' own checkboxes — everything else reads `effectiveFilterStore` |
-| `modalOpen` | `boolean` (derived from a counter) | the `modal` action on each dialog element | Map.svelte (`inert` on the map container) |
+| `modalOpen` | `boolean` (derived from a counter) | the `modal` action on each dialog element | Map.svelte (Escape handler) |
 | `effectiveFilterStore` | derived from `filterStore` + `mappingDetail` | — | Map.svelte (polygon visibility), StandaloneApp/HubApp (tier refetch → cluster params, macro aggregates), FilterChips |
 | `mappingDetail` | `boolean` (default `false`; `localStorage` + `?detail=1\|0`) | MappingDetailControl | Map.svelte (cluster/polygon/macro style), AppShell (legend), PlaygroundPanel (share link), `effectiveFilterStore` |
 | `activeTierStore` | `null \| 'cluster' \| 'polygon' \| 'macro'` | tieredOrchestrator | Map.svelte (layer visibility) |
@@ -225,17 +225,20 @@ Translations live in `locales/*.json` and are loaded by `lib/i18n.js` using svel
 
 Add new keys to `locales/en.json` and `locales/de.json`. Translation to other languages happens via [Weblate](translation-guide.md).
 
-### Modal dialogs and the map
+### Modal dialogs
 
-The map container is focusable (`tabindex="0"`) and sits behind every overlay.
-Every `role="dialog" aria-modal="true"` element therefore carries
-`use:modal` from `stores/modalOpen.js`; while any is mounted, `Map.svelte`
-makes the container `inert`, so Tab cannot leave a dialog onto a map nobody
-can see and a screen reader does not announce it (#758). The action counts,
-so a lightbox opened over another dialog does not release the map when it
-closes. `tests/modal-inert.spec.js` pins the behaviour. The hub's instance
-drawer is not a full-screen overlay and traps Tab itself, so it does not
-register.
+Every `role="dialog" aria-modal="true"` element carries `use:modal` from
+`stores/modalOpen.js` (#758). While it is mounted, everything outside the
+dialog — each sibling of the dialog and of its ancestors up to `<body>` — is
+`inert`, focus moves into the dialog, and on close it returns to where it was.
+`aria-modal` alone does none of that: before this, Tab walked from a dialog's
+last control onto the focusable map behind it (arrow keys then panned a map
+nobody could see), the search bar and the control buttons. Nested dialogs stack
+— a lightbox over another dialog makes that dialog inert and hands it back.
+`modalOpen` lets window-level handlers stand down while a dialog is up (Map's
+Escape for the hub popup). `tests/modal-inert.spec.js` pins it. The hub's
+instance drawer is a side panel, not an overlay, and traps Tab itself, so it
+does not register.
 
 ### Codes that must be read as words
 

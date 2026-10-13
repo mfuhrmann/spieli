@@ -668,14 +668,14 @@
   $: if (macroLayer) macroLayer.setStyle($mappingDetail ? macroRingStyleFn : finderMacroRingStyleFn);
 </script>
 
-<svelte:window on:keydown={(e) => { if (e.key === 'Escape' && backendPopup) backendPopup = null; }} />
+<!-- Not while a dialog is open: that Escape belongs to the dialog, and the popup
+     behind it (inert, #758) would vanish unseen. -->
+<svelte:window on:keydown={(e) => { if (e.key === 'Escape' && backendPopup && !$modalOpen) backendPopup = null; }} />
 <!-- tabindex is required, not decorative: OpenLayers attaches its KeyboardPan/KeyboardZoom
      listeners to this exact element (via `target: mapContainer`), so it must be focusable
      for those interactions to activate at all. -->
 <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-<!-- inert while a modal dialog is open (#758): the container is focusable and
-     sits behind every overlay, so Tab would otherwise reach a map nobody can see. -->
-<div bind:this={mapContainer} class="map-container" role="region" aria-label={$_('map.ariaLabel')} tabindex="0" inert={$modalOpen}>
+<div bind:this={mapContainer} class="map-container" role="region" aria-label={$_('map.ariaLabel')} tabindex="0">
   {#if backendPopup}
     <div
       class="backend-popup"
