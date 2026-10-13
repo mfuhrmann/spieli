@@ -128,8 +128,8 @@ export async function stubHubRegistry(page, { instanceA, instanceB }) {
       contentType: 'application/json',
       body: JSON.stringify({
         instances: [
-          { slug: instanceA.slug, url: instanceA.url, name: instanceA.name },
-          { slug: instanceB.slug, url: instanceB.url, name: instanceB.name },
+          { slug: instanceA.slug, url: instanceA.url, name: instanceA.name, country: instanceA.country },
+          { slug: instanceB.slug, url: instanceB.url, name: instanceB.name, country: instanceB.country },
         ],
       }),
     })

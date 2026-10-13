@@ -1,8 +1,19 @@
 <script>
-  import { _ } from 'svelte-i18n';
+  import { _, locale } from 'svelte-i18n';
   import { X } from 'lucide-svelte';
   import LegalContentModal from '../components/LegalContentModal.svelte';
   import { COMPLETENESS_BASE } from '../lib/completenessPalette.js';
+
+  // Full country name for the chip's accessible label (#741): the bare code
+  // reads as "ess kay". Intl knows every name in every locale, so no strings
+  // for Weblate translators to chase; the code is the fallback.
+  function countryName(code, loc) {
+    try {
+      return new Intl.DisplayNames([loc || 'en'], { type: 'region' }).of(code) ?? code;
+    } catch {
+      return code;
+    }
+  }
 
   // Dots and bar segments read the shared mapping-detail palette rather than
   // hardcoding hexes in <style> — a <style> block can't import, so the colours
@@ -161,6 +172,12 @@
         <li class="instance-item" class:instance-item--highlighted={b.url === highlightedBackendUrl}>
           <div class="instance-row">
             <span class="instance-name">{b.name}</span>
+            {#if b.country}
+              <!-- Only entries that set `country` get a chip: the federation is
+                   almost all German, so marking the exception says the most. -->
+              <span class="country-chip" title={countryName(b.country, $locale)}
+                    aria-label={countryName(b.country, $locale)}>{b.country}</span>
+            {/if}
             <div class="instance-row-end">
               <button
                 class="legal-btn"
@@ -372,6 +389,21 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .country-chip {
+    flex-shrink: 0;
+    /* Sits right after the name; the row is space-between, so without this
+       it would float in the middle. */
+    margin-right: auto;
+    padding: 0 0.3rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.25rem;
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    line-height: 1.3;
+    color: #4b5563;
   }
 
   .instance-row-end {

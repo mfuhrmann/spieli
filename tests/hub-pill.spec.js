@@ -54,6 +54,20 @@ test.describe('Hub instance pill + drawer', () => {
     await expect(drawer).toContainText('Instanz B');
   });
 
+  test('a backend with a registry country gets a chip with the full name (#741)', async ({ page }) => {
+    await page.unrouteAll();
+    await injectHubConfig(page);
+    await stubHubRegistry(page, { instanceA, instanceB: { ...instanceB, country: 'sk' } });
+    await page.goto('/');
+    const pill = await waitForHubSettled(page);
+    await pill.click();
+    const chips = page.locator('.drawer[role="dialog"] .country-chip');
+    // Only the entry that set it — no chip for the other backend.
+    await expect(chips).toHaveCount(1);
+    await expect(chips).toHaveText('SK');
+    await expect(chips).toHaveAttribute('aria-label', /^(Slowakei|Slovakia)$/);
+  });
+
   test('ESC collapses drawer', async ({ page }) => {
     await page.goto('/');
     const pill = page.locator('.instance-slot .pill');
