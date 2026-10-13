@@ -3,6 +3,8 @@
 // Subject URI: geo:{lat},{lon}?q={label}&u={radius m} — see the Subject section
 // Rating scale: 0–100 (we show 1–5 stars = 20/40/60/80/100)
 
+import { getDistance } from 'ol/sphere.js';
+import { toLonLat } from 'ol/proj.js';
 import { mangroveApiUrl as MANGROVE_API } from './config.js';
 
 const LS_KEY = 'spieli-mangrove-keypair';
@@ -78,34 +80,51 @@ function b64urlBytes(buf) {
 // `playground`. Labels are percent-encoded, as other clients store them
 // (`q=Ses%20Taronges`); a raw `&` would end the label early.
 //
-// The radius is the playground's own size, like MapComplete derives it, so a
-// small playground does not pick up a neighbour's `q=playground` review.
+// The radius is the playground's own size, like MapComplete derives it, but
+// capped at 50 m: the generic `playground` label (and a common name like
+// "Spielplatz") is shared by every playground, so a large radius would pull a
+// neighbouring playground's review into this one's list. spieli's own legacy
+// label is unique per playground and keeps the u=50 it was written with, so
+// those reviews are found exactly as before.
+//
+// Labels are encoded with encodeURIComponent, which is what the stored data
+// shows other clients doing: `q=Ses%20Taronges`, and apostrophes left as is
+// (`q=McDonald's`, `q=L'Arte%20di%20Dory`) — checked against ~1 900 live
+// reviews.
 
 const DEFAULT_RADIUS_M = 50;
+const LEGACY_RADIUS_M = 50;
 
 export function reviewRadius(radiusM) {
-    return Number.isFinite(radiusM) ? Math.min(100, Math.max(10, Math.round(radiusM))) : DEFAULT_RADIUS_M;
+    return Number.isFinite(radiusM) ? Math.min(50, Math.max(10, Math.round(radiusM))) : DEFAULT_RADIUS_M;
 }
 
-function geoSubject(lat, lon, q, radiusM) {
-    return `geo:${lat.toFixed(5)},${lon.toFixed(5)}?q=${encodeURIComponent(q)}&u=${reviewRadius(radiusM)}`;
+/** Half the diagonal of an EPSG:3857 extent, in ground metres. */
+export function radiusFromExtent(extent3857) {
+    if (!extent3857 || extent3857.some(v => !Number.isFinite(v))) return null;
+    return getDistance(toLonLat([extent3857[0], extent3857[1]]), toLonLat([extent3857[2], extent3857[3]])) / 2;
+}
+
+function geoSubject(lat, lon, q, u) {
+    return `geo:${lat.toFixed(5)},${lon.toFixed(5)}?q=${encodeURIComponent(q)}&u=${u}`;
 }
 
 /** The subjects a playground's reviews are read from, most specific first. */
 export function readSubjects(lat, lon, osmId, { name, radiusM } = {}) {
-    const labels = [];
-    if (osmId) labels.push(`osm_playground_${osmId}`);
-    labels.push('playground');
+    const u = reviewRadius(radiusM);
+    const subjects = [];
+    if (osmId) subjects.push(geoSubject(lat, lon, `osm_playground_${osmId}`, LEGACY_RADIUS_M));
+    subjects.push(geoSubject(lat, lon, 'playground', u));
     const n = name?.trim();
     // The API matches labels case-insensitively, so a playground literally
     // named "Playground" is already covered by the generic label.
-    if (n && n.toLowerCase() !== 'playground') labels.push(n);
-    return labels.map(q => geoSubject(lat, lon, q, radiusM));
+    if (n && n.toLowerCase() !== 'playground') subjects.push(geoSubject(lat, lon, n, u));
+    return subjects;
 }
 
 /** The subject a new review is written to — the format other clients read. */
 export function writeSubject(lat, lon, { name, radiusM } = {}) {
-    return geoSubject(lat, lon, name?.trim() || 'playground', radiusM);
+    return geoSubject(lat, lon, name?.trim() || 'playground', reviewRadius(radiusM));
 }
 
 // ── Fetch reviews ──────────────────────────────────────────────────────────
@@ -123,8 +142,15 @@ async function fetchSubject(sub, signal) {
 }
 
 export async function fetchReviews(lat, lon, osmId, signal, opts = {}) {
-    const lists = await Promise.all(
+    const settled = await Promise.allSettled(
         readSubjects(lat, lon, osmId, opts).map(sub => fetchSubject(sub, signal)));
+    // An abort aborts everything; otherwise one failed label must not hide the
+    // reviews the others returned. Only when every request failed is it an
+    // error — the same "outage is not an empty list" rule as before.
+    const aborted = settled.find(r => r.status === 'rejected' && r.reason?.name === 'AbortError');
+    if (aborted) throw aborted.reason;
+    const lists = settled.filter(r => r.status === 'fulfilled').map(r => r.value);
+    if (lists.length === 0) throw settled[0].reason;
     // One review can match more than one label; its signature identifies it.
     const seen = new Set();
     const merged = [];
@@ -173,10 +199,22 @@ export function fetchReviewsCached(lat, lon, osmId, signal, opts = {}) {
     return inFlight;
 }
 
-// Drop one playground's cached list — called after a successful submission, so
-// the visitor sees their own review rather than the pre-submission list.
+// Drop one playground's cached list.
 export function invalidateReviews(lat, lon, osmId, opts = {}) {
     sessionCache.delete(cacheKey(lat, lon, osmId, opts));
+}
+
+// Put the visitor's own, just-submitted review into the cached list. Re-reading
+// instead would not show it: the /ext/mangrove/ proxy caches each subject's
+// answer for minutes, so the refetch is the pre-submission list again.
+export function addOwnReview(lat, lon, osmId, opts, review) {
+    const key = cacheKey(lat, lon, osmId, opts);
+    const held = sessionCache.get(key);
+    const next = (held ?? Promise.resolve([]))
+        .catch(() => [])
+        .then(list => [review, ...list.filter(r => r.signature !== review.signature)]);
+    sessionCache.set(key, next);
+    return next;
 }
 
 // ── Submit review ──────────────────────────────────────────────────────────
@@ -202,7 +240,9 @@ export async function submitReview(lat, lon, rating100, opinion, opts = {}) {
         `${MANGROVE_API}/submit/${encodeURIComponent(jwt)}`,
         { method: 'PUT' },
     );
-    return res.ok;
+    // The review as the API will list it — its signature is the JWT's — or
+    // null on failure.
+    return res.ok ? { signature: b64urlBytes(sig), payload } : null;
 }
 
 // ── Display helpers ────────────────────────────────────────────────────────

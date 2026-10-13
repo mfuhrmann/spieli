@@ -1,7 +1,6 @@
 <script>
-  import { fetchReviewsCached, invalidateReviews, submitReview, starsHtml, relativeDate } from '../lib/reviews.js';
+  import { fetchReviewsCached, addOwnReview, submitReview, starsHtml, relativeDate } from '../lib/reviews.js';
   import { _ } from 'svelte-i18n';
-  import { onDestroy } from 'svelte';
 
   /** @type {number} Playground centre latitude (WGS84) */
   export let lat = 0;
@@ -26,9 +25,6 @@
   let submitStatus = '';       // success/error message
 
   let abortCtrl = null;
-  let refreshTimer = null;
-
-  onDestroy(() => clearTimeout(refreshTimer));
 
   // This component is mounted by a collapsed accordion section in
   // PlaygroundPanel, so it exists only once the visitor has expanded reviews.
@@ -36,7 +32,9 @@
   // osmId: the open panel must show the selected playground's reviews, not the
   // previous one's. fetchReviewsCached makes a return to an already-seen
   // playground free rather than another request.
-  $: if (osmId) loadReviews();
+  // name and radiusM are part of the subjects, so they re-trigger the load too:
+  // a load must never run with one playground's id and another's name.
+  $: if (osmId) loadReviews(osmId, name, radiusM);
 
   async function loadReviews() {
     abortCtrl?.abort();
@@ -64,22 +62,17 @@
     submitting = true;
     submitStatus = '';
     try {
-      const ok = await submitReview(target.lat, target.lon, selectedRating, opinion.trim() || null, target.opts);
-      if (ok) {
+      const own = await submitReview(target.lat, target.lon, selectedRating, opinion.trim() || null, target.opts);
+      if (own) {
         submitStatus = 'success';
         selectedRating = null;
         opinion = '';
-        // Without this the refresh below is served from the session cache and
-        // the visitor never sees the review they just submitted.
-        invalidateReviews(target.lat, target.lon, target.osmId, target.opts);
-        clearTimeout(refreshTimer);
-        refreshTimer = setTimeout(() => {
-          // Only refresh if that playground is still the one on screen.
-          // loadReviews() reads the current props and aborts whatever is in
-          // flight, so firing it blindly would abandon the newly selected
-          // playground's load and re-request it.
-          if (osmId === target.osmId) loadReviews();
-        }, 1500);
+        // Show it from what we just signed rather than re-reading: the proxy
+        // caches each subject's answer for minutes, so a re-read would return
+        // the list without it.
+        const list = await addOwnReview(target.lat, target.lon, target.osmId, target.opts, own);
+        // Only if that playground is still the one on screen.
+        if (osmId === target.osmId) { reviews = list; error = false; }
       } else {
         submitStatus = 'error';
       }

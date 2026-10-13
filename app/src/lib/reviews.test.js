@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { fetchReviews, fetchReviewsCached, invalidateReviews, readSubjects, writeSubject, reviewRadius } from './reviews.js';
+import { fetchReviews, fetchReviewsCached, invalidateReviews, addOwnReview, readSubjects, writeSubject, reviewRadius, radiusFromExtent } from './reviews.js';
 
 // Reviews live behind a collapsed accordion, so ReviewsPanel is destroyed on
 // collapse and any cache inside it dies with it. These tests cover the
@@ -195,6 +195,12 @@ const ok = (reviews) => () => ({ ok: true, json: async () => ({ reviews }) });
 
     assert.match(writeSubject(LAT, LON), /\?q=playground&u=50$/);
     assert.match(writeSubject(LAT, LON, { name: 'Grezzbachpark', radiusM: 37.4 }), /\?q=Grezzbachpark&u=37$/);
+    // Apostrophes stay raw, as in the stored data (`q=McDonald's`).
+    assert.match(writeSubject(LAT, LON, { name: "Lito's Spielplatz" }), /q=Lito's%20Spielplatz&/);
+    // spieli's own legacy label keeps the u=50 its reviews were written with,
+    // whatever the playground's size.
+    assert.match(readSubjects(LAT, LON, OSM, { radiusM: 12 })[0], /q=osm_playground_12345&u=50$/);
+    assert.match(readSubjects(LAT, LON, OSM, { radiusM: 12 })[1], /q=playground&u=12$/);
     // The written subject is among the read ones, so a submitted review shows.
     for (const name of [undefined, 'Grezzbachpark']) {
         assert.ok(readSubjects(LAT, LON, OSM, { name, radiusM: 30 }).includes(writeSubject(LAT, LON, { name, radiusM: 30 })));
@@ -202,7 +208,12 @@ const ok = (reviews) => () => ({ ok: true, json: async () => ({ reviews }) });
 
     assert.equal(reviewRadius(undefined), 50);
     assert.equal(reviewRadius(3), 10);
-    assert.equal(reviewRadius(400), 100);
+    // Capped at 50: shared labels must not reach a neighbouring playground.
+    assert.equal(reviewRadius(400), 50);
+    // ~40 m × 30 m box at 50.5° N → half-diagonal ≈ 25 m on the ground.
+    const r = radiusFromExtent([1077000, 6537000, 1077000 + 40 / Math.cos(50.5 * Math.PI / 180), 6537000 + 30 / Math.cos(50.5 * Math.PI / 180)]);
+    assert.ok(Math.abs(r - 25) < 0.5, `radiusFromExtent ${r}`);
+    assert.equal(radiusFromExtent(null), null);
 }
 
 // --- one review matching several labels is shown once ----------------------
@@ -216,13 +227,33 @@ const ok = (reviews) => () => ({ ok: true, json: async () => ({ reviews }) });
     assert.deepEqual(list.map(r => r.signature), ['sig-a', 'sig-b'], 'deduplicated, newest first');
 }
 
-// --- one failing subject fails the load, rather than hiding reviews --------
+// --- one failing label does not hide the others' reviews ------------------
 {
     reset();
     let n = 0;
     respond = () => (++n === 2 ? { ok: false, status: 503, json: async () => ({}) }
-                               : { ok: true, json: async () => ({ reviews: [] }) });
-    await assert.rejects(() => fetchReviews(LAT, LON, 9012), /503/);
+                               : { ok: true, json: async () => ({ reviews: [{ signature: 's', payload: { rating: 80 } }] }) });
+    assert.equal((await fetchReviews(LAT, LON, 9012)).length, 1);
+}
+
+// --- the visitor's own review shows at once, without a re-read -------------
+// A re-read would go through the /ext/mangrove/ proxy cache and miss it.
+{
+    reset();
+    const id = 9013;
+    respond = ok([{ signature: 'old', payload: { rating: 40, iat: 1 } }]);
+    await fetchReviewsCached(LAT, LON, id);
+    const before = calls.length;
+    const own = { signature: 'mine', payload: { rating: 100, iat: 2 } };
+    const list = await addOwnReview(LAT, LON, id, {}, own);
+    assert.deepEqual(list.map(r => r.signature), ['mine', 'old']);
+    assert.deepEqual((await fetchReviewsCached(LAT, LON, id)).map(r => r.signature), ['mine', 'old']);
+    assert.equal(calls.length, before, 'no re-read');
+    // A failed earlier read still yields the own review.
+    reset();
+    respond = () => ({ ok: false, status: 503, json: async () => ({}) });
+    await assert.rejects(() => fetchReviewsCached(LAT, LON, 9014));
+    assert.deepEqual((await addOwnReview(LAT, LON, 9014, {}, own)).map(r => r.signature), ['mine']);
 }
 
 console.log('reviews.test.js: all assertions passed');
