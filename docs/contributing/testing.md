@@ -109,7 +109,7 @@ Fixtures in `tests/fixtures/` are static JSON files matching the shapes document
 
 ```
 tests/fixtures/
-├── get_playground_clusters.json   # array of { lon, lat, count, complete, partial, missing, restricted }
+├── get_playground_clusters.json   # array of { lon, lat, count, complete, partial, missing }
 ├── get_playgrounds_bbox.json      # GeoJSON FeatureCollection
 ├── get_playground.json            # single GeoJSON Feature
 ├── get_equipment.json             # array of GeoJSON features

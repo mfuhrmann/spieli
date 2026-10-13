@@ -296,7 +296,7 @@ All PostgREST calls. Key functions:
 
 All PostgREST-exposed functions live in the `api` schema. See [`docs/reference/api.md`](docs/reference/api.md) for full request/response shapes.
 
-- `get_playground_clusters(z, bbox)` — pre-aggregated cluster buckets with `{count, complete, partial, missing, restricted}`
+- `get_playground_clusters(z, bbox)` — pre-aggregated cluster buckets with `{count, complete, partial, missing}` (no `restricted` since #626)
 - `get_playgrounds_bbox(bbox)` — polygon tier; same response shape as the legacy `get_playgrounds`
 - `get_playground(osm_id)` — single-feature lookup for deeplink/nearby hydration
 - `get_playground_centroids(bbox)` — lightweight per-feature rows (federation-ready, client unused in P1)

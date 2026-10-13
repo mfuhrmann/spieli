@@ -114,12 +114,12 @@ Click any playground to open its detail panel. The panel shows:
 
 - Name, operator, opening hours (when mapped)
 - Surface type and size, and lighting when it is mapped (most playgrounds do not record it yet, so nothing is shown then)
-- Status pills — data age, the mapping-detail badge (only while [mapping detail](#mapping-detail-colours) is on), and (when tagged) a shade pill (Shaded / No shade), baby / toddler suitability, and wheelchair-friendly equipment (see [Wheelchair accessibility](#wheelchair-accessibility))
+- Status pills — the mapping-detail badge (only while [mapping detail](#mapping-detail-colours) is on), data age, and (when tagged) a shade pill (Shaded / No shade), baby / toddler suitability, and wheelchair-friendly equipment (see [Wheelchair accessibility](#wheelchair-accessibility))
 - Theme highlight — a symbol for playgrounds with a theme, such as a ship or castle (see [Playground themes](#playground-themes))
 - Equipment list — devices, pitches, benches, and their sub-attributes, including each item's surface when tagged
 - Street-level photos (from Panoramax, when available)
 - Community reviews (from Mangrove.reviews, when available)
-- Nearby POIs — toilets, cafés, bus stops, and pharmacies around the playground (within 5 km unless the site's operator has set a different radius)
+- Nearby places — toilets, bus stops, ice cream, shops (supermarket, convenience store, bakery), drugstores and emergency care around the playground (within a few kilometres; the site's operator sets the radius)
 - A "Take me there" button that opens navigation to the playground (geo: URL on mobile, OSM directions on desktop)
 - A "Contribute data" link to add or improve information in OpenStreetMap via MapComplete
 

@@ -40,7 +40,7 @@ With mapping detail switched on (it is off by default, see the [user guide](../u
 
 A photo is **not** part of the rating. It is shown separately as a camera glyph on the map.
 
-The map legend, shown only while mapping detail is on, is headed "Erfasste Details" / "Mapping detail". The same three-state breakdown is used in cluster rings, the federation macro view and the hub instance drawer.
+The map legend, shown only while mapping detail is on, is headed "Erfasste Details" / "Mapping detail". The same three-state breakdown is used in cluster rings and the federation macro view (both only with mapping detail on) and, always, in the hub instance drawer.
 
 The scale measures how much of the map is filled in, not how good the playground is. The lowest step means "nobody has mapped this yet — help out", not "bad playground".
 
