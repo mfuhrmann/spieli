@@ -1,4 +1,5 @@
 <script>
+  import { modal } from '../stores/modalOpen.js';
   import { onMount } from 'svelte';
   import { _ } from 'svelte-i18n';
   import { fetchPlaygroundPhotos } from '../lib/commons.js';
@@ -106,7 +107,7 @@
 {#if fullscreen && photos[modalIndex]}
   <div use:portal class="commons-backdrop" onclick={closeModal}>
     <div class="commons-modal" onclick={e => e.stopPropagation()}
-         role="dialog" aria-modal="true" aria-label={$_('accordion.photos')} tabindex="-1">
+         role="dialog" aria-modal="true" use:modal aria-label={$_('accordion.photos')} tabindex="-1">
       <div class="commons-modal-header">
         <div class="commons-nav">
           <button type="button" class="nav-btn" onclick={prev}

@@ -1,4 +1,5 @@
 <script>
+  import { modalOpen } from '../stores/modalOpen.js';
   import { onMount, onDestroy } from 'svelte';
   import { _ } from 'svelte-i18n';
   import { Map, View } from 'ol';
@@ -672,7 +673,9 @@
      listeners to this exact element (via `target: mapContainer`), so it must be focusable
      for those interactions to activate at all. -->
 <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-<div bind:this={mapContainer} class="map-container" role="region" aria-label={$_('map.ariaLabel')} tabindex="0">
+<!-- inert while a modal dialog is open (#758): the container is focusable and
+     sits behind every overlay, so Tab would otherwise reach a map nobody can see. -->
+<div bind:this={mapContainer} class="map-container" role="region" aria-label={$_('map.ariaLabel')} tabindex="0" inert={$modalOpen}>
   {#if backendPopup}
     <div
       class="backend-popup"

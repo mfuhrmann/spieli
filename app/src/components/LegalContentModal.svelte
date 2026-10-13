@@ -1,4 +1,5 @@
 <script>
+  import { modal } from '../stores/modalOpen.js';
   import { _ } from 'svelte-i18n';
 
   export let open = false;
@@ -27,7 +28,7 @@
   <!-- svelte-ignore a11y-click-events-have-key-events -->
   <!-- svelte-ignore a11y-no-static-element-interactions -->
   <div class="modal-backdrop" onclick={onBackdropClick}>
-    <div class="modal-box" role="dialog" aria-modal="true" aria-label={$_('legal.contentTitle')}>
+    <div class="modal-box" role="dialog" aria-modal="true" use:modal aria-label={$_('legal.contentTitle')}>
       <div class="modal-header">
         <span class="modal-title">{$_('legal.contentTitle')}</span>
         <button type="button" class="close-btn" onclick={close} aria-label={$_('hub.closeBtn')}>✕</button>

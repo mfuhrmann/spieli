@@ -1,4 +1,5 @@
 <script>
+  import { modal } from '../stores/modalOpen.js';
   import { onMount } from 'svelte';
   import { panoramaxThumbUrl, panoramaxViewerUrl } from '../lib/panoramax.js';
   import { _ } from 'svelte-i18n';
@@ -145,7 +146,7 @@
 {#if fullscreen}
   <div use:portal class="panoramax-modal-backdrop" onclick={closeModal}>
     <div class="panoramax-modal" onclick={e => e.stopPropagation()}
-         role="dialog" aria-modal="true" aria-label={$_('modal.streetPhoto')} tabindex="-1">
+         role="dialog" aria-modal="true" use:modal aria-label={$_('modal.streetPhoto')} tabindex="-1">
       <div class="panoramax-modal-header">
         <div class="panoramax-nav">
           <button type="button" class="nav-btn"

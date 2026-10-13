@@ -1,4 +1,6 @@
 <script>
+  import { onMount } from 'svelte';
+  import { modal } from '../stores/modalOpen.js';
   import { objDevices, objFitnessStation } from '../lib/objPlaygroundEquipment.js';
   import { panoramaxThumbUrl, panoramaxViewerUrl } from '../lib/panoramax.js';
   import { objColors } from '../lib/vectorStyles.js';
@@ -104,6 +106,17 @@
 
   // Panoramax fullscreen modal for device photos
   let modalUuid = null;
+
+  // Esc closes the device photo, as it does every other dialog (#758). Capture
+  // phase + stopImmediatePropagation, like CommonsGallery, so the same press
+  // does not also close the playground panel underneath.
+  function onModalKeydown(e) {
+    if (modalUuid && e.key === 'Escape') { e.stopImmediatePropagation(); modalUuid = null; }
+  }
+  onMount(() => {
+    window.addEventListener('keydown', onModalKeydown, { capture: true });
+    return () => window.removeEventListener('keydown', onModalKeydown, { capture: true });
+  });
   const thumbUrl  = panoramaxThumbUrl;
   const viewerUrl = panoramaxViewerUrl;
 </script>
@@ -366,7 +379,7 @@
   <!-- svelte-ignore a11y-no-static-element-interactions -->
   <div class="photo-modal-backdrop" onclick={() => modalUuid = null}>
     <div class="photo-modal" onclick={e => e.stopPropagation()}
-         role="dialog" aria-modal="true" aria-label={$_('popup.devicePhoto')} tabindex="-1">
+         role="dialog" aria-modal="true" use:modal aria-label={$_('popup.devicePhoto')} tabindex="-1">
       <div class="photo-modal-header">
         <span class="photo-modal-title">{$_('popup.devicePhoto')}</span>
         <button type="button" class="btn-close" onclick={() => modalUuid = null} aria-label={$_('info.closeBtn')}></button>

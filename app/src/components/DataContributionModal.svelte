@@ -1,4 +1,5 @@
 <script>
+  import { modal } from '../stores/modalOpen.js';
   import { _ , locale } from 'svelte-i18n';
   import { version } from '../../package.json';
   import logoUrl from '../images/spieli_logo.png';
@@ -33,7 +34,7 @@
   <!-- svelte-ignore a11y-click-events-have-key-events -->
   <!-- svelte-ignore a11y-no-static-element-interactions -->
   <div class="modal-backdrop" onclick={onBackdropClick}>
-    <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="info-title">
+    <div class="modal-box" role="dialog" aria-modal="true" use:modal aria-labelledby="info-title">
       <div class="modal-header">
         <h5 class="modal-title" id="info-title">{$_('nav.about')}</h5>
         <button type="button" class="close-btn" onclick={close} aria-label={$_('info.closeBtn')}>✕</button>
