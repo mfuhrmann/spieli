@@ -2221,9 +2221,11 @@
 <li><code>amenity=bench</code>, <code>amenity=shelter</code>, <code>amenity=toilets</code>, <code>amenity=ice_cream</code>, <code>amenity=cafe</code>, <code>amenity=restaurant</code></li>
 <li><code>natural=tree</code>, <code>natural=tree_row</code>, <code>playground=*</code></li>
 <li><code>highway=bus_stop</code>, <code>shop=chemist/supermarket/convenience</code>, <code>emergency=*</code></li>
+<li><code>barrier=fence</code> ways — fences drawn around a playground (#773)</li>
 <li><code>boundary=administrative</code>, <code>type=multipolygon</code></li>
 </ul>
 <p><strong>If you add a new OSM object type</strong>, add its tag to this filter — otherwise the importer will silently discard those objects.</p>
+<p>The list lives in <code>TAG_FILTERS</code>, and the tag-filtered extract is cached next to a hash of it (<code>*_tags.pbf.filter</code>). Changing the list invalidates the cache on the next import, so the new tags arrive even when the source PBF has not changed. It still needs a full import — <code>API_ONLY</code> never runs osmium.</p>
 <h2 id="the-playground_stats-materialised-view">The <code>playground_stats</code> materialised view<a class="headerlink" href="#the-playground_stats-materialised-view" title="Permanent link">&para;</a></h2>
 <p>The most important post-import step in <code>importer/api.sql</code> is building the <code>playground_stats</code> materialized view. It pre-computes per-playground statistics (tree count, bench count, sport types, completeness state) so <code>get_playgrounds_bbox</code> is a fast indexed lookup rather than an aggregation query.</p>
 <p>It is built entirely from the standard osm2pgsql tables:</p>
@@ -2309,7 +2311,7 @@
 </tr>
 <tr>
 <td><code>has_fence</code></td>
-<td><code>enclosed=yes</code> or <code>barrier=fence</code> on playground</td>
+<td><code>enclosed=yes</code> or <code>barrier=fence</code> on the playground, <strong>or</strong> separately mapped <code>barrier=fence</code> ways (from <code>planet_osm_line</code>) within 4 m of at least 75 % of its outline (<code>fence_cover</code>, #773)</td>
 </tr>
 <tr>
 <td><code>has_dogs</code></td>
