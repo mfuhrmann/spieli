@@ -307,6 +307,7 @@ All PostgREST-exposed functions live in the `api` schema. See [`docs/reference/a
 - `get_pitch(osm_id)` — single standalone pitch (same shape, same not-in-a-playground rule) for `#P` links; `null` otherwise
 - `get_trees(bbox)`, `get_pois(lat, lon, radius_m)`, `get_nearest_playgrounds(lat, lon)` (frontend no longer calls it, #949; kept so hubs on older releases keep working)
 - `get_legal(type)` — imprint / legal text fetched from the `legal_content` table
+- Helper (not an RPC, lives in `public`): `metres_to_3857(metres, lat)` — a ground distance in EPSG:3857 units. Every `ST_DWithin` on `way` with a metre value must go through it (#954); comparing metres to Web Mercator units directly shrinks the distance by cos(latitude)
 - `get_playgrounds(relation_id)` — **deprecated** region-scoped variant; SQL `COMMENT` flags it for removal
 
 The `playground_stats` materialised view is rebuilt with each `make db-apply` and carries the per-playground `completeness` (`'complete' | 'partial' | 'missing'`) plus its two inputs `has_equipment` / `has_info` and the separate `has_photo` signal — the rule mirrors `app/src/lib/completeness.js` exactly. The db-smoke workflow's "Assert JS/SQL rule parity" step guards the mirror: it reads `has_equipment` straight out of the live view definition and fails if it stops counting play infrastructure, starts counting street furniture again (#776), or if the classification CASE moves off `has_equipment AND has_info`. The job is path-filtered, so `app/src/lib/completeness.js` is listed as a trigger alongside `importer/api.sql`.
