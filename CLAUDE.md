@@ -303,7 +303,7 @@ All PostgREST-exposed functions live in the `api` schema. See [`docs/reference/a
 - `get_equipment(bbox)` — equipment within a bounding box (used per selected playground)
 - `get_standalone_equipment(bbox)` — pitches + equipment outside any playground polygon; properties carry every OSM tag plus the `access`/`operator` columns
 - `get_pitch(osm_id)` — single standalone pitch (same shape, same not-in-a-playground rule) for `#P` links; `null` otherwise
-- `get_trees(bbox)`, `get_pois(lat, lon, radius_m)`, `get_nearest_playgrounds(lat, lon)` (frontend no longer calls it, #949)
+- `get_trees(bbox)`, `get_pois(lat, lon, radius_m)`, `get_nearest_playgrounds(lat, lon)` (frontend no longer calls it, #949; kept so hubs on older releases keep working)
 - `get_legal(type)` — imprint / legal text fetched from the `legal_content` table
 - `get_playgrounds(relation_id)` — **deprecated** region-scoped variant; SQL `COMMENT` flags it for removal
 

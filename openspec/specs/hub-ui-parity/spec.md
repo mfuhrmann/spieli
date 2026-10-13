@@ -5,7 +5,7 @@ TBD - created by archiving change hub-ui-parity. Update Purpose after archive.
 ## Requirements
 ### Requirement: Feature parity with standalone
 
-Hub-mode deployments SHALL render the same user-facing feature set as standalone-mode deployments: map, playground detail panel, search bar, filter chips, filter panel, locate button, zoom controls, hover preview, nearby-playground suggestions, data-contribution modal, and responsive mobile bottom-sheet.
+Hub-mode deployments SHALL render the same user-facing feature set as standalone-mode deployments: map, playground detail panel, search bar, filter chips, filter panel, locate button, zoom controls, hover preview, data-contribution modal, and responsive mobile bottom-sheet.
 
 #### Scenario: Hub loads with reachable backends
 
@@ -90,23 +90,6 @@ The URL hash SHALL support a `#<slug>/W<osm_id>` form where `<slug>` identifies 
 
 - **WHEN** a user selects a playground in hub mode and the owning backend has no slug
 - **THEN** `location.hash` is set to `#W<osm_id>` (legacy form)
-
-### Requirement: Multi-backend nearest-playground search
-
-In hub mode the nearby-playgrounds suggestion feature SHALL aggregate results from all registered backends, deduplicated by `osm_id` and sorted by distance ascending.
-
-#### Scenario: Nearby suggestions span backends
-
-- **WHEN** the user triggers the locate action and a position is obtained in hub mode
-- **THEN** each reachable backend's `get_nearest_playgrounds` is called in parallel
-- **AND** the merged results are shown, sorted by distance ascending
-- **AND** results with duplicate `osm_id` across backends keep only the nearest entry
-
-#### Scenario: Slow or failing backend does not block UI
-
-- **WHEN** one backend's `get_nearest_playgrounds` fails or times out
-- **THEN** results from the remaining backends are rendered without blocking user interaction
-- **AND** the timeout does not exceed the configured per-backend limit
 
 ### Requirement: Generic data-contribution links in hub mode
 

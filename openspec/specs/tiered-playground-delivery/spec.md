@@ -73,7 +73,7 @@ Each data-node SHALL expose a function returning full playground polygons scoped
 
 ### Requirement: Backend exposes single-feature playground lookup
 
-Each data-node SHALL expose a function returning a single playground feature by `osm_id`, so the client can hydrate a polygon on demand for deeplinks and nearby-list selections when the polygon source isn't populated for the current viewport.
+Each data-node SHALL expose a function returning a single playground feature by `osm_id`, so the client can hydrate a polygon on demand for deeplinks when the polygon source isn't populated for the current viewport.
 
 #### Scenario: Single-feature RPC returns one feature
 
