@@ -70,19 +70,24 @@ jobs:
             < dev/ci/planet-osm-tables.sql
 
       - name: Load fence fixtures
-        # Two playgrounds with a separately mapped barrier=fence way along
-        # their outline (#773): 87.5 % fenced must count, 25 % must not.
+        # Playgrounds with a separately mapped barrier=fence way along their
+        # outline (#773): 87.5 % fenced must count, 25 % must not, and a
+        # fully fenced one with a large unfenced hole must still count —
+        # the share is measured on the outer ring.
         # Loaded before api.sql so the playground_stats build sees them.
         run: |
           set -euo pipefail
           docker compose exec -T db psql -U osm -d osm -v ON_ERROR_STOP=1 --single-transaction <<'SQL'
           INSERT INTO planet_osm_polygon (osm_id, leisure, tags, way) VALUES
             (773001, 'playground', ''::hstore, ST_Transform(ST_MakeEnvelope(9.7000, 50.5000, 9.7006, 50.5004, 4326), 3857)),
-            (773002, 'playground', ''::hstore, ST_Transform(ST_MakeEnvelope(9.7100, 50.5000, 9.7106, 50.5004, 4326), 3857));
+            (773002, 'playground', ''::hstore, ST_Transform(ST_MakeEnvelope(9.7100, 50.5000, 9.7106, 50.5004, 4326), 3857)),
+            (773003, 'playground', ''::hstore, ST_Transform(ST_Difference(
+               ST_MakeEnvelope(9.7200, 50.5000, 9.7206, 50.5004, 4326),
+               ST_MakeEnvelope(9.72015, 50.50010, 9.72045, 50.50030, 4326)), 3857));
           INSERT INTO planet_osm_line (osm_id, barrier, way)
           SELECT 773100 + p.osm_id - 773000, 'fence',
-                 ST_LineSubstring(ST_ExteriorRing(p.way), 0, CASE p.osm_id WHEN 773001 THEN 0.875 ELSE 0.25 END)
-          FROM planet_osm_polygon p WHERE p.osm_id IN (773001, 773002);
+                 ST_LineSubstring(ST_ExteriorRing(p.way), 0, CASE p.osm_id WHEN 773001 THEN 0.875 WHEN 773002 THEN 0.25 ELSE 1 END)
+          FROM planet_osm_polygon p WHERE p.osm_id IN (773001, 773002, 773003);
           SQL
         timeout-minutes: 2
 
@@ -221,10 +226,14 @@ jobs:
           set -euo pipefail
           docker compose exec -T db psql -U osm -d osm -v ON_ERROR_STOP=1 <<'SQL'
           DO $fence$
-          DECLARE a boolean; b boolean;
+          DECLARE a boolean; b boolean; c boolean;
           BEGIN
             SELECT has_fence INTO a FROM playground_stats WHERE osm_id = 773001;
             SELECT has_fence INTO b FROM playground_stats WHERE osm_id = 773002;
+            SELECT has_fence INTO c FROM playground_stats WHERE osm_id = 773003;
+            IF c IS DISTINCT FROM true THEN
+              RAISE EXCEPTION 'fully fenced playground with an unfenced hole is not has_fence (got %) — is the share measured on the outer ring?', c;
+            END IF;
             IF a IS DISTINCT FROM true THEN
               RAISE EXCEPTION 'playground fenced along 87.5 %% of its outline by a barrier=fence way is not has_fence (got %)', a;
             END IF;

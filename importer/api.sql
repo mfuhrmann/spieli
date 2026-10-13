@@ -187,8 +187,14 @@ $$;
 -- is a no-op and the ordering costs nothing there.
 -- =========================================================================
 CREATE INDEX IF NOT EXISTS idx_osm_polygon_way   ON planet_osm_polygon USING GIST (way);
-CREATE INDEX IF NOT EXISTS idx_osm_line_way      ON planet_osm_line    USING GIST (way);
+-- planet_osm_line holds every barrier=fence way since #773; osm2pgsql's own
+-- way index covers the table, so these are partial: fences for fence_cover,
+-- tree rows for get_trees, playground=* lines for the equipment source —
+-- none of them should have to wade through the fences.
 CREATE INDEX IF NOT EXISTS idx_osm_line_fence    ON planet_osm_line    USING GIST (way) WHERE barrier = 'fence';
+CREATE INDEX IF NOT EXISTS idx_osm_polygon_fence ON planet_osm_polygon USING GIST (way) WHERE barrier = 'fence';
+CREATE INDEX IF NOT EXISTS idx_osm_line_treerow  ON planet_osm_line    USING GIST (way) WHERE "natural" = 'tree_row';
+CREATE INDEX IF NOT EXISTS idx_osm_line_play     ON planet_osm_line    USING GIST (way) WHERE tags ? 'playground';
 CREATE INDEX IF NOT EXISTS idx_osm_point_way     ON planet_osm_point   USING GIST (way);
 CREATE INDEX IF NOT EXISTS idx_osm_polygon_lei   ON planet_osm_polygon (leisure)   WHERE leisure   IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_osm_point_lei     ON planet_osm_point   (leisure)   WHERE leisure   IS NOT NULL;
@@ -297,21 +303,38 @@ CREATE MATERIALIZED VIEW public.playground_stats_new AS
   -- a child cannot just run off. The ratio of two lengths is unit-free, so
   -- only the 4 m tolerance needs the Mercator correction. Node playgrounds
   -- have no outline and are skipped.
+  --
+  -- The outline is the outer rings only: holes (a building, a pond) are not
+  -- an edge a child could leave through, and counting them would push a
+  -- fully fenced playground below the threshold. Fences are clipped to the
+  -- playground's neighbourhood before buffering — a multi-km fence along a
+  -- railway must not be buffered in full for every playground it passes —
+  -- and buffered once as a collection. A closed fence that also carries an
+  -- area tag lands in planet_osm_polygon, so its outline counts too.
   fence_cover AS (
     SELECT
       pl.osm_id,
       pl.osm_type,
-      ST_Length(ST_Intersection(ST_Boundary(pl.way), ST_Union(ST_Buffer(f.way, tol.d))))
-        / NULLIF(ST_Length(ST_Boundary(pl.way)), 0) AS fenced_share
+      ST_Length(ST_Intersection(geo.outline, ST_Buffer(ST_Collect(fc.clipped), geo.d)))
+        / NULLIF(ST_Length(geo.outline), 0) AS fenced_share
     FROM all_playgrounds pl
     CROSS JOIN LATERAL (
-      SELECT public.metres_to_3857(4, ST_Y(ST_Transform(ST_Centroid(pl.way), 4326))) AS d
-    ) tol
-    JOIN planet_osm_line f
-      ON f.barrier = 'fence'
-      AND ST_DWithin(f.way, pl.way, tol.d)
+      SELECT
+        public.metres_to_3857(4, ST_Y(ST_Transform(ST_Centroid(pl.way), 4326))) AS d,
+        (SELECT ST_Collect(ST_ExteriorRing(r.geom)) FROM ST_Dump(pl.way) r) AS outline
+    ) geo
+    CROSS JOIN LATERAL (
+      SELECT ST_Intersection(f.way, ST_Expand(pl.way, geo.d)) AS clipped
+      FROM planet_osm_line f
+      WHERE f.barrier = 'fence' AND ST_DWithin(f.way, pl.way, geo.d)
+      UNION ALL
+      SELECT ST_Intersection(ST_Boundary(f.way), ST_Expand(pl.way, geo.d))
+      FROM planet_osm_polygon f
+      WHERE f.barrier = 'fence' AND f.leisure IS DISTINCT FROM 'playground'
+        AND ST_DWithin(f.way, pl.way, geo.d)
+    ) fc
     WHERE pl.osm_type <> 'N'
-    GROUP BY pl.osm_id, pl.osm_type, pl.way
+    GROUP BY pl.osm_id, pl.osm_type, geo.outline, geo.d
   ),
   -- Equipment from all three osm2pgsql tables (incl. planet_osm_line, where
   -- playground=* closed ways land). Shared with api.get_equipment via

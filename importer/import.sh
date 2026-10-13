@@ -176,7 +176,8 @@ run_import() (
     # returns 304 Not Modified when the extract hasn't changed, skipping the
     # download. When a newer extract is available wget updates the file and its
     # mtime, which automatically invalidates the bbox and tag-filter caches
-    # below (they use -nt comparisons against the source PBF).
+    # below (they use -nt comparisons against the source PBF; the tag-filter
+    # cache is also invalidated when TAG_FILTERS changes, see Step 2).
     # --------------------------------------------------------------------------- #
     if [ -f "$PBF_FILE" ]; then
         if ! osmium fileinfo "$PBF_FILE" > /dev/null 2>&1; then
@@ -319,8 +320,11 @@ run_import() (
     # The cache is only valid for the filter list it was built with: a list
     # extended by an upgrade (as #773 did) would otherwise keep serving the
     # old extract until the source PBF happens to change, and the new tags
-    # would silently never arrive. The hash sits next to the cache.
-    TAGS_FILTER_HASH=$(printf '%s' "$TAG_FILTERS" | sha256sum | cut -c1-16)
+    # would silently never arrive. The hash sits next to the cache. Taken over
+    # the sorted expressions, so re-indenting the list does not count as a
+    # change (osmium does not care about their order either).
+    # shellcheck disable=SC2086  # word-split on purpose
+    TAGS_FILTER_HASH=$(printf '%s\n' $TAG_FILTERS | sort | sha256sum | cut -c1-16)
 
     TAGS_CACHE_OK=0
     if [ -f "$TAGS_PBF" ] && [ "$(cat "$TAGS_PBF.filter" 2>/dev/null)" != "$TAGS_FILTER_HASH" ]; then
@@ -339,7 +343,7 @@ run_import() (
         echo "[importer] Running osmium tags-filter..."
         TAGS_TMP=$(mktemp -p /data .tags.XXXXXX.pbf)
         trap 'rm -f "$TAGS_TMP"' EXIT
-        # shellcheck disable=SC2086 — TAG_FILTERS is a word list by design
+        # shellcheck disable=SC2086  # TAG_FILTERS is a word list by design
         osmium tags-filter \
             --overwrite \
             -o "$TAGS_TMP" \
@@ -390,7 +394,7 @@ run_import() (
         -t -c "SELECT count(*) FROM planet_osm_polygon WHERE leisure = 'playground'" \
         2>/dev/null | tr -d ' \n')
     if [ -z "$_PLAYGROUND_COUNT" ] || [ "$_PLAYGROUND_COUNT" -eq 0 ]; then
-        fail "osm2pgsql imported 0 playground polygons — the PBF is likely empty or corrupt. Delete the cached PBF files and re-run: docker run --rm -v <pbf_cache_volume>:/data alpine sh -c 'rm -f /data/*_${OSM_RELATION_ID}*.pbf'"
+        fail "osm2pgsql imported 0 playground polygons — the PBF is likely empty or corrupt. Delete the cached PBF files and re-run: docker run --rm -v <pbf_cache_volume>:/data alpine sh -c 'rm -f /data/*_${OSM_RELATION_ID}*.pbf /data/*_${OSM_RELATION_ID}*.pbf.filter'"
     fi
     echo "[importer] Verified: ${_PLAYGROUND_COUNT} playground polygons imported."
 
