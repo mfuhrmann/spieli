@@ -90,10 +90,35 @@ test('a #<slug>/P<id> link restores the pitch from that backend', async ({ page 
   await expect(panel.locator('.backend-name')).toHaveText('Instanz A');
 });
 
-test('a slug-less pitch link opens the hub without a panel', async ({ page }) => {
+test('a slug-less pitch link asks every backend and opens the one that has it', async ({ page }) => {
   await setup(page);
   await page.goto('/#P501');
-  await expect(page.locator('canvas').first()).toBeVisible();
-  await page.waitForTimeout(1500);
-  await expect(page.locator('aside.pitch-panel')).toHaveCount(0);
+  const panel = page.locator('aside.pitch-panel');
+  await expect(panel).toBeVisible({ timeout: 8000 });
+  await expect(panel.locator('.backend-name')).toHaveText('Instanz A');
+});
+
+test('the pitch layer keeps its pitches when every backend fails', async ({ page }) => {
+  let fail = false;
+  await setup(page);
+  await page.route('**/rpc/get_standalone_equipment**', route => {
+    if (fail) return route.abort();
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ type: 'FeatureCollection', features: [PITCH] }) });
+  });
+  await page.goto('/');
+  await page.waitForFunction(() => window.__spieli?.map);
+  await page.locator('.filter-container > button').click();
+  await page.locator('.layer-section input[type="checkbox"]').check();
+  await page.locator('.filter-container > button').click();
+  await centreOnPitch(page);
+  fail = true;
+  await page.evaluate(() => {
+    const v = window.__spieli.map.getView();
+    const [x, y] = v.getCenter();
+    v.setCenter([x + 20, y]);
+  });
+  await page.waitForTimeout(800);
+  const count = await page.evaluate(() => window.__spieli.map.getLayers().getArray()
+    .find(l => l.get('selectable')).getSource().getFeatures().length);
+  expect(count).toBe(1);
 });

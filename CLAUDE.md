@@ -243,6 +243,7 @@ Two policies ship together for one release: the old wildcard one **enforced**, a
 | `registry.js` | Loads `registry.json`, polls `get_meta` every 5 min, exposes `backends` readable store, provides multi-backend nearest-playground fetcher |
 | `federationHealth.js` | Polls `/federation-status.json` and merges per-backend health into the registry store |
 | `hubPitchLoader.js` | Pitch loader for the shared pitch layer (#947): `get_standalone_equipment` from every healthy backend whose bbox intersects the view, tagged with its backend; hub pitch links are `#<slug>/P<id>` |
+| `backendTag.js` | `tagWithBackend(feature, backend)` — the one rule for stamping `_backendUrl` / `_backendSlug` / `_backendName` on hub features (polygons, pitches, deeplink hydration) |
 | `fanOut.js` | Invokes a fetcher against every selected backend in parallel; surfaces results progressively via `onResult` callback |
 | `osmIdDedup.js` | Deduplicates polygon-tier features across backends by `osm_id` (keeps the feature with the largest area) |
 

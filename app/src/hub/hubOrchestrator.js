@@ -44,6 +44,7 @@ import { hasActiveFilters } from '../stores/filters.js';
 import { selectBackends } from './bboxRouter.js';
 import { filterHealthy } from './federationHealth.js';
 import { applyDedup } from './osmIdDedup.js';
+import { tagWithBackend } from './backendTag.js';
 import { sumClusterBuckets } from './macroAggregate.js';
 import { fanOut } from './fanOut.js';
 import { debounce } from '../lib/utils.js';
@@ -437,10 +438,8 @@ function parsePolygonFeatures(geojson, backendUrl, backend) {
     featureProjection: 'EPSG:3857',
   });
   features.forEach(f => {
-    f.set('_backendUrl', backendUrl);
+    tagWithBackend(f, { url: backendUrl, slug: backend?.slug, name: backend?.name });
     f.set('_lastImportAt', backend?.lastImportAt ?? null);
-    if (backend?.slug) f.set('_backendSlug', backend.slug);
-    if (backend?.name) f.set('_backendName', backend.name);
   });
   return features;
 }

@@ -3,7 +3,7 @@
   import { _ } from 'svelte-i18n';
   import { Filter, Droplets, Baby, Accessibility, Armchair, UtensilsCrossed, Home, RectangleHorizontal, Goal, CircleDot, Lock, Layers, ShieldCheck, Dog, Sun, Sparkles } from 'lucide-svelte';
 
-  import { tick } from 'svelte';
+  import { tick, onDestroy } from 'svelte';
   import { mapStore } from '../stores/map.js';
   import { PITCH_MIN_ZOOM } from '../lib/pitchLayer.js';
 
@@ -25,11 +25,23 @@
   $: if (open) fitToViewport();
 
   // Pitches only load from PITCH_MIN_ZOOM; below it the checkbox gave no
-  // feedback at all (#947). Read when the dropdown opens — it closes on any
-  // map click, so the zoom cannot change underneath it.
-  let zoomAtOpen = null;
-  $: if (open) zoomAtOpen = $mapStore?.getView().getZoom() ?? null;
-  $: pitchesNeedZoom = $filterStore.standalonePitches && zoomAtOpen != null && zoomAtOpen < PITCH_MIN_ZOOM;
+  // feedback at all (#947). The zoom is followed while the dropdown is open:
+  // wheel, pinch and keyboard zoom do not close it.
+  let zoom = null;
+  let untrackZoom = null;
+  function trackZoom(map) {
+    untrackZoom?.();
+    untrackZoom = null;
+    if (!map) return;
+    const view = map.getView();
+    const update = () => { zoom = view.getZoom() ?? null; };
+    update();
+    view.on('change:resolution', update);
+    untrackZoom = () => view.un('change:resolution', update);
+  }
+  $: trackZoom(open ? $mapStore : null);
+  onDestroy(() => untrackZoom?.());
+  $: pitchesNeedZoom = $filterStore.standalonePitches && zoom != null && zoom < PITCH_MIN_ZOOM;
 
   function onWindowClick(e) {
     if (open && wrap && !e.composedPath().includes(wrap)) open = false;

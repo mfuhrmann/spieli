@@ -327,7 +327,7 @@
       });
       // Pitches from every healthy backend in view (#947) — the same layer
       // and behaviour as standalone, with a federated loader.
-      const detachPitches = attachPitchLayer({ map, load: createHubPitchLoader(backends) });
+      const detachPitches = attachPitchLayer({ map, load: createHubPitchLoader(backends), changes: backends });
       detachOrchestrator = () => { orchestrator.detach(); unsubFilters(); detachPitches(); };
       // Detach asynchronously so we're not unsubscribing while still inside
       // svelte's subscriber dispatch loop.

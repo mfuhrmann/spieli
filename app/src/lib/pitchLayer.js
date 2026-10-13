@@ -7,7 +7,9 @@
 //
 //   - loads on moveend from PITCH_MIN_ZOOM, and only while the layer is on
 //     (switching it on loads at once — the checkbox used to wait for the next
-//     pan when the layer had never been loaded);
+//     pan when the layer had never been loaded); `changes`, when given, is a
+//     store whose updates also reload — the hub passes its backends, so a
+//     region whose bbox or health arrives later still gets its pitches;
 //   - visibility follows filterStore.standalonePitches;
 //   - styles: a sport pin per pitch (#929), the polygon underneath only with
 //     mapping detail on, and the selected pitch outlined (#934);
@@ -50,10 +52,11 @@ function selectedPitch(sel) {
 /**
  * Add the pitch layer to `map`.
  * @param {{ map: import('ol/Map.js').default,
- *           load: (extent3857: number[], signal: AbortSignal) => Promise<import('ol/Feature.js').default[]> }} opts
+ *           load: (extent3857: number[], signal: AbortSignal) => Promise<import('ol/Feature.js').default[]>,
+ *           changes?: import('svelte/store').Readable<unknown> }} opts
  * @returns {() => void} detach
  */
-export function attachPitchLayer({ map, load }) {
+export function attachPitchLayer({ map, load, changes = null }) {
   const source = new VectorSource();
   const layer = new VectorLayer({
     source,
@@ -100,6 +103,10 @@ export function attachPitchLayer({ map, load }) {
       reload();
     }),
   ];
+  if (changes) {
+    let first = true;
+    unsubs.push(changes.subscribe(() => { if (first) { first = false; return; } debounced(); }));
+  }
   reload();
 
   return () => {

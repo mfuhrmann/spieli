@@ -9,6 +9,7 @@ import { transformExtent } from 'ol/proj.js';
 import { fetchStandaloneEquipment } from '../lib/api.js';
 import { selectBackends } from './bboxRouter.js';
 import { filterHealthy } from './federationHealth.js';
+import { tagWithBackend } from './backendTag.js';
 
 const geojsonFormat = new GeoJSON();
 
@@ -25,14 +26,17 @@ export function createHubPitchLoader(backendsStore) {
       const features = geojsonFormat.readFeatures(geojson, {
         dataProjection: 'EPSG:4326', featureProjection: 'EPSG:3857',
       });
-      for (const f of features) {
-        f.set('_backendUrl', backend.url);
-        if (backend.slug) f.set('_backendSlug', backend.slug);
-        if (backend.name) f.set('_backendName', backend.name);
-      }
+      for (const f of features) tagWithBackend(f, backend);
       return features;
     }));
     if (signal.aborted) throw new DOMException('aborted', 'AbortError');
+
+    // A failed backend just contributes nothing, but say so. If every backend
+    // failed, throw: the layer then keeps the pitches it already shows rather
+    // than clearing them on a transient outage.
+    const failed = settled.filter(r => r.status === 'rejected');
+    failed.forEach(r => console.warn('[pitches] backend failed:', r.reason));
+    if (failed.length > 0 && failed.length === settled.length) throw failed[0].reason;
 
     // Overlapping regions return the same pitch twice; keep the first.
     const seen = new Set();

@@ -39,7 +39,7 @@
       "showPartial": "grundlegend",
       "showMissing": "keine Details"
     },
-    "standalonePitchesZoomHint": "Erscheinen, wenn du weiter hineinzoomst."
+    "standalonePitchesZoomHint": "Werden angezeigt, wenn du weiter hineinzoomst."
   },
   "hover": {
     "tagWater": "Wasser",

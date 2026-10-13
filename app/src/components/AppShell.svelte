@@ -24,6 +24,7 @@
   import { playgroundSourceStore } from '../stores/playgroundSource.js';
   import { parseHash } from '../lib/deeplink.js';
   import { fetchPlaygroundByOsmId, fetchPitchByOsmId } from '../lib/api.js';
+  import { tagWithBackend } from '../hub/backendTag.js';
   import { filterStore } from '../stores/filters.js';
   import { fitViewToSelection } from '../lib/playgroundHelpers.js';
   import { impressumUrl, privacyUrl, mapMinZoom } from '../lib/config.js';
@@ -131,21 +132,25 @@
   // Load the linked pitch on its own (the pitch layer may be off, or below
   // its minimum zoom), switch the layer on so its pin and neighbours show,
   // select it and frame it. A miss or an old backend just leaves the map.
-  async function restorePitch(osmId, backend = { url: defaultBackendUrl }) {
+  // `backends` are asked in parallel and the first in list order that has the
+  // pitch wins — one entry normally, every backend for a slug-less hub link.
+  async function restorePitch(osmId, backends = [{ url: defaultBackendUrl }]) {
     try {
-      const feat = await fetchPitchByOsmId(osmId, backend.url);
-      if (!feat) return;
+      const found = await Promise.all(backends.map(b =>
+        fetchPitchByOsmId(osmId, b.url).catch(err => {
+          console.warn('[deeplink] pitch restore failed:', err);
+          return null;
+        })));
+      const i = found.findIndex(Boolean);
+      if (i === -1) return;
+      const backend = backends[i];
       const [olFeature] = geojsonFormat.readFeatures(
-        { type: 'FeatureCollection', features: [feat] },
+        { type: 'FeatureCollection', features: [found[i]] },
         { dataProjection: 'EPSG:4326', featureProjection: 'EPSG:3857' },
       );
-      // Hub: tag it like the pitch layer does, so the panel shows the region
+      // Tag it like the pitch layer does, so the hub panel shows the region
       // and the hash keeps its slug.
-      if (resolveSlugToBackendUrl) {
-        olFeature.set('_backendUrl', backend.url);
-        if (backend.slug) olFeature.set('_backendSlug', backend.slug);
-        if (backend.name) olFeature.set('_backendName', backend.name);
-      }
+      tagWithBackend(olFeature, backend);
       filterStore.update(f => ({ ...f, standalonePitches: true }));
       selection.select(olFeature, backend.url, 'pitch');
       const map = $mapStore;
@@ -155,25 +160,36 @@
     }
   }
 
+  function warnUnknownSlug(slug) {
+    if (warnedUnknownSlug) return;
+    console.warn(`[deeplink] unknown registry slug "${slug}" — will retry as backends load`);
+    warnedUnknownSlug = true;
+  }
+
   async function tryRestoreFromHash() {
     if (hashRestored) return;
     const parsed = parseHash(window.location.hash);
     if (!parsed) { hashRestored = true; return; }
 
-    // Pitch links (#934). Only standalone has a pitch layer, so in the hub a
-    // pitch link is ignored and the map opens normally. Standalone accepts the
-    // slug form too, as it does for playgrounds (the slug is not checked).
+    // Pitch links (#934, hub since #947). Standalone accepts the slug form
+    // too, as it does for playgrounds (the slug is not checked).
     if (parsed.kind === 'pitch') {
       if (resolveSlugToBackendUrl) {
-        // Hub: the slug names the region. Without one the id is ambiguous
-        // across regions, so the map just opens. An unknown slug may be a
-        // registry still loading — retry on the next source change, as the
-        // playground path does.
-        if (!parsed.slug) { hashRestored = true; return; }
-        const resolved = resolveSlugToBackendUrl(parsed.slug);
-        if (!resolved) return;
+        if (parsed.slug) {
+          // The slug names the region. An unknown one may be a registry still
+          // loading — warn once and retry, as the playground path does.
+          const resolved = resolveSlugToBackendUrl(parsed.slug);
+          if (!resolved) { warnUnknownSlug(parsed.slug); return; }
+          hashRestored = true;
+          await restorePitch(parsed.osmId, [{ url: resolved.url, slug: parsed.slug, name: resolved.name }]);
+          return;
+        }
+        // Slug-less (a pitch from a backend without a slug): ask every
+        // backend, like the playground broadcast below.
+        const targets = getAllBackendUrls?.() ?? [];
+        if (targets.length === 0) return; // registry still loading — retry
         hashRestored = true;
-        await restorePitch(parsed.osmId, { url: resolved.url, slug: parsed.slug, name: resolved.name });
+        await restorePitch(parsed.osmId, targets);
         return;
       }
       hashRestored = true;
@@ -185,13 +201,7 @@
 
     if (parsed.slug && resolveSlugToBackendUrl) {
       const resolved = resolveSlugToBackendUrl(parsed.slug);
-      if (!resolved) {
-        if (!warnedUnknownSlug) {
-          console.warn(`[deeplink] unknown registry slug "${parsed.slug}" — will retry as backends load`);
-          warnedUnknownSlug = true;
-        }
-        return;
-      }
+      if (!resolved) { warnUnknownSlug(parsed.slug); return; }
       candidates = candidates.filter(f => f.get('_backendUrl') === resolved.url);
     }
 
@@ -255,9 +265,7 @@
           // Stamp URL, slug (for hash canonicalisation), and name (for the
           // backend subtitle in PlaygroundPanel) on every hydrated feature.
           for (const f of olFeatures) {
-            f.set('_backendUrl', url);
-            if (slug) f.set('_backendSlug', slug);
-            if (name) f.set('_backendName', name);
+            tagWithBackend(f, { url, slug, name });
           }
           playgroundSource.addFeatures(olFeatures);
           // The standard match path inside `playgroundSource.on('change')`

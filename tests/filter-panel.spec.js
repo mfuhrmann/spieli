@@ -129,5 +129,8 @@ test.describe('FilterPanel', () => {
     await page.evaluate(() => window.__spieli.map.getView().setZoom(14));
     await page.locator('.filter-container button').click();
     await expect(page.locator('.layer-hint')).toHaveCount(0);
+    // Zooming with the dropdown open (wheel, pinch) updates the hint too.
+    await page.evaluate(() => window.__spieli.map.getView().setZoom(9));
+    await expect(page.locator('.layer-hint')).toHaveCount(1);
   });
 });
