@@ -1356,6 +1356,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#codes-that-must-be-read-as-words" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Codes that must be read as words
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#language-attributes" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2314,6 +2325,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#codes-that-must-be-read-as-words" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Codes that must be read as words
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#language-attributes" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2785,6 +2807,14 @@
 <a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>&lt;p&gt;{$t('myKey')}&lt;/p&gt;
 </code></pre></div>
 <p>Add new keys to <code>locales/en.json</code> and <code>locales/de.json</code>. Translation to other languages happens via <a href="../translation-guide/">Weblate</a>.</p>
+<h3 id="codes-that-must-be-read-as-words">Codes that must be read as words<a class="headerlink" href="#codes-that-must-be-read-as-words" title="Permanent link">&para;</a></h3>
+<p>A short code shown as text — the hub drawer's country chip (<code>SK</code>, #741) — is
+read letter by letter ("ess kay"). <code>aria-label</code> cannot fix that on a plain
+<code>&lt;span&gt;</code>: ARIA forbids naming the generic role and screen readers ignore it
+there. Hide the code with <code>aria-hidden="true"</code> and put the full name next to it
+in a <code>visually-hidden</code> span (Bootstrap's class); a <code>title</code> can carry the same
+name for mouse users. Get names from <code>Intl.DisplayNames</code> in the active locale
+rather than locale keys, so Weblate translators have nothing to chase.</p>
 <h3 id="language-attributes">Language attributes<a class="headerlink" href="#language-attributes" title="Permanent link">&para;</a></h3>
 <p>Two languages coexist on the page, and mixing them up is a WCAG failure:</p>
 <ul>

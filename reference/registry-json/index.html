@@ -1629,6 +1629,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#common-mistakes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Common mistakes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#slug-validation" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2026,6 +2037,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#common-mistakes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Common mistakes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#slug-validation" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2169,7 +2191,7 @@
 <tr>
 <td><code>url</code></td>
 <td>yes</td>
-<td>Base URL of the backend's PostgREST <code>/api</code> (no trailing slash). The Hub calls the tier RPCs (<code>/rpc/get_playground_clusters</code>, <code>/rpc/get_playgrounds_bbox</code>, …) and <code>/rpc/get_meta</code> under it.</td>
+<td>Base URL of the backend's PostgREST <code>/api</code>. Surrounding whitespace and trailing slashes are removed (in the browser and in the hub's health poll alike, #740). The Hub calls the tier RPCs (<code>/rpc/get_playground_clusters</code>, <code>/rpc/get_playgrounds_bbox</code>, …) and <code>/rpc/get_meta</code> under it.</td>
 </tr>
 <tr>
 <td><code>name</code></td>
@@ -2185,6 +2207,44 @@
 <td><code>centroid</code></td>
 <td>no</td>
 <td><code>[lon, lat]</code> in WGS84 (e.g. <code>[9.93, 51.54]</code>). Sets a fallback position for the macro view ring when the backend has no bbox yet (first import not completed, or import failed). Without this field, a backend with no data is invisible on the macro view map. Once the first import completes, the bbox-derived centroid takes over automatically — no manual update needed. <strong>Note:</strong> When a backend has neither <code>bbox</code> nor <code>centroid</code>, the instance panel auto-opens to alert operators, showing a "No position set" warning with a link to troubleshooting docs.</td>
+</tr>
+<tr>
+<td><code>country</code></td>
+<td>no</td>
+<td>ISO 3166-1 alpha-2 code (e.g. <code>"SK"</code>, case-insensitive). Shows a small country chip next to the name in the instance drawer, with the full country name for screen readers and as a tooltip (#741). Set it only where it tells something — on a mostly German federation, only on the non-German entries; entries without it render as before. An invalid value is ignored with a console warning.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="common-mistakes">Common mistakes<a class="headerlink" href="#common-mistakes" title="Permanent link">&para;</a></h3>
+<p>All three of these happened on one entry, and each one fails without an error in the hub (#740):</p>
+<table>
+<thead>
+<tr>
+<th>Mistake</th>
+<th>What you see</th>
+<th>Fix</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>url</code> without the <code>/api</code> path (<code>https://hojdy.sk</code>)</td>
+<td>Backend stays "unreachable" — the hub asks <code>https://hojdy.sk/rpc/get_meta</code>, which is a 404</td>
+<td>End the URL with the PostgREST path, usually <code>/api</code>. Not repaired automatically: path-prefix deployments legitimately use other paths. Check with <code>curl &lt;url&gt;/rpc/get_meta</code></td>
+</tr>
+<tr>
+<td>Stray whitespace or a trailing slash</td>
+<td>—</td>
+<td>Harmless since #740: both are stripped</td>
+</tr>
+<tr>
+<td>No <code>url</code>, or the same <code>url</code> twice</td>
+<td>—</td>
+<td>Skipped with a console warning naming the entry: an entry without a URL has nothing to ask, and a duplicate would never receive data, since every lookup is by URL</td>
+</tr>
+<tr>
+<td>Upper-case <code>slug</code> (<code>"Kosice"</code>)</td>
+<td>Deep links fall back to the bare <code>#W&lt;id&gt;</code> form for that backend</td>
+<td>Use lower case (<code>"kosice"</code>). Not repaired automatically: the slug is part of links people share, so the hub must not serve a different spelling than the registry</td>
 </tr>
 </tbody>
 </table>
