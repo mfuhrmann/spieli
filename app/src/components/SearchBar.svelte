@@ -111,7 +111,6 @@
     // having to dismiss a keyboard by hand on every search, and resolved in
     // their favour. Revisit if it proves the wrong call.
     if (window.matchMedia?.('(pointer: coarse)').matches) inputEl?.blur();
-
   }
 
   function onKeydown(e) {
