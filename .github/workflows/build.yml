@@ -52,7 +52,7 @@ jobs:
       - name: Every third-party host the browser contacts must be disclosed
         run: make check-privacy
 
-      # Deliberately NOT `make check-equipment-images`: that resolves 99 titles
+      # Deliberately NOT `make check-equipment-images`: that resolves 98 titles
       # against the live Commons and OSM wiki APIs, which would make this job
       # slow and dependent on someone else's uptime. These are the properties
       # that can be checked offline, and they are the ones that regressed.

@@ -16,8 +16,8 @@ import { escapeHtml, tl } from './utils.js';
 // chain ONCE at build time. Doing it here at runtime is what forced the
 // browser to contact commons.wikimedia.org directly, then fall back to
 // wiki.openstreetmap.org on a 404 — a host no disclosure named and no CSP
-// allowed — and to make two failing requests for the 14 names that exist on
-// neither wiki.
+// allowed — and to make two failing requests for every name that existed on
+// neither wiki (14 pitch names, until #867 replaced them).
 //
 // Returning null for an unknown name is the point: nothing is rendered, so a
 // missing illustration costs no request and shows no broken image. The build
@@ -48,10 +48,12 @@ function resolvedImage(fileName) {
 }
 
 // Every title was checked to exist on Commons and to show what it claims
-// (#867: 14 of the previous names resolved nowhere, so no pitch illustration
-// had ever rendered). Hockey has no free pitch diagram on Commons, so it has
-// no entry — an absent entry renders nothing, which is what a wrong one did.
-const pitchImages = {
+// (#867: 14 of the previous names resolved nowhere, so only athletics had ever
+// rendered). Hockey has no free pitch diagram on Commons, so it has no entry —
+// an absent entry renders nothing, which is what a wrong one did. Several are
+// photos of real places, so the pitch caption says "example image" like the
+// device one. Exported for the tests, which iterate it.
+export const pitchImages = {
     soccer:'File:Football pitch metric.svg',
     basketball:'File:Basketball court fiba.svg',
     table_tennis:'File:Table Tennis Table Blue.svg',
@@ -68,6 +70,15 @@ const pitchImages = {
     beachvolleyball:'File:Beach volleyball court in Kaukajärvi, Tampere, Finland.jpg',
     climbing:'File:Urduliz outdoor climbing wall.jpg',
 };
+
+// `sport` may list several sports (`soccer;basketball`, common on multi-use
+// courts): a single sport gets its own illustration, several get the
+// multi-use one.
+function pitchImageFor(sportRaw) {
+    const sports = sportRaw.split(';').map(s => s.trim()).filter(Boolean);
+    if (sports.length > 1) return pitchImages.multi;
+    return pitchImages[sports[0]] ?? null;
+}
 
 /**
  * Returns detail attributes for a single equipment item.
@@ -196,15 +207,15 @@ export function getEquipmentAttributesFromProps(props, t) {
                     `<p class="mb-0 text-muted" style="font-size:0.75rem;"><span class="bi bi-image"></span> ` +
                     `${escapeHtml(t('popup.deviceSymbol'))}${imageCredit(img)}</p></div>`;
             }
-        } else if (leisure === 'pitch' && sportRaw && pitchImages[sportRaw]) {
-            const img = resolvedImage(pitchImages[sportRaw]);
+        } else if (leisure === 'pitch' && sportRaw && pitchImageFor(sportRaw)) {
+            const img = resolvedImage(pitchImageFor(sportRaw));
             if (img) {
                 html = `<div class="device-img-wrap">` +
                     `<img src="${escapeHtml(img.url)}"` +
                     ` alt="${escapeHtml(sportRaw)}" loading="lazy" referrerpolicy="no-referrer"` +
                     ` onerror="${onerror}" style="object-fit:contain;width:100%">` +
-                    (imageCredit(img) ? `<p class="mb-0 text-muted" style="font-size:0.7rem;">${imageCredit(img).trim()}</p>` : '') +
-                    `</div>`;
+                    `<p class="mb-0 text-muted" style="font-size:0.75rem;"><span class="bi bi-image"></span> ` +
+                    `${escapeHtml(t('popup.deviceSymbol'))}${imageCredit(img)}</p></div>`;
             }
         }
     }

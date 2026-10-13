@@ -35,7 +35,7 @@ So the redirect is followed at **build time** instead. `tools/build-equipment-im
 Three things follow from that, and each fixed a real defect:
 
 - **The bytes come from this instance.** The resolved URL is an ordinary image path on a MediaWiki file host, which `/ext/wikimedia/<host>/` already serves.
-- **The OSM wiki is no longer an undisclosed host.** 14 of the 99 illustrations exist only there, and the frontend used to reach them through an `<img onerror>` fallback that appeared in neither this page nor the CSP. It is listed above now, and it is proxied like the rest.
+- **The OSM wiki is no longer an undisclosed host.** 14 of the 98 illustrations exist only there, and the frontend used to reach them through an `<img onerror>` fallback that appeared in neither this page nor the CSP. It is listed above now, and it is proxied like the rest.
 - **A name that resolves nowhere fails the build.** 14 of them did, all pitch illustrations, and in production each one cost two failing requests before an `onerror` handler hid the element. They were replaced with verified Commons files in #867 (hockey, which has no free pitch diagram, has no illustration), so every name now resolves and any new one that does not fails the build.
 
 Serving these bytes through our own origin makes us their distributor, so the CC attribution obligation is ours rather than Commons'. The author and licence are rendered under each illustration where the wiki exposes them; the OSM wiki returns no `extmetadata`, so its 14 files carry no credit.
