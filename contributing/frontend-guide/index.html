@@ -1356,6 +1356,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#modal-dialogs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Modal dialogs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#codes-that-must-be-read-as-words" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2325,6 +2336,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#modal-dialogs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Modal dialogs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#codes-that-must-be-read-as-words" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2505,6 +2527,12 @@
 <td><code>{ private: bool, water: bool, baby: bool, … }</code></td>
 <td>FilterPanel, MappingDetailControl, FilterChips</td>
 <td>the popovers' own checkboxes — everything else reads <code>effectiveFilterStore</code></td>
+</tr>
+<tr>
+<td><code>modalOpen</code></td>
+<td><code>boolean</code> (derived from a counter)</td>
+<td>the <code>modal</code> action on each dialog element</td>
+<td>Map.svelte (Escape handler)</td>
 </tr>
 <tr>
 <td><code>effectiveFilterStore</code></td>
@@ -2807,6 +2835,19 @@
 <a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>&lt;p&gt;{$t('myKey')}&lt;/p&gt;
 </code></pre></div>
 <p>Add new keys to <code>locales/en.json</code> and <code>locales/de.json</code>. Translation to other languages happens via <a href="../translation-guide/">Weblate</a>.</p>
+<h3 id="modal-dialogs">Modal dialogs<a class="headerlink" href="#modal-dialogs" title="Permanent link">&para;</a></h3>
+<p>Every <code>role="dialog" aria-modal="true"</code> element carries <code>use:modal</code> from
+<code>stores/modalOpen.js</code> (#758). While it is mounted, everything outside the
+dialog — each sibling of the dialog and of its ancestors up to <code>&lt;body&gt;</code> — is
+<code>inert</code>, focus moves into the dialog, and on close it returns to where it was.
+<code>aria-modal</code> alone does none of that: before this, Tab walked from a dialog's
+last control onto the focusable map behind it (arrow keys then panned a map
+nobody could see), the search bar and the control buttons. Nested dialogs stack
+— a lightbox over another dialog makes that dialog inert and hands it back.
+<code>modalOpen</code> lets window-level handlers stand down while a dialog is up (Map's
+Escape for the hub popup). <code>tests/modal-inert.spec.js</code> pins it. The hub's
+instance drawer is a side panel, not an overlay, and traps Tab itself, so it
+does not register.</p>
 <h3 id="codes-that-must-be-read-as-words">Codes that must be read as words<a class="headerlink" href="#codes-that-must-be-read-as-words" title="Permanent link">&para;</a></h3>
 <p>A short code shown as text — the hub drawer's country chip (<code>SK</code>, #741) — is
 read letter by letter ("ess kay"). <code>aria-label</code> cannot fix that on a plain
