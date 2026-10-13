@@ -335,13 +335,29 @@
                   : $_('equipment.pitchDefault')}
                 {@const detail = getEquipmentAttributesFromProps(f.properties, $_)}
                 {@const themeVal = themeOf(f.properties)}
+                {@const pid = 'pitch-' + uid(f)}
                 <li class="pitch-sub">
                   <span class="pitch-sub-row">
-                    <span style="color:{objColors['fallback']}">◦</span>
-                    {label}
-                    {#if themeVal}<span class="dev-theme" title={themeName(themeVal, $_)} aria-label={themeName(themeVal, $_)}>{themeIcon(themeVal)}</span>{/if}
+                    {#if detail.html}
+                      <!-- Expandable like a device row: the illustration (#962)
+                           would otherwise be generated and shown nowhere (#966). -->
+                      <button type="button" class="device-toggle pitch-toggle" onclick={() => toggleItem(pid)}
+                        aria-expanded={openItems.has(pid)}>
+                        <span style="color:{objColors['fallback']}">◦</span>
+                        {label}
+                        {#if themeVal}<span class="dev-theme" title={themeName(themeVal, $_)} aria-label={themeName(themeVal, $_)}>{themeIcon(themeVal)}</span>{/if}
+                        <span class="bi {openItems.has(pid) ? 'bi-chevron-up' : 'bi-chevron-down'} device-chevron"></span>
+                      </button>
+                    {:else}
+                      <span style="color:{objColors['fallback']}">◦</span>
+                      {label}
+                      {#if themeVal}<span class="dev-theme" title={themeName(themeVal, $_)} aria-label={themeName(themeVal, $_)}>{themeIcon(themeVal)}</span>{/if}
+                    {/if}
                     <MapCompleteLink href={detail.mcUrl} label="" />
                   </span>
+                  {#if detail.html && openItems.has(pid)}
+                    <div class="device-detail">{@html detail.html}</div>
+                  {/if}
                   {#if detail.panoramaxUuid}
                     <button type="button" class="pitch-photo-btn" onclick={() => modalUuid = detail.panoramaxUuid} title={$_('popup.devicePhoto')}>
                       <img src={thumbUrl(detail.panoramaxUuid)} alt={$_('modal.streetPhoto')} referrerpolicy="no-referrer" class="pitch-photo-thumb" />
