@@ -336,7 +336,7 @@ One fetch, both outputs: building them in two runs let the upstream rotate in be
 
 The two edits, applied by `tools/build-basemap-style.py`:
 
-1. Green landcover fills are desaturated, because spieli encodes playground data completeness in green, amber and red. A basemap that paints parks green competes with the map's primary signal.
+1. Green landcover fills are desaturated, because spieli draws its playgrounds in green — emerald pins in the default view, a green-to-slate ramp with mapping detail on. A basemap that paints parks green competes with the map's primary signal.
 2. The `poi` symbol layers are dropped, as the strongest competitor for attention.
 
 The second edit is a legibility change only. Dropping a style layer does not reduce render cost — the tile data is still decoded and simply not drawn.

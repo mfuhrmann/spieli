@@ -134,14 +134,18 @@ At `zoom ≤ macroMaxZoom` the Hub renders one ring per registered backend, size
 
 Clicking a ring animates `view.fit` to the backend's bbox, which lands in the cluster or polygon tier and triggers a tier fetch scoped to that backend only.
 
-Each ring has one of four visual states, driven by `federation-status.json` (see [Monitoring](../ops/monitoring.md)) and the cached `get_meta` response:
+With mapping detail off (the default, #924) a healthy backend is a plain emerald disc with its count; the segmented ring below appears only while mapping detail is on. "Unfiltered" likewise draws the disc instead of the segments; the other states look the same in both views.
+
+Each ring has one of these visual states, driven by `federation-status.json` (see [Monitoring](../ops/monitoring.md)), the cached `get_meta` response and, with a filter active, the filtered fan-out:
 
 | State | Visual | Condition |
 |---|---|---|
-| **Healthy** | Coloured segments (green / amber / red / gray) + count in centre | Backend reachable, data present |
+| **Healthy** | Mapping-detail segments (light green / dark green / slate, see [Colours](completeness.md#colours)) + count in centre; an emerald disc with mapping detail off | Backend reachable, data present |
 | **Offline** | Dashed gray ring + last-known count + "offline" label | `federation-status.json` reports `up: false` |
 | **Importing** | Solid blue ring + count + "updating" label | Backend reachable, osm2pgsql actively running |
 | **Degraded** | Solid amber ring + "no data" label | Backend reachable, not importing, but playground count is zero |
+| **Unfiltered** | Full ring + dashed grey halo + "unfiltered" label | A filter is active but this backend could not apply it (no bbox, or an older release), so its whole catalogue is shown |
+| **No match** | Grey ring + "no match" label | Healthy backend, but the active filter excludes every playground |
 
 Pre-P1 backends that omit the completeness fields from `get_meta` render as a flat gray ring (all count mapped into the "restricted / unknown" segment) so the operator sees "mapping detail unknown" rather than a misleading all-zero healthy ring.
 

@@ -28,19 +28,19 @@ More: [postgrest.org](https://postgrest.org)
 
 ## Mapping detail indicator
 
-Each playground carries a **Mapping detail** badge whose colour reflects how much of it has been mapped in OpenStreetMap:
+With mapping detail switched on (it is off by default, see the [user guide](../user-guide.md#mapping-detail-colours)), each playground carries a **Mapping detail** badge whose colour reflects how much of it has been mapped in OpenStreetMap:
 
 | Colour | Legend label | Meaning |
 |--------|-------------|---------|
-| Green | detailliert / detailed | Play infrastructure **and** at least one detail (surface, opening hours, or a non-trivial access value) |
-| Yellow | grundlegend / basic | One of the two, not both |
-| Red | keine Details / no details yet | Neither — the playground exists in OSM but carries nothing else |
+| Light green | detailliert / detailed | Play infrastructure **and** at least one detail (surface, opening hours, or a non-trivial access value) |
+| Dark green | grundlegend / basic | One of the two, not both |
+| Slate grey | keine Details / no details yet | Neither — the playground exists in OSM but carries nothing else |
 
 "Play infrastructure" means `playground=*` objects and soccer / basketball / table-tennis pitches. Benches, shelters and picnic tables do not count — a lone bench must not carry an otherwise unmapped playground.
 
 A photo is **not** part of the rating. It is shown separately as a camera glyph on the map.
 
-The map legend is headed "Erfasste Details" / "Mapping detail". The same three-state breakdown is used in cluster rings, the federation macro view and the hub instance drawer.
+The map legend, shown only while mapping detail is on, is headed "Erfasste Details" / "Mapping detail". The same three-state breakdown is used in cluster rings, the federation macro view and the hub instance drawer.
 
 The scale measures how much of the map is filled in, not how good the playground is. The lowest step means "nobody has mapped this yet — help out", not "bad playground".
 
