@@ -2521,7 +2521,7 @@
 <td><code>REGION_STATE</code></td>
 <td><em>(unset)</em></td>
 <td>ui, data-node-ui, hub</td>
-<td>Sub-country code for holiday calendars that vary by state (e.g. <code>he</code> for Hessen). Leave empty to keep the library default. Codes are defined by the <a href="https://github.com/opening-hours/opening_hours.js#holidays"><code>opening_hours</code> library</a>, not by a public standard.</td>
+<td>State for holiday calendars that vary by state: the ISO 3166-2 code (<code>he</code> or <code>DE-HE</code>) or the state's name (<code>Hessen</code>, <code>Thüringen</code>; letter case does not matter). Leave empty to keep the library default. Must be a state the <a href="https://github.com/opening-hours/opening_hours.js#holidays"><code>opening_hours</code> library</a> has holidays for; anything else is ignored with a console warning.</td>
 </tr>
 <tr>
 <td><code>MAP_ZOOM</code></td>
@@ -2735,6 +2735,15 @@ not derivable from OSM data.</p>
 public holidays in <code>opening_hours</code> values are resolved. A German-language
 deployment serving Austrian playgrounds sets <code>REGION_LANG=de</code> with
 <code>REGION_COUNTRY=at</code>.</p>
+<p>Only <code>opening_hours</code> values with <code>PH</code> (public holiday) are affected — 69 of
+7 042 playgrounds in the Hessen extract (September 2026). A value the app
+cannot resolve is ignored and logged in the browser console as
+<code>[config] REGION_STATE "…" is not a state of …</code>, listing the codes it knows.</p>
+<p><strong>Behaviour change in #878:</strong> before it, a code such as <code>he</code> was ignored, so
+stacks configured with the previously documented <code>REGION_STATE=he</code> evaluated
+holidays without a state. After upgrading they honour their state's holidays —
+a playground tagged <code>PH off</code> now shows as closed on e.g. Corpus Christi in
+Hessen. No action is needed.</p>
 <blockquote>
 <p><strong>How <code>PG_*</code> values are applied.</strong> The importer runs <code>ALTER SYSTEM SET …</code>
 at the top of <code>api.sql</code>, then <code>SELECT pg_reload_conf()</code>. The values are

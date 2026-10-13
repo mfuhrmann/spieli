@@ -2055,6 +2055,7 @@
 <h2 id="changing-the-app-icon">Changing the app icon<a class="headerlink" href="#changing-the-app-icon" title="Permanent link">&para;</a></h2>
 <p>The installable-app icons live in <code>app/public/icons/</code> (#939). <code>icon-192.png</code> and <code>icon-512.png</code> are the free-standing pin; the <em>maskable</em> variants that Android launchers and some desktops cut into a circle are generated from <code>icon-512.png</code>:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>make<span class="w"> </span>app-icons<span class="w">            </span><span class="c1"># rewrites app/public/icons/icon-maskable-{192,512}.png</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>make<span class="w"> </span>holiday-states<span class="w">       </span><span class="c1"># rewrites app/src/lib/holidayStates.generated.json — after bumping opening_hours</span>
 </code></pre></div>
 <p>Commit the regenerated files. They are served under stable names with a one-day cache, so an installed app picks up a new icon within a day.</p>
 <h2 id="adding-or-changing-an-equipment-illustration">Adding or changing an equipment illustration<a class="headerlink" href="#adding-or-changing-an-equipment-illustration" title="Permanent link">&para;</a></h2>
