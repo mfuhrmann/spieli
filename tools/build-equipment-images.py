@@ -56,31 +56,6 @@ UA = 'spieli-build/1 (+https://github.com/mfuhrmann/spieli)'
 # records no width field: it would describe the request, not the URLs stored.
 THUMB_WIDTH = 800
 
-# Names that resolve on neither wiki. Every one of these is a pitch
-# illustration, and every one has been silently broken in production — the
-# browser made two failing requests and the onerror handler hid the element.
-#
-# Listed explicitly rather than tolerated by a blanket "skip failures", so that
-# a *new* unresolvable name fails the build instead of joining them quietly.
-# Tracked as a data bug; remove entries from this list as they are fixed or
-# replaced upstream, and delete the list when it is empty.
-KNOWN_MISSING = {
-    'File:Association football pitch imperial.svg',
-    'File:BMX track Canberra.jpg',
-    'File:Badminton court 8shuttle.svg',
-    'File:Basketball court dimensions in meters.svg',
-    'File:BeachvolleyballAthens04.jpg',
-    'File:Boules-coloured.jpg',
-    'File:Field Hockey Pitch Dimensions.svg',
-    'File:Handball court metric.svg',
-    'File:Hard tennis court 1.jpg',
-    'File:Multi-use games area.jpg',
-    'File:Outdoor bouldering wall.jpg',
-    'File:Skatepark Vienna Praterstern 2015.jpg',
-    'File:Table tennis table blue.jpg',
-    'File:Volleyball court with dimensions.svg',
-}
-
 
 def file_names():
     """Every `File:` title the two tables reference.
@@ -208,8 +183,10 @@ def main():
     print(f'  ..  {len(names)} File: names referenced by the equipment tables')
 
     resolved, unresolved = resolve(names)
-    unexpected = sorted(set(unresolved) - KNOWN_MISSING)
-    stale = sorted(KNOWN_MISSING - set(unresolved))
+    # Every name must resolve. The pitch table once carried 14 names that
+    # resolved nowhere (#867), pinned in a KNOWN_MISSING list until they were
+    # replaced; a name that renders nothing must not do so silently.
+    unexpected = sorted(unresolved)
 
     print(f'  ..  resolved {len(resolved)}, unresolved {len(unresolved)}')
 
@@ -218,17 +195,8 @@ def main():
               file=sys.stderr)
         for n in unexpected:
             print(f'    {n}', file=sys.stderr)
-        print('\n  Fix the name in the table, or add it to KNOWN_MISSING in this '
-              'script with a reason. A name that renders nothing should not do '
-              'so silently.', file=sys.stderr)
-        return 1
-
-    if stale:
-        print('\nERROR: these names are in KNOWN_MISSING but now resolve:', file=sys.stderr)
-        for n in stale:
-            print(f'    {n}', file=sys.stderr)
-        print('\n  Remove them from KNOWN_MISSING — the list is meant to shrink.',
-              file=sys.stderr)
+        print('\n  Fix the name in the table, or drop the entry. A name that '
+              'renders nothing should not do so silently.', file=sys.stderr)
         return 1
 
     payload = {

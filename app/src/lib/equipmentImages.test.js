@@ -64,6 +64,16 @@ const t = (key) => key;   // the translate function is only used for labels
     assert.ok(rendered > 30, `expected many illustrations to render, got ${rendered}`);
 }
 
+// --- every sport with a pitch illustration renders it (#867) ---------------
+// None of these rendered before: the names resolved on neither wiki.
+for (const sport of ['soccer', 'basketball', 'table_tennis', 'volleyball', 'tennis',
+                     'handball', 'badminton', 'boules', 'petanque', 'multi', 'skateboard',
+                     'bmx', 'athletics', 'beachvolleyball', 'climbing']) {
+    const out = getEquipmentAttributesFromProps(
+        { leisure: 'pitch', sport, osm_type: 'W', osm_id: '1' }, t);
+    assert.ok(out.html.includes('<img'), `pitch sport=${sport} renders no illustration`);
+}
+
 // --- an unresolvable name renders nothing, rather than a broken image ------
 {
     const { objDevices } = await import('./objPlaygroundEquipment.js');

@@ -29,6 +29,13 @@
       "artist": "Elaron",
       "source": "https://commons.wikimedia.org/wiki/File:Athletics_track.jpg"
     },
+    "File:BMX Pump Track, Whitley Bay, UK.jpg": {
+      "host": "upload.wikimedia.org",
+      "path": "/wikipedia/commons/6/66/BMX_Pump_Track%2C_Whitley_Bay%2C_UK.jpg",
+      "license": "CC BY-SA 2.0",
+      "artist": "michael ely",
+      "source": "https://commons.wikimedia.org/wiki/File:BMX_Pump_Track,_Whitley_Bay,_UK.jpg"
+    },
     "File:Baby-swings-2.jpg": {
       "host": "upload.wikimedia.org",
       "path": "/wikipedia/commons/4/4f/Baby-swings-2.jpg",
@@ -36,12 +43,33 @@
       "artist": "Original uploader was Aarchiba at en.wikipedia",
       "source": "https://commons.wikimedia.org/wiki/File:Baby-swings-2.jpg"
     },
+    "File:Badminton court.svg": {
+      "host": "thumb.wikimedia.org",
+      "path": "/wikipedia/commons/thumb/3/3d/Badminton_court.svg/960px-Badminton_court.svg.png",
+      "license": "Public domain",
+      "artist": "Robert Merkel at English Wikipedia",
+      "source": "https://commons.wikimedia.org/wiki/File:Badminton_court.svg"
+    },
+    "File:Basketball court fiba.svg": {
+      "host": "thumb.wikimedia.org",
+      "path": "/wikipedia/commons/thumb/b/be/Basketball_court_fiba.svg/960px-Basketball_court_fiba.svg.png",
+      "license": "CC BY 3.0",
+      "artist": "Jenspo",
+      "source": "https://commons.wikimedia.org/wiki/File:Basketball_court_fiba.svg"
+    },
     "File:Basketball court.jpg": {
       "host": "upload.wikimedia.org",
       "path": "/wikipedia/commons/9/92/Basketball_court.jpg",
       "license": "Public domain",
       "artist": "persco",
       "source": "https://commons.wikimedia.org/wiki/File:Basketball_court.jpg"
+    },
+    "File:Beach volleyball court in Kaukajärvi, Tampere, Finland.jpg": {
+      "host": "thumb.wikimedia.org",
+      "path": "/wikipedia/commons/thumb/d/d2/Beach_volleyball_court_in_Kaukaj%C3%A4rvi%2C_Tampere%2C_Finland.jpg/960px-Beach_volleyball_court_in_Kaukaj%C3%A4rvi%2C_Tampere%2C_Finland.jpg",
+      "license": "CC BY-SA 4.0",
+      "artist": "DaysBrief205",
+      "source": "https://commons.wikimedia.org/wiki/File:Beach_volleyball_court_in_Kaukaj%C3%A4rvi,_Tampere,_Finland.jpg"
     },
     "File:DeimosXL1.jpg": {
       "host": "upload.wikimedia.org",
@@ -78,6 +106,13 @@
       "artist": "Tdorante10",
       "source": "https://commons.wikimedia.org/wiki/File:Farm_Playground_td_(2018-10-30)_28.jpg"
     },
+    "File:Football pitch metric.svg": {
+      "host": "thumb.wikimedia.org",
+      "path": "/wikipedia/commons/thumb/c/cf/Football_pitch_metric.svg/960px-Football_pitch_metric.svg.png",
+      "license": "CC BY-SA 3.0",
+      "artist": "NielsF",
+      "source": "https://commons.wikimedia.org/wiki/File:Football_pitch_metric.svg"
+    },
     "File:Funnel_ball.jpg": {
       "host": "upload.wikimedia.org",
       "path": "/wikipedia/commons/1/15/Funnel_ball.jpg",
@@ -85,12 +120,33 @@
       "artist": "Pavtron ( talk )",
       "source": "https://commons.wikimedia.org/wiki/File:Funnel_ball.jpg"
     },
+    "File:Great Central Road Multi-use Games Area, Loughborough.jpg": {
+      "host": "thumb.wikimedia.org",
+      "path": "/wikipedia/commons/thumb/c/c7/Great_Central_Road_Multi-use_Games_Area%2C_Loughborough.jpg/960px-Great_Central_Road_Multi-use_Games_Area%2C_Loughborough.jpg",
+      "license": "CC BY-SA 4.0",
+      "artist": "Chick0nPTCG",
+      "source": "https://commons.wikimedia.org/wiki/File:Great_Central_Road_Multi-use_Games_Area,_Loughborough.jpg"
+    },
+    "File:Handball Field diagram -en.svg": {
+      "host": "thumb.wikimedia.org",
+      "path": "/wikipedia/commons/thumb/e/ea/Handball_Field_diagram_-en.svg/960px-Handball_Field_diagram_-en.svg.png",
+      "license": "CC BY-SA 4.0",
+      "artist": "snater.com",
+      "source": "https://commons.wikimedia.org/wiki/File:Handball_Field_diagram_-en.svg"
+    },
     "File:Hanging roundabout.jpg": {
       "host": "wiki.openstreetmap.org",
       "path": "/w/images/thumb/8/81/Hanging_roundabout.jpg/960px-Hanging_roundabout.jpg",
       "license": null,
       "artist": null,
       "source": "https://wiki.openstreetmap.org/wiki/File:Hanging_roundabout.jpg"
+    },
+    "File:Haute-Avesnes - Terrain de pétanque du stade.jpg": {
+      "host": "thumb.wikimedia.org",
+      "path": "/wikipedia/commons/thumb/2/2e/Haute-Avesnes_-_Terrain_de_p%C3%A9tanque_du_stade.jpg/960px-Haute-Avesnes_-_Terrain_de_p%C3%A9tanque_du_stade.jpg",
+      "license": "CC BY 4.0",
+      "artist": "IgnaceBoitaclou",
+      "source": "https://commons.wikimedia.org/wiki/File:Haute-Avesnes_-_Terrain_de_p%C3%A9tanque_du_stade.jpg"
     },
     "File:Hinkelbaan tegels.jpg": {
       "host": "thumb.wikimedia.org",
@@ -512,6 +568,13 @@
       "artist": "Exploringlife",
       "source": "https://commons.wikimedia.org/wiki/File:Shun_Lee_Estate_Playground,_Gym_Zone_and_Basketball_Court.jpg"
     },
+    "File:Solvang Skatepark.jpg": {
+      "host": "thumb.wikimedia.org",
+      "path": "/wikipedia/commons/thumb/a/a1/Solvang_Skatepark.jpg/960px-Solvang_Skatepark.jpg",
+      "license": "CC BY-SA 4.0",
+      "artist": "Troy Sankey",
+      "source": "https://commons.wikimedia.org/wiki/File:Solvang_Skatepark.jpg"
+    },
     "File:Speaking Tube - Garden Exhibit - NCSM - Kolkata 2016-06-02 4046.JPG": {
       "host": "thumb.wikimedia.org",
       "path": "/wikipedia/commons/thumb/2/2f/Speaking_Tube_-_Garden_Exhibit_-_NCSM_-_Kolkata_2016-06-02_4046.JPG/960px-Speaking_Tube_-_Garden_Exhibit_-_NCSM_-_Kolkata_2016-06-02_4046.JPG",
@@ -547,12 +610,26 @@
       "artist": "Pece",
       "source": "https://commons.wikimedia.org/wiki/File:Szwedy_-_plac_zabaw_-_k%C3%B3%C5%82ko_i_krzy%C5%BCyk.jpg"
     },
+    "File:Table Tennis Table Blue.svg": {
+      "host": "thumb.wikimedia.org",
+      "path": "/wikipedia/commons/thumb/e/e7/Table_Tennis_Table_Blue.svg/960px-Table_Tennis_Table_Blue.svg.png",
+      "license": "Public domain",
+      "artist": "Begoon (Talk)",
+      "source": "https://commons.wikimedia.org/wiki/File:Table_Tennis_Table_Blue.svg"
+    },
     "File:Teen shelter near former coastguard lookout, Watchet - geograph.org.uk - 1714960.jpg": {
       "host": "upload.wikimedia.org",
       "path": "/wikipedia/commons/f/f3/Teen_shelter_near_former_coastguard_lookout%2C_Watchet_-_geograph.org.uk_-_1714960.jpg",
       "license": "CC BY-SA 2.0",
       "artist": "Phil Champion",
       "source": "https://commons.wikimedia.org/wiki/File:Teen_shelter_near_former_coastguard_lookout,_Watchet_-_geograph.org.uk_-_1714960.jpg"
+    },
+    "File:Tennis court metric.svg": {
+      "host": "thumb.wikimedia.org",
+      "path": "/wikipedia/commons/thumb/c/c5/Tennis_court_metric.svg/960px-Tennis_court_metric.svg.png",
+      "license": "CC BY-SA 3.0",
+      "artist": "NielsF",
+      "source": "https://commons.wikimedia.org/wiki/File:Tennis_court_metric.svg"
     },
     "File:Tire swing, near Litchfield, Connecticut LCCN2012630791 (cropped).jpg": {
       "host": "wiki.openstreetmap.org",
@@ -567,6 +644,20 @@
       "license": "CC BY-SA 3.0",
       "artist": "The original uploader was Glogger at English Wikipedia .",
       "source": "https://commons.wikimedia.org/wiki/File:Urbeach-high-park-splashpad.jpg"
+    },
+    "File:Urduliz outdoor climbing wall.jpg": {
+      "host": "thumb.wikimedia.org",
+      "path": "/wikipedia/commons/thumb/e/e8/Urduliz_outdoor_climbing_wall.jpg/960px-Urduliz_outdoor_climbing_wall.jpg",
+      "license": "CC0",
+      "artist": "Vatealyo",
+      "source": "https://commons.wikimedia.org/wiki/File:Urduliz_outdoor_climbing_wall.jpg"
+    },
+    "File:VolleyballCourt.svg": {
+      "host": "thumb.wikimedia.org",
+      "path": "/wikipedia/commons/thumb/c/cd/VolleyballCourt.svg/960px-VolleyballCourt.svg.png",
+      "license": "CC BY-SA 3.0",
+      "artist": "David Martin",
+      "source": "https://commons.wikimedia.org/wiki/File:VolleyballCourt.svg"
     },
     "File:Wasserspielplatz an der Schäferwiese 01.jpg": {
       "host": "thumb.wikimedia.org",

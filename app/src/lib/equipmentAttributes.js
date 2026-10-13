@@ -47,24 +47,26 @@ function resolvedImage(fileName) {
     return { url, license: entry.license, artist: entry.artist, source: entry.source };
 }
 
+// Every title was checked to exist on Commons and to show what it claims
+// (#867: 14 of the previous names resolved nowhere, so no pitch illustration
+// had ever rendered). Hockey has no free pitch diagram on Commons, so it has
+// no entry — an absent entry renders nothing, which is what a wrong one did.
 const pitchImages = {
-    soccer:'File:Association football pitch imperial.svg',
-    basketball:'File:Basketball court dimensions in meters.svg',
-    table_tennis:'File:Table tennis table blue.jpg',
-    volleyball:'File:Volleyball court with dimensions.svg',
-    tennis:'File:Hard tennis court 1.jpg',
-    handball:'File:Handball court metric.svg',
-    badminton:'File:Badminton court 8shuttle.svg',
-    hockey:'File:Field Hockey Pitch Dimensions.svg',
-    field_hockey:'File:Field Hockey Pitch Dimensions.svg',
-    boules:'File:Boules-coloured.jpg',
-    petanque:'File:Boules-coloured.jpg',
-    multi:'File:Multi-use games area.jpg',
-    skateboard:'File:Skatepark Vienna Praterstern 2015.jpg',
-    bmx:'File:BMX track Canberra.jpg',
+    soccer:'File:Football pitch metric.svg',
+    basketball:'File:Basketball court fiba.svg',
+    table_tennis:'File:Table Tennis Table Blue.svg',
+    volleyball:'File:VolleyballCourt.svg',
+    tennis:'File:Tennis court metric.svg',
+    handball:'File:Handball Field diagram -en.svg',
+    badminton:'File:Badminton court.svg',
+    boules:'File:Haute-Avesnes - Terrain de pétanque du stade.jpg',
+    petanque:'File:Haute-Avesnes - Terrain de pétanque du stade.jpg',
+    multi:'File:Great Central Road Multi-use Games Area, Loughborough.jpg',
+    skateboard:'File:Solvang Skatepark.jpg',
+    bmx:'File:BMX Pump Track, Whitley Bay, UK.jpg',
     athletics:'File:Athletics track.jpg',
-    beachvolleyball:'File:BeachvolleyballAthens04.jpg',
-    climbing:'File:Outdoor bouldering wall.jpg',
+    beachvolleyball:'File:Beach volleyball court in Kaukajärvi, Tampere, Finland.jpg',
+    climbing:'File:Urduliz outdoor climbing wall.jpg',
 };
 
 /**
