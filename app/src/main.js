@@ -3,10 +3,13 @@ import { waitLocale } from 'svelte-i18n';
 import './styles/app.css';
 import { appMode } from './lib/config.js';
 import { setupI18n } from './lib/i18n.js';
+import { installImageFallback } from './lib/imageFallback.js';
 import StandaloneApp from './standalone/StandaloneApp.svelte';
 import HubApp from './hub/HubApp.svelte';
 
 const target = document.getElementById('app');
+
+installImageFallback();
 
 async function main() {
     await setupI18n();

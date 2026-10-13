@@ -95,13 +95,20 @@ export function pitchIllustrationHtml(sportRaw, t) {
     // Alt text in the visitor's language, not the raw tag value.
     const alt = sportRaw.split(';').map(s => s.trim()).filter(Boolean)
         .map(s => tl(t, `equipment.pitches.${s}`, s)).join(' / ');
-    // Hides itself if the file has gone since the build, rather than leaving a
-    // broken-image icon captioned "example image".
-    const onerror = "this.closest('.device-img-wrap').style.display='none'";
+    return illustrationHtml(img, alt, t);
+}
+
+// The one template for an example illustration (device or pitch): the image
+// through our proxy, the "example image" caption and the CC credit. No inline
+// onerror: the narrowed CSP (script-src 'self', #861) would block it. A failed
+// image is hidden by the capture-phase listener in lib/imageFallback.js, which
+// finds it by the `device-img-wrap` class. The height cap keeps a portrait
+// photo from filling a phone panel.
+function illustrationHtml(img, alt, t) {
     return `<div class="device-img-wrap">` +
         `<img src="${escapeHtml(img.url)}"` +
         ` alt="${escapeHtml(alt)}" loading="lazy" referrerpolicy="no-referrer"` +
-        ` onerror="${onerror}" style="object-fit:contain;width:100%">` +
+        ` style="object-fit:contain;width:100%;max-height:240px;border-radius:4px">` +
         `<p class="mb-0 text-muted" style="font-size:0.75rem;"><span class="bi bi-image"></span> ` +
         `${escapeHtml(t('popup.deviceSymbol'))}${imageCredit(img)}</p></div>`;
 }
@@ -214,13 +221,6 @@ export function getEquipmentAttributesFromProps(props, t) {
 
     const deviceKey = g('playground');
     const sportRaw  = g('sport');
-    // The onerror no longer FALLS BACK to a second host — that was the
-    // undisclosed request — but it still hides the wrapper. The build
-    // established that the URL resolved when it ran; a file renamed
-    // upstream since then would otherwise leave a broken-image icon
-    // captioned "Symbolbild", which is worse than showing nothing.
-    const onerror = "this.closest('.device-img-wrap').style.display='none'";
-
     // Pitches: the illustration shows whenever there is no photo, below the
     // attributes rather than instead of them. A pitch almost always carries
     // surface= at least, so the device rule ("only when nothing else is
@@ -233,12 +233,7 @@ export function getEquipmentAttributesFromProps(props, t) {
             const img = resolvedImage(objDevices[deviceKey].image);
             if (img) {
                 const altText = tl(t, `equipment.devices.${deviceKey}`, objDevices[deviceKey].name_de ?? deviceKey);
-                html = `<div class="device-img-wrap">` +
-                    `<img src="${escapeHtml(img.url)}"` +
-                    ` alt="${escapeHtml(altText)}" loading="lazy" referrerpolicy="no-referrer"` +
-                    ` onerror="${onerror}" style="object-fit:contain;width:100%">` +
-                    `<p class="mb-0 text-muted" style="font-size:0.75rem;"><span class="bi bi-image"></span> ` +
-                    `${escapeHtml(t('popup.deviceSymbol'))}${imageCredit(img)}</p></div>`;
+                html = illustrationHtml(img, altText, t);
             }
         }
     }

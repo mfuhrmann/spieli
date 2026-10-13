@@ -225,6 +225,16 @@ Translations live in `locales/*.json` and are loaded by `lib/i18n.js` using svel
 
 Add new keys to `locales/en.json` and `locales/de.json`. Translation to other languages happens via [Weblate](translation-guide.md).
 
+### Example illustrations and failed images
+
+Device and pitch illustrations are HTML strings from `lib/equipmentAttributes.js`
+(`illustrationHtml`), rendered with `{@html}`. They carry **no inline
+`onerror`**: the narrowed CSP (`script-src 'self'`, #861) blocks inline
+handlers. `lib/imageFallback.js`, installed once in `main.js`, listens for
+`error` in the capture phase and hides a failed image's `.device-img-wrap` —
+and an enclosing `[data-illustration]` section, so no empty heading is left.
+New `{@html}` images should use the same wrapper rather than an inline handler.
+
 ### Modal dialogs
 
 Every `role="dialog" aria-modal="true"` element carries `use:modal` from

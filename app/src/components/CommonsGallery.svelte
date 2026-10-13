@@ -5,7 +5,9 @@
   import { fetchPlaygroundPhotos } from '../lib/commons.js';
 
   /** @type {{ commons?: string, image?: string, count?: number }} */
-  let { commons = '', image = '', count = $bindable(0) } = $props();
+  // `loaded` turns true once the tags have been resolved (to photos or to
+  // none), so a parent can tell "no photos" from "still loading".
+  let { commons = '', image = '', count = $bindable(0), loaded = $bindable(false) } = $props();
 
   // How many thumbnails to show before collapsing into a "+N" tile.
   // Five fits the panel width on one row; the 5th becomes the "+N" tile.
@@ -25,14 +27,14 @@
     // Reset on every tag change: switching to another playground must not show
     // the previous one's photos (and keep commonsHasPhotos true) while the new
     // fetch is in flight. The loading skeleton covers the gap.
-    photos = []; count = 0; selectedIndex = 0;
-    if (!c && !i) return;
+    photos = []; count = 0; selectedIndex = 0; loaded = false;
+    if (!c && !i) { loaded = true; return; }
     const ctrl = new AbortController();
     loading = true;
     fetchPlaygroundPhotos(c, i, { signal: ctrl.signal })
       .then(p => { photos = p; count = p.length; selectedIndex = 0; })
       .catch(() => { photos = []; count = 0; })
-      .finally(() => { loading = false; });
+      .finally(() => { loading = false; if (!ctrl.signal.aborted) loaded = true; });
     return () => ctrl.abort();
   });
 

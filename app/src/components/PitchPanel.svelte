@@ -56,14 +56,29 @@
   $: panoramaxUuids = (() => {
     if (!attr) return [];
     const uuids = [];
+    // Same tags as equipmentAttributes reads, panoramax:0 included, so a pitch
+    // shows the same photo whichever panel it is opened in.
     if (attr.panoramax) uuids.push(attr.panoramax);
-    for (let i = 1; i <= 9; i++) if (attr[`panoramax:${i}`]) uuids.push(attr[`panoramax:${i}`]);
+    for (let i = 0; i <= 9; i++) if (attr[`panoramax:${i}`]) uuids.push(attr[`panoramax:${i}`]);
     return uuids;
   })();
   $: commonsTag = attr?.wikimedia_commons || '';
   $: imageTag = attr?.image || '';
   $: illustration = attr ? pitchIllustrationHtml(attr.sport, $_) : '';
   let commonsPhotoCount = 0;
+  let commonsLoaded = false;
+  // Reset per pitch: the gallery is unmounted once it resolves to nothing, so
+  // without this the next pitch would inherit "loaded, 0 photos" and never
+  // mount its gallery at all.
+  $: commonsTag, imageTag, resetCommons();
+  function resetCommons() { commonsLoaded = false; commonsPhotoCount = 0; }
+  // The example illustration stands in when there is no photo to show: no
+  // Panoramax photo, and the Commons/image tags (if any) resolved to nothing —
+  // an `image=` on a foreign host or an empty category must not leave an empty
+  // "Photos" section and no illustration either.
+  $: hasCommonsTags = !!(commonsTag || imageTag);
+  $: showIllustration = !!illustration && panoramaxUuids.length === 0
+    && (!hasCommonsTags || (commonsLoaded && commonsPhotoCount === 0));
 
   // ── Links ─────────────────────────────────────────────────────────────────
   $: mcOsmType = attr ? ({ W: 'way', R: 'relation', N: 'node' }[attr.osm_type] ?? 'way') : 'way';
@@ -205,21 +220,24 @@
         </div>
       {/if}
 
-      {#if commonsTag || imageTag || panoramaxUuids.length > 0}
+      {#if (hasCommonsTags && !(commonsLoaded && commonsPhotoCount === 0)) || panoramaxUuids.length > 0}
         <section class="mb-4">
           <h3 class="section-label"><Image class="h-3 w-3 inline" /> {$_('accordion.photos')}</h3>
-          {#if commonsTag || imageTag}
-            <CommonsGallery commons={commonsTag} image={imageTag} bind:count={commonsPhotoCount} />
+          {#if hasCommonsTags}
+            <CommonsGallery commons={commonsTag} image={imageTag} bind:count={commonsPhotoCount} bind:loaded={commonsLoaded} />
           {/if}
           {#if panoramaxUuids.length > 0}
             <PanoramaxViewer uuids={panoramaxUuids} {mcUrl} />
           {/if}
         </section>
-      {:else if illustration}
+      {/if}
+      {#if showIllustration}
         <!-- No photo of this pitch: an example illustration of its sport, as
-             the pitch rows inside a playground show (#968). -->
-        <section class="mb-4 pitch-illustration">
-          <h3 class="section-label"><Image class="h-3 w-3 inline" /> {$_('accordion.photos')}</h3>
+             the pitch rows inside a playground show (#968). No "Photos"
+             heading — it is not a photo of this place; the caption says
+             "example image". data-illustration lets imageFallback.js hide the
+             whole section if the image fails. -->
+        <section class="mb-4 pitch-illustration" data-illustration>
           {@html illustration}
         </section>
       {/if}
