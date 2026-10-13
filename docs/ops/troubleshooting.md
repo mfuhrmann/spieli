@@ -84,7 +84,7 @@ If you are using the local development setup, `make import` is equivalent. If th
 **Symptom:** On a brand-new data-node install the importer never populates the database and restarts forever:
 
 ```
-importer-1  | [importer] Daemon mode: interval 2–10 days.
+importer-1  | [importer] Daemon mode: interval 2–10 days, jitter up to 6h.
 importer-1  | [importer] API_ONLY mode — skipping PBF download and osm2pgsql import.
 importer-1  | [importer] Applying API schema...
 importer-1  | psql:/tmp/tmp.JsTPhaBgfJ:87: ERROR:  relation "planet_osm_point" does not exist
