@@ -217,14 +217,14 @@
 
   .dropdown-header,
   .completeness-section,
+  .layer-section {
+    flex-shrink: 0;
+  }
+
   .layer-hint {
     margin: -4px 16px 8px 46px;
     font-size: 12px;
     color: #6b7280;
-  }
-
-  .layer-section {
-    flex-shrink: 0;
   }
 
   .dropdown-header {

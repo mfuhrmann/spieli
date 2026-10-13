@@ -179,7 +179,7 @@ Two policies ship together for one release: the old wildcard one **enforced**, a
 
 | Store | Role |
 |---|---|
-| `selection.js` | Current selection — `{ feature, backendUrl, kind }`, `kind` `'playground'` or (standalone) `'pitch'` (#934). `hasSelection` = anything open; `selectedKind`; `selectedOsmId` is playground-only. Readers that only make sense for playgrounds must check `kind` |
+| `selection.js` | Current selection — `{ feature, backendUrl, kind }`, `kind` `'playground'` or `'pitch'` (#934; hub too since #947). `hasSelection` = anything open; `selectedKind`; `selectedOsmId` is playground-only. Readers that only make sense for playgrounds must check `kind` |
 | `filters.js` | Active filter state (playground filters + `standalonePitches` layer toggle). Also exports `effectiveFilterStore` — the filters that actually apply, with the three mapping-detail states forced on while mapping detail is off. **Anything that fetches or draws reads `effectiveFilterStore`**; only the controls that edit filters read `filterStore`. |
 | `mappingDetail.js` | Whether mapping detail is on (#924). Default `false` — the plain "finder" map. Persisted in `localStorage` (`spieli.mappingDetail`, every access in try/catch); `?detail=1\|0` overrides it for one page load without writing it, and a manual toggle rewrites that parameter in place. Read by Map (tier styles), AppShell (legend), PlaygroundPanel (share link carries `?detail=1` while on). |
 | `overlayLayer.js` | Bridge between PlaygroundPanel and Map — carries `{ equipment[], trees[] }` |
@@ -202,7 +202,7 @@ Two policies ship together for one release: the old wildcard one **enforced**, a
 |---|---|
 | `Map.svelte` | OL map, all layers, click/hover handlers (incl. selecting pitches on layers marked `selectable`) |
 | `AppShell.svelte` | Top-level shell used by both modes: mounts Map, manages deeplink restore. **No keyboard handling** — there is no shortcut infrastructure here to extend. Global `keydown` listeners live in the components that own the thing being dismissed: `BottomSheet`, `Sheet`, `LegalContentModal`, `DataContributionModal` and `Map` (Escape closes the hub backend popup), plus `SearchBar`'s own combobox key handling |
-| `PitchPanel.svelte` | Detail panel for a selected standalone pitch (#934), in the playground panel's slot (side panel / `embedded` on phones): sport chips with the pin glyphs, surface, lighting, access/fee/booking, opening hours, hoops, wheelchair, operator, photos, Take me there, share (`#P<id>`), MapComplete. Display rules in `lib/pitchInfo.js` — every fact only when tagged |
+| `PitchPanel.svelte` | Detail panel for a selected standalone pitch (#934), in the playground panel's slot (side panel / `embedded` on phones): sport chips with the pin glyphs, surface, lighting, access/fee/booking, opening hours, hoops, wheelchair, operator, photos, Take me there, share (`#P<id>`, in the hub `#<slug>/P<id>`), MapComplete. Shows the region name in the hub. Display rules in `lib/pitchInfo.js` — every fact only when tagged |
 | `PlaygroundPanel.svelte` | Fetches and displays equipment/trees/POIs for selected playground; writes to `overlayFeaturesStore`; includes "Take me there" navigation button (geo: URL on mobile, OSM directions on desktop) |
 | `EquipmentList.svelte` | Renders device/fitness/pitch/bench lists inside PlaygroundPanel |
 | `NearbyPlaygrounds.svelte` | Shows nearest playgrounds to the selected one; hydrates polygon source on demand |

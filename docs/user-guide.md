@@ -144,7 +144,7 @@ Click or tap a pitch to open its panel — in the same place as a playground's. 
 
 ## Deeplinks
 
-Each playground has a unique URL. When you open a playground, the URL bar updates to include a hash like `#W37808214`. Share that URL to link directly to a specific playground.
+Each playground has a unique URL. When you open a playground, the URL bar updates to include a hash like `#W37808214`. Share that URL to link directly to a specific playground. A sports pitch's link uses `P` instead (`#P123456`). On the all-regions map the link also names the region, e.g. `#hessen/W37808214`.
 
 ## Installing spieli as an app
 

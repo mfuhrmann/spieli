@@ -26,18 +26,17 @@ import { selection } from '../stores/selection.js';
 export const PITCH_MIN_ZOOM = 12;
 
 /**
- * Style for the pitch layer. `selected` is `{ osmId, backendUrl }` of the
- * selected pitch, or null; matched by osm_id — a linked pitch is not in this
- * layer's source until the layer loads its area — and, in the hub, by backend
- * too, since two regions may share a numeric id.
+ * Style for the pitch layer. `selectedId` is the selected pitch's osm_id, or
+ * null; matched by id because a linked pitch is not in this layer's source
+ * until the layer loads its area. Not by backend: every region serves the
+ * same OSM ids, and where regions overlap the layer keeps only one copy of a
+ * pitch — possibly not the region the link named.
  */
-export function pitchLayerStyle(detail, selected) {
+export function pitchLayerStyle(detail, selectedId) {
   return feature => {
     const pin = pitchPinFor(feature);
-    const isSelected = pin != null && selected != null
-      && feature.get('osm_id') === selected.osmId
-      && (selected.backendUrl == null || feature.get('_backendUrl') == null
-          || feature.get('_backendUrl') === selected.backendUrl);
+    const isSelected = pin != null && selectedId != null
+      && feature.get('osm_id') === selectedId;
     const base = pin && !detail ? null : equipmentLayerStyleFn(feature);
     const styles = [base, isSelected ? selectedPitchStyle : null, pin].filter(Boolean);
     return styles.length > 1 ? styles : (styles[0] ?? null);
@@ -45,8 +44,7 @@ export function pitchLayerStyle(detail, selected) {
 }
 
 function selectedPitch(sel) {
-  if (!sel.feature || sel.kind !== 'pitch') return null;
-  return { osmId: sel.feature.get('osm_id'), backendUrl: sel.feature.get('_backendUrl') ?? null };
+  return sel.feature && sel.kind === 'pitch' ? sel.feature.get('osm_id') : null;
 }
 
 /**

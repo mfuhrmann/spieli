@@ -244,8 +244,6 @@
     });
   });
 
-
-
   onDestroy(() => {
     detachTierDeselect();
     if (detachMapSub)      detachMapSub();
