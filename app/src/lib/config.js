@@ -1,7 +1,7 @@
 // Runtime configuration injected via window.APP_CONFIG (set by public/config.js or docker-entrypoint.app.sh).
 // Fallback values are used for local development without a container.
 import { parseCoverageBbox } from './basemapCoverage.js';
-import { openingHoursAddressFor } from './openingHoursAddress.js';
+import { resolveOpeningHoursAddress } from './openingHoursAddress.js';
 
 const c = (typeof window !== 'undefined' && window.APP_CONFIG) || {};
 
@@ -161,8 +161,11 @@ export const regionCountry = c.regionCountry || 'de';
 export const regionState = c.regionState || '';
 
 // `address` for the `opening_hours` constructor, shared by every call site so
-// they cannot drift apart. Rules in openingHoursAddress.js (#878).
-export const openingHoursAddress = openingHoursAddressFor(regionCountry, regionState);
+// they cannot drift apart. Rules in openingHoursAddress.js (#878); a value it
+// cannot resolve is ignored, with a warning instead of the old silence.
+const resolvedHolidayAddress = resolveOpeningHoursAddress(regionCountry, regionState);
+if (resolvedHolidayAddress.warning) console.warn(`[config] ${resolvedHolidayAddress.warning}`);
+export const openingHoursAddress = resolvedHolidayAddress.address;
 
 // Legal pages — null hides the LegalButton entirely.
 export const impressumUrl = c.impressumUrl || null;

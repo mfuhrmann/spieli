@@ -37,9 +37,10 @@ SAFE_REGION_COUNTRY=$(safe_code "${REGION_COUNTRY:-de}")
 # opening_hours library keys holidays on names like "Thüringen" or
 # "Baden-Württemberg", and other countries' names contain spaces and accents.
 # safe_code stripped the umlauts, so two German states were unconfigurable
-# (#878). Keep every letter, drop only what could break out of the quoted JS
-# string or the markup: control characters, quotes, backslash, backtick, <, >.
-safe_name() { printf '%s' "$1" | tr -d '[:cntrl:]' | tr -d "\\\\\"'<>\`"; }
+# (#878). Still an allow-list: ASCII letters, digits, space, dot, hyphen, and
+# every non-ASCII byte (UTF-8 letters of any script; tr works on bytes). No
+# quote, backslash, backtick, angle bracket or control character gets through.
+safe_name() { printf '%s' "$1" | tr -cd 'A-Za-z0-9 .\200-\377-'; }
 SAFE_REGION_STATE=$(safe_name   "${REGION_STATE:-}")
 
 # Legal URLs — IMPRESSUM_URL / PRIVACY_URL override env vars take priority.

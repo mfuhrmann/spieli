@@ -48,6 +48,7 @@ The installable-app icons live in `app/public/icons/` (#939). `icon-192.png` and
 
 ```bash
 make app-icons            # rewrites app/public/icons/icon-maskable-{192,512}.png
+make holiday-states       # rewrites app/src/lib/holidayStates.generated.json — after bumping opening_hours
 ```
 
 Commit the regenerated files. They are served under stable names with a one-day cache, so an installed app picks up a new icon within a day.

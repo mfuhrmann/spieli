@@ -19,7 +19,7 @@ All variables are set in `.env` (copy from `.env.example`). The installer genera
 | `DEFAULT_LOCALE` | *(browser)* | ui, data-node-ui, hub | UI language. Leave empty to auto-detect from the visitor's browser. Supported: `de`, `en`, `sk`. An unsupported value falls back to `en`. |
 | `REGION_LANG` | `de` | ui, data-node-ui, hub | Language your region's playgrounds are **named** in (BCP 47). Not the same as `DEFAULT_LOCALE` — see [Language settings](#language-settings). |
 | `REGION_COUNTRY` | `de` | ui, data-node-ui, hub | Country whose public-holiday calendar `opening_hours` values are evaluated against (ISO 3166-1 alpha-2). |
-| `REGION_STATE` | *(unset)* | ui, data-node-ui, hub | State for holiday calendars that vary by state: the ISO 3166-2 code (`he` or `DE-HE`) or the state's name as the [`opening_hours` library](https://github.com/opening-hours/opening_hours.js#holidays) spells it (`Hessen`, `Thüringen`). Leave empty to keep the library default. Before #878 a code was silently ignored and umlauts were stripped from names, so check an existing value after upgrading. |
+| `REGION_STATE` | *(unset)* | ui, data-node-ui, hub | State for holiday calendars that vary by state: the ISO 3166-2 code (`he` or `DE-HE`) or the state's name (`Hessen`, `Thüringen`; letter case does not matter). Leave empty to keep the library default. Must be a state the [`opening_hours` library](https://github.com/opening-hours/opening_hours.js#holidays) has holidays for; anything else is ignored with a console warning. |
 | `MAP_ZOOM` | `12` | ui, data-node-ui | Initial map zoom level |
 | `MAP_MIN_ZOOM` | `10` | ui, data-node-ui | Minimum zoom level |
 | `BASEMAP_UPSTREAM` | `https://tiles.openfreemap.org` | ui, data-node-ui | Where the bundled style's tiles and sprites are fetched from and cached. Origin only (`scheme://host[:port]`), no path. Point it at your own tileserver to stop using a public one — a two-step swap, see [Basemap](#basemap). |
@@ -75,10 +75,16 @@ public holidays in `opening_hours` values are resolved. A German-language
 deployment serving Austrian playgrounds sets `REGION_LANG=de` with
 `REGION_COUNTRY=at`.
 
-Only `opening_hours` values with `PH` (public holiday) are affected — roughly
-1 % of playgrounds — and a wrong `REGION_STATE` is silent: such a playground is
-shown as open on a state holiday. To check a stack, open a playground tagged
-`PH off` on a holiday that only your state has (e.g. Corpus Christi in Hessen).
+Only `opening_hours` values with `PH` (public holiday) are affected — 69 of
+7 042 playgrounds in the Hessen extract (September 2026). A value the app
+cannot resolve is ignored and logged in the browser console as
+`[config] REGION_STATE "…" is not a state of …`, listing the codes it knows.
+
+**Behaviour change in #878:** before it, a code such as `he` was ignored, so
+stacks configured with the previously documented `REGION_STATE=he` evaluated
+holidays without a state. After upgrading they honour their state's holidays —
+a playground tagged `PH off` now shows as closed on e.g. Corpus Christi in
+Hessen. No action is needed.
 
 > **How `PG_*` values are applied.** The importer runs `ALTER SYSTEM SET …`
 > at the top of `api.sql`, then `SELECT pg_reload_conf()`. The values are
