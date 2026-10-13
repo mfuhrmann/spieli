@@ -227,6 +227,38 @@ jobs:
             -e APP_MODE=hub -e REGISTRY_URL=/registry.json -e DEFAULT_LOCALE=en
           printf '\nall manifest assertions passed\n'
 
+      - name: REGION_STATE keeps state names intact
+        run: |
+          set -eu
+          # opening_hours keys state holidays on full names ("Thüringen"); the
+          # old sanitiser stripped the umlaut, so two German states could not
+          # be configured, silently (#878). Quotes and markup must still go.
+          state() {
+            docker run --rm --entrypoint sh -e APP_MODE=standalone -e APP_NAME=ci-state-marker -e REGION_STATE="$1" spieli-app:citest -c '
+              /docker-entrypoint.sh >/dev/null 2>&1 &
+              i=0
+              # The image ships a default config.js and manifest, so wait for
+              # the generated manifest (written after config.js) to carry the
+              # marker name.
+              while ! grep -q ci-state-marker /usr/share/nginx/html/manifest.webmanifest 2>/dev/null; do
+                i=$((i+1)); [ "$i" -gt 100 ] && { echo "entrypoint did not finish" >&2; exit 1; }
+                sleep 0.2
+              done
+              grep -m1 "regionState:" /usr/share/nginx/html/config.js
+            '
+          }
+          expect() {
+            got=$(state "$1")
+            case "$got" in
+              *"regionState:"*"'$2',"*) echo "ok: [$1] -> $got" ;;
+              *) echo "FAIL: [$1] -> $got (expected '$2')" >&2; exit 1 ;;
+            esac
+          }
+          expect 'Thüringen' 'Thüringen'
+          expect 'Baden-Württemberg' 'Baden-Württemberg'
+          expect 'DE-HE' 'DE-HE'
+          expect "x'</script>\\y" 'x/scripty'
+
       - name: CSP must follow the configuration
         run: |
           set -eu
