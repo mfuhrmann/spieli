@@ -950,6 +950,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#keeping-stacks-from-importing-at-the-same-time" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Keeping stacks from importing at the same time
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2047,6 +2058,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#keeping-stacks-from-importing-at-the-same-time" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Keeping stacks from importing at the same time
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2201,12 +2223,42 @@
 </code></pre></div>
 <p>Check that it entered daemon mode:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>logs<span class="w"> </span>importer<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-i<span class="w"> </span>daemon
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="c1"># [importer] Daemon mode: interval 6–8 days.</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="c1"># [importer] Daemon mode: interval 6–8 days, jitter up to 6h.</span>
+</code></pre></div>
+<h3 id="keeping-stacks-from-importing-at-the-same-time">Keeping stacks from importing at the same time<a class="headerlink" href="#keeping-stacks-from-importing-at-the-same-time" title="Permanent link">&para;</a></h3>
+<p>Several stacks on one host must not run <code>osm2pgsql</code> together — it is the
+memory peak of the whole pipeline. Two mechanisms spread them out (#882):</p>
+<ul>
+<li><strong><code>REIMPORT_JITTER_HOURS</code></strong> (default <code>6</code>) adds a random 0–6 h to every
+  scheduled wait, and delays an import that is already overdue at startup by
+  the same amount — but never past <code>MAX_DAYS</code> plus one jitter window after the
+  last import, so frequent restarts cannot keep postponing it. Without it, a
+  restart of every stack (an upgrade sweep, a host reboot) stamped all overdue
+  stacks with nearly the same <code>last_import_at</code>; with <code>MIN == MAX</code> each stack
+  then only moved by its own import duration, so stacks with similar import
+  times kept their shared slot. With it, slots drift apart every cycle. Set
+  it to <code>0</code> only if a single stack runs on the host.</li>
+</ul>
+<p>Jitter makes overlap unlikely, not impossible: there is no lock between
+stacks on one host (tracked in #961).
+- <strong><code>REIMPORT_STARTUP_JITTER_MAX_HOURS</code></strong> (default <code>0</code>) staggers the <em>first</em>
+  import on a fresh database, for deploying many stacks at once.</p>
+<p>Both draw from <code>/dev/urandom</code>. Before #882 they were seeded from the clock's
+current second, so containers started together drew the same "random" value.
+Values that are not whole numbers are replaced by the default with a warning
+in the importer log, as is <code>MIN &gt; MAX</code> (swapped).</p>
+<p>Every wait logs the absolute time of the next run, so the spread on a host is
+one loop away:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">for</span><span class="w"> </span>d<span class="w"> </span><span class="k">in</span><span class="w"> </span>~/spieli-*<span class="p">;</span><span class="w"> </span><span class="k">do</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span><span class="nb">printf</span><span class="w"> </span><span class="s1">'%-28s '</span><span class="w"> </span><span class="s2">"</span><span class="k">$(</span>basename<span class="w"> </span><span class="s2">"</span><span class="nv">$d</span><span class="s2">"</span><span class="k">)</span><span class="s2">"</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">  </span>docker<span class="w"> </span>compose<span class="w"> </span>--project-directory<span class="w"> </span><span class="s2">"</span><span class="nv">$d</span><span class="s2">"</span><span class="w"> </span>logs<span class="w"> </span>importer<span class="w"> </span><span class="m">2</span>&gt;/dev/null<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">    </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-o<span class="w"> </span><span class="s1">'next run at .*'</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>tail<span class="w"> </span>-n<span class="w"> </span><span class="m">1</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="k">done</span>
 </code></pre></div>
 <h2 id="automatic-image-updates-with-watchtower">Automatic image updates with Watchtower<a class="headerlink" href="#automatic-image-updates-with-watchtower" title="Permanent link">&para;</a></h2>
 <p>Watchtower complements daemon mode: it pulls updated spieli images daily and restarts the affected containers. The importer's startup grace check (see above) prevents an unplanned re-import on Watchtower-triggered restarts.</p>
 <p>Enable Watchtower by including the <code>auto-update</code> profile:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>data-node-ui<span class="w"> </span>--profile<span class="w"> </span>auto-update<span class="w"> </span>up<span class="w"> </span>-d
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>data-node-ui<span class="w"> </span>--profile<span class="w"> </span>auto-update<span class="w"> </span>up<span class="w"> </span>-d
 </code></pre></div>
 <p>Or add <code>auto-update</code> to any existing <code>up</code> invocation. Watchtower polls Docker Hub every 24 hours and cleans up old images automatically.</p>
 <h2 id="how-long-does-an-import-take">How long does an import take?<a class="headerlink" href="#how-long-does-an-import-take" title="Permanent link">&para;</a></h2>
@@ -2248,8 +2300,8 @@
 <p>If you prefer external scheduling, leave <code>REIMPORT_INTERVAL_MIN_DAYS</code> and <code>REIMPORT_INTERVAL_MAX_DAYS</code> unset. The importer exits with code 0 after a successful one-shot run.</p>
 <h3 id="systemd-timer">systemd timer<a class="headerlink" href="#systemd-timer" title="Permanent link">&para;</a></h3>
 <p>spieli ships unit files in <code>deploy/</code> for Linux hosts with systemd:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>sudo<span class="w"> </span>cp<span class="w"> </span>deploy/spieli-import.service<span class="w"> </span>/etc/systemd/system/
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>sudo<span class="w"> </span>cp<span class="w"> </span>deploy/spieli-import.timer<span class="w">   </span>/etc/systemd/system/
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>sudo<span class="w"> </span>cp<span class="w"> </span>deploy/spieli-import.service<span class="w"> </span>/etc/systemd/system/
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>sudo<span class="w"> </span>cp<span class="w"> </span>deploy/spieli-import.timer<span class="w">   </span>/etc/systemd/system/
 </code></pre></div>
 <p>Open <code>/etc/systemd/system/spieli-import.service</code> and set:</p>
 <ul>
@@ -2258,18 +2310,18 @@
 <li><code>User=</code> — user in the <code>docker</code> group that owns the deployment directory</li>
 </ul>
 <p>The default timer fires weekly on Sunday at 04:00. Change the schedule in <code>spieli-import.timer</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="k">[Timer]</span>
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="na">OnCalendar</span><span class="o">=</span><span class="s">Sun 04:00</span><span class="w">      </span><span class="c1"># weekly, Sunday 4 AM</span>
-<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="c1"># OnCalendar=daily         # every day at midnight</span>
-<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="c1"># OnCalendar=*-*-* 03:30  # every day at 3:30 AM</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="k">[Timer]</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="na">OnCalendar</span><span class="o">=</span><span class="s">Sun 04:00</span><span class="w">      </span><span class="c1"># weekly, Sunday 4 AM</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="c1"># OnCalendar=daily         # every day at midnight</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="c1"># OnCalendar=*-*-* 03:30  # every day at 3:30 AM</span>
 </code></pre></div>
 <p>Enable and start:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>sudo<span class="w"> </span>systemctl<span class="w"> </span>daemon-reload
-<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>sudo<span class="w"> </span>systemctl<span class="w"> </span><span class="nb">enable</span><span class="w"> </span>--now<span class="w"> </span>spieli-import.timer
-<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>systemctl<span class="w"> </span>list-timers<span class="w"> </span>spieli-import.timer
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>sudo<span class="w"> </span>systemctl<span class="w"> </span>daemon-reload
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>sudo<span class="w"> </span>systemctl<span class="w"> </span><span class="nb">enable</span><span class="w"> </span>--now<span class="w"> </span>spieli-import.timer
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>systemctl<span class="w"> </span>list-timers<span class="w"> </span>spieli-import.timer
 </code></pre></div>
 <h3 id="host-cron">Host cron<a class="headerlink" href="#host-cron" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>0 4 * * 0 cd /opt/spieli &amp;&amp; docker compose --profile data-node-ui run --rm importer &gt;&gt; /var/log/spieli-import.log 2&gt;&amp;1
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>0 4 * * 0 cd /opt/spieli &amp;&amp; docker compose --profile data-node-ui run --rm importer &gt;&gt; /var/log/spieli-import.log 2&gt;&amp;1
 </code></pre></div>
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>

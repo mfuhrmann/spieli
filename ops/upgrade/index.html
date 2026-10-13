@@ -2453,6 +2453,13 @@ earlier version of this page described:</p>
    invisible: the old schema is internally consistent enough to pass.</li>
 </ol>
 <p>The hub entry skips steps 2–4 automatically.</p>
+<p><strong>A sweep restarts every import clock.</strong> Recreating the daemon importer runs
+its startup grace check, and every stack whose import is overdue imports right
+then. Since #882 each such import first waits a random 0–<code>REIMPORT_JITTER_HOURS</code>
+(default 6 h), so a sweep no longer stamps all of them into one window — but on
+a memory-constrained host it is still worth checking the spread afterwards
+(see <a href="../scheduled-import/#keeping-stacks-from-importing-at-the-same-time">Scheduled import → Keeping stacks from importing at the same
+time</a>).</p>
 <p><strong>A stack that is mid-import is skipped, not forced.</strong> If <code>get_meta</code> reports
 <code>importing: true</code>, the script leaves the schema alone and says so: stopping the
 importer there would SIGKILL <code>osm2pgsql</code> after 10 s and leave the database
