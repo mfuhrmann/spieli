@@ -186,16 +186,6 @@ export async function fetchStandaloneEquipment(extentEPSG3857, baseUrl = default
     return { type: 'FeatureCollection', features: [] };
 }
 
-// Nearest playgrounds to a given WGS84 point, ordered by distance.
-// Returns [] when apiBaseUrl is empty (Overpass / local dev mode).
-export async function fetchNearestPlaygrounds(lat, lon, baseUrl = defaultApiBaseUrl) {
-    if (!baseUrl) return [];
-    const params = new URLSearchParams({ lat, lon });
-    const res = await fetch(`${baseUrl}/rpc/get_nearest_playgrounds?${params}`);
-    if (res.ok) return res.json();
-    return [];
-}
-
 /**
  * Instance metadata (requires spieli v0.2.1+).
  *

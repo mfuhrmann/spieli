@@ -596,7 +596,7 @@
 
     // Publish the polygon source once. Consumers that need to know whether
     // the polygon tier is *visible* read activeTierStore; consumers that
-    // only need to read or hydrate features (NearbyPlaygrounds, AppShell
+    // only need to read or hydrate features (AppShell
     // hash restore) get a stable reference at any tier.
     playgroundSourceStore.set(polygonSrc);
 

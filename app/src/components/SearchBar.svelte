@@ -9,8 +9,6 @@
 
   /** Bounding box [minLon, minLat, maxLon, maxLat] to restrict Nominatim search. */
   export let regionExtent = null;
-  /** Called with (lat, lon) after a result is selected; called with (null, null) on clear. */
-  export let onlocation = null;
 
   let query = '';
   let searching = false;
@@ -114,7 +112,6 @@
     // their favour. Revisit if it proves the wrong call.
     if (window.matchMedia?.('(pointer: coarse)').matches) inputEl?.blur();
 
-    if (onlocation) onlocation(lat, lon);
   }
 
   function onKeydown(e) {
@@ -194,7 +191,6 @@
     activeIndex = -1;
     showResults = false;
     inputEl?.focus();
-    if (onlocation) onlocation(null, null);
   }
 
   function onFocus() {

@@ -218,13 +218,6 @@ export async function stubHubRegistry(page, { instanceA, instanceB }) {
   await page.route('**/rpc/get_pois**', route =>
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([]) })
   );
-  await page.route('**/rpc/get_nearest_playgrounds**', route =>
-    dispatch(route, (b) => ({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify(b.nearest ?? []),
-    }))
-  );
 
   // Default stub for the hub's federation-status.json poll. Without this
   // the browser fires a real network request that 404s in the test runner.

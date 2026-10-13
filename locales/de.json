@@ -118,13 +118,7 @@
     "near": "in der Nähe von {name}"
   },
   "nearby": {
-    "title": "In der Nähe von {label}",
-    "header": "In der Nähe",
-    "loading": "Wird geladen …",
-    "empty": "Keine Spielplätze gefunden.",
-    "unknownName": "Unbekannter Spielplatz",
-    "defaultName": "Spielplatz",
-    "thisLocation": "diesem Ort"
+    "defaultName": "Spielplatz"
   },
   "equipment": {
     "deviceCount": "{count, plural, one {# Spielgerät} other {# Spielgeräte}}",

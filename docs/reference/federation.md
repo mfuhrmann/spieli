@@ -68,7 +68,7 @@ CORS is enabled on `/api/` so the Hub can query instances cross-origin from the 
 
 ## Registry
 
-The Hub discovers instances from a `registry.json` file — see the [`registry.json` reference](registry-json.md) for schema, slug rules, and the derived aggregate behaviours (aggregated bounding box, multi-backend nearest search).
+The Hub discovers instances from a `registry.json` file — see the [`registry.json` reference](registry-json.md) for schema, slug rules, and the derived aggregate behaviours (aggregated bounding box).
 
 ## Hub UI
 

@@ -184,7 +184,7 @@ Two policies ship together for one release: the old wildcard one **enforced**, a
 | `mappingDetail.js` | Whether mapping detail is on (#924). Default `false` — the plain "finder" map. Persisted in `localStorage` (`spieli.mappingDetail`, every access in try/catch); `?detail=1\|0` overrides it for one page load without writing it, and a manual toggle rewrites that parameter in place. Read by Map (tier styles), AppShell (legend), PlaygroundPanel (share link carries `?detail=1` while on). |
 | `overlayLayer.js` | Bridge between PlaygroundPanel and Map — carries `{ equipment[], trees[] }` |
 | `map.js` | OL map instance reference |
-| `playgroundSource.js` | Shared OL VectorSource for the polygon tier. Non-null while Map.svelte is mounted; reset to `null` on teardown. Widgets (NearbyPlaygrounds, AppShell deeplink restore) hydrate features into it on demand at any zoom — there is no separate "cluster source" store; the cluster `VectorSource` is owned by `StandaloneApp.svelte` and never published, since no widget consumes it externally. |
+| `playgroundSource.js` | Shared OL VectorSource for the polygon tier. Non-null while Map.svelte is mounted; reset to `null` on teardown. The AppShell deeplink restore hydrates features into it on demand at any zoom — there is no separate "cluster source" store; the cluster `VectorSource` is owned by `StandaloneApp.svelte` and never published, since no widget consumes it externally. |
 | `tier.js` | Active zoom-tier — `null` \| `'cluster'` \| `'polygon'`. Written by the orchestrator, read by Map for layer visibility |
 | `location.js` | User's current GPS position — `{ lat, lon, accuracy } \| null`. Written by LocateButton (manual + auto-locate), read by Map (location marker) and PlaygroundPanel (navigation origin). |
 | `basemapCoverage.js` | Whether the view has left the basemap's detailed coverage — `null` (no limit declared) \| `false` \| `true`. Written by `Map.svelte` on moveend, read by `BasemapCoverageNotice`. |
@@ -205,7 +205,6 @@ Two policies ship together for one release: the old wildcard one **enforced**, a
 | `PitchPanel.svelte` | Detail panel for a selected standalone pitch (#934), in the playground panel's slot (side panel / `embedded` on phones): sport chips with the pin glyphs, surface, lighting, access/fee/booking, opening hours, hoops, wheelchair, operator, photos, Take me there, share (`#P<id>`), MapComplete. Display rules in `lib/pitchInfo.js` — every fact only when tagged |
 | `PlaygroundPanel.svelte` | Fetches and displays equipment/trees/POIs for selected playground; writes to `overlayFeaturesStore`; includes "Take me there" navigation button (geo: URL on mobile, OSM directions on desktop) |
 | `EquipmentList.svelte` | Renders device/fitness/pitch/bench lists inside PlaygroundPanel |
-| `NearbyPlaygrounds.svelte` | Shows nearest playgrounds to the selected one; hydrates polygon source on demand |
 | `POIPanel.svelte` | Nearby POI list (cafés, toilets, etc.) shown inside PlaygroundPanel |
 | `ReviewsPanel.svelte` | Community reviews for a selected playground (fetch + submit) |
 | `PanoramaxViewer.svelte` | Street-level photos for a playground. Shows the **thumbnail** on selection and creates the viewer `<iframe>` only when the visitor activates it (#852) — an iframe gets its own browsing context on the provider's origin, with cookies and its own analytics, so it must not load on plain map use. The iframe carries `referrerpolicy="no-referrer"` and `sandbox="allow-scripts allow-same-origin"`, which is the narrowest set the viewer actually works under (probed: `allow-scripts` alone renders nothing) |
@@ -240,7 +239,7 @@ Two policies ship together for one release: the old wildcard one **enforced**, a
 | `MacroView.svelte` | Country-level OL layer — one point per backend at its bbox centroid with stacked-ring style |
 | `MacroCoverageBanner.svelte` | Non-alarming "filter covers N of M regions" banner shown at the macro tier when a filter applied to only some backends (reads `macroCoverage`) |
 | `hubOrchestrator.js` | Hub-mode tiered orchestrator — fans every tier fetch out across backends via `fanOut`, filtered by viewport and health |
-| `registry.js` | Loads `registry.json`, polls `get_meta` every 5 min, exposes `backends` readable store, provides multi-backend nearest-playground fetcher |
+| `registry.js` | Loads `registry.json`, polls `get_meta` every 5 min, exposes `backends` readable store |
 | `federationHealth.js` | Polls `/federation-status.json` and merges per-backend health into the registry store |
 | `fanOut.js` | Invokes a fetcher against every selected backend in parallel; surfaces results progressively via `onResult` callback |
 | `osmIdDedup.js` | Deduplicates polygon-tier features across backends by `osm_id` (keeps the feature with the largest area) |
@@ -289,7 +288,7 @@ All PostgREST calls. Key functions:
 - `fetchPlaygroundCentroids(extent, baseUrl, signal)` — server-shipped, client unused in P1 (kept for federation)
 - `fetchPlaygroundEquipment(extentEPSG3857, osmId, baseUrl)` — equipment within a playground's bbox
 - `fetchStandaloneEquipment(extentEPSG3857, baseUrl)` — pitches + equipment NOT within any playground
-- `fetchTrees`, `fetchNearbyPOIs`, `fetchNearestPlaygrounds`, `fetchMeta`
+- `fetchTrees`, `fetchNearbyPOIs`, `fetchMeta`
 - `fetchPlaygrounds(baseUrl)` — region-scoped legacy fetcher; **deprecated**, logs a one-time console warning, will be removed in the release after next
 
 ### Database API (`importer/api.sql`)
@@ -298,13 +297,13 @@ All PostgREST-exposed functions live in the `api` schema. See [`docs/reference/a
 
 - `get_playground_clusters(z, bbox)` — pre-aggregated cluster buckets with `{count, complete, partial, missing, restricted}`
 - `get_playgrounds_bbox(bbox)` — polygon tier; same response shape as the legacy `get_playgrounds`
-- `get_playground(osm_id)` — single-feature lookup for deeplink/nearby hydration
+- `get_playground(osm_id)` — single-feature lookup for deeplink hydration
 - `get_playground_centroids(bbox)` — lightweight per-feature rows (federation-ready, client unused in P1)
 - `get_meta()` — federation discovery; returns `{relation_id, name, playground_count, complete, partial, missing, bbox}`
 - `get_equipment(bbox)` — equipment within a bounding box (used per selected playground)
 - `get_standalone_equipment(bbox)` — pitches + equipment outside any playground polygon; properties carry every OSM tag plus the `access`/`operator` columns
 - `get_pitch(osm_id)` — single standalone pitch (same shape, same not-in-a-playground rule) for `#P` links; `null` otherwise
-- `get_trees(bbox)`, `get_pois(lat, lon, radius_m)`, `get_nearest_playgrounds(lat, lon)`
+- `get_trees(bbox)`, `get_pois(lat, lon, radius_m)`, `get_nearest_playgrounds(lat, lon)` (frontend no longer calls it, #949)
 - `get_legal(type)` — imprint / legal text fetched from the `legal_content` table
 - `get_playgrounds(relation_id)` — **deprecated** region-scoped variant; SQL `COMMENT` flags it for removal
 

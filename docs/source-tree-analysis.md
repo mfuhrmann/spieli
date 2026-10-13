@@ -53,7 +53,6 @@ spieli/                            ← Monorepo root
 │       │   ├── EquipmentList.svelte ← Renders device/pitch/bench lists in detail panel
 │       │   ├── HoverPreview.svelte ← Floating card on playground hover (desktop)
 │       │   ├── EquipmentTooltip.svelte ← Tooltip on equipment hover
-│       │   ├── NearbyPlaygrounds.svelte ← Nearby list (uses playgroundSourceStore)
 │       │   ├── LocateButton.svelte ← Geolocation button
 │       │   ├── AppShell.svelte    ← Top-level layout shell + deeplink restore
 │       │   ├── BottomSheet.svelte ← Mobile bottom sheet

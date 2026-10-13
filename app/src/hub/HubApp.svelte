@@ -53,7 +53,6 @@
     registryError,
     aggregatedBbox,
     overlapWarnings,
-    fetchNearestAcrossBackends,
   } = createRegistry();
 
   // Track current map viewport in EPSG:4326 for search biasing — same pattern
@@ -349,7 +348,6 @@
   {clusterSource}
   {macroSource}
   searchExtent={viewportExtent}
-  nearestFetcher={fetchNearestAcrossBackends}
   {resolveSlugToBackendUrl}
   {getAllBackendUrls}
   onBackendsUpdate={subscribeBackendsForHashRetry}

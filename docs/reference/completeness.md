@@ -82,7 +82,7 @@ Instead each arc is drawn over a dark casing one pixel proud on each side (`RING
 
 **Known cost:** the rings read heavier. `missing` is the dominant bucket — 625 of 926 playgrounds in Fulda — and slate-600 against a dark casing makes a mostly-unmapped cluster read as a near-black disc at low zoom. Kept for now. The levers are a lighter or thinner casing, or lightening `missing`, which the casing makes possible again. Note the tension there: monotonic lightness wants `missing` darkest, while "the least-mapped state should stay quiet" wants it lightest. This palette currently chooses the ordering.
 
-All colours come from **`app/src/lib/completenessPalette.js`**, which documents which field each surface must use (`base` for anything opaque, `fill` only for shapes the basemap shows through or backgrounds carrying text). Every consumer reads from it: playground polygons, cluster rings, hub macro rings, the legend, the detail-panel badge, the filter dots, the nearby-playgrounds list and the hub instance drawer. Nothing may hardcode these values — picking the wrong field or a stale hex fails silently, with two surfaces simply disagreeing.
+All colours come from **`app/src/lib/completenessPalette.js`**, which documents which field each surface must use (`base` for anything opaque, `fill` only for shapes the basemap shows through or backgrounds carrying text). Every consumer reads from it: playground polygons, cluster rings, hub macro rings, the legend, the detail-panel badge, the filter dots and the hub instance drawer. Nothing may hardcode these values — picking the wrong field or a stale hex fails silently, with two surfaces simply disagreeing.
 
 ## Implementation
 

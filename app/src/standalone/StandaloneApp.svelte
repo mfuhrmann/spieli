@@ -13,7 +13,6 @@
     regionChatUrl,
   } from '../lib/config.js';
   import {
-    fetchNearestPlaygrounds,
     fetchStandaloneEquipment,
   } from '../lib/api.js';
   import { fetchRegionInfo } from '../lib/region.js';
@@ -77,12 +76,6 @@
       unsub();
     };
   });
-
-  // Single-backend PostgREST call. Null in local-dev (no API) so
-  // NearbyPlaygrounds falls back to a distance scan of the loaded source.
-  const nearestFetcher = apiBaseUrl
-    ? (lat, lon) => fetchNearestPlaygrounds(lat, lon, apiBaseUrl)
-    : null;
 
   const dataContribLinks = {
     chatUrl: regionChatUrl,
@@ -311,7 +304,6 @@
   {playgroundSource}
   {clusterSource}
   {searchExtent}
-  {nearestFetcher}
   {dataContribLinks}
   defaultBackendUrl={apiBaseUrl}
 />

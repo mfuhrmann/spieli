@@ -24,7 +24,7 @@ Mapping detail is off by default. Switch it on with the **bar-chart button** nex
 | Dark green | Basic — one of the two, not both |
 | Slate grey | No details yet — the playground exists in OSM but carries no equipment and no details |
 
-With mapping detail on, the playground panel also shows the playground's mapping-detail badge, and the nearby list colours its dots by mapping detail; with it off, neither appears.
+With mapping detail on, the playground panel also shows the playground's mapping-detail badge; with it off, it does not.
 
 Your choice is remembered in this browser. To send someone a link that opens with mapping detail on — say, to a fellow mapper — add `?detail=1` to the address (for example `…/fulda?detail=1`), or use the share button on a playground while mapping detail is on: the link it copies includes it. Opening such a link does not change the other person's own setting; `?detail=0` does the opposite.
 

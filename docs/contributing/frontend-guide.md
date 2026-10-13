@@ -22,13 +22,13 @@ The app uses Svelte writable stores (`src/stores/`). Components import stores di
 
 | Store | Shape | Who writes | Who reads |
 |---|---|---|---|
-| `selection` | `{ feature: OlFeature\|null, backendUrl: string }` | Map.svelte (click), AppShell (deeplink restore) | PlaygroundPanel, NearbyPlaygrounds |
+| `selection` | `{ feature: OlFeature\|null, backendUrl: string }` | Map.svelte (click), AppShell (deeplink restore) | PlaygroundPanel |
 | `filterStore` | `{ private: bool, water: bool, baby: bool, … }` | FilterPanel, MappingDetailControl, FilterChips | the popovers' own checkboxes — everything else reads `effectiveFilterStore` |
 | `effectiveFilterStore` | derived from `filterStore` + `mappingDetail` | — | Map.svelte (polygon visibility), StandaloneApp/HubApp (tier refetch → cluster params, macro aggregates), FilterChips |
 | `mappingDetail` | `boolean` (default `false`; `localStorage` + `?detail=1\|0`) | MappingDetailControl | Map.svelte (cluster/polygon/macro style), AppShell (legend), PlaygroundPanel (share link), `effectiveFilterStore` |
 | `activeTierStore` | `null \| 'cluster' \| 'polygon' \| 'macro'` | tieredOrchestrator | Map.svelte (layer visibility) |
 | `overlayFeaturesStore` | `{ equipment: [], trees: [] }` | PlaygroundPanel | Map.svelte (equipment/tree layers) |
-| `playgroundSourceStore` | OL VectorSource \| null | Map.svelte | NearbyPlaygrounds, AppShell |
+| `playgroundSourceStore` | OL VectorSource \| null | Map.svelte | AppShell |
 | `mapStore` | OL Map \| null | Map.svelte | LocateButton, other map-interacting components |
 | `location` | `{ lat, lon, accuracy } \| null` | LocateButton (manual + auto-locate) | Map.svelte (location marker), PlaygroundPanel (navigation origin) |
 | `regionFramingApplied` | `null \| true \| false` (region-URL framing outcome; `false` → unresolved, map left at default extent) | StandaloneApp | LocateButton (auto-locate centering decision) |
@@ -247,7 +247,7 @@ $: titleLang = hasOsmName(attr) ? regionLang : $locale;
 ```
 
 Current name render sites: `HoverPreview`, `PlaygroundPanel` (both header
-variants), `NearbyPlaygrounds`. If you add another, annotate it — an
+variants). If you add another, annotate it — an
 unannotated name silently inherits the interface language.
 
 ## The search combobox
@@ -305,9 +305,9 @@ Reference them with `var(--color-primary)` and friends, never as literals. The l
 
 Each bucket exposes `base`, `fill`, `stroke` and `hatch`. The module documents which surface uses which field; the short version is that anything opaque takes `base`, and only shapes the basemap shows through — or backgrounds carrying text — take `fill`. Getting this wrong is silent: nothing errors, two surfaces simply render the same bucket in different colours.
 
-Consumers today: `vectorStyles.js` (polygons), `clusterStyle.js`, `hub/macroRingStyle.js`, `CompletenessLegend.svelte`, `PlaygroundPanel.svelte`, `MappingDetailControl.svelte`, `NearbyPlaygrounds.svelte`, `hub/InstancePanelDrawer.svelte`.
+Consumers today: `vectorStyles.js` (polygons), `clusterStyle.js`, `hub/macroRingStyle.js`, `CompletenessLegend.svelte`, `PlaygroundPanel.svelte`, `MappingDetailControl.svelte`, `hub/InstancePanelDrawer.svelte`.
 
-Svelte `<style>` blocks cannot import, so components that colour elements via CSS classes read the palette in `<script>` and expose it as custom properties (`--detail-complete` and friends) on the wrapping element. `NearbyPlaygrounds` and `InstancePanelDrawer` follow that pattern — copy it rather than reintroducing literals.
+Svelte `<style>` blocks cannot import, so components that colour elements via CSS classes read the palette in `<script>` and expose it as custom properties (`--detail-complete` and friends) on the wrapping element. `InstancePanelDrawer` follows that pattern — copy it rather than reintroducing literals.
 
 Two rendering traps worth knowing:
 

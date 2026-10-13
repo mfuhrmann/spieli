@@ -118,13 +118,7 @@
     "near": "near {name}"
   },
   "nearby": {
-    "title": "Near {label}",
-    "header": "Nearby",
-    "loading": "Loading …",
-    "empty": "No playgrounds found.",
-    "unknownName": "Unknown playground",
-    "defaultName": "Playground",
-    "thisLocation": "this location"
+    "defaultName": "Playground"
   },
   "equipment": {
     "deviceCount": "{count, plural, one {# piece of equipment} other {# pieces of equipment}}",

@@ -8,7 +8,7 @@ PostgREST exposes the `api` schema as JSON-RPC endpoints under `/api/rpc/`. All 
 |---|---|---|
 | [`get_playground_clusters`](#get_playground_clustersz-bbox) | Standalone cluster tier | zoom ≤ `clusterMaxZoom` |
 | [`get_playgrounds_bbox`](#get_playgrounds_bboxbbox) | Standalone polygon tier | zoom > `clusterMaxZoom` |
-| [`get_playground`](#get_playgroundosm_id) | Deeplink restore, nearby-list hydration | single feature |
+| [`get_playground`](#get_playgroundosm_id) | Deeplink restore | single feature |
 | [`get_playground_centroids`](#get_playground_centroidsbbox-server-only-in-p1) | Federation re-clustering (P2), not consumed by standalone | server-shipped |
 | [`get_equipment`](#get_equipmentbbox) | PlaygroundPanel | devices, pitches, benches within a bbox |
 | [`get_standalone_equipment`](#get_standalone_equipmentbbox) | Standalone pitch layer | pitches/benches outside playgrounds |
@@ -16,7 +16,7 @@ PostgREST exposes the `api` schema as JSON-RPC endpoints under `/api/rpc/`. All 
 | [`get_pois`](#get_poislat-lon-radius_m) | PlaygroundPanel | nearby toilets, bus stops, cafés |
 | [`get_trees`](#get_treesbbox) | PlaygroundPanel tree layer | natural=tree nodes and natural=tree_row lines |
 | [`get_meta`](#get_meta) | Hub federation discovery | instance metadata + import freshness |
-| [`get_nearest_playgrounds`](#get_nearest_playgroundslat-lon) | NearbyPlaygrounds component | ordered by distance |
+| [`get_nearest_playgrounds`](#get_nearest_playgroundslat-lon) | Not used by the frontend since #949 | ordered by distance |
 | [`get_playgrounds` (deprecated)](#deprecated-get_playgroundsrelation_id) | Legacy fallback | region-scoped, will be removed |
 
 ## Two-tier client contract
@@ -32,7 +32,7 @@ Single-feature hydration on demand:
 
 | Use case | RPC |
 |---|---|
-| Deeplink restore at low zoom; nearby-list selection of a not-yet-loaded playground | `get_playground(osm_id)` |
+| Deeplink restore at low zoom | `get_playground(osm_id)` |
 
 A third bbox-scoped RPC, `get_playground_centroids(bbox)`, ships server-side for future use (federated re-clustering across backends, lighter mid-zoom payloads) but is not consumed by the standalone client in this release.
 
@@ -142,7 +142,7 @@ The equipment booleans are aggregated across all equipment within the playground
 
 ## `get_playground(osm_id)`
 
-Single-feature lookup used by the deeplink-hydration and nearby-list fallback paths when the polygon source isn't populated for the current viewport (cluster tier on first load).
+Single-feature lookup used by the deeplink-hydration path when the polygon source isn't populated for the current viewport (cluster tier on first load).
 
 **Parameters**
 
@@ -449,7 +449,7 @@ curl 'https://example.com/api/rpc/get_legal?type=impressum'
 
 ## `get_nearest_playgrounds(lat, lon)`
 
-Returns the nearest playgrounds to a WGS84 point, ordered by distance ascending. Used by the `NearbyPlaygrounds` component. Returns an empty array when `apiBaseUrl` is empty (Overpass fallback, used in local frontend dev without a database).
+Returns the nearest playgrounds to a WGS84 point, ordered by distance ascending. The frontend no longer calls it — the nearby list under the search field was removed (#949); it stays so hubs on older releases keep working.
 
 **Parameters**
 

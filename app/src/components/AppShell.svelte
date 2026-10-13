@@ -9,7 +9,6 @@
 
   import HoverPreview from './HoverPreview.svelte';
   import EquipmentTooltip from './EquipmentTooltip.svelte';
-  import NearbyPlaygrounds from './NearbyPlaygrounds.svelte';
   import DataContributionModal from './DataContributionModal.svelte';
   import CompletenessLegend from './CompletenessLegend.svelte';
   import MappingDetailControl from './MappingDetailControl.svelte';
@@ -30,8 +29,7 @@
 
   /**
    * The OL VectorSource that renders the polygon tier (zoom ≥ 14). The shell
-   * passes it to the Map and to widgets that need to scan features
-   * (NearbyPlaygrounds fallback, URL-hash restore).
+   * passes it to the Map and to the URL-hash restore.
    * @type {import('ol/source/Vector.js').default}
    */
   export let playgroundSource;
@@ -57,14 +55,6 @@
    * @type {import('svelte/store').Readable<[number,number,number,number]|null>}
    */
   export let searchExtent;
-
-  /**
-   * `(lat, lon) => Promise<Array<{ osm_id, name, distance_m, ... }>>` returning
-   * distance-sorted nearby playgrounds. Standalone wires this to a single
-   * PostgREST call; hub wires it to a multi-backend merge.
-   * @type {(lat: number, lon: number) => Promise<Array>}
-   */
-  export let nearestFetcher = null;
 
   /**
    * Links shown in the info modal.
@@ -333,29 +323,7 @@
 
   let dataModalOpen  = false;
 
-  // Nearest-playground suggestions panel
-  let nearbyLocation = null;  // { lat, lon } | null
-  let dismissUnsub = null;
-
-  function handleLocation(lat, lon) {
-    if (dismissUnsub) { dismissUnsub(); dismissUnsub = null; }
-    if (lat === null) { nearbyLocation = null; return; }
-    nearbyLocation = { lat, lon };
-    let first = true;
-    dismissUnsub = selection.subscribe(() => {
-      if (first) { first = false; return; }
-      nearbyLocation = null;
-      if (dismissUnsub) { dismissUnsub(); dismissUnsub = null; }
-    });
-  }
-
-  function dismissNearby() {
-    nearbyLocation = null;
-    if (dismissUnsub) { dismissUnsub(); dismissUnsub = null; }
-  }
-
   onDestroy(() => {
-    if (dismissUnsub) dismissUnsub();
     clearTimeout(panelBlockTimer);
   });
 
@@ -474,16 +442,7 @@
 
   {#if !(isMobile && $hasSelection)}
     <div class="search-area">
-      <SearchBar regionExtent={$searchExtent} onlocation={handleLocation} />
-      {#if nearbyLocation}
-        <NearbyPlaygrounds
-          lat={nearbyLocation.lat}
-          lon={nearbyLocation.lon}
-          fetcher={nearestFetcher}
-          {defaultBackendUrl}
-          ondismiss={dismissNearby}
-        />
-      {/if}
+      <SearchBar regionExtent={$searchExtent} />
       {#if $mappingDetail && !isMobile && !$hasSelection}
         <CompletenessLegend />
       {/if}
@@ -507,7 +466,7 @@
     </div>
 
     <div class="controls-bottom-right">
-      <LocateButton onlocation={handleLocation} />
+      <LocateButton />
       <div class="zoom-controls">
         <button
           class="zoom-btn zoom-in"

@@ -21,9 +21,6 @@
   import { _ } from 'svelte-i18n';
   import { onMount, onDestroy } from 'svelte';
 
-  /** Called with (lat, lon) after a GPS fix is obtained. */
-  export let onlocation = null;
-
   let locating = false;
   let error = '';
   let watchId = null;
@@ -52,7 +49,6 @@
           const coord = fromLonLat([longitude, latitude]);
           $mapStore?.getView().animate({ center: coord, zoom: 16 });
         }
-        if (onlocation) onlocation(latitude, longitude);
         startWatch();
       },
       err => {

@@ -1,11 +1,11 @@
 // Hub registry — loads the registry JSON, fetches per-backend metadata
 // (`get_meta`) on a 5-min poll, exposes the resulting `backends` readable
-// store, and provides a multi-backend nearest-playground fetcher.
+// store.
 //
 // Note (P2 §3): the eager `get_playgrounds(relation_id)` fetch that this
 // module used to do at startup has moved to `hubOrchestrator.js`, which
 // fans out the per-tier RPCs (clusters / bbox-polygons) on every moveend.
-// The registry now only handles registry discovery + metadata + nearest.
+// The registry now only handles registry discovery + metadata.
 
 import { readable, writable, derived } from 'svelte/store';
 import { registryUrl, hubPollInterval } from '../lib/config.js';
@@ -14,14 +14,6 @@ import { isValidSlug } from '../lib/deeplink.js';
 import { startFederationHealthPoll, stopFederationHealthPoll } from './federationHealth.js';
 import { parseNominalCentroid } from './centroid.js';
 import booleanContains from '@turf/boolean-contains';
-
-// Per-backend timeout for multi-backend nearest fan-out. A slow or unreachable
-// backend contributes zero results but never stalls the user interaction.
-const NEAREST_TIMEOUT_MS = 3000;
-const NEAREST_DEFAULT_LIMIT = 10;
-// Discard results from backends that are farther away than this — prevents
-// a distant backend from polluting the list with its own "nearby" playgrounds.
-const NEAREST_MAX_DISTANCE_M = 25_000;
 
 /**
  * Backend status shape:
@@ -58,7 +50,6 @@ const NEAREST_MAX_DISTANCE_M = 25_000;
  *   backends: import('svelte/store').Readable<Array>,
  *   registryError: import('svelte/store').Readable<string|null>,
  *   aggregatedBbox: import('svelte/store').Readable<number[]|null>,
- *   fetchNearestAcrossBackends: (lat: number, lon: number, limit?: number) => Promise<Array>,
  * }}
  */
 export function createRegistry() {
@@ -277,38 +268,11 @@ export function createRegistry() {
     return warnings;
   });
 
-  // Multi-backend nearest-playground search.
-  //
-  // Fires `get_nearest_playgrounds` against every registered backend in
-  // parallel with a per-backend AbortController timeout. Slow or failing
-  // backends contribute zero results but never block the response.
-  async function fetchNearestAcrossBackends(lat, lon, limit = NEAREST_DEFAULT_LIMIT) {
-    const results = await Promise.all(
-      backends.map(b => fetchNearestOne(b, lat, lon).catch(() => []))
-    );
-
-    // Flatten, dedupe by osm_id (keeping the closest), sort, truncate.
-    const byOsmId = new Map();
-    for (const items of results) {
-      for (const item of items) {
-        const existing = byOsmId.get(item.osm_id);
-        if (!existing || item.distance_m < existing.distance_m) {
-          byOsmId.set(item.osm_id, item);
-        }
-      }
-    }
-    return [...byOsmId.values()]
-      .sort((a, b) => a.distance_m - b.distance_m)
-      .filter(item => item.distance_m <= NEAREST_MAX_DISTANCE_M)
-      .slice(0, limit);
-  }
-
   return {
     backends:                   store,
     registryError,
     aggregatedBbox,
     overlapWarnings,
-    fetchNearestAcrossBackends,
   };
 }
 
@@ -319,31 +283,4 @@ function normaliseSlug(raw, url) {
   if (isValidSlug(raw)) return raw;
   console.warn(`[registry] invalid slug "${raw}" on backend ${url} — treating as missing`);
   return null;
-}
-
-/** Per-backend nearest-playgrounds call with a timeout. Returns [] on any
- *  error, timeout, or non-OK response so a single bad backend never blocks
- *  the merged result. Attaches `_backendUrl` / `_backendSlug` to each item
- *  for downstream feature lookup + deep-link writing. */
-async function fetchNearestOne(backend, lat, lon) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), NEAREST_TIMEOUT_MS);
-  try {
-    const params = new URLSearchParams({ lat, lon });
-    const res = await fetch(
-      `${backend.url}/rpc/get_nearest_playgrounds?${params}`,
-      { signal: controller.signal }
-    );
-    if (!res.ok) return [];
-    const items = await res.json();
-    return items.map(item => ({
-      ...item,
-      _backendUrl:  backend.url,
-      _backendSlug: backend.slug ?? null,
-    }));
-  } catch {
-    return [];
-  } finally {
-    clearTimeout(timer);
-  }
 }
