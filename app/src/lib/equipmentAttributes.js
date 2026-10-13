@@ -186,16 +186,36 @@ export function getEquipmentAttributesFromProps(props, t) {
         html += '<ul>' + content.map(c => `<li>${c}</li>`).join('') + '</ul>';
     }
 
-    // Fallback image when no panoramax photo and no attributes
+    const deviceKey = g('playground');
+    const sportRaw  = g('sport');
+    // The onerror no longer FALLS BACK to a second host — that was the
+    // undisclosed request — but it still hides the wrapper. The build
+    // established that the URL resolved when it ran; a file renamed
+    // upstream since then would otherwise leave a broken-image icon
+    // captioned "Symbolbild", which is worse than showing nothing.
+    const onerror = "this.closest('.device-img-wrap').style.display='none'";
+
+    // Pitches: the illustration shows whenever there is no photo, below the
+    // attributes rather than instead of them. A pitch almost always carries
+    // surface= at least, so the device rule ("only when nothing else is
+    // known") would have hidden nearly every pitch illustration (#966).
+    if (leisure === 'pitch' && !panoramaxUuid && sportRaw && pitchImageFor(sportRaw)) {
+        const img = resolvedImage(pitchImageFor(sportRaw));
+        if (img) {
+            // Alt text in the visitor's language, not the raw tag value.
+            const alt = sportRaw.split(';').map(s => s.trim()).filter(Boolean)
+                .map(s => tl(t, `equipment.pitches.${s}`, s)).join(' / ');
+            html += `<div class="device-img-wrap">` +
+                `<img src="${escapeHtml(img.url)}"` +
+                ` alt="${escapeHtml(alt)}" loading="lazy" referrerpolicy="no-referrer"` +
+                ` onerror="${onerror}" style="object-fit:contain;width:100%">` +
+                `<p class="mb-0 text-muted" style="font-size:0.75rem;"><span class="bi bi-image"></span> ` +
+                `${escapeHtml(t('popup.deviceSymbol'))}${imageCredit(img)}</p></div>`;
+        }
+    }
+
+    // Fallback image for a device when no panoramax photo and no attributes
     if (!html && !panoramaxUuid) {
-        const deviceKey = g('playground');
-        const sportRaw  = g('sport');
-        // The onerror no longer FALLS BACK to a second host — that was the
-        // undisclosed request — but it still hides the wrapper. The build
-        // established that the URL resolved when it ran; a file renamed
-        // upstream since then would otherwise leave a broken-image icon
-        // captioned "Symbolbild", which is worse than showing nothing.
-        const onerror = "this.closest('.device-img-wrap').style.display='none'";
         if (deviceKey && objDevices[deviceKey]?.image) {
             const img = resolvedImage(objDevices[deviceKey].image);
             if (img) {
@@ -203,16 +223,6 @@ export function getEquipmentAttributesFromProps(props, t) {
                 html = `<div class="device-img-wrap">` +
                     `<img src="${escapeHtml(img.url)}"` +
                     ` alt="${escapeHtml(altText)}" loading="lazy" referrerpolicy="no-referrer"` +
-                    ` onerror="${onerror}" style="object-fit:contain;width:100%">` +
-                    `<p class="mb-0 text-muted" style="font-size:0.75rem;"><span class="bi bi-image"></span> ` +
-                    `${escapeHtml(t('popup.deviceSymbol'))}${imageCredit(img)}</p></div>`;
-            }
-        } else if (leisure === 'pitch' && sportRaw && pitchImageFor(sportRaw)) {
-            const img = resolvedImage(pitchImageFor(sportRaw));
-            if (img) {
-                html = `<div class="device-img-wrap">` +
-                    `<img src="${escapeHtml(img.url)}"` +
-                    ` alt="${escapeHtml(sportRaw)}" loading="lazy" referrerpolicy="no-referrer"` +
                     ` onerror="${onerror}" style="object-fit:contain;width:100%">` +
                     `<p class="mb-0 text-muted" style="font-size:0.75rem;"><span class="bi bi-image"></span> ` +
                     `${escapeHtml(t('popup.deviceSymbol'))}${imageCredit(img)}</p></div>`;

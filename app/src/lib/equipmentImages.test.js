@@ -80,6 +80,16 @@ const t = (key) => key;   // the translate function is only used for labels
         assert.ok(!/onerror="[^"]*this\.src/.test(html), `pitch sport=${sport}'s onerror assigns a new src`);
         assert.ok(html.includes(t('popup.deviceSymbol')), `pitch sport=${sport} lacks the example-image caption`);
     }
+    // A tagged pitch (surface= is nearly universal) shows its attributes AND
+    // the illustration, not one instead of the other (#966).
+    const tagged = getEquipmentAttributesFromProps(
+        { leisure: 'pitch', sport: 'soccer', surface: 'grass', osm_type: 'W', osm_id: '1' }, t).html;
+    assert.ok(tagged.includes('<ul>') && tagged.includes('<img'), 'tagged pitch lost its illustration');
+    // A photo takes precedence over the illustration.
+    assert.ok(!getEquipmentAttributesFromProps(
+        { leisure: 'pitch', sport: 'soccer', panoramax: 'abc', osm_type: 'W', osm_id: '1' }, t).html.includes('<img'));
+    // Alt text is the translated sport label, not the raw tag.
+    assert.match(render('soccer'), /alt="equipment\.pitches\.soccer"/);
     // Deliberately unillustrated: no free hockey pitch diagram on Commons.
     assert.equal(pitchImages.hockey, undefined);
     assert.equal(pitchImages.field_hockey, undefined);

@@ -188,8 +188,14 @@
     </ul>
   {/if}
 
+  {#snippet pitchLabel(label, themeVal)}
+    <span style="color:{objColors['fallback']}">◦</span>
+    {label}
+    {#if themeVal}<span class="dev-theme" title={themeName(themeVal, $_)} aria-label={themeName(themeVal, $_)}>{themeIcon(themeVal)}</span>{/if}
+  {/snippet}
+
   <!-- Detailed device list (mapped individually) -->
-  {#if deviceFeatures.length || fitnessFeatures.length || pitchFeatures.length}
+{#if deviceFeatures.length || fitnessFeatures.length || pitchFeatures.length}
     <ul class="mb-0 device-list">
       {#each devicesByType as { items, collapsed } (items[0].properties.playground)}
         {@const key = items[0].properties.playground}
@@ -328,35 +334,33 @@
           </button>
           {#if openItems.has('pitches')}
             <ul class="group-children">
-              {#each pitchFeatures as f (f.properties.osm_id)}
+              {#each pitchFeatures as f, i (f.properties.osm_id)}
                 {@const sports = (f.properties.sport ?? '').split(';').map(s => s.trim()).filter(Boolean)}
                 {@const label = sports.length
                   ? sports.map(s => $_('equipment.pitches.' + s, { default: s })).join(' / ')
                   : $_('equipment.pitchDefault')}
                 {@const detail = getEquipmentAttributesFromProps(f.properties, $_)}
                 {@const themeVal = themeOf(f.properties)}
-                {@const pid = 'pitch-' + uid(f)}
+                <!-- Stable per pitch: uid() falls back to Math.random() without
+                     an osm_id, which would change on every render. -->
+                {@const pid = `pitch-${f.properties.osm_type ?? ''}${f.properties.osm_id ?? i}`}
                 <li class="pitch-sub">
                   <span class="pitch-sub-row">
                     {#if detail.html}
-                      <!-- Expandable like a device row: the illustration (#962)
-                           would otherwise be generated and shown nowhere (#966). -->
+                      <!-- Expandable like a device row: the attributes and the
+                           illustration (#962) were otherwise shown nowhere (#966). -->
                       <button type="button" class="device-toggle pitch-toggle" onclick={() => toggleItem(pid)}
-                        aria-expanded={openItems.has(pid)}>
-                        <span style="color:{objColors['fallback']}">◦</span>
-                        {label}
-                        {#if themeVal}<span class="dev-theme" title={themeName(themeVal, $_)} aria-label={themeName(themeVal, $_)}>{themeIcon(themeVal)}</span>{/if}
-                        <span class="bi {openItems.has(pid) ? 'bi-chevron-up' : 'bi-chevron-down'} device-chevron"></span>
+                        aria-expanded={openItems.has(pid)} aria-controls={pid}>
+                        {@render pitchLabel(label, themeVal)}
+                        <span class="bi {openItems.has(pid) ? 'bi-chevron-up' : 'bi-chevron-down'} device-chevron" aria-hidden="true"></span>
                       </button>
                     {:else}
-                      <span style="color:{objColors['fallback']}">◦</span>
-                      {label}
-                      {#if themeVal}<span class="dev-theme" title={themeName(themeVal, $_)} aria-label={themeName(themeVal, $_)}>{themeIcon(themeVal)}</span>{/if}
+                      {@render pitchLabel(label, themeVal)}
                     {/if}
                     <MapCompleteLink href={detail.mcUrl} label="" />
                   </span>
                   {#if detail.html && openItems.has(pid)}
-                    <div class="device-detail">{@html detail.html}</div>
+                    <div class="device-detail" id={pid}>{@html detail.html}</div>
                   {/if}
                   {#if detail.panoramaxUuid}
                     <button type="button" class="pitch-photo-btn" onclick={() => modalUuid = detail.panoramaxUuid} title={$_('popup.devicePhoto')}>
