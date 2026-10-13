@@ -2266,7 +2266,7 @@
 </tr>
 <tr>
 <td><code>GET /api/rpc/get_playground_clusters</code></td>
-<td>Pre-aggregated cluster buckets <code>{lon, lat, count, complete, partial, missing, restricted}</code> for a viewport</td>
+<td>Pre-aggregated cluster buckets <code>{lon, lat, count, complete, partial, missing}</code> for a viewport</td>
 <td>cluster tier (zoom ≤ <code>clusterMaxZoom</code>)</td>
 </tr>
 <tr>
@@ -2286,9 +2286,9 @@
 </tr>
 </tbody>
 </table>
-<p>CORS is enabled on <code>/api/</code> so the Hub can query instances cross-origin from the browser. Backends running pre-P1 releases (no tier RPCs, no completeness extension to <code>get_meta</code>) still join successfully — the macro view shows them as "mapping detail unknown" (flat gray ring) and the cluster tier silently skips them rather than burning bandwidth on a region-wide legacy fetch that would be discarded.</p>
+<p>CORS is enabled on <code>/api/</code> so the Hub can query instances cross-origin from the browser. Backends running pre-P1 releases (no tier RPCs, no completeness extension to <code>get_meta</code>) still join successfully — the macro view shows them as "mapping detail unknown" (flat violet ring) and the cluster tier silently skips them rather than burning bandwidth on a region-wide legacy fetch that would be discarded.</p>
 <h2 id="registry">Registry<a class="headerlink" href="#registry" title="Permanent link">&para;</a></h2>
-<p>The Hub discovers instances from a <code>registry.json</code> file — see the <a href="../registry-json/"><code>registry.json</code> reference</a> for schema, slug rules, and the derived aggregate behaviours (aggregated bounding box, multi-backend nearest search).</p>
+<p>The Hub discovers instances from a <code>registry.json</code> file — see the <a href="../registry-json/"><code>registry.json</code> reference</a> for schema, slug rules, and the derived aggregate behaviours (aggregated bounding box).</p>
 <h2 id="hub-ui">Hub UI<a class="headerlink" href="#hub-ui" title="Permanent link">&para;</a></h2>
 <p>The Hub renders the same layout as a standalone regional map, with two additions:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>┌────────────────────────────────────────────────────────────┐
@@ -2357,7 +2357,8 @@
 <h3 id="country-level-macro-view">Country-level macro view<a class="headerlink" href="#country-level-macro-view" title="Permanent link">&para;</a></h3>
 <p>At <code>zoom ≤ macroMaxZoom</code> the Hub renders one ring per registered backend, sized by <code>playground_count</code> and segmented by the <code>{complete, partial, missing}</code> counts the P1 <code>get_meta</code> extension ships. No per-playground fetch is issued at this zoom — the rings come entirely from the cached registry metadata.</p>
 <p>Clicking a ring animates <code>view.fit</code> to the backend's bbox, which lands in the cluster or polygon tier and triggers a tier fetch scoped to that backend only.</p>
-<p>Each ring has one of four visual states, driven by <code>federation-status.json</code> (see <a href="../../ops/monitoring/">Monitoring</a>) and the cached <code>get_meta</code> response:</p>
+<p>With mapping detail off (the default, #924) a healthy backend is a plain emerald disc with its count; the segmented ring below appears only while mapping detail is on. "Unfiltered" likewise draws the disc instead of the segments; the other states look the same in both views.</p>
+<p>Each ring has one of these visual states, driven by <code>federation-status.json</code> (see <a href="../../ops/monitoring/">Monitoring</a>), the cached <code>get_meta</code> response and, with a filter active, the filtered fan-out:</p>
 <table>
 <thead>
 <tr>
@@ -2369,7 +2370,7 @@
 <tbody>
 <tr>
 <td><strong>Healthy</strong></td>
-<td>Coloured segments (green / amber / red / gray) + count in centre</td>
+<td>Mapping-detail segments (light green / dark green / slate, see <a href="../completeness/#colours">Colours</a>; flat violet when the backend predates the completeness counts) + count in centre; an emerald disc with mapping detail off</td>
 <td>Backend reachable, data present</td>
 </tr>
 <tr>
@@ -2387,9 +2388,19 @@
 <td>Solid amber ring + "no data" label</td>
 <td>Backend reachable, not importing, but playground count is zero</td>
 </tr>
+<tr>
+<td><strong>Unfiltered</strong></td>
+<td>Full ring + dashed grey halo + "unfiltered" label</td>
+<td>A filter is active but this backend could not apply it (no bbox, or an older release), so its whole catalogue is shown</td>
+</tr>
+<tr>
+<td><strong>No match</strong></td>
+<td>Grey ring + "no match" label</td>
+<td>Healthy backend, but the active filter excludes every playground</td>
+</tr>
 </tbody>
 </table>
-<p>Pre-P1 backends that omit the completeness fields from <code>get_meta</code> render as a flat gray ring (all count mapped into the "restricted / unknown" segment) so the operator sees "mapping detail unknown" rather than a misleading all-zero healthy ring.</p>
+<p>Pre-P1 backends that omit the completeness fields from <code>get_meta</code> render as a flat violet ring (the whole count in the "unknown" slot, internally <code>restricted</code>) so the operator sees "mapping detail unknown" rather than a misleading all-zero healthy ring.</p>
 <h3 id="architecture-flow">Architecture flow<a class="headerlink" href="#architecture-flow" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>flowchart LR
 <a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    user[User pans / zooms map] --&gt; moveend[Debounced moveend&lt;br/&gt;300 ms]

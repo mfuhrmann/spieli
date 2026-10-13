@@ -2266,7 +2266,7 @@
 </tr>
 </tbody>
 </table>
-<p>With mapping detail on, the playground panel also shows the playground's mapping-detail badge, and the nearby list colours its dots by mapping detail; with it off, neither appears.</p>
+<p>With mapping detail on, the playground panel also shows the playground's mapping-detail badge; with it off, it does not.</p>
 <p>Your choice is remembered in this browser. To send someone a link that opens with mapping detail on — say, to a fellow mapper — add <code>?detail=1</code> to the address (for example <code>…/fulda?detail=1</code>), or use the share button on a playground while mapping detail is on: the link it copies includes it. Opening such a link does not change the other person's own setting; <code>?detail=0</code> does the opposite.</p>
 <p>Play equipment means slides, swings, climbing frames and the like, plus ball courts. A bench or picnic table on its own does not make a playground "basic" — those are useful to know about, but they say nothing about whether there is anything to play on.</p>
 <p>With mapping detail on, a playground's panel also says under its badge what is missing for the next step — for example "Only the play equipment is missing for 'detailed'" — with a link that opens this playground in MapComplete to add it. Detailed playgrounds get no hint.</p>
@@ -2274,7 +2274,7 @@
 <p>The colours describe the OSM data, not the real-world quality of the playground. The lowest step means nobody has mapped it yet, which is an invitation to help rather than a warning.</p>
 <h2 id="finding-playgrounds">Finding playgrounds<a class="headerlink" href="#finding-playgrounds" title="Permanent link">&para;</a></h2>
 <p><strong>Search:</strong> Type a place name, street, or city into the search box (top bar). The map moves to the matching location.</p>
-<p>Suggestions appear once you have typed two characters. You can work the list entirely from the keyboard — <strong>↓</strong> and <strong>↑</strong> move through the suggestions, <strong>Enter</strong> jumps to the highlighted one (or runs a plain search if none is highlighted), and <strong>Esc</strong> closes the list without leaving the box. Screen readers announce the list, your position in it, and whether a search is still running.</p>
+<p>Suggestions appear once you have typed two characters. You can work the list entirely from the keyboard — <strong>↓</strong> and <strong>↑</strong> move through the suggestions, <strong>Enter</strong> jumps to the highlighted one (or runs a plain search if none is highlighted), and <strong>Esc</strong> closes the list without leaving the box — it also cancels a search you have typed but that has not run yet, so the list does not pop back up a moment later. Screen readers announce the list, your position in it, and whether a search is still running.</p>
 <p><strong>My location:</strong> Tap the location button to centre the map on your current position. Your position is shown as a pulsing blue dot; at high zoom a translucent circle indicates the GPS accuracy. If your browser already granted location permission, spieli auto-locates on page load (unless you opened a deeplink or region link).</p>
 <blockquote>
 <p><strong>Note:</strong> Geolocation requires HTTPS and your browser's permission. If the button does nothing, check your browser's location settings.</p>
@@ -2414,12 +2414,12 @@
 <ul>
 <li>Name, operator, opening hours (when mapped)</li>
 <li>Surface type and size, and lighting when it is mapped (most playgrounds do not record it yet, so nothing is shown then)</li>
-<li>Status pills — completeness, data age, and (when tagged) a shade pill (Shaded / No shade), baby / toddler suitability, and wheelchair-friendly equipment (see <a href="#wheelchair-accessibility">Wheelchair accessibility</a>)</li>
+<li>Status pills — the mapping-detail badge (only while <a href="#mapping-detail-colours">mapping detail</a> is on), data age, and (when tagged) a shade pill (Shaded / No shade), baby / toddler suitability, and wheelchair-friendly equipment (see <a href="#wheelchair-accessibility">Wheelchair accessibility</a>)</li>
 <li>Theme highlight — a symbol for playgrounds with a theme, such as a ship or castle (see <a href="#playground-themes">Playground themes</a>)</li>
 <li>Equipment list — devices, pitches, benches, and their sub-attributes, including each item's surface when tagged</li>
 <li>Street-level photos (from Panoramax, when available)</li>
 <li>Community reviews (from Mangrove.reviews, when available)</li>
-<li>Nearby POIs — toilets, cafés, bus stops, and pharmacies within 500 m</li>
+<li>Nearby places — toilets, bus stops, ice cream, shops (supermarket, convenience store, bakery), drugstores and emergency care around the playground (within a few kilometres; the site's operator sets the radius)</li>
 <li>A "Take me there" button that opens navigation to the playground (geo: URL on mobile, OSM directions on desktop)</li>
 <li>A "Contribute data" link to add or improve information in OpenStreetMap via MapComplete</li>
 </ul>

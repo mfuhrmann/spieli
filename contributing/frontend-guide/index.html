@@ -2476,7 +2476,7 @@
 <td><code>selection</code></td>
 <td><code>{ feature: OlFeature\|null, backendUrl: string }</code></td>
 <td>Map.svelte (click), AppShell (deeplink restore)</td>
-<td>PlaygroundPanel, NearbyPlaygrounds</td>
+<td>PlaygroundPanel</td>
 </tr>
 <tr>
 <td><code>filterStore</code></td>
@@ -2512,7 +2512,7 @@
 <td><code>playgroundSourceStore</code></td>
 <td>OL VectorSource | null</td>
 <td>Map.svelte</td>
-<td>NearbyPlaygrounds, AppShell</td>
+<td>AppShell</td>
 </tr>
 <tr>
 <td><code>mapStore</code></td>
@@ -2804,7 +2804,7 @@ and the returned string cannot tell you which. Ask <code>hasOsmName(attr)</code>
 <a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>&lt;h2 lang={titleLang}&gt;{getPlaygroundTitle(attr, $_)}&lt;/h2&gt;
 </code></pre></div>
 <p>Current name render sites: <code>HoverPreview</code>, <code>PlaygroundPanel</code> (both header
-variants), <code>NearbyPlaygrounds</code>. If you add another, annotate it — an
+variants). If you add another, annotate it — an
 unannotated name silently inherits the interface language.</p>
 <h2 id="the-search-combobox">The search combobox<a class="headerlink" href="#the-search-combobox" title="Permanent link">&para;</a></h2>
 <p><code>SearchBar.svelte</code> implements the <a href="https://www.w3.org/WAI/ARIA/apg/patterns/combobox/">ARIA 1.2 combobox pattern</a> over the Nominatim suggestion list. If you touch it, keep these invariants:</p>
@@ -2865,8 +2865,8 @@ unannotated name silently inherits the interface language.</p>
 <h3 id="the-mapping-detail-palette">The mapping-detail palette<a class="headerlink" href="#the-mapping-detail-palette" title="Permanent link">&para;</a></h3>
 <p><code>src/lib/completenessPalette.js</code> is the single source of truth for the three mapping-detail colours (<code>complete</code> / <code>partial</code> / <code>missing</code>). <strong>Never hardcode these values anywhere else.</strong></p>
 <p>Each bucket exposes <code>base</code>, <code>fill</code>, <code>stroke</code> and <code>hatch</code>. The module documents which surface uses which field; the short version is that anything opaque takes <code>base</code>, and only shapes the basemap shows through — or backgrounds carrying text — take <code>fill</code>. Getting this wrong is silent: nothing errors, two surfaces simply render the same bucket in different colours.</p>
-<p>Consumers today: <code>vectorStyles.js</code> (polygons), <code>clusterStyle.js</code>, <code>hub/macroRingStyle.js</code>, <code>CompletenessLegend.svelte</code>, <code>PlaygroundPanel.svelte</code>, <code>MappingDetailControl.svelte</code>, <code>NearbyPlaygrounds.svelte</code>, <code>hub/InstancePanelDrawer.svelte</code>.</p>
-<p>Svelte <code>&lt;style&gt;</code> blocks cannot import, so components that colour elements via CSS classes read the palette in <code>&lt;script&gt;</code> and expose it as custom properties (<code>--detail-complete</code> and friends) on the wrapping element. <code>NearbyPlaygrounds</code> and <code>InstancePanelDrawer</code> follow that pattern — copy it rather than reintroducing literals.</p>
+<p>Consumers today: <code>vectorStyles.js</code> (polygons), <code>clusterStyle.js</code>, <code>hub/macroRingStyle.js</code>, <code>CompletenessLegend.svelte</code>, <code>PlaygroundPanel.svelte</code>, <code>MappingDetailControl.svelte</code>, <code>hub/InstancePanelDrawer.svelte</code>.</p>
+<p>Svelte <code>&lt;style&gt;</code> blocks cannot import, so components that colour elements via CSS classes read the palette in <code>&lt;script&gt;</code> and expose it as custom properties (<code>--detail-complete</code> and friends) on the wrapping element. <code>InstancePanelDrawer</code> follows that pattern — copy it rather than reintroducing literals.</p>
 <p>Two rendering traps worth knowing:</p>
 <ul>
 <li>OpenLayers' <code>renderPolygonGeometry</code> handles fill, stroke and text only. An <code>image</code> style attached to a Polygon is <strong>silently dropped</strong> — no render, no warning. Give it a <code>geometry</code> function returning the polygon's interior point.</li>

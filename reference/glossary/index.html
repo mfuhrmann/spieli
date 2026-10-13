@@ -2063,7 +2063,7 @@
 <p><strong>PostgREST</strong> is a server that automatically turns a PostgreSQL database into a REST API. Instead of writing server-side code, you write SQL functions and PostgREST exposes them as HTTP endpoints. spieli's entire API layer is PostgREST — there is no custom backend application server.</p>
 <p>More: <a href="https://postgrest.org">postgrest.org</a></p>
 <h2 id="mapping-detail-indicator">Mapping detail indicator<a class="headerlink" href="#mapping-detail-indicator" title="Permanent link">&para;</a></h2>
-<p>Each playground carries a <strong>Mapping detail</strong> badge whose colour reflects how much of it has been mapped in OpenStreetMap:</p>
+<p>With mapping detail switched on (it is off by default, see the <a href="../../user-guide/#mapping-detail-colours">user guide</a>), each playground carries a <strong>Mapping detail</strong> badge whose colour reflects how much of it has been mapped in OpenStreetMap:</p>
 <table>
 <thead>
 <tr>
@@ -2074,17 +2074,17 @@
 </thead>
 <tbody>
 <tr>
-<td>Green</td>
+<td>Light green</td>
 <td>detailliert / detailed</td>
 <td>Play infrastructure <strong>and</strong> at least one detail (surface, opening hours, or a non-trivial access value)</td>
 </tr>
 <tr>
-<td>Yellow</td>
+<td>Dark green</td>
 <td>grundlegend / basic</td>
 <td>One of the two, not both</td>
 </tr>
 <tr>
-<td>Red</td>
+<td>Slate grey</td>
 <td>keine Details / no details yet</td>
 <td>Neither — the playground exists in OSM but carries nothing else</td>
 </tr>
@@ -2092,7 +2092,7 @@
 </table>
 <p>"Play infrastructure" means <code>playground=*</code> objects and soccer / basketball / table-tennis pitches. Benches, shelters and picnic tables do not count — a lone bench must not carry an otherwise unmapped playground.</p>
 <p>A photo is <strong>not</strong> part of the rating. It is shown separately as a camera glyph on the map.</p>
-<p>The map legend is headed "Erfasste Details" / "Mapping detail". The same three-state breakdown is used in cluster rings, the federation macro view and the hub instance drawer.</p>
+<p>The map legend, shown only while mapping detail is on, is headed "Erfasste Details" / "Mapping detail". The same three-state breakdown is used in cluster rings and the federation macro view (both only with mapping detail on) and, always, in the hub instance drawer.</p>
 <p>The scale measures how much of the map is filled in, not how good the playground is. The lowest step means "nobody has mapped this yet — help out", not "bad playground".</p>
 <p>Internally, the three states are referred to as <code>complete</code>, <code>partial</code>, and <code>missing</code>. These values appear in the API responses (see <a href="../api/"><code>api.md</code></a>) and in the database (<code>playground_stats</code> materialised view). They are deliberately <em>not</em> renamed to match the labels — federation between backends on different versions depends on them. Full rule in <a href="../completeness/"><code>completeness.md</code></a>.</p>
 <h2 id="overpass-turbo">Overpass Turbo<a class="headerlink" href="#overpass-turbo" title="Permanent link">&para;</a></h2>

@@ -1667,17 +1667,6 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#multi-backend-nearest-search" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Multi-backend nearest search
-      
-    </span>
-  </a>
-  
-</li>
-        
       </ul>
     </nav>
   
@@ -2075,17 +2064,6 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#multi-backend-nearest-search" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Multi-backend nearest search
-      
-    </span>
-  </a>
-  
-</li>
-        
       </ul>
     </nav>
   
@@ -2191,7 +2169,7 @@
 <tr>
 <td><code>url</code></td>
 <td>yes</td>
-<td>Base URL of the backend's PostgREST <code>/api</code> (no trailing slash). The Hub appends <code>/rpc/get_playgrounds</code>, <code>/rpc/get_meta</code>, and <code>/rpc/get_nearest_playgrounds</code>.</td>
+<td>Base URL of the backend's PostgREST <code>/api</code> (no trailing slash). The Hub calls the tier RPCs (<code>/rpc/get_playground_clusters</code>, <code>/rpc/get_playgrounds_bbox</code>, …) and <code>/rpc/get_meta</code> under it.</td>
 </tr>
 <tr>
 <td><code>name</code></td>
@@ -2221,8 +2199,6 @@
 <p>Once the registry is loaded, the Hub derives two aggregate behaviours:</p>
 <h3 id="aggregated-bounding-box">Aggregated bounding box<a class="headerlink" href="#aggregated-bounding-box" title="Permanent link">&para;</a></h3>
 <p>The Hub unions every backend's <code>get_meta().bbox</code> into a single extent and uses it to fit the initial map view. Backends that haven't yet reported (still loading, failed, or running a version older than v0.2.1) are ignored. Until at least one backend reports a bbox, the map stays on its default Germany-wide view.</p>
-<h3 id="multi-backend-nearest-search">Multi-backend nearest search<a class="headerlink" href="#multi-backend-nearest-search" title="Permanent link">&para;</a></h3>
-<p>The "nearby playgrounds" panel fans <code>get_nearest_playgrounds</code> out to every registered backend in parallel with a 3 s per-backend timeout. Results are merged, deduplicated by <code>osm_id</code> (keeping the closest distance), sorted by distance, and truncated to the top 10. A slow or unreachable backend contributes zero results but never stalls the response.</p>
 <h2 id="deep-link-behaviour">Deep-link behaviour<a class="headerlink" href="#deep-link-behaviour" title="Permanent link">&para;</a></h2>
 <table>
 <thead>

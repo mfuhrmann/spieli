@@ -3062,7 +3062,7 @@ so the budget is the larger of the two plus baseline (~700 MB for
 <p>One fetch, both outputs: building them in two runs let the upstream rotate in between, leaving the two variants derived from different sources with nothing detecting it.</p>
 <p>The two edits, applied by <code>tools/build-basemap-style.py</code>:</p>
 <ol>
-<li>Green landcover fills are desaturated, because spieli encodes playground data completeness in green, amber and red. A basemap that paints parks green competes with the map's primary signal.</li>
+<li>Green landcover fills are desaturated, because spieli draws its playgrounds in green — emerald pins in the default view, a green-to-slate ramp with mapping detail on. A basemap that paints parks green competes with the map's primary signal.</li>
 <li>The <code>poi</code> symbol layers are dropped, as the strongest competitor for attention.</li>
 </ol>
 <p>The second edit is a legibility change only. Dropping a style layer does not reduce render cost — the tile data is still decoded and simply not drawn.</p>

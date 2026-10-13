@@ -2314,7 +2314,7 @@
 </tr>
 <tr>
 <td><a href="#get_playgroundosm_id"><code>get_playground</code></a></td>
-<td>Deeplink restore, nearby-list hydration</td>
+<td>Deeplink restore</td>
 <td>single feature</td>
 </tr>
 <tr>
@@ -2354,7 +2354,7 @@
 </tr>
 <tr>
 <td><a href="#get_nearest_playgroundslat-lon"><code>get_nearest_playgrounds</code></a></td>
-<td>NearbyPlaygrounds component</td>
+<td>Not used by the frontend since #949</td>
 <td>ordered by distance</td>
 </tr>
 <tr>
@@ -2397,7 +2397,7 @@
 </thead>
 <tbody>
 <tr>
-<td>Deeplink restore at low zoom; nearby-list selection of a not-yet-loaded playground</td>
+<td>Deeplink restore at low zoom</td>
 <td><code>get_playground(osm_id)</code></td>
 </tr>
 </tbody>
@@ -2611,7 +2611,7 @@
 <a id="__codelineno-2-29" name="__codelineno-2-29" href="#__codelineno-2-29"></a><span class="p">}</span>
 </code></pre></div>
 <h2 id="get_playgroundosm_id"><code>get_playground(osm_id)</code><a class="headerlink" href="#get_playgroundosm_id" title="Permanent link">&para;</a></h2>
-<p>Single-feature lookup used by the deeplink-hydration and nearby-list fallback paths when the polygon source isn't populated for the current viewport (cluster tier on first load).</p>
+<p>Single-feature lookup used by the deeplink-hydration path when the polygon source isn't populated for the current viewport (cluster tier on first load).</p>
 <p><strong>Parameters</strong></p>
 <table>
 <thead>
@@ -2999,7 +2999,7 @@
 </code></pre></div>
 <hr />
 <h2 id="get_nearest_playgroundslat-lon"><code>get_nearest_playgrounds(lat, lon)</code><a class="headerlink" href="#get_nearest_playgroundslat-lon" title="Permanent link">&para;</a></h2>
-<p>Returns the nearest playgrounds to a WGS84 point, ordered by distance ascending. Used by the <code>NearbyPlaygrounds</code> component. Returns an empty array when <code>apiBaseUrl</code> is empty (Overpass fallback, used in local frontend dev without a database).</p>
+<p>Returns the nearest playgrounds to a WGS84 point, ordered by distance ascending. The frontend no longer calls it — the nearby list under the search field was removed (#949); it stays so hubs on older releases keep working.</p>
 <p><strong>Parameters</strong></p>
 <table>
 <thead>
