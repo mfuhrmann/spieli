@@ -3,6 +3,7 @@
   import { fromLonLat } from 'ol/proj';
   import { mapStore } from '../stores/map.js';
   import { nominatimFetch } from '../lib/nominatim.js';
+  import { rankSearchHits } from '../lib/searchRanking.js';
   import { Search, Loader2, X } from 'lucide-svelte';
   import { cn } from '../lib/utils.js';
   import { _ } from 'svelte-i18n';
@@ -48,29 +49,26 @@
     searching = true;
     try {
       const baseParams = { q, addressdetails: 1, limit: 10 };
-      let viewCenterLon = null;
-      let viewCenterLat = null;
-      let hits;
+      // Both answers, always (#973): the one bounded to the view finds the
+      // nearby street or shop, the unbounded one the city. Using the local
+      // answer alone whenever it had anything hid every city behind a
+      // same-named shop. The view still biases the unbounded query.
+      let globalHits = [];
+      let localHits = [];
       if (regionExtent) {
-        const [minLon, minLat, maxLon, maxLat] = regionExtent;
-        const viewbox = `${minLon},${minLat},${maxLon},${maxLat}`;
-        viewCenterLon = (minLon + maxLon) / 2;
-        viewCenterLat = (minLat + maxLat) / 2;
-        hits = await nominatimFetch('/search', { ...baseParams, viewbox, bounded: 1 }, { timeout: 0 });
-        if (!hits.length) {
-          hits = await nominatimFetch('/search', { ...baseParams, viewbox, bounded: 0 }, { timeout: 0 });
-        }
+        const viewbox = regionExtent.join(',');
+        const [g, l] = await Promise.allSettled([
+          nominatimFetch('/search', { ...baseParams, viewbox, bounded: 0 }, { timeout: 0 }),
+          nominatimFetch('/search', { ...baseParams, viewbox, bounded: 1 }, { timeout: 0 }),
+        ]);
+        // One failed request must not hide what the other found.
+        if (g.status === 'rejected' && l.status === 'rejected') throw g.reason;
+        globalHits = g.status === 'fulfilled' ? g.value : [];
+        localHits = l.status === 'fulfilled' ? l.value : [];
       } else {
-        hits = await nominatimFetch('/search', baseParams, { timeout: 0 });
+        globalHits = await nominatimFetch('/search', baseParams, { timeout: 0 });
       }
-      if (viewCenterLon !== null) {
-        hits = hits.slice().sort((a, b) => {
-          const da = (parseFloat(a.lon) - viewCenterLon) ** 2 + (parseFloat(a.lat) - viewCenterLat) ** 2;
-          const db = (parseFloat(b.lon) - viewCenterLon) ** 2 + (parseFloat(b.lat) - viewCenterLat) ** 2;
-          return da - db;
-        });
-      }
-      results = hits.slice(0, 5);
+      results = rankSearchHits(globalHits, localHits, regionExtent);
       activeIndex = -1;
       showResults = results.length > 0 && !dismissed;
     } catch (err) {
