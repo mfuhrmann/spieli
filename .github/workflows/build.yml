@@ -805,10 +805,16 @@ jobs:
           echo "   ok"
 
           echo "-- no request is access-logged at all (#988)"
-          get / >/dev/null; get /config.js >/dev/null; get '/api/rpc/get_meta?probe=988' >/dev/null || true
-          # Match the access-log format only: an error_log line also quotes
-          # the request (request: "GET /api/..."), and errors may stay.
-          docker logs bmcheck 2>&1 | grep -E '^[0-9a-fA-F.:]+ - [^ ]+ \[[^]]+\] "(GET|HEAD|POST|PUT) /' \
+          # Access-log format only: an error_log line also quotes the request
+          # (request: "GET /api/..."), and errors may stay.
+          al='^[0-9a-fA-F.:]+ - [^ ]+ \[[^]]+\] "[A-Z]+ /'
+          # Positive control: the pattern must match the stock "main" format,
+          # or the negative check below proves nothing.
+          echo '172.18.0.1 - - [14/Oct/2026:12:00:42 +0000] "GET / HTTP/1.1" 200 1237 "-" "curl/8" "-"' \
+            | grep -qE "$al" || { echo "FAIL: access-log pattern does not match the main format"; exit 1; }
+          get / >/dev/null; get /config.js >/dev/null; get '/api/rpc/get_meta?probe=988' >/dev/null
+          sleep 1
+          docker logs bmcheck 2>&1 | grep -E "$al" \
             && { echo "FAIL: a request was written to the access log"; exit 1; }
           echo "   ok"
 

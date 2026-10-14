@@ -539,7 +539,7 @@ docker compose exec app du -sh /var/cache/nginx/ext
 docker compose config | grep -A2 ext_cache
 ```
 
-**Search returns nothing under load.** The Nominatim proxy shares the OSMF limit of 1 request per second across the whole instance, and sheds beyond it rather than exceeding the policy. Cached queries are unaffected — the limiter only sees misses — so this shows up as unusual free-text searches failing while region URLs keep working. Look for `limiting requests` in the error log:
+**Search returns nothing under load.** The Nominatim proxy shares the OSMF limit of 1 request per second across the whole instance, and sheds beyond it rather than exceeding the policy. Cached queries are unaffected — the limiter only sees misses — so this shows up as unusual free-text searches failing while region URLs keep working. Look for `limiting requests` in the error log (the error log is the only one there is, #988; it holds the shed request line, so treat it with care):
 
 ```bash
 docker compose logs app | grep "limiting requests"
