@@ -23,6 +23,7 @@ RUN apk add --no-cache busybox-suid jq
 
 COPY --from=builder /build/dist      /usr/share/nginx/html
 COPY oci/app/nginx.conf              /etc/nginx/conf.d/default.conf
+COPY oci/app/00-no-access-log.conf   /etc/nginx/conf.d/00-no-access-log.conf
 COPY oci/app/docker-entrypoint.sh       /docker-entrypoint.sh
 COPY oci/app/poll-federation.sh         /usr/local/bin/poll-federation.sh
 COPY oci/app/datenschutz.template.html  /datenschutz.template.html

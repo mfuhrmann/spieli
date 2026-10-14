@@ -206,7 +206,7 @@ That arrangement does two jobs at once:
 - **It is kind to the upstream.** OpenFreeMap is donation-funded and run by one person. A federation of backends sending every visitor's tile requests straight there is not a neighbourly load pattern; a cache in front means one client per deployment, with duplicate misses collapsed (`proxy_cache_lock`) and conditional revalidation rather than full refetches.
 - **Visitors' browsers never contact it.** No third party sees a visitor's IP address or the z/x/y stream that reveals what they were looking at.
 
-Proxied requests are not written to the access log, for the same reason they are not sent to a third party: at high zoom the z/x/y stream is a record of what someone looked at. Files served from disk are logged normally — a webfont or the style document fetched once says nothing about where anyone looked.
+No request is written to the access log (#988): `oci/app/00-no-access-log.conf` turns it off for the whole container, and the proxied locations additionally carry their own `access_log off` — at high zoom the z/x/y stream is a record of what someone looked at, as are the API's bbox parameters.
 
 This covers the *access* log only. `error_log` still records the URI of a request that fails upstream, which is what keeps outages diagnosable; it is a record of failures rather than of browsing, but it is not nothing, so treat the container's error log with the same care as any other log that can name a path a visitor requested.
 
@@ -302,7 +302,7 @@ Sizing depends heavily on raster versus vector. Vector tilesets cap at a low max
 
 ### Tile requests are never access-logged
 
-When proxying is enabled, nginx sets `access_log off` on `/tiles/`. This is a correctness property of the feature rather than a hardening tip: proxying moves the visitor's tile stream onto your server, and at high zoom that z/x/y sequence is not metadata about what someone looked at — it *is* what they looked at. Logging it would build a per-visitor location trail on your disk, which is worse than the third-party delivery proxying replaces. Error-level logging is retained so upstream failures stay diagnosable.
+When proxying is enabled, nginx sets `access_log off` on `/tiles/` (on top of the container-wide `access_log off`, #988). This is a correctness property of the feature rather than a hardening tip: proxying moves the visitor's tile stream onto your server, and at high zoom that z/x/y sequence is not metadata about what someone looked at — it *is* what they looked at. Logging it would build a per-visitor location trail on your disk, which is worse than the third-party delivery proxying replaces. Error-level logging is retained so upstream failures stay diagnosable.
 
 If you run a reverse proxy in front of spieli (Traefik, for example), check that it does not log the tile path either. A location trail is no less a location trail for being written by the ingress.
 
