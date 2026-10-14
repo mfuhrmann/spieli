@@ -39,13 +39,13 @@ How the three states are coloured is described in [Colours](#colours) below; eve
 
 ## Hints in the panel
 
-With mapping detail on, `PlaygroundPanel` shows a line under the badge naming the missing input (#919), from `mappingDetailHintKey()` in `completeness.js`, which reads the same `mappingDetailInputs()` the rule does — the hint and the badge cannot disagree:
+With mapping detail on, `PlaygroundPanel` shows a highlighted hint under the badge naming the missing input (#919), from `mappingDetailHintKey()` in `completeness.js`, which reads the same `mappingDetailInputs()` the rule does — the hint and the badge cannot disagree:
 
 | Badge | Missing | Hint (`mappingDetail.nextStep.*`) |
 |---|---|---|
-| no details yet | both | One piece of play equipment makes it "basic", and so does the surface or opening hours (if it has any). Both together: "detailed". |
-| basic | equipment | Only the play equipment is missing for "detailed". |
-| basic | info | Only the surface — or opening hours, if it has any — is missing for "detailed". |
+| no details yet | both | Not mapped yet: play equipment, and the surface or opening hours (if it has any). |
+| basic | equipment | Not mapped yet: the play equipment. |
+| basic | info | Not mapped yet: the surface or opening hours (if it has any). |
 | detailed | – | *(none)* |
 
 The hint carries no link of its own: the panel's MapComplete links further down already open this playground. The list is closed on purpose: only surface and opening hours are named, because a vaguer "general details" would send mappers to `name` or `operator`, which do not count. Surface comes first because it can be checked on site and is unambiguous; opening hours carry "if it has any", since many playgrounds legitimately have none and the hint must not invite invented ones. Restricted access also counts but is not named — it describes the place, it is not something to add. By the rule's design, once one device is mapped there is no equipment hint even if more are missing, and "detailed" does not mean complete.

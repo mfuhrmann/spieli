@@ -364,9 +364,8 @@
   // back exactly the data-quality reading the view leaves out (#924).
   $: completenessLevel = attr && $mappingDetail ? playgroundCompleteness(attr) : null;
 
-  // Under the badge: which of the rule's two inputs is missing, with a link to
-  // this playground in MapComplete — so "basic" or "no details yet" reads as
-  // an invitation, not a grade (#919). Same condition as the badge: only with
+  // Under the badge: which of the rule's two inputs is missing — so "basic" or
+  // "no details yet" reads as an invitation, not a grade (#919). Same condition as the badge: only with
   // mapping detail on; nothing for "detailed".
   $: detailHintKey = completenessLevel ? mappingDetailHintKey(attr) : null;
   $: completeness = completenessLevel
@@ -615,8 +614,8 @@
         </div>
         {#if detailHintKey}
           <p class="detail-hint" data-testid="mapping-detail-hint">
-            <PencilLine class="detail-hint__icon" aria-hidden="true" />
-            <span>{$_(detailHintKey, { values: { detailed: $_('mappingDetail.detailed'), basic: $_('mappingDetail.basic') } })}</span>
+            <PencilLine class="h-4 w-4 shrink-0 mt-px text-blue-600" />
+            <span class="min-w-0">{$_(detailHintKey)}</span>
           </p>
         {/if}
       {/if}
@@ -1256,11 +1255,11 @@
     flex-shrink: 0;
   }
 
-  /* Pulled up against the status row's mb-4 so it reads as the badge's
-     caption, not as a separate section. */
-  /* A callout rather than a grey line: among the panel's other content the
-     plain line went unnoticed (#982). Amber reads as "to do" without the
-     alarm of red, and stays clear of the green mapping-detail ramp. */
+  /* A callout rather than a grey caption line, which went unnoticed among the
+     panel's other content (#982). Blue, not amber: the hint is an invitation,
+     and a warning colour next to the badge would read as the verdict the
+     mapping-detail palette avoids. Pulled up against the status row's mb-4 so
+     it stays attached to the badge. */
   .detail-hint {
     display: flex;
     align-items: flex-start;
@@ -1268,18 +1267,11 @@
     margin: -0.25rem 0 1rem;
     padding: 8px 10px;
     border-radius: 8px;
-    background: #fffbeb;
-    border: 1px solid #fde68a;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
     font-size: 0.8125rem;
     line-height: 1.4;
-    color: #78350f;
-  }
-  .detail-hint :global(.detail-hint__icon) {
-    flex-shrink: 0;
-    width: 16px;
-    height: 16px;
-    margin-top: 1px;
-    color: #b45309;
+    color: #1e3a8a;
   }
 
   .data-age-chip {

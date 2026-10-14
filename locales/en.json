@@ -94,9 +94,9 @@
     "hint": "Colours playgrounds by how completely they are mapped in OpenStreetMap — useful if you add data to OSM.",
     "filterTitle": "Show",
     "nextStep": {
-      "noInfo": "Only the surface — or opening hours, if it has any — is missing for “{detailed}”.",
-      "noEquipment": "Only the play equipment is missing for “{detailed}”.",
-      "noDetails": "One piece of play equipment makes it “{basic}”, and so does the surface or opening hours (if it has any). Both together: “{detailed}”."
+      "noInfo": "Not mapped yet: the surface or opening hours (if it has any).",
+      "noEquipment": "Not mapped yet: the play equipment.",
+      "noDetails": "Not mapped yet: play equipment, and the surface or opening hours (if it has any)."
     }
   },
   "completeness": {
