@@ -804,6 +804,14 @@ jobs:
             && { echo "FAIL: proxied tile path was written to the access log"; exit 1; }
           echo "   ok"
 
+          echo "-- no request is access-logged at all (#988)"
+          get / >/dev/null; get /config.js >/dev/null; get '/api/rpc/get_meta?probe=988' >/dev/null || true
+          # Match the access-log format only: an error_log line also quotes
+          # the request (request: "GET /api/..."), and errors may stay.
+          docker logs bmcheck 2>&1 | grep -E '^[0-9a-fA-F.:]+ - [^ ]+ \[[^]]+\] "(GET|HEAD|POST|PUT) /' \
+            && { echo "FAIL: a request was written to the access log"; exit 1; }
+          echo "   ok"
+
       - name: Shared basemap cache must preserve the same-origin rewrite
         run: |
           set -eu

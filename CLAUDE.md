@@ -149,7 +149,7 @@ Same-origin by default, like the basemap. `docker-entrypoint.sh` generates `/etc
 
 Six things here are load-bearing and were each found the hard way:
 
-- **`access_log off` in every location.** Proxying moves the visitor's request stream onto the operator's disk; logging it is worse than the exposure it replaced. Emitted from `_ext_common` so a call site cannot forget it.
+- **`access_log off` in every location.** Proxying moves the visitor's request stream onto the operator's disk; logging it is worse than the exposure it replaced. Emitted from `_ext_common` so a call site cannot forget it. Since #988 the whole container logs no requests either: the Dockerfile turns the stock `nginx.conf` `access_log` off (and fails the build if that line stops matching), and CI asserts that a request to `/` or `/api/` leaves no access-log line. `error_log` stays.
 - **The rate limiter lives on the loopback server, not the visitor-facing location.** `limit_req` runs in the preaccess phase, *before* the cache lookup, so on the outer location it sheds requests that were already cached — two simultaneous visitors were enough to break search. Only misses reach the loopback hop; a shed request falls back to stale via `proxy_cache_use_stale … http_503`.
 - **That loopback server needs a `server_name`.** The limiter is keyed on `$server_name`, and nginx *silently skips* `limit_req` when its key is empty — a limiter that parses and enforces nothing.
 - **`set` must come BEFORE `rewrite … break`.** `break` stops the rewrite module, and `set` is one of its directives, so a `set` after it never runs — the `Cache-Control` header then renders empty and none is sent at all.
