@@ -61,13 +61,16 @@
       // same-named shop. The view still biases the unbounded query.
       let globalHits = [];
       let localHits = null;   // null = no view, or the view request failed
-      // "Nearby" is the view, widened to ~10 km when zoomed in (#976).
+      // The in-view query reaches at least ~10 km from the view centre, so a
+      // street-level view still finds the street across town (#976). The
+      // wider box holds more matches, so it asks for more of them; the ranking
+      // keeps the real view and sorts local hits by distance.
       const area = searchArea(regionExtent);
       if (area) {
         const viewbox = area.join(',');
         const [g, l] = await Promise.allSettled([
           nominatimFetch('/search', { ...baseParams, viewbox, bounded: 0 }, { timeout: 0 }),
-          nominatimFetch('/search', { ...baseParams, viewbox, bounded: 1 }, { timeout: 0 }),
+          nominatimFetch('/search', { ...baseParams, viewbox, bounded: 1, limit: 25 }, { timeout: 0 }),
         ]);
         // One failed request must not hide what the other found — but it is
         // logged, so an empty search box has a trace.
@@ -80,7 +83,7 @@
         globalHits = await nominatimFetch('/search', baseParams, { timeout: 0 });
       }
       if (seq !== searchSeq) return;
-      results = rankSearchHits(globalHits, localHits, area);
+      results = rankSearchHits(globalHits, localHits, area ? regionExtent : null);
       activeIndex = -1;
       showResults = results.length > 0 && !dismissed;
     } catch (err) {

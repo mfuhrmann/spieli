@@ -130,6 +130,23 @@ const WETZLAR = [8.40, 50.50, 8.60, 50.60];
   assert.ok(+lehnerz.lon > area[0] && +lehnerz.lon < area[2] && +lehnerz.lat > area[1] && +lehnerz.lat < area[3]);
   assert.deepEqual(searchArea(WETZLAR.map((v, i) => i < 2 ? v - 1 : v + 1)), WETZLAR.map((v, i) => i < 2 ? v - 1 : v + 1));
   assert.equal(searchArea(null), null);
+  assert.equal(searchArea([NaN, 1, 2, 3]), null);
+  // Near the antimeridian the box stays a valid viewbox.
+  const fiji = searchArea([179.95, -16.6, 179.97, -16.58]);
+  assert.ok(fiji[2] <= 180 && fiji[0] >= -180);
+}
+
+// 16. With the widened query, what is on screen still comes first: local hits
+//     are ordered by distance from the real view's centre.
+{
+  const z17 = [9.669, 50.548, 9.683, 50.554];
+  const local = [
+    hit(140, 'highway', 'residential', 'road', 0.2, 9.80, 50.60, 'Turmstraße, far side'),
+    hit(141, 'highway', 'residential', 'road', 0.1, 9.677, 50.551, 'Turmstraße, on screen'),
+    hit(142, 'highway', 'residential', 'road', 0.1, 9.703, 50.572, 'Turmstraße, Lehnerz'),
+  ];
+  assert.deepEqual(rankSearchHits([], local, z17).map(h => h.display_name),
+    ['Turmstraße, on screen', 'Turmstraße, Lehnerz', 'Turmstraße, far side']);
 }
 
 console.log('searchRanking tests passed.');
