@@ -19,9 +19,9 @@ async function open(page, props, detail = '1') {
   return page.locator('[data-testid="mapping-detail-hint"]');
 }
 
-test('no details yet: equipment or general details make it basic, both detailed', async ({ page }) => {
+test('no details yet: equipment, surface or opening hours make it basic, both detailed', async ({ page }) => {
   const hint = await open(page, {});
-  await expect(hint).toContainText('A piece of play equipment or general details such as the surface or opening hours make it “basic”; both together make it “detailed”.');
+  await expect(hint).toContainText('One piece of play equipment makes it “basic”, and so does the surface or opening hours (if it has any). Both together: “detailed”.');
   await expect(hint.locator('a')).toHaveCount(0);
 });
 
@@ -32,7 +32,7 @@ test('basic without equipment: only the play equipment is missing', async ({ pag
 
 test('basic without info: only surface or opening hours are missing', async ({ page }) => {
   const hint = await open(page, { device_count: 3 });
-  await expect(hint).toContainText('Only general details such as the surface or opening hours are missing for “detailed”.');
+  await expect(hint).toContainText('Only the surface — or opening hours, if it has any — is missing for “detailed”.');
 });
 
 test('detailed: no hint', async ({ page }) => {

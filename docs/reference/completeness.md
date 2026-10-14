@@ -43,12 +43,12 @@ With mapping detail on, `PlaygroundPanel` shows a line under the badge naming th
 
 | Badge | Missing | Hint (`mappingDetail.nextStep.*`) |
 |---|---|---|
-| no details yet | both | A piece of play equipment or general details such as the surface or opening hours make it "basic"; both together make it "detailed". |
+| no details yet | both | One piece of play equipment makes it "basic", and so does the surface or opening hours (if it has any). Both together: "detailed". |
 | basic | equipment | Only the play equipment is missing for "detailed". |
-| basic | info | Only general details such as the surface or opening hours are missing for "detailed". |
+| basic | info | Only the surface — or opening hours, if it has any — is missing for "detailed". |
 | detailed | – | *(none)* |
 
-The hint carries no link of its own: the panel's MapComplete links further down already open this playground. Surface is named before opening hours on purpose: it can be checked on site and is unambiguous, while many playgrounds legitimately have no opening hours — the hint must not invite invented ones. By the rule's design, once one device is mapped there is no equipment hint even if more are missing, and "detailed" does not mean complete.
+The hint carries no link of its own: the panel's MapComplete links further down already open this playground. The list is closed on purpose: only surface and opening hours are named, because a vaguer "general details" would send mappers to `name` or `operator`, which do not count. Surface comes first because it can be checked on site and is unambiguous; opening hours carry "if it has any", since many playgrounds legitimately have none and the hint must not invite invented ones. Restricted access also counts but is not named — it describes the place, it is not something to add. By the rule's design, once one device is mapped there is no equipment hint even if more are missing, and "detailed" does not mean complete.
 
 ## Photos are not a criterion
 
