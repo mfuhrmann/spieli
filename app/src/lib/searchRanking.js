@@ -48,6 +48,25 @@ const visibleName = (h) => String(h.display_name ?? '').replace(/,\s*\d{4,5}(?=,
 
 const wrapLon = (lon) => ((lon + 180) % 360 + 360) % 360 - 180;
 
+/**
+ * The area "nearby" means: the view, but at least `minKm` around its centre
+ * (#976). Selecting a place zooms the map to street level, about 1 km across;
+ * searching a street from there must still find the one 2.5 km away in the
+ * same town (Turmstraße in Fulda-Lehnerz), not only namesakes elsewhere.
+ * @param {number[]|null} box  [minLon, minLat, maxLon, maxLat]
+ * @returns {number[]|null}
+ */
+export function searchArea(box, minKm = 10) {
+  if (!box || box.some(v => !Number.isFinite(v))) return box ?? null;
+  const lon = (box[0] + box[2]) / 2, lat = (box[1] + box[3]) / 2;
+  const dLat = minKm / 111;
+  const dLon = minKm / (111 * Math.max(0.01, Math.cos(lat * Math.PI / 180)));
+  return [
+    Math.min(box[0], lon - dLon), Math.max(-90, Math.min(box[1], lat - dLat)),
+    Math.max(box[2], lon + dLon), Math.min(90, Math.max(box[3], lat + dLat)),
+  ];
+}
+
 /** The view as a centre and a containment test, or null. Copes with a view
  *  whose longitudes OpenLayers reports outside [-180, 180] (a wrapped world). */
 function viewOf(box) {

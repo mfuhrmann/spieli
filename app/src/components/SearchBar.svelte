@@ -3,7 +3,7 @@
   import { fromLonLat } from 'ol/proj';
   import { mapStore } from '../stores/map.js';
   import { nominatimFetch } from '../lib/nominatim.js';
-  import { rankSearchHits } from '../lib/searchRanking.js';
+  import { rankSearchHits, searchArea } from '../lib/searchRanking.js';
   import { Search, Loader2, X } from 'lucide-svelte';
   import { cn } from '../lib/utils.js';
   import { _ } from 'svelte-i18n';
@@ -61,8 +61,10 @@
       // same-named shop. The view still biases the unbounded query.
       let globalHits = [];
       let localHits = null;   // null = no view, or the view request failed
-      if (regionExtent) {
-        const viewbox = regionExtent.join(',');
+      // "Nearby" is the view, widened to ~10 km when zoomed in (#976).
+      const area = searchArea(regionExtent);
+      if (area) {
+        const viewbox = area.join(',');
         const [g, l] = await Promise.allSettled([
           nominatimFetch('/search', { ...baseParams, viewbox, bounded: 0 }, { timeout: 0 }),
           nominatimFetch('/search', { ...baseParams, viewbox, bounded: 1 }, { timeout: 0 }),
@@ -78,7 +80,7 @@
         globalHits = await nominatimFetch('/search', baseParams, { timeout: 0 });
       }
       if (seq !== searchSeq) return;
-      results = rankSearchHits(globalHits, localHits, regionExtent);
+      results = rankSearchHits(globalHits, localHits, area);
       activeIndex = -1;
       showResults = results.length > 0 && !dismissed;
     } catch (err) {
