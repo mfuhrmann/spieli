@@ -38,7 +38,13 @@
     resultsEl?.children?.[i]?.scrollIntoView({ block: 'nearest' });
   }
 
+  // Each search gets a number; an answer that lands after a newer search
+  // started is dropped, so a slow request for "Frank" cannot overwrite the
+  // results for "Frankfurt" (two requests per search widen that window).
+  let searchSeq = 0;
+
   async function search() {
+    const seq = ++searchSeq;
     const q = query.trim();
     if (!q) {
       results = [];
@@ -54,30 +60,35 @@
       // answer alone whenever it had anything hid every city behind a
       // same-named shop. The view still biases the unbounded query.
       let globalHits = [];
-      let localHits = [];
+      let localHits = null;   // null = no view, or the view request failed
       if (regionExtent) {
         const viewbox = regionExtent.join(',');
         const [g, l] = await Promise.allSettled([
           nominatimFetch('/search', { ...baseParams, viewbox, bounded: 0 }, { timeout: 0 }),
           nominatimFetch('/search', { ...baseParams, viewbox, bounded: 1 }, { timeout: 0 }),
         ]);
-        // One failed request must not hide what the other found.
+        // One failed request must not hide what the other found — but it is
+        // logged, so an empty search box has a trace.
         if (g.status === 'rejected' && l.status === 'rejected') throw g.reason;
+        if (g.status === 'rejected') console.warn('Search (unbounded) failed:', g.reason);
+        if (l.status === 'rejected') console.warn('Search (in view) failed:', l.reason);
         globalHits = g.status === 'fulfilled' ? g.value : [];
-        localHits = l.status === 'fulfilled' ? l.value : [];
+        localHits = l.status === 'fulfilled' ? l.value : null;
       } else {
         globalHits = await nominatimFetch('/search', baseParams, { timeout: 0 });
       }
+      if (seq !== searchSeq) return;
       results = rankSearchHits(globalHits, localHits, regionExtent);
       activeIndex = -1;
       showResults = results.length > 0 && !dismissed;
     } catch (err) {
+      if (seq !== searchSeq) return;
       console.error('Search failed:', err);
       results = [];
       activeIndex = -1;
       showResults = false;
     } finally {
-      searching = false;
+      if (seq === searchSeq) searching = false;
     }
   }
 
@@ -170,6 +181,7 @@
     // suggestions *for*, so it must not keep claiming to be — `aria-expanded`
     // has to describe the popup that is actually relevant to the input.
     if (query.length < 2) {
+      searchSeq++;   // an answer still in flight must not reopen the list
       results = [];
       showResults = false;
     }
@@ -183,6 +195,7 @@
   let searchTimeout;
 
   function clearSearch() {
+    searchSeq++;   // an answer still in flight must not refill a cleared box
     query = '';
     results = [];
     activeIndex = -1;

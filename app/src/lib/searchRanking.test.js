@@ -47,8 +47,9 @@ const WETZLAR = [8.40, 50.50, 8.60, 50.60];
   const places = [1, 2, 3, 4, 5].map(i => hit(40 + i, 'place', 'village', 'village', 0.3, 8.4 + i / 50, 50.55, `P${i}`));
   const local = [hit(50, 'amenity', 'cafe', 'amenity', 0, 8.5, 50.55, 'Café')];
   const r = rankSearchHits(places, local, WETZLAR);
-  assert.equal(r.filter(isPlace).length, 3);
-  assert.ok(r.some(h => h.display_name === 'Café'));
+  // Three places lead, the local café comes next, further places fill up.
+  assert.equal(r.slice(0, 3).filter(isPlace).length, 3);
+  assert.equal(r[3].display_name, 'Café');
   assert.ok(r.length <= 6);
 }
 
@@ -89,6 +90,34 @@ const WETZLAR = [8.40, 50.50, 8.60, 50.60];
   const zurich = [1, 2, 3, 4, 5].map(i => hit(90 + i, 'highway', 'pedestrian', 'road', 0.3, 8.54, 47.37, 'Bahnhofstrasse, Zürich'));
   const r = rankSearchHits(zurich, [hit(99, 'highway', 'residential', 'road', 0.1, 8.5, 50.55, 'Bahnhofstraße, Wetzlar')], WETZLAR);
   assert.deepEqual(r.map(h => h.display_name), ['Bahnhofstraße, Wetzlar', 'Bahnhofstrasse, Zürich']);
+}
+
+// 11. No view, or the view request failed: the global answer fills the list.
+{
+  const streets = [1, 2, 3, 4, 5].map(i => hit(100 + i, 'highway', 'residential', 'road', 0.1, 8 + i, 50 + i, `Street ${i}`));
+  assert.equal(rankSearchHits(streets, null, null).length, 5);
+  assert.equal(rankSearchHits(streets, null, WETZLAR).length, 5);
+}
+
+// 12. More places than the place slots: the rest still fill the list later.
+{
+  const villages = [1, 2, 3, 4, 5].map(i => hit(110 + i, 'place', 'village', 'village', 0.3, 8.4 + i / 50, 50.55, `Neu${i}`));
+  assert.equal(rankSearchHits(villages, villages, WETZLAR).length, 5);
+}
+
+// 13. Address points and postcodes are not places.
+{
+  assert.equal(isPlace(hit(120, 'place', 'house', 'place', 0.1, 8.5, 50.5)), false);
+  assert.equal(isPlace(hit(121, 'place', 'postcode', 'postcode', 0.1, 8.5, 50.5)), false);
+  assert.equal(isPlace(hit(122, 'place', 'village', 'village', 0.1, 8.5, 50.5)), true);
+}
+
+// 14. A wrapped view (longitudes past 180) still recognises nearby hits.
+{
+  const wrapped = WETZLAR.map((v, i) => i % 2 === 0 ? v + 360 : v);
+  const near = hit(130, 'boundary', 'administrative', 'village', 0.40, 8.55, 50.52, 'Near');
+  const far  = hit(131, 'boundary', 'administrative', 'town', 0.45, 9.9, 51.0, 'Far');
+  assert.equal(rankSearchHits([far, near], [], wrapped)[0].display_name, 'Near');
 }
 
 console.log('searchRanking tests passed.');
