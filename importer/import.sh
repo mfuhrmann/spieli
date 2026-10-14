@@ -157,29 +157,81 @@ _clear_importing() {
 # hash below cannot disagree on what "this api.sql" means.
 API_SQL_VARS='$OSM_RELATION_ID $PG_MAX_PARALLEL_WORKERS $PG_MAX_PARALLEL_WORKERS_PER_GATHER $PG_MAX_PARALLEL_MAINTENANCE_WORKERS $PG_MAINTENANCE_WORK_MEM $PG_WORK_MEM $SPIELI_VERSION $IMPRESSUM_URL $PRIVACY_URL $SITE_URL'
 
-# Helper: hash of api.sql as it would be applied (after envsubst), so a changed
-# setting (PG_WORK_MEM, the legal URLs, the version) counts as a change too.
-_api_sql_hash() {
-    envsubst "$API_SQL_VARS" < /api.sql | sha256sum | cut -c1-16
+# ── Skipping an unchanged startup apply (#971) ──────────────────────────────
+# Rebuilding playground_stats is the importer's memory peak, and the daemon
+# used to do it on every start. An upgrade sweep therefore rebuilt each stack
+# twice, the second time in the background, and two stacks' rebuilds
+# overlapping took a 7.7 GB host into the OOM killer.
+#
+# A start may skip the apply only when BOTH still hold:
+#   - the rendered api.sql is the one recorded by the last completed apply
+#     (sql_hash: settings such as PG_WORK_MEM and the legal URLs included), and
+#   - the live schema is still the one that apply produced (schema_fp: the api
+#     functions and the playground_stats definition). Any other writer — a
+#     rollback image that does not record, `make db-apply` of an edited file,
+#     an import killed after osm2pgsql dropped the tables (cascading away the
+#     view) — changes or removes those, so the fingerprint no longer matches
+#     and the start applies as it always did.
+# Recorded only after psql finished with ON_ERROR_STOP, so a partial apply is
+# never recorded. In `public`, not `api`: PostgREST must not expose it.
+
+_psql_q() {
+    psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -A -q -c "$1"
 }
 
-# Helper: the hash recorded by the last apply that ran to completion, or empty.
-_recorded_api_sql_hash() {
-    psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
-        -t -A -c "SELECT sql_hash FROM public.spieli_schema_apply WHERE id = 1" \
+# Fingerprint of the live schema, or empty when it cannot be read.
+_schema_fingerprint() {
+    _psql_q "SELECT md5(
+               coalesce((SELECT string_agg(p.proname || '(' || pg_get_function_identity_arguments(p.oid) || ')' || md5(p.prosrc), ',' ORDER BY 1)
+                         FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+                         WHERE n.nspname = 'api'), '')
+               || '|' ||
+               coalesce((SELECT definition FROM pg_matviews
+                         WHERE schemaname = 'public' AND matviewname = 'playground_stats'), 'missing'))" \
         2>/dev/null || true
 }
 
-# Helper: record that this api.sql was applied completely (#971). Written only
-# after psql finished with ON_ERROR_STOP, so an apply killed partway is never
-# recorded and the next start applies again. In `public`, not `api`: PostgREST
-# must not expose it. Never fatal.
-_record_api_sql_hash() {
-    psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -q \
-        -c "CREATE TABLE IF NOT EXISTS public.spieli_schema_apply (id int PRIMARY KEY, sql_hash text NOT NULL, applied_at timestamptz NOT NULL DEFAULT now());
-            INSERT INTO public.spieli_schema_apply (id, sql_hash) VALUES (1, '$(_api_sql_hash)')
-            ON CONFLICT (id) DO UPDATE SET sql_hash = EXCLUDED.sql_hash, applied_at = now();" \
-        >/dev/null 2>&1 || true
+# "sql_hash schema_fp" as recorded by the last completed apply, or empty.
+_recorded_apply() {
+    _psql_q "SELECT sql_hash || ' ' || schema_fp FROM public.spieli_schema_apply WHERE id = 1" \
+        2>/dev/null || true
+}
+
+# Record a completed apply of the rendered file $1. Never fatal.
+_record_apply() {
+    _h=$(sha256sum "$1" | cut -c1-16)
+    _fp=$(_schema_fingerprint)
+    [ -n "$_fp" ] || return 0
+    _psql_q "CREATE TABLE IF NOT EXISTS public.spieli_schema_apply (
+               id int PRIMARY KEY, sql_hash text NOT NULL, schema_fp text NOT NULL,
+               applied_at timestamptz NOT NULL DEFAULT now());
+             ALTER TABLE public.spieli_schema_apply ADD COLUMN IF NOT EXISTS schema_fp text NOT NULL DEFAULT '';
+             INSERT INTO public.spieli_schema_apply (id, sql_hash, schema_fp) VALUES (1, '$_h', '$_fp')
+             ON CONFLICT (id) DO UPDATE SET sql_hash = EXCLUDED.sql_hash,
+               schema_fp = EXCLUDED.schema_fp, applied_at = now();" >/dev/null 2>&1 || true
+}
+
+# Forget the record — before anything that can leave the schema half-built.
+_forget_apply() {
+    _psql_q "DELETE FROM public.spieli_schema_apply WHERE id = 1" >/dev/null 2>&1 || true
+}
+
+# True when the startup apply can be skipped (see above).
+_apply_is_current() {
+    _tmp=$(mktemp)
+    envsubst "$API_SQL_VARS" < /api.sql > "$_tmp"
+    _want="$(sha256sum "$_tmp" | cut -c1-16) $(_schema_fingerprint)"
+    rm -f "$_tmp"
+    _have=$(_recorded_apply)
+    [ -n "$_have" ] && [ "${_want#* }" != "" ] && [ "$_have" = "$_want" ]
+}
+
+# The daemon is idle for a while (>= 30 min) and no heavy work is imminent.
+# scripts/upgrade-stacks.sh waits for exactly this token before it moves on to
+# the next stack, so keep the wording.
+_settled() {
+    [ "${1:-0}" -ge 1800 ] && echo "[importer] settled — idle for ${1}s"
+    return 0
 }
 
 # Helper: a random non-negative integer from /dev/urandom. awk's srand()
@@ -437,6 +489,10 @@ run_import() (
     trap 'exit' TERM INT
     trap '_clear_importing' EXIT
 
+    # osm2pgsql recreates the planet_osm_* tables, cascading away the views
+    # built on them; a kill from here until api.sql is re-applied leaves the
+    # schema half-built, so the record must not survive it.
+    _forget_apply
     echo "[importer] Starting osm2pgsql import on $IMPORT_PBF..."
     osm2pgsql \
         --host     "$POSTGRES_HOST" \
@@ -481,7 +537,7 @@ run_import() (
     psql -v ON_ERROR_STOP=1 \
         -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
         -f "$TMP_API_SQL"
-    _record_api_sql_hash
+    _record_apply "$TMP_API_SQL"
 
     # --------------------------------------------------------------------------- #
     # Record successful import timestamp (read by get_meta / federation-status).
@@ -613,7 +669,7 @@ run_api_apply() (
     psql -v ON_ERROR_STOP=1 \
         -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
         -f "$TMP_API_SQL"
-    _record_api_sql_hash
+    _record_apply "$TMP_API_SQL"
 
     psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
         -c "NOTIFY pgrst, 'reload schema';"
@@ -724,8 +780,8 @@ elif [ -n "$REIMPORT_INTERVAL_MIN_DAYS" ] && [ -n "$REIMPORT_INTERVAL_MAX_DAYS" 
     # applied each stack's schema twice (API_ONLY, then again here, in the
     # background), and two stacks' rebuilds overlapping took a 7.7 GB host into
     # the OOM killer. A new image with a changed api.sql still applies at once.
-    if [ "$IMPORT_STATE" = "t" ] && [ "$(_recorded_api_sql_hash)" = "$(_api_sql_hash)" ]; then
-        echo "[importer] api.sql unchanged since the last completed apply — skipping the startup apply."
+    if [ "$IMPORT_STATE" = "t" ] && _apply_is_current; then
+        echo "[importer] api.sql and the live schema unchanged since the last completed apply — skipping the startup apply."
     elif [ "$IMPORT_STATE" = "t" ]; then
         echo "[importer] Applying API schema on startup (image may carry schema changes)."
         # Never fatal. The marker proves a prior apply *started* finishing, not
@@ -769,6 +825,7 @@ elif [ -n "$REIMPORT_INTERVAL_MIN_DAYS" ] && [ -n "$REIMPORT_INTERVAL_MAX_DAYS" 
         if [ "$NOW" -lt "$NEXT_RUN" ]; then
             SLEEP_SECS=$((NEXT_RUN - NOW))
             echo "[importer] Last import $(_at "$LAST_TS"); next run in ${GRACE_DAYS}d + ${JITTER_SECS}s jitter, at $(_at "$NEXT_RUN")."
+            _settled "$SLEEP_SECS"
             sleep "$SLEEP_SECS"
         elif [ "$NOW" -lt "$DEADLINE" ]; then
             # Overdue. An upgrade sweep or a host reboot restarts every stack
@@ -778,6 +835,7 @@ elif [ -n "$REIMPORT_INTERVAL_MIN_DAYS" ] && [ -n "$REIMPORT_INTERVAL_MAX_DAYS" 
             # but never past the deadline.
             WAIT=$(( JITTER_SECS < DEADLINE - NOW ? JITTER_SECS : DEADLINE - NOW ))
             echo "[importer] Import overdue — waiting ${WAIT}s so restarted stacks do not import together; next run at $(_at $((NOW + WAIT)))."
+            _settled "$WAIT"
             sleep "$WAIT"
         else
             echo "[importer] Import overdue past MAX_DAYS + jitter — importing now."
@@ -790,6 +848,7 @@ elif [ -n "$REIMPORT_INTERVAL_MIN_DAYS" ] && [ -n "$REIMPORT_INTERVAL_MAX_DAYS" 
         JITTER_SECS=$(_jitter_secs "$REIMPORT_STARTUP_JITTER_MAX_HOURS")
         if [ "$JITTER_SECS" -gt 0 ]; then
             echo "[importer] Fresh install — startup jitter: sleeping ${JITTER_SECS}s (max ${REIMPORT_STARTUP_JITTER_MAX_HOURS}h), first import at $(_at $(($(date +%s) + JITTER_SECS)))."
+            _settled "$JITTER_SECS"
             sleep "$JITTER_SECS"
         fi
     fi
@@ -800,6 +859,7 @@ elif [ -n "$REIMPORT_INTERVAL_MIN_DAYS" ] && [ -n "$REIMPORT_INTERVAL_MAX_DAYS" 
             echo "[importer] Import completed successfully."
         else
             echo "[importer] Import failed. Retrying in 1 hour." >&2
+            _settled 3600
             sleep 3600
             continue
         fi
@@ -810,6 +870,7 @@ elif [ -n "$REIMPORT_INTERVAL_MIN_DAYS" ] && [ -n "$REIMPORT_INTERVAL_MAX_DAYS" 
         # MIN == MAX, where only each stack's own import duration moves it.
         JITTER_SECS=$(_jitter_secs "$REIMPORT_JITTER_HOURS")
         echo "[importer] Sleeping ${DAYS} days + ${JITTER_SECS}s; next run at $(_at $(($(date +%s) + DAYS * 86400 + JITTER_SECS)))."
+        _settled $((DAYS * 86400 + JITTER_SECS))
         sleep $((DAYS * 86400 + JITTER_SECS))
     done
 else

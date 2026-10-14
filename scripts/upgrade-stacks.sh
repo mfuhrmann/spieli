@@ -42,6 +42,47 @@ STACKS=(
 # schema apply, or an import that was already overdue). A big state's full
 # import can take a while; the sweep stops rather than overlap two stacks.
 SETTLE_TIMEOUT_MIN="${SETTLE_TIMEOUT_MIN:-120}"
+[[ "$SETTLE_TIMEOUT_MIN" =~ ^[1-9][0-9]*$ ]] \
+  || { echo "SETTLE_TIMEOUT_MIN must be a whole number of minutes >= 1 (got '$SETTLE_TIMEOUT_MIN')" >&2; exit 2; }
+
+# Wait until a data-node's importer has SETTLED (#971) — "[importer] settled"
+# is printed by import.sh only when the daemon is about to be idle for 30+
+# minutes, i.e. no schema rebuild or import is running or imminent. The older
+# wording is accepted so a rollback sweep onto a previous image does not hang.
+# Only the log written since the last poll is read, so a long osm2pgsql log is
+# not re-streamed every 10 s.
+wait_for_settle() {
+  local since="$1" deadline=$(( $(date +%s) + SETTLE_TIMEOUT_MIN * 60 )) last_report=0 now chunk
+  while :; do
+    now=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+    chunk=$(docker compose "${profile_flags[@]}" logs --no-color --since "$since" importer 2>/dev/null || true)
+    if grep -qE '\[importer\] settled|until next (scheduled run|import)' <<< "$chunk"; then
+      return 0
+    fi
+    since="$now"
+    (( $(date +%s) >= deadline )) && return 1
+    if (( $(date +%s) - last_report >= 60 )); then
+      last_report=$(date +%s)
+      [[ -n "$chunk" ]] && echo "  still working: $(tail -n 1 <<< "$chunk" | cut -c1-140)"
+    fi
+    sleep 10
+  done
+}
+
+# Wait for an import that was already running when the sweep reached a stack.
+wait_for_import_end() {
+  local deadline=$(( $(date +%s) + SETTLE_TIMEOUT_MIN * 60 ))
+  while :; do
+    curl -s --max-time 10 "http://localhost:${port}/api/rpc/get_meta" | python3 -c "import sys,json
+try:
+    d=json.load(sys.stdin); d=d[0] if isinstance(d,list) and d else d
+    sys.exit(0 if isinstance(d,dict) and not d.get('importing') else 1)
+except Exception:
+    sys.exit(1)" 2>/dev/null && return 0
+    (( $(date +%s) >= deadline )) && return 1
+    sleep 30
+  done
+}
 
 # ── Sweep bookkeeping ─────────────────────────────────────────────────────────
 # Recorded as the sweep progresses so that any abort — a planned fail() or an
@@ -51,7 +92,6 @@ SETTLE_TIMEOUT_MIN="${SETTLE_TIMEOUT_MIN:-120}"
 upgraded=()        # stacks that finished every step
 verify_failed=()   # stacks upgraded, but whose post-upgrade check was inconclusive
 current=""         # stack being processed right now
-reimport_pids=()   # "name:pid" for forced reimports launched in the background
 schema_skipped=()  # stacks whose schema apply was skipped (import in progress)
 
 # $1 = exit code, rest = reason.
@@ -69,20 +109,6 @@ report_abort() {
   echo "  NOT upgraded:              that stack and every one after it." >&2
   echo "                             Re-run after fixing — completed stacks are idempotent." >&2
 
-  # A forced reimport is launched detached, so it outlives this script. Re-running
-  # the sweep while one is in flight makes the next api.sql step race it on the
-  # playground_stats DROP/CREATE — the race documented at the API_ONLY step below.
-  local entry pid
-  for entry in "${reimport_pids[@]:-}"; do
-    [[ -n "$entry" ]] || continue
-    pid=${entry##*:}
-    if kill -0 "$pid" 2>/dev/null; then
-      echo "" >&2
-      echo "  WARNING: a forced reimport for ${entry%%:*} is still running (PID $pid)." >&2
-      echo "           Wait for it to finish before re-running, or the api.sql step" >&2
-      echo "           will race it and fail." >&2
-    fi
-  done
   exit "$rc"
 }
 
@@ -152,6 +178,8 @@ for entry in "${STACKS[@]}"; do
     || fail "docker compose pull failed for $name — later stacks were NOT upgraded, re-run after fixing"
 
   # Pure hub stacks (DEPLOY_MODE=ui) have no importer — skip importer steps.
+  settle_since=""
+  wait_import=""
   if [[ "$profiles" == *"data-node"* ]]; then
     # The order below is load-bearing, and the previous order corrupted a stack
     # during the v0.9.0 sweep (#800). What went wrong:
@@ -195,6 +223,7 @@ except Exception:
       echo "  database partially imported. The app was upgraded; re-run the sweep"
       echo "  for this stack once the import has finished."
       schema_skipped+=("$name (import in progress)")
+      wait_import=1
     else
       echo "→ Stopping daemon importer so it cannot race the schema apply..."
       docker compose "${profile_flags[@]}" stop importer \
@@ -217,32 +246,6 @@ except Exception:
       settle_since=$(date -u +%Y-%m-%dT%H:%M:%SZ)
       docker compose "${profile_flags[@]}" up -d --force-recreate importer
 
-      # Wait for the recreated daemon to SETTLE before touching the next stack
-      # (#971). Its startup path may still rebuild playground_stats (when the
-      # api.sql hash differs from the last completed apply) or run an overdue
-      # import, both in the background — and the get_meta check below cannot
-      # see either, because the old view keeps answering 200 during a
-      # build-then-swap (#720). Moving on regardless overlapped two stacks'
-      # rebuilds during the v0.12.0 sweep and took the host into the OOM
-      # killer. "Settled" is the daemon announcing its next run (or that it
-      # has nothing to apply yet); the older wording is matched too, so a
-      # rollback sweep onto a previous image does not hang.
-      echo "→ Waiting for the importer to settle (schema apply / overdue import)..."
-      settled=""
-      for ((i = 0; i < SETTLE_TIMEOUT_MIN * 6; i++)); do
-        if docker compose "${profile_flags[@]}" logs --no-color --since "$settle_since" importer 2>/dev/null \
-            | grep -qE 'next run (at|in)|first import at|until next (scheduled run|import)|No completed import on record'; then
-          settled=1
-          break
-        fi
-        if (( i > 0 && i % 6 == 0 )); then
-          last=$(docker compose "${profile_flags[@]}" logs --no-color --since "$settle_since" importer 2>/dev/null | tail -n 1)
-          echo "  still working after $((i / 6)) min: ${last:0:140}"
-        fi
-        sleep 10
-      done
-      [[ -n "$settled" ]] \
-        || fail "the importer for $name did not settle within ${SETTLE_TIMEOUT_MIN} min — stopping so the next stack's rebuild cannot overlap it. Check 'docker compose logs importer' there, then re-run."
     fi
   else
     echo "→ Pure hub — no importer, skipping api.sql step."
@@ -347,15 +350,29 @@ except Exception:
     # image the stack will actually keep running.
     if [[ "$playground_count" -eq 0 ]]; then
       logfile="/tmp/${name}-reimport.log"
-      echo "→ No playgrounds found — triggering forced reimport in background (log: $logfile)"
-      (
-        docker compose "${profile_flags[@]}" run --rm \
-          -e REIMPORT_INTERVAL_MIN_DAYS= \
-          -e REIMPORT_INTERVAL_MAX_DAYS= \
-          importer
-      ) > "$logfile" 2>&1 &
-      reimport_pids+=("$name:$!")
-      echo "  PID $! — check log when done: tail -f $logfile"
+      # In the foreground, not `&`: a background reimport overlapped the next
+      # stack's schema rebuild, the memory peak #971 is about. The sweep waits.
+      echo "→ No playgrounds found — running a forced reimport now (log: $logfile)"
+      docker compose "${profile_flags[@]}" run --rm \
+        -e REIMPORT_INTERVAL_MIN_DAYS= \
+        -e REIMPORT_INTERVAL_MAX_DAYS= \
+        importer > "$logfile" 2>&1 \
+        || echo "  WARNING: forced reimport failed — see $logfile"
+    fi
+
+    # One heavy job at a time on the host (#971). Only now, after the app was
+    # restarted and verified, so the stack never runs the old app against the
+    # new schema while we wait. A stack whose daemon was recreated may still be
+    # rebuilding playground_stats or about to run an overdue import; a stack
+    # skipped because it was importing is still importing.
+    if [[ -n "$settle_since" ]]; then
+      echo "→ Waiting for the importer to settle before the next stack (max ${SETTLE_TIMEOUT_MIN} min)..."
+      wait_for_settle "$settle_since" \
+        || fail "the importer for $name did not settle within ${SETTLE_TIMEOUT_MIN} min — stopping so the next stack cannot overlap it. Check 'docker compose logs importer' there, then re-run."
+    elif [[ -n "$wait_import" ]]; then
+      echo "→ Waiting for the running import to finish before the next stack (max ${SETTLE_TIMEOUT_MIN} min)..."
+      wait_for_import_end \
+        || fail "the import on $name was still running after ${SETTLE_TIMEOUT_MIN} min — stopping so the next stack cannot overlap it. Re-run when it has finished."
     fi
   fi
 

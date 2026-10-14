@@ -220,7 +220,7 @@ earlier version of this page described:
 
 The hub entry skips steps 2–4 automatically.
 
-**The sweep waits for each data-node to settle** (#971). After recreating a stack's importer it waits until the daemon announces its next run (`next run in … / at …`) before touching the next stack — up to `SETTLE_TIMEOUT_MIN` (default 120) minutes, then it stops rather than overlap two stacks. Before, it moved on as soon as `get_meta` answered, which it does at once because the old view keeps serving during a rebuild; during the v0.12.0 sweep two stacks' rebuilds overlapped and the host ran out of memory. Combined with the startup apply now skipping an unchanged `api.sql`, a sweep runs one rebuild at a time.
+**The sweep runs one heavy job at a time** (#971). After a data-node's app is restarted and verified, the sweep waits until its importer logs `[importer] settled` — no schema rebuild or import running or imminent — before touching the next stack; a stack that was mid-import waits for that import to end, and the zero-playground safety-net reimport now runs in the foreground. Up to `SETTLE_TIMEOUT_MIN` (default 120) minutes each, then the sweep stops rather than overlap two stacks. Before, it moved on as soon as `get_meta` answered, which it does at once because the old view keeps serving during a rebuild; during the v0.12.0 sweep two stacks' rebuilds overlapped and the host ran out of memory. Combined with the daemon skipping an unchanged startup apply, a sweep of already-current stacks does no rebuild at all.
 
 **A sweep restarts every import clock.** Recreating the daemon importer runs
 its startup grace check, and every stack whose import is overdue imports right
