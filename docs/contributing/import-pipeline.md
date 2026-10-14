@@ -85,7 +85,7 @@ The most important post-import step in `importer/api.sql` is building the `playg
 It is built entirely from the standard osm2pgsql tables:
 
 - Playground polygons and nodes come from `planet_osm_polygon` (`leisure = 'playground'`) and `planet_osm_point`.
-- Equipment and trees are joined from `planet_osm_point` and `planet_osm_polygon` using spatial containment (`ST_Intersects` / `ST_DWithin`).
+- Equipment and trees are joined from `planet_osm_point` and `planet_osm_polygon` using spatial containment (`ST_Intersects` / `ST_DWithin`). Trees count within 15 m of the playground. A distance in metres must go through `public.metres_to_3857(metres, lat)` before it is compared to `way`: EPSG:3857 units shrink by cos(latitude), so a bare `15` covers only ~9.5 m in Hessen.
 - Less common tags (e.g. `panoramax`, `opening_hours`) are read from the `tags` hstore column.
 
 ### How the rebuild avoids an outage

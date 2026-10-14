@@ -289,12 +289,15 @@ CREATE MATERIALIZED VIEW public.playground_stats_new AS
       pl.osm_id,
       pl.osm_type,
       COUNT(t.osm_id)::int AS tree_count
-    -- 15 m on the ground, not 15 EPSG:3857 units: those shrink by cos(lat),
-    -- which counted only ~9.5 m around a playground in Fulda (#957).
     FROM all_playgrounds pl
+    -- 15 m on the ground, not 15 EPSG:3857 units: those shrink by cos(lat),
+    -- which counted only ~9.5 m around a playground in Fulda (#957). Computed
+    -- once per playground, not in the join's recheck for every tree.
+    CROSS JOIN LATERAL (
+      SELECT public.metres_to_3857(15, ST_Y(ST_Transform(ST_Centroid(pl.way), 4326))) AS d
+    ) geo
     LEFT JOIN planet_osm_point t
-      ON ST_DWithin(t.way, pl.way,
-           public.metres_to_3857(15, ST_Y(ST_Transform(ST_Centroid(pl.way), 4326))))
+      ON ST_DWithin(t.way, pl.way, geo.d)
       AND t.natural = 'tree'
     GROUP BY pl.osm_id, pl.osm_type
   ),
