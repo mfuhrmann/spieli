@@ -10,7 +10,7 @@
 <script>
   import { onMount, onDestroy } from 'svelte';
   import { transform } from 'ol/proj';
-  import { X, Share2, Check, ChevronDown, ChevronUp, ChevronRight, Image, Package, Navigation, Star, Info, Phone, Mail, Accessibility } from 'lucide-svelte';
+  import { X, Share2, Check, ChevronDown, ChevronUp, ChevronRight, Image, Package, Navigation, Star, Info, Phone, Mail, Accessibility, PencilLine } from 'lucide-svelte';
   import { _, locale } from 'svelte-i18n';
 
   import { selection } from '../stores/selection.js';
@@ -615,7 +615,8 @@
         </div>
         {#if detailHintKey}
           <p class="detail-hint" data-testid="mapping-detail-hint">
-            {$_(detailHintKey, { values: { detailed: $_('mappingDetail.detailed'), basic: $_('mappingDetail.basic') } })}
+            <PencilLine class="detail-hint__icon" aria-hidden="true" />
+            <span>{$_(detailHintKey, { values: { detailed: $_('mappingDetail.detailed'), basic: $_('mappingDetail.basic') } })}</span>
           </p>
         {/if}
       {/if}
@@ -1257,11 +1258,28 @@
 
   /* Pulled up against the status row's mb-4 so it reads as the badge's
      caption, not as a separate section. */
+  /* A callout rather than a grey line: among the panel's other content the
+     plain line went unnoticed (#982). Amber reads as "to do" without the
+     alarm of red, and stays clear of the green mapping-detail ramp. */
   .detail-hint {
-    margin: -0.5rem 0 1rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin: -0.25rem 0 1rem;
+    padding: 8px 10px;
+    border-radius: 8px;
+    background: #fffbeb;
+    border: 1px solid #fde68a;
     font-size: 0.8125rem;
     line-height: 1.4;
-    color: #4b5563;
+    color: #78350f;
+  }
+  .detail-hint :global(.detail-hint__icon) {
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    margin-top: 1px;
+    color: #b45309;
   }
 
   .data-age-chip {
