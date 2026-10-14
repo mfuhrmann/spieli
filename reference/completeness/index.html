@@ -2231,7 +2231,7 @@
 <p>The identifiers <code>complete</code> / <code>partial</code> / <code>missing</code> are wire and storage values — they appear in API responses, in <code>playground_stats</code>, and in the <code>filterStore</code> keys. They deliberately differ from the labels shown to users; renaming them would break federation between backends on different versions.</p>
 <p>How the three states are coloured is described in <a href="#colours">Colours</a> below; every surface reads the same palette module, so the legend, the polygons and the ring arcs cannot disagree.</p>
 <h2 id="hints-in-the-panel">Hints in the panel<a class="headerlink" href="#hints-in-the-panel" title="Permanent link">&para;</a></h2>
-<p>With mapping detail on, <code>PlaygroundPanel</code> shows a line under the badge naming the missing input (#919), from <code>mappingDetailHintKey()</code> in <code>completeness.js</code>, which reads the same <code>mappingDetailInputs()</code> the rule does — the hint and the badge cannot disagree:</p>
+<p>With mapping detail on, <code>PlaygroundPanel</code> shows a highlighted hint under the badge naming the missing input (#919), from <code>mappingDetailHintKey()</code> in <code>completeness.js</code>, which reads the same <code>mappingDetailInputs()</code> the rule does — the hint and the badge cannot disagree:</p>
 <table>
 <thead>
 <tr>
@@ -2244,17 +2244,17 @@
 <tr>
 <td>no details yet</td>
 <td>both</td>
-<td>One piece of play equipment makes it "basic", and so does the surface or opening hours (if it has any). Both together: "detailed".</td>
+<td>Not mapped yet: play equipment, and the surface or opening hours (if it has any).</td>
 </tr>
 <tr>
 <td>basic</td>
 <td>equipment</td>
-<td>Only the play equipment is missing for "detailed".</td>
+<td>Not mapped yet: the play equipment.</td>
 </tr>
 <tr>
 <td>basic</td>
 <td>info</td>
-<td>Only the surface — or opening hours, if it has any — is missing for "detailed".</td>
+<td>Not mapped yet: the surface or opening hours (if it has any).</td>
 </tr>
 <tr>
 <td>detailed</td>
