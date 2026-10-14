@@ -153,6 +153,35 @@ _clear_importing() {
         2>/dev/null || true
 }
 
+# The variables api.sql is rendered with. One list, so the applies and the
+# hash below cannot disagree on what "this api.sql" means.
+API_SQL_VARS='$OSM_RELATION_ID $PG_MAX_PARALLEL_WORKERS $PG_MAX_PARALLEL_WORKERS_PER_GATHER $PG_MAX_PARALLEL_MAINTENANCE_WORKERS $PG_MAINTENANCE_WORK_MEM $PG_WORK_MEM $SPIELI_VERSION $IMPRESSUM_URL $PRIVACY_URL $SITE_URL'
+
+# Helper: hash of api.sql as it would be applied (after envsubst), so a changed
+# setting (PG_WORK_MEM, the legal URLs, the version) counts as a change too.
+_api_sql_hash() {
+    envsubst "$API_SQL_VARS" < /api.sql | sha256sum | cut -c1-16
+}
+
+# Helper: the hash recorded by the last apply that ran to completion, or empty.
+_recorded_api_sql_hash() {
+    psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+        -t -A -c "SELECT sql_hash FROM public.spieli_schema_apply WHERE id = 1" \
+        2>/dev/null || true
+}
+
+# Helper: record that this api.sql was applied completely (#971). Written only
+# after psql finished with ON_ERROR_STOP, so an apply killed partway is never
+# recorded and the next start applies again. In `public`, not `api`: PostgREST
+# must not expose it. Never fatal.
+_record_api_sql_hash() {
+    psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -q \
+        -c "CREATE TABLE IF NOT EXISTS public.spieli_schema_apply (id int PRIMARY KEY, sql_hash text NOT NULL, applied_at timestamptz NOT NULL DEFAULT now());
+            INSERT INTO public.spieli_schema_apply (id, sql_hash) VALUES (1, '$(_api_sql_hash)')
+            ON CONFLICT (id) DO UPDATE SET sql_hash = EXCLUDED.sql_hash, applied_at = now();" \
+        >/dev/null 2>&1 || true
+}
+
 # Helper: a random non-negative integer from /dev/urandom. awk's srand()
 # seeds from the current second, so containers started together (compose up,
 # an upgrade sweep, a host reboot) all drew the *same* "random" interval and
@@ -448,10 +477,11 @@ run_import() (
     # timestamp").
     TMP_API_SQL=$(mktemp)
     trap 'rm -f "$TMP_API_SQL"; _clear_importing' EXIT
-    envsubst '$OSM_RELATION_ID $PG_MAX_PARALLEL_WORKERS $PG_MAX_PARALLEL_WORKERS_PER_GATHER $PG_MAX_PARALLEL_MAINTENANCE_WORKERS $PG_MAINTENANCE_WORK_MEM $PG_WORK_MEM $SPIELI_VERSION $IMPRESSUM_URL $PRIVACY_URL $SITE_URL' < /api.sql > "$TMP_API_SQL"
+    envsubst "$API_SQL_VARS" < /api.sql > "$TMP_API_SQL"
     psql -v ON_ERROR_STOP=1 \
         -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
         -f "$TMP_API_SQL"
+    _record_api_sql_hash
 
     # --------------------------------------------------------------------------- #
     # Record successful import timestamp (read by get_meta / federation-status).
@@ -579,10 +609,11 @@ run_api_apply() (
     echo "[importer] Applying API schema..."
     TMP_API_SQL=$(mktemp)
     trap 'rm -f "$TMP_API_SQL"' EXIT
-    envsubst '$OSM_RELATION_ID $PG_MAX_PARALLEL_WORKERS $PG_MAX_PARALLEL_WORKERS_PER_GATHER $PG_MAX_PARALLEL_MAINTENANCE_WORKERS $PG_MAINTENANCE_WORK_MEM $PG_WORK_MEM $SPIELI_VERSION $IMPRESSUM_URL $PRIVACY_URL $SITE_URL' < /api.sql > "$TMP_API_SQL"
+    envsubst "$API_SQL_VARS" < /api.sql > "$TMP_API_SQL"
     psql -v ON_ERROR_STOP=1 \
         -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
         -f "$TMP_API_SQL"
+    _record_api_sql_hash
 
     psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
         -c "NOTIFY pgrst, 'reload schema';"
@@ -687,7 +718,15 @@ elif [ -n "$REIMPORT_INTERVAL_MIN_DAYS" ] && [ -n "$REIMPORT_INTERVAL_MAX_DAYS" 
         fi
     done
 
-    if [ "$IMPORT_STATE" = "t" ]; then
+    # Skip the apply when this exact api.sql was already applied to completion
+    # (#971). Rebuilding playground_stats is the memory peak of the whole
+    # importer, and the startup apply ran it on EVERY restart: an upgrade sweep
+    # applied each stack's schema twice (API_ONLY, then again here, in the
+    # background), and two stacks' rebuilds overlapping took a 7.7 GB host into
+    # the OOM killer. A new image with a changed api.sql still applies at once.
+    if [ "$IMPORT_STATE" = "t" ] && [ "$(_recorded_api_sql_hash)" = "$(_api_sql_hash)" ]; then
+        echo "[importer] api.sql unchanged since the last completed apply — skipping the startup apply."
+    elif [ "$IMPORT_STATE" = "t" ]; then
         echo "[importer] Applying API schema on startup (image may carry schema changes)."
         # Never fatal. The marker proves a prior apply *started* finishing, not
         # that it completed: api.sql is not applied in a single transaction, and

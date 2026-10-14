@@ -20,7 +20,7 @@ A random interval in `[MIN, MAX]` days is chosen after each successful import, s
 
 Every daemon-mode start runs the same three steps before the schedule takes over:
 
-1. **Apply `api.sql`** — so schema changes carried by a new image take effect at once instead of waiting up to `REIMPORT_INTERVAL_MAX_DAYS` for the next import. Without this a Watchtower update would leave the app on the old schema.
+1. **Apply `api.sql`** — so schema changes carried by a new image take effect at once instead of waiting up to `REIMPORT_INTERVAL_MAX_DAYS` for the next import. Without this a Watchtower update would leave the app on the old schema. **Skipped when nothing changed** (#971): every completed apply records a hash of the rendered `api.sql` (settings such as `PG_WORK_MEM` and the legal URLs included) in `public.spieli_schema_apply`, and a start with the same hash logs `api.sql unchanged since the last completed apply — skipping the startup apply.` Rebuilding `playground_stats` is the importer's memory peak; running it on every restart is what let an upgrade sweep's rebuilds overlap and exhaust a 7.7 GB host. A new image with a changed `api.sql`, or a changed setting, still applies at once.
 2. **Grace check** — if a recent import is on record, sleep the remainder of the interval instead of re-importing.
 3. **Import** — otherwise run the import immediately, then loop.
 

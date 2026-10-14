@@ -38,6 +38,11 @@ STACKS=(
 )
 # ─────────────────────────────────────────────────────────────────────────────
 
+# Minutes to wait per data-node for its recreated importer to settle (startup
+# schema apply, or an import that was already overdue). A big state's full
+# import can take a while; the sweep stops rather than overlap two stacks.
+SETTLE_TIMEOUT_MIN="${SETTLE_TIMEOUT_MIN:-120}"
+
 # ── Sweep bookkeeping ─────────────────────────────────────────────────────────
 # Recorded as the sweep progresses so that any abort — a planned fail() or an
 # unexpected death under `set -e` — can say how far it got. Without this, a run
@@ -209,7 +214,35 @@ except Exception:
       # --force-recreate, NOT a plain `up -d`: the latter restarts the existing
       # container, which is how the daemon stayed on the old image and became the
       # last writer.
+      settle_since=$(date -u +%Y-%m-%dT%H:%M:%SZ)
       docker compose "${profile_flags[@]}" up -d --force-recreate importer
+
+      # Wait for the recreated daemon to SETTLE before touching the next stack
+      # (#971). Its startup path may still rebuild playground_stats (when the
+      # api.sql hash differs from the last completed apply) or run an overdue
+      # import, both in the background — and the get_meta check below cannot
+      # see either, because the old view keeps answering 200 during a
+      # build-then-swap (#720). Moving on regardless overlapped two stacks'
+      # rebuilds during the v0.12.0 sweep and took the host into the OOM
+      # killer. "Settled" is the daemon announcing its next run (or that it
+      # has nothing to apply yet); the older wording is matched too, so a
+      # rollback sweep onto a previous image does not hang.
+      echo "→ Waiting for the importer to settle (schema apply / overdue import)..."
+      settled=""
+      for ((i = 0; i < SETTLE_TIMEOUT_MIN * 6; i++)); do
+        if docker compose "${profile_flags[@]}" logs --no-color --since "$settle_since" importer 2>/dev/null \
+            | grep -qE 'next run (at|in)|first import at|until next (scheduled run|import)|No completed import on record'; then
+          settled=1
+          break
+        fi
+        if (( i > 0 && i % 6 == 0 )); then
+          last=$(docker compose "${profile_flags[@]}" logs --no-color --since "$settle_since" importer 2>/dev/null | tail -n 1)
+          echo "  still working after $((i / 6)) min: ${last:0:140}"
+        fi
+        sleep 10
+      done
+      [[ -n "$settled" ]] \
+        || fail "the importer for $name did not settle within ${SETTLE_TIMEOUT_MIN} min — stopping so the next stack's rebuild cannot overlap it. Check 'docker compose logs importer' there, then re-run."
     fi
   else
     echo "→ Pure hub — no importer, skipping api.sql step."
