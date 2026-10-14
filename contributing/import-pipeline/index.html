@@ -2231,7 +2231,7 @@
 <p>It is built entirely from the standard osm2pgsql tables:</p>
 <ul>
 <li>Playground polygons and nodes come from <code>planet_osm_polygon</code> (<code>leisure = 'playground'</code>) and <code>planet_osm_point</code>.</li>
-<li>Equipment and trees are joined from <code>planet_osm_point</code> and <code>planet_osm_polygon</code> using spatial containment (<code>ST_Intersects</code> / <code>ST_DWithin</code>).</li>
+<li>Equipment and trees are joined from <code>planet_osm_point</code> and <code>planet_osm_polygon</code> using spatial containment (<code>ST_Intersects</code> / <code>ST_DWithin</code>). Trees count within 15 m of the playground. A distance in metres must go through <code>public.metres_to_3857(metres, lat)</code> before it is compared to <code>way</code>: EPSG:3857 units shrink by cos(latitude), so a bare <code>15</code> covers only ~9.5 m in Hessen.</li>
 <li>Less common tags (e.g. <code>panoramax</code>, <code>opening_hours</code>) are read from the <code>tags</code> hstore column.</li>
 </ul>
 <h3 id="how-the-rebuild-avoids-an-outage">How the rebuild avoids an outage<a class="headerlink" href="#how-the-rebuild-avoids-an-outage" title="Permanent link">&para;</a></h3>
