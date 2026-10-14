@@ -29,13 +29,21 @@
       "hasDogs": "Psy povolené",
       "shade": "S tieňom",
       "theme": "Tematické"
-    }
+    },
+    "mappingDetail": {
+      "title": "Úroveň zmapovania",
+      "showComplete": "podrobné",
+      "showPartial": "základné",
+      "showMissing": "zatiaľ bez podrobností"
+    },
+    "standalonePitchesZoomHint": "Zobrazia sa po ďalšom priblížení."
   },
   "hover": {
     "tagWater": "Voda",
     "tagBaby": "Bábätko",
     "tagTrees": "Stromy",
-    "playground": "Ihrisko"
+    "playground": "Ihrisko",
+    "tagWheelchair": "Vozík"
   },
   "zoom": {
     "in": "Priblížiť",
@@ -43,7 +51,9 @@
   },
   "panoramax": {
     "noPhotos": "Zatiaľ žiadne fotky.",
-    "fullscreen": "Na celú obrazovku"
+    "fullscreen": "Na celú obrazovku",
+    "loadViewer": "Zobraziť fotografiu z ulice",
+    "loadViewerHint": "Otvorí interaktívny prehliadač Panoramax, ktorý ukladá vlastné cookies"
   },
   "search": {
     "placeholder": "Hľadať…",
@@ -75,7 +85,8 @@
     "equipment": "Výbava",
     "shadow": "Tieň",
     "surroundings": "Okolie",
-    "reviews": "Hodnotenia"
+    "reviews": "Hodnotenia",
+    "mappingDetail": "Úroveň zmapovania"
   },
   "location": {
     "btn": "Moja poloha",
@@ -85,13 +96,7 @@
     "near": "Neďaleko od {name}"
   },
   "nearby": {
-    "title": "Neďaleko od {label}",
-    "header": "Neďaleko",
-    "loading": "Načítavanie…",
-    "empty": "Nenašli sa žiadne ihriská.",
-    "unknownName": "Neznáme ihrisko",
-    "defaultName": "Ihrisko",
-    "thisLocation": "táto poloha"
+    "defaultName": "Ihrisko"
   },
   "equipment": {
     "deviceCount": "{count, plural, one {# hrací prvok} few {# hracie prvky} many {# hracie prvky} other {# hracích prvkov}}",
@@ -333,7 +338,8 @@
       "introText": "Údaje na tejto mape pochádzajú z {osmLink}. Môžete ju upraviť priamo cez {mapcompleteLink} - potrebujete len účet na OpenStreetMap.",
       "githubLabel": "Zdrojový kód na GitHube",
       "translateLabel": "Pomôžte s prekladom na Weblate",
-      "weblateCredit": "Preklad od komunity na {weblateLink}"
+      "weblateCredit": "Preklad od komunity na {weblateLink}",
+      "installApp": "Nainštalovať ako aplikáciu"
     },
     "about": {
       "history": {
@@ -387,7 +393,12 @@
     "lastReachableMinutes": "naposledy dostupné pred {m} min",
     "lastReachableHours": "naposledy dostupné pred {h} hod",
     "neverReachable": "nikdy nebolo dostupné",
-    "observationStale": "Stav pozorovania zastaraný"
+    "observationStale": "Stav pozorovania zastaraný",
+    "macroCoverage": "Filter pokrýva {answered} z {total, plural, one {# oblasti} few {# oblastí} many {# oblastí} other {# oblastí}}",
+    "importing": "aktualizuje sa",
+    "bboxOverlap": "prekrýva sa s {name}",
+    "noPosition": "Poloha nie je nastavená",
+    "troubleshootingLink": "Riešenie problémov"
   },
   "details": {
     "sizeLabel": "Veľkosť",
@@ -453,7 +464,25 @@
       "unpaved": "Nedláždené",
       "wood": "Drevo",
       "woodchips": "Drevený mulč"
-    }
+    },
+    "treeShadow": "Stromy / stromoradia",
+    "forBaby": "Pre bábätká",
+    "forToddler": "Pre batoľatá",
+    "wheelchairPlay": "Vhodné pre vozíčkarov",
+    "wheelchairPlayNone": "Žiadne prvky pre vozíčkarov",
+    "shaded": "V tieni",
+    "notShaded": "Bez tieňa",
+    "ageGroups": {
+      "toddler": "Batoľa",
+      "child": "Dieťa",
+      "preteen": "Staršie dieťa",
+      "teen": "Tínedžer"
+    },
+    "themes": "Témy",
+    "themedPlayground": "Tematické ihrisko: {theme}",
+    "atGlance": "Na prvý pohľad",
+    "contactSection": "Kontakt",
+    "equipmentSection": "Vybavenie"
   },
   "popup": {
     "clickForDetails": "Kliknite pre podrobnosti",
@@ -657,7 +686,54 @@
       "water": "Voda",
       "western": "Western",
       "whale": "Veľryba",
-      "windmill": "Veterný mlyn"
+      "windmill": "Veterný mlyn",
+      "adventure": "Dobrodružstvo",
+      "airplane": "Lietadlo",
+      "animals": "Zvieratá",
+      "barrel": "Sud",
+      "bear": "Medveď",
+      "bee": "Včela",
+      "beetle": "Chrobák",
+      "bible": "Biblia",
+      "bird": "Vták",
+      "bridge": "Most",
+      "caterpillar": "Húsenica",
+      "chicken": "Sliepka",
+      "circus": "Cirkus",
+      "climbing": "Lezenie",
+      "cow": "Krava",
+      "crocodile": "Krokodíl",
+      "dinosaur": "Dinosaurus",
+      "dog": "Pes",
+      "dolphin": "Delfín",
+      "forest": "Les",
+      "frog": "Žaba",
+      "giraffe": "Žirafa",
+      "insect": "Hmyz",
+      "koala": "Koala",
+      "ladybug": "Lienka",
+      "lion": "Lev",
+      "motorbike": "Motorka",
+      "motorcycle": "Motocykel",
+      "music": "Hudba",
+      "nature": "Príroda",
+      "octopus": "Chobotnica",
+      "panda": "Panda",
+      "pig": "Prasa",
+      "pirate": "Pirát",
+      "pirate_ship": "Pirátska loď",
+      "rabbit": "Zajac",
+      "rocket": "Raketa",
+      "slide": "Šmykľavka",
+      "snail": "Slimák",
+      "space": "Vesmír",
+      "squirrel": "Veverička",
+      "swing": "Hojdačka",
+      "tractor": "Traktor",
+      "tree": "Strom",
+      "treehouse": "Domček na strome",
+      "truck": "Nákladné auto",
+      "turtle": "Korytnačka"
     }
   },
   "legal": {
@@ -676,5 +752,100 @@
   },
   "map": {
     "ariaLabel": "Mapa ihrísk"
+  },
+  "basemap": {
+    "outsideCoverage": "Pre túto oblasť nie sú k dispozícii podrobné mapové údaje."
+  },
+  "mappingDetail": {
+    "legendTitle": "Úroveň zmapovania",
+    "detailed": "podrobné",
+    "basic": "základné",
+    "noDetails": "zatiaľ bez podrobností",
+    "hasPhoto": "má fotografiu",
+    "toggle": "Úroveň zmapovania",
+    "show": "Zobraziť úroveň zmapovania",
+    "hint": "Vyfarbí ihriská podľa toho, ako úplne sú zmapované v OpenStreetMap – užitočné, ak pridávate údaje do OSM.",
+    "filterTitle": "Zobraziť",
+    "nextStep": {
+      "noInfo": "Na „{detailed}“ chýba už len povrch – alebo otváracie hodiny, ak nejaké má.",
+      "noEquipment": "Na „{detailed}“ chýbajú už len herné prvky.",
+      "noDetails": "Jeden herný prvok ho urobí „{basic}“, rovnako aj povrch alebo otváracie hodiny (ak nejaké má). Oboje spolu: „{detailed}“."
+    }
+  },
+  "commons": {
+    "viewSource": "Zobraziť na Wikimedia Commons"
+  },
+  "pitch": {
+    "label": "Športové ihrisko",
+    "sportsLabel": "Športy",
+    "lightingLabel": "Osvetlenie",
+    "accessLabel": "Prístup",
+    "titles": {
+      "soccer": "Futbalové ihrisko",
+      "basketball": "Basketbalové ihrisko",
+      "tennis": "Tenisový kurt",
+      "table_tennis": "Stôl na stolný tenis",
+      "volleyball": "Volejbalové ihrisko",
+      "beachvolleyball": "Ihrisko na plážový volejbal",
+      "skateboard": "Skatepark",
+      "equestrian": "Jazdecká plocha",
+      "athletics": "Atletická dráha",
+      "boules": "Ihrisko na petang",
+      "chess": "Vonkajší šach",
+      "baseball": "Bejzbalové ihrisko",
+      "multi": "Multifunkčné ihrisko",
+      "generic": "Športové ihrisko"
+    },
+    "sports": {
+      "soccer": "Futbal",
+      "basketball": "Basketbal",
+      "tennis": "Tenis",
+      "table_tennis": "Stolný tenis",
+      "volleyball": "Volejbal",
+      "beachvolleyball": "Plážový volejbal",
+      "skateboard": "Skateboarding",
+      "roller_skating": "Korčuľovanie na kolieskových korčuliach",
+      "inlinehockey": "Inline hokej",
+      "equestrian": "Jazdectvo",
+      "athletics": "Atletika",
+      "boules": "Petang",
+      "chess": "Šach",
+      "baseball": "Bejzbal",
+      "multi": "Viac športov",
+      "cycling": "Cyklistika",
+      "bmx": "BMX",
+      "archery": "Lukostreľba",
+      "shooting": "Streľba",
+      "handball": "Hádzaná",
+      "ice_stock": "Ice stock",
+      "kick_scooter": "Kolobežka"
+    },
+    "lit": {
+      "yes": "Osvetlené",
+      "no": "Neosvetlené",
+      "limited": "Čiastočne osvetlené",
+      "times": "Osvetlené {times}"
+    },
+    "access": {
+      "public": "Verejné",
+      "customers": "Len pre zákazníkov",
+      "members": "Len pre členov",
+      "private": "Súkromné"
+    },
+    "fee": {
+      "yes": "Spoplatnené",
+      "no": "Zadarmo"
+    },
+    "reservation": {
+      "required": "Nutná rezervácia",
+      "recommended": "Odporúčaná rezervácia"
+    },
+    "hoops": "{count, plural, one {# kôš} few {# koše} many {# košov} other {# košov}}",
+    "wheelchair": {
+      "yes": "Bezbariérové",
+      "limited": "Čiastočne bezbariérové",
+      "no": "Nie je bezbariérové"
+    },
+    "addDetails": "Niečo chýba? Doplňte povrch, osvetlenie alebo fotografie v MapComplete."
   }
 }

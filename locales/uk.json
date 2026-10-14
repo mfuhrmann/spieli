@@ -35,9 +35,7 @@
     "near": "near {name}"
   },
   "nearby": {
-    "title": "Поблизу {{label}}",
-    "defaultName": "Майданчик",
-    "thisLocation": "цього місця"
+    "defaultName": "Майданчик"
   },
   "equipment": {
     "fitnessDefault": "Тренажер",

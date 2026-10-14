@@ -35,9 +35,7 @@
     "near": "near {name}"
   },
   "nearby": {
-    "title": "W pobliżu {{label}}",
-    "defaultName": "Plac zabaw",
-    "thisLocation": "tej lokalizacji"
+    "defaultName": "Plac zabaw"
   },
   "equipment": {
     "fitnessDefault": "Urządzenie fitness",

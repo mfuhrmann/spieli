@@ -35,9 +35,7 @@
     "near": "near {name}"
   },
   "nearby": {
-    "title": "V blízkosti {{label}}",
-    "defaultName": "Hřiště",
-    "thisLocation": "tohoto místa"
+    "defaultName": "Hřiště"
   },
   "equipment": {
     "fitnessDefault": "Fitness zařízení",

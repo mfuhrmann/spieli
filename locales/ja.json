@@ -35,9 +35,7 @@
     "near": "near {name}"
   },
   "nearby": {
-    "title": "{{label}}の近く",
-    "defaultName": "遊び場",
-    "thisLocation": "この場所"
+    "defaultName": "遊び場"
   },
   "equipment": {
     "fitnessDefault": "フィットネス器具",

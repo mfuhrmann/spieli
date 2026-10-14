@@ -84,13 +84,7 @@
     "near": "near {name}"
   },
   "nearby": {
-    "title": "Cerca de {{label}}",
-    "header": "Cerca",
-    "loading": "Cargando …",
-    "empty": "No se encontraron parques.",
-    "unknownName": "Parque infantil desconocido",
-    "defaultName": "Parque infantil",
-    "thisLocation": "esta ubicación"
+    "defaultName": "Parque infantil"
   },
   "equipment": {
     "deviceCount": "{count, plural, one {# elemento} other {# elementos}}",

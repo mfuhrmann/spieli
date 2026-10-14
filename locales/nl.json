@@ -35,9 +35,7 @@
     "near": "near {name}"
   },
   "nearby": {
-    "title": "In de buurt van {{label}}",
-    "defaultName": "Speeltuin",
-    "thisLocation": "deze locatie"
+    "defaultName": "Speeltuin"
   },
   "equipment": {
     "fitnessDefault": "Fitnesstoestel",

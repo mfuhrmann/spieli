@@ -84,13 +84,7 @@
     "near": "near {name}"
   },
   "nearby": {
-    "title": "À proximité de {{label}}",
-    "header": "À proximité",
-    "loading": "Chargement …",
-    "empty": "Aucune aire de jeux trouvée.",
-    "unknownName": "Aire de jeux inconnue",
-    "defaultName": "Aire de jeux",
-    "thisLocation": "cet endroit"
+    "defaultName": "Aire de jeux"
   },
   "equipment": {
     "deviceCount": "{count, plural, one {# équipement} other {# équipements}}",

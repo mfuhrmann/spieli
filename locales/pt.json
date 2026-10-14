@@ -35,9 +35,7 @@
     "near": "near {name}"
   },
   "nearby": {
-    "title": "Perto de {{label}}",
-    "defaultName": "Parque infantil",
-    "thisLocation": "esta localização"
+    "defaultName": "Parque infantil"
   },
   "equipment": {
     "fitnessDefault": "Equipamento de fitness",

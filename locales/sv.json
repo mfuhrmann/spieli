@@ -35,9 +35,7 @@
     "near": "near {name}"
   },
   "nearby": {
-    "title": "Nära {{label}}",
-    "defaultName": "Lekplats",
-    "thisLocation": "denna plats"
+    "defaultName": "Lekplats"
   },
   "equipment": {
     "fitnessDefault": "Fitnessredskap",

@@ -35,9 +35,7 @@
     "near": "near {name}"
   },
   "nearby": {
-    "title": "Vicino a {{label}}",
-    "defaultName": "Parco giochi",
-    "thisLocation": "questa posizione"
+    "defaultName": "Parco giochi"
   },
   "equipment": {
     "fitnessDefault": "Attrezzo fitness",
