@@ -96,8 +96,7 @@
     "nextStep": {
       "noInfo": "Only general details such as the surface or opening hours are missing for “{detailed}”.",
       "noEquipment": "Only the play equipment is missing for “{detailed}”.",
-      "noDetails": "A piece of play equipment or general details such as the surface or opening hours make it “{basic}”; both together make it “{detailed}”.",
-      "action": "Add it in MapComplete"
+      "noDetails": "A piece of play equipment or general details such as the surface or opening hours make it “{basic}”; both together make it “{detailed}”."
     }
   },
   "completeness": {

@@ -48,7 +48,7 @@ With mapping detail on, `PlaygroundPanel` shows a line under the badge naming th
 | basic | info | Only general details such as the surface or opening hours are missing for "detailed". |
 | detailed | – | *(none)* |
 
-Each is followed by a link to this playground in MapComplete. Surface is named before opening hours on purpose: it can be checked on site and is unambiguous, while many playgrounds legitimately have no opening hours — the hint must not invite invented ones. By the rule's design, once one device is mapped there is no equipment hint even if more are missing, and "detailed" does not mean complete.
+The hint carries no link of its own: the panel's MapComplete links further down already open this playground. Surface is named before opening hours on purpose: it can be checked on site and is unambiguous, while many playgrounds legitimately have no opening hours — the hint must not invite invented ones. By the rule's design, once one device is mapped there is no equipment hint even if more are missing, and "detailed" does not mean complete.
 
 ## Photos are not a criterion
 

@@ -613,10 +613,9 @@
             </button>
           {/if}
         </div>
-        {#if detailHintKey && mcUrl}
+        {#if detailHintKey}
           <p class="detail-hint" data-testid="mapping-detail-hint">
             {$_(detailHintKey, { values: { detailed: $_('mappingDetail.detailed'), basic: $_('mappingDetail.basic') } })}
-            <a href={mcUrl} target="_blank" rel="noopener">{$_('mappingDetail.nextStep.action')}</a>
           </p>
         {/if}
       {/if}
@@ -1264,12 +1263,6 @@
     line-height: 1.4;
     color: #4b5563;
   }
-  .detail-hint a {
-    color: var(--color-primary);
-    font-weight: 600;
-    white-space: nowrap;
-  }
-  .detail-hint a:hover { text-decoration: underline; }
 
   .data-age-chip {
     display: inline-flex;

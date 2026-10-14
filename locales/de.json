@@ -96,8 +96,7 @@
     "nextStep": {
       "noInfo": "Für „{detailed}“ fehlen nur noch allgemeine Angaben wie Bodenbelag oder Öffnungszeiten.",
       "noEquipment": "Für „{detailed}“ fehlen nur noch die Spielgeräte.",
-      "noDetails": "Ein Spielgerät oder allgemeine Angaben wie Bodenbelag oder Öffnungszeiten machen ihn „{basic}“, beides zusammen „{detailed}“.",
-      "action": "In MapComplete ergänzen"
+      "noDetails": "Ein Spielgerät oder allgemeine Angaben wie Bodenbelag oder Öffnungszeiten machen ihn „{basic}“, beides zusammen „{detailed}“."
     }
   },
   "completeness": {
