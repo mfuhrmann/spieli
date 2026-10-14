@@ -767,9 +767,9 @@
     "hint": "Vyfarbí ihriská podľa toho, ako úplne sú zmapované v OpenStreetMap – užitočné, ak pridávate údaje do OSM.",
     "filterTitle": "Zobraziť",
     "nextStep": {
-      "noInfo": "Na „{detailed}“ chýba už len povrch – alebo otváracie hodiny, ak nejaké má.",
-      "noEquipment": "Na „{detailed}“ chýbajú už len herné prvky.",
-      "noDetails": "Jeden herný prvok ho urobí „{basic}“, rovnako aj povrch alebo otváracie hodiny (ak nejaké má). Oboje spolu: „{detailed}“."
+      "noInfo": "Zatiaľ nezmapované: povrch alebo otváracie hodiny (ak nejaké má).",
+      "noEquipment": "Zatiaľ nezmapované: herné prvky.",
+      "noDetails": "Zatiaľ nezmapované: herné prvky, ako aj povrch alebo otváracie hodiny (ak nejaké má)."
     }
   },
   "commons": {
