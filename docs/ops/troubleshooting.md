@@ -553,6 +553,6 @@ If you see it routinely, your instance is busy enough to want its own Nominatim;
 docker compose logs app | grep -i "ext/wikimedia"
 ```
 
-`/ext/` locations are deliberately not access-logged, so a successful request leaves no trace by design — only errors appear. A 404 from the instance itself means the path did not match the allowlist; the most likely cause is Wikimedia serving files from a host the proxy does not know about. The proxy accepts any `*.wikimedia.org` host, so this should be rare, but it is the first thing to check if thumbnails break after a Wikimedia change.
+No request is access-logged (#988), `/ext/` included, so a successful request leaves no trace by design — only errors appear. A 404 from the instance itself means the path did not match the allowlist; the most likely cause is Wikimedia serving files from a host the proxy does not know about. The proxy accepts any `*.wikimedia.org` host, so this should be rare, but it is the first thing to check if thumbnails break after a Wikimedia change.
 
 To rule the proxies out entirely, set `PROXY_COMMONS=false` and restart: the browser then fetches from Wikimedia directly, as it did before.
