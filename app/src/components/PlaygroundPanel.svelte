@@ -10,7 +10,7 @@
 <script>
   import { onMount, onDestroy } from 'svelte';
   import { transform } from 'ol/proj';
-  import { X, Share2, Check, ChevronDown, ChevronUp, ChevronRight, Image, Package, Navigation, Star, Info, Phone, Mail, Accessibility, PencilLine } from 'lucide-svelte';
+  import { X, Share2, Check, ChevronDown, ChevronUp, ChevronRight, Image, Package, Navigation, Star, Info, Phone, Mail, Accessibility, PencilLine, LockKeyhole } from 'lucide-svelte';
   import { _, locale } from 'svelte-i18n';
 
   import { selection } from '../stores/selection.js';
@@ -23,6 +23,7 @@
   import { playgroundCompleteness, mappingDetailHintKey } from '../lib/completeness.js';
   import { openingHoursState } from '../lib/openingHours.js';
   import { litInfo } from '../lib/pitchInfo.js';
+  import { isRestrictedAccess } from '../lib/vectorStyles.js';
   import { COMPLETENESS_PALETTE } from '../lib/completenessPalette.js';
   import { poiRadiusM, appMode, mapMinZoom, regionLang } from '../lib/config.js';
   import { getPlaygroundTitle, getPlaygroundLocation, hasOsmName, navigationUrl, isMobileUserAgent } from '../lib/playgroundHelpers.js';
@@ -395,6 +396,10 @@
     return $_('details.access.' + access, { default: $_('details.access.unknown') });
   })();
 
+  // Same rule as the lock badge on the map pin and the hover card's chip, so
+  // the panel repeats the marker's signal instead of dropping it (#996).
+  $: restricted = attr ? isRestrictedAccess(attr) : false;
+
   $: litFact = attr ? litInfo(attr.lit) : null;
 
   $: surfaceLabel = attr?.surface
@@ -621,8 +626,13 @@
       {/if}
 
       <!-- Status pills: opening hours, baby/toddler, shade -->
-      {#if openingHoursInfo || attr.for_baby || attr.for_toddler || attr.wheelchair_play || attr.has_shade != null}
+      {#if restricted || openingHoursInfo || attr.for_baby || attr.for_toddler || attr.wheelchair_play || attr.has_shade != null}
         <div class="status-row mb-4">
+          {#if restricted}
+            <Badge variant="neutralSoft" class="gap-[5px] whitespace-nowrap" data-testid="restricted-badge">
+              <LockKeyhole class="h-3 w-3" aria-hidden="true" />{$_('completeness.restrictedHint')}
+            </Badge>
+          {/if}
           {#if openingHoursInfo}
             <Badge
               variant={openingHoursInfo.open ? 'successSoft' : 'dangerSoft'}

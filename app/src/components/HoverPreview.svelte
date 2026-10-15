@@ -2,6 +2,7 @@
   import OpeningHours from 'opening_hours';
   import { cn } from '../lib/utils.js';
   import { getPlaygroundTitle, hasOsmName } from '../lib/playgroundHelpers.js';
+  import { isRestrictedAccess } from '../lib/vectorStyles.js';
   import { regionLang, openingHoursAddress } from '../lib/config.js';
   import { MapPin, Droplets, Baby, TreeDeciduous, Accessibility, Clock, LockKeyhole } from 'lucide-svelte';
   import { _, locale } from 'svelte-i18n';
@@ -24,7 +25,7 @@
   // tag. The raw tag describes site access, which barely separates playgrounds —
   // it disagreed with the wheelchair filter on 67 of 69 hover icons (#777).
   $: isWheelchair = attr?.for_wheelchair;
-  $: isRestricted = attr?.access === 'private' || attr?.access === 'customers';
+  $: isRestricted = attr ? isRestrictedAccess(attr) : false;
   $: area = attr?.area > 0 ? `${Math.round(attr.area / 10) * 10 || attr.area} m²` : null;
 
   $: surface = attr?.surface
