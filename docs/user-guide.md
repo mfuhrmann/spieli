@@ -125,6 +125,8 @@ Click any playground to open its detail panel. The panel shows:
 - A "Take me there" button that opens navigation to the playground (geo: URL on mobile, OSM directions on desktop)
 - A "Contribute data" link to add or improve information in OpenStreetMap via MapComplete
 
+To close the panel, use its close or "back to map" button — or your browser's back: on a phone the back swipe takes you from the panel back to the map instead of leaving spieli.
+
 ## Playground themes
 
 Some playgrounds have a theme — they are built around a motif like a ship, castle, or octopus. When OpenStreetMap records a theme for a playground, spieli highlights it in the detail panel:

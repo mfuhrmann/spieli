@@ -42,8 +42,8 @@ test.describe('Playground selection', () => {
   test('ESC key clears the URL hash', async ({ page }) => {
     await loadWithSelection(page);
     await page.keyboard.press('Escape');
-    const url = new URL(page.url());
-    expect(url.hash).toBe('');
+    // Closing pops the panel's history entry (#997), which lands asynchronously.
+    await expect.poll(() => new URL(page.url()).hash).toBe('');
   });
 
   test('slug-prefixed hash still selects in standalone mode', async ({ page }) => {

@@ -405,6 +405,15 @@
     }
   }
 
+  // The visitor's back (the phone's back swipe, #997) closes the panel the
+  // way the in-app button does: on mobile with the same zoom-out, on desktop
+  // the plain close.
+  const detachBackHandler = selection.setBackHandler(() => {
+    if (isMobile) mobileBackToMap();
+    else selection.clear();
+  });
+  onDestroy(detachBackHandler);
+
   // Hover preview state
   let hoverFeature = null;
   let hoverPosition = null;
