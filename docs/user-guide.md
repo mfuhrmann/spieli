@@ -7,7 +7,7 @@ spieli is a free, interactive playground map based on OpenStreetMap data. This g
 Use your mouse (desktop) or fingers (mobile) to pan and zoom. The map shows:
 
 - **Green circles** — at lower zoom levels, nearby playgrounds are grouped into a circle showing how many there are
-- **Green pins** — zoom in and every playground gets its own pin; a camera on the pin means there is a photo, and a **grey pin with a lock** means the playground is private (e.g. a kindergarten's or a school's) and not open to you; the filter **No private ones** hides them; a **green pin with a small cup** means it is for customers or guests (e.g. a café's), so you can use it while you are there
+- **Green pins** — zoom in and every playground gets its own pin; a camera on the pin means there is a photo. A **grey pin with a lock** or a **cup** tells you who may use it — see [Who can use a playground](#who-can-use-a-playground)
 - **The selected playground's outline** — once you open a playground, its area is outlined on the map
 
 This is the default view, made for finding a place to play. If you add data to OpenStreetMap, you can switch on [mapping detail](#mapping-detail-colours) instead.
@@ -50,6 +50,23 @@ While a dialog or a full-screen photo is open, the keyboard stays with it: focus
 
 **Region links:** Visit a region by name in the URL — e.g. `spieli.eu/fulda` frames the map on Fulda. spieli geocodes the single path segment via Nominatim and pans to its bounding box (works in both standalone and hub mode). Share these links like any other URL.
 
+## Who can use a playground
+
+Not every playground on the map is open to everyone. spieli reads this from the playground's `access` tag in OpenStreetMap and shows it the same way on the pin, in the hover preview (desktop) and at the top of the detail panel:
+
+| On the map | In the panel | Meaning |
+|---|---|---|
+| Green pin | — | Public: anyone can play here. Also the case when nothing is recorded |
+| Green pin with an amber **cup** | "For customers & guests only" | Belongs to a café, a restaurant, a store or a holiday park (`access=customers`). You can use it while you are a customer there |
+| **Grey** pin with a **lock** | "Private – not open to the public" | Belongs to a kindergarten, a school or a residential complex (`access=private` or `access=no`). Not open to visitors. Some are usable by a particular group, for example the people living in that housing estate; the panel's details say so when it is recorded |
+
+Every playground is shown by default. Two filters hide the ones you can't use:
+
+- **No private ones** hides only private playgrounds; café and store playgrounds stay.
+- **Public only** hides both private and customers-only playgrounds.
+
+Many kindergarten and school playgrounds have no `access` tag in OpenStreetMap and therefore look public. If you know better, you can add the tag in [MapComplete](https://mapcomplete.org) or any OSM editor.
+
 ## Filters
 
 Open the filter panel to show only playgrounds that match your needs:
@@ -70,7 +87,7 @@ Open the filter panel to show only playgrounds that match your needs:
 | Dogs allowed | Dogs are permitted (`dog=yes`) |
 | Themed | Has a recognised theme — ship, octopus, castle, … (`playground:theme`) |
 | With shade | Shaded areas (`shade=yes`) |
-| Public only | Hide playgrounds that are private or for customers only |
+| Public only | Hide playgrounds that are private or for customers only — see [Who can use a playground](#who-can-use-a-playground) |
 | No private ones | Hide only private playgrounds (e.g. a kindergarten's or a school's); customers-only ones stay |
 
 Active filters appear as chips below the search bar. Click a chip to remove that filter.

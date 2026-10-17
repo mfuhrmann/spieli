@@ -562,7 +562,7 @@ CREATE MATERIALIZED VIEW public.playground_stats_new AS
     -- app/src/lib/access.js (#1002):
     --   access_restricted — anything but public: drives filter_private
     --   access_private    — not usable at all (a kindergarten's, a school's):
-    --                       drives filter_hide_private, the finder default
+    --                       drives filter_hide_private ("No private ones")
     (COALESCE(pl.access, '') IN ('private', 'no', 'customers')) AS access_restricted,
     (COALESCE(pl.access, '') IN ('private', 'no'))              AS access_private,
     -- The three inputs to `completeness`, persisted so the composition of each

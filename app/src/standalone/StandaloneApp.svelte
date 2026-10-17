@@ -207,15 +207,16 @@
           baseUrl: apiBaseUrl,
           clusterSource,
           polygonSource: playgroundSource,
-          // Before the subscription below has run, read the store directly,
-          // so a filter set before the map loads reaches the first fetch.
-          getFilters: () => JSON.parse(clusterFilterFingerprint || serverFilterFingerprint(get(effectiveFilterStore))),
+          // Read the store itself: the fingerprint below is only for change
+          // detection, and is not set yet when the first fetch goes out.
+          getFilters: () => get(effectiveFilterStore),
         });
         detachOrchestrator = orchestrator.detach;
 
         // Subscribe to filter changes imperatively — avoids Svelte $: dependency-tracking
         // uncertainty for variables set inside async/nested callbacks.
-        // Skip the immediate invocation (filters start all-false, orchestrator just ran).
+        // Skip the immediate invocation: the orchestrator's first run already
+        // read the current filters.
         let filterSubReady = false;
         // effectiveFilterStore, not filterStore: it also emits when mapping
         // detail is toggled, and never carries hidden completeness states

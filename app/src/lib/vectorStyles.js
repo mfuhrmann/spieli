@@ -1,6 +1,5 @@
 // OL vector styles for playground polygons and equipment points.
 // Ported from style/VectorStyles.js; import path updated for the new app layout.
-import { accessKind } from './access.js';
 
 import { Icon, Style } from 'ol/style.js';
 import Fill from 'ol/style/Fill.js';
@@ -10,6 +9,7 @@ import Circle from 'ol/style/Circle.js';
 import { objDevices, objFeatures } from './objPlaygroundEquipment.js';
 import { playgroundCompleteness, hasPhotoSignal } from './completeness.js';
 import { COMPLETENESS_PALETTE, COMPLETENESS_ORDER } from './completenessPalette.js';
+import { accessKind } from './access.js';
 
 // ── Playground completeness colours ──────────────────────────────────────────
 
@@ -69,7 +69,6 @@ function makeHatchStyle(type) {
         })
     });
 }
-
 
 
 // ── Photo marker ─────────────────────────────────────────────────────────────

@@ -1,7 +1,7 @@
 <script>
   import { filterStore, hasActiveFilters, activeFilterCount, defaultFilters, effectiveFilters } from '../stores/filters.js';
   import { _ } from 'svelte-i18n';
-  import { Filter, Droplets, Baby, Accessibility, Armchair, UtensilsCrossed, Home, RectangleHorizontal, Goal, CircleDot, Lock, Layers, ShieldCheck, Dog, Sun, Sparkles, LockKeyhole } from 'lucide-svelte';
+  import { Filter, Droplets, Baby, Accessibility, Armchair, UtensilsCrossed, Home, RectangleHorizontal, Goal, CircleDot, Users, Layers, ShieldCheck, Dog, Sun, Sparkles, LockKeyhole } from 'lucide-svelte';
 
   import { tick, onDestroy } from 'svelte';
   import { mapStore } from '../stores/map.js';
@@ -48,7 +48,9 @@
   }
 
   const FILTER_ICONS = {
-    private:     Lock,
+    // Two access filters that must not look alike (#1002): "Public only"
+    // keeps only what anyone can use; "No private ones" drops only the lock.
+    private:     Users,
     hidePrivate: LockKeyhole,
     water:       Droplets,
     baby:        Baby,
@@ -149,7 +151,6 @@
         {#if pitchesNeedZoom}
           <p class="layer-hint">{$_('filter.standalonePitchesZoomHint')}</p>
         {/if}
-
       </div>
     </div>
   {/if}

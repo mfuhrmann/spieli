@@ -10,8 +10,8 @@
 // "public only" filter, so they cannot disagree again (`access=no` used to be
 // filtered but not marked, and `customers` marked but not filtered).
 //
-// Mirrors `access_restricted` in importer/api.sql, which the server-side
-// filter uses; that one does not know `no` yet.
+// Mirrored by `access_restricted` / `access_private` in importer/api.sql,
+// which the server-side cluster filters use; both sides agree on `no`.
 
 /** @returns {'public' | 'customers' | 'private'} */
 export function accessKind(props) {

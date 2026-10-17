@@ -55,7 +55,7 @@ test('an older backend without the parameter gets a retry, not the legacy path',
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ type: 'FeatureCollection', features: [] }) });
   });
   const urls = await trackClusters(page, url =>
-    url.searchParams.has('filter_hide_private') ? { status: 404, body: '{}' } : null);
+    url.searchParams.has('filter_hide_private') ? { status: 404, body: JSON.stringify({ code: 'PGRST202' }) } : null);
   await page.goto('/');
   await expect.poll(() => urls.length).toBeGreaterThan(0);
   const before = urls.length;

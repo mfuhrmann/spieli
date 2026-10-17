@@ -305,9 +305,9 @@
         backendsStore: backends,
         clusterSource,
         polygonSource,
-        // Before the subscription below has run, read the store directly,
-          // so a filter set before the map loads reaches the first fetch.
-          getFilters: () => JSON.parse(clusterFilterFingerprint || serverFilterFingerprint(get(effectiveFilterStore))),
+          // Read the store itself: the fingerprint below is only for change
+          // detection, and is not set yet when the first fetch goes out.
+          getFilters: () => get(effectiveFilterStore),
       });
       let filterSubReady = false;
       // Effective filters: completeness states are ignored while mapping

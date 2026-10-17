@@ -81,7 +81,8 @@
               <Accessibility class="h-3 w-3" />{$_('hover.tagWheelchair')}
             </span>
           {/if}
-          <!-- Same rule and colours as the pin's badge (#1002). -->
+          <!-- Same rule as the pin's badge (#1002): grey for private, amber
+               for customers-only. -->
           {#if access === 'private'}
             <span class="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full" style="background:#e5e7eb;color:#374151;" data-testid="access-chip">
               <LockKeyhole class="h-3 w-3" />{$_('access.privateShort')}
