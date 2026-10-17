@@ -227,36 +227,28 @@ const noFilters = {
   assert.equal(activeFilterCount({ ...noFilters, water: true, showMissing: false }), 2);
 }
 
-// 26. Private playgrounds (#1002): hidden in the finder view by default,
-//     shown when toggled on or with mapping detail; customers-only stays.
+// 26. Private playgrounds (#1002): shown by default in every mode; the
+//     hidePrivate filter hides only them and keeps customers-only ones.
 {
-  const finder = effectiveFilters({ ...defaultFilters }, false);
-  assert.equal(matchesFilters({ access: 'private' }, finder), false);
-  assert.equal(matchesFilters({ access: 'no' }, finder), false);
-  assert.equal(matchesFilters({ access: 'customers' }, finder), true);
-  assert.equal(matchesFilters({}, finder), true);
-  assert.equal(matchesFilters({ access: 'private' }, { ...finder, showPrivate: true }), true);
-  const detail = effectiveFilters({ ...defaultFilters }, true);
-  assert.equal(detail.showPrivate, true);
-  assert.equal(matchesFilters({ access: 'private' }, detail), true);
-  // A filters object without the key hides nothing.
-  const { showPrivate: _omit, ...withoutKey } = defaultFilters;
-  assert.equal(matchesFilters({ access: 'private' }, withoutKey), true);
+  for (const detailOn of [false, true]) {
+    const f = effectiveFilters({ ...defaultFilters }, detailOn);
+    assert.equal(matchesFilters({ access: 'private' }, f), true);
+  }
+  const hide = { ...defaultFilters, hidePrivate: true };
+  assert.equal(matchesFilters({ access: 'private' }, hide), false);
+  assert.equal(matchesFilters({ access: 'no' }, hide), false);
+  assert.equal(matchesFilters({ access: 'customers' }, hide), true);
+  assert.equal(matchesFilters({}, hide), true);
+  assert.equal(hasActiveFilters(hide), true);
+  assert.equal(activeFilterCount(hide), 1);
 }
 
 // 27. "Public only" hides customers-only and access=no too, like the server.
 {
-  const f = { ...defaultFilters, private: true, showPrivate: true };
+  const f = { ...defaultFilters, private: true };
   assert.equal(matchesFilters({ access: 'customers' }, f), false);
   assert.equal(matchesFilters({ access: 'no' }, f), false);
   assert.equal(matchesFilters({ access: 'yes' }, f), true);
-}
-
-// 28. The showPrivate default is a layer setting, not an active filter.
-{
-  assert.equal(hasActiveFilters({ ...defaultFilters }), false);
-  assert.equal(hasActiveFilters({ ...defaultFilters, showPrivate: true }), false);
-  assert.equal(activeFilterCount({ ...defaultFilters, showPrivate: true }), 0);
 }
 
 console.log('All filter tests passed.');

@@ -49,6 +49,7 @@ export async function fetchPlaygrounds(baseUrl = defaultApiBaseUrl, signal) {
  */
 const clusterFilterMap = {
     private:      'filter_private',
+    hidePrivate:  'filter_hide_private',
     water:        'filter_water',
     baby:         'filter_baby',
     toddler:      'filter_toddler',
@@ -66,10 +67,10 @@ const clusterFilterMap = {
 };
 
 // Backends that answered 404 to `filter_hide_private` (#1002) — older than
-// the parameter. It is sent by default in the finder view, so a 404 must not
-// look like "no tiered delivery" and push the backend onto the legacy path:
-// retry once without it and stop sending it to that backend. Their counts
-// then still include private playgrounds; the pins are filtered client-side.
+// the parameter. A 404 must not look like "no tiered delivery" and push the
+// backend onto the legacy path for the session: retry once without it and
+// stop sending it to that backend. Their cluster counts then still include
+// private playgrounds; the pins are filtered client-side.
 const noHidePrivate = new Set();
 
 export async function fetchPlaygroundClusters(zoom, extentEPSG3857, baseUrl = defaultApiBaseUrl, signal, filters = null) {
@@ -82,7 +83,7 @@ export async function fetchPlaygroundClusters(zoom, extentEPSG3857, baseUrl = de
         if (filters.showComplete === false) params.set('filter_complete', 'false');
         if (filters.showPartial  === false) params.set('filter_partial',  'false');
         if (filters.showMissing  === false) params.set('filter_missing',  'false');
-        if (filters.showPrivate  === false && !noHidePrivate.has(baseUrl)) params.set('filter_hide_private', 'true');
+        if (noHidePrivate.has(baseUrl)) params.delete('filter_hide_private');
     }
     let res = await fetch(`${baseUrl}/rpc/get_playground_clusters?${params}`, { signal });
     if (res.status === 404 && params.has('filter_hide_private')) {

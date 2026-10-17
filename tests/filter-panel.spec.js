@@ -83,7 +83,7 @@ test.describe('FilterPanel', () => {
   test('layers section contains the standalone pitches toggle', async ({ page }) => {
     await page.locator('.filter-container button').click();
     await expect(page.locator('.layer-section')).toBeVisible();
-    const pitchToggle = page.locator('.layer-section input[type="checkbox"] >> nth=0');
+    const pitchToggle = page.locator('.layer-section input[type="checkbox"]');
     await expect(pitchToggle).toBeVisible();
     await expect(pitchToggle).not.toBeChecked();
   });
@@ -114,7 +114,7 @@ test.describe('FilterPanel', () => {
 
   test('the pitch layer alone does not mark the filter button active', async ({ page }) => {
     await page.locator('.filter-container button').click();
-    await page.locator('.layer-section input[type="checkbox"] >> nth=0').check();
+    await page.locator('.layer-section input[type="checkbox"]').check();
     await expect(page.locator('.filter-container .badge')).toHaveCount(0);
     await expect(page.locator('.filter-container .control-btn')).not.toHaveClass(/active/);
   });
@@ -123,7 +123,7 @@ test.describe('FilterPanel', () => {
   test('the pitch toggle says to zoom in when the map is too far out', async ({ page }) => {
     await page.evaluate(() => window.__spieli.map.getView().setZoom(10));
     await page.locator('.filter-container button').click();
-    await page.locator('.layer-section input[type="checkbox"] >> nth=0').check();
+    await page.locator('.layer-section input[type="checkbox"]').check();
     await expect(page.locator('.layer-hint')).toHaveText('Shown when you zoom in further.');
     await page.locator('.filter-container button').click();
     await page.evaluate(() => window.__spieli.map.getView().setZoom(14));

@@ -7,7 +7,7 @@ spieli is a free, interactive playground map based on OpenStreetMap data. This g
 Use your mouse (desktop) or fingers (mobile) to pan and zoom. The map shows:
 
 - **Green circles** — at lower zoom levels, nearby playgrounds are grouped into a circle showing how many there are
-- **Green pins** — zoom in and every playground gets its own pin; a camera on the pin means there is a photo, and a **grey pin with a lock** means the playground is private (e.g. a kindergarten's or a school's) and not open to you — these are hidden unless you switch on **Private playgrounds** under *Layers* in the filter menu, or turn on mapping detail; a **green pin with a small cup** means it is for customers or guests (e.g. a café's), so you can use it while you are there
+- **Green pins** — zoom in and every playground gets its own pin; a camera on the pin means there is a photo, and a **grey pin with a lock** means the playground is private (e.g. a kindergarten's or a school's) and not open to you; the filter **No private ones** hides them; a **green pin with a small cup** means it is for customers or guests (e.g. a café's), so you can use it while you are there
 - **The selected playground's outline** — once you open a playground, its area is outlined on the map
 
 This is the default view, made for finding a place to play. If you add data to OpenStreetMap, you can switch on [mapping detail](#mapping-detail-colours) instead.
@@ -70,7 +70,8 @@ Open the filter panel to show only playgrounds that match your needs:
 | Dogs allowed | Dogs are permitted (`dog=yes`) |
 | Themed | Has a recognised theme — ship, octopus, castle, … (`playground:theme`) |
 | With shade | Shaded areas (`shade=yes`) |
-| Exclude private | Hide playgrounds that are private or for customers only |
+| Public only | Hide playgrounds that are private or for customers only |
+| No private ones | Hide only private playgrounds (e.g. a kindergarten's or a school's); customers-only ones stay |
 
 Active filters appear as chips below the search bar. Click a chip to remove that filter.
 

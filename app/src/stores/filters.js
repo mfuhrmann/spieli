@@ -7,6 +7,10 @@ import { mappingDetail } from './mappingDetail.js';
 // Deactivating a state hides playgrounds of that completeness.
 export const defaultFilters = {
     private:          false,
+    // #1002: hide only private playgrounds (a kindergarten's, a school's) and
+    // keep customers-only ones, which a visitor can use. `private` above
+    // ("public only") hides both.
+    hidePrivate:      false,
     water:            false,
     baby:             false,
     toddler:          false,
@@ -22,10 +26,6 @@ export const defaultFilters = {
     theme:            false,
     shade:            false,
     standalonePitches: false,  // layer toggle — show pitches outside playground areas
-    // Layer toggle (#1002): private playgrounds (a kindergarten's, a school's)
-    // are hidden in the finder view unless asked for. Forced on with mapping
-    // detail, where mappers need to see everything.
-    showPrivate:      false,
     showComplete:     true,
     showPartial:      true,
     showMissing:      true,
@@ -40,7 +40,7 @@ export const filterStore = writable({ ...defaultFilters });
  * take effect again when mapping detail is switched back on.
  */
 export function effectiveFilters(filters, mappingDetailOn) {
-    if (mappingDetailOn) return { ...filters, showPrivate: true };
+    if (mappingDetailOn) return filters;
     return { ...filters, showComplete: true, showPartial: true, showMissing: true };
 }
 
@@ -69,8 +69,7 @@ export function serverFilterFingerprint(filters) {
  */
 export function matchesFilters(props, filters) {
     if (filters.private     && isRestrictedAccess(props)) return false;
-    // `=== false`, not falsy: a filters object without the key shows everything.
-    if (filters.showPrivate === false && accessKind(props) === 'private') return false;
+    if (filters.hidePrivate && accessKind(props) === 'private') return false;
     if (filters.water       && !props.is_water)       return false;
     if (filters.baby        && !props.for_baby)       return false;
     if (filters.toddler     && !props.for_toddler)    return false;
@@ -101,16 +100,14 @@ export function matchesFilters(props, filters) {
  * as in activeFilterCount (#932).
  */
 export function hasActiveFilters(filters) {
-    // showPrivate is a layer default, not a filter the visitor set: it neither
-    // counts as active nor wakes the hub's filtered macro fan-out.
-    const { showComplete, showPartial, showMissing, standalonePitches, showPrivate, ...rest } = filters;
+    const { showComplete, showPartial, showMissing, standalonePitches, ...rest } = filters;
     return Object.values(rest).some(Boolean)
         || !showComplete || !showPartial || !showMissing;
 }
 
 /** Count of active filters for the badge (deactivated completeness states count too). */
 export function activeFilterCount(filters) {
-    const { showComplete, showPartial, showMissing, standalonePitches, showPrivate, ...boolFilters } = filters;
+    const { showComplete, showPartial, showMissing, standalonePitches, ...boolFilters } = filters;
     return Object.values(boolFilters).filter(Boolean).length
         + (showComplete ? 0 : 1) + (showPartial ? 0 : 1) + (showMissing ? 0 : 1);
 }

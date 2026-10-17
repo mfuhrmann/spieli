@@ -18,6 +18,7 @@
     "standalonePitches": "Sportflächen (außerhalb Spielplätze)",
     "labels": {
       "private": "Nur öffentlich",
+      "hidePrivate": "Ohne private (z. B. Kita, Schule)",
       "water": "Wasserspielplatz",
       "baby": "Baby-geeignet",
       "toddler": "Kleinkind-geeignet",
@@ -39,8 +40,7 @@
       "showPartial": "grundlegend",
       "showMissing": "keine Details"
     },
-    "standalonePitchesZoomHint": "Werden angezeigt, wenn du weiter hineinzoomst.",
-    "showPrivate": "Private Spielplätze (z. B. Kita, Schule)"
+    "standalonePitchesZoomHint": "Werden angezeigt, wenn du weiter hineinzoomst."
   },
   "hover": {
     "tagWater": "Wasser",

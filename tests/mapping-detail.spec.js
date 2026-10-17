@@ -83,24 +83,17 @@ test.describe('mapping detail control', () => {
     await req;
   });
 
-  // With nothing hidden, mapping detail changes one thing the server sees:
-  // private playgrounds (#1002), hidden in the finder view and shown to
-  // mappers. Toggling refetches for that alone, and nothing else changes.
-  test('toggling mapping detail refetches only to show or hide private playgrounds', async ({ page }) => {
+  test('toggling mapping detail with nothing hidden does not refetch', async ({ page }) => {
     const first = page.waitForRequest(/\/rpc\/get_playground_clusters/);
     await load(page, '/', { clusterMaxZoom: 20 });
-    expect(new URL((await first).url()).searchParams.get('filter_hide_private')).toBe('true');
+    await first;
     await page.waitForTimeout(600); // let the initial tier fetch settle
-
-    const on = page.waitForRequest(/\/rpc\/get_playground_clusters/);
+    let refetches = 0;
+    page.on('request', r => { if (r.url().includes('/rpc/get_playground_clusters')) refetches++; });
     await switchDetail(page, true);
-    const onParams = new URL((await on).url()).searchParams;
-    expect(onParams.has('filter_hide_private')).toBe(false);
-    for (const p of ['filter_complete', 'filter_partial', 'filter_missing']) expect(onParams.has(p)).toBe(false);
-
-    const off = page.waitForRequest(/\/rpc\/get_playground_clusters/);
     await switchDetail(page, false);
-    expect(new URL((await off).url()).searchParams.get('filter_hide_private')).toBe('true');
+    await page.waitForTimeout(800); // past the orchestrator's 300 ms debounce
+    expect(refetches).toBe(0);
   });
 
   test('clicking a pin opens the playground', async ({ page }) => {

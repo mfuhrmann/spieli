@@ -305,9 +305,8 @@
         backendsStore: backends,
         clusterSource,
         polygonSource,
-        // Before the subscription below has run, read the store directly:
-          // the defaults are not all "off" any more (private playgrounds are
-          // hidden in the finder view, #1002), so the first fetch needs them.
+        // Before the subscription below has run, read the store directly,
+          // so a filter set before the map loads reaches the first fetch.
           getFilters: () => JSON.parse(clusterFilterFingerprint || serverFilterFingerprint(get(effectiveFilterStore))),
       });
       let filterSubReady = false;

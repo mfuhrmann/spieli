@@ -47,7 +47,7 @@ Pre-aggregated cluster buckets for the cluster tier. Each bucket counts playgrou
 | `z` | `int` | — | Zoom level — drives cell size via a hardcoded table (10 Mm at z=0, halving each level down to ~1.2 km at z=13) |
 | `min_lon`, `min_lat`, `max_lon`, `max_lat` | `float8` | — | WGS84 bounding box |
 | `filter_private` | `boolean` | `false` | When `true`, exclude every playground that is not public: `access` = `private`, `no` or `customers` |
-| `filter_hide_private` | `boolean` | `false` | When `true`, exclude only private playgrounds (`access` = `private` or `no`) and keep customers-only ones. The frontend sends it by default in the finder view (#1002). A backend older than this parameter answers 404; the client then retries without it and stops sending it to that backend for the session |
+| `filter_hide_private` | `boolean` | `false` | When `true`, exclude only private playgrounds (`access` = `private` or `no`) and keep customers-only ones. Sent by the frontend's "No private ones" filter (#1002). A backend older than this parameter answers 404; the client then retries without it and stops sending it to that backend for the session |
 | `filter_water` | `boolean` | `false` | When `true`, include only water playgrounds |
 | `filter_baby` | `boolean` | `false` | When `true`, include only baby-friendly playgrounds |
 | `filter_toddler` | `boolean` | `false` | When `true`, include only toddler-friendly playgrounds |

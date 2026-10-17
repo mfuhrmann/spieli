@@ -46,7 +46,7 @@ async function openMapWithPitches(page) {
   await page.goto('/');
   await page.waitForFunction(() => window.__spieli?.map);
   await page.locator('.filter-container > button').click();
-  await page.locator('.layer-section input[type="checkbox"] >> nth=0').check();
+  await page.locator('.layer-section input[type="checkbox"]').check();
   await page.locator('.filter-container > button').click();
 }
 
@@ -221,7 +221,7 @@ test.describe('#P links', () => {
     await page.goto('/#P501');
     await expect(page.locator('aside.pitch-panel')).toBeVisible({ timeout: 8000 });
     await page.locator('.filter-container > button').click();
-    await expect(page.locator('.layer-section input[type="checkbox"] >> nth=0')).toBeChecked();
+    await expect(page.locator('.layer-section input[type="checkbox"]')).toBeChecked();
   });
 
   test('the slug form also restores in standalone, like playground links', async ({ page }) => {
