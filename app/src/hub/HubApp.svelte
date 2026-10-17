@@ -21,6 +21,7 @@
   import { effectiveFilterStore, serverFilterFingerprint } from '../stores/filters.js';
   import { macroFilteredStore } from '../stores/macroFiltered.js';
   import { macroCoverageStore } from '../stores/macroCoverage.js';
+  import { dataCoverage } from '../stores/dataCoverage.js';
   import { activeTierStore } from '../stores/tier.js';
   import { clusterMaxZoom, regionChatUrl } from '../lib/config.js';
   import { regionFitPadding } from '../lib/playgroundHelpers.js';
@@ -56,6 +57,15 @@
     aggregatedBbox,
     overlapWarnings,
   } = createRegistry();
+
+  // Where the federation has data (#1000): every backend that reported a
+  // bbox, with what the report flow needs to query it.
+  const detachCoverage = backends.subscribe(bs => {
+    const withBbox = bs.filter(b => Array.isArray(b.bbox));
+    dataCoverage.set(withBbox.length
+      ? withBbox.map(b => ({ url: b.url, bbox: b.bbox, slug: b.slug ?? null, name: b.name ?? null }))
+      : null);
+  });
 
   // Track current map viewport in EPSG:4326 for search biasing — same pattern
   // as StandaloneApp. aggregatedBbox covers all backends and is far too coarse.
@@ -336,6 +346,8 @@
   });
 
   onDestroy(() => {
+    detachCoverage();
+    dataCoverage.set(null);
     detachMap?.();
     detachBbox?.();
     detachBackends?.();

@@ -182,9 +182,21 @@ Each spieli region installs as its own app, under its own name — the Fulda map
 
 On a desktop, Chrome and Edge (install icon in the address bar) and Safari on a Mac (*File → Add to Dock*) can do the same; Firefox on the desktop cannot (only an experimental "Taskbar Tabs" feature on Windows).
 
+## Reporting a missing playground
+
+Know a playground that is not on the map? Press **Missing a playground?** (the green button at the bottom right, "Missing one?" on phones). You can also right-click the map (with a mouse), use the offer that appears when a search finds nothing or when no playgrounds are in view, or open it from the Info dialog. The back button or gesture closes the report again.
+
+1. **Mark the spot.** Move the map until the cross sits on the playground. If your location is known, "I'm standing in front of it" jumps there. If a known playground is right next to the spot, spieli asks whether you mean that one. Outside the area this map has data for, spieli cannot check that, so it only offers MapComplete, which shows what OpenStreetMap already has there.
+2. **Choose how to report it:**
+    - **Leave a hint — no account needed.** Tick what is there (swings, slide, …), add a name or a note if you like, and send. The hint becomes a public [OpenStreetMap note](https://wiki.openstreetmap.org/wiki/Notes) that local mappers review and use to add the playground. The OpenStreetMap Foundation stores your IP address with the note to prevent abuse; notes are public and you cannot delete them yourself afterwards, so don't include personal details.
+    - **Add it yourself** in [MapComplete](https://mapcomplete.org), with a free OpenStreetMap account.
+3. **Follow up.** If you tick "Remember this hint on this device" before sending, the hint shows up on your map as a small pin (in this browser only). Tap it to see whether a mapper has dealt with it yet. Without the tick, nothing is stored.
+
+Nothing is sent until you press **Send hint**; opening or moving the map never contacts OpenStreetMap's notes service.
+
 ## Adding or improving data
 
-All playground data comes from [OpenStreetMap](https://openstreetmap.org). If a playground is missing, has the wrong location, or lacks details:
+All playground data comes from [OpenStreetMap](https://openstreetmap.org). If a playground is missing (see [above](#reporting-a-missing-playground)), has the wrong location, or lacks details:
 
 1. Click the playground and open its detail panel
 2. Use the **"Contribute data"** button to open [MapComplete](https://mapcomplete.org) — a beginner-friendly OSM editor focused on playgrounds

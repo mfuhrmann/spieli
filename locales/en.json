@@ -18,7 +18,6 @@
     "standalonePitches": "Sports pitches (outside playgrounds)",
     "labels": {
       "private": "Public only",
-      "hidePrivate": "No private ones (e.g. kindergarten, school)",
       "water": "Water playground",
       "baby": "Baby-friendly",
       "toddler": "Toddler-friendly",
@@ -32,7 +31,8 @@
       "fence": "Fenced",
       "hasDogs": "Dogs allowed",
       "theme": "Themed",
-      "shade": "With shade"
+      "shade": "With shade",
+      "hidePrivate": "No private ones (e.g. kindergarten, school)"
     },
     "mappingDetail": {
       "title": "Mapping detail",
@@ -845,6 +845,89 @@
       "no": "Not wheelchair accessible"
     },
     "addDetails": "Missing something? Add surface, lighting or photos in MapComplete."
+  },
+  "report": {
+    "button": "Missing a playground?",
+    "buttonShort": "Missing one?",
+    "infoCard": "Report a missing playground",
+    "searchHint": "Missing a playground? Report it",
+    "cancel": "Cancel",
+    "place": {
+      "title": "Where is the playground?",
+      "hint": "Move the map until the cross sits on the playground.",
+      "here": "I'm standing in front of it",
+      "zoomIn": "Zoom in closer",
+      "next": "Next",
+      "checking": "Checking…"
+    },
+    "dupe": {
+      "title": "Do you mean this playground?",
+      "text": "“{name}” is already on the map, right next to this spot.",
+      "show": "Yes, show it",
+      "other": "No, it's a different one"
+    },
+    "choose": {
+      "title": "How would you like to report it?",
+      "noteTitle": "Leave a hint",
+      "noteBadge": "no account needed",
+      "noteText": "Tell us briefly what's there. Local mappers add the playground to OpenStreetMap. This can take a few days.",
+      "limit": "You've already sent {count} hints. To report more, please add them yourself.",
+      "mcTitle": "Add it yourself",
+      "mcBadge": "OSM account",
+      "mcText": "Map the playground directly in OpenStreetMap with MapComplete. You need a free OpenStreetMap account.",
+      "outside": "This map has no data for this area, so it cannot tell whether the playground is already in OpenStreetMap. MapComplete shows what is there."
+    },
+    "equipment": {
+      "swing": "Swings",
+      "slide": "Slide",
+      "sandpit": "Sandpit",
+      "climbingframe": "Climbing frame",
+      "seesaw": "Seesaw",
+      "springy": "Spring rider"
+    },
+    "form": {
+      "title": "What's there?",
+      "intro": "Your hint goes to OpenStreetMap as a note. Local mappers check it and add the playground. No account needed.",
+      "equipmentLabel": "Equipment (optional)",
+      "fenced": "Fenced",
+      "name": "Name (optional)",
+      "details": "Anything else? (optional)",
+      "detailsPlaceholder": "e.g. behind the primary school, entrance from the car park",
+      "publicWarning": "Good to know: your hint appears publicly on OpenStreetMap without your name, and can't be changed or withdrawn afterwards. So please don't put anything personal in it. Like any website, OpenStreetMap sees your IP address and keeps it to prevent abuse.",
+      "privacyLabel": "More about privacy:",
+      "privacyOsmf": "OpenStreetMap Foundation",
+      "privacyThisSite": "this map",
+      "remember": "Remember this hint on this device, so I can check later whether it was added",
+      "rememberHint": "Stays in your browser only. Without this, nothing is stored.",
+      "back": "Back",
+      "send": "Send hint",
+      "sending": "Sending…",
+      "error": "Sending didn't work. Please try again later, or add the playground yourself in MapComplete.",
+      "refused": "OpenStreetMap is not accepting hints without an account at the moment. You can still add the playground yourself:"
+    },
+    "done": {
+      "title": "Thank you!",
+      "text": "Your hint is now on OpenStreetMap. Local mappers will add the playground. It can take a few days before it shows up here.",
+      "viewNote": "View your hint on OpenStreetMap",
+      "close": "Back to the map"
+    },
+    "empty": {
+      "text": "No playgrounds here. Know one?",
+      "action": "Report it",
+      "dismiss": "Dismiss"
+    },
+    "own": {
+      "title": "Your hint from {date}",
+      "checking": "Checking status…",
+      "view": "View on OpenStreetMap",
+      "close": "Close",
+      "status": {
+        "open": "Still open. Local mappers will take a look.",
+        "closed": "Closed by a mapper. If the playground was added, it will show up here after the next data update.",
+        "hidden": "Removed by OpenStreetMap moderators.",
+        "unknown": "The status could not be checked right now."
+      }
+    }
   },
   "access": {
     "private": "Private – not open to the public",

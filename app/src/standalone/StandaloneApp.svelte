@@ -13,7 +13,9 @@
   } from '../lib/config.js';
   import {
     fetchStandaloneEquipment,
+    fetchMeta,
   } from '../lib/api.js';
+  import { dataCoverage } from '../stores/dataCoverage.js';
   import { fetchRegionInfo } from '../lib/region.js';
   import { resolveRegionFromPath, isRegionPath } from '../lib/regionUrl.js';
   import { regionFramingApplied } from '../stores/urlFraming.js';
@@ -76,6 +78,18 @@
   };
 
   onMount(async () => {
+    // Where this instance has data (#1000): its backend's own bbox, not the
+    // Nominatim region, because that is what the import was clipped to.
+    if (apiBaseUrl) {
+      fetchMeta(apiBaseUrl)
+        .then(meta => {
+          const bbox = meta?.bbox;
+          if (Array.isArray(bbox) && bbox.length === 4 && bbox.every(Number.isFinite)) {
+            dataCoverage.set([{ url: apiBaseUrl, bbox }]);
+          }
+        })
+        .catch(() => { /* unknown coverage: the report flow fails open */ });
+    }
     // Fit to the configured region and attach the pitch layer once the map
     // becomes available (Map.svelte publishes itself via mapStore on mount).
     detachMapSub = mapStore.subscribe(async (map) => {
