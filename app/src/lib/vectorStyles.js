@@ -1,5 +1,6 @@
 // OL vector styles for playground polygons and equipment points.
 // Ported from style/VectorStyles.js; import path updated for the new app layout.
+import { accessKind } from './access.js';
 
 import { Icon, Style } from 'ol/style.js';
 import Fill from 'ol/style/Fill.js';
@@ -69,9 +70,6 @@ function makeHatchStyle(type) {
     });
 }
 
-export function isRestrictedAccess(props) {
-    return props.access === 'private' || props.access === 'customers';
-}
 
 
 // ── Photo marker ─────────────────────────────────────────────────────────────
@@ -122,7 +120,9 @@ function getPhotoStyle() {
 export function playgroundStyleFn(feature) {
     const props = feature.getProperties();
     const c = playgroundCompleteness(props);
-    const base = isRestrictedAccess(props)
+    // Hatched only when the visitor cannot use it at all; a customers-only
+    // playground is usable and keeps the plain fill (#1002).
+    const base = accessKind(props) === 'private'
         ? makeHatchStyle(c)
         : (_polygonStyles[c] ?? _polygonStyles.missing);
     return hasPhotoSignal(props) ? [base, getPhotoStyle()] : base;

@@ -99,9 +99,6 @@
       "noDetails": "Not mapped yet: play equipment, and the surface or opening hours (if it has any)."
     }
   },
-  "completeness": {
-    "restrictedHint": "not public"
-  },
   "accordion": {
     "photos": "Photos",
     "equipment": "Equipment",
@@ -847,5 +844,11 @@
       "no": "Not wheelchair accessible"
     },
     "addDetails": "Missing something? Add surface, lighting or photos in MapComplete."
+  },
+  "access": {
+    "private": "Private – not open to the public",
+    "customers": "For customers & guests only",
+    "privateShort": "Private",
+    "customersShort": "Customers only"
   }
 }

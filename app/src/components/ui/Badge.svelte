@@ -1,7 +1,7 @@
 <script>
   import { cn } from '../../lib/utils.js';
 
-  /** @type {'default' | 'secondary' | 'destructive' | 'outline' | 'success' | 'warning' | 'info' | 'successSoft' | 'dangerSoft' | 'neutralSoft'} */
+  /** @type {'default' | 'secondary' | 'destructive' | 'outline' | 'success' | 'warning' | 'info' | 'successSoft' | 'dangerSoft' | 'neutralSoft' | 'privateSoft' | 'customersSoft'} */
   export let variant = 'default';
   let className = '';
   export { className as class };
@@ -22,6 +22,10 @@
     // Slate, deliberately not dangerSoft: used for surveyed-but-absent facts,
     // which are information rather than a problem with the playground.
     neutralSoft: 'py-[3px] border-[rgba(100,116,139,0.35)] bg-[#f1f5f9] text-[#475569]',
+    // Access (#1002): the same grey and amber as the pin's badges. Private is
+    // the stronger grey on purpose — it is the one that rules a trip out.
+    privateSoft: 'py-[3px] border-[rgba(55,65,81,0.45)] bg-[#e5e7eb] text-[#1f2937]',
+    customersSoft: 'py-[3px] border-[rgba(180,83,9,0.4)] bg-[#fffbeb] text-[#92400e]',
   };
 
   $: classes = cn(baseStyles, variants[variant], className);

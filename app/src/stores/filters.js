@@ -1,4 +1,5 @@
 import { writable, derived } from 'svelte/store';
+import { isRestrictedAccess } from '../lib/access.js';
 import { playgroundCompleteness } from '../lib/completeness.js';
 import { mappingDetail } from './mappingDetail.js';
 
@@ -54,7 +55,7 @@ export const effectiveFilterStore = derived(
  * @param {Object} filters - current filterStore value
  */
 export function matchesFilters(props, filters) {
-    if (filters.private     && (props.access === 'private' || props.access === 'no')) return false;
+    if (filters.private     && isRestrictedAccess(props)) return false;
     if (filters.water       && !props.is_water)       return false;
     if (filters.baby        && !props.for_baby)       return false;
     if (filters.toddler     && !props.for_toddler)    return false;

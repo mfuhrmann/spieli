@@ -25,7 +25,7 @@ import Fill from 'ol/style/Fill.js';
 import Stroke from 'ol/style/Stroke.js';
 import { radiusForCount, countBucket } from './clusterStyle.js';
 import { hasPhotoSignal } from './completeness.js';
-import { isRestrictedAccess } from './vectorStyles.js';
+import { accessKind } from './access.js';
 import { sportKey, sportGlyph } from './sportGlyphs.js';
 import { FINDER } from './completenessPalette.js';
 import { hidpiStyleOptions } from './hidpiRenderer.js';
@@ -111,20 +111,32 @@ const PIN_TIP_Y = PIN_CY + PIN_RADIUS + PIN_POINTER;
 // in its 24-unit viewBox.
 const CAMERA_BODY = 'M9 3.5h6L16.5 6H21a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h4.5L9 3.5z';
 
-// Lock badge: a dark disc overlapping the pin's upper right, so it reads as
-// "not public" without hiding the photo glyph. BADGE_PAD gives it room in
-// the bitmap; the anchor still sits on the pointer's tip.
-const LOCK_BADGE = '#374151'; // gray-700 — neutral, not a mapping-detail colour
+// Access badges (#1002): a disc overlapping the pin's upper right, so it
+// reads without hiding the photo glyph. BADGE_PAD gives it room in the
+// bitmap; the anchor still sits on the pointer's tip.
+//   private   — lock on a dark disc, and the whole pin greyed: not for you
+//   customers — cup on an amber disc, pin stays green: usable as a guest
+const LOCK_BADGE = '#374151';     // gray-700 — neutral, not a mapping-detail colour
+const CUSTOMERS_BADGE = '#b45309'; // amber-700 — "conditional", white glyph ≥ 4.5:1
+// The private pin: same shape, emerald swapped for grey, so "closed to you"
+// is visible from the pin itself and not only from a 15 px badge.
+const MUTED = { casing: '#4b5563', border: '#ffffff', fill: '#9ca3af' };
 
-function drawLockBadge(ctx) {
-  const bx = PIN_CX + 9, by = PIN_CY - 9, r = 7.5;
+const BADGE_X = PIN_CX + 9, BADGE_Y = PIN_CY - 9, BADGE_R = 7.5;
+
+function drawBadgeDisc(ctx, colour) {
   ctx.beginPath();
-  ctx.arc(bx, by, r, 0, Math.PI * 2);
-  ctx.fillStyle = LOCK_BADGE;
+  ctx.arc(BADGE_X, BADGE_Y, BADGE_R, 0, Math.PI * 2);
+  ctx.fillStyle = colour;
   ctx.fill();
   ctx.lineWidth = 1.5;
   ctx.strokeStyle = FINDER.border;
   ctx.stroke();
+}
+
+function drawLockBadge(ctx) {
+  const bx = BADGE_X, by = BADGE_Y;
+  drawBadgeDisc(ctx, LOCK_BADGE);
   // Shackle, then body.
   ctx.beginPath();
   ctx.arc(bx, by - 1, 2.4, Math.PI, 0);
@@ -134,9 +146,23 @@ function drawLockBadge(ctx) {
   ctx.fillRect(bx - 3.5, by - 1, 7, 5);
 }
 
-function drawPin(canvas, photo, restricted, pixelRatio) {
+function drawCupBadge(ctx) {
+  const bx = BADGE_X, by = BADGE_Y;
+  drawBadgeDisc(ctx, CUSTOMERS_BADGE);
+  // Cup body, then handle.
+  ctx.fillStyle = FINDER.border;
+  ctx.fillRect(bx - 4, by - 2.5, 6, 5.5);
+  ctx.beginPath();
+  ctx.arc(bx + 2.2, by + 0.2, 1.9, -Math.PI / 2, Math.PI / 2);
+  ctx.lineWidth = 1.3;
+  ctx.strokeStyle = FINDER.border;
+  ctx.stroke();
+}
+
+function drawPin(canvas, photo, kind, pixelRatio) {
   const ctx = prepareCanvas(canvas, PIN_W, PIN_H, pixelRatio);
-  paintShape(ctx, () => tracePinPath(ctx));
+  const colors = kind === 'private' ? MUTED : SOLID;
+  paintShape(ctx, () => tracePinPath(ctx), colors);
 
   if (photo) {
     const s = 0.58; // 24-unit glyph → ~14 px
@@ -147,7 +173,7 @@ function drawPin(canvas, photo, restricted, pixelRatio) {
     ctx.fill(new Path2D(CAMERA_BODY));
     ctx.beginPath();
     ctx.arc(12, 13, 3.6, 0, Math.PI * 2);
-    ctx.fillStyle = FINDER.fill;
+    ctx.fillStyle = colors.fill;
     ctx.fill();
     ctx.restore();
   } else {
@@ -157,15 +183,16 @@ function drawPin(canvas, photo, restricted, pixelRatio) {
     ctx.fill();
   }
 
-  if (restricted) drawLockBadge(ctx);
+  if (kind === 'private') drawLockBadge(ctx);
+  else if (kind === 'customers') drawCupBadge(ctx);
 }
 
-function pinBitmap(photo, restricted, pixelRatio) {
-  const key = `${photo ? 1 : 0}${restricted ? 1 : 0}@${pixelRatio}`;
+function pinBitmap(photo, kind, pixelRatio) {
+  const key = `${photo ? 1 : 0}${kind}@${pixelRatio}`;
   let canvas = pinCache.get(key);
   if (!canvas) {
     canvas = document.createElement('canvas');
-    drawPin(canvas, photo, restricted, pixelRatio);
+    drawPin(canvas, photo, kind, pixelRatio);
     pinCache.set(key, canvas);
   }
   return canvas;
@@ -234,9 +261,9 @@ export function pitchPinFor(feature) {
   return feature.get('leisure') === 'pitch' ? pitchPinStyle(sportKey(feature.get('sport'))) : null;
 }
 
-function drawPinAt(ctx, [x, y], photo, restricted, pixelRatio) {
+function drawPinAt(ctx, [x, y], photo, kind, pixelRatio) {
   // Anchor the pointer's tip on the coordinate.
-  ctx.drawImage(pinBitmap(photo, restricted, pixelRatio), x - PIN_CX, y - PIN_TIP_Y, PIN_W, PIN_H);
+  ctx.drawImage(pinBitmap(photo, kind, pixelRatio), x - PIN_CX, y - PIN_TIP_Y, PIN_W, PIN_H);
 }
 
 // ── Styles ───────────────────────────────────────────────────────────────────
@@ -245,9 +272,9 @@ function renderFinderCluster(pixelCoords, state) {
   const pixelRatio = state.pixelRatio || 1;
   const count = state.feature.get('count') ?? 0;
   // Cluster buckets carry no access information, so a cluster of one cannot
-  // show the lock; it appears once the polygon tier draws the playground.
+  // show the access badge; it appears once the polygon tier draws the playground.
   if (count <= 1) {
-    drawPinAt(state.context, pixelCoords, false, false, pixelRatio);
+    drawPinAt(state.context, pixelCoords, false, 'public', pixelRatio);
     return;
   }
   const bitmap = discBitmap(count, pixelRatio);
@@ -276,11 +303,11 @@ function renderPlaygroundPin(pixelCoords, state) {
   const pixelRatio = state.pixelRatio || 1;
   const props = state.feature.getProperties();
   const photo = hasPhotoSignal(props);
-  const restricted = isRestrictedAccess(props);
+  const kind = accessKind(props);
   // A MultiPolygon yields a MultiPoint: one pin per part, as the photo glyph
   // already does in mapping-detail mode.
   const points = Array.isArray(pixelCoords[0]) ? pixelCoords : [pixelCoords];
-  for (const p of points) drawPinAt(state.context, p, photo, restricted, pixelRatio);
+  for (const p of points) drawPinAt(state.context, p, photo, kind, pixelRatio);
 }
 
 const pinStyle = new Style({ geometry: interiorPoints, ...hidpiStyleOptions(renderPlaygroundPin), zIndex: 2 });

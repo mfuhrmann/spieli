@@ -10,7 +10,7 @@
 <script>
   import { onMount, onDestroy } from 'svelte';
   import { transform } from 'ol/proj';
-  import { X, Share2, Check, ChevronDown, ChevronUp, ChevronRight, Image, Package, Navigation, Star, Info, Phone, Mail, Accessibility, PencilLine, LockKeyhole } from 'lucide-svelte';
+  import { X, Share2, Check, ChevronDown, ChevronUp, ChevronRight, Image, Package, Navigation, Star, Info, Phone, Mail, Accessibility, PencilLine, LockKeyhole, Coffee } from 'lucide-svelte';
   import { _, locale } from 'svelte-i18n';
 
   import { selection } from '../stores/selection.js';
@@ -23,7 +23,7 @@
   import { playgroundCompleteness, mappingDetailHintKey } from '../lib/completeness.js';
   import { openingHoursState } from '../lib/openingHours.js';
   import { litInfo } from '../lib/pitchInfo.js';
-  import { isRestrictedAccess } from '../lib/vectorStyles.js';
+  import { accessKind } from '../lib/access.js';
   import { COMPLETENESS_PALETTE } from '../lib/completenessPalette.js';
   import { poiRadiusM, appMode, mapMinZoom, regionLang } from '../lib/config.js';
   import { getPlaygroundTitle, getPlaygroundLocation, hasOsmName, navigationUrl, isMobileUserAgent } from '../lib/playgroundHelpers.js';
@@ -396,9 +396,11 @@
     return $_('details.access.' + access, { default: $_('details.access.unknown') });
   })();
 
-  // Same rule as the lock badge on the map pin and the hover card's chip, so
-  // the panel repeats the marker's signal instead of dropping it (#996).
-  $: restricted = attr ? isRestrictedAccess(attr) : false;
+  // Same rule as the map pin's badge and the hover card's chip, so the panel
+  // repeats the marker's signal instead of dropping it (#996), and tells a
+  // café's playground from a kindergarten's (#1002).
+  $: access = attr ? accessKind(attr) : 'public';
+  $: restricted = access !== 'public';
 
   $: litFact = attr ? litInfo(attr.lit) : null;
 
@@ -628,9 +630,13 @@
       <!-- Status pills: opening hours, baby/toddler, shade -->
       {#if restricted || openingHoursInfo || attr.for_baby || attr.for_toddler || attr.wheelchair_play || attr.has_shade != null}
         <div class="status-row mb-4">
-          {#if restricted}
-            <Badge variant="neutralSoft" class="gap-[5px] whitespace-nowrap" data-testid="restricted-badge">
-              <LockKeyhole class="h-3 w-3" aria-hidden="true" />{$_('completeness.restrictedHint')}
+          {#if access === 'private'}
+            <Badge variant="privateSoft" class="gap-[5px] whitespace-nowrap" data-testid="restricted-badge" data-access="private">
+              <LockKeyhole class="h-3 w-3" aria-hidden="true" />{$_('access.private')}
+            </Badge>
+          {:else if access === 'customers'}
+            <Badge variant="customersSoft" class="gap-[5px] whitespace-nowrap" data-testid="restricted-badge" data-access="customers">
+              <Coffee class="h-3 w-3" aria-hidden="true" />{$_('access.customers')}
             </Badge>
           {/if}
           {#if openingHoursInfo}

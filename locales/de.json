@@ -99,9 +99,6 @@
       "noDetails": "Noch nicht erfasst: Spielgeräte sowie Bodenbelag oder Öffnungszeiten (falls es welche gibt)."
     }
   },
-  "completeness": {
-    "restrictedHint": "nicht öffentlich"
-  },
   "accordion": {
     "photos": "Bilder",
     "equipment": "Ausstattung",
@@ -847,5 +844,11 @@
       "no": "Nicht rollstuhlgerecht"
     },
     "addDetails": "Etwas fehlt? Belag, Beleuchtung oder Fotos kannst du in MapComplete ergänzen."
+  },
+  "access": {
+    "private": "Privat – nicht öffentlich zugänglich",
+    "customers": "Nur für Gäste & Kunden",
+    "privateShort": "Privat",
+    "customersShort": "Nur für Kunden"
   }
 }

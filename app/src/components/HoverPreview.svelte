@@ -2,9 +2,9 @@
   import OpeningHours from 'opening_hours';
   import { cn } from '../lib/utils.js';
   import { getPlaygroundTitle, hasOsmName } from '../lib/playgroundHelpers.js';
-  import { isRestrictedAccess } from '../lib/vectorStyles.js';
+  import { accessKind } from '../lib/access.js';
   import { regionLang, openingHoursAddress } from '../lib/config.js';
-  import { MapPin, Droplets, Baby, TreeDeciduous, Accessibility, Clock, LockKeyhole } from 'lucide-svelte';
+  import { MapPin, Droplets, Baby, TreeDeciduous, Accessibility, Clock, LockKeyhole, Coffee } from 'lucide-svelte';
   import { _, locale } from 'svelte-i18n';
 
   /** @type {{ x: number, y: number } | null} */
@@ -25,7 +25,7 @@
   // tag. The raw tag describes site access, which barely separates playgrounds —
   // it disagreed with the wheelchair filter on 67 of 69 hover icons (#777).
   $: isWheelchair = attr?.for_wheelchair;
-  $: isRestricted = attr ? isRestrictedAccess(attr) : false;
+  $: access = attr ? accessKind(attr) : 'public';
   $: area = attr?.area > 0 ? `${Math.round(attr.area / 10) * 10 || attr.area} m²` : null;
 
   $: surface = attr?.surface
@@ -81,9 +81,14 @@
               <Accessibility class="h-3 w-3" />{$_('hover.tagWheelchair')}
             </span>
           {/if}
-          {#if isRestricted}
-            <span class="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full" style="background:rgba(107,114,128,.1);color:#6b7280;">
-              <LockKeyhole class="h-3 w-3" />{$_('completeness.restrictedHint')}
+          <!-- Same rule and colours as the pin's badge (#1002). -->
+          {#if access === 'private'}
+            <span class="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full" style="background:#e5e7eb;color:#374151;" data-testid="access-chip">
+              <LockKeyhole class="h-3 w-3" />{$_('access.privateShort')}
+            </span>
+          {:else if access === 'customers'}
+            <span class="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full" style="background:#fef3c7;color:#92400e;" data-testid="access-chip">
+              <Coffee class="h-3 w-3" />{$_('access.customersShort')}
             </span>
           {/if}
         </div>
