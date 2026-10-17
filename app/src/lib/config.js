@@ -217,6 +217,11 @@ export const commonsApiUrl    = c.commonsApiUrl    || 'https://commons.wikimedia
 // see proxiedImageUrl for why the host cannot be assumed.
 export const commonsFileBase = c.commonsFileBase || '';
 export const mangroveApiUrl   = c.mangroveApiUrl   || 'https://api.mangrove.reviews';
+// OSM notes API for "missing playground" reports (#1000). The browser posts
+// to it directly, and only when the visitor presses Send. Empty disables the
+// anonymous hint; the MapComplete link stays. `??`, not `||`: an explicit ''
+// is the opt-out.
+export const osmNotesUrl      = c.osmNotesUrl ?? 'https://api.openstreetmap.org';
 // Panoramax is intentionally absent: it cannot be proxied (its thumbnail
 // endpoint redirects to a per-instance derivative host, and its viewer is an
 // iframe). The host lives in app/src/lib/panoramax.js, which explains why.

@@ -101,8 +101,9 @@ test.describe('desktop', () => {
     await clickPitch(page, 501, LON, LAT);
     await expect(page.locator('aside.pitch-panel')).toBeVisible();
     const box = await page.locator('.map-container').boundingBox();
-    // Right edge, mid-height: clear of the panel, the controls and both pitches.
-    await page.mouse.click(box.x + box.width - 140, box.y + box.height / 2 + 120);
+    // Right of centre, below mid-height: clear of the panel, the controls
+    // (including the labelled report button, #1000) and both pitches.
+    await page.mouse.click(box.x + box.width - 280, box.y + box.height / 2 + 120);
     await expect(page.locator('aside.pitch-panel')).toHaveCount(0);
   });
 

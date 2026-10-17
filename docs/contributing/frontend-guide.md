@@ -36,6 +36,7 @@ The app uses Svelte writable stores (`src/stores/`). Components import stores di
 | `hubLoadingStore` | `{ loaded, total, settling }` | hubOrchestrator | InstancePanel |
 | `macroFilteredStore` | `Map<backendUrl, {count, complete, partial, missing}> \| null` | hubOrchestrator (macro tier, filter active) | MacroView |
 | `macroCoverageStore` | `{ answered, total, cantFilter[], settling } \| null` | hubOrchestrator (macro tier, filter active) | MacroView, MacroCoverageBanner |
+| `reportStep` / `reportPlacing` | `null \| 'place' \| 'dupe' \| 'choose' \| 'form' \| 'done'` / derived boolean | `startReport()` from every entry point (AppShell button, SearchBar no-hits, Info dialog, ReportMissingFlow's empty-area hint and right-click) | ReportMissingFlow (the steps), AppShell (hides controls), Map.svelte (click does not select while placing) |
 
 ### Selection flow
 

@@ -66,6 +66,7 @@ LINK_ONLY = {
     'purl.org',
     'www.w3.org',
     'opendatacommons.org',
+    'osmfoundation.org',      # privacy-policy link in the hint form (#1000)
 }
 
 # Placeholder and fixture hosts that only appear in tests or config examples.

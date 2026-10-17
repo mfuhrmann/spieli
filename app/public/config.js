@@ -27,6 +27,10 @@ window.APP_CONFIG = {
   regionCountry: 'de',
   regionState: '',
 
+  // OSM notes API for "missing playground" reports. Local dev points at the
+  // OSM dev sandbox so testing never creates real notes. Empty = off.
+  osmNotesUrl: 'https://master.apis.dev.openstreetmap.org',
+
   // --- Hub mode ---
   registryUrl: './registry.json',
   hubPollInterval: 300,

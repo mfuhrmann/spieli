@@ -321,9 +321,21 @@ jobs:
           reject "img-src 'self' data: https:;" "$P"
           reject "connect-src 'self' https:\"" "$P"
           # Since #853 the default proxies the fetch paths, so connect-src
-          # reduces to 'self'. img-src keeps the Wikimedia and Panoramax
+          # reduces to 'self' plus the OSM notes API (#1000), which is posted
+          # to only when a visitor sends a missing-playground hint and is
+          # deliberately not proxied. img-src keeps the Wikimedia and Panoramax
           # sources deliberately — see the "External-service proxies" step.
+          want "connect-src 'self' https://api.openstreetmap.org\"" "$P"
+
+          printf '\n── OSM notes: off removes the host, a custom origin is named\n'
+          P=$(csp -e APP_MODE=standalone -e OSM_NOTES_URL=false)
           want "connect-src 'self'\"" "$P"
+          # Case-insensitive like the PROXY_* switches, not a bad URL.
+          P=$(csp -e APP_MODE=standalone -e OSM_NOTES_URL=OFF)
+          want "connect-src 'self'\"" "$P"
+          P=$(csp -e APP_MODE=standalone -e OSM_NOTES_URL=https://master.apis.dev.openstreetmap.org)
+          want "connect-src 'self' https://master.apis.dev.openstreetmap.org\"" "$P"
+          reject "https://api.openstreetmap.org" "$P"
 
           printf '\n── with the proxies off, each host is named\n'
           P=$(csp -e APP_MODE=standalone -e PROXY_NOMINATIM=false \
@@ -335,9 +347,10 @@ jobs:
           reject "img-src 'self' data: https:;" "$P"
 
           printf '\n── raster opt-out: the configured provider is named\n'
-          P=$(csp -e APP_MODE=standalone \
+          P=$(csp -e APP_MODE=standalone -e OSM_NOTES_URL=false \
                 -e BASEMAP_URL='https://tiles.example.org/{z}/{y}/{x}.png' \
                 -e BASEMAP_ATTRIBUTION='(c) Example')
+          # OSM notes off, so the tile host is alone in connect-src.
           # A raster tile is an image and a vector style is a fetch, so a
           # basemap host has to reach both directives; naming only one
           # half-renders the map. With every service proxied it is the only
@@ -413,7 +426,8 @@ jobs:
           # The one state that must NOT be narrow: a style is configured but
           # could not be read, so where it sends the browser is unknown and a
           # guess would blank the basemap.
-          P=$(csp -e APP_MODE=standalone -e BASEMAP_STYLE_URL=/basemap/nope.json \
+          # OSM notes off, so the wide fallback is alone in connect-src.
+          P=$(csp -e APP_MODE=standalone -e OSM_NOTES_URL=false -e BASEMAP_STYLE_URL=/basemap/nope.json \
                 -e BASEMAP_ATTRIBUTION='(c) Example')
           # Anchored for the same reason as the reject above: 'https:' alone is
           # always present via frame-ancestors. The wildcard is appended to
@@ -448,7 +462,7 @@ jobs:
               # Every grep here is a diagnostic dump, so a legitimately empty
               # file (all proxies disabled) must not fail the container and
               # abort the caller mid-assertion.
-              echo "=== config.js"; grep -E "nominatimBaseUrl|commonsApiUrl|commonsFileBase|mangroveApiUrl|panoramaxApiUrl" /usr/share/nginx/html/config.js || true
+              echo "=== config.js"; grep -E "nominatimBaseUrl|commonsApiUrl|commonsFileBase|mangroveApiUrl|panoramaxApiUrl|osmNotesUrl" /usr/share/nginx/html/config.js || true
               echo "=== csp"; grep -A1 Content-Security-Policy-Report-Only /etc/nginx/csp.conf | tail -1
               echo "=== locations"; grep -E "^location" /etc/nginx/ext-locations.conf || true
               echo "=== access_log_count=$(grep -c access_log /etc/nginx/ext-locations.conf || echo 0)"
@@ -470,8 +484,10 @@ jobs:
           want "nominatimBaseUrl:           '/ext/nominatim'" "$O"
           want "commonsFileBase:            '/ext/wikimedia'" "$O"
           want "mangroveApiUrl:             '/ext/mangrove'" "$O"
-          # connect-src reaches 'self': every fetch is same-origin.
-          want "connect-src 'self'\"" "$O"
+          # connect-src reaches 'self': every fetch is same-origin, except the
+          # OSM notes API, which the browser posts to only on Send (#1000).
+          want "connect-src 'self' https://api.openstreetmap.org\"" "$O"
+          want "osmNotesUrl:                'https://api.openstreetmap.org'" "$O"
           # img-src reduces to 'self' data: plus Panoramax, and no further.
           # Since #862 the equipment illustrations resolve to real file URLs at
           # build time and go through /ext/wikimedia/, so no Wikimedia host is

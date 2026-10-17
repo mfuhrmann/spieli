@@ -4,7 +4,8 @@
   import { mapStore } from '../stores/map.js';
   import { nominatimFetch } from '../lib/nominatim.js';
   import { rankSearchHits, searchArea } from '../lib/searchRanking.js';
-  import { Search, Loader2, X } from 'lucide-svelte';
+  import { Search, Loader2, X, MapPinPlus } from 'lucide-svelte';
+  import { startReport } from '../stores/reportMissing.js';
   import { cn } from '../lib/utils.js';
   import { _ } from 'svelte-i18n';
 
@@ -15,6 +16,9 @@
   let searching = false;
   let results = [];
   let showResults = false;
+  // True after a search that found nothing: the box then offers to report a
+  // missing playground (#1000). Cleared by the next edit.
+  let noHits = false;
   // Set by Escape, cleared by the next edit: a search that lands after the
   // visitor dismissed the list fills the cache but must not reopen it.
   let dismissed = false;
@@ -86,6 +90,7 @@
       results = rankSearchHits(globalHits, localHits, area ? regionExtent : null);
       activeIndex = -1;
       showResults = results.length > 0 && !dismissed;
+      noHits = results.length === 0 && !dismissed;
     } catch (err) {
       if (seq !== searchSeq) return;
       console.error('Search failed:', err);
@@ -181,6 +186,7 @@
     // for a query the user had already deleted.
     activeIndex = -1;
     dismissed = false;
+    noHits = false;
 
     // Below the search threshold there is nothing the cached list can be
     // suggestions *for*, so it must not keep claiming to be — `aria-expanded`
@@ -205,6 +211,7 @@
     results = [];
     activeIndex = -1;
     showResults = false;
+    noHits = false;
     inputEl?.focus();
   }
 
@@ -220,6 +227,7 @@
   function onCardFocusOut(e) {
     if (e.currentTarget.contains(e.relatedTarget)) return;
     showResults = false;
+    noHits = false;
     activeIndex = -1;
   }
 
@@ -265,6 +273,19 @@
       </button>
     {/if}
   </div>
+
+  {#if noHits && !listOpen}
+    <!-- mousedown is suppressed like the results list's: Safari and Firefox
+         on macOS do not focus a button on click, so the input's blur would
+         close this offer (onCardFocusOut) before the click arrives. -->
+    <div class="no-hits" role="status" onmousedown={(e) => e.preventDefault()}>
+      <span>{$_('search.notFound')}</span>
+      <button type="button" class="no-hits-report" onclick={() => { noHits = false; startReport(); }}>
+        <MapPinPlus class="h-4 w-4" aria-hidden="true" />
+        {$_('report.searchHint')}
+      </button>
+    </div>
+  {/if}
 
   {#if listOpen}
     <div
@@ -314,6 +335,36 @@
 </script>
 
 <style>
+  .no-hits {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.625rem 0.75rem;
+    border-top: 1px solid #e5e7eb;
+    font-size: 0.8125rem;
+    color: #4b5563;
+  }
+
+  .no-hits-report {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.625rem;
+    border: none;
+    border-radius: 999px;
+    background: #ecfdf5;
+    color: #065f46;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .no-hits-report:hover {
+    background: #d1fae5;
+  }
+
   .search-card {
     background: white;
     border-radius: 8px;
