@@ -82,6 +82,8 @@ The `-2xa5-a4` file puts two posters on one A4 sheet with a dashed cut line, for
 
 The PDFs are **committed**, so anyone can print the poster straight from the repository. After changing the template, run `make poster` and commit the PDFs with it. Only rebuild them for a real change: they add about 3.5 MB to the history each time.
 
+`marketing/poster/preview.png` shows all three languages side by side, for the PR and anyone browsing the folder. It is not built by `make poster`; after a visible change, regenerate it from the A5 PDFs (`pdftoppm -png -r 80` each, then `magick … +append`).
+
 When printing, choose **actual size / 100 %**, not "fit to page". The design keeps a 6 mm white margin because inkjets cannot print borderless, and a light sky to save ink. Scan the QR code off the printout before hanging it up.
 
 Keep the bubble to things spieli really shows. Shade, for instance, is barely mapped (12 of 473 playgrounds in Landkreis Fulda), so promising it disappoints.
