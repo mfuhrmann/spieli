@@ -2608,6 +2608,12 @@
 <td>Fetch and submit reviews server-side through <code>/ext/mangrove/</code>. Submission still verifies at Mangrove: the JWT signature covers its own claims, so the proxy is transparent to it.</td>
 </tr>
 <tr>
+<td><code>OSM_NOTES_URL</code></td>
+<td><em>(empty — the public OSM API)</em></td>
+<td>ui, data-node-ui</td>
+<td>Where "Missing a playground?" hints go as anonymous <a href="https://wiki.openstreetmap.org/wiki/Notes">OSM notes</a> (#1000). An <code>https://</code> origin with no path. <code>false</code> turns the anonymous hint off; the MapComplete option stays. Not proxied: the browser sends the note itself, only when the visitor presses Send, and the host is added to the generated CSP and privacy page. For testing, use the OSM dev sandbox <code>https://master.apis.dev.openstreetmap.org</code> so no real notes are created.</td>
+</tr>
+<tr>
 <td><code>EXT_CACHE_MAX_SIZE</code></td>
 <td><code>2g</code></td>
 <td>ui, data-node-ui</td>

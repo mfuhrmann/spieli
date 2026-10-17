@@ -2622,6 +2622,12 @@
 <td>hubOrchestrator (macro tier, filter active)</td>
 <td>MacroView, MacroCoverageBanner</td>
 </tr>
+<tr>
+<td><code>reportStep</code> / <code>reportPlacing</code></td>
+<td><code>null \| 'place' \| 'dupe' \| 'choose' \| 'form' \| 'done'</code> / derived boolean</td>
+<td><code>startReport()</code> from every entry point (AppShell button, SearchBar no-hits, Info dialog, ReportMissingFlow's empty-area hint and right-click)</td>
+<td>ReportMissingFlow (the steps), AppShell (hides controls), Map.svelte (click does not select while placing)</td>
+</tr>
 </tbody>
 </table>
 <h3 id="selection-flow">Selection flow<a class="headerlink" href="#selection-flow" title="Permanent link">&para;</a></h3>

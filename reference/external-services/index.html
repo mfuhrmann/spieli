@@ -2109,7 +2109,7 @@
 They fall into groups, and the distinction matters for privacy: what the visitor's browser contacts directly, what it contacts only on a click, and what only this server ever contacts.</p>
 <h2 id="contacted-by-the-visitors-browser">Contacted by the visitor's browser<a class="headerlink" href="#contacted-by-the-visitors-browser" title="Permanent link">&para;</a></h2>
 <p>Most of what used to be here is gone: geocoding, the Commons API, the playground photo bytes and reviews are all fetched <strong>server-side</strong> through a cache on this instance, so the browser only connects to the instance itself.</p>
-<p><strong>One</strong> thing still reaches a third party directly, and it is deliberate rather than unfinished.</p>
+<p><strong>Two</strong> things still reach a third party directly, and both are deliberate rather than unfinished.</p>
 <table>
 <thead>
 <tr>
@@ -2125,6 +2125,12 @@ They fall into groups, and the distinction matters for privacy: what the visitor
 <td><code>api.panoramax.xyz</code></td>
 <td>Street-level photo <strong>thumbnails</strong> always; the <strong>viewer</strong> only after the visitor activates it</td>
 <td>The thumbnail endpoint answers <code>308</code> with a <code>Location</code> on a per-instance derivative host (<code>panoramax.openstreetmap.fr</code> for the flagship). nginx cannot follow a redirect, and Panoramax is a federation whose derivative hosts are not ours to enumerate. The viewer is an <code>&lt;iframe&gt;</code>: serving a whole interactive application from this origin would grant it same-origin privileges here. See <a href="https://github.com/mfuhrmann/spieli/issues/863">#863</a></td>
+</tr>
+<tr>
+<td><a href="https://wiki.openstreetmap.org/wiki/Notes">OpenStreetMap notes</a></td>
+<td><code>api.openstreetmap.org</code> (<code>OSM_NOTES_URL</code>)</td>
+<td>A "Missing a playground?" hint, <strong>only when the visitor presses Send</strong>; a sent hint's status, only when the visitor taps its pin. Never on plain map use. No cookies, no referrer</td>
+<td>A proxy would send every anonymous note from this server's one address, which is exactly what OSM's spam limits look for. Turn it off with <code>OSM_NOTES_URL=false</code>. See <a href="https://github.com/mfuhrmann/spieli/issues/1000">#1000</a></td>
 </tr>
 </tbody>
 </table>
