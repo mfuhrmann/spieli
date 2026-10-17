@@ -847,5 +847,80 @@
       "no": "Nicht rollstuhlgerecht"
     },
     "addDetails": "Etwas fehlt? Belag, Beleuchtung oder Fotos kannst du in MapComplete ergänzen."
+  },
+  "report": {
+    "button": "Spielplatz fehlt?",
+    "buttonShort": "Fehlt einer?",
+    "infoCard": "Fehlenden Spielplatz melden",
+    "searchHint": "Spielplatz fehlt? Melden",
+    "cancel": "Abbrechen",
+    "place": {
+      "title": "Wo ist der Spielplatz?",
+      "hint": "Verschiebe die Karte, bis das Kreuz auf dem Spielplatz liegt.",
+      "here": "Ich stehe davor",
+      "zoomIn": "Näher heranzoomen",
+      "next": "Weiter"
+    },
+    "dupe": {
+      "title": "Meinst du diesen Spielplatz?",
+      "text": "„{name}“ ist schon auf der Karte, direkt neben dieser Stelle.",
+      "show": "Ja, anzeigen",
+      "other": "Nein, ein anderer"
+    },
+    "choose": {
+      "title": "Wie möchtest du ihn melden?",
+      "noteTitle": "Hinweis geben",
+      "noteBadge": "ohne Konto",
+      "noteText": "Du beschreibst kurz, was es dort gibt. Mapper vor Ort tragen den Spielplatz in OpenStreetMap ein. Das kann ein paar Tage dauern.",
+      "limit": "Du hast schon {count} Hinweise gesendet. Weitere Spielplätze trag bitte selbst ein.",
+      "mcTitle": "Selbst eintragen",
+      "mcBadge": "OSM-Konto",
+      "mcText": "Mit MapComplete trägst du den Spielplatz direkt in OpenStreetMap ein. Dafür brauchst du ein kostenloses OpenStreetMap-Konto."
+    },
+    "equipment": {
+      "swing": "Schaukel",
+      "slide": "Rutsche",
+      "sandpit": "Sandkasten",
+      "climbingframe": "Klettergerüst",
+      "seesaw": "Wippe",
+      "springy": "Federwippe"
+    },
+    "form": {
+      "title": "Was gibt es dort?",
+      "intro": "Dein Hinweis geht als Notiz an OpenStreetMap. Mapper vor Ort prüfen ihn und tragen den Spielplatz ein. Ein Konto brauchst du nicht.",
+      "equipmentLabel": "Ausstattung (optional)",
+      "fenced": "Eingezäunt",
+      "name": "Name (optional)",
+      "details": "Sonst noch etwas? (optional)",
+      "detailsPlaceholder": "z. B. hinter der Grundschule, Eingang vom Parkplatz",
+      "publicWarning": "Notizen sind öffentlich. Bitte keine Namen, Telefonnummern oder andere persönliche Angaben eintragen.",
+      "back": "Zurück",
+      "send": "Hinweis senden",
+      "sending": "Wird gesendet…",
+      "error": "Das Senden hat nicht geklappt. Versuch es später noch einmal, oder trag den Spielplatz selbst in MapComplete ein."
+    },
+    "done": {
+      "title": "Danke!",
+      "text": "Dein Hinweis ist jetzt auf OpenStreetMap. Mapper vor Ort tragen den Spielplatz ein. Es kann ein paar Tage dauern, bis er hier erscheint.",
+      "viewNote": "Deinen Hinweis auf OpenStreetMap ansehen",
+      "close": "Zurück zur Karte"
+    },
+    "empty": {
+      "text": "Hier sind keine Spielplätze eingetragen. Kennst du einen?",
+      "action": "Melden",
+      "dismiss": "Ausblenden"
+    },
+    "own": {
+      "title": "Dein Hinweis vom {date}",
+      "checking": "Status wird geprüft…",
+      "view": "Auf OpenStreetMap ansehen",
+      "close": "Schließen",
+      "status": {
+        "open": "Noch offen. Mapper vor Ort schauen sich das an.",
+        "closed": "Von einem Mapper abgeschlossen. Wurde der Spielplatz eingetragen, erscheint er hier nach der nächsten Datenaktualisierung.",
+        "hidden": "Von den OpenStreetMap-Moderatoren entfernt.",
+        "unknown": "Der Status ließ sich gerade nicht prüfen."
+      }
+    }
   }
 }

@@ -7,11 +7,12 @@ They fall into groups, and the distinction matters for privacy: what the visitor
 
 Most of what used to be here is gone: geocoding, the Commons API, the playground photo bytes and reviews are all fetched **server-side** through a cache on this instance, so the browser only connects to the instance itself.
 
-**One** thing still reaches a third party directly, and it is deliberate rather than unfinished.
+**Two** things still reach a third party directly, and both are deliberate rather than unfinished.
 
 | Service | Host | What still goes direct | Why it is not proxied |
 |---|---|---|---|
 | [Panoramax](https://panoramax.xyz) | `api.panoramax.xyz` | Street-level photo **thumbnails** always; the **viewer** only after the visitor activates it | The thumbnail endpoint answers `308` with a `Location` on a per-instance derivative host (`panoramax.openstreetmap.fr` for the flagship). nginx cannot follow a redirect, and Panoramax is a federation whose derivative hosts are not ours to enumerate. The viewer is an `<iframe>`: serving a whole interactive application from this origin would grant it same-origin privileges here. See [#863](https://github.com/mfuhrmann/spieli/issues/863) |
+| [OpenStreetMap notes](https://wiki.openstreetmap.org/wiki/Notes) | `api.openstreetmap.org` (`OSM_NOTES_URL`) | A "Missing a playground?" hint, **only when the visitor presses Send**; a sent hint's status, only when the visitor taps its pin. Never on plain map use. No cookies, no referrer | A proxy would send every anonymous note from this server's one address, which is exactly what OSM's spam limits look for. Turn it off with `OSM_NOTES_URL=false`. See [#1000](https://github.com/mfuhrmann/spieli/issues/1000) |
 
 It is named in the generated Content Security Policy and keeps its rows on the generated privacy page.
 

@@ -153,6 +153,29 @@ case "${SAFE_BASEMAP_UPSTREAM#*://}" in
     */*) die "BASEMAP_UPSTREAM must be an origin with no path (scheme://host[:port]), got: $SAFE_BASEMAP_UPSTREAM. The bundled style already carries the provider's own paths; to target a differently-shaped tileserver, rebuild the style against it: tools/build-basemap-style.py --source <its style URL> --asset-base /basemap" ;;
 esac
 
+# OSM notes API for "missing playground" reports (#1000). Not proxied: the
+# browser posts to it directly, and only when the visitor presses Send, so
+# opening the map never contacts it. A proxy would send every anonymous note
+# from this one server address, which is what OSM's spam limits look for.
+# Empty means the public API; false/off turns the anonymous hint off (the
+# MapComplete link stays). Origin only, like BASEMAP_UPSTREAM: the client
+# appends /api/0.6/notes itself.
+case "${OSM_NOTES_URL:-}" in
+    false|off|0|no) SAFE_OSM_NOTES_URL="" ;;
+    '')             SAFE_OSM_NOTES_URL="https://api.openstreetmap.org" ;;
+    *)              SAFE_OSM_NOTES_URL="${OSM_NOTES_URL%/}" ;;
+esac
+if [ -n "$SAFE_OSM_NOTES_URL" ]; then
+    require_origin OSM_NOTES_URL "$SAFE_OSM_NOTES_URL"
+    case "$SAFE_OSM_NOTES_URL" in
+        https://*) ;;
+        *) die "OSM_NOTES_URL must start with https:// (got: $SAFE_OSM_NOTES_URL)" ;;
+    esac
+    case "${SAFE_OSM_NOTES_URL#https://}" in
+        ''|:*|*/*) die "OSM_NOTES_URL must be an origin with no path (https://host[:port]), got: $SAFE_OSM_NOTES_URL" ;;
+    esac
+fi
+
 SAFE_BASEMAP_URL=$(safe_tile_url "${BASEMAP_URL:-}")
 SAFE_BASEMAP_STYLE_URL=$(safe_tile_url "${BASEMAP_STYLE_URL:-}")
 
@@ -1310,6 +1333,9 @@ fi
 if [ -z "$EXT_MANGROVE" ]; then
     _csp_connect=$(_csp_append "$_csp_connect" "https://api.mangrove.reviews")
 fi
+if [ -n "$SAFE_OSM_NOTES_URL" ]; then
+    _csp_connect=$(_csp_append "$_csp_connect" "$SAFE_OSM_NOTES_URL")
+fi
 
 # Basemap hosts belong in BOTH directives, which is easy to get wrong: raster
 # tiles and a vector style's sprite sheet are images, while the style document
@@ -1459,6 +1485,7 @@ window.APP_CONFIG = {
   commonsApiUrl:     '${EXT_COMMONS_API_URL}',
   commonsFileBase:   '${EXT_COMMONS_FILE_BASE}',
   mangroveApiUrl:    '${EXT_MANGROVE_URL}',
+  osmNotesUrl:       '${SAFE_OSM_NOTES_URL}',
   defaultLocale:     '${SAFE_DEFAULT_LOCALE}',
   regionLang:        '${SAFE_REGION_LANG}',
   regionCountry:     '${SAFE_REGION_COUNTRY}',
@@ -1489,6 +1516,7 @@ window.APP_CONFIG = {
   commonsApiUrl:              '${EXT_COMMONS_API_URL}',
   commonsFileBase:            '${EXT_COMMONS_FILE_BASE}',
   mangroveApiUrl:             '${EXT_MANGROVE_URL}',
+  osmNotesUrl:                '${SAFE_OSM_NOTES_URL}',
   defaultLocale:              '${SAFE_DEFAULT_LOCALE}',
   regionLang:                 '${SAFE_REGION_LANG}',
   regionCountry:              '${SAFE_REGION_COUNTRY}',
@@ -1654,6 +1682,23 @@ EXTROW_OSMWIKI
         <td>IP-Adresse, User-Agent, Referer, Koordinaten des Spielplatzes. Beim Absenden zusätzlich Ihre Bewertung, ein optionaler Kommentar und Ihr öffentlicher Schlüssel (siehe „Lokale Speicherung“)</td>
       </tr>
 EXTROW_MG
+        fi
+        if [ -n "$SAFE_OSM_NOTES_URL" ]; then
+            # The default host is written out literally rather than through the
+            # variable, so tools/check-privacy-disclosure.py can see it.
+            if [ "$SAFE_OSM_NOTES_URL" = "https://api.openstreetmap.org" ]; then
+                _notes_code='<code>api.openstreetmap.org</code>'
+            else
+                _notes_code="<code>$(printf '%s' "${SAFE_OSM_NOTES_URL#https://}" | tr -cd 'A-Za-z0-9._:-')</code>"
+            fi
+            cat >> "$EXT_ROWS_FILE" <<EXTROW_NOTES
+      <tr>
+        <td><a href="https://www.openstreetmap.org/" target="_blank" rel="noopener">OpenStreetMap</a> – Notizen<br>${_notes_code}</td>
+        <td>Hinweis auf einen fehlenden Spielplatz als OSM-Notiz; Abruf des Bearbeitungsstands eigener Hinweise</td>
+        <td>Nur beim Absenden eines Hinweises sowie beim Antippen eines eigenen Hinweises auf der Karte. Nicht beim bloßen Aufrufen oder Bewegen der Karte</td>
+        <td>IP-Adresse, User-Agent, Koordinaten der markierten Stelle und der eingegebene Hinweistext. Ein Referer und Cookies werden nicht übertragen. Die Notiz ist auf openstreetmap.org öffentlich einsehbar</td>
+      </tr>
+EXTROW_NOTES
         fi
         # Two distinct Panoramax rows, both unconditional. Neither is proxied:
         # the thumbnail endpoint redirects to a per-instance derivative host

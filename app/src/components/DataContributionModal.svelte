@@ -4,6 +4,7 @@
   import { version } from '../../package.json';
   import logoUrl from '../images/spieli_logo.png';
   import { installPrompt, promptInstall } from '../stores/installPrompt.js';
+  import { startReport } from '../stores/reportMissing.js';
 
   export let open = false;
   /** Community chat URL; hidden when null/falsy. */
@@ -59,6 +60,10 @@
               <span>{$_('modal.addData.installApp')}</span>
             </button>
           {/if}
+          <button type="button" class="link-card link-card--button" onclick={() => { close(); startReport(); }}>
+            <span class="link-icon">📍</span>
+            <span>{$_('report.infoCard')}</span>
+          </button>
           <a class="link-card" href={osmWikiUrl} target="_blank" rel="noopener">
             <span class="link-icon">🗺️</span>
             <span>{$_('modal.addData.wikiLinkText')}</span>

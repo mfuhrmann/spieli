@@ -1,6 +1,7 @@
 <script>
   import { modalOpen } from '../stores/modalOpen.js';
   import { onMount, onDestroy } from 'svelte';
+  import { get } from 'svelte/store';
   import { _ } from 'svelte-i18n';
   import { Map, View } from 'ol';
   import { Tile as TileLayer, Vector as VectorLayer, VectorTile as VectorTileLayer } from 'ol/layer.js';
@@ -35,6 +36,7 @@
   import { finderClusterStyleFn, finderPlaygroundStyle } from '../lib/finderStyle.js';
   import { mappingDetail } from '../stores/mappingDetail.js';
   import { selection } from '../stores/selection.js';
+  import { reportPlacing } from '../stores/reportMissing.js';
   import { mapStore } from '../stores/map.js';
   import { location } from '../stores/location.js';
   import { playgroundSourceStore } from '../stores/playgroundSource.js';
@@ -423,6 +425,9 @@
     //    tier and trigger a fan-out scoped to that backend.
     //  - Empty space: clear selection.
     olMap.on('click', (evt) => {
+      // While a missing-playground report is being placed, a tap moves the
+      // map under the crosshair; it must not open a panel over it (#1000).
+      if (get(reportPlacing)) return;
       const polygonHit = olMap.forEachFeatureAtPixel(evt.pixel, (f) => f, {
         layerFilter: (l) => l === playgroundLayer,
         hitTolerance: 10,
