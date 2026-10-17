@@ -2,7 +2,7 @@
 """Render the printable poster (marketing/poster/) to PDF.
 
 For every language the template knows, writes two files to
-marketing/poster/out/:
+marketing/poster/print/ (committed, so people can print without building):
 
   poster-<lang>-a5.pdf       one A5 poster
   poster-<lang>-2xa5-a4.pdf  two A5 posters on one A4 sheet, with a cut line
@@ -24,7 +24,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 POSTER_DIR = ROOT / 'marketing' / 'poster'
-OUT_DIR = POSTER_DIR / 'out'
+OUT_DIR = POSTER_DIR / 'print'
 LANGS = ['de', 'en', 'sk']
 BROWSERS = ['chromium', 'chromium-browser', 'google-chrome', 'google-chrome-stable']
 

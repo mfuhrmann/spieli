@@ -75,10 +75,12 @@ Two things to expect:
 `marketing/poster/` holds an A5 poster for hanging up locally (#1004): pixel-art scene in the logo's style, QR code to `spieli.eu`. One template, three languages — `poster.html?lang=de|en|sk` (default `de`); the texts are in the `TEXT` table at the bottom of the file. Open it in a browser to preview.
 
 ```bash
-make poster               # writes marketing/poster/out/poster-<lang>-a5.pdf and -2xa5-a4.pdf
+make poster               # rewrites marketing/poster/print/poster-<lang>-a5.pdf and -2xa5-a4.pdf
 ```
 
-The `-2xa5-a4` file puts two posters on one A4 sheet with a dashed cut line, for printers that only take A4. Needs a Chromium (`CHROME=` to point at one) and network access, because the fonts come from Google Fonts. The PDFs are not committed.
+The `-2xa5-a4` file puts two posters on one A4 sheet with a dashed cut line, for printers that only take A4. Needs a Chromium (`CHROME=` to point at one) and network access, because the fonts come from Google Fonts.
+
+The PDFs are **committed**, so anyone can print the poster straight from the repository. After changing the template, run `make poster` and commit the PDFs with it. Only rebuild them for a real change: they add about 3.5 MB to the history each time.
 
 When printing, choose **actual size / 100 %**, not "fit to page". The design keeps a 6 mm white margin because inkjets cannot print borderless, and a light sky to save ink. Scan the QR code off the printout before hanging it up.
 
