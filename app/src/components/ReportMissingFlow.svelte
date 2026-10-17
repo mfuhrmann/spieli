@@ -7,7 +7,7 @@
   import { onDestroy } from 'svelte';
   import { get } from 'svelte/store';
   import { _ } from 'svelte-i18n';
-  import { MapPinPlus, Navigation2, X, Check, CircleHelp, MessageSquarePlus, Pencil, ExternalLink } from 'lucide-svelte';
+  import { MapPinPlus, Navigation2, X, Check, CircleHelp, Info, MessageSquarePlus, Pencil, ExternalLink } from 'lucide-svelte';
   import VectorLayer from 'ol/layer/Vector.js';
   import VectorSource from 'ol/source/Vector.js';
   import Feature from 'ol/Feature.js';
@@ -440,7 +440,9 @@
               placeholder={$_('report.form.detailsPlaceholder')}></textarea>
           </label>
 
-          <div class="warning">
+          <div class="good-to-know">
+            <Info class="h-4 w-4 good-to-know-icon" aria-hidden="true" />
+            <div>
             <p>{$_('report.form.publicWarning')}</p>
             <p class="privacy-links">
               {$_('report.form.privacyLabel')}
@@ -449,6 +451,7 @@
                 · <a href={privacyUrl} target="_blank" rel="noopener">{$_('report.form.privacyThisSite')}</a>
               {/if}
             </p>
+            </div>
           </div>
 
           <label class="remember">
@@ -694,9 +697,22 @@
   }
   .input:focus { outline: 2px solid #047857; outline-offset: 1px; }
 
-  .warning p { margin: 0; }
-  .warning .privacy-links { margin-top: 0.375rem; }
-  .warning a { color: #78350f; font-weight: 600; }
+  /* Calm on purpose: this informs, it does not warn. */
+  .good-to-know {
+    display: flex;
+    gap: 0.5rem;
+    margin: 0 0 0.875rem;
+    padding: 0.5rem 0.625rem;
+    border-radius: 8px;
+    background: #f3f4f6;
+    font-size: 0.8125rem;
+    line-height: 1.45;
+    color: #4b5563;
+  }
+  .good-to-know p { margin: 0; }
+  .good-to-know .privacy-links { margin-top: 0.375rem; }
+  .good-to-know a { color: #047857; font-weight: 600; }
+  :global(.good-to-know-icon) { flex-shrink: 0; margin-top: 0.125rem; color: #6b7280; }
 
   .remember {
     display: flex;
@@ -711,16 +727,6 @@
   .remember input { margin-top: 0.2rem; accent-color: #047857; width: 16px; height: 16px; flex-shrink: 0; }
   .remember-hint { display: block; color: #6b7280; }
 
-  .warning {
-    margin: 0 0 0.875rem;
-    padding: 0.5rem 0.625rem;
-    border-radius: 8px;
-    background: #fffbeb;
-    border: 1px solid #fde68a;
-    font-size: 0.8125rem;
-    line-height: 1.45;
-    color: #78350f;
-  }
 
   .error {
     margin: 0 0 0.75rem;
