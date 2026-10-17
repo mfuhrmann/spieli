@@ -64,6 +64,12 @@ test('a hint is placed, filled in and sent as an OSM note', async ({ page }) => 
   await expect(dialog.getByRole('button', { name: 'Slide' })).toHaveAttribute('aria-pressed', 'true');
   await dialog.getByRole('button', { name: 'Fenced' }).click();
   await dialog.getByLabel('Anything else? (optional)').fill('behind the school');
+  // Keeping the hint on this device is opt-in.
+  const remember = dialog.getByRole('checkbox', { name: /Remember this hint/ });
+  await expect(remember).not.toBeChecked();
+  await remember.check();
+  await expect(dialog.getByRole('link', { name: 'OpenStreetMap Foundation' }))
+    .toHaveAttribute('href', 'https://osmfoundation.org/wiki/Privacy_Policy');
   await dialog.getByRole('button', { name: 'Send hint' }).click();
 
   const done = page.getByRole('dialog', { name: 'Thank you!' });
@@ -125,4 +131,19 @@ test('a search with no hits offers to report a missing playground', async ({ pag
 
   await offer.click();
   await expect(page.getByRole('region', { name: 'Where is the playground?' })).toBeVisible();
+});
+
+test('without the opt-in, a sent hint is not stored on the device', async ({ page }) => {
+  const { posts } = await setup(page);
+  await page.getByRole('button', { name: 'Missing a playground?' }).click();
+  const card = page.getByRole('region', { name: 'Where is the playground?' });
+  await card.getByRole('button', { name: 'Zoom in closer' }).click();
+  await card.getByRole('button', { name: 'Next' }).click();
+  await page.getByRole('dialog', { name: 'How would you like to report it?' })
+    .getByRole('button', { name: /Leave a hint/ }).click();
+  await page.getByRole('dialog', { name: "What's there?" })
+    .getByRole('button', { name: 'Send hint' }).click();
+  await expect(page.getByRole('dialog', { name: 'Thank you!' })).toBeVisible();
+  expect(posts).toHaveLength(1);
+  expect(await page.evaluate(() => localStorage.getItem('spieli.ownNotes'))).toBeNull();
 });

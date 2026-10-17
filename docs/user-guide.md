@@ -170,9 +170,9 @@ Know a playground that is not on the map? Press **Missing a playground?** (the g
 
 1. **Mark the spot.** Move the map until the cross sits on the playground. If your location is known, "I'm standing in front of it" jumps there. If a known playground is right next to the spot, spieli asks whether you mean that one.
 2. **Choose how to report it:**
-    - **Leave a hint — no account needed.** Tick what is there (swings, slide, …), add a name or a note if you like, and send. The hint becomes a public [OpenStreetMap note](https://wiki.openstreetmap.org/wiki/Notes) that local mappers review and use to add the playground. Notes are public, so don't include personal details.
+    - **Leave a hint — no account needed.** Tick what is there (swings, slide, …), add a name or a note if you like, and send. The hint becomes a public [OpenStreetMap note](https://wiki.openstreetmap.org/wiki/Notes) that local mappers review and use to add the playground. The OpenStreetMap Foundation stores your IP address with the note to prevent abuse; notes are public and you cannot delete them yourself afterwards, so don't include personal details.
     - **Add it yourself** in [MapComplete](https://mapcomplete.org), with a free OpenStreetMap account.
-3. **Follow up.** Hints you sent show up on your map as small pins (in this browser only). Tap one to see whether a mapper has dealt with it yet.
+3. **Follow up.** If you tick "Remember this hint on this device" before sending, the hint shows up on your map as a small pin (in this browser only). Tap it to see whether a mapper has dealt with it yet. Without the tick, nothing is stored.
 
 Nothing is sent until you press **Send hint**; opening or moving the map never contacts OpenStreetMap's notes service.
 

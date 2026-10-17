@@ -1696,7 +1696,7 @@ EXTROW_MG
         <td><a href="https://www.openstreetmap.org/" target="_blank" rel="noopener">OpenStreetMap</a> – Notizen<br>${_notes_code}</td>
         <td>Hinweis auf einen fehlenden Spielplatz als OSM-Notiz; Abruf des Bearbeitungsstands eigener Hinweise</td>
         <td>Nur beim Absenden eines Hinweises sowie beim Antippen eines eigenen Hinweises auf der Karte. Nicht beim bloßen Aufrufen oder Bewegen der Karte</td>
-        <td>IP-Adresse, User-Agent, Koordinaten der markierten Stelle und der eingegebene Hinweistext. Ein Referer und Cookies werden nicht übertragen. Die Notiz ist auf openstreetmap.org öffentlich einsehbar</td>
+        <td>IP-Adresse, User-Agent, Koordinaten der markierten Stelle und der eingegebene Hinweistext. Ein Referer und Cookies werden nicht übertragen. Die OpenStreetMap Foundation (Vereinigtes Königreich; Daten in Großbritannien und den Niederlanden) ist dafür eigenständig verantwortlich und speichert die IP-Adresse zusammen mit der Notiz, um Missbrauch zu verhindern. Die Notiz ist auf openstreetmap.org dauerhaft öffentlich einsehbar und kann nicht durch Sie selbst gelöscht werden, nur durch die Moderation von OpenStreetMap. Siehe die <a href="https://osmfoundation.org/wiki/Privacy_Policy" target="_blank" rel="noopener">Datenschutzerklärung der OpenStreetMap Foundation</a></td>
       </tr>
 EXTROW_NOTES
         fi

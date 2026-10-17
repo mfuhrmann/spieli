@@ -24,7 +24,7 @@
   import { location } from '../stores/location.js';
   import { reportStep, reportStartAt, startReport, cancelReport } from '../stores/reportMissing.js';
   import { getPlaygroundTitle, fitViewToSelection } from '../lib/playgroundHelpers.js';
-  import { osmNotesUrl, regionLang } from '../lib/config.js';
+  import { osmNotesUrl, regionLang, privacyUrl } from '../lib/config.js';
   import {
     REPORT_EQUIPMENT, DETAILS_MAX, NAME_MAX, buildNoteText, createNote, fetchNoteStatus,
     mapCompleteAddUrl, readOwnNotes, addOwnNote, updateOwnNoteStatus,
@@ -42,6 +42,7 @@
   // The empty-area hint waits this long after the map settles, so it does not
   // flash while the polygon tier is still loading.
   const EMPTY_HINT_DELAY_MS = 1500;
+  const OSMF_PRIVACY_URL = 'https://osmfoundation.org/wiki/Privacy_Policy';
 
   let zoom = 0;
   let dupeFeature = null;
@@ -50,6 +51,9 @@
   let fenced = false;
   let name = '';
   let details = '';
+  // Opt-in: keeping the hint in localStorage is not something the visitor
+  // asked for by sending it, so it needs their say-so (TDDDG § 25).
+  let remember = false;
   let sending = false;
   let sendError = false;
   let sentNote = null;      // { id, url }
@@ -166,6 +170,7 @@
     fenced = false;
     name = '';
     details = '';
+    remember = false;
     sendError = false;
     sentNote = null;
     dupeFeature = null;
@@ -249,14 +254,16 @@
       const text = buildNoteText({ equipment, fenced, name, details, lang: regionLang });
       sentNote = await createNote({ lat: spot.lat, lon: spot.lon, text, base: osmNotesUrl });
       countSent();
-      refreshOwnPins(addOwnNote({
-        id: sentNote.id,
-        lat: spot.lat,
-        lon: spot.lon,
-        created: new Date().toISOString().slice(0, 10),
-        status: 'open',
-        url: sentNote.url,
-      }));
+      if (remember) {
+        refreshOwnPins(addOwnNote({
+          id: sentNote.id,
+          lat: spot.lat,
+          lon: spot.lon,
+          created: new Date().toISOString().slice(0, 10),
+          status: 'open',
+          url: sentNote.url,
+        }));
+      }
       reportStep.set('done');
     } catch (err) {
       console.warn('[report] sending the note failed:', err);
@@ -433,7 +440,24 @@
               placeholder={$_('report.form.detailsPlaceholder')}></textarea>
           </label>
 
-          <p class="warning">{$_('report.form.publicWarning')}</p>
+          <div class="warning">
+            <p>{$_('report.form.publicWarning')}</p>
+            <p class="privacy-links">
+              {$_('report.form.privacyLabel')}
+              <a href={OSMF_PRIVACY_URL} target="_blank" rel="noopener noreferrer">{$_('report.form.privacyOsmf')}</a>
+              {#if privacyUrl}
+                · <a href={privacyUrl} target="_blank" rel="noopener">{$_('report.form.privacyThisSite')}</a>
+              {/if}
+            </p>
+          </div>
+
+          <label class="remember">
+            <input type="checkbox" bind:checked={remember} />
+            <span>
+              {$_('report.form.remember')}
+              <span class="remember-hint">{$_('report.form.rememberHint')}</span>
+            </span>
+          </label>
 
           {#if sendError}
             <p class="error" role="alert">{$_('report.form.error')}</p>
@@ -669,6 +693,23 @@
     resize: vertical;
   }
   .input:focus { outline: 2px solid #047857; outline-offset: 1px; }
+
+  .warning p { margin: 0; }
+  .warning .privacy-links { margin-top: 0.375rem; }
+  .warning a { color: #78350f; font-weight: 600; }
+
+  .remember {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin: 0 0 0.875rem;
+    font-size: 0.8125rem;
+    line-height: 1.45;
+    color: #374151;
+    cursor: pointer;
+  }
+  .remember input { margin-top: 0.2rem; accent-color: #047857; width: 16px; height: 16px; flex-shrink: 0; }
+  .remember-hint { display: block; color: #6b7280; }
 
   .warning {
     margin: 0 0 0.875rem;
