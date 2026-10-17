@@ -92,7 +92,11 @@ export async function createNote({ lat, lon, text, base, fetchImpl = fetch }) {
         credentials: 'omit',
         referrerPolicy: 'no-referrer',
     });
-    if (!res.ok) throw new Error(`OSM notes API answered ${res.status}`);
+    if (!res.ok) {
+        const err = new Error(`OSM notes API answered ${res.status}`);
+        err.status = res.status;
+        throw err;
+    }
     const data = await res.json();
     const id = data?.properties?.id;
     if (!Number.isInteger(id)) throw new Error('OSM notes API returned no note id');
@@ -167,10 +171,34 @@ export function updateOwnNoteStatus(id, status, storage = storageOrNull()) {
 // --- Session limit ----------------------------------------------------------
 // The one spam guard. Traffic is low, and a visitor reporting more than a
 // handful of playgrounds in one sitting is better served by MapComplete.
+// Kept in sessionStorage so a reload does not reset it; falls back to memory
+// where storage is unavailable.
 
 export const SESSION_LIMIT = 3;
-let sentThisSession = 0;
+const SENT_KEY = 'spieli.notesSent';
+let sentInMemory = 0;
 
-export function canSendMore() { return sentThisSession < SESSION_LIMIT; }
-export function countSent() { sentThisSession += 1; }
-export function _resetSessionCount() { sentThisSession = 0; }
+function sessionOrNull() {
+    try { return globalThis.sessionStorage ?? null; } catch { return null; }
+}
+
+function sentCount(storage = sessionOrNull()) {
+    try {
+        const n = Number.parseInt(storage?.getItem(SENT_KEY) ?? '', 10);
+        return Number.isFinite(n) ? Math.max(n, sentInMemory) : sentInMemory;
+    } catch {
+        return sentInMemory;
+    }
+}
+
+export function canSendMore(storage = sessionOrNull()) { return sentCount(storage) < SESSION_LIMIT; }
+
+export function countSent(storage = sessionOrNull()) {
+    sentInMemory = sentCount(storage) + 1;
+    try { storage?.setItem(SENT_KEY, String(sentInMemory)); } catch { /* memory only */ }
+}
+
+export function _resetSessionCount(storage = sessionOrNull()) {
+    sentInMemory = 0;
+    try { storage?.removeItem(SENT_KEY); } catch { /* nothing to reset */ }
+}

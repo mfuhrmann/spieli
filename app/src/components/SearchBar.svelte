@@ -275,7 +275,10 @@
   </div>
 
   {#if noHits && !listOpen}
-    <div class="no-hits" role="status">
+    <!-- mousedown is suppressed like the results list's: Safari and Firefox
+         on macOS do not focus a button on click, so the input's blur would
+         close this offer (onCardFocusOut) before the click arrives. -->
+    <div class="no-hits" role="status" onmousedown={(e) => e.preventDefault()}>
       <span>{$_('search.notFound')}</span>
       <button type="button" class="no-hits-report" onclick={() => { noHits = false; startReport(); }}>
         <MapPinPlus class="h-4 w-4" aria-hidden="true" />

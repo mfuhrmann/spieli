@@ -330,6 +330,9 @@ jobs:
           printf '\n── OSM notes: off removes the host, a custom origin is named\n'
           P=$(csp -e APP_MODE=standalone -e OSM_NOTES_URL=false)
           want "connect-src 'self'\"" "$P"
+          # Case-insensitive like the PROXY_* switches, not a bad URL.
+          P=$(csp -e APP_MODE=standalone -e OSM_NOTES_URL=OFF)
+          want "connect-src 'self'\"" "$P"
           P=$(csp -e APP_MODE=standalone -e OSM_NOTES_URL=https://master.apis.dev.openstreetmap.org)
           want "connect-src 'self' https://master.apis.dev.openstreetmap.org\"" "$P"
           reject "https://api.openstreetmap.org" "$P"

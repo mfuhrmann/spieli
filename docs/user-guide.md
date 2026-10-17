@@ -166,9 +166,9 @@ On a desktop, Chrome and Edge (install icon in the address bar) and Safari on a 
 
 ## Reporting a missing playground
 
-Know a playground that is not on the map? Press **Missing a playground?** (the green button at the bottom right, "Missing one?" on phones). You can also right-click the map, use the offer that appears when a search finds nothing or when no playgrounds are in view, or open it from the Info dialog.
+Know a playground that is not on the map? Press **Missing a playground?** (the green button at the bottom right, "Missing one?" on phones). You can also right-click the map (with a mouse), use the offer that appears when a search finds nothing or when no playgrounds are in view, or open it from the Info dialog. The back button or gesture closes the report again.
 
-1. **Mark the spot.** Move the map until the cross sits on the playground. If your location is known, "I'm standing in front of it" jumps there. If a known playground is right next to the spot, spieli asks whether you mean that one.
+1. **Mark the spot.** Move the map until the cross sits on the playground. If your location is known, "I'm standing in front of it" jumps there. If a known playground is right next to the spot, spieli asks whether you mean that one. Outside the area this map has data for, spieli cannot check that, so it only offers MapComplete, which shows what OpenStreetMap already has there.
 2. **Choose how to report it:**
     - **Leave a hint — no account needed.** Tick what is there (swings, slide, …), add a name or a note if you like, and send. The hint becomes a public [OpenStreetMap note](https://wiki.openstreetmap.org/wiki/Notes) that local mappers review and use to add the playground. The OpenStreetMap Foundation stores your IP address with the note to prevent abuse; notes are public and you cannot delete them yourself afterwards, so don't include personal details.
     - **Add it yourself** in [MapComplete](https://mapcomplete.org), with a free OpenStreetMap account.

@@ -859,7 +859,8 @@
       "hint": "Move the map until the cross sits on the playground.",
       "here": "I'm standing in front of it",
       "zoomIn": "Zoom in closer",
-      "next": "Next"
+      "next": "Next",
+      "checking": "Checking…"
     },
     "dupe": {
       "title": "Do you mean this playground?",
@@ -875,7 +876,8 @@
       "limit": "You've already sent {count} hints. To report more, please add them yourself.",
       "mcTitle": "Add it yourself",
       "mcBadge": "OSM account",
-      "mcText": "Map the playground directly in OpenStreetMap with MapComplete. You need a free OpenStreetMap account."
+      "mcText": "Map the playground directly in OpenStreetMap with MapComplete. You need a free OpenStreetMap account.",
+      "outside": "This map has no data for this area, so it cannot tell whether the playground is already in OpenStreetMap. MapComplete shows what is there."
     },
     "equipment": {
       "swing": "Swings",
@@ -902,7 +904,8 @@
       "back": "Back",
       "send": "Send hint",
       "sending": "Sending…",
-      "error": "Sending didn't work. Please try again later, or add the playground yourself in MapComplete."
+      "error": "Sending didn't work. Please try again later, or add the playground yourself in MapComplete.",
+      "refused": "OpenStreetMap is not accepting hints without an account at the moment. You can still add the playground yourself:"
     },
     "done": {
       "title": "Thank you!",

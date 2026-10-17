@@ -160,10 +160,12 @@ esac
 # Empty means the public API; false/off turns the anonymous hint off (the
 # MapComplete link stays). Origin only, like BASEMAP_UPSTREAM: the client
 # appends /api/0.6/notes itself.
-case "${OSM_NOTES_URL:-}" in
-    false|off|0|no) SAFE_OSM_NOTES_URL="" ;;
-    '')             SAFE_OSM_NOTES_URL="https://api.openstreetmap.org" ;;
-    *)              SAFE_OSM_NOTES_URL="${OSM_NOTES_URL%/}" ;;
+# Case-insensitive like ext_enabled for the PROXY_* switches: False and OFF
+# turn it off, True and ON mean the default, rather than dying as a bad URL.
+case "$(printf '%s' "${OSM_NOTES_URL:-}" | tr '[:upper:]' '[:lower:]')" in
+    false|off|0|no)     SAFE_OSM_NOTES_URL="" ;;
+    ''|true|on|1|yes)   SAFE_OSM_NOTES_URL="https://api.openstreetmap.org" ;;
+    *)                  SAFE_OSM_NOTES_URL="${OSM_NOTES_URL%/}" ;;
 esac
 if [ -n "$SAFE_OSM_NOTES_URL" ]; then
     require_origin OSM_NOTES_URL "$SAFE_OSM_NOTES_URL"

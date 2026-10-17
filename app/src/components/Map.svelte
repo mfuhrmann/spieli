@@ -428,6 +428,13 @@
       // While a missing-playground report is being placed, a tap moves the
       // map under the crosshair; it must not open a panel over it (#1000).
       if (get(reportPlacing)) return;
+      // A tap on one of the visitor's own report pins belongs to
+      // ReportMissingFlow alone: no selection, no empty-map deselect.
+      const ownPinHit = olMap.forEachFeatureAtPixel(evt.pixel, () => true, {
+        layerFilter: (l) => l.get('spieliOwnNotes') === true,
+        hitTolerance: 6,
+      });
+      if (ownPinHit) return;
       const polygonHit = olMap.forEachFeatureAtPixel(evt.pixel, (f) => f, {
         layerFilter: (l) => l === playgroundLayer,
         hitTolerance: 10,

@@ -115,8 +115,26 @@ function memStorage() {
 
 // --- session limit ---------------------------------------------------------
 
-_resetSessionCount();
-for (let i = 0; i < SESSION_LIMIT; i++) { assert.equal(canSendMore(), true); countSent(); }
-assert.equal(canSendMore(), false);
+{
+    // In memory (no storage available).
+    _resetSessionCount(null);
+    for (let i = 0; i < SESSION_LIMIT; i++) { assert.equal(canSendMore(null), true); countSent(null); }
+    assert.equal(canSendMore(null), false);
+}
+{
+    // Survives a reload: a fresh module state reading the same sessionStorage.
+    const s = { m: new Map(), getItem(k) { return this.m.get(k) ?? null; }, setItem(k, v) { this.m.set(k, v); }, removeItem(k) { this.m.delete(k); } };
+    _resetSessionCount(s);
+    countSent(s); countSent(s);
+    assert.equal(s.getItem('spieli.notesSent'), '2');
+    assert.equal(canSendMore(s), true);
+    countSent(s);
+    assert.equal(canSendMore(s), false);
+}
+{
+    // A failing request carries its status, so the form can tell a refusal.
+    const err = await createNote({ lat: 1, lon: 1, text: 'x', base: 'b', fetchImpl: async () => ({ ok: false, status: 403 }) }).catch(e => e);
+    assert.equal(err.status, 403);
+}
 
 console.log('osmNotes tests passed');

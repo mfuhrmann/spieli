@@ -859,7 +859,8 @@
       "hint": "Verschiebe die Karte, bis das Kreuz auf dem Spielplatz liegt.",
       "here": "Ich stehe davor",
       "zoomIn": "Näher heranzoomen",
-      "next": "Weiter"
+      "next": "Weiter",
+      "checking": "Wird geprüft…"
     },
     "dupe": {
       "title": "Meinst du diesen Spielplatz?",
@@ -875,7 +876,8 @@
       "limit": "Du hast schon {count} Hinweise gesendet. Weitere Spielplätze trag bitte selbst ein.",
       "mcTitle": "Selbst eintragen",
       "mcBadge": "OSM-Konto",
-      "mcText": "Mit MapComplete trägst du den Spielplatz direkt in OpenStreetMap ein. Dafür brauchst du ein kostenloses OpenStreetMap-Konto."
+      "mcText": "Mit MapComplete trägst du den Spielplatz direkt in OpenStreetMap ein. Dafür brauchst du ein kostenloses OpenStreetMap-Konto.",
+      "outside": "Für diese Gegend hat diese Karte keine Daten und kann nicht prüfen, ob der Spielplatz schon in OpenStreetMap ist. MapComplete zeigt, was dort eingetragen ist."
     },
     "equipment": {
       "swing": "Schaukel",
@@ -902,7 +904,8 @@
       "back": "Zurück",
       "send": "Hinweis senden",
       "sending": "Wird gesendet…",
-      "error": "Das Senden hat nicht geklappt. Versuch es später noch einmal, oder trag den Spielplatz selbst in MapComplete ein."
+      "error": "Das Senden hat nicht geklappt. Versuch es später noch einmal, oder trag den Spielplatz selbst in MapComplete ein.",
+      "refused": "OpenStreetMap nimmt gerade keine Hinweise ohne Konto an. Du kannst den Spielplatz aber selbst eintragen:"
     },
     "done": {
       "title": "Danke!",

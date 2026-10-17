@@ -4,7 +4,7 @@
   // visitor's own sent hints as pins. The entry points only call
   // startReport(); everything after that lives here. Note text, sending and
   // storage are in lib/osmNotes.js.
-  import { onDestroy } from 'svelte';
+  import { onDestroy, tick } from 'svelte';
   import { get } from 'svelte/store';
   import { _ } from 'svelte-i18n';
   import { MapPinPlus, Navigation2, X, Check, CircleHelp, Info, MessageSquarePlus, Pencil, ExternalLink } from 'lucide-svelte';
@@ -14,6 +14,7 @@
   import Point from 'ol/geom/Point.js';
   import { fromLonLat, toLonLat } from 'ol/proj.js';
   import { buffer } from 'ol/extent.js';
+  import GeoJSON from 'ol/format/GeoJSON.js';
   import { Style, Circle as CircleStyle, Fill, Stroke, Text } from 'ol/style.js';
   import { modal } from '../stores/modalOpen.js';
   import { mapStore } from '../stores/map.js';
@@ -22,9 +23,12 @@
   import { effectiveFilterStore, hasActiveFilters } from '../stores/filters.js';
   import { selection, hasSelection } from '../stores/selection.js';
   import { location } from '../stores/location.js';
-  import { reportStep, reportStartAt, startReport, cancelReport } from '../stores/reportMissing.js';
+  import { dataCoverage, coverageAt, isCovered } from '../stores/dataCoverage.js';
+  import { reportStep, reportStartAt, reportBusy, startReport, cancelReport } from '../stores/reportMissing.js';
+  import { fetchPlaygroundsBbox } from '../lib/api.js';
+  import { tagWithBackend } from '../hub/backendTag.js';
   import { getPlaygroundTitle, fitViewToSelection } from '../lib/playgroundHelpers.js';
-  import { osmNotesUrl, regionLang, privacyUrl } from '../lib/config.js';
+  import { osmNotesUrl, regionLang, privacyUrl, apiBaseUrl } from '../lib/config.js';
   import {
     REPORT_EQUIPMENT, DETAILS_MAX, NAME_MAX, buildNoteText, createNote, fetchNoteStatus,
     mapCompleteAddUrl, readOwnNotes, addOwnNote, updateOwnNoteStatus,
@@ -62,23 +66,33 @@
 
   const ownSource = new VectorSource();
   const ownLayer = new VectorLayer({ source: ownSource, zIndex: 25, minZoom: 11 });
+  // Map.svelte's click handler skips features on this layer: a tap on an own
+  // pin is ours alone, not also a playground selection or an empty-map click.
+  ownLayer.set('spieliOwnNotes', true);
   ownLayer.setStyle(ownNoteStyle);
 
+  const ownStyles = new Map();
   function ownNoteStyle(feature) {
-    const status = feature.get('status');
-    const colour = status === 'closed' ? '#059669' : status === 'hidden' ? '#9ca3af' : '#d97706';
-    return new Style({
-      image: new CircleStyle({
-        radius: 10,
-        fill: new Fill({ color: colour }),
-        stroke: new Stroke({ color: '#ffffff', width: 2 }),
-      }),
-      text: new Text({
-        text: status === 'closed' ? '✓' : '?',
-        font: 'bold 12px system-ui, sans-serif',
-        fill: new Fill({ color: '#ffffff' }),
-      }),
-    });
+    const status = feature.get('status') === 'closed' ? 'closed'
+      : feature.get('status') === 'hidden' ? 'hidden' : 'open';
+    let style = ownStyles.get(status);
+    if (!style) {
+      const colour = status === 'closed' ? '#059669' : status === 'hidden' ? '#9ca3af' : '#d97706';
+      style = new Style({
+        image: new CircleStyle({
+          radius: 10,
+          fill: new Fill({ color: colour }),
+          stroke: new Stroke({ color: '#ffffff', width: 2 }),
+        }),
+        text: new Text({
+          text: status === 'closed' ? '✓' : '?',
+          font: 'bold 12px system-ui, sans-serif',
+          fill: new Fill({ color: '#ffffff' }),
+        }),
+      });
+      ownStyles.set(status, style);
+    }
+    return style;
   }
 
   function refreshOwnPins(list = readOwnNotes()) {
@@ -104,17 +118,42 @@
 
   function evaluateEmptyHint() {
     const source = get(playgroundSourceStore);
-    if (!attachedMap || !source || emptyHintDismissed) return;
+    if (!attachedMap || !source || emptyHintDismissed) { showEmptyHint = false; return; }
     // A filter can empty the view on its own; the hint would then claim a
     // gap that is not there.
-    if (get(reportStep) || get(hasSelection) || get(activeTierStore) !== 'polygon') return;
-    if (hasActiveFilters(get(effectiveFilterStore))) return;
-    const extent = attachedMap.getView().calculateExtent(attachedMap.getSize());
+    if (get(reportStep) || get(hasSelection) || get(activeTierStore) !== 'polygon'
+        || hasActiveFilters(get(effectiveFilterStore))) {
+      showEmptyHint = false;
+      return;
+    }
+    // Outside the data this map has, an empty view says nothing about OSM.
+    const view = attachedMap.getView();
+    const [lon, lat] = toLonLat(view.getCenter());
+    if (!isCovered(get(dataCoverage), lon, lat)) { showEmptyHint = false; return; }
+    const extent = view.calculateExtent(attachedMap.getSize());
     showEmptyHint = source.getFeaturesInExtent(extent).length === 0;
   }
 
+  // The polygon tier can land after the hint was decided (a slow backend, a
+  // hub fan-out): re-check when the source changes, so the hint goes away as
+  // soon as playgrounds arrive.
+  let watchedSource = null;
+  function onSourceChange() { if (showEmptyHint) evaluateEmptyHint(); }
+  $: watchSource($playgroundSourceStore);
+  function watchSource(source) {
+    if (watchedSource === source) return;
+    watchedSource?.un('change', onSourceChange);
+    watchedSource = source;
+    watchedSource?.on('change', onSourceChange);
+  }
+
+  // Right-click with a mouse only. A touch long-press fires contextmenu too
+  // (Android Chrome), and a resting finger must not start a report.
+  let lastPointerType = 'mouse';
+  function onPointerDown(evt) { lastPointerType = evt.pointerType || 'mouse'; }
   function onContextMenu(evt) {
     if (!attachedMap || get(reportStep)) return;
+    if ((evt.pointerType || lastPointerType) !== 'mouse') return;
     evt.preventDefault();
     startReport(attachedMap.getEventCoordinate(evt));
   }
@@ -126,6 +165,7 @@
       hitTolerance: 6,
     });
     if (hit) openOwnNote(hit);
+    else ownPopup = null;
   }
 
   function attach(map) {
@@ -137,6 +177,7 @@
     map.on('moveend', onMoveEnd);
     map.on('click', onMapClick);
     map.getViewport().addEventListener('contextmenu', onContextMenu);
+    map.getViewport().addEventListener('pointerdown', onPointerDown, true);
     zoom = map.getView().getZoom() ?? 0;
     refreshOwnPins();
   }
@@ -147,20 +188,35 @@
     attachedMap.un('moveend', onMoveEnd);
     attachedMap.un('click', onMapClick);
     attachedMap.getViewport().removeEventListener('contextmenu', onContextMenu);
+    attachedMap.getViewport().removeEventListener('pointerdown', onPointerDown, true);
     attachedMap = null;
   }
 
   $: attach($mapStore);
-  onDestroy(() => { detach(); clearTimeout(emptyTimer); });
+  onDestroy(() => { detach(); watchSource(null); clearTimeout(emptyTimer); });
 
   // ── place step ────────────────────────────────────────────────────────────
 
-  // A new report: reset the form, close any open panel, frame the start spot.
+  // A new report: reset the form, frame the start spot. startReport() has
+  // already closed any open panel, in step with the history entries.
   let lastStep = null;
   $: onStepChange($reportStep);
   function onStepChange(step) {
     if (step === 'place' && lastStep === null) beginReport();
+    if (step !== lastStep) moveFocus(step);
     lastStep = step;
+  }
+
+  // Each step replaces the previous one's content, so the focused button
+  // disappears with it. Move focus to the new step's heading, which a screen
+  // reader then announces; on close, back to the map's report button.
+  async function moveFocus(step) {
+    await tick();
+    if (step) {
+      document.querySelector('[data-report-focus]')?.focus({ preventScroll: true });
+    } else if (!document.activeElement || document.activeElement === document.body) {
+      document.querySelector('.report-btn')?.focus({ preventScroll: true });
+    }
   }
 
   function beginReport() {
@@ -174,7 +230,8 @@
     sendError = false;
     sentNote = null;
     dupeFeature = null;
-    if (get(hasSelection)) selection.clear();
+    checking = false;
+    flowId += 1;
     const at = get(reportStartAt);
     reportStartAt.set(null);
     const view = attachedMap?.getView();
@@ -199,26 +256,69 @@
     view?.animate({ zoom: PLACE_MIN_ZOOM + 1, duration: 300 });
   }
 
-  function confirmSpot() {
+  // Every async step checks this: a report closed (or restarted) while a
+  // request was in flight must not be pushed forward by its answer.
+  let flowId = 0;
+  let checking = false;
+  let outside = false;
+  const geojson = new GeoJSON();
+
+  async function confirmSpot() {
     const view = attachedMap?.getView();
-    if (!view) return;
+    if (!view || checking) return;
     const center = view.getCenter();
     const [lon, lat] = toLonLat(center);
     spot = { lat, lon };
-    dupeFeature = nearbyPlayground(center, lat);
+    const coverage = get(dataCoverage);
+    outside = !isCovered(coverage, lon, lat);
+    if (outside) {
+      // No data here: no duplicate check is possible, so only MapComplete,
+      // which shows what OSM already has, is offered.
+      dupeFeature = null;
+      reportStep.set('choose');
+      return;
+    }
+    const id = flowId;
+    checking = true;
+    // Coverage not known yet: standalone still has its one backend to ask.
+    const backends = Array.isArray(coverage) && coverage.length
+      ? coverageAt(coverage, lon, lat)
+      : (apiBaseUrl ? [{ url: apiBaseUrl }] : []);
+    const nearby = await fetchNearby(center, lat, backends);
+    checking = false;
+    if (id !== flowId || get(reportStep) !== 'place') return;
+    dupeFeature = nearbyPlayground(center, lat, nearby);
     reportStep.set(dupeFeature ? 'dupe' : 'choose');
   }
 
+  // Ask the backend(s) holding this spot for playgrounds right around it.
+  // The polygon source alone is not enough: after a zoom-in its fetch is
+  // often still in flight (300 ms debounce plus the request), and a quick
+  // "Next" would find nothing and skip "Do you mean this one?".
+  async function fetchNearby(center, lat, backends) {
+    const r = (DUPE_RADIUS_M * 2) / Math.cos((lat * Math.PI) / 180);
+    const extent = buffer([...center, ...center], r);
+    const results = await Promise.allSettled(backends.map(async (b) => {
+      const fc = await fetchPlaygroundsBbox(extent, b.url);
+      const features = geojson.readFeatures(fc, { dataProjection: 'EPSG:4326', featureProjection: 'EPSG:3857' });
+      for (const f of features) tagWithBackend(f, b);
+      return features;
+    }));
+    return results.flatMap(res => (res.status === 'fulfilled' ? res.value : []));
+  }
+
   // The closest known playground within DUPE_RADIUS_M of the crosshair, or
-  // null. Web Mercator stretches distances by 1/cos(latitude), so the ground
-  // radius is scaled before it is compared with map units.
-  function nearbyPlayground(center, lat) {
+  // null: from the fetched candidates and from what the map already shows.
+  // Web Mercator stretches distances by 1/cos(latitude), so the ground radius
+  // is scaled before it is compared with map units.
+  function nearbyPlayground(center, lat, fetched = []) {
     const source = get(playgroundSourceStore);
-    if (!source) return null;
     const r = DUPE_RADIUS_M / Math.cos((lat * Math.PI) / 180);
+    const area = buffer([...center, ...center], r);
+    const candidates = [...fetched, ...(source ? source.getFeaturesInExtent(area) : [])];
     let best = null;
     let bestDist = Infinity;
-    for (const f of source.getFeaturesInExtent(buffer([...center, ...center], r))) {
+    for (const f of candidates) {
       const geom = f.getGeometry();
       if (!geom) continue;
       const d = geom.intersectsCoordinate(center)
@@ -231,11 +331,14 @@
 
   function showDupe() {
     const f = dupeFeature;
-    cancelReport();
-    if (!f) return;
-    selection.select(f, f.get('_backendUrl') ?? defaultBackendUrl);
-    const view = attachedMap?.getView();
-    if (view) fitViewToSelection(view, f.getGeometry().getExtent());
+    if (!f) { cancelReport(); return; }
+    // Open the playground only once the report's history entry is gone, so
+    // the panel's own entry is not popped by that back.
+    cancelReport(() => {
+      selection.select(f, f.get('_backendUrl') ?? defaultBackendUrl);
+      const view = attachedMap?.getView();
+      if (view) fitViewToSelection(view, f.getGeometry().getExtent());
+    });
   }
 
   $: dupeTitle = dupeFeature ? getPlaygroundTitle(dupeFeature.getProperties(), $_) : '';
@@ -248,12 +351,18 @@
 
   async function send() {
     if (!spot || sending || !canSendMore()) return;
+    const id = flowId;
     sending = true;
+    reportBusy.set(true);
     sendError = false;
     try {
       const text = buildNoteText({ equipment, fenced, name, details, lang: regionLang });
-      sentNote = await createNote({ lat: spot.lat, lon: spot.lon, text, base: osmNotesUrl });
+      const note = await createNote({ lat: spot.lat, lon: spot.lon, text, base: osmNotesUrl });
       countSent();
+      // Closing is blocked while sending, but a restart in between would
+      // still be overtaken by this answer.
+      if (id !== flowId) return;
+      sentNote = note;
       if (remember) {
         refreshOwnPins(addOwnNote({
           id: sentNote.id,
@@ -267,9 +376,13 @@
       reportStep.set('done');
     } catch (err) {
       console.warn('[report] sending the note failed:', err);
-      sendError = true;
+      // 401/403: OSM no longer takes notes without an account (a change the
+      // community has debated). Say so and point to MapComplete instead of a
+      // generic "try again later".
+      sendError = err?.status === 401 || err?.status === 403 ? 'refused' : 'failed';
     } finally {
       sending = false;
+      reportBusy.set(false);
     }
   }
 
@@ -300,7 +413,7 @@
 
   function onKeydown(e) {
     if (e.key !== 'Escape') return;
-    if ($reportStep) cancelReport();
+    if ($reportStep) cancelReport();   // a no-op while sending
     else if (ownPopup) ownPopup = null;
   }
 </script>
@@ -322,7 +435,7 @@
 {#if $reportStep === 'place'}
   <div class="report-card" role="region" aria-label={$_('report.place.title')}>
     <div class="card-head">
-      <h2 class="card-title">{$_('report.place.title')}</h2>
+      <h2 class="card-title" tabindex="-1" data-report-focus>{$_('report.place.title')}</h2>
       <button type="button" class="icon-btn" onclick={cancelReport} aria-label={$_('report.cancel')}>
         <X class="h-4 w-4" />
       </button>
@@ -338,7 +451,9 @@
       {#if zoom < PLACE_MIN_ZOOM}
         <button type="button" class="btn btn-primary" onclick={zoomCloser}>{$_('report.place.zoomIn')}</button>
       {:else}
-        <button type="button" class="btn btn-primary" onclick={confirmSpot}>{$_('report.place.next')}</button>
+        <button type="button" class="btn btn-primary" onclick={confirmSpot} disabled={checking} aria-busy={checking}>
+          {checking ? $_('report.place.checking') : $_('report.place.next')}
+        </button>
       {/if}
     </div>
   </div>
@@ -346,7 +461,7 @@
 
 {#if $reportStep === 'dupe'}
   <div class="report-card" role="region" aria-label={$_('report.dupe.title')}>
-    <h2 class="card-title">{$_('report.dupe.title')}</h2>
+    <h2 class="card-title" tabindex="-1" data-report-focus>{$_('report.dupe.title')}</h2>
     <p class="card-text">{$_('report.dupe.text', { values: { name: dupeTitle } })}</p>
     <div class="card-actions">
       <button type="button" class="btn btn-secondary" onclick={() => reportStep.set('choose')}>{$_('report.dupe.other')}</button>
@@ -362,14 +477,17 @@
     <div class="modal-box" role="dialog" aria-modal="true" use:modal aria-labelledby="report-title">
       {#if $reportStep === 'choose'}
         <div class="modal-header">
-          <h2 class="modal-title" id="report-title">{$_('report.choose.title')}</h2>
+          <h2 class="modal-title" id="report-title" tabindex="-1" data-report-focus>{$_('report.choose.title')}</h2>
           <button type="button" class="icon-btn" onclick={cancelReport} aria-label={$_('report.cancel')}>
             <X class="h-4 w-4" />
           </button>
         </div>
         <div class="modal-body">
+          {#if outside}
+            <p class="card-text">{$_('report.choose.outside')}</p>
+          {/if}
           <div class="options">
-            {#if osmNotesUrl}
+            {#if osmNotesUrl && !outside}
               <button type="button" class="option" onclick={() => reportStep.set('form')} disabled={limitReached}>
                 <span class="option-icon"><MessageSquarePlus class="h-5 w-5" aria-hidden="true" /></span>
                 <span class="option-body">
@@ -403,8 +521,8 @@
         </div>
       {:else if $reportStep === 'form'}
         <div class="modal-header">
-          <h2 class="modal-title" id="report-title">{$_('report.form.title')}</h2>
-          <button type="button" class="icon-btn" onclick={cancelReport} aria-label={$_('report.cancel')}>
+          <h2 class="modal-title" id="report-title" tabindex="-1" data-report-focus>{$_('report.form.title')}</h2>
+          <button type="button" class="icon-btn" onclick={cancelReport} aria-label={$_('report.cancel')} disabled={sending}>
             <X class="h-4 w-4" />
           </button>
         </div>
@@ -462,12 +580,17 @@
             </span>
           </label>
 
-          {#if sendError}
+          {#if sendError === 'refused'}
+            <p class="error" role="alert">
+              {$_('report.form.refused')}
+              <a href={mcUrl} target="_blank" rel="noopener noreferrer">{$_('report.choose.mcTitle')}</a>
+            </p>
+          {:else if sendError}
             <p class="error" role="alert">{$_('report.form.error')}</p>
           {/if}
 
           <div class="card-actions">
-            <button type="button" class="btn btn-secondary" onclick={() => reportStep.set('choose')}>{$_('report.form.back')}</button>
+            <button type="button" class="btn btn-secondary" onclick={() => reportStep.set('choose')} disabled={sending}>{$_('report.form.back')}</button>
             <button type="button" class="btn btn-primary" onclick={send} disabled={sending}>
               {sending ? $_('report.form.sending') : $_('report.form.send')}
             </button>
@@ -475,7 +598,7 @@
         </div>
       {:else}
         <div class="modal-header">
-          <h2 class="modal-title" id="report-title">{$_('report.done.title')}</h2>
+          <h2 class="modal-title" id="report-title" tabindex="-1" data-report-focus>{$_('report.done.title')}</h2>
           <button type="button" class="icon-btn" onclick={cancelReport} aria-label={$_('info.closeBtn')}>
             <X class="h-4 w-4" />
           </button>
@@ -733,6 +856,10 @@
     font-size: 0.8125rem;
     color: #b91c1c;
   }
+  .error a { color: #047857; font-weight: 600; }
+
+  [data-report-focus]:focus { outline: none; }
+  [data-report-focus]:focus-visible { outline: 2px solid #047857; outline-offset: 2px; border-radius: 4px; }
 
   .options { display: flex; flex-direction: column; gap: 0.625rem; margin-bottom: 1rem; }
 
