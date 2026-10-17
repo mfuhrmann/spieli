@@ -24,7 +24,7 @@
   import { regionFitPadding } from '../lib/playgroundHelpers.js';
   import { attachPitchLayer } from '../lib/pitchLayer.js';
   import { mapStore } from '../stores/map.js';
-  import { effectiveFilterStore } from '../stores/filters.js';
+  import { effectiveFilterStore, serverFilterFingerprint } from '../stores/filters.js';
   import { activeTierStore } from '../stores/tier.js';
   import { selection } from '../stores/selection.js';
 
@@ -221,20 +221,22 @@
           baseUrl: apiBaseUrl,
           clusterSource,
           polygonSource: playgroundSource,
-          getFilters: () => clusterFilterFingerprint ? JSON.parse(clusterFilterFingerprint) : null,
+          // Read the store itself: the fingerprint below is only for change
+          // detection, and is not set yet when the first fetch goes out.
+          getFilters: () => get(effectiveFilterStore),
         });
         detachOrchestrator = orchestrator.detach;
 
         // Subscribe to filter changes imperatively — avoids Svelte $: dependency-tracking
         // uncertainty for variables set inside async/nested callbacks.
-        // Skip the immediate invocation (filters start all-false, orchestrator just ran).
+        // Skip the immediate invocation: the orchestrator's first run already
+        // read the current filters.
         let filterSubReady = false;
         // effectiveFilterStore, not filterStore: it also emits when mapping
         // detail is toggled, and never carries hidden completeness states
         // while it is off (#924).
         const unsubFilters = effectiveFilterStore.subscribe(filters => {
-          const { standalonePitches: _sp, ...cf } = filters;
-          const fingerprint = JSON.stringify(cf);
+          const fingerprint = serverFilterFingerprint(filters);
           // Only refetch when the filters that reach the server changed: toggling
           // mapping detail with nothing hidden, or the pitch layer, emits here too.
           const changed = fingerprint !== clusterFilterFingerprint;

@@ -8,7 +8,7 @@
   // chip-rendered). Omitting a key means that filter can be set but shows no
   // removable chip — keep in sync when adding filters.
   const FILTER_KEYS = new Set([
-    'private', 'water', 'baby', 'toddler', 'wheelchair',
+    'private', 'hidePrivate', 'water', 'baby', 'toddler', 'wheelchair',
     'bench', 'picnic', 'shelter', 'tableTennis', 'soccer', 'basketball',
     'fence', 'hasDogs', 'theme', 'shade',
   ]);

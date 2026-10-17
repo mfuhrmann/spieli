@@ -1,4 +1,5 @@
 import { writable, derived } from 'svelte/store';
+import { accessKind, isRestrictedAccess } from '../lib/access.js';
 import { playgroundCompleteness } from '../lib/completeness.js';
 import { mappingDetail } from './mappingDetail.js';
 
@@ -6,6 +7,10 @@ import { mappingDetail } from './mappingDetail.js';
 // Deactivating a state hides playgrounds of that completeness.
 export const defaultFilters = {
     private:          false,
+    // #1002: hide only private playgrounds (a kindergarten's, a school's) and
+    // keep customers-only ones, which a visitor can use. `private` above
+    // ("public only") hides both.
+    hidePrivate:      false,
     water:            false,
     baby:             false,
     toddler:          false,
@@ -48,13 +53,23 @@ export const effectiveFilterStore = derived(
 );
 
 /**
+ * The filters that reach the server, as a comparable string: everything but
+ * the standalonePitches layer toggle, which only drives the pitch layer.
+ */
+export function serverFilterFingerprint(filters) {
+    const { standalonePitches: _sp, ...cf } = filters;
+    return JSON.stringify(cf);
+}
+
+/**
  * Returns true if the feature properties satisfy all active filters.
  * Property names match what get_playgrounds returns.
  * @param {Object} props - OL feature properties
  * @param {Object} filters - current filterStore value
  */
 export function matchesFilters(props, filters) {
-    if (filters.private     && (props.access === 'private' || props.access === 'no')) return false;
+    if (filters.private     && isRestrictedAccess(props)) return false;
+    if (filters.hidePrivate && accessKind(props) === 'private') return false;
     if (filters.water       && !props.is_water)       return false;
     if (filters.baby        && !props.for_baby)       return false;
     if (filters.toddler     && !props.for_toddler)    return false;

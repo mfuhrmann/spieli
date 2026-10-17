@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { matchesFilters, hasActiveFilters, activeFilterCount } from './filters.js';
+import { matchesFilters, hasActiveFilters, activeFilterCount, effectiveFilters, defaultFilters } from './filters.js';
 
 const noFilters = {
   private: false, water: false, baby: false, toddler: false,
@@ -225,6 +225,30 @@ const noFilters = {
 // 25. Mixed: regular + completeness
 {
   assert.equal(activeFilterCount({ ...noFilters, water: true, showMissing: false }), 2);
+}
+
+// 26. Private playgrounds (#1002): shown by default in every mode; the
+//     hidePrivate filter hides only them and keeps customers-only ones.
+{
+  for (const detailOn of [false, true]) {
+    const f = effectiveFilters({ ...defaultFilters }, detailOn);
+    assert.equal(matchesFilters({ access: 'private' }, f), true);
+  }
+  const hide = { ...defaultFilters, hidePrivate: true };
+  assert.equal(matchesFilters({ access: 'private' }, hide), false);
+  assert.equal(matchesFilters({ access: 'no' }, hide), false);
+  assert.equal(matchesFilters({ access: 'customers' }, hide), true);
+  assert.equal(matchesFilters({}, hide), true);
+  assert.equal(hasActiveFilters(hide), true);
+  assert.equal(activeFilterCount(hide), 1);
+}
+
+// 27. "Public only" hides customers-only and access=no too, like the server.
+{
+  const f = { ...defaultFilters, private: true };
+  assert.equal(matchesFilters({ access: 'customers' }, f), false);
+  assert.equal(matchesFilters({ access: 'no' }, f), false);
+  assert.equal(matchesFilters({ access: 'yes' }, f), true);
 }
 
 console.log('All filter tests passed.');

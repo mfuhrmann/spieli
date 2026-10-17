@@ -9,6 +9,7 @@ import Circle from 'ol/style/Circle.js';
 import { objDevices, objFeatures } from './objPlaygroundEquipment.js';
 import { playgroundCompleteness, hasPhotoSignal } from './completeness.js';
 import { COMPLETENESS_PALETTE, COMPLETENESS_ORDER } from './completenessPalette.js';
+import { accessKind } from './access.js';
 
 // ── Playground completeness colours ──────────────────────────────────────────
 
@@ -69,10 +70,6 @@ function makeHatchStyle(type) {
     });
 }
 
-export function isRestrictedAccess(props) {
-    return props.access === 'private' || props.access === 'customers';
-}
-
 
 // ── Photo marker ─────────────────────────────────────────────────────────────
 //
@@ -122,7 +119,9 @@ function getPhotoStyle() {
 export function playgroundStyleFn(feature) {
     const props = feature.getProperties();
     const c = playgroundCompleteness(props);
-    const base = isRestrictedAccess(props)
+    // Hatched only when the visitor cannot use it at all; a customers-only
+    // playground is usable and keeps the plain fill (#1002).
+    const base = accessKind(props) === 'private'
         ? makeHatchStyle(c)
         : (_polygonStyles[c] ?? _polygonStyles.missing);
     return hasPhotoSignal(props) ? [base, getPhotoStyle()] : base;

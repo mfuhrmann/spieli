@@ -49,6 +49,7 @@ export async function fetchPlaygrounds(baseUrl = defaultApiBaseUrl, signal) {
  */
 const clusterFilterMap = {
     private:      'filter_private',
+    hidePrivate:  'filter_hide_private',
     water:        'filter_water',
     baby:         'filter_baby',
     toddler:      'filter_toddler',
@@ -65,6 +66,36 @@ const clusterFilterMap = {
     shade:        'filter_shade',
 };
 
+// Backends older than `filter_hide_private` (#1002). PostgREST answers an
+// unknown parameter with 404 / PGRST202 ("function not found"), which must not
+// look like "no tiered delivery" and push the backend onto the legacy path for
+// the session: retry once without it and stop sending it to that backend.
+//
+// The filter is then NOT applied on that backend at the cluster tier: bucket
+// counts include private playgrounds, and a bucket of one private playground
+// is drawn as an ordinary pin (buckets carry no access). Only the polygon tier
+// filters it, client-side. Callers that report filter coverage must check
+// backendIgnoresHidePrivate() and count such a backend as unfiltered.
+const noHidePrivate = new Set();
+
+/** True once `baseUrl` has shown it does not know `filter_hide_private`. */
+export function backendIgnoresHidePrivate(baseUrl) {
+    return noHidePrivate.has(baseUrl);
+}
+
+// Only PostgREST's "no function with these parameters" is the old-backend
+// signature. Any other 404 — a schema being re-applied mid-deploy, a backend
+// with no tier RPCs at all — is left to the caller's own handling, so a
+// passing blip cannot disable the filter for the rest of the session.
+async function isUnknownParameter(res) {
+    if (res.status !== 404) return false;
+    try {
+        return (await res.clone().json())?.code === 'PGRST202';
+    } catch {
+        return false;
+    }
+}
+
 export async function fetchPlaygroundClusters(zoom, extentEPSG3857, baseUrl = defaultApiBaseUrl, signal, filters = null) {
     const [minLon, minLat, maxLon, maxLat] = transformExtent(extentEPSG3857, 'EPSG:3857', 'EPSG:4326');
     const params = new URLSearchParams({ z: zoom, min_lon: minLon, min_lat: minLat, max_lon: maxLon, max_lat: maxLat });
@@ -75,8 +106,15 @@ export async function fetchPlaygroundClusters(zoom, extentEPSG3857, baseUrl = de
         if (filters.showComplete === false) params.set('filter_complete', 'false');
         if (filters.showPartial  === false) params.set('filter_partial',  'false');
         if (filters.showMissing  === false) params.set('filter_missing',  'false');
+        if (noHidePrivate.has(baseUrl)) params.delete('filter_hide_private');
     }
-    const res = await fetch(`${baseUrl}/rpc/get_playground_clusters?${params}`, { signal });
+    let res = await fetch(`${baseUrl}/rpc/get_playground_clusters?${params}`, { signal });
+    if (params.has('filter_hide_private') && await isUnknownParameter(res)) {
+        noHidePrivate.add(baseUrl);
+        console.warn(`[api] ${baseUrl} does not know filter_hide_private yet; cluster counts there include private playgrounds`);
+        params.delete('filter_hide_private');
+        res = await fetch(`${baseUrl}/rpc/get_playground_clusters?${params}`, { signal });
+    }
     if (res.ok) return res.json();
     throw new Error(`get_playground_clusters failed: ${res.status}`);
 }

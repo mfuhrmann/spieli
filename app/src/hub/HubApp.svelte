@@ -18,7 +18,7 @@
   import { attachPitchLayer } from '../lib/pitchLayer.js';
   import { mapStore } from '../stores/map.js';
   import { selection } from '../stores/selection.js';
-  import { effectiveFilterStore } from '../stores/filters.js';
+  import { effectiveFilterStore, serverFilterFingerprint } from '../stores/filters.js';
   import { macroFilteredStore } from '../stores/macroFiltered.js';
   import { macroCoverageStore } from '../stores/macroCoverage.js';
   import { dataCoverage } from '../stores/dataCoverage.js';
@@ -315,14 +315,15 @@
         backendsStore: backends,
         clusterSource,
         polygonSource,
-        getFilters: () => clusterFilterFingerprint ? JSON.parse(clusterFilterFingerprint) : null,
+          // Read the store itself: the fingerprint below is only for change
+          // detection, and is not set yet when the first fetch goes out.
+          getFilters: () => get(effectiveFilterStore),
       });
       let filterSubReady = false;
       // Effective filters: completeness states are ignored while mapping
       // detail is off, and toggling it re-derives the macro aggregates (#924).
       const unsubFilters = effectiveFilterStore.subscribe(filters => {
-        const { standalonePitches: _sp, ...cf } = filters;
-        const fingerprint = JSON.stringify(cf);
+        const fingerprint = serverFilterFingerprint(filters);
         // Only refetch when the filters that reach the server changed: toggling
         // mapping detail with nothing hidden, or the pitch layer, emits here too.
         const changed = fingerprint !== clusterFilterFingerprint;
