@@ -426,7 +426,8 @@ jobs:
           # The one state that must NOT be narrow: a style is configured but
           # could not be read, so where it sends the browser is unknown and a
           # guess would blank the basemap.
-          P=$(csp -e APP_MODE=standalone -e BASEMAP_STYLE_URL=/basemap/nope.json \
+          # OSM notes off, so the wide fallback is alone in connect-src.
+          P=$(csp -e APP_MODE=standalone -e OSM_NOTES_URL=false -e BASEMAP_STYLE_URL=/basemap/nope.json \
                 -e BASEMAP_ATTRIBUTION='(c) Example')
           # Anchored for the same reason as the reject above: 'https:' alone is
           # always present via frame-ancestors. The wildcard is appended to
