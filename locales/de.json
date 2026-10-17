@@ -39,7 +39,8 @@
       "showPartial": "grundlegend",
       "showMissing": "keine Details"
     },
-    "standalonePitchesZoomHint": "Werden angezeigt, wenn du weiter hineinzoomst."
+    "standalonePitchesZoomHint": "Werden angezeigt, wenn du weiter hineinzoomst.",
+    "showPrivate": "Private Spielplätze (z. B. Kita, Schule)"
   },
   "hover": {
     "tagWater": "Wasser",

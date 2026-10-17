@@ -557,9 +557,14 @@ CREATE MATERIALIZED VIEW public.playground_stats_new AS
     -- Tiered-delivery (P1): persisted centroid + per-playground completeness
     ST_Centroid(pl.way)                           AS centroid_3857,
     -- NULL-safe: untagged playgrounds (access IS NULL) are public, not NULL.
-    -- Retained only to drive filter_private; never excludes a playground from
-    -- the cluster completeness aggregation.
-    (COALESCE(pl.access, '') IN ('private', 'customers')) AS access_restricted,
+    -- Retained only to drive the access filters; never excludes a playground
+    -- from the cluster completeness aggregation. Mirrors accessKind() in
+    -- app/src/lib/access.js (#1002):
+    --   access_restricted — anything but public: drives filter_private
+    --   access_private    — not usable at all (a kindergarten's, a school's):
+    --                       drives filter_hide_private, the finder default
+    (COALESCE(pl.access, '') IN ('private', 'no', 'customers')) AS access_restricted,
+    (COALESCE(pl.access, '') IN ('private', 'no'))              AS access_private,
     -- The three inputs to `completeness`, persisted so the composition of each
     -- bucket is queryable without re-deriving them:
     --   SELECT completeness, has_equipment, has_info, has_photo, count(*)
@@ -784,6 +789,7 @@ DROP FUNCTION IF EXISTS api.get_playground_clusters(int, float8, float8, float8,
 DROP FUNCTION IF EXISTS api.get_playground_clusters(int, float8, float8, float8, float8, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean);
 DROP FUNCTION IF EXISTS api.get_playground_clusters(int, float8, float8, float8, float8, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean);
 DROP FUNCTION IF EXISTS api.get_playground_clusters(int, float8, float8, float8, float8, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean);
+DROP FUNCTION IF EXISTS api.get_playground_clusters(int, float8, float8, float8, float8, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean);
 
 CREATE OR REPLACE FUNCTION api.get_playground_clusters(
   z                   int,
@@ -806,6 +812,7 @@ CREATE OR REPLACE FUNCTION api.get_playground_clusters(
   filter_has_dogs     boolean DEFAULT false,
   filter_theme        boolean DEFAULT false,
   filter_shade       boolean DEFAULT false,
+  filter_hide_private boolean DEFAULT false,
   filter_complete     boolean DEFAULT true,
   filter_partial      boolean DEFAULT true,
   filter_missing      boolean DEFAULT true
@@ -851,6 +858,7 @@ AS $$
     FROM public.playground_stats ps, bbox b, cell_size cs
     WHERE ST_Intersects(ps.centroid_3857, b.geom)
       AND (NOT filter_private        OR NOT ps.access_restricted)
+      AND (NOT filter_hide_private   OR NOT ps.access_private)
       AND (NOT filter_water          OR ps.is_water)
       AND (NOT filter_baby           OR ps.for_baby)
       AND (NOT filter_toddler        OR ps.for_toddler)
@@ -905,7 +913,7 @@ AS $$
   FROM aggregated;
 $$;
 
-GRANT EXECUTE ON FUNCTION api.get_playground_clusters(int, float8, float8, float8, float8, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean) TO web_anon;
+GRANT EXECUTE ON FUNCTION api.get_playground_clusters(int, float8, float8, float8, float8, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean) TO web_anon;
 
 -- =========================================================================
 -- 1b. get_playground_centroids(bbox)

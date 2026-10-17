@@ -65,7 +65,7 @@ test('the pitch layer loads from the backends in view and opens the pitch panel'
   await page.goto('/');
   await page.waitForFunction(() => window.__spieli?.map);
   await page.locator('.filter-container > button').click();
-  await page.locator('.layer-section input[type="checkbox"]').check();
+  await page.locator('.layer-section input[type="checkbox"] >> nth=0').check();
   await page.locator('.filter-container > button').click();
 
   const px = await centreOnPitch(page);
@@ -108,7 +108,7 @@ test('the pitch layer keeps its pitches when every backend fails', async ({ page
   await page.goto('/');
   await page.waitForFunction(() => window.__spieli?.map);
   await page.locator('.filter-container > button').click();
-  await page.locator('.layer-section input[type="checkbox"]').check();
+  await page.locator('.layer-section input[type="checkbox"] >> nth=0').check();
   await page.locator('.filter-container > button').click();
   await centreOnPitch(page);
   fail = true;

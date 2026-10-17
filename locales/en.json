@@ -39,7 +39,8 @@
       "showPartial": "basic",
       "showMissing": "no details yet"
     },
-    "standalonePitchesZoomHint": "Shown when you zoom in further."
+    "standalonePitchesZoomHint": "Shown when you zoom in further.",
+    "showPrivate": "Private playgrounds (e.g. kindergarten, school)"
   },
   "hover": {
     "tagWater": "Water",

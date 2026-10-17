@@ -1,7 +1,8 @@
 <script>
   import { filterStore, hasActiveFilters, activeFilterCount, defaultFilters, effectiveFilters } from '../stores/filters.js';
   import { _ } from 'svelte-i18n';
-  import { Filter, Droplets, Baby, Accessibility, Armchair, UtensilsCrossed, Home, RectangleHorizontal, Goal, CircleDot, Lock, Layers, ShieldCheck, Dog, Sun, Sparkles } from 'lucide-svelte';
+  import { Filter, Droplets, Baby, Accessibility, Armchair, UtensilsCrossed, Home, RectangleHorizontal, Goal, CircleDot, Lock, Layers, ShieldCheck, Dog, Sun, Sparkles, LockKeyhole } from 'lucide-svelte';
+  import { mappingDetail } from '../stores/mappingDetail.js';
 
   import { tick, onDestroy } from 'svelte';
   import { mapStore } from '../stores/map.js';
@@ -147,6 +148,19 @@
         </label>
         {#if pitchesNeedZoom}
           <p class="layer-hint">{$_('filter.standalonePitchesZoomHint')}</p>
+        {/if}
+        <!-- Finder view only: with mapping detail on, private playgrounds are
+             always shown (#1002), so the toggle would do nothing there. -->
+        {#if !$mappingDetail}
+          <label class="filter-item" class:checked={$filterStore.showPrivate}>
+            <input
+              type="checkbox"
+              checked={$filterStore.showPrivate}
+              onchange={() => toggle('showPrivate')}
+            />
+            <LockKeyhole class="h-4 w-4" />
+            <span>{$_('filter.showPrivate')}</span>
+          </label>
         {/if}
       </div>
     </div>

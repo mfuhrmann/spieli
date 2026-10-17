@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { matchesFilters, hasActiveFilters, activeFilterCount } from './filters.js';
+import { matchesFilters, hasActiveFilters, activeFilterCount, effectiveFilters, defaultFilters } from './filters.js';
 
 const noFilters = {
   private: false, water: false, baby: false, toddler: false,
@@ -225,6 +225,38 @@ const noFilters = {
 // 25. Mixed: regular + completeness
 {
   assert.equal(activeFilterCount({ ...noFilters, water: true, showMissing: false }), 2);
+}
+
+// 26. Private playgrounds (#1002): hidden in the finder view by default,
+//     shown when toggled on or with mapping detail; customers-only stays.
+{
+  const finder = effectiveFilters({ ...defaultFilters }, false);
+  assert.equal(matchesFilters({ access: 'private' }, finder), false);
+  assert.equal(matchesFilters({ access: 'no' }, finder), false);
+  assert.equal(matchesFilters({ access: 'customers' }, finder), true);
+  assert.equal(matchesFilters({}, finder), true);
+  assert.equal(matchesFilters({ access: 'private' }, { ...finder, showPrivate: true }), true);
+  const detail = effectiveFilters({ ...defaultFilters }, true);
+  assert.equal(detail.showPrivate, true);
+  assert.equal(matchesFilters({ access: 'private' }, detail), true);
+  // A filters object without the key hides nothing.
+  const { showPrivate: _omit, ...withoutKey } = defaultFilters;
+  assert.equal(matchesFilters({ access: 'private' }, withoutKey), true);
+}
+
+// 27. "Public only" hides customers-only and access=no too, like the server.
+{
+  const f = { ...defaultFilters, private: true, showPrivate: true };
+  assert.equal(matchesFilters({ access: 'customers' }, f), false);
+  assert.equal(matchesFilters({ access: 'no' }, f), false);
+  assert.equal(matchesFilters({ access: 'yes' }, f), true);
+}
+
+// 28. The showPrivate default is a layer setting, not an active filter.
+{
+  assert.equal(hasActiveFilters({ ...defaultFilters }), false);
+  assert.equal(hasActiveFilters({ ...defaultFilters, showPrivate: true }), false);
+  assert.equal(activeFilterCount({ ...defaultFilters, showPrivate: true }), 0);
 }
 
 console.log('All filter tests passed.');
