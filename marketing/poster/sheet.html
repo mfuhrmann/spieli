@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>spieli poster – 2×A5 on A4</title>
+<style>
+  /* Two A5 posters side by side on one A4 sheet, with a dashed cut line. */
+  @page { size: A4 landscape; margin: 0; }
+  * { margin: 0; padding: 0; }
+  html, body { width: 297mm; height: 210mm; overflow: hidden; background: #fff; }
+  body { display: flex; position: relative; }
+  iframe { width: 148.5mm; height: 210mm; border: 0; display: block; }
+  .cut { position: absolute; left: 148.5mm; top: 0; bottom: 0; border-left: 0.2mm dashed #bbb; }
+</style>
+</head>
+<body>
+  <iframe></iframe>
+  <iframe></iframe>
+  <div class="cut"></div>
+  <script>
+    // sheet.html?lang=en passes the language on to both posters.
+    for (const f of document.querySelectorAll('iframe')) f.src = 'poster.html' + location.search;
+  </script>
+</body>
+</html>

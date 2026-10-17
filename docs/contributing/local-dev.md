@@ -69,3 +69,17 @@ Two things to expect:
 - **The resolved URL is not `Special:FilePath`.** It is the real file path on a Wikimedia or OSM-wiki host, which the `/ext/wikimedia/` proxy serves, so the visitor's browser never contacts either wiki. Do not reintroduce a `Special:FilePath` URL in the frontend — CI rejects it.
 
 `make check-equipment-images` re-resolves and fails if the committed map no longer points at the same files. It is not wired into CI, because it depends on two live APIs; run it by hand if illustrations start disappearing.
+
+## Printing the poster
+
+`marketing/poster/` holds an A5 poster for hanging up locally (#1004): pixel-art scene in the logo's style, QR code to `spieli.eu`. One template, three languages — `poster.html?lang=de|en|sk` (default `de`); the texts are in the `TEXT` table at the bottom of the file. Open it in a browser to preview.
+
+```bash
+make poster               # writes marketing/poster/out/poster-<lang>-a5.pdf and -2xa5-a4.pdf
+```
+
+The `-2xa5-a4` file puts two posters on one A4 sheet with a dashed cut line, for printers that only take A4. Needs a Chromium (`CHROME=` to point at one) and network access, because the fonts come from Google Fonts. The PDFs are not committed.
+
+When printing, choose **actual size / 100 %**, not "fit to page". The design keeps a 6 mm white margin because inkjets cannot print borderless, and a light sky to save ink. Scan the QR code off the printout before hanging it up.
+
+Keep the bubble to things spieli really shows. Shade, for instance, is barely mapped (12 of 473 playgrounds in Landkreis Fulda), so promising it disappoints.

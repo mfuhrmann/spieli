@@ -30,3 +30,6 @@ docs/project-scan-report.json
 site/
 .venv
 /spieli/
+
+# Rendered poster PDFs (make poster)
+marketing/poster/out/

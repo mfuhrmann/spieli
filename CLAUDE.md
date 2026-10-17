@@ -53,6 +53,7 @@ make basemap-assets   # regenerate the vendored basemap style + macro world outl
 make equipment-images # re-resolve the equipment illustrations' File: names
 make app-icons        # regenerate the maskable app icons from app/public/icons/icon-512.png
 make holiday-states   # re-extract opening_hours state codes/names (after bumping opening_hours)
+make poster           # render the printable A5 poster (marketing/poster/) to PDF, de/en/sk
 ```
 
 ## Docker Compose stack
@@ -364,6 +365,7 @@ to a tile server.
 | `build-equipment-images.py` | Resolves the equipment illustrations' `File:` names to real file URLs, writing `app/src/lib/equipmentImages.generated.json`. Run via `make equipment-images`, **not** `make basemap-assets`. Follows the `Special:FilePath` redirect chain once at build time, because that chain cannot be proxied without allowing `/w/index.php` through the cache. Resolves against Commons then the OSM wiki, and **fails on a name that resolves on neither**, so a wrong name is a build failure rather than a silently blank illustration (the pitch table carried 14 such names until #867). Also records author, licence and file-page URL, since serving the bytes through our own origin makes the CC attribution obligation ours. |
 | `build-holiday-states.mjs` | Extracts the state codes and names `opening_hours` knows for state holidays into `app/src/lib/holidayStates.generated.json` (#878). The library keys those holidays on full names and exports no definitions, so `REGION_STATE` codes are resolved from this table. A unit test fails while the table's recorded library version differs from the installed one. Run via `make holiday-states`. |
 | `build-app-icons.py` | Builds `app/public/icons/icon-maskable-{192,512}.png` from the 512 px pin (#939): the pin at two thirds of the canvas on the accent's soft tint, so a launcher's circle/squircle mask cannot crop it. The originals are declared `purpose: any`. Run via `make app-icons`. |
+| `build-poster.py` | Renders `marketing/poster/poster.html` (A5, one template, `?lang=de\|en\|sk`) and `sheet.html` (two A5 on one A4 with a cut line) to PDF in `marketing/poster/out/` (gitignored) with headless Chromium (#1004). Fonts come from Google Fonts, so it needs network. Run via `make poster`. |
 | `build-macro-outline.py` | Rebuilds `app/public/basemap/world-110m.json` from Natural Earth 1:110m — the world outline shown under the hub macro tier, so areas outside the federation's tileset are not blank. |
 
 ## Documentation
