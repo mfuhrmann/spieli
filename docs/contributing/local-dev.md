@@ -78,9 +78,11 @@ Two things to expect:
 make poster               # rewrites marketing/poster/print/poster-<lang>-a5.pdf and -2xa5-a4.pdf
 ```
 
-The `-2xa5-a4` file puts two posters on one A4 sheet with a dashed cut line and black cut marks, for printers that only take A4. Both posters sit slightly outwards: many printers shrink a page to about 97 % towards its centre even at "100 %", which would otherwise leave each cut A5 with twice the margin outside as at the cut (`sheet.html` has the numbers). Needs a Chromium (`CHROME=` to point at one) and network access, because the fonts come from Google Fonts.
+The `-2xa5-a4` file puts two posters on one A4 sheet with a dashed cut line and black cut marks, for printers that only take A4. Both posters sit slightly outwards: many printers shrink a page to about 97 % towards its centre even at "100 %", which would otherwise leave each cut A5 with twice the margin outside as at the cut (`sheet.html` has the numbers). Needs a Chromium (`CHROME=` to point at one), Ghostscript (`gs`) and network access, because the fonts come from Google Fonts and jsDelivr.
 
-The PDFs are **committed**, so anyone can print the poster straight from the repository. After changing the template, run `make poster` and commit the PDFs with it. Only rebuild them for a real change: they add about 3.5 MB to the history each time.
+Chromium's PDF is flattened into one opaque 600 dpi image per page. Printers that interpret PDF themselves (e.g. a Brother inkjet over IPP) silently drop images with transparency — every pin — and Type 3 fonts; a flattened page prints the same everywhere. Check a new build with `pdfimages -list` (no `smask` rows) and `pdffonts` (empty).
+
+The PDFs are **committed**, so anyone can print the poster straight from the repository. After changing the template, run `make poster` and commit the PDFs with it. Only rebuild them for a real change: they add about 4.8 MB to the history each time.
 
 `marketing/poster/preview.png` shows all three languages side by side, for the PR and anyone browsing the folder. It is not built by `make poster`; after a visible change, regenerate it from the A5 PDFs (`pdftoppm -png -r 80` each, then `magick … +append`).
 
