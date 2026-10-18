@@ -8,15 +8,26 @@
   @page { size: A4 landscape; margin: 0; }
   * { margin: 0; padding: 0; }
   html, body { width: 297mm; height: 210mm; overflow: hidden; background: #fff; }
-  body { display: flex; position: relative; }
-  iframe { width: 148.5mm; height: 210mm; border: 0; display: block; }
+  body { position: relative; }
+  iframe { position: absolute; top: 0; width: 148.5mm; height: 210mm; border: 0; display: block; }
+  /* Both posters sit outwards. Many printers shrink the page to ~97 % towards
+     its centre even at "100 %"; without the shift each cut A5 ends up with
+     ~10 mm margin outside and ~5 mm at the cut. With it both are ~7.5-8 mm at
+     97 % (3-4 mm outside at a true 100 %). The right one moves less because
+     its frame shadow is on the outer side. Same fix as the OSM Fulda Aushang. */
+  iframe:first-of-type { left: -2.5mm; }
+  iframe:last-of-type { left: 150.5mm; }
   .cut { position: absolute; left: 148.5mm; top: 0; bottom: 0; border-left: 0.2mm dashed #bbb; }
+  /* black cut marks in the paper margin: still visible if the line is too faint */
+  .mark { position: absolute; left: 148.425mm; width: 0.15mm; height: 5mm; background: #000; }
 </style>
 </head>
 <body>
   <iframe></iframe>
   <iframe></iframe>
   <div class="cut"></div>
+  <div class="mark" style="top: 0.5mm"></div>
+  <div class="mark" style="bottom: 0.5mm"></div>
   <script>
     // sheet.html?lang=en passes the language on to both posters.
     for (const f of document.querySelectorAll('iframe')) f.src = 'poster.html' + location.search;

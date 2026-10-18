@@ -78,7 +78,7 @@ Two things to expect:
 make poster               # rewrites marketing/poster/print/poster-<lang>-a5.pdf and -2xa5-a4.pdf
 ```
 
-The `-2xa5-a4` file puts two posters on one A4 sheet with a dashed cut line, for printers that only take A4. Needs a Chromium (`CHROME=` to point at one) and network access, because the fonts come from Google Fonts.
+The `-2xa5-a4` file puts two posters on one A4 sheet with a dashed cut line and black cut marks, for printers that only take A4. Both posters sit slightly outwards: many printers shrink a page to about 97 % towards its centre even at "100 %", which would otherwise leave each cut A5 with twice the margin outside as at the cut (`sheet.html` has the numbers). Needs a Chromium (`CHROME=` to point at one) and network access, because the fonts come from Google Fonts.
 
 The PDFs are **committed**, so anyone can print the poster straight from the repository. After changing the template, run `make poster` and commit the PDFs with it. Only rebuild them for a real change: they add about 3.5 MB to the history each time.
 
