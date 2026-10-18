@@ -8,7 +8,7 @@ marketing/poster/print/ (committed, so people can print without building):
   poster-<lang>-2xa5-a4.pdf  two A5 posters on one A4 sheet, with a cut line
 
 Rendering uses a headless Chromium. The poster loads its webfonts from
-Google Fonts, so this needs network access; the virtual-time budget gives
+Google Fonts and jsDelivr, so this needs network access; the virtual-time budget gives
 them time to arrive before the page is printed.
 
 Usage: python3 tools/build-poster.py [--lang de,en,sk]
