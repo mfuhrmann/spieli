@@ -7,8 +7,6 @@ import { injectApiConfig, stubApiRoutes } from './helpers.js';
 // dialog, Tab stays there, and Esc hands focus back to where it was.
 
 test.beforeEach(async ({ page }) => {
-  // No live Nominatim: its region fit would land at a network-dependent time.
-  await page.route('**/nominatim.openstreetmap.org/**', route => route.abort());
   await injectApiConfig(page);
   await stubApiRoutes(page);
   await page.goto('/');

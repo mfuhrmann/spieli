@@ -13,9 +13,6 @@ const EMPTY = { type: 'FeatureCollection', features: [] };
 const CORS = { 'access-control-allow-origin': '*' };
 
 async function base(page, { meta = null, overrides = {} } = {}) {
-  // No live Nominatim: its region lookup would re-frame the map whenever it
-  // happens to answer, after a test has already placed the view.
-  await page.route('**/nominatim.openstreetmap.org/**', route => route.abort());
   await injectApiConfig(page, { osmNotesUrl: NOTES, ...overrides });
   await stubApiRoutes(page, EMPTY);
   if (meta) {
