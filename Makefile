@@ -186,6 +186,9 @@ check-equipment-images: require-python3  ## Fail if the generated equipment-imag
 
 basemap-assets: basemap-style basemap-outline basemap-fonts  ## Rebuild all basemap assets
 
+poster: require-python3  ## Render the printable poster to PDF (marketing/poster/print/)
+	python3 tools/build-poster.py
+
 ## ── Help ──────────────────────────────────────────────────────────────────────
 
 help:                     ## Show this help

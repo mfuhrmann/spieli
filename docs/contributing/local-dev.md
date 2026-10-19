@@ -69,3 +69,23 @@ Two things to expect:
 - **The resolved URL is not `Special:FilePath`.** It is the real file path on a Wikimedia or OSM-wiki host, which the `/ext/wikimedia/` proxy serves, so the visitor's browser never contacts either wiki. Do not reintroduce a `Special:FilePath` URL in the frontend — CI rejects it.
 
 `make check-equipment-images` re-resolves and fails if the committed map no longer points at the same files. It is not wired into CI, because it depends on two live APIs; run it by hand if illustrations start disappearing.
+
+## Printing the poster
+
+`marketing/poster/` holds an A5 poster for hanging up locally (#1004): pixel-art scene in the logo's style, QR code to `spieli.eu`. One template, three languages — `poster.html?lang=de|en|sk` (default `de`); the texts are in the `TEXT` table at the bottom of the file. Open it in a browser to preview.
+
+```bash
+make poster               # rewrites marketing/poster/print/poster-<lang>-a5.pdf and -2xa5-a4.pdf
+```
+
+The `-2xa5-a4` file puts two posters on one A4 sheet with a dashed cut line and black cut marks, for printers that only take A4. Both posters sit slightly outwards: many printers shrink a page to about 97 % towards its centre even at "100 %", which would otherwise leave each cut A5 with twice the margin outside as at the cut (`sheet.html` has the numbers). Needs a Chromium (`CHROME=` to point at one), Ghostscript (`gs`) and network access, because the fonts come from Google Fonts and jsDelivr.
+
+Chromium's PDF is flattened into one opaque 600 dpi image per page. Printers that interpret PDF themselves (e.g. a Brother inkjet over IPP) silently drop images with transparency — every pin — and Type 3 fonts; a flattened page prints the same everywhere. Check a new build with `pdfimages -list` (no `smask` rows) and `pdffonts` (empty).
+
+The PDFs are **committed**, so anyone can print the poster straight from the repository. After changing the template, run `make poster` and commit the PDFs with it. Only rebuild them for a real change: they add about 4.8 MB to the history each time.
+
+`marketing/poster/preview.png` shows all three languages side by side, for the PR and anyone browsing the folder. It is not built by `make poster`; after a visible change, regenerate it from the A5 PDFs (`pdftoppm -png -r 80` each, then `magick … +append`).
+
+When printing, choose **actual size / 100 %**, not "fit to page". The design keeps a 6 mm white margin because inkjets cannot print borderless, and a light sky to save ink. Scan the QR code off the printout before hanging it up.
+
+Keep the bubble to things spieli really shows. Shade, for instance, is barely mapped (12 of 473 playgrounds in Landkreis Fulda), so promising it disappoints.
