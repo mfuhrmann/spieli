@@ -2,7 +2,7 @@
 // All functions accept an optional baseUrl parameter (defaults to the configured apiBaseUrl).
 // This allows the Hub to call per-backend URLs using the same functions.
 
-import { transformExtent } from 'ol/proj';
+import { transformExtent } from 'ol/proj.js';
 import { osmRelationId, apiBaseUrl as defaultApiBaseUrl } from './config.js';
 
 let _fetchPlaygroundsDeprecationWarned = false;
