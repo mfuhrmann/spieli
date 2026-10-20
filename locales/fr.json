@@ -299,7 +299,7 @@
     "nextPhoto": "Photo suivante",
     "ok": "OK",
     "addData": {
-      "introText": "Les données de cette carte proviennent de {name}. Vous pouvez les modifier directement – aucun compte n'est nécessaire pour MapComplete.",
+      "introText": "Les données de cette carte proviennent de {osmLink}. Vous pouvez les modifier directement avec {mapcompleteLink} – seul un compte OpenStreetMap gratuit est nécessaire.",
       "wikiLinkText": "Règles de cartographie pour les aires de jeux de cette région",
       "osm": {
         "label": "OpenStreetMap",
