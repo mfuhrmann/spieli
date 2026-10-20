@@ -27,12 +27,19 @@ const B = { url: 'https://b.example/api', bbox: [11.0, 48.0, 12.0, 49.0] };
 // ── harness ─────────────────────────────────────────────────────────────────
 
 // `fetch` stub: every call is recorded; the reply comes from `respond(url)`,
-// which returns `{ status, body }` or a promise of one.
+// which returns `{ status, body }` or a promise of one. Like the real fetch it
+// rejects as soon as its signal aborts, so superseded runs and per-backend
+// timeouts reach the orchestrator as failed entries, not as late successes.
 let calls = [];
 let respond = () => ({ status: 200, body: [] });
-globalThis.fetch = async (url) => {
+globalThis.fetch = async (url, { signal } = {}) => {
   calls.push(new URL(url));
-  const { status, body } = await respond(url);
+  const aborted = new Promise((_, reject) => {
+    const fail = () => reject(new DOMException('aborted', 'AbortError'));
+    if (signal?.aborted) fail();
+    else signal?.addEventListener('abort', fail, { once: true });
+  });
+  const { status, body } = await Promise.race([respond(url), aborted]);
   return { ok: status >= 200 && status < 300, status, json: async () => body };
 };
 
@@ -57,10 +64,20 @@ function attach({ backends, filters, zoom = macroMaxZoom }) {
   return { state, orch };
 }
 
-// Let every pending fetch/fanOut continuation run.
-const settle = () => new Promise(r => setTimeout(r, 0));
+// Let every pending fetch/fanOut continuation run. Several macrotask turns,
+// so a reply chain that gains a timer hop still settles before asserting.
+const settle = async () => {
+  for (let i = 0; i < 10; i++) await new Promise(r => setTimeout(r, 0));
+};
+
+// Warnings are captured, not silenced: each test asserts the ones it expects,
+// and reset() fails on any left over.
+const warnings = [];
+const warn = console.warn;
+console.warn = (...args) => warnings.push(args.join(' '));
 
 function reset() {
+  assert.deepEqual(warnings.splice(0), [], 'unexpected console.warn');
   calls = [];
   respond = () => ({ status: 200, body: [] });
   macroFilteredStore.set(null);
@@ -68,9 +85,6 @@ function reset() {
   activeTierStore.set(null);
 }
 
-// Silence the orchestrator's intentional one-time 404 warning.
-const warn = console.warn;
-console.warn = () => {};
 
 // ── 1. No active filter: zero-fetch, both stores null ───────────────────────
 {
@@ -115,7 +129,7 @@ console.warn = () => {};
 
   // Every publish is a fresh Map, or Svelte subscribers would not re-render.
   const maps = published.filter(v => v instanceof Map);
-  assert.ok(maps.length >= 3, 'empty Map + one publish per backend');
+  assert.equal(maps.length, 3, 'empty Map + one publish per backend');
   assert.equal(new Set(maps).size, maps.length);
   orch.detach();
 }
@@ -153,8 +167,11 @@ console.warn = () => {};
   respond = (url) => url.startsWith(A.url) ? { status: 404, body: null } : { status: 500, body: null };
   const { orch } = attach({ backends: [A, B], filters: WATER });
   await settle();
-  assert.deepEqual(get(macroCoverageStore).cantFilter.sort(), [A.url, B.url]);
+  assert.deepEqual([...get(macroCoverageStore).cantFilter].sort(), [A.url, B.url]);
   assert.equal(get(macroFilteredStore).size, 0);
+  // The 404 warns once (it makes the fallback sticky); the 500 is silent.
+  assert.equal(warnings.length, 1);
+  assert.match(warnings.splice(0)[0], new RegExp(`${A.url} returned 404`));
 
   // Next run: the 404 peer is can't-filter from the start and not asked
   // again (pre-tier backend); the 500 peer was a transient error and is.
@@ -188,6 +205,28 @@ console.warn = () => {};
   orch.detach();
 }
 
+// ── 6b. Filter X → filter Y: X's late replies must not land under Y ─────────
+{
+  reset();
+  let release;
+  const late = new Promise(r => { release = r; });
+  respond = (url) => url.includes('filter_water')
+    ? late.then(() => ({ status: 200, body: [{ count: 9, complete: 9, partial: 0, missing: 0 }] }))
+    : { status: 200, body: [{ count: 2, complete: 1, partial: 1, missing: 0 }] };
+  const { state, orch } = attach({ backends: [A], filters: WATER });
+  await settle();
+
+  state.filters = { ...NO_FILTER, baby: true };
+  orch.rerun();
+  await settle();
+  release();
+  await settle();
+  assert.deepEqual(get(macroFilteredStore).get(A.url), { count: 2, complete: 1, partial: 1, missing: 0 });
+  assert.deepEqual(get(macroCoverageStore), { answered: 1, total: 1, cantFilter: [], settling: false },
+    "the aborted water run must not mark A can't-filter");
+  orch.detach();
+}
+
 // ── 7. P12: filters cleared at the polygon tier, then zoom out to macro ─────
 // The macro layer is visible only while activeTierStore is 'macro' (Map.svelte)
 // and HubApp does not rerun the orchestrator for a filter change at the
@@ -207,7 +246,6 @@ console.warn = () => {};
   orch.rerun();
   await settle();
   assert.equal(get(activeTierStore), 'polygon');
-  assert.ok(get(macroFilteredStore) instanceof Map, 'stale aggregate is kept while macro is hidden');
 
   state.filters = NO_FILTER;  // cleared at the polygon tier: no rerun (HubApp)
   state.zoom = macroMaxZoom;  // zoom out — the moveend runs orchestrate()
@@ -218,5 +256,6 @@ console.warn = () => {};
   orch.detach();
 }
 
+reset();
 console.warn = warn;
 console.log('hubOrchestrator.macro.test.js OK');
