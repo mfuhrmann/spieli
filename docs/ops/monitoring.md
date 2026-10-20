@@ -23,6 +23,8 @@ Both are written atomically every 60 seconds by a cron job inside the hub contai
       "last_success": "2026-04-26T12:00:00Z",
       "last_import_at": "2026-04-25T03:12:00Z",
       "data_age_seconds": 118080,
+      "osm_data_timestamp": "2026-04-24T21:00:00Z",
+      "osm_data_age_seconds": 140400,
       "playground_count": 42,
       "complete": 28,
       "partial": 10,
@@ -43,6 +45,8 @@ Both are written atomically every 60 seconds by a cron job inside the hub contai
 | `backends.<slug>.last_success` | ISO 8601 timestamp of the last successful probe, preserved across failures. `null` if the backend was never reachable. |
 | `backends.<slug>.last_import_at` | Value of `api.import_status.last_import_at` from the backend DB. `null` if no import has run or backend is down. |
 | `backends.<slug>.data_age_seconds` | Seconds since `last_import_at`. `null` if `last_import_at` is `null`. |
+| `backends.<slug>.osm_data_timestamp` | Replication timestamp of the OSM extract the backend imported (when Geofabrik generated it). `null` if the PBF header lacks it, the backend predates the field, or it is down. |
+| `backends.<slug>.osm_data_age_seconds` | Seconds since `osm_data_timestamp` — how old the served data is, which is always at least `data_age_seconds`. `null` when `osm_data_timestamp` is. |
 | `backends.<slug>.playground_count` | Total playgrounds in the region. `null` on pre-P1 backends or when backend is down. |
 | `backends.<slug>.complete` | Playgrounds with complete equipment data. `null` on pre-P1 backends. |
 | `backends.<slug>.partial` | Playgrounds with partial equipment data. `null` on pre-P1 backends. |
@@ -71,6 +75,10 @@ spielplatz_backend_latency_seconds{backend="fulda",url="https://fulda.example.co
 # TYPE spielplatz_backend_data_age_seconds gauge
 spielplatz_backend_data_age_seconds{backend="fulda",url="https://fulda.example.com/api"} 118080
 
+# HELP spielplatz_backend_osm_data_age_seconds Seconds since the OSM source data the backend serves was snapshotted (PBF replication timestamp).
+# TYPE spielplatz_backend_osm_data_age_seconds gauge
+spielplatz_backend_osm_data_age_seconds{backend="fulda",url="https://fulda.example.com/api"} 140400
+
 # HELP spielplatz_backend_playgrounds_total Total number of playgrounds in the region.
 # TYPE spielplatz_backend_playgrounds_total gauge
 spielplatz_backend_playgrounds_total{backend="fulda",url="https://fulda.example.com/api"} 42
@@ -92,7 +100,7 @@ spielplatz_backend_playgrounds_missing{backend="fulda",url="https://fulda.exampl
 spielplatz_poll_generated_timestamp 1745668800
 ```
 
-`spielplatz_backend_data_age_seconds` and the four completeness gauges are omitted for a backend when the field is `null` (backend down, pre-P1 backend, or no import yet). `spielplatz_backend_importing` is always emitted when the backend is reachable; it defaults to `0` for older backends that predate the `importing` field in `get_meta`.
+`spielplatz_backend_data_age_seconds`, `spielplatz_backend_osm_data_age_seconds` and the four completeness gauges are omitted for a backend when the field is `null` (backend down, pre-P1 backend, or no import yet). `spielplatz_backend_importing` is always emitted when the backend is reachable; it defaults to `0` for older backends that predate the `importing` field in `get_meta`.
 
 ## Recipes
 
@@ -153,7 +161,35 @@ spielplatz_backend_up == 1
   and spielplatz_backend_playgrounds_total == 0
 ```
 
-### Recipe 3 — Frontend error monitoring (Sentry)
+### Recipe 3 — Bundled Prometheus + Grafana dashboard
+
+`deploy/monitoring/` is a ready-made stack: Prometheus scraping one hub, and Grafana with the datasource and a **spieli federation** dashboard provisioned.
+
+```bash
+cd deploy/monitoring
+# set the hub to scrape in prometheus.yml (default: https://spieli.eu)
+docker compose up -d
+```
+
+Grafana opens at `http://127.0.0.1:3001` without login, Prometheus at `http://127.0.0.1:9091`. Both bind to loopback only, and Grafana runs with **anonymous admin** — turn `GF_AUTH_ANONYMOUS_*` off in `compose.yml` before exposing it anywhere.
+
+Keep the job name `spieli_hub` when changing the target; every panel selects on it. To scrape a hub-mode stack on the same machine, use the commented `host.docker.internal:8080` job in `prometheus.yml`. A standalone stack serves only `spielplatz_poll_generated_timestamp`, so most panels stay empty against it.
+
+| Panel | Shows |
+|---|---|
+| Backends up / down | How many backends answered the last `get_meta` probe |
+| Playgrounds (all backends) | Sum of `playgrounds_total` |
+| Hub poll age | Seconds since the hub last wrote `/metrics` — high means the poll cron died and every other panel is frozen |
+| Up per backend, Importing | Per-backend state over time |
+| get_meta latency | Probe round-trip from the hub server |
+| Import age, OSM data age | Time since the last import, and age of the OSM extract it imported |
+| Detailed share, mapping-detail bars, counts table, totals | Playgrounds per backend split into detailed / basic / no details yet |
+
+Every panel carries a description (the ⓘ next to its title) of what it shows and what an unusual value means.
+
+The dashboard is a provisioned file (`grafana/dashboards/federation.json`): edits made in the Grafana UI cannot be saved over it. Export the JSON from the UI and replace the file instead.
+
+### Recipe 4 — Frontend error monitoring (Sentry)
 
 The hub frontend does not ship in-repo error reporting. For production deployments, sign up for [Sentry's free tier](https://sentry.io/pricing/) and add the Sentry browser SDK to your `nginx` serving config or `config.js` generation step. The DSN stays out of this repository.
 

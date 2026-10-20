@@ -1,0 +1,32 @@
+# Prometheus + Grafana for a spieli hub's /metrics (see docs/ops/monitoring.md).
+#
+#   docker compose up -d
+#
+# Grafana:    http://127.0.0.1:3001  (anonymous admin — local use only)
+# Prometheus: http://127.0.0.1:9091
+#
+# Scrape target lives in prometheus.yml. Both ports bind to loopback; before
+# exposing Grafana anywhere, turn anonymous admin off below.
+name: spieli-monitoring
+services:
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    command: ["--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.retention.time=30d"]
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prom-data:/prometheus
+    ports: ["127.0.0.1:9091:9090"]
+    # Lets prometheus.yml reach a stack on this host as host.docker.internal.
+    extra_hosts: ["host.docker.internal:host-gateway"]
+  grafana:
+    image: grafana/grafana:12.1.0
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      GF_AUTH_DISABLE_LOGIN_FORM: "true"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports: ["127.0.0.1:3001:3000"]
+volumes:
+  prom-data:
