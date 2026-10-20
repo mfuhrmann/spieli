@@ -17,15 +17,13 @@ import { defaultLocale as configuredLocale } from './config.js';
 //      `{{placeholder}}` form. That is a render-time throw, not a graceful
 //      fallback, so a single bad string breaks the view that uses it.
 //
-// Current state, measured rather than assumed (see i18n.test.js, which fails
-// the build if a registered locale stops parsing):
+// Current state (2026-10-20; i18n.test.js fails the build if any locale file
+// stops parsing, registered or not, #751):
 //
 //   de, en, sk  registered — complete and ICU-clean
-//   fr, es      ~96% complete but carrying strings the formatter cannot
-//               parse (14 and 12 respectively); blocked on #751, and #752 is
-//               the graduation task once it lands. They are the only two
-//               worth graduating: the rest are nowhere near the bar.
-//   others      ~20% translated, so placeholders are not what holds them back
+//   fr, es      ~79% complete; not shipped by decision, no backend serves
+//               those languages (#752, DECLINED in i18n.test.js)
+//   others      ~10–20% translated
 const SUPPORTED = ['de', 'en', 'sk'];
 
 register('de', () => import('../../../locales/de.json'));

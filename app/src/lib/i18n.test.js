@@ -23,42 +23,65 @@ import { IntlMessageFormat } from 'intl-messageformat';
 //
 // The opposite failure is louder but no better: svelte-i18n formats through
 // intl-messageformat, which THROWS on the i18next-style `{{placeholder}}`
-// form rather than degrading. A registered locale carrying one of those breaks
-// the view that renders it. So these tests check both directions — every
-// registered locale must exist and must parse, and a locale must not be
-// registered without being listed.
+// form rather than degrading, and on a placeholder the caller does not pass.
+// A registered locale carrying one of those breaks the view that renders it.
+// So these tests check both directions — every locale file, registered or not,
+// must parse and use only en's placeholders (#751), every registered locale
+// must exist, and a locale must not be registered without being listed.
 
 const root = new URL('../../../', import.meta.url);
 const src = readFileSync(new URL('lib/i18n.js', new URL('app/src/', root)), 'utf8');
 
-// One definition of "parseable", used by both halves below. The graduation
-// gate and the exclusion check previously disagreed — the gate ran the real
-// parser while the exclusion check grepped for `{{ }}` — so a locale broken
-// for any other reason (an unbalanced brace, a plural block missing `other`)
-// counted as clean and the exclusion assertion told the maintainer to register
-// it. That is the inversion this file exists to prevent.
+// One definition of "broken", run with the real parser rather than a grep for
+// `{{ }}`: a locale broken for any other reason (an unbalanced brace, a plural
+// block missing `other`) must fail just the same.
+//
+// A string that parses can still throw at render: an argument en does not
+// have (a translated `{nombreRegion}` for `{regionName}`) is never passed, and
+// intl-messageformat raises MISSING_VALUE. So each string's argument names
+// must be a subset of its en counterpart's. Fewer is fine — a translation may
+// drop a value its language does not need.
 //
 // ignoreTag mirrors svelte-i18n's own default (runtime.cjs sets it), without
 // which every string containing <br> fails as UNCLOSED_TAG — including en's
 // and de's, which ship and work. A check stricter than the runtime reports
 // defects that do not exist.
-function unparseable(dict, lang) {
+function argNames(ast, out = new Set()) {
+    for (const el of ast) {
+        if (typeof el.value === 'string' && el.type >= 1 && el.type <= 6) out.add(el.value);
+        for (const opt of Object.values(el.options ?? {})) argNames(opt.value, out);
+        if (el.children) argNames(el.children, out);
+    }
+    return out;
+}
+
+function parse(str, lang) {
+    return new IntlMessageFormat(str, lang, undefined, { ignoreTag: true }).getAst();
+}
+
+function leafStrings(obj, path = '', out = new Map()) {
+    for (const [k, v] of Object.entries(obj)) {
+        const at = path ? `${path}.${k}` : k;
+        if (typeof v === 'string') out.set(at, v);
+        else if (v && typeof v === 'object') leafStrings(v, at, out);
+    }
+    return out;
+}
+
+function broken(dict, lang, enArgs) {
     const bad = [];
-    const walk = (obj, path) => {
-        for (const [k, v] of Object.entries(obj)) {
-            const at = path ? `${path}.${k}` : k;
-            if (typeof v === 'string') {
-                try {
-                    new IntlMessageFormat(v, lang, undefined, { ignoreTag: true });
-                } catch (e) {
-                    bad.push(`${at}: ${e.message.split('\n')[0]}`);
-                }
-            } else if (v && typeof v === 'object') {
-                walk(v, at);
-            }
+    for (const [at, v] of leafStrings(dict)) {
+        let names;
+        try {
+            names = argNames(parse(v, lang));
+        } catch (e) {
+            bad.push(`${lang} ${at}: ${e.message.split('\n')[0]}`);
+            continue;
         }
-    };
-    walk(dict, '');
+        const allowed = enArgs.get(at) ?? new Set();
+        const unknown = [...names].filter(n => !allowed.has(n));
+        if (unknown.length) bad.push(`${lang} ${at}: placeholder not in en: {${unknown.join('}, {')}}`);
+    }
     return bad;
 }
 
@@ -85,6 +108,11 @@ function load(lang) {
     return JSON.parse(readFileSync(new URL(`locales/${lang}.json`, root), 'utf8'));
 }
 
+// Every locale file, registered or not.
+const locales = readdirSync(new URL('locales/', root))
+    .filter(f => f.endsWith('.json'))
+    .map(f => f.slice(0, -5));
+
 // Both quote styles: a future register("pt", …) must not be invisible to the
 // pairing assertion below, since a registered-but-unlisted locale is the exact
 // silent no-op of #814.
@@ -105,48 +133,61 @@ const supported = JSON.parse(
 
 // --- every registered locale file exists ---------------------------------
 {
-    const available = readdirSync(new URL('locales/', root))
-        .filter(f => f.endsWith('.json'))
-        .map(f => f.slice(0, -5));
     for (const lang of registered) {
-        assert.ok(available.includes(lang), `registered locale has no file: ${lang}`);
+        assert.ok(locales.includes(lang), `registered locale has no file: ${lang}`);
     }
 }
 
-// --- every registered locale parses under ICU ----------------------------
-// This is what makes graduating a locale safe: a string the formatter cannot
-// parse throws at render, so it must not be registered until that is fixed
-// (#751).
+// --- every locale parses under ICU, registered or not ---------------------
+// A string the formatter cannot parse throws at render. Checking only the
+// registered locales let ten unregistered ones carry 190 `{{placeholder}}`
+// strings for months (#751), which turned graduating any of them into a
+// repair job. Checking every file fails the Weblate PR that introduces a bad
+// string, so it is fixed in Weblate before it lands and a locale that reaches
+// the graduation bar can simply be registered.
+//
+// Collected across all locales before asserting, so one CI run lists every
+// broken string rather than one language per Weblate round trip.
 {
-    for (const lang of registered) {
-        assert.deepEqual(unparseable(load(lang), lang), [],
-            `${lang} has strings intl-messageformat cannot parse`);
-    }
+    const enArgs = new Map(
+        [...leafStrings(load('en'))].map(([at, v]) => [at, argNames(parse(v, 'en'))]),
+    );
+    const bad = locales.flatMap(lang => broken(load(lang), lang, enArgs));
+    assert.deepEqual(bad, [],
+        'locale strings that would throw at render — fix them in Weblate, not in the file');
 }
 
 // --- the locales NOT registered are excluded for a stated reason ----------
 // Recorded so the exclusion is a decision rather than an oversight — which is
-// exactly what #814 turned out to be. A locale that becomes complete AND
-// parseable should be registered, and this fails until someone does.
+// exactly what #814 turned out to be. Every locale parses (above), so a locale
+// is excluded either for coverage, or because a maintainer decided not to ship
+// it and recorded why in DECLINED. Any other locale that reaches the bar
+// should be registered, and this fails until someone does.
 //
 // 0.8 is the documented graduation bar (docs/contributing/translations.md),
 // applied to key coverage rather than byte size for the reason given above.
+//
+// es and fr sit just under the bar (79% on 2026-10-20) and are translated in
+// Weblate, but no backend serves a Spanish- or French-speaking region, so
+// shipping them was declined (#752). Remove an entry to graduate it.
+const DECLINED = { es: '#752', fr: '#752' };
 {
     const enKeys = leafKeys(load('en'));
 
-    for (const f of readdirSync(new URL('locales/', root)).filter(f => f.endsWith('.json'))) {
-        const lang = f.slice(0, -5);
-        if (registered.includes(lang)) continue;
+    for (const lang of Object.keys(DECLINED)) {
+        assert.ok(!registered.includes(lang), `${lang} is registered but listed in DECLINED`);
+    }
 
-        const dict = load(lang);
-        const bad = unparseable(dict, lang);
-        const have = leafKeys(dict);
+    for (const lang of locales) {
+        if (registered.includes(lang) || lang in DECLINED) continue;
+
+        const have = leafKeys(load(lang));
         const covered = [...enKeys].filter(k => have.has(k)).length / enKeys.size;
 
         assert.ok(
-            bad.length > 0 || covered < 0.8,
-            `${lang} is ${(covered * 100).toFixed(0)}% complete and parses cleanly, `
-            + 'so it should be registered in app/src/lib/i18n.js — see #752',
+            covered < 0.8,
+            `${lang} is ${(covered * 100).toFixed(0)}% complete, `
+            + 'so it should be registered in app/src/lib/i18n.js — see docs/contributing/translations.md',
         );
     }
 }
