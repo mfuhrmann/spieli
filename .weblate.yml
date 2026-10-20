@@ -44,6 +44,11 @@ component:
   add_message: "chore(i18n): add {{ language_name }} translation from Weblate"
   delete_message: "chore(i18n): remove {{ language_name }} translation from Weblate"
   new_lang: add
+  # Runs Weblate's ICU MessageFormat syntax and placeholder checks, so a
+  # translator sees a malformed string (e.g. `{{regionName}}`, #751) while
+  # typing. CI enforces the same rule in app/src/lib/i18n.test.js either way.
+  # Settings → Translation → Translation flags.
+  check_flags: icu-message-format
 
 # File format parameters, set under Settings → Files on the component.
 # These replaced the "Customize JSON output" add-on, which was removed in

@@ -85,6 +85,11 @@ function load(lang) {
     return JSON.parse(readFileSync(new URL(`locales/${lang}.json`, root), 'utf8'));
 }
 
+// Every locale file, registered or not.
+const locales = readdirSync(new URL('locales/', root))
+    .filter(f => f.endsWith('.json'))
+    .map(f => f.slice(0, -5));
+
 // Both quote styles: a future register("pt", …) must not be invisible to the
 // pairing assertion below, since a registered-but-unlisted locale is the exact
 // silent no-op of #814.
@@ -105,48 +110,46 @@ const supported = JSON.parse(
 
 // --- every registered locale file exists ---------------------------------
 {
-    const available = readdirSync(new URL('locales/', root))
-        .filter(f => f.endsWith('.json'))
-        .map(f => f.slice(0, -5));
     for (const lang of registered) {
-        assert.ok(available.includes(lang), `registered locale has no file: ${lang}`);
+        assert.ok(locales.includes(lang), `registered locale has no file: ${lang}`);
     }
 }
 
-// --- every registered locale parses under ICU ----------------------------
-// This is what makes graduating a locale safe: a string the formatter cannot
-// parse throws at render, so it must not be registered until that is fixed
-// (#751).
+// --- every locale parses under ICU, registered or not ---------------------
+// A string the formatter cannot parse throws at render. Checking only the
+// registered locales let ten unregistered ones carry 190 `{{placeholder}}`
+// strings for months (#751), which turned graduating any of them into a
+// repair job. Checking every file fails the Weblate PR that introduces a bad
+// string, so it is fixed in Weblate before it lands and a locale that reaches
+// the graduation bar can simply be registered.
 {
-    for (const lang of registered) {
+    for (const lang of locales) {
         assert.deepEqual(unparseable(load(lang), lang), [],
-            `${lang} has strings intl-messageformat cannot parse`);
+            `${lang} has strings intl-messageformat cannot parse — fix them in Weblate, not in the file`);
     }
 }
 
 // --- the locales NOT registered are excluded for a stated reason ----------
 // Recorded so the exclusion is a decision rather than an oversight — which is
-// exactly what #814 turned out to be. A locale that becomes complete AND
-// parseable should be registered, and this fails until someone does.
+// exactly what #814 turned out to be. Every locale parses (above), so the one
+// remaining reason is coverage: a locale that reaches the bar should be
+// registered, and this fails until someone does.
 //
 // 0.8 is the documented graduation bar (docs/contributing/translations.md),
 // applied to key coverage rather than byte size for the reason given above.
 {
     const enKeys = leafKeys(load('en'));
 
-    for (const f of readdirSync(new URL('locales/', root)).filter(f => f.endsWith('.json'))) {
-        const lang = f.slice(0, -5);
+    for (const lang of locales) {
         if (registered.includes(lang)) continue;
 
-        const dict = load(lang);
-        const bad = unparseable(dict, lang);
-        const have = leafKeys(dict);
+        const have = leafKeys(load(lang));
         const covered = [...enKeys].filter(k => have.has(k)).length / enKeys.size;
 
         assert.ok(
-            bad.length > 0 || covered < 0.8,
-            `${lang} is ${(covered * 100).toFixed(0)}% complete and parses cleanly, `
-            + 'so it should be registered in app/src/lib/i18n.js — see #752',
+            covered < 0.8,
+            `${lang} is ${(covered * 100).toFixed(0)}% complete, `
+            + 'so it should be registered in app/src/lib/i18n.js — see docs/contributing/translations.md',
         );
     }
 }

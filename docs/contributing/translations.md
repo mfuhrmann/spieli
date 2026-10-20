@@ -141,9 +141,11 @@ Weblate collects translations for every registered language, but the app loads o
 
 `app/src/lib/i18n.test.js` enforces both halves of that: a `register()` call without a `SUPPORTED` entry (or the reverse) fails the build, because either on its own is a silent no-op — the locale is simply never selected, with nothing logged. That is how Slovak sat complete and unreachable for weeks ([#814](https://github.com/mfuhrmann/spieli/issues/814)).
 
-The same test refuses to let a language graduate while it still carries strings `intl-messageformat` cannot parse. The i18next-style `{{placeholder}}` form **throws at render** rather than degrading, so one bad string breaks whichever view uses it — see [#751](https://github.com/mfuhrmann/spieli/issues/751). `es` and `fr` are otherwise complete and are blocked only on that.
+The same test requires **every** locale file — registered or not — to parse under `intl-messageformat`, with the options svelte-i18n uses. A string it cannot parse **throws at render** rather than degrading, so one bad string breaks whichever view uses it. Until [#751](https://github.com/mfuhrmann/spieli/issues/751) only registered languages were checked, and ten unregistered ones carried 190 i18next-style `{{placeholder}}` strings unnoticed, so any of them would have needed a repair before it could graduate. Now the Weblate PR that brings in a bad string fails CI: fix the string in Weblate (the PR picks it up on the next push), not in the file.
 
-It also asserts the *reason* each unregistered language is excluded, so a language that becomes complete and clean fails the build until someone registers it. The exclusion stays a decision rather than decaying into an oversight.
+Placeholders take one brace: `{regionName}`, never `{{regionName}}`. When repairing them with Weblate's *Search and replace*, do not replace `}}` on its own — a plural string legitimately ends in `}}` (`… other {# bancos}}`), and a blanket replace breaks every one of them.
+
+It also asserts the *reason* each unregistered language is excluded — below 80% key coverage — so a language that reaches the bar fails the build until someone registers it. The exclusion stays a decision rather than decaying into an oversight.
 
 ## Adding new UI strings (developer workflow)
 
