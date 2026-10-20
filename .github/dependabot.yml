@@ -19,8 +19,8 @@ updates:
         versions: ["8.1.x"]
 
       # intl-messageformat is a devDependency used by exactly one thing:
-      # app/src/lib/i18n.test.js, which refuses to graduate a locale whose
-      # strings the ICU parser cannot read. The parser that matters at runtime
+      # app/src/lib/i18n.test.js, which fails any PR (Weblate's included) that
+      # carries a locale string the ICU parser cannot read. The parser that matters at runtime
       # is the one svelte-i18n brings, and svelte-i18n@4 pins
       # intl-messageformat ^10.5.3. Bumping the devDependency to 11 makes npm
       # nest a second copy (svelte-i18n keeps 10, the test gets 11), so the
