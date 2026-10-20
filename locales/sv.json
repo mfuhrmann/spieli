@@ -1,9 +1,9 @@
 {
-  "appTitle": "Lekplatskarta – {{regionName}}",
+  "appTitle": "Lekplatskarta – {regionName}",
   "search": {
     "placeholder": "Sök …",
-    "found": "\"{{query}}\" i {{location}}",
-    "foundGeneric": "\"{{query}}\" hittades",
+    "found": "\"{query}\" i {location}",
+    "foundGeneric": "\"{query}\" hittades",
     "notFound": "Inga resultat hittades!",
     "ariaLabel": "Location search",
     "clearLabel": "Clear search"
@@ -47,15 +47,15 @@
     "none": "Inga foton för den här lekplatsen ännu.<br>Har du besökt den?",
     "addLink": "Lägg till foto",
     "enlarge": "Klicka för att förstora",
-    "thumbnail": "Foto {{n}}"
+    "thumbnail": "Foto {n}"
   },
   "poi": {
     "errorLoad": "Kunde inte ladda omgivningsdata.",
     "alwaysOpen": "Alltid öppet",
     "open": "Öppet",
-    "openUntil": "Öppet till {{time}}",
+    "openUntil": "Öppet till {time}",
     "closed": "Stängt",
-    "opensAt": "Öppnar {{day}} kl. {{time}}",
+    "opensAt": "Öppnar {day} kl. {time}",
     "openingHours": "Öppettider",
     "today": "Idag",
     "tomorrow": "Imorgon",
@@ -85,41 +85,41 @@
     "addData": {
       "osm": {
         "label": "OpenStreetMap",
-        "text": "Data kommer från {{osmLink}} — en fri, samarbetande världskarta skapad av miljontals volontärer. Endast det som har kartlagts visas här.",
+        "text": "Data kommer från {osmLink} — en fri, samarbetande världskarta skapad av miljontals volontärer. Endast det som har kartlagts visas här.",
         "wikiUrl": "https://sv.wikipedia.org/wiki/OpenStreetMap"
       },
       "contribute": {
         "label": "Bidra till lekplatser",
-        "text": "Vem som helst kan bidra. En bra startpunkt är {{learnOsmLink}}. Relevanta taggar finns dokumenterade i {{wikiLink}} och på sidan om {{equipmentLink}}.",
+        "text": "Vem som helst kan bidra. En bra startpunkt är {learnOsmLink}. Relevanta taggar finns dokumenterade i {wikiLink} och på sidan om {equipmentLink}.",
         "learnOsmUrl": "https://learnosm.org/en/beginner/",
         "wikiLabel": "OSM-wikin",
         "equipmentLabel": "kartläggning av enskild utrustning"
       },
       "photos": {
         "label": "Lägg till foton",
-        "text": "Foton kan laddas upp direkt via {{mapcompleteLink}} — öppna en lekplats och klicka på \"Lägg till foto\". Foton tillhandahålls av {{panoramaxLink}}."
+        "text": "Foton kan laddas upp direkt via {mapcompleteLink} — öppna en lekplats och klicka på \"Lägg till foto\". Foton tillhandahålls av {panoramaxLink}."
       },
       "community": {
         "label": "Gemenskap",
-        "text": "Frågor eller vill du engagera dig? Det lokala OSM-gemenskapen nås via {{chatLink}}.",
+        "text": "Frågor eller vill du engagera dig? Det lokala OSM-gemenskapen nås via {chatLink}.",
         "chatLabel": "lokal OSM-gemenskapschatt"
       }
     },
     "about": {
       "history": {
         "label": "Historia",
-        "text": "Lekplatskartan skapades av {{authorLink}} som avslutningsprojekt för en {{courseLink}} — ursprungligen inriktad på Berlin. Med tiden utvecklades den till en generisk karta som kan användas för vilket OSM-område som helst.",
+        "text": "Lekplatskartan skapades av {authorLink} som avslutningsprojekt för en {courseLink} — ursprungligen inriktad på Berlin. Med tiden utvecklades den till en generisk karta som kan användas för vilket OSM-område som helst.",
         "courseUrl": "https://gis-trainer.com/de/gis_webmapping.php",
         "courseLabel": "GIS och webbkartläggningskurs"
       },
       "project": {
         "label": "Projektet",
-        "text": "Lekplatskartan är en fri, interaktiv webbkarta baserad på {{osmLink}}-data. Den innehåller inga proprietära data, kräver ingen inloggning och spårar inga användare. Den som förbättrar lekplatsdata i OSM förbättrar automatiskt även denna karta.",
+        "text": "Lekplatskartan är en fri, interaktiv webbkarta baserad på {osmLink}-data. Den innehåller inga proprietära data, kräver ingen inloggning och spårar inga användare. Den som förbättrar lekplatsdata i OSM förbättrar automatiskt även denna karta.",
         "osmWikiUrl": "https://sv.wikipedia.org/wiki/OpenStreetMap"
       },
       "source": {
         "label": "Källkod",
-        "text": "Projektet är öppen källkod och {{repoLink}}.",
+        "text": "Projektet är öppen källkod och {repoLink}.",
         "repoLabel": "offentligt tillgängligt"
       }
     }

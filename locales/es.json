@@ -1,5 +1,5 @@
 {
-  "appTitle": "Parques infantiles – {{regionName}}",
+  "appTitle": "Parques infantiles – {regionName}",
   "locate": {
     "title": "Mostrar mi ubicación",
     "denied": "Acceso a la ubicación denegado.",
@@ -48,8 +48,8 @@
     "placeholder": "Buscar …",
     "ariaLabel": "Location search",
     "clearLabel": "Clear search",
-    "found": "\"{{query}}\" en {{location}}",
-    "foundGeneric": "\"{{query}}\" encontrado",
+    "found": "\"{query}\" en {location}",
+    "foundGeneric": "\"{query}\" encontrado",
     "notFound": "¡No se encontraron resultados!"
   },
   "nav": {
@@ -258,16 +258,16 @@
     "none": "Aún no hay fotos de este parque.<br>¿Has estado allí?",
     "addLink": "Añadir foto",
     "enlarge": "Clic para ampliar",
-    "thumbnail": "Foto {{n}}",
+    "thumbnail": "Foto {n}",
     "thumbnailTitle": "Foto {n} de {total}"
   },
   "poi": {
     "errorLoad": "No se pudieron cargar los datos del entorno.",
     "alwaysOpen": "Siempre abierto",
     "open": "Abierto",
-    "openUntil": "Abierto hasta {{time}}",
+    "openUntil": "Abierto hasta {time}",
     "closed": "Cerrado",
-    "opensAt": "Abre {{day}} {{time}}",
+    "opensAt": "Abre {day} {time}",
     "openingHours": "Horario",
     "today": "Hoy",
     "tomorrow": "Mañana",
@@ -303,23 +303,23 @@
       "wikiLinkText": "Reglas de mapeo para parques infantiles en esta región",
       "osm": {
         "label": "OpenStreetMap",
-        "text": "Los datos provienen de {{osmLink}} — un mapa mundial libre y colaborativo creado por millones de voluntarios. Solo lo que ha sido mapeado aparece aquí.",
+        "text": "Los datos provienen de {osmLink} — un mapa mundial libre y colaborativo creado por millones de voluntarios. Solo lo que ha sido mapeado aparece aquí.",
         "wikiUrl": "https://es.wikipedia.org/wiki/OpenStreetMap"
       },
       "contribute": {
         "label": "Contribuir a los parques",
-        "text": "Cualquiera puede contribuir. Un buen punto de partida es {{learnOsmLink}}. Las etiquetas relevantes están documentadas en el {{wikiLink}} y en la página sobre {{equipmentLink}}.",
+        "text": "Cualquiera puede contribuir. Un buen punto de partida es {learnOsmLink}. Las etiquetas relevantes están documentadas en el {wikiLink} y en la página sobre {equipmentLink}.",
         "learnOsmUrl": "https://learnosm.org/es/beginner/",
         "wikiLabel": "wiki de OSM",
         "equipmentLabel": "el mapeo de equipos individuales"
       },
       "photos": {
         "label": "Añadir fotos",
-        "text": "Las fotos se pueden subir directamente a través de {{mapcompleteLink}} — abre un parque y haz clic en \"Añadir foto\". Las fotos son proporcionadas por {{panoramaxLink}}."
+        "text": "Las fotos se pueden subir directamente a través de {mapcompleteLink} — abre un parque y haz clic en \"Añadir foto\". Las fotos son proporcionadas por {panoramaxLink}."
       },
       "community": {
         "label": "Comunidad",
-        "text": "¿Preguntas o quieres participar? La comunidad OSM local se puede contactar a través de {{chatLink}}.",
+        "text": "¿Preguntas o quieres participar? La comunidad OSM local se puede contactar a través de {chatLink}.",
         "chatLabel": "chat de la comunidad OSM local",
         "simpleText": "Preguntas y debate en el",
         "simpleChatLabel": "chat local"
@@ -328,18 +328,18 @@
     "about": {
       "history": {
         "label": "Historia",
-        "text": "El mapa de parques fue creado por {{authorLink}} como proyecto final de un {{courseLink}} — originalmente centrado en Berlín. Con el tiempo se desarrolló en un mapa genérico utilizable para cualquier región OSM.",
+        "text": "El mapa de parques fue creado por {authorLink} como proyecto final de un {courseLink} — originalmente centrado en Berlín. Con el tiempo se desarrolló en un mapa genérico utilizable para cualquier región OSM.",
         "courseUrl": "https://gis-trainer.com/de/gis_webmapping.php",
         "courseLabel": "curso de SIG y cartografía web"
       },
       "project": {
         "label": "El proyecto",
-        "text": "El mapa de parques es un mapa web libre e interactivo basado en datos de {{osmLink}}. No contiene datos propietarios, no requiere inicio de sesión y no rastrea usuarios. Quien mejora los datos en OSM mejora automáticamente este mapa.",
+        "text": "El mapa de parques es un mapa web libre e interactivo basado en datos de {osmLink}. No contiene datos propietarios, no requiere inicio de sesión y no rastrea usuarios. Quien mejora los datos en OSM mejora automáticamente este mapa.",
         "osmWikiUrl": "https://es.wikipedia.org/wiki/OpenStreetMap"
       },
       "source": {
         "label": "Código fuente",
-        "text": "El proyecto es de código abierto y {{repoLink}}.",
+        "text": "El proyecto es de código abierto y {repoLink}.",
         "repoLabel": "disponible públicamente"
       }
     }
