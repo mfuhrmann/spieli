@@ -299,7 +299,7 @@
     "nextPhoto": "Foto siguiente",
     "ok": "Aceptar",
     "addData": {
-      "introText": "Los datos de este mapa provienen de {name}. Puedes editarlos directamente – no se necesita cuenta para MapComplete.",
+      "introText": "Los datos de este mapa provienen de {osmLink}. Puedes editarlos directamente con {mapcompleteLink}; solo necesitas una cuenta gratuita de OpenStreetMap.",
       "wikiLinkText": "Reglas de mapeo para parques infantiles en esta región",
       "osm": {
         "label": "OpenStreetMap",
