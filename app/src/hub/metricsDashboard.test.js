@@ -20,10 +20,16 @@ const docs = read('../../../docs/ops/monitoring.md');
 const exported = new Set(exporters.flatMap(s => [...s.matchAll(/# HELP (spielplatz_\w+)/g)].map(m => m[1])));
 assert.ok(exported.size >= 9, `expected the exporter's HELP lines, found ${[...exported]}`);
 
+// Panels inside a collapsed row nest under the row's own `panels`; the row
+// itself is a layout element, not something with data to explain.
+const panels = dashboard.panels.flatMap(p => (p.type === 'row' ? p.panels ?? [] : [p]));
+
+// Only PromQL targets have an `expr`; others (Dashboard datasource,
+// expressions) reuse data and query no metric themselves.
 const queried = new Set(
-  dashboard.panels
+  panels
     .flatMap(p => p.targets ?? [])
-    .flatMap(t => [...t.expr.matchAll(/spielplatz_\w+/g)].map(m => m[0])),
+    .flatMap(t => [...(t.expr ?? '').matchAll(/spielplatz_\w+/g)].map(m => m[0])),
 );
 
 for (const metric of exported) {
@@ -35,7 +41,7 @@ for (const metric of queried) {
 }
 
 // Every panel explains itself (the ⓘ next to its title).
-for (const p of dashboard.panels) {
+for (const p of panels) {
   assert.ok(p.description?.trim(), `panel "${p.title}" has no description`);
 }
 

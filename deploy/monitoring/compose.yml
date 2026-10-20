@@ -2,11 +2,12 @@
 #
 #   docker compose up -d
 #
-# Grafana:    http://127.0.0.1:3001  (anonymous admin — local use only)
+# Grafana:    http://127.0.0.1:3001  (anonymous, read-only)
 # Prometheus: http://127.0.0.1:9091
 #
-# Scrape target lives in prometheus.yml. Both ports bind to loopback; before
-# exposing Grafana anywhere, turn anonymous admin off below.
+# Scrape target lives in prometheus.yml. Both ports bind to loopback. Grafana
+# lets anyone who reaches it view without logging in; before exposing it
+# anywhere else, turn anonymous access off and set an admin password.
 name: spieli-monitoring
 services:
   prometheus:
@@ -21,9 +22,18 @@ services:
   grafana:
     image: grafana/grafana:12.1.0
     environment:
+      # Viewer is all a provisioned dashboard needs (it cannot be saved from
+      # the UI anyway). Basic auth off, so the default admin/admin cannot be
+      # used against the API either.
       GF_AUTH_ANONYMOUS_ENABLED: "true"
-      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
       GF_AUTH_DISABLE_LOGIN_FORM: "true"
+      GF_AUTH_BASIC_ENABLED: "false"
+      # Redirect any other Host header to 127.0.0.1, so a page that rebinds
+      # its own DNS name to loopback cannot read the API same-origin.
+      GF_SERVER_DOMAIN: "127.0.0.1"
+      GF_SERVER_ROOT_URL: "http://127.0.0.1:3001/"
+      GF_SERVER_ENFORCE_DOMAIN: "true"
     volumes:
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
       - ./grafana/dashboards:/var/lib/grafana/dashboards:ro

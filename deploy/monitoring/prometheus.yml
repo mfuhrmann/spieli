@@ -3,16 +3,15 @@ global:
 
 scrape_configs:
   # The dashboard selects job="spieli_hub" — keep the job name, change the
-  # target. /metrics carries per-backend data only on a hub (APP_MODE=hub);
-  # a standalone stack serves just the poll timestamp.
+  # target to your hub. /metrics carries per-backend data only on a hub
+  # (APP_MODE=hub); a standalone stack serves just the poll timestamp.
+  #
+  # Default: a hub-mode stack on this machine (compose.yml maps
+  # host.docker.internal to the host). For a remote hub instead:
+  #     scheme: https
+  #     static_configs:
+  #       - targets: ['hub.example.org']
   - job_name: spieli_hub
-    scheme: https
     metrics_path: /metrics
     static_configs:
-      - targets: ['spieli.eu']
-
-  # A hub-mode stack on this machine instead:
-  # - job_name: spieli_hub
-  #   metrics_path: /metrics
-  #   static_configs:
-  #     - targets: ['host.docker.internal:8080']
+      - targets: ['host.docker.internal:8080']

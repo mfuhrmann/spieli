@@ -167,13 +167,13 @@ spielplatz_backend_up == 1
 
 ```bash
 cd deploy/monitoring
-# set the hub to scrape in prometheus.yml (default: https://spieli.eu)
+# point prometheus.yml at your hub (default: a hub-mode stack on this machine, port 8080)
 docker compose up -d
 ```
 
-Grafana opens at `http://127.0.0.1:3001` without login, Prometheus at `http://127.0.0.1:9091`. Both bind to loopback only, and Grafana runs with **anonymous admin** — turn `GF_AUTH_ANONYMOUS_*` off in `compose.yml` before exposing it anywhere.
+Grafana opens at `http://127.0.0.1:3001` (read-only, no login), Prometheus at `http://127.0.0.1:9091`. Both bind to loopback only. Before exposing Grafana anywhere else, turn `GF_AUTH_ANONYMOUS_ENABLED` off in `compose.yml` and set an admin password.
 
-Keep the job name `spieli_hub` when changing the target; every panel selects on it. To scrape a hub-mode stack on the same machine, use the commented `host.docker.internal:8080` job in `prometheus.yml`. A standalone stack serves only `spielplatz_poll_generated_timestamp`, so most panels stay empty against it.
+Keep the job name `spieli_hub` when changing the target; every panel selects on it. A remote hub needs `scheme: https` and its host as target — the commented example in `prometheus.yml`. A standalone stack serves only `spielplatz_poll_generated_timestamp`, so most panels stay empty against it.
 
 | Panel | Shows |
 |---|---|
@@ -185,7 +185,7 @@ Keep the job name `spieli_hub` when changing the target; every panel selects on 
 | Import age, OSM data age | Time since the last import, and age of the OSM extract it imported |
 | Detailed share, mapping-detail bars, counts table, totals | Playgrounds per backend split into detailed / basic / no details yet |
 
-Every panel carries a description (the ⓘ next to its title) of what it shows and what an unusual value means.
+Every panel carries a description (the ⓘ next to its title) of what it shows and what an unusual value means; the data source and the mapping-detail rule are explained once, in the *About this dashboard* panel at the top.
 
 The dashboard is a provisioned file (`grafana/dashboards/federation.json`): edits made in the Grafana UI cannot be saved over it. Export the JSON from the UI and replace the file instead.
 

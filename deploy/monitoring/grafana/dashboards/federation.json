@@ -9,6 +9,22 @@
  "refresh": "1m",
  "panels": [
   {
+   "id": 14,
+   "type": "text",
+   "title": "About this dashboard",
+   "gridPos": {
+    "x": 0,
+    "y": 0,
+    "w": 24,
+    "h": 8
+   },
+   "description": "What the data is and how mapping detail is defined. Every other panel refers here.",
+   "options": {
+    "mode": "markdown",
+    "content": "**Source.** Everything here comes from one spieli hub's `/metrics`, written by `oci/app/poll-federation.sh`. The hub probes each backend's `get_meta` every 60 s from its own server (3 s timeout); Prometheus scrapes the hub every 60 s. A backend is one regional data node listed in the hub's `registry.json`.\n\n**Mapping detail** says how much of a playground is mapped in OpenStreetMap, not how good it is:\n\n- **Detailed** (`complete`): play equipment (any `playground=*` object, or a soccer/basketball/table-tennis pitch) **and** info (`opening_hours`, `surface` or a meaningful `access`).\n- **Basic** (`partial`): one of the two.\n- **No details yet** (`missing`): neither.\n\nBenches, shelters, picnic tables and photos do not count. The rule lives in `app/src/lib/completeness.js` (mirrored in `importer/api.sql`); see `docs/reference/completeness.md`.\n\nHover the ⓘ next to a panel title for what it shows and what an unusual value means."
+   }
+  },
+  {
    "id": 1,
    "title": "Backends up",
    "type": "stat",
@@ -18,7 +34,7 @@
    },
    "gridPos": {
     "x": 0,
-    "y": 0,
+    "y": 8,
     "w": 6,
     "h": 4
    },
@@ -42,7 +58,7 @@
     },
     "overrides": []
    },
-   "description": "Number of backends (regional data nodes) that answered the hub's last `get_meta` probe within 3 s.\n\n**Means:** should equal the number of backends in `registry.json`. Lower = some region's map is currently missing from the hub.\n\n**Source:** the hub's `/metrics`, written by `poll-federation.sh`. The hub polls each backend's `get_meta` every 60 s from its own server; Prometheus scrapes the hub every 60 s."
+   "description": "Number of backends (regional data nodes) that answered the hub's last `get_meta` probe within 3 s.\n\n**Means:** should equal the number of backends in `registry.json`. Lower = some region's map is currently missing from the hub.\n\nData source and the mapping-detail rule: see *About this dashboard* at the top."
   },
   {
    "id": 2,
@@ -54,7 +70,7 @@
    },
    "gridPos": {
     "x": 6,
-    "y": 0,
+    "y": 8,
     "w": 6,
     "h": 4
    },
@@ -87,7 +103,7 @@
     },
     "overrides": []
    },
-   "description": "Number of backends whose last probe failed (timeout after 3 s, HTTP error, or unreachable).\n\n**Means:** anything above 0 means visitors on the hub see that region as offline (dashed ring, no playgrounds).\n\n**Source:** the hub's `/metrics`, written by `poll-federation.sh`. The hub polls each backend's `get_meta` every 60 s from its own server; Prometheus scrapes the hub every 60 s."
+   "description": "Number of backends whose last probe failed (timeout after 3 s, HTTP error, or unreachable).\n\n**Means:** anything above 0 means visitors on the hub see that region as offline (dashed ring, no playgrounds).\n\nData source and the mapping-detail rule: see *About this dashboard* at the top."
   },
   {
    "id": 3,
@@ -99,7 +115,7 @@
    },
    "gridPos": {
     "x": 12,
-    "y": 0,
+    "y": 8,
     "w": 6,
     "h": 4
    },
@@ -123,7 +139,7 @@
     },
     "overrides": []
    },
-   "description": "Sum of all playgrounds across every backend, as reported by each backend's `get_meta`.\n\n**Means:** overall size of the federated map. A sudden drop usually means a backend is down or mid-import, not that playgrounds disappeared.\n\n**Source:** the hub's `/metrics`, written by `poll-federation.sh`. The hub polls each backend's `get_meta` every 60 s from its own server; Prometheus scrapes the hub every 60 s."
+   "description": "Sum of all playgrounds across every backend, as reported by each backend's `get_meta`.\n\n**Means:** overall size of the federated map. A sudden drop usually means a backend is down or mid-import, not that playgrounds disappeared.\n\nData source and the mapping-detail rule: see *About this dashboard* at the top."
   },
   {
    "id": 4,
@@ -135,7 +151,7 @@
    },
    "gridPos": {
     "x": 18,
-    "y": 0,
+    "y": 8,
     "w": 6,
     "h": 4
    },
@@ -160,7 +176,7 @@
     },
     "overrides": []
    },
-   "description": "Seconds since each hub last wrote its `/metrics` file (`time() - spielplatz_poll_generated_timestamp`).\n\n**Means:** for the production hub this should stay below ~120 s. Much higher = the hub's poll cron has died and every other panel shows frozen data.\n\nOn a standalone stack this grows forever: it only writes a placeholder once at startup."
+   "description": "Seconds since each hub last wrote its `/metrics` file (`time() - spielplatz_poll_generated_timestamp`).\n\n**Means:** for the production hub this should stay below ~120 s. Much higher = the hub's poll cron has died and every other panel shows frozen data.\n\nOn a standalone stack this grows forever: it only writes a placeholder once at startup.\n\nData source and the mapping-detail rule: see *About this dashboard* at the top."
   },
   {
    "id": 5,
@@ -172,7 +188,7 @@
    },
    "gridPos": {
     "x": 0,
-    "y": 4,
+    "y": 12,
     "w": 24,
     "h": 8
    },
@@ -188,10 +204,55 @@
     }
    ],
    "fieldConfig": {
-    "defaults": {},
+    "defaults": {
+     "mappings": [
+      {
+       "type": "value",
+       "options": {
+        "0": {
+         "text": "down",
+         "color": "red",
+         "index": 0
+        },
+        "1": {
+         "text": "up",
+         "color": "green",
+         "index": 1
+        }
+       }
+      }
+     ],
+     "color": {
+      "mode": "thresholds"
+     },
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "red",
+        "value": null
+       },
+       {
+        "color": "green",
+        "value": 1
+       }
+      ]
+     }
+    },
     "overrides": []
    },
-   "description": "Per backend over time: up (1) or down (0) for each poll.\n\n**Means:** gaps or red stretches show outages and when they happened. Short single blips are usually a slow response over the 3 s timeout.\n\n**Source:** the hub's `/metrics`, written by `poll-federation.sh`. The hub polls each backend's `get_meta` every 60 s from its own server; Prometheus scrapes the hub every 60 s."
+   "description": "Per backend over time: up (1) or down (0) for each poll.\n\n**Means:** red stretches (down) show outages and when they happened. Short single blips are usually a slow response over the 3 s timeout.\n\nData source and the mapping-detail rule: see *About this dashboard* at the top.",
+   "options": {
+    "showValue": "never",
+    "mergeValues": true,
+    "rowHeight": 0.9,
+    "legend": {
+     "showLegend": false
+    },
+    "tooltip": {
+     "mode": "single"
+    }
+   }
   },
   {
    "id": 6,
@@ -203,7 +264,7 @@
    },
    "gridPos": {
     "x": 0,
-    "y": 12,
+    "y": 20,
     "w": 8,
     "h": 8
    },
@@ -214,7 +275,7 @@
       "type": "prometheus",
       "uid": "prom"
      },
-     "expr": "spielplatz_backend_latency_seconds{job=\"spieli_hub\"}",
+     "expr": "spielplatz_backend_latency_seconds{job=\"spieli_hub\"} and on(backend) (spielplatz_backend_up{job=\"spieli_hub\"} == 1)",
      "legendFormat": "{{backend}}"
     }
    ],
@@ -224,7 +285,7 @@
     },
     "overrides": []
    },
-   "description": "Round-trip time of the hub's last `get_meta` call to each backend, measured from the hub server (not from visitors' browsers).\n\n**Means:** a rough health/load signal per backend. Rising latency often precedes timeouts; spikes are typical while a backend imports. Shows 0 when the probe failed.\n\n**Source:** the hub's `/metrics`, written by `poll-federation.sh`. The hub polls each backend's `get_meta` every 60 s from its own server; Prometheus scrapes the hub every 60 s."
+   "description": "Round-trip time of the hub's last `get_meta` call to each backend, measured from the hub server (not from visitors' browsers).\n\n**Means:** a rough health/load signal per backend. Rising latency often precedes timeouts; spikes are typical while a backend imports. Failed probes are left out (the exporter reports them as 0 s) — see *Up per backend* for those.\n\nData source and the mapping-detail rule: see *About this dashboard* at the top."
   },
   {
    "id": 7,
@@ -236,7 +297,7 @@
    },
    "gridPos": {
     "x": 8,
-    "y": 12,
+    "y": 20,
     "w": 8,
     "h": 8
    },
@@ -257,7 +318,7 @@
     },
     "overrides": []
    },
-   "description": "Seconds since each backend last finished an OSM data import (`last_import_at`).\n\n**Means:** how stale a region's playground data is compared to OpenStreetMap. The importer daemon re-imports every 6–8 days by default (`REIMPORT_INTERVAL_MIN/MAX_DAYS`), so the line saws up to ~8 days and drops back. Clearly more than the configured max (default ~9 days) suggests the daemon is stuck or disabled. Missing line = backend down or never imported.\n\n**Source:** the hub's `/metrics`, written by `poll-federation.sh`. The hub polls each backend's `get_meta` every 60 s from its own server; Prometheus scrapes the hub every 60 s."
+   "description": "Seconds since each backend last finished an OSM data import (`last_import_at`).\n\n**Means:** how stale a region's playground data is compared to OpenStreetMap. With the importer in daemon mode (`REIMPORT_INTERVAL_MIN_DAYS` and `_MAX_DAYS` both set) the line saws up to about the max interval plus up to `REIMPORT_JITTER_HOURS` (default 6 h) and drops back; clearly beyond that, the daemon is stuck. Without daemon mode the importer runs once and exits, so the age only grows until someone re-imports — expected there. Missing line = backend down or never imported.\n\nData source and the mapping-detail rule: see *About this dashboard* at the top."
   },
   {
    "id": 8,
@@ -269,7 +330,7 @@
    },
    "gridPos": {
     "x": 0,
-    "y": 20,
+    "y": 28,
     "w": 12,
     "h": 10
    },
@@ -280,7 +341,7 @@
       "type": "prometheus",
       "uid": "prom"
      },
-     "expr": "spielplatz_backend_playgrounds_complete{job=\"spieli_hub\"} / spielplatz_backend_playgrounds_total{job=\"spieli_hub\"}",
+     "expr": "spielplatz_backend_playgrounds_complete{job=\"spieli_hub\"} / on(backend) (spielplatz_backend_playgrounds_total{job=\"spieli_hub\"} > 0)",
      "legendFormat": "{{backend}}"
     }
    ],
@@ -296,7 +357,7 @@
     },
     "overrides": []
    },
-   "description": "Share of each backend's playgrounds that are **detailed** (complete ÷ total).\n\n**Means:** how well a region is mapped. Low values show where mappers could help.\n\n**Mapping detail** says how much of a playground is mapped in OSM, not how good it is:\n- **Detailed** (`complete`): has play equipment (any `playground=*` object, or a soccer/basketball/table-tennis pitch) **and** info (`opening_hours`, `surface` or a meaningful `access`).\n- **Basic** (`partial`): one of the two.\n- **No details yet** (`missing`): neither.\n\nBenches, shelters and picnic tables don't count as equipment; photos don't count either.\n\n**Source:** the hub's `/metrics`, written by `poll-federation.sh`. The hub polls each backend's `get_meta` every 60 s from its own server; Prometheus scrapes the hub every 60 s.",
+   "description": "Share of each backend's playgrounds that are **detailed** (complete ÷ total; backends with 0 playgrounds are left out).\n\n**Means:** how well a region is mapped. Low values show where mappers could help.\n\nData source and the mapping-detail rule: see *About this dashboard* at the top.",
    "options": {
     "orientation": "horizontal",
     "displayMode": "basic",
@@ -319,7 +380,7 @@
    },
    "gridPos": {
     "x": 12,
-    "y": 20,
+    "y": 28,
     "w": 12,
     "h": 10
    },
@@ -335,10 +396,55 @@
     }
    ],
    "fieldConfig": {
-    "defaults": {},
+    "defaults": {
+     "mappings": [
+      {
+       "type": "value",
+       "options": {
+        "0": {
+         "text": "idle",
+         "color": "transparent",
+         "index": 0
+        },
+        "1": {
+         "text": "importing",
+         "color": "blue",
+         "index": 1
+        }
+       }
+      }
+     ],
+     "color": {
+      "mode": "thresholds"
+     },
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "transparent",
+        "value": null
+       },
+       {
+        "color": "blue",
+        "value": 1
+       }
+      ]
+     }
+    },
     "overrides": []
    },
-   "description": "Per backend over time: 1 while osm2pgsql is importing data on that backend, otherwise 0.\n\n**Means:** during an import counts and latency may jump and the hub shows the region as \"updating\". Explains dips in other panels. Normally a window every 6–8 days per backend, staggered so they don't all import at once.\n\n**Source:** the hub's `/metrics`, written by `poll-federation.sh`. The hub polls each backend's `get_meta` every 60 s from its own server; Prometheus scrapes the hub every 60 s."
+   "description": "Per backend over time: *importing* (blue) while osm2pgsql runs on that backend, otherwise idle.\n\n**Means:** during an import counts and latency may jump and the hub shows the region as updating — explains dips in other panels. How often it happens depends on each backend's `REIMPORT_INTERVAL_*` setting (none = only manual imports).\n\nData source and the mapping-detail rule: see *About this dashboard* at the top.",
+   "options": {
+    "showValue": "never",
+    "mergeValues": true,
+    "rowHeight": 0.9,
+    "legend": {
+     "showLegend": false
+    },
+    "tooltip": {
+     "mode": "single"
+    }
+   }
   },
   {
    "id": 10,
@@ -350,7 +456,7 @@
    },
    "gridPos": {
     "x": 0,
-    "y": 30,
+    "y": 38,
     "w": 24,
     "h": 16
    },
@@ -515,7 +621,7 @@
      }
     ]
    },
-   "description": "Each backend's playgrounds split into **detailed / basic / no details yet**, stacked, sorted by total.\n\n**Means:** bar length = region size; green share = how well it is mapped. Compare regions at a glance; hover for exact numbers.\n\n**Mapping detail** says how much of a playground is mapped in OSM, not how good it is:\n- **Detailed** (`complete`): has play equipment (any `playground=*` object, or a soccer/basketball/table-tennis pitch) **and** info (`opening_hours`, `surface` or a meaningful `access`).\n- **Basic** (`partial`): one of the two.\n- **No details yet** (`missing`): neither.\n\nBenches, shelters and picnic tables don't count as equipment; photos don't count either.\n\n**Source:** the hub's `/metrics`, written by `poll-federation.sh`. The hub polls each backend's `get_meta` every 60 s from its own server; Prometheus scrapes the hub every 60 s."
+   "description": "Each backend's playgrounds split into **detailed / basic / no details yet**, stacked, sorted by total.\n\n**Means:** bar length = region size; green share = how well it is mapped. Compare regions at a glance; hover for exact numbers.\n\nData source and the mapping-detail rule: see *About this dashboard* at the top."
   },
   {
    "id": 11,
@@ -527,7 +633,7 @@
    },
    "gridPos": {
     "x": 0,
-    "y": 50,
+    "y": 58,
     "w": 24,
     "h": 14
    },
@@ -575,6 +681,28 @@
      "instant": true,
      "range": false,
      "format": "table"
+    },
+    {
+     "refId": "E",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prom"
+     },
+     "instant": true,
+     "range": false,
+     "format": "table",
+     "expr": "sum by (backend) (spielplatz_backend_playgrounds_complete{job=\"spieli_hub\"}) / sum by (backend) (spielplatz_backend_playgrounds_total{job=\"spieli_hub\"} > 0)"
+    },
+    {
+     "refId": "F",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prom"
+     },
+     "instant": true,
+     "range": false,
+     "format": "table",
+     "expr": "sum by (backend) (spielplatz_backend_playgrounds_partial{job=\"spieli_hub\"}) / sum by (backend) (spielplatz_backend_playgrounds_total{job=\"spieli_hub\"} > 0)"
     }
    ],
    "transformations": [
@@ -596,7 +724,9 @@
        "Value #A": "Total",
        "Value #B": "Detailed",
        "Value #C": "Basic",
-       "Value #D": "No details yet"
+       "Value #D": "No details yet",
+       "Value #E": "Detailed share",
+       "Value #F": "Basic share"
       }
      }
     },
@@ -609,30 +739,6 @@
         "desc": true
        }
       ]
-     }
-    },
-    {
-     "id": "calculateField",
-     "options": {
-      "mode": "binary",
-      "alias": "Detailed share",
-      "binary": {
-       "left": "Detailed",
-       "operator": "/",
-       "right": "Total"
-      }
-     }
-    },
-    {
-     "id": "calculateField",
-     "options": {
-      "mode": "binary",
-      "alias": "Basic share",
-      "binary": {
-       "left": "Basic",
-       "operator": "/",
-       "right": "Total"
-      }
      }
     }
    ],
@@ -678,7 +784,7 @@
      }
     ]
    },
-   "description": "The same per-backend numbers as a table: total, the three mapping-detail counts, and the detailed and basic shares (count ÷ total).\n\n**Means:** exact values for comparison or copying; click a column header to sort (e.g. by *Detailed share* to find the best-mapped region).\n\n**Mapping detail** says how much of a playground is mapped in OSM, not how good it is:\n- **Detailed** (`complete`): has play equipment (any `playground=*` object, or a soccer/basketball/table-tennis pitch) **and** info (`opening_hours`, `surface` or a meaningful `access`).\n- **Basic** (`partial`): one of the two.\n- **No details yet** (`missing`): neither.\n\nBenches, shelters and picnic tables don't count as equipment; photos don't count either.\n\n**Source:** the hub's `/metrics`, written by `poll-federation.sh`. The hub polls each backend's `get_meta` every 60 s from its own server; Prometheus scrapes the hub every 60 s."
+   "description": "The same per-backend numbers as a table: total, the three mapping-detail counts, and the detailed and basic shares (count ÷ total).\n\n**Means:** exact values for comparison or copying; click a column header to sort (e.g. by *Detailed share* to find the best-mapped region).\n\nData source and the mapping-detail rule: see *About this dashboard* at the top."
   },
   {
    "id": 12,
@@ -690,7 +796,7 @@
    },
    "gridPos": {
     "x": 0,
-    "y": 46,
+    "y": 54,
     "w": 24,
     "h": 4
    },
@@ -802,7 +908,7 @@
      }
     ]
    },
-   "description": "Totals across all backends: all playgrounds and how many are detailed, basic or have no details yet.\n\n**Means:** the federation-wide mapping picture. Detailed + Basic + No details yet = Total.\n\n**Mapping detail** says how much of a playground is mapped in OSM, not how good it is:\n- **Detailed** (`complete`): has play equipment (any `playground=*` object, or a soccer/basketball/table-tennis pitch) **and** info (`opening_hours`, `surface` or a meaningful `access`).\n- **Basic** (`partial`): one of the two.\n- **No details yet** (`missing`): neither.\n\nBenches, shelters and picnic tables don't count as equipment; photos don't count either.\n\n**Source:** the hub's `/metrics`, written by `poll-federation.sh`. The hub polls each backend's `get_meta` every 60 s from its own server; Prometheus scrapes the hub every 60 s."
+   "description": "Totals across all backends: all playgrounds and how many are detailed, basic or have no details yet.\n\n**Means:** the federation-wide mapping picture. Detailed + Basic + No details yet = Total.\n\nData source and the mapping-detail rule: see *About this dashboard* at the top."
   },
   {
    "id": 13,
@@ -814,7 +920,7 @@
    },
    "gridPos": {
     "x": 16,
-    "y": 12,
+    "y": 20,
     "w": 8,
     "h": 8
    },
@@ -835,7 +941,7 @@
     },
     "overrides": []
    },
-   "description": "Seconds since the OpenStreetMap snapshot each backend serves was taken (the PBF extract's replication timestamp), not since the import ran.\n\n**Means:** how old the playground data really is from a visitor's point of view. It is always at least *Import age*: an import of a day-old Geofabrik extract starts at ~1 day. A gap between the two that keeps growing means imports run but fetch an old extract (stale `PBF_URL` mirror). Missing line = backend predates the field, or no import yet.\n\n**Source:** the hub's `/metrics`, written by `poll-federation.sh`. The hub polls each backend's `get_meta` every 60 s from its own server; Prometheus scrapes the hub every 60 s."
+   "description": "Seconds since the OpenStreetMap snapshot each backend serves was taken (the PBF extract's replication timestamp), not since the import ran.\n\n**Means:** how old the playground data really is from a visitor's point of view. It is always at least *Import age*: an import of a day-old Geofabrik extract starts at ~1 day. A gap between the two that keeps growing means imports run but fetch an old extract (stale `PBF_URL` mirror). Missing line = backend predates the field, or no import yet.\n\nData source and the mapping-detail rule: see *About this dashboard* at the top."
   }
  ],
  "version": 1
