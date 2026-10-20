@@ -1,5 +1,5 @@
 {
-  "appTitle": "Aires de jeux – {{regionName}}",
+  "appTitle": "Aires de jeux – {regionName}",
   "locate": {
     "title": "Afficher ma position",
     "denied": "Accès à la localisation refusé.",
@@ -48,8 +48,8 @@
     "placeholder": "Rechercher …",
     "ariaLabel": "Location search",
     "clearLabel": "Clear search",
-    "found": "« {{query}} » à {{location}}",
-    "foundGeneric": "« {{query}} » trouvé",
+    "found": "« {query} » à {location}",
+    "foundGeneric": "« {query} » trouvé",
     "notFound": "Aucun résultat trouvé !"
   },
   "nav": {
@@ -258,16 +258,16 @@
     "none": "Pas encore de photos pour cette aire de jeux.<br>Vous y êtes allé ?",
     "addLink": "Ajouter une photo",
     "enlarge": "Cliquer pour agrandir",
-    "thumbnail": "Photo {{n}}",
+    "thumbnail": "Photo {n}",
     "thumbnailTitle": "Photo {n} sur {total}"
   },
   "poi": {
     "errorLoad": "Impossible de charger les données environnantes.",
     "alwaysOpen": "Toujours ouvert",
     "open": "Ouvert",
-    "openUntil": "Ouvert jusqu'à {{time}}",
+    "openUntil": "Ouvert jusqu'à {time}",
     "closed": "Fermé",
-    "opensAt": "Ouvre {{day}} {{time}}",
+    "opensAt": "Ouvre {day} {time}",
     "openingHours": "Horaires",
     "today": "Aujourd'hui",
     "tomorrow": "Demain",
@@ -303,23 +303,23 @@
       "wikiLinkText": "Règles de cartographie pour les aires de jeux de cette région",
       "osm": {
         "label": "OpenStreetMap",
-        "text": "Les données proviennent d'{{osmLink}} — une carte mondiale libre et collaborative créée par des millions de bénévoles. Seul ce qui a été cartographié apparaît ici.",
+        "text": "Les données proviennent d'{osmLink} — une carte mondiale libre et collaborative créée par des millions de bénévoles. Seul ce qui a été cartographié apparaît ici.",
         "wikiUrl": "https://fr.wikipedia.org/wiki/OpenStreetMap"
       },
       "contribute": {
         "label": "Contribuer aux aires de jeux",
-        "text": "Tout le monde peut contribuer. Un bon point de départ est {{learnOsmLink}}. Les tags pertinents sont documentés dans le {{wikiLink}} et sur la page concernant {{equipmentLink}}.",
+        "text": "Tout le monde peut contribuer. Un bon point de départ est {learnOsmLink}. Les tags pertinents sont documentés dans le {wikiLink} et sur la page concernant {equipmentLink}.",
         "learnOsmUrl": "https://learnosm.org/fr/beginner/",
         "wikiLabel": "wiki OSM",
         "equipmentLabel": "la cartographie des équipements individuels"
       },
       "photos": {
         "label": "Ajouter des photos",
-        "text": "Les photos peuvent être téléversées directement via {{mapcompleteLink}} — ouvrez simplement une aire de jeux et cliquez sur \"Ajouter une photo\". Les photos sont fournies par {{panoramaxLink}}."
+        "text": "Les photos peuvent être téléversées directement via {mapcompleteLink} — ouvrez simplement une aire de jeux et cliquez sur \"Ajouter une photo\". Les photos sont fournies par {panoramaxLink}."
       },
       "community": {
         "label": "Communauté",
-        "text": "Des questions ou envie de participer ? La communauté OSM locale est accessible via {{chatLink}}.",
+        "text": "Des questions ou envie de participer ? La communauté OSM locale est accessible via {chatLink}.",
         "chatLabel": "chat de la communauté OSM locale",
         "simpleText": "Questions et discussion dans le",
         "simpleChatLabel": "chat local"
@@ -328,18 +328,18 @@
     "about": {
       "history": {
         "label": "Histoire",
-        "text": "La carte des aires de jeux a été créée par {{authorLink}} dans le cadre d'un {{courseLink}} — à l'origine centrée sur Berlin. Au fil du temps, elle a évolué en une carte générique utilisable pour n'importe quelle région OSM.",
+        "text": "La carte des aires de jeux a été créée par {authorLink} dans le cadre d'un {courseLink} — à l'origine centrée sur Berlin. Au fil du temps, elle a évolué en une carte générique utilisable pour n'importe quelle région OSM.",
         "courseUrl": "https://gis-trainer.com/de/gis_webmapping.php",
         "courseLabel": "cours de SIG et cartographie web"
       },
       "project": {
         "label": "Le projet",
-        "text": "La carte des aires de jeux est une carte web libre et interactive basée sur les données d'{{osmLink}}. Elle ne contient aucune donnée propriétaire, ne nécessite pas de connexion et ne suit pas les utilisateurs. Quiconque améliore les données dans OSM améliore automatiquement cette carte.",
+        "text": "La carte des aires de jeux est une carte web libre et interactive basée sur les données d'{osmLink}. Elle ne contient aucune donnée propriétaire, ne nécessite pas de connexion et ne suit pas les utilisateurs. Quiconque améliore les données dans OSM améliore automatiquement cette carte.",
         "osmWikiUrl": "https://fr.wikipedia.org/wiki/OpenStreetMap"
       },
       "source": {
         "label": "Code source",
-        "text": "Le projet est open source et {{repoLink}}.",
+        "text": "Le projet est open source et {repoLink}.",
         "repoLabel": "disponible publiquement"
       }
     }
