@@ -350,6 +350,12 @@ With mapping detail off (the default, #924) `Map.svelte` swaps every tier's styl
 | `setup-germany-backends.sh` | Bootstraps all 15 non-Hessen German Bundesland data-node stacks and wires them into a hub with Traefik. One-time setup script. |
 | `migrate-hub-hessen.sh` | Splits a combined hub+Hessen stack into a pure hub (`DEPLOY_MODE=ui`) and a dedicated Hessen data-node. Two-phase: Phase 1 creates `~/spieli-hessen` and runs the first import; Phase 2 (`--convert`) updates `registry.json`, switches hub to ui-only, and removes orphaned volumes. |
 
+## Hub metrics and dashboard (`deploy/monitoring/`)
+
+The hub's `/metrics` is written by `oci/app/poll-federation.sh` (and once, as a placeholder, by `docker-entrypoint.sh`). `deploy/monitoring/` ships a Prometheus + Grafana stack whose provisioned **spieli federation** dashboard (`grafana/dashboards/federation.json`) reads it; usage in [`docs/ops/monitoring.md`](docs/ops/monitoring.md).
+
+**Touching the exported metrics means touching the dashboard in the same PR.** Adding, renaming or removing a `spielplatz_*` metric, or changing its labels or meaning, also updates: the dashboard panel(s) that query it, their descriptions, and the metric list and `federation-status.json` field table in `docs/ops/monitoring.md`. Every panel carries a `description` saying what it shows and what an unusual value means — write one for a new panel. `app/src/hub/metricsDashboard.test.js` (in `make test-unit`) fails when a HELP-declared metric has no panel or no docs entry, when a panel queries a metric the exporter no longer emits, or when a panel has no description; it cannot catch a changed meaning or label, so check those by hand. Panels select `job="spieli_hub"` — keep that job name in `prometheus.yml`. The mapping-detail rule is restated once, in the dashboard's *About this dashboard* text panel — a change to `completeness.js` updates it too. The dashboard is provisioned from the file: edit the JSON (or export from the UI and replace it), not the UI copy.
+
 ## Build tools (`tools/`)
 
 Asset generators. Their output is committed, so a rebuild should be diffed
@@ -377,5 +383,6 @@ When adding or changing something covered by the `docs/` structure, update the r
 - New accessibility invariant (ARIA pattern, keyboard contract, `lang` handling) → `docs/contributing/frontend-guide.md`, and say what a user can now *do* in `docs/user-guide.md` — an a11y feature nobody is told about helps nobody
 - New make target or dev workflow step → `docs/contributing/local-dev.md`
 - New troubleshooting scenario → `docs/ops/troubleshooting.md`
+- New or changed hub metric (`poll-federation.sh`) → `deploy/monitoring/grafana/dashboards/federation.json` + `docs/ops/monitoring.md` (see *Hub metrics and dashboard*)
 
 Run `make docs-build` before pushing to catch broken links.
