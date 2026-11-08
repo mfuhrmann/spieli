@@ -33,3 +33,19 @@ export function panoramaxThumbUrl(uuid) {
 export function panoramaxViewerUrl(uuid) {
     return `${PANORAMAX}/?pic=${uuid}&nav=none&focus=pic`;
 }
+
+// Panoramax photo UUIDs from a feature's OSM tags, in tag order: `panoramax`,
+// then `panoramax:0` … `panoramax:9`. MapComplete writes the second photo to
+// `panoramax:0`, so a reader that starts at `panoramax:1` drops it (#1028).
+// A UUID that appears in two tags is returned once.
+export const PANORAMAX_KEYS = ['panoramax', ...Array.from({ length: 10 }, (_, i) => `panoramax:${i}`)];
+
+export function panoramaxUuidsFromTags(tags) {
+    if (!tags) return [];
+    const uuids = [];
+    for (const key of PANORAMAX_KEYS) {
+        const v = typeof tags[key] === 'string' ? tags[key].trim() : '';
+        if (v && !uuids.includes(v)) uuids.push(v);
+    }
+    return uuids;
+}

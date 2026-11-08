@@ -26,6 +26,7 @@
   import PanoramaxViewer from './PanoramaxViewer.svelte';
   import CommonsGallery from './CommonsGallery.svelte';
   import { pitchIllustrationHtml } from '../lib/equipmentAttributes.js';
+  import { panoramaxUuidsFromTags } from '../lib/panoramax.js';
 
   export let embedded = false;
 
@@ -53,15 +54,9 @@
   $: openingHoursInfo = attr?.opening_hours ? openingHoursState(attr.opening_hours, $_) : null;
 
   // ── Photos ────────────────────────────────────────────────────────────────
-  $: panoramaxUuids = (() => {
-    if (!attr) return [];
-    const uuids = [];
-    // Same tags as equipmentAttributes reads, panoramax:0 included, so a pitch
-    // shows the same photo whichever panel it is opened in.
-    if (attr.panoramax) uuids.push(attr.panoramax);
-    for (let i = 0; i <= 9; i++) if (attr[`panoramax:${i}`]) uuids.push(attr[`panoramax:${i}`]);
-    return uuids;
-  })();
+  // Same tags as equipmentAttributes reads, panoramax:0 included, so a pitch
+  // shows the same photo whichever panel it is opened in.
+  $: panoramaxUuids = panoramaxUuidsFromTags(attr);
   $: commonsTag = attr?.wikimedia_commons || '';
   $: imageTag = attr?.image || '';
   $: illustration = attr ? pitchIllustrationHtml(attr.sport, $_) : '';

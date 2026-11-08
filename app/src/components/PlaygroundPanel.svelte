@@ -37,6 +37,7 @@
   import CommonsGallery from './CommonsGallery.svelte';
   import ReviewsPanel from './ReviewsPanel.svelte';
   import { radiusFromExtent } from '../lib/reviews.js';
+  import { panoramaxUuidsFromTags } from '../lib/panoramax.js';
   import Badge from './ui/Badge.svelte';
   import Button from './ui/Button.svelte';
 
@@ -430,16 +431,7 @@
   }
 
   // ── Panoramax UUIDs from OSM tags ─────────────────────────────────────────
-  $: panoramaxUuids = (() => {
-    if (!attr) return [];
-    const uuids = [];
-    if (attr['panoramax']) uuids.push(attr['panoramax']);
-    for (let i = 1; i <= 9; i++) {
-      const v = attr[`panoramax:${i}`];
-      if (v) uuids.push(v);
-    }
-    return uuids;
-  })();
+  $: panoramaxUuids = panoramaxUuidsFromTags(attr);
 
   // ── Wikimedia Commons photos from OSM tags (issue #650) ────────────────────
   $: commonsTag = attr?.['wikimedia_commons'] || '';
