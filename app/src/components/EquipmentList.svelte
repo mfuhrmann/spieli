@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import { modal } from '../stores/modalOpen.js';
   import { objDevices, objFitnessStation } from '../lib/objPlaygroundEquipment.js';
-  import { panoramaxThumbUrl, panoramaxViewerUrl } from '../lib/panoramax.js';
+  import { panoramaxThumbUrl, panoramaxViewerUrl, panoramaxUuidsFromTags } from '../lib/panoramax.js';
   import { objColors } from '../lib/vectorStyles.js';
   import { getEquipmentAttributesFromProps } from '../lib/equipmentAttributes.js';
   import { themeOf, themeIcon, themeName } from '../lib/playgroundThemes.js';
@@ -70,10 +70,8 @@
     const uuids = [];
     const seen = new Set();
     for (const f of feats) {
-      for (let i = 0; i <= 9; i++) {
-        const key = i === 0 ? 'panoramax' : `panoramax:${i}`;
-        const v = f.properties[key];
-        if (v && !seen.has(v)) { seen.add(v); uuids.push(v); }
+      for (const v of panoramaxUuidsFromTags(f.properties)) {
+        if (!seen.has(v)) { seen.add(v); uuids.push(v); }
       }
     }
     return uuids;
@@ -90,10 +88,8 @@
     const uuids = [];
     const seen = new Set();
     const push = props => {
-      for (let i = 0; i <= 9; i++) {
-        const key = i === 0 ? 'panoramax' : `panoramax:${i}`;
-        const v = props[key];
-        if (v && !seen.has(v)) {
+      for (const v of panoramaxUuidsFromTags(props)) {
+        if (!seen.has(v)) {
           seen.add(v);
           uuids.push(v);
         }

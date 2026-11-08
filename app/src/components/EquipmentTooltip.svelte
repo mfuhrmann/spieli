@@ -1,6 +1,6 @@
 <script>
   import { objDevices, objFitnessStation } from '../lib/objPlaygroundEquipment.js';
-  import { panoramaxThumbUrl } from '../lib/panoramax.js';
+  import { panoramaxThumbUrl, panoramaxUuidsFromTags } from '../lib/panoramax.js';
   import { themeOf, themeIcon, themeName } from '../lib/playgroundThemes.js';
   import { _ } from 'svelte-i18n';
 
@@ -51,15 +51,7 @@
     return items;
   })();
 
-  $: panoramaxUuid = (() => {
-    if (!props) return null;
-    if (props.panoramax) return props.panoramax;
-    for (let i = 0; i <= 9; i++) {
-      const v = props[`panoramax:${i}`];
-      if (v) return v;
-    }
-    return null;
-  })();
+  $: panoramaxUuid = panoramaxUuidsFromTags(props)[0] ?? null;
   $: thumbUrl = panoramaxUuid ? panoramaxThumbUrl(panoramaxUuid) : null;
 
   $: style = position ? `left: ${position.x}px; top: ${position.y}px;` : '';
