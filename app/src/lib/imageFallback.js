@@ -1,10 +1,9 @@
 // Hide an example illustration whose image fails to load (#969).
 //
 // The illustrations are HTML strings rendered with {@html}, and used to carry
-// an inline onerror="…" to hide themselves. The narrowed CSP (script-src
-// 'self', still report-only until #861) blocks inline handlers, so that
-// fallback would silently stop working the day the policy is enforced, leaving
-// a broken-image icon captioned "example image". `error` does not bubble but
+// an inline onerror="…" to hide themselves. The CSP (script-src 'self')
+// blocks inline handlers, so that fallback silently does nothing, leaving a
+// broken-image icon captioned "example image". `error` does not bubble but
 // is seen in the capture phase, so one listener on the document covers every
 // illustration, wherever it is rendered.
 //
