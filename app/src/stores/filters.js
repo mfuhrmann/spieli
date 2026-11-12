@@ -20,6 +20,7 @@ export const defaultFilters = {
     hasDogs:          false,
     theme:            false,
     shade:            false,
+    lit:              false,
     standalonePitches: false,  // layer toggle — show pitches outside playground areas
     showComplete:     true,
     showPartial:      true,
@@ -69,6 +70,7 @@ export function matchesFilters(props, filters) {
     if (filters.hasDogs     && !props.has_dogs)       return false;
     if (filters.theme       && !props.has_theme)      return false;
     if (filters.shade       && !props.has_shade)       return false;
+    if (filters.lit         && !props.has_lit)         return false;
     if (!filters.showComplete || !filters.showPartial || !filters.showMissing) {
         const c = playgroundCompleteness(props);
         if (!filters.showComplete && c === 'complete') return false;

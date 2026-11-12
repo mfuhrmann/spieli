@@ -31,7 +31,8 @@
       "fence": "Fenced",
       "hasDogs": "Dogs allowed",
       "theme": "Themed",
-      "shade": "With shade"
+      "shade": "With shade",
+      "lit": "Lit at night"
     },
     "mappingDetail": {
       "title": "Mapping detail",
@@ -449,6 +450,8 @@
     "wheelchairPlayNone": "No wheelchair equipment",
     "shaded": "Shaded",
     "notShaded": "No shade",
+    "lit": "Lit",
+    "notLit": "No lighting",
     "ageGroups": {
       "toddler": "Toddler",
       "child": "Child",

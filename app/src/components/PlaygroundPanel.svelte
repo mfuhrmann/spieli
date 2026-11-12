@@ -617,8 +617,8 @@
         {/if}
       {/if}
 
-      <!-- Status pills: opening hours, baby/toddler, shade -->
-      {#if restricted || openingHoursInfo || attr.for_baby || attr.for_toddler || attr.wheelchair_play || attr.has_shade != null}
+      <!-- Status pills: opening hours, baby/toddler, shade, lighting -->
+      {#if restricted || openingHoursInfo || attr.for_baby || attr.for_toddler || attr.wheelchair_play || attr.has_shade != null || attr.has_lit != null}
         <div class="status-row mb-4">
           {#if restricted}
             <Badge variant="neutralSoft" class="gap-[5px] whitespace-nowrap" data-testid="restricted-badge">
@@ -659,6 +659,11 @@
           {#if attr.has_shade != null}
             <Badge variant={attr.has_shade ? 'successSoft' : 'dangerSoft'} class="whitespace-nowrap">
               {$_(attr.has_shade ? 'details.shaded' : 'details.notShaded')}
+            </Badge>
+          {/if}
+          {#if attr.has_lit != null}
+            <Badge variant={attr.has_lit ? 'successSoft' : 'neutralSoft'} class="whitespace-nowrap">
+              {$_(attr.has_lit ? 'details.lit' : 'details.notLit')}
             </Badge>
           {/if}
         </div>

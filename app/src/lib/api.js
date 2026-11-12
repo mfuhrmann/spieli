@@ -63,6 +63,7 @@ const clusterFilterMap = {
     hasDogs:      'filter_has_dogs',
     theme:        'filter_theme',
     shade:        'filter_shade',
+    lit:          'filter_lit',
 };
 
 export async function fetchPlaygroundClusters(zoom, extentEPSG3857, baseUrl = defaultApiBaseUrl, signal, filters = null) {

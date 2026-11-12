@@ -449,7 +449,12 @@ CREATE MATERIALIZED VIEW public.playground_stats_new AS
         OR regexp_split_to_array(btrim(lower(COALESCE(e.tags->'playground:theme',''))), '\s*;\s*')
           && ARRAY['ship','octopus','castle','rocket','spiderweb','circus','dragon','water','adventure']
       )                                                                       AS has_theme,
-      CASE WHEN BOOL_OR(pl.tags ? 'shade') THEN BOOL_OR(pl.tags->'shade' = 'yes') END AS has_shade
+      CASE WHEN BOOL_OR(pl.tags ? 'shade') THEN BOOL_OR(pl.tags->'shade' = 'yes') END AS has_shade,
+      -- has_lit: tri-state like has_shade. Every lit=* value other than no /
+      -- disused means some lighting (yes, automatic, limited, 24/7,
+      -- sunset-sunrise, interval).
+      CASE WHEN BOOL_OR(pl.tags ? 'lit')
+           THEN BOOL_OR(pl.tags->'lit' NOT IN ('no', 'disused')) END            AS has_lit
     FROM all_playgrounds pl
     LEFT JOIN all_equip e ON ST_Intersects(pl.way, e.way)
     GROUP BY pl.osm_id, pl.osm_type
@@ -554,6 +559,7 @@ CREATE MATERIALIZED VIEW public.playground_stats_new AS
     COALESCE(es.has_dogs,       false) AS has_dogs,
     COALESCE(es.has_theme,      false) AS has_theme,
     es.has_shade,
+    es.has_lit,
     -- Tiered-delivery (P1): persisted centroid + per-playground completeness
     ST_Centroid(pl.way)                           AS centroid_3857,
     -- NULL-safe: untagged playgrounds (access IS NULL) are public, not NULL.
@@ -749,7 +755,8 @@ AS $$
               'has_fence',          COALESCE(s.has_fence, false),
               'has_dogs',           COALESCE(s.has_dogs, false),
               'has_theme',          COALESCE(s.has_theme, false),
-              'has_shade',          s.has_shade
+              'has_shade',          s.has_shade,
+              'has_lit',            s.has_lit
             ) || COALESCE(hstore_to_jsonb(pl.tags), '{}'::jsonb)
           )
         )
@@ -784,6 +791,7 @@ DROP FUNCTION IF EXISTS api.get_playground_clusters(int, float8, float8, float8,
 DROP FUNCTION IF EXISTS api.get_playground_clusters(int, float8, float8, float8, float8, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean);
 DROP FUNCTION IF EXISTS api.get_playground_clusters(int, float8, float8, float8, float8, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean);
 DROP FUNCTION IF EXISTS api.get_playground_clusters(int, float8, float8, float8, float8, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean);
+DROP FUNCTION IF EXISTS api.get_playground_clusters(int, float8, float8, float8, float8, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean);
 
 CREATE OR REPLACE FUNCTION api.get_playground_clusters(
   z                   int,
@@ -806,6 +814,7 @@ CREATE OR REPLACE FUNCTION api.get_playground_clusters(
   filter_has_dogs     boolean DEFAULT false,
   filter_theme        boolean DEFAULT false,
   filter_shade       boolean DEFAULT false,
+  filter_lit          boolean DEFAULT false,
   filter_complete     boolean DEFAULT true,
   filter_partial      boolean DEFAULT true,
   filter_missing      boolean DEFAULT true
@@ -865,6 +874,7 @@ AS $$
       AND (NOT filter_has_dogs       OR ps.has_dogs)
       AND (NOT filter_theme          OR ps.has_theme)
       AND (NOT filter_shade          OR ps.has_shade)
+      AND (NOT filter_lit            OR ps.has_lit)
       AND (
         (ps.completeness = 'complete' AND filter_complete)
         OR (ps.completeness = 'partial'  AND filter_partial)
@@ -905,7 +915,7 @@ AS $$
   FROM aggregated;
 $$;
 
-GRANT EXECUTE ON FUNCTION api.get_playground_clusters(int, float8, float8, float8, float8, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean) TO web_anon;
+GRANT EXECUTE ON FUNCTION api.get_playground_clusters(int, float8, float8, float8, float8, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean) TO web_anon;
 
 -- =========================================================================
 -- 1b. get_playground_centroids(bbox)
@@ -951,6 +961,7 @@ AS $$
           'has_dogs',          ps.has_dogs,
           'has_theme',         ps.has_theme,
           'has_shade',         ps.has_shade,
+          'has_lit',           ps.has_lit,
           'access_restricted', ps.access_restricted
         )
       )
@@ -1063,7 +1074,8 @@ AS $$
               'has_fence',          COALESCE(s.has_fence, false),
               'has_dogs',           COALESCE(s.has_dogs, false),
               'has_theme',          COALESCE(s.has_theme, false),
-              'has_shade',          s.has_shade
+              'has_shade',          s.has_shade,
+              'has_lit',            s.has_lit
             ) || COALESCE(hstore_to_jsonb(pl.tags), '{}'::jsonb)
           )
         )
@@ -1161,7 +1173,8 @@ AS $$
         'has_fence',          COALESCE(s.has_fence, false),
         'has_dogs',           COALESCE(s.has_dogs, false),
         'has_theme',          COALESCE(s.has_theme, false),
-        'has_shade',          s.has_shade
+        'has_shade',          s.has_shade,
+        'has_lit',            s.has_lit
       ) || COALESCE(hstore_to_jsonb(p.tags), '{}'::jsonb)
     )
   )

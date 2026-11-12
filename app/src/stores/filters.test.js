@@ -5,7 +5,7 @@ const noFilters = {
   private: false, water: false, baby: false, toddler: false,
   wheelchair: false, bench: false, picnic: false, shelter: false,
   tableTennis: false, soccer: false, basketball: false, fence: false,
-  hasDogs: false, theme: false, shade: false, standalonePitches: false,
+  hasDogs: false, theme: false, shade: false, lit: false, standalonePitches: false,
   showComplete: true, showPartial: true, showMissing: true,
 };
 
@@ -129,6 +129,15 @@ const noFilters = {
   assert.equal(matchesFilters({}, f), false);
 }
 
+// 15a. lit filter — untagged (null) does not match
+{
+  const f = { ...noFilters, lit: true };
+  assert.equal(matchesFilters({ has_lit: true }, f), true);
+  assert.equal(matchesFilters({ has_lit: false }, f), false);
+  assert.equal(matchesFilters({ has_lit: null }, f), false);
+  assert.equal(matchesFilters({}, f), false);
+}
+
 // 15b. theme filter
 {
   const f = { ...noFilters, theme: true };
@@ -189,6 +198,7 @@ const noFilters = {
   assert.equal(hasActiveFilters({ ...noFilters, fence: true }), true);
   assert.equal(hasActiveFilters({ ...noFilters, hasDogs: true }), true);
   assert.equal(hasActiveFilters({ ...noFilters, shade: true }), true);
+  assert.equal(hasActiveFilters({ ...noFilters, lit: true }), true);
 }
 
 // 20. Any completeness state false → true

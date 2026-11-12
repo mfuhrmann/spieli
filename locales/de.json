@@ -31,7 +31,8 @@
       "fence": "Eingezäunt",
       "hasDogs": "Hunde erlaubt",
       "theme": "Mit Thema",
-      "shade": "Mit Schatten"
+      "shade": "Mit Schatten",
+      "lit": "Beleuchtet"
     },
     "mappingDetail": {
       "title": "Erfasste Details",
@@ -449,6 +450,8 @@
     "wheelchairPlayNone": "Keine Rollstuhlgeräte",
     "shaded": "Schattig",
     "notShaded": "Kein Schatten",
+    "lit": "Beleuchtet",
+    "notLit": "Keine Beleuchtung",
     "ageGroups": {
       "toddler": "Kleinkind",
       "child": "Kind",
