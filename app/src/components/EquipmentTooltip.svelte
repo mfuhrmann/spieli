@@ -1,5 +1,6 @@
 <script>
   import { objDevices, objFitnessStation } from '../lib/objPlaygroundEquipment.js';
+  import { deviceLabel } from '../lib/deviceLabel.js';
   import { panoramaxThumbUrl, panoramaxUuidsFromTags } from '../lib/panoramax.js';
   import { themeOf, themeIcon, themeName } from '../lib/playgroundThemes.js';
   import { _ } from 'svelte-i18n';
@@ -14,7 +15,7 @@
     if (!props) return '';
     if (props.name) return props.name;
     if (props.playground && props.playground !== 'yes') {
-      return $_('equipment.devices.' + props.playground, { default: objDevices[props.playground]?.name_de ?? props.playground });
+      return deviceLabel(props.playground, $_);
     }
     if (props.leisure === 'fitness_station') {
       const ft = props.fitness_station;
