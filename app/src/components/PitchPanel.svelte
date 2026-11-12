@@ -6,6 +6,7 @@
   // What to show is decided in lib/pitchInfo.js: every fact appears only when
   // tagged, never as "unknown".
   import { _, locale } from 'svelte-i18n';
+  import { humanizeTagValue, tagValuesLabel } from '../lib/deviceLabel.js';
   import { X, Share2, Check, Image } from 'lucide-svelte';
   import { transform } from 'ol/proj';
   import { getCenter } from 'ol/extent';
@@ -41,11 +42,11 @@
   // OSM name → region language; a generated title is interface text.
   $: titleLang = title?.name ? regionLang : $locale;
   $: sports = attr ? pitchSports(attr) : [];
-  const sportLabel = (s, t) => t(`pitch.sports.${s}`, { default: s.replace(/_/g, ' ') });
+  const sportLabel = (s, t) => t(`pitch.sports.${s}`, { default: humanizeTagValue(s) });
 
   // ── Facts (each null when untagged) ───────────────────────────────────────
   $: surfaceLabel = attr?.surface
-    ? attr.surface.split(';').map(s => $_('details.surfaceValues.' + s.trim(), { default: s.trim() })).join(' / ')
+    ? tagValuesLabel(attr.surface, 'details.surfaceValues.', $_)
     : null;
   $: lit = attr ? litInfo(attr.lit) : null;
   $: access = attr ? [accessInfo(attr), feeInfo(attr), reservationInfo(attr)].filter(Boolean) : [];

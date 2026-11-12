@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import { modal } from '../stores/modalOpen.js';
   import { objDevices, objFitnessStation } from '../lib/objPlaygroundEquipment.js';
-  import { deviceLabel } from '../lib/deviceLabel.js';
+  import { deviceLabel, humanizeTagValue } from '../lib/deviceLabel.js';
   import { panoramaxThumbUrl, panoramaxViewerUrl, panoramaxUuidsFromTags } from '../lib/panoramax.js';
   import { objColors } from '../lib/vectorStyles.js';
   import { getEquipmentAttributesFromProps } from '../lib/equipmentAttributes.js';
@@ -334,7 +334,7 @@
               {#each pitchFeatures as f, i (f.properties.osm_id)}
                 {@const sports = (f.properties.sport ?? '').split(';').map(s => s.trim()).filter(Boolean)}
                 {@const label = sports.length
-                  ? sports.map(s => $_('equipment.pitches.' + s, { default: s })).join(' / ')
+                  ? sports.map(s => $_('equipment.pitches.' + s, { default: humanizeTagValue(s) })).join(' / ')
                   : $_('equipment.pitchDefault')}
                 {@const detail = getEquipmentAttributesFromProps(f.properties, $_)}
                 {@const themeVal = themeOf(f.properties)}

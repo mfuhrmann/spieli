@@ -12,6 +12,7 @@
   import { transform } from 'ol/proj';
   import { X, Share2, Check, ChevronDown, ChevronUp, ChevronRight, Image, Package, Navigation, Star, Info, Phone, Mail, Accessibility, PencilLine, LockKeyhole } from 'lucide-svelte';
   import { _, locale } from 'svelte-i18n';
+  import { tagValuesLabel } from '../lib/deviceLabel.js';
 
   import { selection } from '../stores/selection.js';
   import { mapStore } from '../stores/map.js';
@@ -404,7 +405,7 @@
   $: litFact = attr ? litInfo(attr.lit) : null;
 
   $: surfaceLabel = attr?.surface
-    ? attr.surface.split(';').map(s => $_('details.surfaceValues.' + s.trim(), { default: s.trim() })).join(' / ')
+    ? tagValuesLabel(attr.surface, 'details.surfaceValues.', $_)
     : null;
 
   $: descriptionParts = (() => {

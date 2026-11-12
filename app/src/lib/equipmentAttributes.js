@@ -8,6 +8,7 @@ import { proxiedImageUrl } from './commons.js';
 // bundler instead of only being reachable through the browser build.
 import equipmentImages from './equipmentImages.generated.json' with { type: 'json' };
 import { escapeHtml, tl } from './utils.js';
+import { deviceLabel, humanizeTagValue } from './deviceLabel.js';
 
 // Resolve a `File:` name to a same-origin image URL, or null.
 //
@@ -94,7 +95,7 @@ export function pitchIllustrationHtml(sportRaw, t) {
     if (!img) return '';
     // Alt text in the visitor's language, not the raw tag value.
     const alt = sportRaw.split(';').map(s => s.trim()).filter(Boolean)
-        .map(s => tl(t, `equipment.pitches.${s}`, s)).join(' / ');
+        .map(s => tl(t, `equipment.pitches.${s}`, humanizeTagValue(s))).join(' / ');
     return illustrationHtml(img, alt, t);
 }
 
@@ -156,7 +157,7 @@ export function getEquipmentAttributesFromProps(props, t) {
 
     const material = g('material');
     if (material) {
-        const label = material.split(';').map(m => tl(t, `equipAttr.materials.${m.trim()}`, escapeHtml(m.trim()))).join(' / ');
+        const label = material.split(';').map(m => tl(t, `equipAttr.materials.${m.trim()}`, escapeHtml(humanizeTagValue(m)))).join(' / ');
         content.push(`${t('equipAttr.material')}: ${label}`);
     }
 
@@ -183,14 +184,14 @@ export function getEquipmentAttributesFromProps(props, t) {
     // we do show it, and format multi-value strings with human-readable labels.
     if (sport && g('leisure') !== 'pitch' && !['table_tennis','soccer','basketball'].includes(sport)) {
         const sportLabel = sport.split(';')
-            .map(s => tl(t, `equipAttr.sports.${s.trim()}`, escapeHtml(s.trim())))
+            .map(s => tl(t, `equipAttr.sports.${s.trim()}`, escapeHtml(humanizeTagValue(s))))
             .join(' / ');
         content.push(`${t('equipAttr.sport')}: ${sportLabel}`);
     }
 
     const surface = g('surface');
     if (surface) {
-        const label = surface.split(';').map(s => tl(t, `details.surfaceValues.${s.trim()}`, escapeHtml(s.trim()))).join(' / ');
+        const label = surface.split(';').map(s => tl(t, `details.surfaceValues.${s.trim()}`, escapeHtml(humanizeTagValue(s)))).join(' / ');
         content.push(`${t('equipAttr.surface')}: ${label}`);
     }
 
@@ -232,7 +233,7 @@ export function getEquipmentAttributesFromProps(props, t) {
         if (deviceKey && objDevices[deviceKey]?.image) {
             const img = resolvedImage(objDevices[deviceKey].image);
             if (img) {
-                const altText = tl(t, `equipment.devices.${deviceKey}`, objDevices[deviceKey].name_de ?? deviceKey);
+                const altText = deviceLabel(deviceKey, t);
                 html = illustrationHtml(img, altText, t);
             }
         }
