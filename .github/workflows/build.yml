@@ -469,7 +469,7 @@ jobs:
               echo "=== csp"; grep -A1 Content-Security-Policy-Report-Only /etc/nginx/csp.conf | tail -1
               echo "=== locations"; grep -E "^location" /etc/nginx/ext-locations.conf || true
               echo "=== access_log_count=$(grep -c access_log /etc/nginx/ext-locations.conf || echo 0)"
-              echo "=== panoramax"; grep -E "panoramax|error_page|proxy_cache_key|proxy_cache_valid|proxy_hide_header Location" /etc/nginx/ext-locations.conf | grep -v "^ *#" || true
+              echo "=== panoramax"; grep -E "panoramax|error_page|proxy_intercept_errors|proxy_cache_key|proxy_cache_valid|proxy_hide_header Location" /etc/nginx/ext-locations.conf | grep -v "^ *#" || true
               echo "=== limiter"; grep -E "server_name ext-nominatim-internal|limit_req zone=ext_nominatim" /etc/nginx/conf.d/11-ext-cache.conf || true
             '
           }
