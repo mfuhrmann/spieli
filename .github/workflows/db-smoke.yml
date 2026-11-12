@@ -17,6 +17,9 @@ on:
       # to completeness.js alone never runs the parity check below — which is
       # precisely the drift direction it exists to catch.
       - 'app/src/lib/completeness.js'
+      # The JS half of the mirrored lit rule and its shared truth table.
+      - 'app/src/lib/pitchInfo.js'
+      - 'app/src/lib/litState.cases.json'
 
 jobs:
   db-smoke:
@@ -218,6 +221,44 @@ jobs:
             RAISE NOTICE 'OK: playground_stats carries the equipment/info rule';
           END
           $parity$;
+          SQL
+        timeout-minutes: 2
+
+      - name: Assert lit_state parity with the JS rule (#1035)
+        # The "Lit at night" filter (public.lit_state, api.sql) and the
+        # panel's Lighting row (litInfo/litState, app/src/lib/pitchInfo.js)
+        # read the same lit=* tag. Both run the one truth table in
+        # app/src/lib/litState.cases.json — the JS side in pitchInfo.test.js,
+        # the SQL side here — and the view must use the helper rather than an
+        # inline copy of the rule.
+        run: |
+          set -euo pipefail
+          docker compose exec -T db psql -U osm -d osm -v ON_ERROR_STOP=1 \
+            -v cases="$(jq -c . app/src/lib/litState.cases.json)" <<'SQL'
+          CREATE TEMP TABLE lit_cases AS
+            SELECT e->>0 AS v, (e->>1)::boolean AS want
+            FROM jsonb_array_elements(:'cases'::jsonb) e;
+          DO $lit$
+          DECLARE r record; bad int := 0;
+          BEGIN
+            IF (SELECT count(*) FROM lit_cases) = 0 THEN
+              RAISE EXCEPTION 'litState.cases.json yielded no cases';
+            END IF;
+            IF pg_get_viewdef('public.playground_stats'::regclass) !~ 'lit_state\(' THEN
+              RAISE EXCEPTION 'playground_stats no longer derives has_lit through public.lit_state()';
+            END IF;
+            FOR r IN SELECT v, want, public.lit_state(v) AS got FROM lit_cases LOOP
+              IF r.got IS DISTINCT FROM r.want THEN
+                RAISE WARNING 'lit_state(%) = %, JS litState expects %', quote_literal(r.v), r.got, r.want;
+                bad := bad + 1;
+              END IF;
+            END LOOP;
+            IF bad > 0 THEN
+              RAISE EXCEPTION '% lit_state case(s) differ from litState.cases.json', bad;
+            END IF;
+            RAISE NOTICE 'OK: lit_state matches the JS rule';
+          END
+          $lit$;
           SQL
         timeout-minutes: 2
 
