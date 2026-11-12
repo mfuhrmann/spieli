@@ -1,5 +1,6 @@
 <script>
-  import { objDevices, objFitnessStation } from '../lib/objPlaygroundEquipment.js';
+  import { objFitnessStation } from '../lib/objPlaygroundEquipment.js';
+  import { deviceLabel, tagValuesLabel } from '../lib/deviceLabel.js';
   import { panoramaxThumbUrl, panoramaxUuidsFromTags } from '../lib/panoramax.js';
   import { themeOf, themeIcon, themeName } from '../lib/playgroundThemes.js';
   import { _ } from 'svelte-i18n';
@@ -14,7 +15,7 @@
     if (!props) return '';
     if (props.name) return props.name;
     if (props.playground && props.playground !== 'yes') {
-      return $_('equipment.devices.' + props.playground, { default: objDevices[props.playground]?.name_de ?? props.playground });
+      return deviceLabel(props.playground, $_);
     }
     if (props.leisure === 'fitness_station') {
       const ft = props.fitness_station;
@@ -22,12 +23,14 @@
     }
     if (props.leisure === 'pitch') {
       const sport = props.sport;
-      return sport ? $_('equipment.pitches.' + sport, { default: `${$_('equipment.pitchDefault')} (${sport})` }) : $_('equipment.pitchDefault');
+      return sport ? $_('equipment.pitches.' + sport, { default: `${$_('equipment.pitchDefault')} (${tagValuesLabel(sport, 'pitch.sports.', $_)})` }) : $_('equipment.pitchDefault');
     }
     if (props.amenity === 'bench') return $_('equipment.devices.bench', { default: 'Bench' });
     if (props.amenity === 'shelter') return $_('equipment.devices.shelter', { default: 'Shelter' });
     if (props.leisure === 'picnic_table') return $_('equipment.devices.picnic_table', { default: 'Picnic table' });
-    return props.playground || $_('equipment.fitnessDefault');
+    // playground=yes (or anything else unlabelled above): never the raw lower-case value
+    if (props.playground) return $_('equipment.deviceDefault');
+    return $_('equipment.fitnessDefault');
   })();
 
   $: details = (() => {
@@ -36,11 +39,11 @@
     const themeVal = themeOf(props);
     if (themeVal) items.push(`${themeIcon(themeVal)} ${themeName(themeVal, $_)}`);
     if (props.surface) {
-      const label = props.surface.split(';').map(s => $_('details.surfaceValues.' + s.trim(), { default: s.trim() })).join(' / ');
+      const label = tagValuesLabel(props.surface, 'details.surfaceValues.', $_);
       items.push(`${$_('equipAttr.surface')}: ${label}`);
     }
     if (props.material) {
-      const label = props.material.split(';').map(m => $_('equipAttr.materials.' + m.trim(), { default: m.trim() })).join(' / ');
+      const label = tagValuesLabel(props.material, 'equipAttr.materials.', $_);
       items.push(`${$_('equipAttr.material')}: ${label}`);
     }
     if (props.capacity) items.push(`${$_('equipAttr.capacity')}: ${props.capacity}`);

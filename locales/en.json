@@ -128,6 +128,7 @@
     "picnic": "{count, plural, one {# picnic table} other {# picnic tables}}",
     "noDevices": "No equipment mapped.",
     "fitnessDefault": "Fitness station",
+    "deviceDefault": "Play equipment",
     "pitchDefault": "Sports pitch",
     "addHint": "Equipment not yet mapped individually – help out! 👇",
     "addLink": "Add equipment",
