@@ -32,6 +32,7 @@ import { mergeOverlappingBuckets } from '../lib/clusterMerge.js';
 
 import {
   fetchPlaygroundClusters,
+  backendIgnoresHidePrivate,
   fetchPlaygroundsBbox,
   fetchPlaygrounds,
 } from '../lib/api.js';
@@ -286,8 +287,12 @@ export function attachHubOrchestrator({
     // when it isn't (#688).
     const inScope = filterHealthy(allBackends);
     const total = inScope.length;
+    // A backend that has shown it does not know filter_hide_private (#1002)
+    // would answer with unfiltered counts, so it cannot apply that filter.
+    const ignoresFilter = (url) => filters.hidePrivate && backendIgnoresHidePrivate(url);
     const selectedUrls = new Set(
-      inScope.filter(b => Array.isArray(b.bbox) && !backendUseLegacy.has(b.url)).map(b => b.url),
+      inScope.filter(b => Array.isArray(b.bbox) && !backendUseLegacy.has(b.url) && !ignoresFilter(b.url))
+        .map(b => b.url),
     );
     const selected   = inScope.filter(b => selectedUrls.has(b.url));
     const cantFilter = new Set(inScope.filter(b => !selectedUrls.has(b.url)).map(b => b.url));
@@ -318,12 +323,15 @@ export function attachHubOrchestrator({
       signal,
       onResult: (entry) => {
         if (signal.aborted) return;
-        if (entry.ok && Array.isArray(entry.value)) {
+        // The retry inside fetchPlaygroundClusters resolves OK, so a backend
+        // that just dropped filter_hide_private looks like a success here.
+        if (entry.ok && Array.isArray(entry.value) && !ignoresFilter(entry.backendUrl)) {
           acc.set(entry.backendUrl, sumClusterBuckets(entry.value));
           // Fresh Map reference per publish so Svelte subscribers re-render.
           macroFilteredStore.set(new Map(acc));
         } else {
-          // Any failure (404, 500, network, timeout) means this backend
+          // Any failure (404, 500, network, timeout), or a backend that
+          // silently dropped a filter it does not know, means this backend
           // couldn't apply the filter → flag it can't-filter so its ring is
           // marked "unfiltered" rather than silently shown as a normal filtered
           // ring. Only a 404 makes the legacy fallback sticky for the session.

@@ -32,6 +32,7 @@
       "hasDogs": "Dogs allowed",
       "theme": "Themed",
       "shade": "With shade",
+      "hidePrivate": "No private ones (e.g. kindergarten, school)",
       "lit": "Lit at night"
     },
     "mappingDetail": {
@@ -99,9 +100,6 @@
       "noEquipment": "Not mapped yet: the play equipment.",
       "noDetails": "Not mapped yet: play equipment, and the surface or opening hours (if it has any)."
     }
-  },
-  "completeness": {
-    "restrictedHint": "not public"
   },
   "accordion": {
     "photos": "Photos",
@@ -931,5 +929,11 @@
         "unknown": "The status could not be checked right now."
       }
     }
+  },
+  "access": {
+    "private": "Private – not open to the public",
+    "customers": "For customers & guests only",
+    "privateShort": "Private",
+    "customersShort": "Customers only"
   }
 }

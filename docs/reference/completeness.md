@@ -127,8 +127,7 @@ All UI strings live under the `mappingDetail.*` namespace in `locales/de.json` a
 | `mappingDetail.basic` | grundlegend | basic |
 | `mappingDetail.noDetails` | keine Details | no details yet |
 | `mappingDetail.hasPhoto` | hat ein Foto | has a photo |
-| `completeness.restrictedHint` | nicht öffentlich | not public |
 
-`completeness.restrictedHint` stays in its old namespace — access restriction is a separate axis from mapping detail.
+Access is a separate axis from mapping detail and has its own `access.*` namespace (#1002): `access.private` / `access.customers` for the panel badge and `access.privateShort` / `access.customersShort` for the hover chip. The rule behind them is `accessKind()` in `app/src/lib/access.js`.
 
 The filter labels under `filter.mappingDetail.*` use the same wording (`detailliert` / `grundlegend` / `keine Details`); the filter keys themselves (`showComplete`, `showPartial`, `showMissing`) keep the identifier naming.

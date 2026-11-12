@@ -32,6 +32,7 @@
       "hasDogs": "Hunde erlaubt",
       "theme": "Mit Thema",
       "shade": "Mit Schatten",
+      "hidePrivate": "Ohne private (z. B. Kita, Schule)",
       "lit": "Beleuchtet"
     },
     "mappingDetail": {
@@ -99,9 +100,6 @@
       "noEquipment": "Noch nicht erfasst: Spielgeräte.",
       "noDetails": "Noch nicht erfasst: Spielgeräte sowie Bodenbelag oder Öffnungszeiten (falls es welche gibt)."
     }
-  },
-  "completeness": {
-    "restrictedHint": "nicht öffentlich"
   },
   "accordion": {
     "photos": "Bilder",
@@ -931,5 +929,11 @@
         "unknown": "Der Status ließ sich gerade nicht prüfen."
       }
     }
+  },
+  "access": {
+    "private": "Privat – nicht öffentlich zugänglich",
+    "customers": "Nur für Gäste & Kunden",
+    "privateShort": "Privat",
+    "customersShort": "Nur für Kunden"
   }
 }
