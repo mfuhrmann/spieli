@@ -142,7 +142,7 @@ Several boolean columns in `playground_stats` are computed from equipment found 
 | `has_dogs` | `dog=yes` on playground |
 | `has_theme` | an allowlisted `playground:theme` value on the playground area **or** any device within it (allowlist mirrors `SUPPORTED_THEMES` in `app/src/lib/playgroundThemes.js`) |
 | `has_shade` | `shade` tag on playground — `true` when `shade=yes`, `false` when `shade=no`, `null` when untagged |
-| `has_lit` | `lit` tag on playground — `false` when `lit=no` or `lit=disused`, `true` for any other value (`yes`, `automatic`, `24/7`, …), `null` when untagged |
+| `has_lit` | `lit` tag on playground (case-insensitive) — `true` for `yes`, `24/7`, `automatic`, `limited`, `interval` or times (`sunset-22:00`), `false` for `no` / `disused`, `null` when untagged or unrecognised. Rule: `public.lit_state()`, mirrored by `litState()` in `app/src/lib/pitchInfo.js` |
 
 All flag logic lives in `importer/api.sql` (the `equip_stats` CTE inside `playground_stats`).
 

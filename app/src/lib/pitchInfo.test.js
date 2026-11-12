@@ -1,6 +1,7 @@
+import { readFileSync } from 'node:fs';
 import assert from 'node:assert/strict';
 import {
-  pitchSports, pitchTitle, litInfo, accessInfo, feeInfo,
+  pitchSports, pitchTitle, litInfo, litState, accessInfo, feeInfo,
   reservationInfo, hoopsInfo, wheelchairInfo,
 } from './pitchInfo.js';
 
@@ -14,6 +15,12 @@ assert.deepEqual(pitchTitle({ name: 'Kunstrasen', sport: 'soccer' }), { name: 'K
 assert.deepEqual(pitchTitle({ sport: 'basketball;soccer' }), { key: 'pitch.titles.basketball' });
 assert.deepEqual(pitchTitle({ sport: 'ice_stock' }), { key: 'pitch.titles.generic' });
 assert.deepEqual(pitchTitle({}), { key: 'pitch.titles.generic' });
+
+// litState — truth table in litState.cases.json, which the db-smoke workflow
+// also runs against public.lit_state(), so JS and SQL cannot drift.
+const litCases = JSON.parse(readFileSync(new URL('./litState.cases.json', import.meta.url), 'utf8'));
+for (const [v, want] of litCases) assert.equal(litState(v), want, `litState(${JSON.stringify(v)})`);
+assert.equal(litState(undefined), null);
 
 // litInfo
 assert.equal(litInfo(undefined), null);

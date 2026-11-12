@@ -450,8 +450,6 @@
     "wheelchairPlayNone": "No wheelchair equipment",
     "shaded": "Shaded",
     "notShaded": "No shade",
-    "lit": "Lit",
-    "notLit": "No lighting",
     "ageGroups": {
       "toddler": "Toddler",
       "child": "Child",

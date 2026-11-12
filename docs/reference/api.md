@@ -61,7 +61,7 @@ Pre-aggregated cluster buckets for the cluster tier. Each bucket counts playgrou
 | `filter_has_dogs` | `boolean` | `false` | When `true`, include only playgrounds where dogs are allowed |
 | `filter_theme` | `boolean` | `false` | When `true`, include only playgrounds with a recognised `playground:theme` |
 | `filter_shade` | `boolean` | `false` | When `true`, include only playgrounds with shade |
-| `filter_lit` | `boolean` | `false` | When `true`, include only lit playgrounds (`lit=*` other than `no`/`disused`) |
+| `filter_lit` | `boolean` | `false` | When `true`, include only playgrounds whose `has_lit` is `true` |
 | `filter_complete` | `boolean` | `true` | When `false`, exclude complete playgrounds |
 | `filter_partial` | `boolean` | `true` | When `false`, exclude partial playgrounds |
 | `filter_missing` | `boolean` | `true` | When `false`, exclude missing playgrounds |
@@ -187,7 +187,7 @@ Returns lightweight per-playground rows for a bbox — `osm_id`, lon/lat, comple
 
 The standalone client doesn't consume this RPC in P1 — the server-bucketed cluster tier covers zoom ≤ 13 directly. The RPC ships now so federated hub clustering (`add-federated-playground-clustering`) and any future centroid tier can use it without a schema change.
 
-> Note: the `filter_attrs` object includes `has_fence`, `has_dogs`, `has_theme`, `has_shade` and `has_lit` for the playground filters. Both are nullable — `has_shade` is `true` when `shade=yes`, `false` when `shade=no`; `has_lit` is `false` when `lit=no` or `lit=disused` and `true` for any other `lit` value; each is `null` when untagged.
+> Note: the `filter_attrs` object includes `has_fence`, `has_dogs`, `has_theme`, `has_shade` and `has_lit` for the playground filters. Both are nullable — `has_shade` is `true` when `shade=yes`, `false` when `shade=no`; `has_lit` is `true` for a recognised lighting value (`yes`, `24/7`, `automatic`, `limited`, `interval`, times), `false` for `no` / `disused`; each is `null` when untagged (`has_lit` also when the value is not recognised).
 
 ## `get_meta()` — extended
 

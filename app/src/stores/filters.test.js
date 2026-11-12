@@ -136,6 +136,12 @@ const noFilters = {
   assert.equal(matchesFilters({ has_lit: false }, f), false);
   assert.equal(matchesFilters({ has_lit: null }, f), false);
   assert.equal(matchesFilters({}, f), false);
+  // no has_lit (older backend in a hub, Overpass): fall back to the raw tag
+  assert.equal(matchesFilters({ lit: 'yes' }, f), true);
+  assert.equal(matchesFilters({ lit: 'No' }, f), false);
+  assert.equal(matchesFilters({ lit: 'unknown' }, f), false);
+  // the server's answer wins when present
+  assert.equal(matchesFilters({ has_lit: false, lit: 'yes' }, f), false);
 }
 
 // 15b. theme filter

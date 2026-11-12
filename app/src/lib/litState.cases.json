@@ -1,0 +1,19 @@
+[
+  ["yes", true],
+  ["YES", true],
+  [" yes ", true],
+  ["24/7", true],
+  ["automatic", true],
+  ["limited", true],
+  ["interval", true],
+  ["sunset-sunrise", true],
+  ["18:00-22:00", true],
+  ["no", false],
+  ["No", false],
+  ["no ", false],
+  ["disused", false],
+  ["unknown", null],
+  ["fixme", null],
+  ["ys", null],
+  ["", null]
+]

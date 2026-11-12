@@ -70,7 +70,7 @@ Open the filter panel to show only playgrounds that match your needs:
 | Dogs allowed | Dogs are permitted (`dog=yes`) |
 | Themed | Has a recognised theme — ship, octopus, castle, … (`playground:theme`) |
 | With shade | Shaded areas (`shade=yes`) |
-| Lit at night | Lit playgrounds (`lit=*` other than `no` / `disused`) |
+| Lit at night | Playgrounds tagged as lit — `lit=yes`, `automatic`, `24/7`, `limited`, or lighting times. Values the map does not recognise do not count |
 | Exclude private | Hide access-restricted playgrounds |
 
 Active filters appear as chips below the search bar. Click a chip to remove that filter.
@@ -117,7 +117,7 @@ Click any playground to open its detail panel. The panel shows:
 
 - Name, operator, opening hours (when mapped)
 - Surface type and size, and lighting when it is mapped (most playgrounds do not record it yet, so nothing is shown then)
-- Status pills — the mapping-detail badge (only while [mapping detail](#mapping-detail-colours) is on), data age, and (when tagged) a shade pill (Shaded / No shade), a lighting pill (Lit / No lighting), baby / toddler suitability, and wheelchair-friendly equipment (see [Wheelchair accessibility](#wheelchair-accessibility))
+- Status pills — the mapping-detail badge (only while [mapping detail](#mapping-detail-colours) is on), data age, and (when tagged) a shade pill (Shaded / No shade), baby / toddler suitability, and wheelchair-friendly equipment (see [Wheelchair accessibility](#wheelchair-accessibility))
 - Theme highlight — a symbol for playgrounds with a theme, such as a ship or castle (see [Playground themes](#playground-themes))
 - Equipment list — devices, pitches, benches, and their sub-attributes, including each item's surface when tagged
 - Street-level photos (from Panoramax, when available)

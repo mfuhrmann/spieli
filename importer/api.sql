@@ -173,6 +173,30 @@ AS $$
 $$;
 
 -- =========================================================================
+-- lit_state(lit)
+--    Tri-state reading of a `lit=*` value: true (some lighting), false
+--    (none), NULL (untagged or a value we do not recognise). MIRRORS
+--    litInfo()/litState() in app/src/lib/pitchInfo.js — the filter and the
+--    panel's Lighting row must agree on the same tag. Case- and
+--    whitespace-insensitive like the JS; an unrecognised value (`unknown`,
+--    `fixme`, a typo) is NULL, never "lit". The db-smoke workflow asserts
+--    the truth table in app/src/lib/litState.cases.json, which
+--    pitchInfo.test.js runs against the JS. In `public`: a helper, not an RPC.
+-- =========================================================================
+CREATE OR REPLACE FUNCTION public.lit_state(lit text)
+RETURNS boolean
+LANGUAGE sql IMMUTABLE PARALLEL SAFE
+AS $$
+  SELECT CASE
+    WHEN v = '' THEN NULL
+    WHEN v IN ('yes', '24/7', 'automatic', 'limited', 'interval') THEN true
+    WHEN v IN ('no', 'disused') THEN false
+    WHEN v ~ '[0-9]' OR v LIKE '%sunset%' OR v LIKE '%sunrise%' THEN true
+  END
+  FROM (SELECT lower(btrim(COALESCE(lit, ''))) AS v) s;
+$$;
+
+-- =========================================================================
 -- Indexes on the osm2pgsql tables (idempotent).
 --
 -- These are created *before* the playground_stats build, not after it: the
@@ -449,12 +473,7 @@ CREATE MATERIALIZED VIEW public.playground_stats_new AS
         OR regexp_split_to_array(btrim(lower(COALESCE(e.tags->'playground:theme',''))), '\s*;\s*')
           && ARRAY['ship','octopus','castle','rocket','spiderweb','circus','dragon','water','adventure']
       )                                                                       AS has_theme,
-      CASE WHEN BOOL_OR(pl.tags ? 'shade') THEN BOOL_OR(pl.tags->'shade' = 'yes') END AS has_shade,
-      -- has_lit: tri-state like has_shade. Every lit=* value other than no /
-      -- disused means some lighting (yes, automatic, limited, 24/7,
-      -- sunset-sunrise, interval).
-      CASE WHEN BOOL_OR(pl.tags ? 'lit')
-           THEN BOOL_OR(pl.tags->'lit' NOT IN ('no', 'disused')) END            AS has_lit
+      CASE WHEN BOOL_OR(pl.tags ? 'shade') THEN BOOL_OR(pl.tags->'shade' = 'yes') END AS has_shade
     FROM all_playgrounds pl
     LEFT JOIN all_equip e ON ST_Intersects(pl.way, e.way)
     GROUP BY pl.osm_id, pl.osm_type
@@ -559,7 +578,9 @@ CREATE MATERIALIZED VIEW public.playground_stats_new AS
     COALESCE(es.has_dogs,       false) AS has_dogs,
     COALESCE(es.has_theme,      false) AS has_theme,
     es.has_shade,
-    es.has_lit,
+    -- Tri-state from the playground's own lit=* tag; see lit_state() above.
+    -- Not aggregated in equip_stats: it reads no equipment.
+    public.lit_state(pl.tags->'lit') AS has_lit,
     -- Tiered-delivery (P1): persisted centroid + per-playground completeness
     ST_Centroid(pl.way)                           AS centroid_3857,
     -- NULL-safe: untagged playgrounds (access IS NULL) are public, not NULL.

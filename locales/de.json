@@ -450,8 +450,6 @@
     "wheelchairPlayNone": "Keine Rollstuhlgeräte",
     "shaded": "Schattig",
     "notShaded": "Kein Schatten",
-    "lit": "Beleuchtet",
-    "notLit": "Keine Beleuchtung",
     "ageGroups": {
       "toddler": "Kleinkind",
       "child": "Kind",
