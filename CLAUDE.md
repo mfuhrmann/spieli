@@ -146,8 +146,9 @@ Same-origin by default, like the basemap. `docker-entrypoint.sh` generates `/etc
 | `/ext/commons/` | `commons.wikimedia.org` | `/w/api.php` only |
 | `/ext/wikimedia/<host>/<path>` | any `*.wikimedia.org` | Image bytes. A **regex** location, so its include must stay above the `~* \.(js|css|png…)$` static block |
 | `/ext/mangrove/` | `api.mangrove.reviews` | `reviews` (GET) and `submit/<jwt>` (**PUT**) |
+| `/ext/panoramax/` | `api.panoramax.xyz`, then the derivative host | `api/pictures/<uuid>/thumb.jpg` only. A **regex** location, like `/ext/wikimedia/`. No opt-out (#863) |
 
-Six things here are load-bearing and were each found the hard way:
+Seven things here are load-bearing and were each found the hard way:
 
 - **`access_log off` in every location.** Proxying moves the visitor's request stream onto the operator's disk; logging it is worse than the exposure it replaced. Emitted from `_ext_common` so a call site cannot forget it. Since #988 they are defence in depth: `oci/app/00-no-access-log.conf` sets `access_log off` (and `log_not_found off`) at http level for the whole container — `off` cancels every access_log of that level regardless of include order, so the stock `nginx.conf` needs no patching — and CI asserts that `/` and `/api/` leave no access-log line, with a positive control for the pattern. `error_log` stays, and the privacy page says what it can hold.
 - **The rate limiter lives on the loopback server, not the visitor-facing location.** `limit_req` runs in the preaccess phase, *before* the cache lookup, so on the outer location it sheds requests that were already cached — two simultaneous visitors were enough to break search. Only misses reach the loopback hop; a shed request falls back to stale via `proxy_cache_use_stale … http_503`.
@@ -155,12 +156,13 @@ Six things here are load-bearing and were each found the hard way:
 - **`set` must come BEFORE `rewrite … break`.** `break` stops the rewrite module, and `set` is one of its directives, so a `set` after it never runs — the `Cache-Control` header then renders empty and none is sent at all.
 - **Comments inside the generated blocks must not use backticks.** These are unquoted heredocs, so `` `always` `` is command substitution: the shell tried to run `always`, `set` and `rewrite` as commands and the container died before nginx started.
 - **The Wikimedia host is carried in the path, not assumed.** The imageinfo API returns thumbnails on `thumb.wikimedia.org` and originals on `upload.wikimedia.org`; a rewrite pinned to one host sends every thumbnail straight to Wikimedia while appearing to work. `proxiedImageUrl` in `app/src/lib/commons.js` does the rewrite (validate host first, rewrite second) and preserves the `?utm_*` query the API attaches.
+- **nginx follows the Panoramax redirect, but only uncached.** The thumbnail endpoint answers `308` to a per-instance derivative host. `proxy_intercept_errors` + `error_page 308 = @ext_panoramax_follow` proxies to `$upstream_http_location` (copied into a variable first, shape-checked). The `308` must never be cached: on a hit `$upstream_http_location` is empty and every later request 502s. Both locations share one `proxy_cache_key`, so the outer one finds the image the follow location stored and a cached thumbnail costs no upstream request at all.
 
 **OSM notes are not proxied either** (#1000): `OSM_NOTES_URL` (default the public API, `false` = off) is posted to by the browser, only on Send — a proxy would send every anonymous note from one server address, which is what OSM's spam limits look for. The entrypoint adds the origin to `connect-src` and a row to the privacy table.
 
-**Panoramax is not proxied at all**, and that is a finding rather than an omission: its thumbnail endpoint answers 308 with a `Location` on a per-instance derivative host (nginx cannot follow a redirect, and the derivative hosts are a federation's, not ours to enumerate), and its viewer is an iframe that must not be served from this origin. **Equipment-attribute illustrations are not proxied either** — `equipmentAttributes.js` renders them from `Special:FilePath`, whose redirect chain would need `/w/index.php` opened as a relay. Both are why `img-src` keeps its Wikimedia and Panoramax sources even when every proxy is on; narrowing it would block the images *and* falsify the privacy page.
+**The Panoramax viewer is not proxied**: it is an iframe that must not be served from this origin, gated behind a click (#852) and named in `frame-src`. Its thumbnails are proxied (above), and equipment illustrations go through `/ext/wikimedia/` since #862, so with every proxy on `img-src` is `'self' data:`.
 
-Per-service opt-out via `PROXY_NOMINATIM` / `PROXY_COMMONS` / `PROXY_MANGROVE` (default on). Opting one out routes the browser directly *and* adds its host to the generated CSP and to the generated privacy-page table — both follow the configuration, neither is hardcoded.
+Per-service opt-out via `PROXY_NOMINATIM` / `PROXY_COMMONS` / `PROXY_MANGROVE` (default on). Panoramax thumbnails have none: going direct would need a CSP naming derivative hosts nobody can list in advance. Opting one out routes the browser directly *and* adds its host to the generated CSP and to the generated privacy-page table — both follow the configuration, neither is hardcoded.
 
 ### Web app manifest (#939)
 

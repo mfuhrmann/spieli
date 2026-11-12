@@ -323,9 +323,10 @@ jobs:
           # Since #853 the default proxies the fetch paths, so connect-src
           # reduces to 'self' plus the OSM notes API (#1000), which is posted
           # to only when a visitor sends a missing-playground hint and is
-          # deliberately not proxied. img-src keeps the Wikimedia and Panoramax
-          # sources deliberately — see the "External-service proxies" step.
+          # deliberately not proxied. img-src reduces to 'self' data: since
+          # #863 — see the "External-service proxies" step.
           want "connect-src 'self' https://api.openstreetmap.org\"" "$P"
+          want "img-src 'self' data:;" "$P"
 
           printf '\n── OSM notes: off removes the host, a custom origin is named\n'
           P=$(csp -e APP_MODE=standalone -e OSM_NOTES_URL=false)
@@ -343,7 +344,9 @@ jobs:
           want "https://nominatim.openstreetmap.org" "$P"
           want "https://api.mangrove.reviews" "$P"
           want "https://*.wikimedia.org" "$P"
-          want "https://api.panoramax.xyz" "$P"
+          # Panoramax thumbnails have no opt-out (#863), so its host never
+          # comes back to img-src; only frame-src names it, for the viewer.
+          reject "data: https://api.panoramax.xyz" "$P"
           reject "img-src 'self' data: https:;" "$P"
 
           printf '\n── raster opt-out: the configured provider is named\n'
@@ -462,10 +465,11 @@ jobs:
               # Every grep here is a diagnostic dump, so a legitimately empty
               # file (all proxies disabled) must not fail the container and
               # abort the caller mid-assertion.
-              echo "=== config.js"; grep -E "nominatimBaseUrl|commonsApiUrl|commonsFileBase|mangroveApiUrl|panoramaxApiUrl|osmNotesUrl" /usr/share/nginx/html/config.js || true
+              echo "=== config.js"; grep -E "nominatimBaseUrl|commonsApiUrl|commonsFileBase|mangroveApiUrl|panoramaxThumbBase|osmNotesUrl" /usr/share/nginx/html/config.js || true
               echo "=== csp"; grep -A1 Content-Security-Policy-Report-Only /etc/nginx/csp.conf | tail -1
               echo "=== locations"; grep -E "^location" /etc/nginx/ext-locations.conf || true
               echo "=== access_log_count=$(grep -c access_log /etc/nginx/ext-locations.conf || echo 0)"
+              echo "=== panoramax"; grep -E "panoramax|error_page|proxy_cache_key|proxy_cache_valid|proxy_hide_header Location" /etc/nginx/ext-locations.conf | grep -v "^ *#" || true
               echo "=== limiter"; grep -E "server_name ext-nominatim-internal|limit_req zone=ext_nominatim" /etc/nginx/conf.d/11-ext-cache.conf || true
             '
           }
@@ -488,13 +492,13 @@ jobs:
           # OSM notes API, which the browser posts to only on Send (#1000).
           want "connect-src 'self' https://api.openstreetmap.org\"" "$O"
           want "osmNotesUrl:                'https://api.openstreetmap.org'" "$O"
-          # img-src reduces to 'self' data: plus Panoramax, and no further.
-          # Since #862 the equipment illustrations resolve to real file URLs at
-          # build time and go through /ext/wikimedia/, so no Wikimedia host is
-          # fetched by the browser. Panoramax stays because its thumbnail
-          # endpoint redirects to a per-instance derivative host nginx cannot
-          # follow (#863).
-          want "img-src 'self' data: https://api.panoramax.xyz;" "$O"
+          # img-src reduces to 'self' data:, and no further. Since #862 the
+          # equipment illustrations resolve to real file URLs at build time and
+          # go through /ext/wikimedia/, and since #863 Panoramax thumbnails go
+          # through /ext/panoramax/, so no image host is contacted by the
+          # browser.
+          want "img-src 'self' data:;" "$O"
+          want "panoramaxThumbBase:         '/ext/panoramax'" "$O"
           reject "wikimedia.org" "$O"
           reject "wiki.openstreetmap.org" "$O"
           # The viewer iframe is never proxied, so its host must remain framed.
@@ -504,7 +508,25 @@ jobs:
           # Not a tuning choice: proxying moves the visitor's request stream
           # onto the operator's disk, and logging it is worse than the exposure
           # being removed. One per location, plus the catch-all.
-          want "access_log_count=5" "$O"
+          want "access_log_count=7" "$O"
+
+          printf '\n── Panoramax: the redirect is followed server-side, never relayed\n'
+          # nginx does not follow redirects itself; it intercepts the 308 and
+          # proxies to its Location from a named location. Each line below
+          # was measured to matter (#863):
+          want "location @ext_panoramax_follow" "$O"
+          want "error_page 301 302 303 307 308 = @ext_panoramax_follow;" "$O"
+          want "proxy_intercept_errors on;" "$O"
+          # The follow location must not hand the browser a redirect of its own.
+          want "proxy_hide_header Location;" "$O"
+          # One key for both locations: without it every view costs an
+          # upstream round trip for the redirect.
+          test "$(printf '%s\n' "$O" | grep -c 'proxy_cache_key "panoramax-thumb$request_uri";')" -eq 2 \
+            || { echo 'both Panoramax locations must share one proxy_cache_key' >&2; exit 1; }
+          # A cached 308 has an empty $upstream_http_location on every later
+          # hit, so caching a redirect turns the proxy into a 502 machine.
+          reject "proxy_cache_valid 30" "$O"
+          reject "proxy_cache_valid any" "$O"
 
           printf '\n── the rate limiter is on the loopback server and has a non-empty key\n'
           # nginx silently skips limit_req when its key is empty, and
@@ -536,11 +558,13 @@ jobs:
           reject "server_name ext-nominatim-internal;" "$O"
           want "commonsApiUrl:              '/ext/commons/w/api.php'" "$O"
 
-          printf '\n── all proxies off: no locations, no cache zone\n'
+          printf '\n── all proxies off: only the Panoramax thumbnail location is left\n'
           O=$(ext -e APP_MODE=standalone -e PROXY_NOMINATIM=false -e PROXY_COMMONS=false \
                 -e PROXY_MANGROVE=false)
           reject "location ^~ /ext/nominatim/" "$O"
           want "https://nominatim.openstreetmap.org" "$O"
+          want "location @ext_panoramax_follow" "$O"
+          want "img-src 'self' data:;" "$O"
 
           printf '\n── a value with whitespace fails closed with the intended message\n'
           # An unquoted eval word-splits "true junk" and runs the second word,
