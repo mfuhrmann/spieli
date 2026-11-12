@@ -2432,7 +2432,13 @@
 <td><code>filter_private</code></td>
 <td><code>boolean</code></td>
 <td><code>false</code></td>
-<td>When <code>true</code>, exclude access-restricted playgrounds</td>
+<td>When <code>true</code>, exclude every playground that is not public: <code>access</code> = <code>private</code>, <code>no</code> or <code>customers</code></td>
+</tr>
+<tr>
+<td><code>filter_hide_private</code></td>
+<td><code>boolean</code></td>
+<td><code>false</code></td>
+<td>When <code>true</code>, exclude only private playgrounds (<code>access</code> = <code>private</code> or <code>no</code>) and keep customers-only ones. Sent by the frontend's "No private ones" filter (#1002). A backend older than this parameter answers 404 <code>PGRST202</code>; the client then retries without it and stops sending it to that backend for the session. The filter is then <strong>not</strong> applied there at the cluster tier (bucket counts include private playgrounds, and buckets carry no access, so a bucket of one is an ordinary pin); only the polygon tier filters it client-side, and the hub's macro tier counts that backend as "can't filter"</td>
 </tr>
 <tr>
 <td><code>filter_water</code></td>

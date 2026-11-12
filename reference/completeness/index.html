@@ -2356,14 +2356,9 @@
 <td>hat ein Foto</td>
 <td>has a photo</td>
 </tr>
-<tr>
-<td><code>completeness.restrictedHint</code></td>
-<td>nicht öffentlich</td>
-<td>not public</td>
-</tr>
 </tbody>
 </table>
-<p><code>completeness.restrictedHint</code> stays in its old namespace — access restriction is a separate axis from mapping detail.</p>
+<p>Access is a separate axis from mapping detail and has its own <code>access.*</code> namespace (#1002): <code>access.private</code> / <code>access.customers</code> for the panel badge and <code>access.privateShort</code> / <code>access.customersShort</code> for the hover chip. The rule behind them is <code>accessKind()</code> in <code>app/src/lib/access.js</code>.</p>
 <p>The filter labels under <code>filter.mappingDetail.*</code> use the same wording (<code>detailliert</code> / <code>grundlegend</code> / <code>keine Details</code>); the filter keys themselves (<code>showComplete</code>, <code>showPartial</code>, <code>showMissing</code>) keep the identifier naming.</p>
 
 

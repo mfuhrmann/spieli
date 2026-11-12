@@ -527,6 +527,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#who-can-use-a-playground" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Who can use a playground
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#filters" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2091,6 +2102,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#who-can-use-a-playground" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Who can use a playground
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#filters" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2259,7 +2281,7 @@
 <p>Use your mouse (desktop) or fingers (mobile) to pan and zoom. The map shows:</p>
 <ul>
 <li><strong>Green circles</strong> — at lower zoom levels, nearby playgrounds are grouped into a circle showing how many there are</li>
-<li><strong>Green pins</strong> — zoom in and every playground gets its own pin; a camera on the pin means there is a photo, and a small lock means the playground is not public (private, or for customers only)</li>
+<li><strong>Green pins</strong> — zoom in and every playground gets its own pin; a camera on the pin means there is a photo. A <strong>grey pin with a lock</strong> or a <strong>cup</strong> tells you who may use it — see <a href="#who-can-use-a-playground">Who can use a playground</a></li>
 <li><strong>The selected playground's outline</strong> — once you open a playground, its area is outlined on the map</li>
 </ul>
 <p>This is the default view, made for finding a place to play. If you add data to OpenStreetMap, you can switch on <a href="#mapping-detail-colours">mapping detail</a> instead.</p>
@@ -2303,6 +2325,40 @@
 <p><strong>Note:</strong> Geolocation requires HTTPS and your browser's permission. If the button does nothing, check your browser's location settings.</p>
 </blockquote>
 <p><strong>Region links:</strong> Visit a region by name in the URL — e.g. <code>spieli.eu/fulda</code> frames the map on Fulda. spieli geocodes the single path segment via Nominatim and pans to its bounding box (works in both standalone and hub mode). Share these links like any other URL.</p>
+<h2 id="who-can-use-a-playground">Who can use a playground<a class="headerlink" href="#who-can-use-a-playground" title="Permanent link">&para;</a></h2>
+<p>Not every playground on the map is open to everyone. spieli reads this from the playground's <code>access</code> tag in OpenStreetMap and shows it the same way on the pin, in the hover preview (desktop) and at the top of the detail panel:</p>
+<table>
+<thead>
+<tr>
+<th>On the map</th>
+<th>In the panel</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Green pin</td>
+<td>—</td>
+<td>Public: anyone can play here. Also the case when nothing is recorded</td>
+</tr>
+<tr>
+<td>Green pin with an amber <strong>cup</strong></td>
+<td>"For customers &amp; guests only"</td>
+<td>Belongs to a café, a restaurant, a store or a holiday park (<code>access=customers</code>). You can use it while you are a customer there</td>
+</tr>
+<tr>
+<td><strong>Grey</strong> pin with a <strong>lock</strong></td>
+<td>"Private – not open to the public"</td>
+<td>Belongs to a kindergarten, a school or a residential complex (<code>access=private</code> or <code>access=no</code>). Not open to visitors. Some are usable by a particular group, for example the people living in that housing estate; the panel's details say so when it is recorded</td>
+</tr>
+</tbody>
+</table>
+<p>Every playground is shown by default. Two filters hide the ones you can't use:</p>
+<ul>
+<li><strong>No private ones</strong> hides only private playgrounds; café and store playgrounds stay.</li>
+<li><strong>Public only</strong> hides both private and customers-only playgrounds.</li>
+</ul>
+<p>Many kindergarten and school playgrounds have no <code>access</code> tag in OpenStreetMap and therefore look public. If you know better, you can add the tag in <a href="https://mapcomplete.org">MapComplete</a> or any OSM editor.</p>
 <h2 id="filters">Filters<a class="headerlink" href="#filters" title="Permanent link">&para;</a></h2>
 <p>Open the filter panel to show only playgrounds that match your needs:</p>
 <table>
@@ -2374,8 +2430,12 @@
 <td>Playgrounds tagged as lit — <code>lit=yes</code>, <code>automatic</code>, <code>24/7</code>, <code>limited</code>, or lighting times. Values the map does not recognise do not count</td>
 </tr>
 <tr>
-<td>Exclude private</td>
-<td>Hide access-restricted playgrounds</td>
+<td>Public only</td>
+<td>Hide playgrounds that are private or for customers only — see <a href="#who-can-use-a-playground">Who can use a playground</a></td>
+</tr>
+<tr>
+<td>No private ones</td>
+<td>Hide only private playgrounds (e.g. a kindergarten's or a school's); customers-only ones stay</td>
 </tr>
 </tbody>
 </table>
