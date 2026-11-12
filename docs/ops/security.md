@@ -83,20 +83,11 @@ To see the policy your instance actually serves:
 docker compose exec app cat /etc/nginx/csp.conf
 ```
 
-### Two policies ship together, on purpose
+### One policy, enforced
 
-During the current release the container sends **both** of these:
+Since #861 the container sends a single, enforced `Content-Security-Policy` with the host lists narrowed to what the app actually uses. It shipped as `Content-Security-Policy-Report-Only` beside the old `https:` wildcard policy from v0.10.0 to v0.13.x first, because an over-tight CSP fails silently: an image simply does not appear, with nothing but a browser console message.
 
-| Header | Host lists | Status |
-|---|---|---|
-| `Content-Security-Policy` | `img-src`/`connect-src` still `https:` | **Enforced** |
-| `Content-Security-Policy-Report-Only` | narrowed to the hosts actually used | **Observed only** |
-
-The narrowed policy is delivered in report-only form first because the failure mode of an over-tight CSP is silent: photos simply do not appear, with nothing but a browser console message.
-The path most likely to break is therefore a rarely-taken one, in production.
-Once the report set has been confirmed empty across both app modes and both basemap postures, the report-only policy becomes the enforced one and the wildcard policy is deleted.
-
-If you see console messages beginning `Content Security Policy` while running this release, nothing is being blocked — but please report them, because they are exactly what the observation period is for.
+If an image or the map stops loading after an upgrade, open the browser console. A message beginning `Content Security Policy` names the blocked origin. If that origin is one your deployment legitimately needs and the generator cannot discover, add it with `CSP_IMG_EXTRA` or `CSP_CONNECT_EXTRA` (see below) and please report it, so the generator can learn it.
 
 There is deliberately **no `report-uri`**. It would collect a per-visitor record of what each browser tried to load, on your disk, which is the same shape of trail that [serving the basemap yourself](#the-basemap-is-same-origin-by-default) exists to remove.
 

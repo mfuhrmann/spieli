@@ -295,18 +295,24 @@ jobs:
                 sleep 0.2
               done
               nginx -t >/dev/null 2>&1 || { echo "generated config is invalid" >&2; exit 1; }
-              # Only the report-only line: the enforced one still carries the
-              # old wildcards by design during the observation release.
-              grep -A1 Content-Security-Policy-Report-Only /etc/nginx/csp.conf | tail -1
+              # Exactly one policy, and it is the enforced one (#861). A
+              # leftover report-only header would mean the narrowed lists are
+              # still not what the browser obeys.
+              if grep -q Content-Security-Policy-Report-Only /etc/nginx/csp.conf; then
+                echo "a report-only policy is still emitted" >&2; exit 1
+              fi
+              [ "$(grep -c "^add_header Content-Security-Policy\$" /etc/nginx/csp.conf)" -eq 1 ] \
+                || { echo "expected exactly one enforced Content-Security-Policy" >&2; cat /etc/nginx/csp.conf >&2; exit 1; }
+              grep -A1 "^add_header Content-Security-Policy\$" /etc/nginx/csp.conf | tail -1
             '
           }
           want() {
             printf '%s' "$2" | grep -qF -- "$1" \
-              || { printf 'expected %s in the report-only policy:\n%s\n' "$1" "$2" >&2; exit 1; }
+              || { printf 'expected %s in the enforced policy:\n%s\n' "$1" "$2" >&2; exit 1; }
           }
           reject() {
             printf '%s' "$2" | grep -qF -- "$1" \
-              && { printf 'did NOT expect %s in the report-only policy:\n%s\n' "$1" "$2" >&2; exit 1; }
+              && { printf 'did NOT expect %s in the enforced policy:\n%s\n' "$1" "$2" >&2; exit 1; }
             :
           }
 
@@ -466,7 +472,7 @@ jobs:
               # file (all proxies disabled) must not fail the container and
               # abort the caller mid-assertion.
               echo "=== config.js"; grep -E "nominatimBaseUrl|commonsApiUrl|commonsFileBase|mangroveApiUrl|panoramaxThumbBase|osmNotesUrl" /usr/share/nginx/html/config.js || true
-              echo "=== csp"; grep -A1 Content-Security-Policy-Report-Only /etc/nginx/csp.conf | tail -1
+              echo "=== csp"; grep -A1 "^add_header Content-Security-Policy\$" /etc/nginx/csp.conf | tail -1
               echo "=== locations"; grep -E "^location" /etc/nginx/ext-locations.conf || true
               echo "=== access_log_count=$(grep -c access_log /etc/nginx/ext-locations.conf || echo 0)"
               echo "=== panoramax"; grep -E "panoramax|error_page|proxy_intercept_errors|proxy_cache_key|proxy_cache_valid|proxy_hide_header Location" /etc/nginx/ext-locations.conf | grep -v "^ *#" || true
