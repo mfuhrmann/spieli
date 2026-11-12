@@ -58,11 +58,17 @@ test('an older backend without the parameter gets a retry, not the legacy path',
     url.searchParams.has('filter_hide_private') ? { status: 404, body: JSON.stringify({ code: 'PGRST202' }) } : null);
   await page.goto('/');
   await expect.poll(() => urls.length).toBeGreaterThan(0);
-  const before = urls.length;
   await hidePrivate(page);
-  await expect.poll(() => urls.length).toBeGreaterThan(before + 1);
-  expect(urls[before].searchParams.get('filter_hide_private')).toBe('true');
-  expect(urls[before + 1].searchParams.has('filter_hide_private')).toBe(false);
+  // Located by content, not by position: the initial load can still issue a
+  // cluster request after the first one (its timing moved when the suite
+  // started blocking live Nominatim, #1012), so "the request after the first"
+  // is not necessarily the filtered one. The retry is issued inside the same
+  // fetchPlaygroundClusters call, so it is the very next request.
+  const firstFiltered = () => urls.findIndex(u => u.searchParams.get('filter_hide_private') === 'true');
+  await expect.poll(firstFiltered).toBeGreaterThanOrEqual(0);
+  const i = firstFiltered();
+  await expect.poll(() => urls.length).toBeGreaterThan(i + 1);
+  expect(urls[i + 1].searchParams.has('filter_hide_private')).toBe(false);
 
   // Remembered: the next request leaves the parameter out straight away.
   const n = urls.length;
