@@ -1,9 +1,9 @@
 {
-  "appTitle": "Aree gioco – {{regionName}}",
+  "appTitle": "Aree gioco – {regionName}",
   "search": {
     "placeholder": "Cerca …",
-    "found": "\"{{query}}\" a {{location}}",
-    "foundGeneric": "\"{{query}}\" trovato",
+    "found": "\"{query}\" a {location}",
+    "foundGeneric": "\"{query}\" trovato",
     "notFound": "Nessun risultato trovato!",
     "ariaLabel": "Location search",
     "clearLabel": "Clear search"
@@ -47,15 +47,15 @@
     "none": "Ancora nessuna foto per questo parco.<br>Ci sei stato?",
     "addLink": "Aggiungi foto",
     "enlarge": "Clicca per ingrandire",
-    "thumbnail": "Foto {{n}}"
+    "thumbnail": "Foto {n}"
   },
   "poi": {
     "errorLoad": "Impossibile caricare i dati dei dintorni.",
     "alwaysOpen": "Sempre aperto",
     "open": "Aperto",
-    "openUntil": "Aperto fino alle {{time}}",
+    "openUntil": "Aperto fino alle {time}",
     "closed": "Chiuso",
-    "opensAt": "Apre {{day}} alle {{time}}",
+    "opensAt": "Apre {day} alle {time}",
     "openingHours": "Orari",
     "today": "Oggi",
     "tomorrow": "Domani",
@@ -85,41 +85,41 @@
     "addData": {
       "osm": {
         "label": "OpenStreetMap",
-        "text": "I dati provengono da {{osmLink}} — una mappa mondiale libera e collaborativa creata da milioni di volontari. Appare solo ciò che è stato mappato.",
+        "text": "I dati provengono da {osmLink} — una mappa mondiale libera e collaborativa creata da milioni di volontari. Appare solo ciò che è stato mappato.",
         "wikiUrl": "https://it.wikipedia.org/wiki/OpenStreetMap"
       },
       "contribute": {
         "label": "Contribuisci ai parchi",
-        "text": "Chiunque può contribuire. Un buon punto di partenza è {{learnOsmLink}}. I tag rilevanti sono documentati nel {{wikiLink}} e nella pagina su {{equipmentLink}}.",
+        "text": "Chiunque può contribuire. Un buon punto di partenza è {learnOsmLink}. I tag rilevanti sono documentati nel {wikiLink} e nella pagina su {equipmentLink}.",
         "learnOsmUrl": "https://learnosm.org/it/beginner/",
         "wikiLabel": "wiki di OSM",
         "equipmentLabel": "la mappatura delle attrezzature individuali"
       },
       "photos": {
         "label": "Aggiungi foto",
-        "text": "Le foto possono essere caricate direttamente tramite {{mapcompleteLink}} — apri un parco e clicca su \"Aggiungi foto\". Le foto sono fornite da {{panoramaxLink}}."
+        "text": "Le foto possono essere caricate direttamente tramite {mapcompleteLink} — apri un parco e clicca su \"Aggiungi foto\". Le foto sono fornite da {panoramaxLink}."
       },
       "community": {
         "label": "Comunità",
-        "text": "Domande o vuoi partecipare? La comunità OSM locale è raggiungibile tramite {{chatLink}}.",
+        "text": "Domande o vuoi partecipare? La comunità OSM locale è raggiungibile tramite {chatLink}.",
         "chatLabel": "chat della comunità OSM locale"
       }
     },
     "about": {
       "history": {
         "label": "Storia",
-        "text": "La mappa dei parchi giochi è stata creata da {{authorLink}} come progetto finale di un {{courseLink}} — originariamente focalizzata su Berlino. Nel tempo si è evoluta in una mappa generica utilizzabile per qualsiasi regione OSM.",
+        "text": "La mappa dei parchi giochi è stata creata da {authorLink} come progetto finale di un {courseLink} — originariamente focalizzata su Berlino. Nel tempo si è evoluta in una mappa generica utilizzabile per qualsiasi regione OSM.",
         "courseUrl": "https://gis-trainer.com/de/gis_webmapping.php",
         "courseLabel": "corso GIS e web mapping"
       },
       "project": {
         "label": "Il progetto",
-        "text": "La mappa dei parchi giochi è una mappa web libera e interattiva basata sui dati di {{osmLink}}. Non contiene dati proprietari, non richiede login e non traccia gli utenti. Chi migliora i dati in OSM migliora automaticamente questa mappa.",
+        "text": "La mappa dei parchi giochi è una mappa web libera e interattiva basata sui dati di {osmLink}. Non contiene dati proprietari, non richiede login e non traccia gli utenti. Chi migliora i dati in OSM migliora automaticamente questa mappa.",
         "osmWikiUrl": "https://it.wikipedia.org/wiki/OpenStreetMap"
       },
       "source": {
         "label": "Codice sorgente",
-        "text": "Il progetto è open source e {{repoLink}}.",
+        "text": "Il progetto è open source e {repoLink}.",
         "repoLabel": "disponibile pubblicamente"
       }
     }

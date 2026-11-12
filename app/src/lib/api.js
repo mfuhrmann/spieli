@@ -2,7 +2,7 @@
 // All functions accept an optional baseUrl parameter (defaults to the configured apiBaseUrl).
 // This allows the Hub to call per-backend URLs using the same functions.
 
-import { transformExtent } from 'ol/proj';
+import { transformExtent } from 'ol/proj.js';
 import { osmRelationId, apiBaseUrl as defaultApiBaseUrl } from './config.js';
 
 let _fetchPlaygroundsDeprecationWarned = false;
@@ -64,6 +64,7 @@ const clusterFilterMap = {
     hasDogs:      'filter_has_dogs',
     theme:        'filter_theme',
     shade:        'filter_shade',
+    lit:          'filter_lit',
 };
 
 // Backends older than `filter_hide_private` (#1002). PostgREST answers an

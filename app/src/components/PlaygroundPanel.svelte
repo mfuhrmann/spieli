@@ -12,6 +12,7 @@
   import { transform } from 'ol/proj';
   import { X, Share2, Check, ChevronDown, ChevronUp, ChevronRight, Image, Package, Navigation, Star, Info, Phone, Mail, Accessibility, PencilLine, LockKeyhole, Coffee } from 'lucide-svelte';
   import { _, locale } from 'svelte-i18n';
+  import { tagValuesLabel } from '../lib/deviceLabel.js';
 
   import { selection } from '../stores/selection.js';
   import { mapStore } from '../stores/map.js';
@@ -37,6 +38,7 @@
   import CommonsGallery from './CommonsGallery.svelte';
   import ReviewsPanel from './ReviewsPanel.svelte';
   import { radiusFromExtent } from '../lib/reviews.js';
+  import { panoramaxUuidsFromTags } from '../lib/panoramax.js';
   import Badge from './ui/Badge.svelte';
   import Button from './ui/Button.svelte';
 
@@ -405,7 +407,7 @@
   $: litFact = attr ? litInfo(attr.lit) : null;
 
   $: surfaceLabel = attr?.surface
-    ? attr.surface.split(';').map(s => $_('details.surfaceValues.' + s.trim(), { default: s.trim() })).join(' / ')
+    ? tagValuesLabel(attr.surface, 'details.surfaceValues.', $_)
     : null;
 
   $: descriptionParts = (() => {
@@ -432,16 +434,7 @@
   }
 
   // ── Panoramax UUIDs from OSM tags ─────────────────────────────────────────
-  $: panoramaxUuids = (() => {
-    if (!attr) return [];
-    const uuids = [];
-    if (attr['panoramax']) uuids.push(attr['panoramax']);
-    for (let i = 1; i <= 9; i++) {
-      const v = attr[`panoramax:${i}`];
-      if (v) uuids.push(v);
-    }
-    return uuids;
-  })();
+  $: panoramaxUuids = panoramaxUuidsFromTags(attr);
 
   // ── Wikimedia Commons photos from OSM tags (issue #650) ────────────────────
   $: commonsTag = attr?.['wikimedia_commons'] || '';

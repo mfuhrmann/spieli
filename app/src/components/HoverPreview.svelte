@@ -1,4 +1,5 @@
 <script>
+  import { tagValuesLabel } from '../lib/deviceLabel.js';
   import OpeningHours from 'opening_hours';
   import { cn } from '../lib/utils.js';
   import { getPlaygroundTitle, hasOsmName } from '../lib/playgroundHelpers.js';
@@ -29,7 +30,7 @@
   $: area = attr?.area > 0 ? `${Math.round(attr.area / 10) * 10 || attr.area} m²` : null;
 
   $: surface = attr?.surface
-    ? attr.surface.split(';').map(s => $_('details.surfaceValues.' + s.trim(), { default: s.trim() })).join(' / ')
+    ? tagValuesLabel(attr.surface, 'details.surfaceValues.', $_)
     : null;
 
   $: ohOpen = (() => {

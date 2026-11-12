@@ -101,6 +101,18 @@ test('Escape cancels placing and the map button comes back', async ({ page }) =>
   await expect(page.getByRole('button', { name: 'Missing a playground?' })).toBeVisible();
 });
 
+test('right-click leaves the browser menu alone and does not start a report (#1006)', async ({ page }) => {
+  await setup(page);
+  await page.evaluate(() => {
+    window.__ctx = [];
+    window.addEventListener('contextmenu', e => window.__ctx.push(e.defaultPrevented));
+  });
+  const box = await page.locator('.ol-viewport').boundingBox();
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2, { button: 'right' });
+  await expect.poll(() => page.evaluate(() => window.__ctx)).toEqual([false]);
+  await expect(page.getByRole('region', { name: 'Where is the playground?' })).toHaveCount(0);
+});
+
 test('with notes turned off, only MapComplete is offered', async ({ page }) => {
   const { posts } = await setup(page, { osmNotesUrl: '' });
   await page.getByRole('button', { name: 'Missing a playground?' }).click();

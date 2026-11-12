@@ -10,7 +10,7 @@
   const FILTER_KEYS = new Set([
     'private', 'hidePrivate', 'water', 'baby', 'toddler', 'wheelchair',
     'bench', 'picnic', 'shelter', 'tableTennis', 'soccer', 'basketball',
-    'fence', 'hasDogs', 'theme', 'shade',
+    'fence', 'hasDogs', 'theme', 'shade', 'lit',
   ]);
 
   $: activeFilters = Object.entries($effectiveFilterStore)

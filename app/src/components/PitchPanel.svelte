@@ -6,6 +6,7 @@
   // What to show is decided in lib/pitchInfo.js: every fact appears only when
   // tagged, never as "unknown".
   import { _, locale } from 'svelte-i18n';
+  import { humanizeTagValue, tagValuesLabel } from '../lib/deviceLabel.js';
   import { X, Share2, Check, Image } from 'lucide-svelte';
   import { transform } from 'ol/proj';
   import { getCenter } from 'ol/extent';
@@ -26,6 +27,7 @@
   import PanoramaxViewer from './PanoramaxViewer.svelte';
   import CommonsGallery from './CommonsGallery.svelte';
   import { pitchIllustrationHtml } from '../lib/equipmentAttributes.js';
+  import { panoramaxUuidsFromTags } from '../lib/panoramax.js';
 
   export let embedded = false;
 
@@ -40,11 +42,11 @@
   // OSM name → region language; a generated title is interface text.
   $: titleLang = title?.name ? regionLang : $locale;
   $: sports = attr ? pitchSports(attr) : [];
-  const sportLabel = (s, t) => t(`pitch.sports.${s}`, { default: s.replace(/_/g, ' ') });
+  const sportLabel = (s, t) => t(`pitch.sports.${s}`, { default: humanizeTagValue(s) });
 
   // ── Facts (each null when untagged) ───────────────────────────────────────
   $: surfaceLabel = attr?.surface
-    ? attr.surface.split(';').map(s => $_('details.surfaceValues.' + s.trim(), { default: s.trim() })).join(' / ')
+    ? tagValuesLabel(attr.surface, 'details.surfaceValues.', $_)
     : null;
   $: lit = attr ? litInfo(attr.lit) : null;
   $: access = attr ? [accessInfo(attr), feeInfo(attr), reservationInfo(attr)].filter(Boolean) : [];
@@ -53,15 +55,9 @@
   $: openingHoursInfo = attr?.opening_hours ? openingHoursState(attr.opening_hours, $_) : null;
 
   // ── Photos ────────────────────────────────────────────────────────────────
-  $: panoramaxUuids = (() => {
-    if (!attr) return [];
-    const uuids = [];
-    // Same tags as equipmentAttributes reads, panoramax:0 included, so a pitch
-    // shows the same photo whichever panel it is opened in.
-    if (attr.panoramax) uuids.push(attr.panoramax);
-    for (let i = 0; i <= 9; i++) if (attr[`panoramax:${i}`]) uuids.push(attr[`panoramax:${i}`]);
-    return uuids;
-  })();
+  // Same tags as equipmentAttributes reads, panoramax:0 included, so a pitch
+  // shows the same photo whichever panel it is opened in.
+  $: panoramaxUuids = panoramaxUuidsFromTags(attr);
   $: commonsTag = attr?.wikimedia_commons || '';
   $: imageTag = attr?.image || '';
   $: illustration = attr ? pitchIllustrationHtml(attr.sport, $_) : '';

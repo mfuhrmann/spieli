@@ -1,9 +1,9 @@
 <script>
   // "Missing a playground?" (#1000): crosshair placement, duplicate check,
-  // form, thank-you — plus the empty-area hint, right-click entry and the
-  // visitor's own sent hints as pins. The entry points only call
-  // startReport(); everything after that lives here. Note text, sending and
-  // storage are in lib/osmNotes.js.
+  // form, thank-you — plus the empty-area hint and the visitor's own sent
+  // hints as pins. The entry points only call startReport(); everything
+  // after that lives here. Note text, sending and storage are in
+  // lib/osmNotes.js.
   import { onDestroy, tick } from 'svelte';
   import { get } from 'svelte/store';
   import { _ } from 'svelte-i18n';
@@ -16,7 +16,7 @@
   import { buffer } from 'ol/extent.js';
   import GeoJSON from 'ol/format/GeoJSON.js';
   import { Style, Circle as CircleStyle, Fill, Stroke, Text } from 'ol/style.js';
-  import { modal } from '../stores/modalOpen.js';
+  import { modal, modalOpen } from '../stores/modalOpen.js';
   import { mapStore } from '../stores/map.js';
   import { playgroundSourceStore } from '../stores/playgroundSource.js';
   import { activeTierStore } from '../stores/tier.js';
@@ -24,7 +24,7 @@
   import { selection, hasSelection } from '../stores/selection.js';
   import { location } from '../stores/location.js';
   import { dataCoverage, coverageAt, isCovered } from '../stores/dataCoverage.js';
-  import { reportStep, reportStartAt, reportBusy, startReport, cancelReport } from '../stores/reportMissing.js';
+  import { reportStep, reportBusy, startReport, cancelReport } from '../stores/reportMissing.js';
   import { fetchPlaygroundsBbox } from '../lib/api.js';
   import { tagWithBackend } from '../hub/backendTag.js';
   import { getPlaygroundTitle, fitViewToSelection } from '../lib/playgroundHelpers.js';
@@ -147,17 +147,6 @@
     watchedSource?.on('change', onSourceChange);
   }
 
-  // Right-click with a mouse only. A touch long-press fires contextmenu too
-  // (Android Chrome), and a resting finger must not start a report.
-  let lastPointerType = 'mouse';
-  function onPointerDown(evt) { lastPointerType = evt.pointerType || 'mouse'; }
-  function onContextMenu(evt) {
-    if (!attachedMap || get(reportStep)) return;
-    if ((evt.pointerType || lastPointerType) !== 'mouse') return;
-    evt.preventDefault();
-    startReport(attachedMap.getEventCoordinate(evt));
-  }
-
   function onMapClick(evt) {
     if (get(reportStep)) return;
     const hit = attachedMap.forEachFeatureAtPixel(evt.pixel, f => f, {
@@ -176,8 +165,6 @@
     map.addLayer(ownLayer);
     map.on('moveend', onMoveEnd);
     map.on('click', onMapClick);
-    map.getViewport().addEventListener('contextmenu', onContextMenu);
-    map.getViewport().addEventListener('pointerdown', onPointerDown, true);
     zoom = map.getView().getZoom() ?? 0;
     refreshOwnPins();
   }
@@ -187,8 +174,6 @@
     attachedMap.removeLayer(ownLayer);
     attachedMap.un('moveend', onMoveEnd);
     attachedMap.un('click', onMapClick);
-    attachedMap.getViewport().removeEventListener('contextmenu', onContextMenu);
-    attachedMap.getViewport().removeEventListener('pointerdown', onPointerDown, true);
     attachedMap = null;
   }
 
@@ -232,12 +217,6 @@
     dupeFeature = null;
     checking = false;
     flowId += 1;
-    const at = get(reportStartAt);
-    reportStartAt.set(null);
-    const view = attachedMap?.getView();
-    if (at && view) {
-      view.animate({ center: at, zoom: Math.max(view.getZoom() ?? 0, 18), duration: 400 });
-    }
   }
 
   function useMyLocation() {
@@ -615,7 +594,7 @@
   </div>
 {/if}
 
-{#if showEmptyHint && !$reportStep && !$hasSelection}
+{#if showEmptyHint && !$reportStep && !$hasSelection && !$modalOpen}
   <div class="empty-hint" role="status">
     <span>{$_('report.empty.text')}</span>
     <button type="button" class="btn btn-primary btn-small" onclick={() => startReport()}>

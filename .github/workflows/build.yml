@@ -26,7 +26,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
 
       - name: Set up Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
         with:
           node-version: 20
           cache: npm
@@ -199,9 +199,15 @@ jobs:
           # breaks installation silently: the browser just never offers it.
           manifest() {
             docker run --rm --entrypoint sh "$@" spieli-app:citest -c '
+              # The image ships the make-dev fallback manifest (name spieli),
+              # so waiting for the file to exist could read the fallback before
+              # the entrypoint replaced it (#987). Remove it first: the
+              # generated one is moved into place atomically, so its existence
+              # means it is complete. It is also written after csp.conf.
+              rm -f /usr/share/nginx/html/manifest.webmanifest
               /docker-entrypoint.sh >/dev/null 2>&1 &
               i=0
-              while [ ! -s /usr/share/nginx/html/manifest.webmanifest ] || [ ! -s /etc/nginx/csp.conf ]; do
+              while [ ! -s /usr/share/nginx/html/manifest.webmanifest ]; do
                 i=$((i+1)); [ "$i" -gt 100 ] && { echo "entrypoint did not finish" >&2; exit 1; }
                 sleep 0.2
               done
@@ -1024,7 +1030,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
 
       - name: Log in to Container Registry
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f  # v4.6.0
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6  # v4.7.0
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -1106,7 +1112,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
 
       - name: Log in to Container Registry
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f  # v4.6.0
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6  # v4.7.0
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}

@@ -1,9 +1,9 @@
 {
-  "appTitle": "遊び場マップ – {{regionName}}",
+  "appTitle": "遊び場マップ – {regionName}",
   "search": {
     "placeholder": "検索 …",
-    "found": "{{location}}で「{{query}}」",
-    "foundGeneric": "「{{query}}」が見つかりました",
+    "found": "{location}で「{query}」",
+    "foundGeneric": "「{query}」が見つかりました",
     "notFound": "結果が見つかりませんでした！",
     "ariaLabel": "Location search",
     "clearLabel": "Clear search"
@@ -47,15 +47,15 @@
     "none": "この遊び場の写真はまだありません。<br>訪れたことがありますか？",
     "addLink": "写真を追加",
     "enlarge": "クリックして拡大",
-    "thumbnail": "写真 {{n}}"
+    "thumbnail": "写真 {n}"
   },
   "poi": {
     "errorLoad": "周辺データを読み込めませんでした。",
     "alwaysOpen": "常時開放",
     "open": "営業中",
-    "openUntil": "{{time}}まで営業",
+    "openUntil": "{time}まで営業",
     "closed": "閉店",
-    "opensAt": "{{day}} {{time}}に開きます",
+    "opensAt": "{day} {time}に開きます",
     "openingHours": "営業時間",
     "today": "今日",
     "tomorrow": "明日",
@@ -85,41 +85,41 @@
     "addData": {
       "osm": {
         "label": "OpenStreetMap",
-        "text": "データは{{osmLink}}から提供されています — 数百万人のボランティアによって作られた無料の共同世界地図です。マッピングされたものだけが表示されます。",
+        "text": "データは{osmLink}から提供されています — 数百万人のボランティアによって作られた無料の共同世界地図です。マッピングされたものだけが表示されます。",
         "wikiUrl": "https://ja.wikipedia.org/wiki/OpenStreetMap"
       },
       "contribute": {
         "label": "遊び場に貢献する",
-        "text": "誰でも貢献できます。{{learnOsmLink}}が良い出発点です。関連するタグは{{wikiLink}}および{{equipmentLink}}のページに記載されています。",
+        "text": "誰でも貢献できます。{learnOsmLink}が良い出発点です。関連するタグは{wikiLink}および{equipmentLink}のページに記載されています。",
         "learnOsmUrl": "https://learnosm.org/ja/beginner/",
         "wikiLabel": "OSM wiki",
         "equipmentLabel": "個別遊具のマッピング"
       },
       "photos": {
         "label": "写真を追加する",
-        "text": "写真は{{mapcompleteLink}}から直接アップロードできます — 遊び場を開いて「写真を追加」をクリックしてください。写真は{{panoramaxLink}}によって提供されます。"
+        "text": "写真は{mapcompleteLink}から直接アップロードできます — 遊び場を開いて「写真を追加」をクリックしてください。写真は{panoramaxLink}によって提供されます。"
       },
       "community": {
         "label": "コミュニティ",
-        "text": "質問や参加を希望する方は、{{chatLink}}からローカルOSMコミュニティにご連絡ください。",
+        "text": "質問や参加を希望する方は、{chatLink}からローカルOSMコミュニティにご連絡ください。",
         "chatLabel": "ローカルOSMコミュニティチャット"
       }
     },
     "about": {
       "history": {
         "label": "歴史",
-        "text": "遊び場マップは{{authorLink}}によって{{courseLink}}の最終プロジェクトとして作成されました — 当初はベルリンを対象としていました。その後、任意のOSM地域で使用できる汎用マップへと発展しました。",
+        "text": "遊び場マップは{authorLink}によって{courseLink}の最終プロジェクトとして作成されました — 当初はベルリンを対象としていました。その後、任意のOSM地域で使用できる汎用マップへと発展しました。",
         "courseUrl": "https://gis-trainer.com/de/gis_webmapping.php",
         "courseLabel": "GISおよびウェブマッピングコース"
       },
       "project": {
         "label": "プロジェクト",
-        "text": "遊び場マップは{{osmLink}}データに基づく無料のインタラクティブウェブマップです。独自データを含まず、ログインも不要で、ユーザーを追跡しません。OSMで遊び場データを改善すると、このマップも自動的に改善されます。",
+        "text": "遊び場マップは{osmLink}データに基づく無料のインタラクティブウェブマップです。独自データを含まず、ログインも不要で、ユーザーを追跡しません。OSMで遊び場データを改善すると、このマップも自動的に改善されます。",
         "osmWikiUrl": "https://ja.wikipedia.org/wiki/OpenStreetMap"
       },
       "source": {
         "label": "ソースコード",
-        "text": "このプロジェクトはオープンソースで、{{repoLink}}。",
+        "text": "このプロジェクトはオープンソースで、{repoLink}。",
         "repoLabel": "公開されています"
       }
     }

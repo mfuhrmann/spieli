@@ -523,17 +523,16 @@
           <Minus class="h-4 w-4" />
         </button>
       </div>
-      <!-- An action, not a map tool: labelled and in the accent colour, so it
-           does not read as one more zoom/locate control (#1000). -->
+      <!-- Icon only, so it does not compete with the map; the accent-coloured
+           icon keeps it apart from the zoom/locate controls (#1000). -->
       {#if !$reportPlacing}
         <button
-          class="report-btn"
+          class="control-btn report-btn"
           onclick={() => startReport()}
+          title={$_('report.button')}
           aria-label={$_('report.button')}
         >
           <MapPinPlus class="h-5 w-5" aria-hidden="true" />
-          <span class="report-label-long" aria-hidden="true">{$_('report.button')}</span>
-          <span class="report-label-short" aria-hidden="true">{$_('report.buttonShort')}</span>
         </button>
       {/if}
     </div>
@@ -647,38 +646,6 @@
     align-items: flex-end;
   }
 
-  .report-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.375rem;
-    height: 40px;
-    padding: 0 0.875rem 0 0.75rem;
-    border: none;
-    border-radius: 999px;
-    background: #047857;
-    color: #ffffff;
-    font: inherit;
-    font-size: 0.875rem;
-    font-weight: 600;
-    white-space: nowrap;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-    cursor: pointer;
-    transition: background 0.15s;
-  }
-
-  .report-btn:hover {
-    background: #065f46;
-  }
-
-  .report-btn:focus-visible {
-    outline: 3px solid #34d399;
-    outline-offset: 2px;
-  }
-
-  .report-label-short {
-    display: none;
-  }
-
   .control-btn {
     display: flex;
     align-items: center;
@@ -697,6 +664,12 @@
   .control-btn:hover {
     background: #f5f5f5;
     color: #333;
+  }
+
+  /* Compound selector, so .control-btn's grey cannot win on order. */
+  .control-btn.report-btn,
+  .control-btn.report-btn:hover {
+    color: #047857;
   }
 
   .zoom-controls {
@@ -847,14 +820,6 @@
     .controls-bottom-right {
       bottom: 10rem;
       right: 0.75rem;
-    }
-
-    .report-label-long {
-      display: none;
-    }
-
-    .report-label-short {
-      display: inline;
     }
 
     /* Legend moved out of the search column on mobile — sits below the

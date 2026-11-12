@@ -12,7 +12,18 @@ import fixture from './fixtures/playground.json' assert { type: 'json' };
  * Pass `{ clusterMaxZoom: 13 }` (or any other override) when a test needs
  * the cluster tier behaviour.
  */
+/**
+ * Abort live Nominatim (#1012). Its region lookup re-frames the map whenever
+ * it happens to answer, so a test that places the view would depend on the
+ * network. Registered on the context: page.route() stubs take precedence, so
+ * a spec that needs search results still gets its own, in any order.
+ */
+async function blockLiveNominatim(page) {
+  await page.context().route('**/nominatim.openstreetmap.org/**', route => route.abort());
+}
+
 export async function injectApiConfig(page, overrides = {}) {
+  await blockLiveNominatim(page);
   await page.route('**/config.js', route =>
     route.fulfill({
       status: 200,
@@ -94,6 +105,7 @@ export async function stubApiRoutes(page, playgrounds = fixture, clusters = null
  * can dispatch requests by path prefix.
  */
 export async function injectHubConfig(page, overrides = {}) {
+  await blockLiveNominatim(page);
   await page.route('**/config.js', route =>
     route.fulfill({
       status: 200,

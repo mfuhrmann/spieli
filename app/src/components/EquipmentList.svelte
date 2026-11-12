@@ -2,7 +2,8 @@
   import { onMount } from 'svelte';
   import { modal } from '../stores/modalOpen.js';
   import { objDevices, objFitnessStation } from '../lib/objPlaygroundEquipment.js';
-  import { panoramaxThumbUrl, panoramaxViewerUrl } from '../lib/panoramax.js';
+  import { deviceLabel, humanizeTagValue } from '../lib/deviceLabel.js';
+  import { panoramaxThumbUrl, panoramaxViewerUrl, panoramaxUuidsFromTags } from '../lib/panoramax.js';
   import { objColors } from '../lib/vectorStyles.js';
   import { getEquipmentAttributesFromProps } from '../lib/equipmentAttributes.js';
   import { themeOf, themeIcon, themeName } from '../lib/playgroundThemes.js';
@@ -70,10 +71,8 @@
     const uuids = [];
     const seen = new Set();
     for (const f of feats) {
-      for (let i = 0; i <= 9; i++) {
-        const key = i === 0 ? 'panoramax' : `panoramax:${i}`;
-        const v = f.properties[key];
-        if (v && !seen.has(v)) { seen.add(v); uuids.push(v); }
+      for (const v of panoramaxUuidsFromTags(f.properties)) {
+        if (!seen.has(v)) { seen.add(v); uuids.push(v); }
       }
     }
     return uuids;
@@ -90,10 +89,8 @@
     const uuids = [];
     const seen = new Set();
     const push = props => {
-      for (let i = 0; i <= 9; i++) {
-        const key = i === 0 ? 'panoramax' : `panoramax:${i}`;
-        const v = props[key];
-        if (v && !seen.has(v)) {
+      for (const v of panoramaxUuidsFromTags(props)) {
+        if (!seen.has(v)) {
           seen.add(v);
           uuids.push(v);
         }
@@ -173,7 +170,7 @@
                 {#each group.children as child (child.properties.osm_id)}
                   {@const childKey = child.properties.playground}
                   {@const childName = childKey
-                    ? $_('equipment.devices.' + childKey, { default: childKey })
+                    ? deviceLabel(childKey, $_)
                     : '?'}
                   {@const childCat = childKey ? (objDevices[childKey]?.category ?? 'fallback') : 'fallback'}
                   {@const childColor = objColors[childCat] ?? objColors['fallback']}
@@ -199,7 +196,7 @@
     <ul class="mb-0 device-list">
       {#each devicesByType as { items, collapsed } (items[0].properties.playground)}
         {@const key = items[0].properties.playground}
-        {@const name = $_('equipment.devices.' + key, { default: objDevices[key]?.name_de ?? key })}
+        {@const name = deviceLabel(key, $_)}
         {@const cat = objDevices[key]?.category ?? 'fallback'}
         {@const color = objColors[cat] ?? objColors['fallback']}
         {#if collapsed}
@@ -337,7 +334,7 @@
               {#each pitchFeatures as f, i (f.properties.osm_id)}
                 {@const sports = (f.properties.sport ?? '').split(';').map(s => s.trim()).filter(Boolean)}
                 {@const label = sports.length
-                  ? sports.map(s => $_('equipment.pitches.' + s, { default: s })).join(' / ')
+                  ? sports.map(s => $_('equipment.pitches.' + s, { default: humanizeTagValue(s) })).join(' / ')
                   : $_('equipment.pitchDefault')}
                 {@const detail = getEquipmentAttributesFromProps(f.properties, $_)}
                 {@const themeVal = themeOf(f.properties)}
@@ -379,7 +376,7 @@
   {:else if Object.keys(fallbackCounts).length}
     <ul class="mb-0">
       {#each Object.entries(fallbackCounts) as [key, count]}
-        {@const name = $_('equipment.devices.' + key, { default: objDevices[key]?.name_de ?? key })}
+        {@const name = deviceLabel(key, $_)}
         {@const cat  = objDevices[key]?.category ?? 'fallback'}
         {@const color = objColors[cat] ?? objColors['fallback']}
         <li>

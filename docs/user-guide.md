@@ -87,6 +87,7 @@ Open the filter panel to show only playgrounds that match your needs:
 | Dogs allowed | Dogs are permitted (`dog=yes`) |
 | Themed | Has a recognised theme — ship, octopus, castle, … (`playground:theme`) |
 | With shade | Shaded areas (`shade=yes`) |
+| Lit at night | Playgrounds tagged as lit — `lit=yes`, `automatic`, `24/7`, `limited`, or lighting times. Values the map does not recognise do not count |
 | Public only | Hide playgrounds that are private or for customers only — see [Who can use a playground](#who-can-use-a-playground) |
 | No private ones | Hide only private playgrounds (e.g. a kindergarten's or a school's); customers-only ones stay |
 
@@ -184,7 +185,7 @@ On a desktop, Chrome and Edge (install icon in the address bar) and Safari on a 
 
 ## Reporting a missing playground
 
-Know a playground that is not on the map? Press **Missing a playground?** (the green button at the bottom right, "Missing one?" on phones). You can also right-click the map (with a mouse), use the offer that appears when a search finds nothing or when no playgrounds are in view, or open it from the Info dialog. The back button or gesture closes the report again.
+Know a playground that is not on the map? Press the green map pin with a plus at the bottom right, below the zoom buttons. You can also use the offer that appears when a search finds nothing or when no playgrounds are in view, or open it from the Info dialog. The back button or gesture closes the report again.
 
 1. **Mark the spot.** Move the map until the cross sits on the playground. If your location is known, "I'm standing in front of it" jumps there. If a known playground is right next to the spot, spieli asks whether you mean that one. Outside the area this map has data for, spieli cannot check that, so it only offers MapComplete, which shows what OpenStreetMap already has there.
 2. **Choose how to report it:**

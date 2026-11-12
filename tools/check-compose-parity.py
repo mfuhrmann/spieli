@@ -17,6 +17,10 @@ The invariant is one-directional. Production may pass MORE than development
 (HUB_POLL_INTERVAL does), because the deployment shapes genuinely differ. It may
 not pass less.
 
+Both files must also end with a newline (#881): the operator's copy is
+compared against the released file with diff, where a missing one is noise on
+every comparison, and an append with >> would land on the last line.
+
 Usage:
     tools/check-compose-parity.py [--dev compose.yml] [--prod compose.prod.yml]
 """
@@ -51,6 +55,13 @@ def main():
     args = ap.parse_args()
 
     failed = False
+    for path in (args.dev, args.prod):
+        with open(path, 'rb') as fh:
+            data = fh.read()
+        if not data.endswith(b'\n'):
+            failed = True
+            print(f'ERROR: {path} does not end with a newline', file=sys.stderr)
+
     for service in SHARED_SERVICES:
         dev = env_keys(args.dev, service)
         prod = env_keys(args.prod, service)

@@ -32,7 +32,8 @@
       "hasDogs": "Dogs allowed",
       "theme": "Themed",
       "shade": "With shade",
-      "hidePrivate": "No private ones (e.g. kindergarten, school)"
+      "hidePrivate": "No private ones (e.g. kindergarten, school)",
+      "lit": "Lit at night"
     },
     "mappingDetail": {
       "title": "Mapping detail",
@@ -126,6 +127,7 @@
     "picnic": "{count, plural, one {# picnic table} other {# picnic tables}}",
     "noDevices": "No equipment mapped.",
     "fitnessDefault": "Fitness station",
+    "deviceDefault": "Play equipment",
     "pitchDefault": "Sports pitch",
     "addHint": "Equipment not yet mapped individually – help out! 👇",
     "addLink": "Add equipment",
@@ -848,7 +850,6 @@
   },
   "report": {
     "button": "Missing a playground?",
-    "buttonShort": "Missing one?",
     "infoCard": "Report a missing playground",
     "searchHint": "Missing a playground? Report it",
     "cancel": "Cancel",

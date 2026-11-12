@@ -32,7 +32,8 @@
       "hasDogs": "Hunde erlaubt",
       "theme": "Mit Thema",
       "shade": "Mit Schatten",
-      "hidePrivate": "Ohne private (z. B. Kita, Schule)"
+      "hidePrivate": "Ohne private (z. B. Kita, Schule)",
+      "lit": "Beleuchtet"
     },
     "mappingDetail": {
       "title": "Erfasste Details",
@@ -126,6 +127,7 @@
     "picnic": "{count, plural, one {# Picknicktisch} other {# Picknicktische}}",
     "noDevices": "Keine Spielgeräte erfasst.",
     "fitnessDefault": "Fitnessgerät",
+    "deviceDefault": "Spielgerät",
     "pitchDefault": "Sportfeld",
     "addHint": "Spielgeräte noch nicht einzeln kartiert – hilf mit! 👇",
     "addLink": "Spielgerät hinzufügen",
@@ -848,7 +850,6 @@
   },
   "report": {
     "button": "Spielplatz fehlt?",
-    "buttonShort": "Fehlt einer?",
     "infoCard": "Fehlenden Spielplatz melden",
     "searchHint": "Spielplatz fehlt? Melden",
     "cancel": "Abbrechen",
