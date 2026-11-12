@@ -221,7 +221,6 @@ volumes:
   pgdata2:
   pbf_cache:
   basemap_cache:
-
   ext_cache:
 networks:
   default:
