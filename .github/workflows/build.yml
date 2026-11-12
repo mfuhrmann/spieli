@@ -564,7 +564,13 @@ jobs:
           reject "location ^~ /ext/nominatim/" "$O"
           want "https://nominatim.openstreetmap.org" "$O"
           want "location @ext_panoramax_follow" "$O"
-          want "img-src 'self' data:;" "$O"
+          # Commons is off here, so its hosts are back in img-src, but
+          # Panoramax must not be: thumbnails have no opt-out. Only the
+          # img-src directive is checked, because frame-src names the host
+          # for the viewer.
+          if printf '%s' "$O" | grep -o "img-src[^;]*" | grep -q panoramax; then
+            echo 'Panoramax is in img-src although its thumbnails are always proxied' >&2; exit 1
+          fi
 
           printf '\n── a value with whitespace fails closed with the intended message\n'
           # An unquoted eval word-splits "true junk" and runs the second word,
