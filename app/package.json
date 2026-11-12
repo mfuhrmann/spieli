@@ -20,7 +20,7 @@
     "ol": "10.11.0",
     "ol-mapbox-style": "^13.8.0",
     "opening_hours": "^3.15.0",
-    "svelte": "^5.57.2",
+    "svelte": "^5.57.3",
     "svelte-i18n": "^4.0.1",
     "tailwind-merge": "^3.7.0",
     "tailwind-variants": "^3.3.1"
