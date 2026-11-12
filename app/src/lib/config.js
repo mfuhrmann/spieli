@@ -222,6 +222,8 @@ export const mangroveApiUrl   = c.mangroveApiUrl   || 'https://api.mangrove.revi
 // anonymous hint; the MapComplete link stays. `??`, not `||`: an explicit ''
 // is the opt-out.
 export const osmNotesUrl      = c.osmNotesUrl ?? 'https://api.openstreetmap.org';
-// Panoramax is intentionally absent: it cannot be proxied (its thumbnail
-// endpoint redirects to a per-instance derivative host, and its viewer is an
-// iframe). The host lives in app/src/lib/panoramax.js, which explains why.
+// Base for Panoramax thumbnails: '/ext/panoramax' in the container, which
+// follows the endpoint's redirect server-side (#863), or the public API for
+// `make dev`. Only thumbnails: the viewer is an iframe and stays on the
+// provider's origin — see app/src/lib/panoramax.js.
+export const panoramaxThumbBase = c.panoramaxThumbBase || 'https://api.panoramax.xyz';

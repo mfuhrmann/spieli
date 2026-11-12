@@ -193,5 +193,5 @@ The "last import" date shown in the instance footer indicates when the database 
 ## Privacy
 
 - No user accounts, no tracking, no cookies beyond what the browser stores locally
-- Your browser directly contacts Nominatim (search), the configured basemap provider (map tiles), Panoramax (photos), and Mangrove.reviews — see [External Services](reference/external-services.md) for the full list
+- Search, map tiles, photos and reviews are fetched by the spieli server, not by your browser. In a default setup your browser contacts a third party only when you open the Panoramax photo viewer, or send a "missing playground" hint to OpenStreetMap — see [External Services](reference/external-services.md) for the full list
 - spieli itself does not log search queries or playground clicks
