@@ -1,6 +1,7 @@
 import { writable, derived } from 'svelte/store';
 import { playgroundCompleteness } from '../lib/completeness.js';
 import { mappingDetail } from './mappingDetail.js';
+import { litState } from '../lib/pitchInfo.js';
 
 // showComplete/showPartial/showMissing default true (show all).
 // Deactivating a state hides playgrounds of that completeness.
@@ -20,6 +21,7 @@ export const defaultFilters = {
     hasDogs:          false,
     theme:            false,
     shade:            false,
+    lit:              false,
     standalonePitches: false,  // layer toggle — show pitches outside playground areas
     showComplete:     true,
     showPartial:      true,
@@ -69,6 +71,9 @@ export function matchesFilters(props, filters) {
     if (filters.hasDogs     && !props.has_dogs)       return false;
     if (filters.theme       && !props.has_theme)      return false;
     if (filters.shade       && !props.has_shade)       return false;
+    // has_lit comes from the server; a backend on an older schema (hub) or
+    // Overpass data has none, so read the raw tag by the same rule instead.
+    if (filters.lit         && !(props.has_lit ?? litState(props.lit))) return false;
     if (!filters.showComplete || !filters.showPartial || !filters.showMissing) {
         const c = playgroundCompleteness(props);
         if (!filters.showComplete && c === 'complete') return false;

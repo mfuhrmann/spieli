@@ -49,6 +49,19 @@ export function litInfo(lit) {
   return null;
 }
 
+/**
+ * Tri-state reading of `lit` for the "Lit at night" filter: true when
+ * litInfo() reports some lighting, false for no/disused, null when untagged
+ * or unrecognised. MIRRORS public.lit_state() in importer/api.sql, so the
+ * filter and the Lighting row agree; the db-smoke workflow runs the truth
+ * table in litState.cases.json against both.
+ */
+export function litState(lit) {
+  const info = litInfo(lit);
+  if (!info) return null;
+  return info.key !== 'pitch.lit.no';
+}
+
 const ACCESS = {
   yes: 'public', public: 'public', permissive: 'public',
   customers: 'customers',

@@ -173,6 +173,30 @@ AS $$
 $$;
 
 -- =========================================================================
+-- lit_state(lit)
+--    Tri-state reading of a `lit=*` value: true (some lighting), false
+--    (none), NULL (untagged or a value we do not recognise). MIRRORS
+--    litInfo()/litState() in app/src/lib/pitchInfo.js — the filter and the
+--    panel's Lighting row must agree on the same tag. Case- and
+--    whitespace-insensitive like the JS; an unrecognised value (`unknown`,
+--    `fixme`, a typo) is NULL, never "lit". The db-smoke workflow asserts
+--    the truth table in app/src/lib/litState.cases.json, which
+--    pitchInfo.test.js runs against the JS. In `public`: a helper, not an RPC.
+-- =========================================================================
+CREATE OR REPLACE FUNCTION public.lit_state(lit text)
+RETURNS boolean
+LANGUAGE sql IMMUTABLE PARALLEL SAFE
+AS $$
+  SELECT CASE
+    WHEN v = '' THEN NULL
+    WHEN v IN ('yes', '24/7', 'automatic', 'limited', 'interval') THEN true
+    WHEN v IN ('no', 'disused') THEN false
+    WHEN v ~ '[0-9]' OR v LIKE '%sunset%' OR v LIKE '%sunrise%' THEN true
+  END
+  FROM (SELECT lower(btrim(COALESCE(lit, ''))) AS v) s;
+$$;
+
+-- =========================================================================
 -- Indexes on the osm2pgsql tables (idempotent).
 --
 -- These are created *before* the playground_stats build, not after it: the
@@ -554,6 +578,9 @@ CREATE MATERIALIZED VIEW public.playground_stats_new AS
     COALESCE(es.has_dogs,       false) AS has_dogs,
     COALESCE(es.has_theme,      false) AS has_theme,
     es.has_shade,
+    -- Tri-state from the playground's own lit=* tag; see lit_state() above.
+    -- Not aggregated in equip_stats: it reads no equipment.
+    public.lit_state(pl.tags->'lit') AS has_lit,
     -- Tiered-delivery (P1): persisted centroid + per-playground completeness
     ST_Centroid(pl.way)                           AS centroid_3857,
     -- NULL-safe: untagged playgrounds (access IS NULL) are public, not NULL.
@@ -749,7 +776,8 @@ AS $$
               'has_fence',          COALESCE(s.has_fence, false),
               'has_dogs',           COALESCE(s.has_dogs, false),
               'has_theme',          COALESCE(s.has_theme, false),
-              'has_shade',          s.has_shade
+              'has_shade',          s.has_shade,
+              'has_lit',            s.has_lit
             ) || COALESCE(hstore_to_jsonb(pl.tags), '{}'::jsonb)
           )
         )
@@ -784,6 +812,7 @@ DROP FUNCTION IF EXISTS api.get_playground_clusters(int, float8, float8, float8,
 DROP FUNCTION IF EXISTS api.get_playground_clusters(int, float8, float8, float8, float8, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean);
 DROP FUNCTION IF EXISTS api.get_playground_clusters(int, float8, float8, float8, float8, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean);
 DROP FUNCTION IF EXISTS api.get_playground_clusters(int, float8, float8, float8, float8, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean);
+DROP FUNCTION IF EXISTS api.get_playground_clusters(int, float8, float8, float8, float8, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean);
 
 CREATE OR REPLACE FUNCTION api.get_playground_clusters(
   z                   int,
@@ -806,6 +835,7 @@ CREATE OR REPLACE FUNCTION api.get_playground_clusters(
   filter_has_dogs     boolean DEFAULT false,
   filter_theme        boolean DEFAULT false,
   filter_shade       boolean DEFAULT false,
+  filter_lit          boolean DEFAULT false,
   filter_complete     boolean DEFAULT true,
   filter_partial      boolean DEFAULT true,
   filter_missing      boolean DEFAULT true
@@ -865,6 +895,7 @@ AS $$
       AND (NOT filter_has_dogs       OR ps.has_dogs)
       AND (NOT filter_theme          OR ps.has_theme)
       AND (NOT filter_shade          OR ps.has_shade)
+      AND (NOT filter_lit            OR ps.has_lit)
       AND (
         (ps.completeness = 'complete' AND filter_complete)
         OR (ps.completeness = 'partial'  AND filter_partial)
@@ -905,7 +936,7 @@ AS $$
   FROM aggregated;
 $$;
 
-GRANT EXECUTE ON FUNCTION api.get_playground_clusters(int, float8, float8, float8, float8, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean) TO web_anon;
+GRANT EXECUTE ON FUNCTION api.get_playground_clusters(int, float8, float8, float8, float8, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean) TO web_anon;
 
 -- =========================================================================
 -- 1b. get_playground_centroids(bbox)
@@ -951,6 +982,7 @@ AS $$
           'has_dogs',          ps.has_dogs,
           'has_theme',         ps.has_theme,
           'has_shade',         ps.has_shade,
+          'has_lit',           ps.has_lit,
           'access_restricted', ps.access_restricted
         )
       )
@@ -1063,7 +1095,8 @@ AS $$
               'has_fence',          COALESCE(s.has_fence, false),
               'has_dogs',           COALESCE(s.has_dogs, false),
               'has_theme',          COALESCE(s.has_theme, false),
-              'has_shade',          s.has_shade
+              'has_shade',          s.has_shade,
+              'has_lit',            s.has_lit
             ) || COALESCE(hstore_to_jsonb(pl.tags), '{}'::jsonb)
           )
         )
@@ -1161,7 +1194,8 @@ AS $$
         'has_fence',          COALESCE(s.has_fence, false),
         'has_dogs',           COALESCE(s.has_dogs, false),
         'has_theme',          COALESCE(s.has_theme, false),
-        'has_shade',          s.has_shade
+        'has_shade',          s.has_shade,
+        'has_lit',            s.has_lit
       ) || COALESCE(hstore_to_jsonb(p.tags), '{}'::jsonb)
     )
   )

@@ -31,7 +31,8 @@
       "fence": "Eingezäunt",
       "hasDogs": "Hunde erlaubt",
       "theme": "Mit Thema",
-      "shade": "Mit Schatten"
+      "shade": "Mit Schatten",
+      "lit": "Beleuchtet"
     },
     "mappingDetail": {
       "title": "Erfasste Details",

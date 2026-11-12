@@ -70,6 +70,7 @@ Open the filter panel to show only playgrounds that match your needs:
 | Dogs allowed | Dogs are permitted (`dog=yes`) |
 | Themed | Has a recognised theme — ship, octopus, castle, … (`playground:theme`) |
 | With shade | Shaded areas (`shade=yes`) |
+| Lit at night | Playgrounds tagged as lit — `lit=yes`, `automatic`, `24/7`, `limited`, or lighting times. Values the map does not recognise do not count |
 | Exclude private | Hide access-restricted playgrounds |
 
 Active filters appear as chips below the search bar. Click a chip to remove that filter.

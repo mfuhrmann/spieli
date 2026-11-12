@@ -1,7 +1,7 @@
 <script>
   import { filterStore, hasActiveFilters, activeFilterCount, defaultFilters, effectiveFilters } from '../stores/filters.js';
   import { _ } from 'svelte-i18n';
-  import { Filter, Droplets, Baby, Accessibility, Armchair, UtensilsCrossed, Home, RectangleHorizontal, Goal, CircleDot, Lock, Layers, ShieldCheck, Dog, Sun, Sparkles } from 'lucide-svelte';
+  import { Filter, Droplets, Baby, Accessibility, Armchair, UtensilsCrossed, Home, RectangleHorizontal, Goal, CircleDot, Lock, Layers, ShieldCheck, Dog, Sun, Sparkles, Lightbulb } from 'lucide-svelte';
 
   import { tick, onDestroy } from 'svelte';
   import { mapStore } from '../stores/map.js';
@@ -63,6 +63,7 @@
     hasDogs:     Dog,
     theme:       Sparkles,
     shade:       Sun,
+    lit:         Lightbulb,
   };
 
   $: FILTERS = Object.entries(FILTER_ICONS).map(([key, icon]) => ({

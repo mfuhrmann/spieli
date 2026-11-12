@@ -25,6 +25,7 @@
         { "key": "barrier", "value": "fence", "object_types": ["way","area","relation"], "description": "Fenced-playground filter and feature indication" },
         { "key": "dog", "value": "yes", "object_types": ["node","way","area","relation"], "description": "Dogs-allowed filter for playgrounds" },
         { "key": "shade", "object_types": ["node","way","area","relation"], "description": "Shade filter and feature indication for playgrounds" },
+        { "key": "lit", "object_types": ["node","way","area","relation"], "description": "Lighting filter and feature indication for playgrounds" },
         { "key": "wheelchair", "object_types": ["node","way","area","relation"], "description": "Wheelchair-accessibility target-group filter and equipment detail" },
         { "key": "baby", "object_types": ["node","way","area","relation"], "description": "Baby/infant target-group filter and equipment detail" },
         { "key": "capacity:baby", "object_types": ["node","way","area","relation"], "description": "Baby target-group detection and equipment detail" },

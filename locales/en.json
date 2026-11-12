@@ -31,7 +31,8 @@
       "fence": "Fenced",
       "hasDogs": "Dogs allowed",
       "theme": "Themed",
-      "shade": "With shade"
+      "shade": "With shade",
+      "lit": "Lit at night"
     },
     "mappingDetail": {
       "title": "Mapping detail",
