@@ -199,9 +199,15 @@ jobs:
           # breaks installation silently: the browser just never offers it.
           manifest() {
             docker run --rm --entrypoint sh "$@" spieli-app:citest -c '
+              # The image ships the make-dev fallback manifest (name spieli),
+              # so waiting for the file to exist could read the fallback before
+              # the entrypoint replaced it (#987). Remove it first: the
+              # generated one is moved into place atomically, so its existence
+              # means it is complete. It is also written after csp.conf.
+              rm -f /usr/share/nginx/html/manifest.webmanifest
               /docker-entrypoint.sh >/dev/null 2>&1 &
               i=0
-              while [ ! -s /usr/share/nginx/html/manifest.webmanifest ] || [ ! -s /etc/nginx/csp.conf ]; do
+              while [ ! -s /usr/share/nginx/html/manifest.webmanifest ]; do
                 i=$((i+1)); [ "$i" -gt 100 ] && { echo "entrypoint did not finish" >&2; exit 1; }
                 sleep 0.2
               done
