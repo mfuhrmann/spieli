@@ -1,5 +1,5 @@
 <script>
-  import { objDevices, objFitnessStation } from '../lib/objPlaygroundEquipment.js';
+  import { objFitnessStation } from '../lib/objPlaygroundEquipment.js';
   import { deviceLabel } from '../lib/deviceLabel.js';
   import { panoramaxThumbUrl, panoramaxUuidsFromTags } from '../lib/panoramax.js';
   import { themeOf, themeIcon, themeName } from '../lib/playgroundThemes.js';
@@ -28,7 +28,9 @@
     if (props.amenity === 'bench') return $_('equipment.devices.bench', { default: 'Bench' });
     if (props.amenity === 'shelter') return $_('equipment.devices.shelter', { default: 'Shelter' });
     if (props.leisure === 'picnic_table') return $_('equipment.devices.picnic_table', { default: 'Picnic table' });
-    return props.playground || $_('equipment.fitnessDefault');
+    // playground=yes (or anything else unlabelled above): never the raw lower-case value
+    if (props.playground) return $_('equipment.deviceDefault');
+    return $_('equipment.fitnessDefault');
   })();
 
   $: details = (() => {
