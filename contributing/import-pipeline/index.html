@@ -2325,6 +2325,10 @@
 <td><code>has_shade</code></td>
 <td><code>shade</code> tag on playground — <code>true</code> when <code>shade=yes</code>, <code>false</code> when <code>shade=no</code>, <code>null</code> when untagged</td>
 </tr>
+<tr>
+<td><code>has_lit</code></td>
+<td><code>lit</code> tag on playground (case-insensitive) — <code>true</code> for <code>yes</code>, <code>24/7</code>, <code>automatic</code>, <code>limited</code>, <code>interval</code> or times (<code>sunset-22:00</code>), <code>false</code> for <code>no</code> / <code>disused</code>, <code>null</code> when untagged or unrecognised. Rule: <code>public.lit_state()</code>, mirrored by <code>litState()</code> in <code>app/src/lib/pitchInfo.js</code></td>
+</tr>
 </tbody>
 </table>
 <p>All flag logic lives in <code>importer/api.sql</code> (the <code>equip_stats</code> CTE inside <code>playground_stats</code>).</p>

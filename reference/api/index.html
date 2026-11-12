@@ -2519,6 +2519,12 @@
 <td>When <code>true</code>, include only playgrounds with shade</td>
 </tr>
 <tr>
+<td><code>filter_lit</code></td>
+<td><code>boolean</code></td>
+<td><code>false</code></td>
+<td>When <code>true</code>, include only playgrounds whose <code>has_lit</code> is <code>true</code></td>
+</tr>
+<tr>
 <td><code>filter_complete</code></td>
 <td><code>boolean</code></td>
 <td><code>true</code></td>
@@ -2574,7 +2580,7 @@
 </tr>
 </tbody>
 </table>
-<p><strong>Response</strong> — GeoJSON <code>FeatureCollection</code>. Each feature's <code>properties</code> include <code>osm_id</code>, <code>osm_type</code> (<code>R</code>, <code>W</code>, or <code>N</code>), <code>name</code>, <code>leisure</code>, <code>operator</code>, <code>access</code>, <code>surface</code>, <code>area</code>, the playground-stats counts (<code>tree_count</code> — <code>natural=tree</code> nodes within 15 m of the playground on the ground, <code>bench_count</code>, etc.), and the per-equipment booleans (<code>is_water</code>, <code>for_baby</code>, <code>for_toddler</code>, <code>for_wheelchair</code>, <code>has_soccer</code>, <code>has_basketball</code>, <code>has_fence</code>, <code>has_dogs</code>, <code>has_theme</code>, <code>has_shade</code>), plus the tri-state <code>wheelchair_play</code> (<code>'yes'</code> | <code>'no'</code> | <code>null</code>). The original tag hstore is spread on top so any OSM tag is reachable. Node playgrounds (<code>osm_type = 'N'</code>) are returned as small circular polygons (5 m radius buffer around the node point).</p>
+<p><strong>Response</strong> — GeoJSON <code>FeatureCollection</code>. Each feature's <code>properties</code> include <code>osm_id</code>, <code>osm_type</code> (<code>R</code>, <code>W</code>, or <code>N</code>), <code>name</code>, <code>leisure</code>, <code>operator</code>, <code>access</code>, <code>surface</code>, <code>area</code>, the playground-stats counts (<code>tree_count</code> — <code>natural=tree</code> nodes within 15 m of the playground on the ground, <code>bench_count</code>, etc.), and the per-equipment booleans (<code>is_water</code>, <code>for_baby</code>, <code>for_toddler</code>, <code>for_wheelchair</code>, <code>has_soccer</code>, <code>has_basketball</code>, <code>has_fence</code>, <code>has_dogs</code>, <code>has_theme</code>, <code>has_shade</code>, <code>has_lit</code>), plus the tri-state <code>wheelchair_play</code> (<code>'yes'</code> | <code>'no'</code> | <code>null</code>). The original tag hstore is spread on top so any OSM tag is reachable. Node playgrounds (<code>osm_type = 'N'</code>) are returned as small circular polygons (5 m radius buffer around the node point).</p>
 <p>The equipment booleans are aggregated across all equipment within the playground polygon. <code>for_baby</code> is <code>true</code> when any equipment has <code>baby=yes</code>, <code>capacity:baby</code> set, or <code>playground</code> ∈ <code>baby_swing</code>, <code>basketswing</code>, <code>sandpit</code>, <code>springy</code>. See <a href="../../contributing/import-pipeline/#filter-flags-for_baby-for_toddler-is_water">Import Pipeline — filter flags</a> for the full trigger list.</p>
 <p><code>for_wheelchair</code> is the boolean projection of <code>wheelchair_play</code>, which is derived from play devices only — the playground area's own <code>wheelchair</code> tag is not an input, and street furniture and pitches cannot set it. <code>wheelchair_play = 'no'</code> means accessibility was surveyed and nothing qualified; <code>null</code> means nobody recorded it either way. The tri-state is carried by the per-feature RPCs only, not by the cluster, centroid or meta aggregates.</p>
 <blockquote>
@@ -2602,13 +2608,14 @@
 <a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a><span class="w">        </span><span class="nt">"has_dogs"</span><span class="p">:</span><span class="w">           </span><span class="kc">false</span><span class="p">,</span>
 <a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a><span class="w">        </span><span class="nt">"has_theme"</span><span class="p">:</span><span class="w">          </span><span class="kc">false</span><span class="p">,</span>
 <a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a><span class="w">        </span><span class="nt">"has_shade"</span><span class="p">:</span><span class="w">          </span><span class="kc">true</span><span class="p">,</span><span class="w">  </span><span class="c1">// true | false | null (untagged)</span>
-<a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a><span class="w">        </span><span class="nt">"is_water"</span><span class="p">:</span><span class="w">           </span><span class="kc">true</span><span class="p">,</span>
-<a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a><span class="w">        </span><span class="nt">"for_wheelchair"</span><span class="p">:</span><span class="w">     </span><span class="kc">false</span><span class="p">,</span>
-<a id="__codelineno-2-25" name="__codelineno-2-25" href="#__codelineno-2-25"></a><span class="w">        </span><span class="nt">"wheelchair_play"</span><span class="p">:</span><span class="w">    </span><span class="kc">null</span><span class="w">   </span><span class="c1">// 'yes' | 'no' | null (never surveyed)</span>
-<a id="__codelineno-2-26" name="__codelineno-2-26" href="#__codelineno-2-26"></a><span class="w">      </span><span class="p">}</span>
-<a id="__codelineno-2-27" name="__codelineno-2-27" href="#__codelineno-2-27"></a><span class="w">    </span><span class="p">}</span>
-<a id="__codelineno-2-28" name="__codelineno-2-28" href="#__codelineno-2-28"></a><span class="w">  </span><span class="p">]</span>
-<a id="__codelineno-2-29" name="__codelineno-2-29" href="#__codelineno-2-29"></a><span class="p">}</span>
+<a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a><span class="w">        </span><span class="nt">"has_lit"</span><span class="p">:</span><span class="w">            </span><span class="kc">null</span><span class="p">,</span><span class="w">  </span><span class="c1">// true | false | null (untagged)</span>
+<a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a><span class="w">        </span><span class="nt">"is_water"</span><span class="p">:</span><span class="w">           </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-2-25" name="__codelineno-2-25" href="#__codelineno-2-25"></a><span class="w">        </span><span class="nt">"for_wheelchair"</span><span class="p">:</span><span class="w">     </span><span class="kc">false</span><span class="p">,</span>
+<a id="__codelineno-2-26" name="__codelineno-2-26" href="#__codelineno-2-26"></a><span class="w">        </span><span class="nt">"wheelchair_play"</span><span class="p">:</span><span class="w">    </span><span class="kc">null</span><span class="w">   </span><span class="c1">// 'yes' | 'no' | null (never surveyed)</span>
+<a id="__codelineno-2-27" name="__codelineno-2-27" href="#__codelineno-2-27"></a><span class="w">      </span><span class="p">}</span>
+<a id="__codelineno-2-28" name="__codelineno-2-28" href="#__codelineno-2-28"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-2-29" name="__codelineno-2-29" href="#__codelineno-2-29"></a><span class="w">  </span><span class="p">]</span>
+<a id="__codelineno-2-30" name="__codelineno-2-30" href="#__codelineno-2-30"></a><span class="p">}</span>
 </code></pre></div>
 <h2 id="get_playgroundosm_id"><code>get_playground(osm_id)</code><a class="headerlink" href="#get_playgroundosm_id" title="Permanent link">&para;</a></h2>
 <p>Single-feature lookup used by the deeplink-hydration path when the polygon source isn't populated for the current viewport (cluster tier on first load).</p>
@@ -2650,14 +2657,15 @@
 <a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a><span class="w">      </span><span class="nt">"has_dogs"</span><span class="p">:</span><span class="w">          </span><span class="kc">false</span><span class="p">,</span>
 <a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a><span class="w">      </span><span class="nt">"has_theme"</span><span class="p">:</span><span class="w">         </span><span class="kc">false</span><span class="p">,</span>
 <a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a><span class="w">      </span><span class="nt">"has_shade"</span><span class="p">:</span><span class="w">         </span><span class="kc">true</span><span class="p">,</span><span class="w">  </span><span class="c1">// true | false | null (untagged)</span>
-<a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a><span class="w">      </span><span class="nt">"access_restricted"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span>
-<a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a><span class="w">    </span><span class="p">}</span>
-<a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a><span class="w">  </span><span class="p">}</span>
-<a id="__codelineno-3-21" name="__codelineno-3-21" href="#__codelineno-3-21"></a><span class="p">]</span>
+<a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a><span class="w">      </span><span class="nt">"has_lit"</span><span class="p">:</span><span class="w">           </span><span class="kc">null</span><span class="p">,</span><span class="w">  </span><span class="c1">// true | false | null (untagged)</span>
+<a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a><span class="w">      </span><span class="nt">"access_restricted"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span>
+<a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-3-21" name="__codelineno-3-21" href="#__codelineno-3-21"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-3-22" name="__codelineno-3-22" href="#__codelineno-3-22"></a><span class="p">]</span>
 </code></pre></div>
 <p>The standalone client doesn't consume this RPC in P1 — the server-bucketed cluster tier covers zoom ≤ 13 directly. The RPC ships now so federated hub clustering (<code>add-federated-playground-clustering</code>) and any future centroid tier can use it without a schema change.</p>
 <blockquote>
-<p>Note: the <code>filter_attrs</code> object includes <code>has_fence</code>, <code>has_dogs</code>, <code>has_theme</code>, and <code>has_shade</code> for the new playground filters. <code>has_shade</code> is nullable — <code>true</code> when <code>shade=yes</code>, <code>false</code> when <code>shade=no</code>, <code>null</code> when untagged.</p>
+<p>Note: the <code>filter_attrs</code> object includes <code>has_fence</code>, <code>has_dogs</code>, <code>has_theme</code>, <code>has_shade</code> and <code>has_lit</code> for the playground filters. Both are nullable — <code>has_shade</code> is <code>true</code> when <code>shade=yes</code>, <code>false</code> when <code>shade=no</code>; <code>has_lit</code> is <code>true</code> for a recognised lighting value (<code>yes</code>, <code>24/7</code>, <code>automatic</code>, <code>limited</code>, <code>interval</code>, times), <code>false</code> for <code>no</code> / <code>disused</code>; each is <code>null</code> when untagged (<code>has_lit</code> also when the value is not recognised).</p>
 </blockquote>
 <h2 id="get_meta-extended"><code>get_meta()</code> — extended<a class="headerlink" href="#get_meta-extended" title="Permanent link">&para;</a></h2>
 <p>Existing federation-discovery RPC, extended with completeness counts.</p>
