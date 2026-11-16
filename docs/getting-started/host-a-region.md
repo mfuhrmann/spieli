@@ -1,6 +1,6 @@
 # Host a region for spieli.eu
 
-[spieli.eu](https://spieli.eu) is a public playground map. It holds no data of its own. Every region on it comes from a data-node that someone runs for that region. At the moment these are the German states, and we are looking for people to add more.
+[spieli.eu](https://spieli.eu) is a public playground map. It holds no data of its own. Every region on it comes from a data-node that someone runs for that region. At the moment these are the German states, and we are looking for people to add more. A region does not have to be a whole country: a single state, district or city is just as welcome.
 
 If you are interested, come to [#spieli:matrix.org](https://matrix.to/#/#spieli:matrix.org) before you start. We can tell you whether your region is already covered and help you choose its boundary.
 
@@ -38,7 +38,7 @@ Once it runs, there is little to do: keep the server's operating system up to da
 
 ## Choosing a region
 
-A data-node covers one OpenStreetMap boundary relation, for example a city, a state or a country. It is cut out of a [Geofabrik](https://download.geofabrik.de) extract that contains the region. The table above goes up to Bavaria, which has 13 million inhabitants. Larger countries work as well but need more memory and disk; please ask in the chat first.
+A data-node covers one OpenStreetMap boundary relation. That can be a whole country, but a state, a district or a single city of a country is fine too; other people can add the neighbouring regions later. The region is cut out of a [Geofabrik](https://download.geofabrik.de) extract that contains the region. The table above goes up to Bavaria, which has 13 million inhabitants. Larger countries work as well but need more memory and disk; please ask in the chat first.
 
 ## Setting it up
 
