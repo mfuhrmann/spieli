@@ -17,7 +17,7 @@ With automatic updates switched on, the data-node re-imports the data every 2 to
 The installer offers two modes, and both put your region on spieli.eu:
 
 - `data-node` runs only the database and the API.
-- `data-node-ui` also serves a playground map of your region on your own domain, for example `playground.example.at` for Austria. spieli.eu reads from the same API, so both maps show the same data.
+- `data-node-ui` also serves a playground map of your region on your own domain. Someone covering Austria could run it as `my-playground-map.at`. spieli.eu reads from the same API, so both maps show the same data.
 
 Choose `data-node-ui` if you want a map you can point people to locally under its own name. When the installer then asks for the app mode, choose `standalone`.
 
@@ -42,7 +42,7 @@ A data-node covers one OpenStreetMap boundary relation, for example a city, a st
 
 ## Setting it up
 
-You need a Linux server with Docker and the Compose plugin, a domain or subdomain that points to it (here `spieli.example.org`), and ports 80 and 443 open.
+You need a Linux server with Docker and the Compose plugin, a domain or subdomain that points to it, and ports 80 and 443 open. The examples below use `my-playground-map.at` for a data-node covering Austria.
 
 1. Run the installer. The command for the current release is in the [Quick Start](quick-start.md#install), which also explains how to find your region's relation ID and extract. Choose `data-node` or `data-node-ui`, and answer yes to automatic updates. The question about an external hub origin can stay empty.
 
@@ -53,13 +53,13 @@ You need a Linux server with Docker and the Compose plugin, a domain or subdomai
     bash install-traefik.sh
     ```
 
-3. When the first import has finished, check the API from another machine. The answer should be `200 OK` with the header `Access-Control-Allow-Origin: *`, and `playground_count` should be above 0. With `data-node-ui`, your map is now at `https://spieli.example.org`.
+3. When the first import has finished, check the API from another machine. The answer should be `200 OK` with the header `Access-Control-Allow-Origin: *`, and `playground_count` should be above 0. With `data-node-ui`, your map is now at `https://my-playground-map.at`.
 
     ```bash
-    curl -i https://spieli.example.org/api/rpc/get_meta
+    curl -i https://my-playground-map.at/api/rpc/get_meta
     ```
 
-4. Send us the API address (`https://spieli.example.org/api`), the name of the region and its country in [#spieli:matrix.org](https://matrix.to/#/#spieli:matrix.org), and we add it to spieli.eu.
+4. Send us the API address (`https://my-playground-map.at/api`), the name of the region and its country in [#spieli:matrix.org](https://matrix.to/#/#spieli:matrix.org), and we add it to spieli.eu.
 
 ## Legal and privacy
 
