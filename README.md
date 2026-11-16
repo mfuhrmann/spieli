@@ -23,20 +23,15 @@ A free, interactive web map for exploring playgrounds based on [OpenStreetMap](h
 
 ## Deploy
 
-The interactive installer downloads everything it needs and walks you through configuration:
-
-```bash
-TAG=v0.5.1  # check https://github.com/mfuhrmann/spieli/releases for the latest tag
-curl -fsSL "https://github.com/mfuhrmann/spieli/releases/download/${TAG}/install.sh" -o install.sh
-curl -fsSL "https://github.com/mfuhrmann/spieli/releases/download/${TAG}/install.sh.sha256" -o install.sh.sha256
-sha256sum --check install.sh.sha256 && bash install.sh
-```
+An interactive installer downloads everything it needs and walks you through configuration: deployment mode (`data-node` / `ui` / `data-node-ui`), your OSM region and optional settings. It then generates a `.env`, pulls the images and optionally runs the first import.
 
 **Requirements:** Docker with the Compose plugin, `bash`, `openssl`
 
-The installer asks for a deployment mode (`data-node` / `ui` / `data-node-ui`), your OSM region, and optional settings, then generates a `.env`, pulls images, and optionally runs the first import.
+The command for the current release is in the [Quick Start](https://mfuhrmann.github.io/spieli/getting-started/quick-start/).
 
 For deploying from source, see [Manual Deploy](https://mfuhrmann.github.io/spieli/ops/manual-deploy/).
+
+To add your region to [spieli.eu](https://spieli.eu), see [Host a Region for spieli.eu](https://mfuhrmann.github.io/spieli/getting-started/host-a-region/).
 
 ---
 
