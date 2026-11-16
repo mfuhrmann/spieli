@@ -91,7 +91,7 @@ Traefik handles certificate issuance and renewal automatically — no manual cer
 If someone is running a spieli Hub and you want your region to appear on it, stand up a data-node and send them your API URL. The hub operator then adds you to their `registry.json`.
 
 !!! tip "Want your region on spieli.eu?"
-    [Host a Region for spieli.eu](host-a-region.md) has the same steps plus what it costs, which mode to pick, the legal side, and where to get in touch.
+    [Host a Region for spieli.eu](host-a-region.md) describes the same steps for spieli.eu, together with the server requirements and how to contact us.
 
 **1. Run the installer**
 

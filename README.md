@@ -27,11 +27,11 @@ An interactive installer downloads everything it needs and walks you through con
 
 **Requirements:** Docker with the Compose plugin, `bash`, `openssl`
 
-**[Install with the Quick Start →](https://mfuhrmann.github.io/spieli/getting-started/quick-start/)** — it always carries the command for the latest release.
+The command for the current release is in the [Quick Start](https://mfuhrmann.github.io/spieli/getting-started/quick-start/).
 
 For deploying from source, see [Manual Deploy](https://mfuhrmann.github.io/spieli/ops/manual-deploy/).
 
-**Want your region on [spieli.eu](https://spieli.eu)?** See [Host a Region for spieli.eu](https://mfuhrmann.github.io/spieli/getting-started/host-a-region/) — what it costs, how to set it up, and where to get in touch.
+To add your region to [spieli.eu](https://spieli.eu), see [Host a Region for spieli.eu](https://mfuhrmann.github.io/spieli/getting-started/host-a-region/).
 
 ---
 

@@ -28,12 +28,12 @@ Multiple regional instances can be aggregated into a single **Hub** map — see 
 
 ## See it in action
 
-[spieli.eu](https://spieli.eu) is the public map. Two well-mapped playgrounds in Fulda — open one, then look at the devices, the details and the 360° photos in the panel:
+The public map runs at [spieli.eu](https://spieli.eu). Two well-mapped playgrounds in Fulda, both with 360° photos:
 
-- [Carl-Schurz-Straße](https://spieli.eu/#hessen/W818585707) — 30 play devices, opening hours, operator
-- [Galgengraben](https://spieli.eu/#hessen/W143374809) — 25 play devices, several photos, two of them 360°
+- [Carl-Schurz-Straße](https://spieli.eu/#hessen/W818585707): 30 play devices, opening hours and operator
+- [Galgengraben](https://spieli.eu/#hessen/W143374809): 25 play devices and several photos
 
-Want your region on it? See [Host a Region for spieli.eu](getting-started/host-a-region.md).
+To add your own region, see [Host a Region for spieli.eu](getting-started/host-a-region.md).
 
 ---
 
