@@ -2,7 +2,7 @@
 
 [spieli.eu](https://spieli.eu) is a public playground map. It holds no data of its own. Every region on it comes from a data-node that someone runs for that region. At the moment these are the German states, and we are looking for people to add more. A region does not have to be a whole country: a single state, district or city is just as welcome.
 
-If you are interested, come to [#spieli:matrix.org](https://matrix.to/#/#spieli:matrix.org) before you start. We can tell you whether your region is already covered and help you choose its boundary.
+You can see which regions are already covered on the map itself, in the list of regions on [spieli.eu](https://spieli.eu), or in [spieli.eu/registry.json](https://spieli.eu/registry.json). Before you start, please come to [#spieli:matrix.org](https://matrix.to/#/#spieli:matrix.org) anyway: someone may already be setting up your region, and we can help you choose its boundary.
 
 An example of a well-mapped playground is [Carl-Schurz-Straße in Fulda](https://spieli.eu/#hessen/W818585707).
 
@@ -72,7 +72,7 @@ The data is © OpenStreetMap contributors and licensed under the ODbL. spieli.eu
 
 ## Languages
 
-The map is available in German, English and Slovak. French and Spanish are translated but cannot be switched on yet ([#751](https://github.com/mfuhrmann/spieli/issues/751)). Other languages are being translated on [Weblate](https://hosted.weblate.org/engage/spieli/), and help there is welcome too.
+The map is available in German, English and Slovak. French and Spanish are about 80 % translated, other languages less. Translation happens on [Weblate](https://hosted.weblate.org/engage/spieli/), and help there is welcome too.
 
 ## See also
 
