@@ -2,35 +2,71 @@
 <html lang="de">
 <head>
 <meta charset="utf-8">
-<title>spieli poster – 2×A5 on A4</title>
+<title>spieli poster – two on A4</title>
 <style>
-  /* Two A5 posters side by side on one A4 sheet, with a dashed cut line. */
+  /* Two posters side by side on A4 landscape, laid out like the OSM Fulda
+     Aushang sheets: each cut to 137 x 194 mm (the A5 ratio, as large as fits
+     with room for the marks), the two touching in the middle, cut marks
+     outside, light hairlines across the sheet. Five cuts per sheet.
+
+     The paper margin is cut away, so a printer's unprintable edge does not
+     matter, and a printer that shrinks the page to ~97 % shrinks the marks
+     with it: both halves still come out the same size.
+
+     The poster is designed on A5 (148 x 210, its white margin included) and
+     scaled to the cell; the 0.4 mm it is taller than the A5 ratio is trimmed
+     evenly top and bottom. */
   @page { size: A4 landscape; margin: 0; }
+  :root {
+    --w: 137mm; --h: 194mm;
+    --x0: calc((297mm - 2 * var(--w)) / 2);    /* 11.5 mm */
+    --y0: calc((210mm - var(--h)) / 2);        /* 8 mm */
+    --scale: calc(137 / 148);
+  }
   * { margin: 0; padding: 0; }
   html, body { width: 297mm; height: 210mm; overflow: hidden; background: #fff; }
   body { position: relative; }
-  iframe { position: absolute; top: 0; width: 148.5mm; height: 210mm; border: 0; display: block; }
-  /* Both posters sit outwards. Many printers shrink the page to ~97 % towards
-     its centre even at "100 %"; without the shift each cut A5 ends up with
-     ~10 mm margin outside and ~5 mm at the cut. With it both are ~7.5-8 mm at
-     97 % (3-4 mm outside at a true 100 %). The right one moves less because
-     its frame shadow is on the outer side. Same fix as the OSM Fulda Aushang. */
-  iframe:first-of-type { left: -2.5mm; }
-  iframe:last-of-type { left: 150.5mm; }
-  .cut { position: absolute; left: 148.5mm; top: 0; bottom: 0; border-left: 0.2mm dashed #bbb; }
-  /* black cut marks in the paper margin: still visible if the line is too faint */
-  .mark { position: absolute; left: 148.425mm; width: 0.15mm; height: 5mm; background: #000; }
+  .cell { position: absolute; top: var(--y0); width: var(--w); height: var(--h); overflow: hidden; }
+  .cell iframe {
+    position: absolute; left: 0; top: calc((var(--h) - 210mm * var(--scale)) / 2);
+    width: 148mm; height: 210mm; border: 0; display: block;
+    transform: scale(var(--scale)); transform-origin: 0 0;
+  }
+  /* hairlines across the whole sheet: visible on every piece, whatever the cutting order */
+  .guide { position: absolute; background: #aaa; }
+  .guide.v { top: 0; bottom: 0; width: 0.1mm; margin-left: -0.05mm; }
+  .guide.h { left: 0; right: 0; height: 0.1mm; margin-top: -0.05mm; }
+  /* black cut marks in the margin: 6 mm long, 2 mm from the posters */
+  .mark { position: absolute; background: #000; }
+  .mark.v { width: 0.15mm; height: 6mm; margin-left: -0.075mm; }
+  .mark.h { width: 6mm; height: 0.15mm; margin-top: -0.075mm; }
 </style>
 </head>
 <body>
-  <iframe></iframe>
-  <iframe></iframe>
-  <div class="cut"></div>
-  <div class="mark" style="top: 0.5mm"></div>
-  <div class="mark" style="bottom: 0.5mm"></div>
+  <div class="cell" style="left: var(--x0)"><iframe></iframe></div>
+  <div class="cell" style="left: calc(var(--x0) + var(--w))"><iframe></iframe></div>
   <script>
     // sheet.html?lang=en passes the language on to both posters.
     for (const f of document.querySelectorAll('iframe')) f.src = 'poster.html' + location.search;
+
+    // Cut lines: three vertical (left, middle, right), two horizontal (top, bottom).
+    const W = 137, H = 194, X0 = (297 - 2 * W) / 2, Y0 = (210 - H) / 2, GAP = 2, LEN = 6;
+    const add = (cls, style) => {
+      const el = document.createElement('div');
+      el.className = cls;
+      Object.assign(el.style, style);
+      document.body.append(el);
+    };
+    for (const x of [X0, X0 + W, X0 + 2 * W]) {
+      add('guide v', { left: `${x}mm` });
+      add('mark v', { left: `${x}mm`, top: `${Y0 - GAP - LEN}mm` });
+      add('mark v', { left: `${x}mm`, top: `${Y0 + H + GAP}mm` });
+    }
+    for (const y of [Y0, Y0 + H]) {
+      add('guide h', { top: `${y}mm` });
+      add('mark h', { top: `${y}mm`, left: `${X0 - GAP - LEN}mm` });
+      add('mark h', { top: `${y}mm`, left: `${X0 + 2 * W + GAP}mm` });
+    }
   </script>
 </body>
 </html>

@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
-"""Render the printable poster (marketing/poster/) to PDF.
+"""Render the printable poster (marketing/poster/) to PDF and PNG.
 
-For every language the template knows, writes two files to
+For every language the template knows, writes three files to
 marketing/poster/print/ (committed, so people can print without building):
 
-  poster-<lang>-a5.pdf       one A5 poster
-  poster-<lang>-2xa5-a4.pdf  two A5 posters on one A4 sheet, with a cut line
+  poster-<lang>-a4.pdf       one poster filling an A4 page (a4.html)
+  poster-<lang>-2up-a4.pdf   two posters on A4 landscape, each cut to
+                             137 x 194 mm, with cut marks (sheet.html; same
+                             layout as the OSM Fulda Aushang sheets)
+  poster-<lang>.png          the poster on its own, 150 dpi on A4, for use
+                             online (rendered from the A4 PDF)
 
 Rendering uses a headless Chromium. The poster loads its webfonts from
 Google Fonts and jsDelivr, so this needs network access; the virtual-time budget gives
@@ -23,6 +27,7 @@ Usage: python3 tools/build-poster.py [--lang de,en,sk]
 
 import argparse
 import os
+from concurrent.futures import ThreadPoolExecutor
 import shutil
 import subprocess
 import sys
@@ -57,8 +62,11 @@ def render(browser, gs, page, lang, out):
     url = (POSTER_DIR / page).as_uri() + f'?lang={lang}'
     with tempfile.TemporaryDirectory() as tmp:
         raw = Path(tmp) / 'raw.pdf'
+        flat = Path(tmp) / 'flat.pdf'
+        # own profile per run, so parallel Chromiums do not share one
         subprocess.run(
             [browser, '--headless', '--disable-gpu', '--no-pdf-header-footer',
+             f'--user-data-dir={Path(tmp) / "profile"}',
              '--virtual-time-budget=10000', f'--print-to-pdf={raw}', url],
             check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=120)
         if not raw.exists() or raw.stat().st_size == 0:
@@ -67,8 +75,21 @@ def render(browser, gs, page, lang, out):
         subprocess.run(
             [gs, '-q', '-dNOPAUSE', '-dBATCH', '-dSAFER', '-sDEVICE=pdfwrite',
              '-dCompatibilityLevel=1.3', '-dHaveTransparency=false', '-r600',
-             f'-sOutputFile={out}', str(raw)],
-            check=True, timeout=300)
+             f'-sOutputFile={flat}', str(raw)],
+            check=True, timeout=1800)
+        # written aside and moved: an interrupted build never leaves a half-written file
+        shutil.move(flat, out)
+    print(f'  {out.relative_to(ROOT)}')
+
+
+def to_png(gs, pdf, out):
+    # 600 dpi downscaled 4x: smooth edges on the text, crisp pixel art.
+    tmp = out.with_suffix('.tmp.png')
+    subprocess.run(
+        [gs, '-q', '-dNOPAUSE', '-dBATCH', '-dSAFER', '-sDEVICE=png16m',
+         '-r600', '-dDownScaleFactor=4', f'-sOutputFile={tmp}', str(pdf)],
+        check=True, timeout=1800)
+    tmp.replace(out)
     print(f'  {out.relative_to(ROOT)}')
 
 
@@ -85,9 +106,21 @@ def main():
     browser = find_browser()
     gs = find_ghostscript()
     OUT_DIR.mkdir(exist_ok=True)
-    for lang in langs:
-        render(browser, gs, 'poster.html', lang, OUT_DIR / f'poster-{lang}-a5.pdf')
-        render(browser, gs, 'sheet.html', lang, OUT_DIR / f'poster-{lang}-2xa5-a4.pdf')
+
+    # Flattening is single-threaded Ghostscript, minutes per page; the files
+    # do not depend on each other (the PNG only on its own A4 PDF), so run
+    # them side by side, one job per core.
+    def a4_and_png(lang):
+        render(browser, gs, 'a4.html', lang, OUT_DIR / f'poster-{lang}-a4.pdf')
+        to_png(gs, OUT_DIR / f'poster-{lang}-a4.pdf', OUT_DIR / f'poster-{lang}.png')
+
+    def sheet(lang):
+        render(browser, gs, 'sheet.html', lang, OUT_DIR / f'poster-{lang}-2up-a4.pdf')
+
+    jobs = [(a4_and_png, lang) for lang in langs] + [(sheet, lang) for lang in langs]
+    with ThreadPoolExecutor(max_workers=min(len(jobs), os.cpu_count() or 1)) as pool:
+        for future in [pool.submit(job, lang) for job, lang in jobs]:
+            future.result()     # re-raises the first failure
 
 
 if __name__ == '__main__':
