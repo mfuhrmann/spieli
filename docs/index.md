@@ -26,13 +26,25 @@ Multiple regional instances can be aggregated into a single **Hub** map — see 
 
 ---
 
+## See it in action
+
+[spieli.eu](https://spieli.eu) is the public map. Two well-mapped playgrounds in Fulda — open one, then look at the devices, the details and the 360° photos in the panel:
+
+- [Carl-Schurz-Straße](https://spieli.eu/#hessen/W818585707) — 30 play devices, opening hours, operator
+- [Galgengraben](https://spieli.eu/#hessen/W143374809) — 25 play devices, several photos, two of them 360°
+
+Want your region on it? See [Host a Region for spieli.eu](getting-started/host-a-region.md).
+
+---
+
 ## Getting started
 
 | I want to… | Go to… |
 |---|---|
 | Deploy spieli for my region | [Quick Start](getting-started/quick-start.md) |
 | Deploy from source | [Manual Deploy](ops/manual-deploy.md) |
-| Connect my backend to an existing Hub | [Quick Start → Joining an existing Hub](getting-started/quick-start.md#joining-an-existing-hub) |
+| Host my region for spieli.eu | [Host a Region](getting-started/host-a-region.md) |
+| Connect my backend to an existing Hub | [Quick Start → Contributing your region to a Hub](getting-started/quick-start.md#contributing-your-region-to-a-hub) |
 
 ## Using the map
 

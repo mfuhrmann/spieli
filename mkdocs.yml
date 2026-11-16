@@ -32,6 +32,7 @@ nav:
   - User Guide: user-guide.md
   - Getting Started:
       - Quick Start: getting-started/quick-start.md
+      - Host a Region for spieli.eu: getting-started/host-a-region.md
   - Operations:
       - Manual Deploy: ops/manual-deploy.md
       - HTTPS Setup: ops/https-setup.md
