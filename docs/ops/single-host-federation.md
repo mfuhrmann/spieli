@@ -45,13 +45,18 @@ sudo swapon /swapfile
 echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
 ```
 
-### Per-backend RAM and disk estimates
+### Per-backend RAM and disk
 
-| Size class | Examples | pgdata | RAM (steady-state) |
+Measured on the production host (15 Bundesländer on one 8 GB VPS, November 2026). RAM is the whole stack while serving; disk is the database plus the cached extract (`pbf_cache`):
+
+| Size class | Examples | pgdata + pbf_cache | RAM (serving) |
 |---|---|---|---|
-| Small | Bremen, Hamburg, Saarland, Berlin | ~200–300 MB | ~50–150 MiB |
-| Medium | Hessen, Thüringen, Sachsen-Anhalt, Brandenburg, MV | ~500 MB–1 GB | ~150–250 MiB |
-| Large | Bayern, NRW, Niedersachsen, BaWü, Sachsen, RLP, SH | ~1–3 GB | ~300–600 MiB |
+| Small | Bremen, Saarland, Berlin, Hamburg | 0.2–0.5 GB | ~75–300 MiB |
+| Medium | Thüringen, MV, Sachsen-Anhalt, SH | 0.7–0.8 GB | ~115–150 MiB |
+| Medium-large | Hessen, RLP, Brandenburg, Sachsen | 1.2–1.5 GB | ~145–165 MiB |
+| Large | Niedersachsen, NRW, Bayern | 2.1–3.6 GB | ~165–550 MiB |
+
+Serving is cheap; the import is the peak, which is why imports must not overlap (see swap above and [Scheduled Import](scheduled-import.md)). A container's `memory.peak` is no guide to it: it counts reclaimable file cache, and shows 3.7–4.6 GiB for every importer, Bremen included.
 
 Check free RAM before adding large backends:
 
