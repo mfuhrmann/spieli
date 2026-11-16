@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>spieli poster – A4</title>
+<style>
+  /* One poster filling an A4 page. A4 and A5 share their ratio, so the A5
+     design (white margin included) is simply scaled up by 297/210. */
+  @page { size: A4; margin: 0; }
+  * { margin: 0; padding: 0; }
+  html, body { width: 210mm; height: 297mm; overflow: hidden; background: #fff; }
+  iframe {
+    width: 148mm; height: 210mm; border: 0; display: block;
+    transform: scale(calc(297 / 210)); transform-origin: 0 0;
+  }
+</style>
+</head>
+<body>
+  <iframe></iframe>
+  <script>
+    // a4.html?lang=en passes the language on to the poster.
+    document.querySelector('iframe').src = 'poster.html' + location.search;
+  </script>
+</body>
+</html>
