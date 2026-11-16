@@ -534,6 +534,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/host-a-region/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Host a Region for spieli.eu
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -794,10 +822,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#per-backend-ram-and-disk-estimates" class="md-nav__link">
+  <a href="#per-backend-ram-and-disk" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Per-backend RAM and disk estimates
+        Per-backend RAM and disk
       
     </span>
   </a>
@@ -2103,10 +2131,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#per-backend-ram-and-disk-estimates" class="md-nav__link">
+  <a href="#per-backend-ram-and-disk" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Per-backend RAM and disk estimates
+        Per-backend RAM and disk
       
     </span>
   </a>
@@ -2304,37 +2332,45 @@
 <a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>sudo<span class="w"> </span>swapon<span class="w"> </span>/swapfile
 <a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="nb">echo</span><span class="w"> </span><span class="s1">'/swapfile none swap sw 0 0'</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>sudo<span class="w"> </span>tee<span class="w"> </span>-a<span class="w"> </span>/etc/fstab
 </code></pre></div>
-<h3 id="per-backend-ram-and-disk-estimates">Per-backend RAM and disk estimates<a class="headerlink" href="#per-backend-ram-and-disk-estimates" title="Permanent link">&para;</a></h3>
+<h3 id="per-backend-ram-and-disk">Per-backend RAM and disk<a class="headerlink" href="#per-backend-ram-and-disk" title="Permanent link">&para;</a></h3>
+<p>Measured on the production host (15 Bundesländer on one 8 GB VPS, November 2026). RAM is the whole stack while serving; disk is the database plus the cached extract (<code>pbf_cache</code>):</p>
 <table>
 <thead>
 <tr>
 <th>Size class</th>
 <th>Examples</th>
-<th>pgdata</th>
-<th>RAM (steady-state)</th>
+<th>pgdata + pbf_cache</th>
+<th>RAM (serving)</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>Small</td>
-<td>Bremen, Hamburg, Saarland, Berlin</td>
-<td>~200–300 MB</td>
-<td>~50–150 MiB</td>
+<td>Bremen, Saarland, Berlin, Hamburg</td>
+<td>0.2–0.5 GB</td>
+<td>~75–300 MiB</td>
 </tr>
 <tr>
 <td>Medium</td>
-<td>Hessen, Thüringen, Sachsen-Anhalt, Brandenburg, MV</td>
-<td>~500 MB–1 GB</td>
-<td>~150–250 MiB</td>
+<td>Thüringen, MV, Sachsen-Anhalt, SH</td>
+<td>0.7–0.8 GB</td>
+<td>~115–150 MiB</td>
+</tr>
+<tr>
+<td>Medium-large</td>
+<td>Hessen, RLP, Brandenburg, Sachsen</td>
+<td>1.2–1.5 GB</td>
+<td>~145–165 MiB</td>
 </tr>
 <tr>
 <td>Large</td>
-<td>Bayern, NRW, Niedersachsen, BaWü, Sachsen, RLP, SH</td>
-<td>~1–3 GB</td>
-<td>~300–600 MiB</td>
+<td>Niedersachsen, NRW, Bayern</td>
+<td>2.1–3.6 GB</td>
+<td>~165–550 MiB</td>
 </tr>
 </tbody>
 </table>
+<p>Serving is cheap; the import is the peak, which is why imports must not overlap (see swap above and <a href="../scheduled-import/">Scheduled Import</a>). A container's <code>memory.peak</code> is no guide to it: it counts reclaimable file cache, and shows 3.7–4.6 GiB for every importer, Bremen included.</p>
 <p>Check free RAM before adding large backends:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>free<span class="w"> </span>-h
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>docker<span class="w"> </span>stats<span class="w"> </span>--no-stream<span class="w"> </span>--format<span class="w"> </span><span class="s2">"table {{.Name}}\t{{.MemUsage}}"</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>sort<span class="w"> </span>-k2<span class="w"> </span>-h
