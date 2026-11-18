@@ -21,9 +21,9 @@ const PROXIED = {
   commonsApiUrl: '/ext/commons/w/api.php',
   commonsFileBase: '/ext/wikimedia',
   mangroveApiUrl: '/ext/mangrove',
-  // No panoramax entry: Panoramax cannot be proxied (its thumbnail endpoint
-  // redirects to a per-instance derivative host, and its viewer is an iframe),
-  // so it stays browser-contacted by design. See app/src/lib/panoramax.js.
+  // Thumbnails only: the viewer is an iframe and stays on the provider's
+  // origin, behind a click (#852). See app/src/lib/panoramax.js.
+  panoramaxThumbBase: '/ext/panoramax',
 };
 
 /** Record every request, split into same-origin and cross-origin. */
@@ -86,6 +86,25 @@ test.describe('Proxied deployment routes external services same-origin', () => {
       expect(rec.crossOrigin().filter(u => u.includes(host)),
              `${host} must not be contacted directly`).toEqual([]);
     }
+  });
+
+  test('a Panoramax thumbnail goes to /ext/panoramax, not to Panoramax', async ({ page }) => {
+    const UUID = 'a3dde228-46c5-45aa-8d77-3aecae9257e6';
+    const rec = await recordRequests(page);
+    await injectApiConfig(page, PROXIED);
+    await stubApiRoutes(page, (() => {
+      const fc = structuredClone(fixture);
+      fc.features[0].properties.panoramax = UUID;
+      return fc;
+    })());
+    await page.goto(`/#W${OSM_ID}`);
+    await expect(page.locator('aside.info-panel')).toBeVisible({ timeout: 8000 });
+
+    await expect.poll(() => rec.ext().filter(p => p.startsWith('/ext/panoramax/')).length,
+                      { timeout: 8000 }).toBeGreaterThan(0);
+    expect(rec.ext()).toContain(`/ext/panoramax/api/pictures/${UUID}/thumb.jpg`);
+    // The viewer was not opened, so nothing at all may reach Panoramax.
+    expect(rec.crossOrigin().filter(u => u.includes('panoramax'))).toEqual([]);
   });
 
   test('control: without the proxy config the third parties ARE contacted', async ({ page }) => {

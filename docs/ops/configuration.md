@@ -363,16 +363,16 @@ Only the origin is stripped; the upstream's own paths are preserved verbatim. Th
 By default the visitor's browser contacts **no third party**. Geocoding, playground photos and reviews are all fetched by this instance and served from its own origin, cached on disk. This is the same mechanism as the basemap, extended to the rest.
 
 ```
-Browser ──► this instance ──► nginx cache ──► Nominatim / Commons / Mangrove
+Browser ──► this instance ──► nginx cache ──► Nominatim / Commons / Mangrove / Panoramax thumbnails
 ```
 
 Each service can be opted out individually with the `PROXY_*` variables above. Opting out restores direct browser requests for that service and adds its host to the generated Content Security Policy; the others stay proxied.
 
-### Two exceptions
+### Panoramax
 
-**Panoramax is not proxied at all.** Its thumbnail endpoint answers `308` with a `Location` on a per-instance derivative host, and nginx cannot follow a redirect — relaying it would send the browser to a host the privacy page does not name and the CSP does not allow. Its viewer is an `<iframe>`, and serving a whole interactive third-party application from this origin would grant it same-origin privileges here. Both stay cross-origin, are named in the CSP, and keep their privacy-page rows.
+**Thumbnails are always proxied**, with no `PROXY_*` switch. The endpoint answers `308` to a per-instance derivative host, which nginx follows server-side (#863). Going direct would send the browser to that derivative host, and no CSP can name it in advance.
 
-**Equipment-attribute illustrations are not proxied.** They are rendered from `commons.wikimedia.org/wiki/Special:FilePath/…`, which answers with a redirect chain; following it would mean allowing `/w/index.php` through the proxy, which is a much larger relay surface than a photo gallery is worth. The playground photo gallery itself *is* proxied.
+**The viewer is not proxied.** It is an `<iframe>`, and serving a whole interactive third-party application from this origin would grant it same-origin privileges here. It loads only after the visitor activates the preview, is named in `frame-src`, and keeps its privacy-page row.
 
 ### Nothing is logged
 
