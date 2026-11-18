@@ -2229,15 +2229,15 @@
 </tr>
 <tr>
 <td><code>backends.&lt;slug&gt;.complete</code></td>
-<td>Playgrounds with complete equipment data. <code>null</code> on pre-P1 backends.</td>
+<td>Playgrounds with detailed mapping: play equipment and info (opening_hours, surface or access). <code>null</code> on pre-P1 backends.</td>
 </tr>
 <tr>
 <td><code>backends.&lt;slug&gt;.partial</code></td>
-<td>Playgrounds with partial equipment data. <code>null</code> on pre-P1 backends.</td>
+<td>Playgrounds with basic mapping: play equipment or info, not both. <code>null</code> on pre-P1 backends.</td>
 </tr>
 <tr>
 <td><code>backends.&lt;slug&gt;.missing</code></td>
-<td>Playgrounds with no equipment data. <code>null</code> on pre-P1 backends.</td>
+<td>Playgrounds with no details yet: neither play equipment nor info. <code>null</code> on pre-P1 backends.</td>
 </tr>
 </tbody>
 </table>
@@ -2268,15 +2268,15 @@
 <a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a># TYPE spielplatz_backend_playgrounds_total gauge
 <a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a>spielplatz_backend_playgrounds_total{backend="fulda",url="https://fulda.example.com/api"} 42
 <a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a>
-<a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a># HELP spielplatz_backend_playgrounds_complete Playgrounds with complete equipment data.
+<a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a># HELP spielplatz_backend_playgrounds_complete Playgrounds with detailed mapping: play equipment and info (opening_hours, surface or access).
 <a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a># TYPE spielplatz_backend_playgrounds_complete gauge
 <a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a>spielplatz_backend_playgrounds_complete{backend="fulda",url="https://fulda.example.com/api"} 28
 <a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a>
-<a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a># HELP spielplatz_backend_playgrounds_partial Playgrounds with partial equipment data.
+<a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a># HELP spielplatz_backend_playgrounds_partial Playgrounds with basic mapping: play equipment or info, not both.
 <a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a># TYPE spielplatz_backend_playgrounds_partial gauge
 <a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a>spielplatz_backend_playgrounds_partial{backend="fulda",url="https://fulda.example.com/api"} 10
 <a id="__codelineno-1-32" name="__codelineno-1-32" href="#__codelineno-1-32"></a>
-<a id="__codelineno-1-33" name="__codelineno-1-33" href="#__codelineno-1-33"></a># HELP spielplatz_backend_playgrounds_missing Playgrounds with no equipment data.
+<a id="__codelineno-1-33" name="__codelineno-1-33" href="#__codelineno-1-33"></a># HELP spielplatz_backend_playgrounds_missing Playgrounds with no details yet: neither play equipment nor info.
 <a id="__codelineno-1-34" name="__codelineno-1-34" href="#__codelineno-1-34"></a># TYPE spielplatz_backend_playgrounds_missing gauge
 <a id="__codelineno-1-35" name="__codelineno-1-35" href="#__codelineno-1-35"></a>spielplatz_backend_playgrounds_missing{backend="fulda",url="https://fulda.example.com/api"} 4
 <a id="__codelineno-1-36" name="__codelineno-1-36" href="#__codelineno-1-36"></a>
@@ -2309,28 +2309,30 @@
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># Is any backend currently down?</span>
 <a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="nv">spielplatz_backend_up</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span>
 <a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="c1"># Alert if data is more than 48 hours old</span>
-<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="nv">spielplatz_backend_data_age_seconds</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">172800</span>
-<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>
-<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="c1"># Alert if the hub poll has stopped writing (cron died)</span>
-<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="kr">time</span><span class="o">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nv">spielplatz_poll_generated_timestamp</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">300</span>
-<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>
-<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="c1"># Completeness ratio per backend (fraction of playgrounds with full data)</span>
-<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="nv">spielplatz_backend_playgrounds_complete</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nv">spielplatz_backend_playgrounds_total</span>
-<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>
-<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="c1"># Total playgrounds with missing data across all backends</span>
-<a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="k">sum</span><span class="o">(</span><span class="nv">spielplatz_backend_playgrounds_missing</span><span class="o">)</span>
-<a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a>
-<a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="c1"># Alert if completeness ratio drops below 50 % for any backend</span>
-<a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="nv">spielplatz_backend_playgrounds_complete</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nv">spielplatz_backend_playgrounds_total</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mf">0.5</span>
-<a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a>
-<a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a><span class="c1"># Which backends are currently importing (data in flux)?</span>
-<a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a><span class="nv">spielplatz_backend_importing</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">1</span>
-<a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a>
-<a id="__codelineno-4-22" name="__codelineno-4-22" href="#__codelineno-4-22"></a><span class="c1"># Backend online but no data and not importing (degraded ring state)</span>
-<a id="__codelineno-4-23" name="__codelineno-4-23" href="#__codelineno-4-23"></a><span class="nv">spielplatz_backend_up</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">1</span>
-<a id="__codelineno-4-24" name="__codelineno-4-24" href="#__codelineno-4-24"></a><span class="w">  </span><span class="ow">and</span><span class="w"> </span><span class="nv">spielplatz_backend_importing</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span>
-<a id="__codelineno-4-25" name="__codelineno-4-25" href="#__codelineno-4-25"></a><span class="w">  </span><span class="ow">and</span><span class="w"> </span><span class="nv">spielplatz_backend_playgrounds_total</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="c1"># Alert if a daemon-mode backend missed its reimport: REIMPORT_INTERVAL_MAX_DAYS</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="c1"># plus REIMPORT_JITTER_HOURS (default 6) plus time for the import itself.</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="c1"># Shown for MAX_DAYS=5; one-shot backends (no daemon) only re-import by hand.</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="nv">spielplatz_backend_data_age_seconds</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="o">(</span><span class="mi">5</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">86400</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">6</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">3600</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">3600</span><span class="o">)</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="c1"># Alert if the hub poll has stopped writing (cron died)</span>
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="kr">time</span><span class="o">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nv">spielplatz_poll_generated_timestamp</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">300</span>
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>
+<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="c1"># Detailed share per backend (fraction of playgrounds mapped as detailed)</span>
+<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="nv">spielplatz_backend_playgrounds_complete</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nv">spielplatz_backend_playgrounds_total</span>
+<a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a>
+<a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="c1"># Playgrounds with no details yet, across all backends</span>
+<a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="k">sum</span><span class="o">(</span><span class="nv">spielplatz_backend_playgrounds_missing</span><span class="o">)</span>
+<a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a>
+<a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a><span class="c1"># Alert if the detailed share drops below 50 % for any backend</span>
+<a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a><span class="nv">spielplatz_backend_playgrounds_complete</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nv">spielplatz_backend_playgrounds_total</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mf">0.5</span>
+<a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a>
+<a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a><span class="c1"># Which backends are currently importing (data in flux)?</span>
+<a id="__codelineno-4-22" name="__codelineno-4-22" href="#__codelineno-4-22"></a><span class="nv">spielplatz_backend_importing</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">1</span>
+<a id="__codelineno-4-23" name="__codelineno-4-23" href="#__codelineno-4-23"></a>
+<a id="__codelineno-4-24" name="__codelineno-4-24" href="#__codelineno-4-24"></a><span class="c1"># Backend online but no data and not importing (degraded ring state)</span>
+<a id="__codelineno-4-25" name="__codelineno-4-25" href="#__codelineno-4-25"></a><span class="nv">spielplatz_backend_up</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">1</span>
+<a id="__codelineno-4-26" name="__codelineno-4-26" href="#__codelineno-4-26"></a><span class="w">  </span><span class="ow">and</span><span class="w"> </span><span class="nv">spielplatz_backend_importing</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span>
+<a id="__codelineno-4-27" name="__codelineno-4-27" href="#__codelineno-4-27"></a><span class="w">  </span><span class="ow">and</span><span class="w"> </span><span class="nv">spielplatz_backend_playgrounds_total</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span>
 </code></pre></div>
 <h3 id="recipe-3-bundled-prometheus-grafana-dashboard">Recipe 3 — Bundled Prometheus + Grafana dashboard<a class="headerlink" href="#recipe-3-bundled-prometheus-grafana-dashboard" title="Permanent link">&para;</a></h3>
 <p><code>deploy/monitoring/</code> is a ready-made stack: Prometheus scraping one hub, and Grafana with the datasource and a <strong>spieli federation</strong> dashboard provisioned.</p>
