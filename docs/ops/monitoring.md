@@ -48,9 +48,9 @@ Both are written atomically every 60 seconds by a cron job inside the hub contai
 | `backends.<slug>.osm_data_timestamp` | Replication timestamp of the OSM extract the backend imported (when Geofabrik generated it). `null` if the PBF header lacks it, the backend predates the field, or it is down. |
 | `backends.<slug>.osm_data_age_seconds` | Seconds since `osm_data_timestamp` — how old the served data is, which is always at least `data_age_seconds`. `null` when `osm_data_timestamp` is. |
 | `backends.<slug>.playground_count` | Total playgrounds in the region. `null` on pre-P1 backends or when backend is down. |
-| `backends.<slug>.complete` | Playgrounds with complete equipment data. `null` on pre-P1 backends. |
-| `backends.<slug>.partial` | Playgrounds with partial equipment data. `null` on pre-P1 backends. |
-| `backends.<slug>.missing` | Playgrounds with no equipment data. `null` on pre-P1 backends. |
+| `backends.<slug>.complete` | Playgrounds with detailed mapping: play equipment and info (opening_hours, surface or access). `null` on pre-P1 backends. |
+| `backends.<slug>.partial` | Playgrounds with basic mapping: play equipment or info, not both. `null` on pre-P1 backends. |
+| `backends.<slug>.missing` | Playgrounds with no details yet: neither play equipment nor info. `null` on pre-P1 backends. |
 
 The hub UI reads this endpoint every 60 seconds and surfaces freshness labels in the instance drawer. It also shows a "stale observation" banner when `generated_at` is older than `2 × poll_interval_seconds` (i.e. the hub cron has stopped writing).
 
@@ -83,15 +83,15 @@ spielplatz_backend_osm_data_age_seconds{backend="fulda",url="https://fulda.examp
 # TYPE spielplatz_backend_playgrounds_total gauge
 spielplatz_backend_playgrounds_total{backend="fulda",url="https://fulda.example.com/api"} 42
 
-# HELP spielplatz_backend_playgrounds_complete Playgrounds with complete equipment data.
+# HELP spielplatz_backend_playgrounds_complete Playgrounds with detailed mapping: play equipment and info (opening_hours, surface or access).
 # TYPE spielplatz_backend_playgrounds_complete gauge
 spielplatz_backend_playgrounds_complete{backend="fulda",url="https://fulda.example.com/api"} 28
 
-# HELP spielplatz_backend_playgrounds_partial Playgrounds with partial equipment data.
+# HELP spielplatz_backend_playgrounds_partial Playgrounds with basic mapping: play equipment or info, not both.
 # TYPE spielplatz_backend_playgrounds_partial gauge
 spielplatz_backend_playgrounds_partial{backend="fulda",url="https://fulda.example.com/api"} 10
 
-# HELP spielplatz_backend_playgrounds_missing Playgrounds with no equipment data.
+# HELP spielplatz_backend_playgrounds_missing Playgrounds with no details yet: neither play equipment nor info.
 # TYPE spielplatz_backend_playgrounds_missing gauge
 spielplatz_backend_playgrounds_missing{backend="fulda",url="https://fulda.example.com/api"} 4
 
@@ -137,19 +137,21 @@ Useful PromQL expressions:
 # Is any backend currently down?
 spielplatz_backend_up == 0
 
-# Alert if data is more than 48 hours old
-spielplatz_backend_data_age_seconds > 172800
+# Alert if a daemon-mode backend missed its reimport: REIMPORT_INTERVAL_MAX_DAYS
+# plus REIMPORT_JITTER_HOURS (default 6) plus time for the import itself.
+# Shown for MAX_DAYS=5; one-shot backends (no daemon) only re-import by hand.
+spielplatz_backend_data_age_seconds > (5 * 86400 + 6 * 3600 + 3600)
 
 # Alert if the hub poll has stopped writing (cron died)
 time() - spielplatz_poll_generated_timestamp > 300
 
-# Completeness ratio per backend (fraction of playgrounds with full data)
+# Detailed share per backend (fraction of playgrounds mapped as detailed)
 spielplatz_backend_playgrounds_complete / spielplatz_backend_playgrounds_total
 
-# Total playgrounds with missing data across all backends
+# Playgrounds with no details yet, across all backends
 sum(spielplatz_backend_playgrounds_missing)
 
-# Alert if completeness ratio drops below 50 % for any backend
+# Alert if the detailed share drops below 50 % for any backend
 spielplatz_backend_playgrounds_complete / spielplatz_backend_playgrounds_total < 0.5
 
 # Which backends are currently importing (data in flux)?
