@@ -119,7 +119,7 @@ Then open `http://<that-ip>:8080` on your phone.
 When testing against the Docker stack, rebuild and restart the app container after changes:
 
 ```bash
-docker compose -f compose.yml --profile <mode> up -d --build app
+docker compose up -d --build app   # or: make docker-build
 ```
 
 See also the [operator troubleshooting page](../ops/troubleshooting.md) for problems with the Docker stack itself.

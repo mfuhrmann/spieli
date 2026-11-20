@@ -86,7 +86,7 @@ Federation is not free of cost. It moves work outward:
 
 - **Someone has to run each region.** A region nobody hosts stays empty on the map, which is why we are [looking for hosts](../getting-started/host-a-region.md).
 - **Each data-node is a public server.** It needs HTTPS, updates and, in Germany, an imprint. The installer and automatic updates keep this small, but it is not zero.
-- **Regions should not overlap.** Two data-nodes covering the same area would show the same playgrounds twice. The hub drops exact duplicates and warns about overlapping regions, but choosing boundaries is a matter of talking to each other, in [#spieli:matrix.org](https://matrix.to/#/#spieli:matrix.org).
+- **Regions should not overlap.** Two data-nodes covering the same area would show the same playgrounds twice. The hub drops exact duplicates and warns when one region lies entirely inside another (a partial overlap goes unflagged), but choosing boundaries is a matter of talking to each other, in [#spieli:matrix.org](https://matrix.to/#/#spieli:matrix.org).
 
 ## Where to go next
 

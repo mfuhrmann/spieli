@@ -40,7 +40,7 @@ Then open `locales/de.json` and add the German translation at the same path:
 }
 ```
 
-Both files must be updated — a key missing in one falls back to the tag value with underscores replaced and the first letter capitalised.
+Both files must be updated — a key missing from `de.json` shows the English text (`fallbackLocale: 'en'`); only a key missing from `en.json` too falls back to the tag value with underscores replaced and the first letter capitalised.
 
 There is a second namespace for the sport on its own, `pitch.sports.<value>` ("Roller hockey" rather than "Roller hockey rink"). The panel of a pitch outside a playground (`PitchPanel`) shows its sports as chips from it, and the hover tooltip uses it when `equipment.pitches` has no entry. Add the key there too, in both files:
 

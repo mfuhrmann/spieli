@@ -44,7 +44,7 @@ From `access` on the playground area:
 | Water playground | A device inside has a `playground` value containing `water`, or `playground=splash_pad` / `pump` |
 | Baby-friendly | A device inside has `baby=yes`, or is `playground=baby_swing`, `basketswing`, `sandpit` or `springy`, or carries `capacity:baby` |
 | Toddler-friendly | A device inside has `provided_for:toddler=yes`, or is `playground=basketswing` |
-| Wheelchair-friendly | A **play device** (`playground=*`) inside carries `wheelchair=yes`, `limited` or `designated`; a `playground=sandpit` counts only with `wheelchair=yes`. The area's own `wheelchair` tag, benches and pitches do not count. If devices carry `wheelchair` tags but none qualifies, the panel says *No wheelchair equipment*; if none carries one, it says nothing |
+| Wheelchair-friendly | A **play device** (`playground=*`) inside carries `wheelchair=yes`, `limited` or `designated`; a `playground=sandpit` counts only with `wheelchair=yes`. The area's own `wheelchair` tag, benches and pitches do not count. If devices carry `wheelchair` tags but none qualifies, the panel says *No wheelchair equipment*; if none carries one, it says nothing. A sandpit tagged anything other than `wheelchair=yes` does not count as surveyed, so a playground whose only tagged device is such a sandpit shows nothing either |
 | With bench | `amenity=bench` inside |
 | With picnic table | `leisure=picnic_table` inside |
 | With shelter | `amenity=shelter` inside |

@@ -163,7 +163,7 @@ The Hub has no importer, no database, no `run --rm importer` step.
    - One `GET /registry.json` from the Hub's origin.
    - One `GET /rpc/get_meta` per data-node, cross-origin, returning 200 with `playground_count` + `bbox` + completeness fields.
    - On the first moveend, either `GET /rpc/get_playground_clusters?...` (cluster tier, zoom ≤ 13) or `GET /rpc/get_playgrounds_bbox?...` (polygon tier, zoom ≥ 14) per data-node whose bbox intersects the viewport. A data-node whose bbox sits entirely outside the viewport receives no request — that's the bbox router (see [How the hub works internally](../contributing/hub-internals.md)) doing its job, not a bug.
-   - At zoom ≤ 7 (`MACRO_MAX_ZOOM`, the country view) you should see no per-playground requests at all — the country-level macro view renders entirely from the cached `get_meta` response. One ring per data-node.
+   - At zoom ≤ 7 (`MACRO_MAX_ZOOM`, the country view) you should see no per-playground requests at all while no filter is active — the country-level macro view renders entirely from the cached `get_meta` response. One ring per data-node. With a filter on, one `get_playground_clusters` request per data-node is expected: that is how the rings show filtered counts.
 4. Click the instance pill — the drawer lists both backends with their playground count, data age and release version (from each backend's `get_meta`).
 5. Click a playground in each region — the selection panel opens with that region's data.
 

@@ -64,10 +64,12 @@ Hessen. No action is needed.
 > at the top of `api.sql`, then `SELECT pg_reload_conf()`. The values are
 > persisted to `postgresql.auto.conf` inside the data volume and apply to
 > every connection — including PostgREST — without restarting the database
-> container. To re-tune, edit `.env` and re-run the importer:
+> container. To re-tune, edit `.env` and re-apply the schema only:
 > ```bash
-> docker compose --profile <mode> run --rm importer
+> docker compose --profile <mode> run --rm -e API_ONLY=1 importer
 > ```
+> Without `API_ONLY=1` this runs a full import — or, on a stack with
+> automatic updates, starts a second importer daemon next to the running one.
 
 ## RAM sizing
 

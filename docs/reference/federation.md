@@ -35,11 +35,11 @@ The Hub discovers instances from a `registry.json` file — see the [`registry.j
 
 The hub looks like a regional map, plus a region pill and list at the bottom left and one ring per region when zoomed out. What visitors see and what the ring labels mean: [User Guide → The all-regions map](../user-guide.md#the-all-regions-map). The ring states and the conditions behind them are listed under [Ring states](#ring-states) below; deep-link forms in the [`registry.json` reference](registry-json.md#deep-link-behaviour).
 
-Two signals in the region list are meant for hub operators: a region whose boundary overlaps another's (from `region_geom` in `get_meta`) carries an "overlaps with …" badge, and if `registry.json` itself cannot be loaded the pill reads "Registry unreachable".
+Two signals in the region list are meant for hub operators: a region whose boundary lies entirely inside another's, or contains it (from `region_geom` in `get_meta`), carries an "overlaps with …" badge — a partial overlap is not detected — and if `registry.json` itself cannot be loaded the pill reads "Registry unreachable".
 
 ## Ring states
 
-At `zoom ≤ macroMaxZoom` the Hub renders one ring per registered backend, sized by `playground_count` and segmented by the `{complete, partial, missing}` counts from `get_meta`. No per-playground fetch is issued at this zoom — the rings come entirely from the cached registry metadata.
+At `zoom ≤ macroMaxZoom` the Hub renders one ring per registered backend, sized by `playground_count` and segmented by the `{complete, partial, missing}` counts from `get_meta`. Without an active filter no per-playground fetch is issued at this zoom — the rings come entirely from the cached registry metadata. With a filter active, the hub asks each in-scope backend for `get_playground_clusters` at `macroMaxZoom` and sums the buckets, so the ring counts reflect the filter.
 
 Clicking a ring animates `view.fit` to the backend's bbox, which lands in the cluster or polygon tier and triggers a tier fetch scoped to that backend only.
 

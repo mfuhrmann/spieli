@@ -34,9 +34,9 @@ After editing, run `make db-apply` to reload the function. Tag the PR with `requ
 Each category in the `CATEGORIES` array has:
 
 - `icon` — emoji displayed next to the category
-- `label` — i18n key for the category name
+- `label` — the translated category name, `$_('poi.categories.<name>')` (not the bare key)
 - `match` — function that tests a POI's tags (must match the SQL filter)
-- `fallback` — i18n key shown when no POIs are found
+- `fallback` — the translated text shown when no POIs are found, `$_('poi.fallbacks.<name>')`
 - `hint` (optional) — function returning an extra line per POI, e.g. a bus stop's direction
 
 To add a new category, add an entry to the array. To add an OSM tag to an existing category, extend its `match` function.
