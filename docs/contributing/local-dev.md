@@ -1,6 +1,15 @@
 # Local Development
 
-**Requirements:** Node.js v18+, Docker with the Compose plugin
+**Requirements:** Node.js 20.19 or newer (Vite 8 needs it; CI runs Node 20), Docker with the Compose plugin
+
+## Start here
+
+1. Set up the stack below, and run the tests once ([Testing Guide](testing.md)).
+2. Get the picture: [Architecture](../reference/architecture.md), then [Tech Stack](../reference/tech-stack.md).
+3. Read the guide for the part you will touch: [Frontend Guide](frontend-guide.md), [Import Pipeline](import-pipeline.md), or [How the hub works internally](hub-internals.md).
+4. For a typical first change, follow a how-to: [Add a Playground Device](add-device.md), [Add a Sport Pitch Type](add-sport-type.md), [Add a POI Category](add-poi-category.md), [Add a Filter](add-filter.md).
+
+**How changes get in:** open an issue first, branch from `main` as `<type>/<issue>-<short-description>`, write [Conventional Commits](https://www.conventionalcommits.org), and open a pull request against `mfuhrmann/spieli`. New UI strings go into `locales/en.json` and `locales/de.json` only; the other locale files belong to Weblate ([Translation Workflow](translations.md)). The full walkthrough: [CONTRIBUTING.md](https://github.com/mfuhrmann/spieli/blob/main/CONTRIBUTING.md).
 
 ## Setup
 
