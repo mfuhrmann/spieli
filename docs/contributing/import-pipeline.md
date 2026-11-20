@@ -171,9 +171,7 @@ Two of them mirror a frontend rule. `has_lit` (`public.lit_state()` ↔ `litStat
 
 All flag logic lives in `importer/api.sql` (the `equip_stats` CTE inside `playground_stats`).
 
-**If you add a new flag**, add it to `playground_stats` in `api.sql` and run `make db-apply`. A full `make import` is only needed if the new flag depends on a tag not yet in the tag filter.
-
-> **Testing**: verify with a real import against a region that has playgrounds with the relevant equipment, then check the filter chip appears correctly in the UI.
+Adding a flag and the filter that uses it: [Add a Filter](add-filter.md).
 
 ## Applying schema changes without a full re-import
 
