@@ -3,9 +3,9 @@
 # Downloads the production compose file and db schema, then walks through
 # configuration interactively.
 #
-# Usage (download first so stdin stays attached to the terminal):
-#   curl -fsSL https://raw.githubusercontent.com/mfuhrmann/spieli/main/install.sh -o install.sh
-#   bash install.sh
+# Usage: download install.sh and install.sh.sha256 from a tagged release, verify
+# the checksum, then run it (download first so stdin stays attached to the
+# terminal). The exact commands: https://mfuhrmann.github.io/spieli/getting-started/quick-start/#install
 
 set -euo pipefail
 
@@ -585,15 +585,15 @@ printf "  docker compose --profile %s down         # stop the stack\n" "$DEPLOY_
 
 if [[ "$DEPLOY_MODE" != "ui" ]]; then
     if [[ "$AUTO_UPDATE" == "true" ]]; then
-        printf "  docker compose restart importer             # trigger an early re-import\n"
+        printf "  Re-import now: a restart does not; stop the importer, run it once, start it again:\n"
+        printf "    ${CYAN}https://mfuhrmann.github.io/spieli/ops/refresh-data/#daemon-mode${RESET}\n"
     else
         printf "  docker compose --profile %s run --rm importer  # re-import OSM data\n" "$DEPLOY_MODE"
         printf "\n"
         printf "${YELLOW}Manual update reminders:${RESET}\n"
         printf "  • Re-run the importer periodically to refresh OSM data.\n"
         printf "  • Pull updated images with: ${CYAN}docker compose pull${RESET}\n"
-        printf "  • Systemd timer units for scheduled imports: ${CYAN}%s/deploy/${RESET}\n" \
-            "$(cd "$DEPLOY_DIR" && pwd)"
+        printf "  • Scheduled imports with a systemd timer: ${CYAN}https://mfuhrmann.github.io/spieli/ops/scheduled-import/#systemd-timer${RESET}\n"
     fi
 fi
 

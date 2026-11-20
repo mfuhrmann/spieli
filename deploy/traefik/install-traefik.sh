@@ -230,13 +230,13 @@ printf "  docker compose down           # stop\n"
 printf "  docker compose logs -f        # watch logs\n\n"
 if [[ "$TRAEFIK_MODE" == "data-node-ui" ]]; then
     printf "${BOLD}Next step — install spieli:${RESET}\n"
-    printf "  curl -fsSL https://raw.githubusercontent.com/mfuhrmann/spieli/main/install.sh -o install.sh\n"
-    printf "  bash install.sh\n\n"
+    printf "  Install a tagged release with a verified checksum, as in the Quick Start:\n"
+    printf "  ${CYAN}https://mfuhrmann.github.io/spieli/getting-started/quick-start/#install${RESET}\n\n"
     printf "${YELLOW}Tip:${RESET} when the installer asks for the public URL, enter ${BOLD}https://$DOMAIN${RESET}\n"
 else
     printf "${BOLD}Next step — install spieli (data-node mode):${RESET}\n"
-    printf "  curl -fsSL https://raw.githubusercontent.com/mfuhrmann/spieli/main/install.sh -o install.sh\n"
-    printf "  bash install.sh\n\n"
+    printf "  Install a tagged release with a verified checksum, as in the Quick Start:\n"
+    printf "  ${CYAN}https://mfuhrmann.github.io/spieli/getting-started/quick-start/#install${RESET}\n\n"
     printf "${YELLOW}Tip:${RESET} choose ${BOLD}data-node${RESET} mode in the installer.\n"
     printf "Your API will be available at ${CYAN}https://$DOMAIN/api/${RESET}\n"
 fi
