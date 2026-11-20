@@ -78,13 +78,12 @@ nav:
           - Add a POI Category: contributing/add-poi-category.md
           - Add a Filter: contributing/add-filter.md
           - Update Generated Assets: contributing/generated-assets.md
+          - Build the Poster: contributing/poster.md
       - Maintain:
           - Maintainer Guide: contributing/maintaining.md
           - Translation Workflow: contributing/translations.md
-          - Build the Poster: contributing/poster.md
           - ADR-0001 — OpenSpec sharing policy: adr/0001-openspec-sharing-policy.md
-          - Project Overview (AI context): project-overview.md
-          - Source Tree (AI context): source-tree-analysis.md
+          - Source Tree: source-tree-analysis.md
   - Reference:
       - Data:
           - OSM Tags spieli Reads: reference/osm-tags.md
@@ -116,3 +115,6 @@ markdown_extensions:
       alternate_style: true
   - toc:
       permalink: true
+
+not_in_nav: |
+  /project-overview.md

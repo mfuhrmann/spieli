@@ -3,7 +3,7 @@
 Annotated directory tree for the spieli monorepo. Excludes `node_modules`, `dist`, `.git`, and build artefacts.
 
 !!! note "A selective tour, not a complete listing"
-    It names the files worth knowing first. Today `app/src/` holds 22 shared components, 17 stores and some 36 library modules; `CLAUDE.md` in the repository root keeps the full component and store tables, and the [Frontend Guide](contributing/frontend-guide.md) explains how they fit together.
+    It names the files worth knowing first. `CLAUDE.md` in the repository root keeps the full component and store tables, and the [Frontend Guide](contributing/frontend-guide.md) explains how they fit together.
 
 ```
 spieli/                            ← Monorepo root
