@@ -134,9 +134,77 @@ Neither rules out an overlap; two imports can still land close together, which i
 
 ## Upgrading
 
-See [Upgrading — Single-host federation](upgrade.md#single-host-federation-multiple-stacks-on-one-vps) for the full procedure. The short version: use `scripts/upgrade-stacks.sh`, which upgrades all stacks sequentially (data-nodes first, hub last) and handles the `API_ONLY=1` ordering automatically.
+When the hub and its data-nodes share a single VPS, use `scripts/upgrade-stacks.sh`. It handles the correct order (data-nodes first, hub last) and runs each stack sequentially to avoid OOM from concurrent importer runs.
 
-Standard releases with Watchtower active require no manual action — the daemon importer applies a changed `api.sql` when it restarts (an unchanged one is skipped, #971). Only [breaking-label releases](upgrade.md#breaking-label-procedures) need manual steps.
+Copy the script to the VPS once, then edit the `STACKS` array to match your port layout:
+
+```bash
+scp scripts/upgrade-stacks.sh user@vps:~/upgrade-stacks.sh
+```
+
+```bash
+STACKS=(
+  "$HOME/spieli-hessen:data-node-ui:8081"
+  "$HOME/spieli-berlin:data-node-ui:8082"
+  "$HOME/spieli:ui auto-update:8080"   # hub last
+)
+```
+
+Run:
+
+```bash
+bash ~/upgrade-stacks.sh
+```
+
+Per stack, in this order — the order is the point, and it is not the one an
+earlier version of this page described:
+
+1. **Pull images.**
+2. **Stop the daemon importer** (data-nodes only), so it cannot race the schema
+   apply. The [manual procedure](upgrade.md#manual-upgrade) calls this not optional; the script does
+   it for you.
+3. **Apply `api.sql`** via a one-shot `API_ONLY=1` importer, which never
+   triggers a full reimport. If it fails, the daemon importer is brought back
+   up *before* the sweep aborts, so a failed run never leaves a stack with its
+   importer stopped.
+4. **Recreate the daemon importer** with `up -d --force-recreate`. The plain
+   restart form is what left daemons running the old image during the v0.9.0
+   sweep.
+5. **Restart the app container** — last, so it never serves against a schema
+   the database does not have yet.
+6. **Verify** by polling `get_meta` for up to 180 s, treating only `200` and
+   `404` as settled. Verifying before step 4 is precisely what made [#800]
+   invisible: the old schema is internally consistent enough to pass.
+
+[#800]: https://github.com/mfuhrmann/spieli/issues/800
+
+The hub entry skips steps 2–4 automatically.
+
+**The sweep runs one heavy job at a time** (#971). After a data-node's app is restarted and verified, the sweep waits until its importer logs `[importer] settled` — no schema rebuild or import running or imminent — before touching the next stack; a stack that was mid-import waits for that import to end, and the zero-playground safety-net reimport now runs in the foreground. Up to `SETTLE_TIMEOUT_MIN` (default 120) minutes each, then the sweep stops rather than overlap two stacks. Before, it moved on as soon as `get_meta` answered, which it does at once because the old view keeps serving during a rebuild; during the v0.12.0 sweep two stacks' rebuilds overlapped and the host ran out of memory. Combined with the daemon skipping an unchanged startup apply, a sweep of already-current stacks does no rebuild at all.
+
+**A sweep restarts every import clock.** Recreating the daemon importer runs
+its startup grace check, and every stack whose import is overdue imports right
+then. Since #882 each such import first waits a random 0–`REIMPORT_JITTER_HOURS`
+(default 6 h), so a sweep no longer stamps all of them into one window — but on
+a memory-constrained host it is still worth checking the spread afterwards
+(see [Keeping imports apart](#keeping-imports-apart)).
+
+**A stack that is mid-import is skipped, not forced.** If `get_meta` reports
+`importing: true`, the script leaves the schema alone and says so: stopping the
+importer there would SIGKILL `osm2pgsql` after 10 s and leave the database
+partially imported. The app is still upgraded, and the stack is listed
+separately at the end — re-run the sweep for it once the import has finished.
+
+> **The script does not touch `.env` or `compose.yml`.** A release labelled
+> `requires-env-update` or `requires-compose-update` needs those applied to
+> every stack **before** the sweep. It is easy to miss, because the script
+> otherwise looks like the whole federation procedure.
+
+**Verification is not fatal to the sweep.** By the time a stack is verified its images are already pulled and its containers restarted, so a failed check means the upgrade worked but the stack is not serving data yet. The script records the stack, carries on with the rest, and exits non-zero at the end listing every inconclusive one. A data-node that has never completed an import answers `404` on `get_meta` and is called out as such — expected until its first import finishes.
+
+If the sweep does abort — a failed image pull or container start — it prints which stacks were upgraded, which one it stopped on, and that everything from there onward was not reached. Completed stacks are idempotent, so re-run after fixing the cause. One caveat it will warn you about: if a forced reimport was launched in the background before the abort, wait for it to finish first, or the next run's `API_ONLY=1` step races it on the `playground_stats` rebuild.
+
+Standard releases with Watchtower active need no sweep — the daemon importer applies a changed `api.sql` when it restarts (an unchanged one is skipped, #971). Only [breaking-label releases](upgrade.md#breaking-label-procedures) need manual steps.
 
 ## Watchtower
 
