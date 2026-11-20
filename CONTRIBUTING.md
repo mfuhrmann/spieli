@@ -9,13 +9,13 @@ Translations are managed with [Weblate](https://weblate.org/), which hosts spiel
 | Directory | Contents |
 |---|---|
 | `app/` | Svelte 5 frontend app (source in `app/src/`) |
-| `importer/` | osm2pgsql import scripts and PostgREST API SQL |
+| `importer/` | Import script (`import.sh`: osmium filter + osm2pgsql) and PostgREST API SQL (`api.sql`) |
 | `db/` | PostgreSQL initialisation SQL |
 | `oci/` | Docker build contexts — `oci/app/` (Svelte app + nginx) |
-| `processing/` | OSM data pipeline scripts (Lua rules, SQL, shell) used during import |
 | `taginfo/` | [taginfo](https://taginfo.openstreetmap.org) metadata describing the OSM tags this project uses. Keep `taginfo/taginfo.json` in sync when you change the `osmium tags-filter` in `importer/import.sh`, the tags read in `importer/api.sql`, or the tags rendered by the frontend (e.g. `app/src/lib/equipmentAttributes.js`). |
 | `locales/` | Translation files (`*.json`, one per language) — maintained on [Weblate](https://hosted.weblate.org/engage/spieli/); only `en.json` and `de.json` are hand-edited |
-| `deploy/` | Systemd unit files for automated weekly import on Linux servers |
+| `deploy/` | Traefik HTTPS stack, shared basemap cache, monitoring stack, systemd import timer |
+| `docs/` | This documentation (MkDocs); `mkdocs.yml` holds the navigation |
 
 ## Step 1 — Create a GitHub issue
 
@@ -26,17 +26,10 @@ Before writing code, open an issue describing what you want to fix or add. This 
 ```bash
 git checkout main
 git pull
-git checkout -b fix/my-fix-name
+git checkout -b fix/123-popup-scroll
 ```
 
-**Branch naming:**
-
-| Prefix | Use for |
-|---|---|
-| `feat/` | New feature (e.g. `feat/add-balance-beam-device`) |
-| `fix/` | Bug fix (e.g. `fix/popup-scroll`) |
-| `docs/` | Documentation only (e.g. `docs/add-glossary`) |
-| `chore/` | Maintenance, dependency updates |
+**Branch naming:** `<type>/<issue-number>-<short-description>`, with the type from the commit types below, e.g. `feat/130-equipment-map-layer`, `fix/123-popup-scroll`, `docs/456-glossary`. Contributors without write access work on a fork and open the PR against `mfuhrmann/spieli`.
 
 ## Step 3 — Make your change and test it
 
@@ -51,9 +44,9 @@ git add app/src/lib/yourChangedFile.js
 git commit -m "feat: add balance_beam playground device"
 ```
 
-**Format:** `<type>: <short description>`
+**Format:** [Conventional Commits](https://www.conventionalcommits.org/), `<type>[optional scope]: <short description>`
 
-Types: `feat`, `fix`, `docs`, `style`, `refactor`, `chore`, `ci`
+Types: `feat`, `fix`, `docs`, `refactor`, `perf`, `test`, `chore`, `ci`, `build`, `revert`
 
 Examples:
 
@@ -64,7 +57,7 @@ Examples:
 ## Step 5 — Push and open a pull request
 
 ```bash
-git push -u origin fix/my-fix-name
+git push -u origin fix/123-popup-scroll
 ```
 
 GitHub will print a link to open a pull request. Write a short description of what you changed and why, and submit. A maintainer will review it.

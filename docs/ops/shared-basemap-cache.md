@@ -6,7 +6,7 @@ A single-stack operator needs nothing here: every instance already caches basema
 ## Why
 
 Each stack fetches tiles from `BASEMAP_UPSTREAM` and caches them itself.
-That is the right default — it is portable and needs no extra component — but on the federated host it multiplies:
+That is the right default — it is portable and needs no extra component — but on a host with many stacks it multiplies:
 
 | | Per-stack caches (default) | One shared cache |
 |---|---|---|
@@ -37,6 +37,20 @@ This is why the shared cache needs no Traefik router, no CORS exception and no C
     Without that rewrite each stack would look for *its* configured upstream — now the cache, not the provider — find nothing to rewrite, and hand the browser `tiles.openfreemap.org` URLs directly. The map would still render perfectly while quietly undoing the same-origin property. CI asserts the rewrite for this reason.
 
 ## Set it up
+
+### 0. Get the files
+
+The installer does not download these. From a clone, they are `deploy/basemap-cache/` and `compose.override.basemap-cache.yml` in the repository root. On an installed host, fetch them for the release you run (the same `TAG` as in the [Quick Start](../getting-started/quick-start.md#install)):
+
+```bash
+TAG=vX.Y.Z   # the release you run (docker compose images shows it)
+RAW=https://raw.githubusercontent.com/mfuhrmann/spieli/${TAG}
+mkdir -p deploy/basemap-cache
+curl -fsSL "$RAW/deploy/basemap-cache/compose.yml"         -o deploy/basemap-cache/compose.yml
+curl -fsSL "$RAW/deploy/basemap-cache/nginx.conf.template" -o deploy/basemap-cache/nginx.conf.template
+# and into every stack's directory, next to its compose.yml:
+curl -fsSL "$RAW/compose.override.basemap-cache.yml" -o compose.override.basemap-cache.yml
+```
 
 ### 1. Start the cache
 
@@ -125,4 +139,4 @@ BASEMAP_UPSTREAM=http://tileserver:8080
 BASEMAP_UPSTREAM_HOST=tileserver:8080
 ```
 
-If that server's URL layout differs from the provider's, the bundled style needs rebuilding against it too — see [Configuration](configuration.md#basemap). The stacks need no change either way.
+If that server's URL layout differs from the provider's, the bundled style needs rebuilding against it too — see [Customise your own image → Your own tileserver](customise-image.md#your-own-tileserver). The stacks need no change either way.

@@ -124,7 +124,7 @@ check_nginx_time() { check_nginx_unit "$1" "$2" 'smhdwMy' 's/m/h/d/w/M/y'; }
 # That is a TWO-step swap, not one: the style document carries the provider's
 # own asset paths, so a differently-shaped tileserver also needs the style
 # rebuilt against it (tools/build-basemap-style.py --source ... --asset-base
-# /basemap). See docs/ops/configuration.md#basemap.
+# /basemap). See docs/ops/basemap-and-services.md#basemap.
 SAFE_BASEMAP_UPSTREAM="${BASEMAP_UPSTREAM:-https://tiles.openfreemap.org}"
 require_origin BASEMAP_UPSTREAM "$SAFE_BASEMAP_UPSTREAM"
 # Scheme first, THEN trim: trimming trailing slashes first eats the "//" out of

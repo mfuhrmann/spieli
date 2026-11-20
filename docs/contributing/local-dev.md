@@ -1,23 +1,49 @@
 # Local Development
 
-**Requirements:** Node.js v18+, Docker with the Compose plugin
+**Requirements:** Node.js 20.19 or newer (Vite 8 needs it; CI runs Node 20), Docker with the Compose plugin
+
+## Start here
+
+1. Set up the stack below, and run the tests once ([Testing Guide](testing.md)).
+2. Get the picture: [Architecture](../reference/architecture.md), then [Tech Stack](../reference/tech-stack.md).
+3. Read the guide for the part you will touch: [Frontend Guide](frontend-guide.md), [Import Pipeline](import-pipeline.md), or [How the hub works internally](hub-internals.md).
+4. For a typical first change, follow a how-to: [Add a Playground Device](add-device.md), [Add a Sport Pitch Type](add-sport-type.md), [Add a POI Category](add-poi-category.md), [Add a Filter](add-filter.md).
+
+**How changes get in:** open an issue first, branch from `main` as `<type>/<issue>-<short-description>`, write [Conventional Commits](https://www.conventionalcommits.org), and open a pull request against `mfuhrmann/spieli`. New UI strings go into `locales/en.json` and `locales/de.json` only; the other locale files belong to Weblate ([Translation Workflow](translations.md)). The full walkthrough: [CONTRIBUTING.md](https://github.com/mfuhrmann/spieli/blob/main/CONTRIBUTING.md).
 
 ## Setup
 
 ```bash
+cp .env.example .env
 make install      # install Node dependencies (once)
-make up           # start db + PostgREST + nginx
-make import       # download Hessen PBF and import Fulda Stadt (454863) — ~300 MB, run once
+make up           # start db + PostgREST + nginx; on first launch it also imports
+                  # Fulda Stadt (454863) from the Hessen PBF — ~300 MB download
 make dev          # Vite dev server with hot-reload at http://localhost:5173
 ```
 
-For quick testing without a full import, load the bundled fixture (4 Fulda playgrounds):
+`make up` runs `make import` by itself when the database has no `api` schema yet. Run `make import` again later to refresh the data.
+
+For quick testing without the download, load the bundled fixture (4 Fulda playgrounds) **before** the first `make up`. It contains the `api` schema, so `make up` then skips the import:
 
 ```bash
 make seed-load
+make up
 ```
 
 Run `make help` to list all available targets.
+
+`compose.yml` is this development stack, not the `compose.prod.yml` the installer sets up for operators: it always starts the database, the API and the app, plus a second database and API (`db2`, `postgrest2`) for hub testing, whatever `DEPLOY_MODE` says. To work on a different region, set `OSM_RELATION_ID` and `PBF_URL` in `.env` ([how to find them](../getting-started/quick-start.md#finding-your-region)) and run `make import`. SQL-only changes to `importer/api.sql` are applied with `make db-apply`, without a re-import.
+
+## Repository layout
+
+| Path | Role |
+|---|---|
+| `app/src/` | Svelte 5 frontend components and modules |
+| `importer/` | Import script (`import.sh`: osmium filter + osm2pgsql) and PostgREST API SQL (`api.sql`) |
+| `db/` | PostgreSQL schema initialisation |
+| `oci/` | Docker build contexts |
+
+For a file-by-file tour, see [Source Tree](../source-tree-analysis.md).
 
 ## Hub mode
 
@@ -31,7 +57,19 @@ make import       # imports Fulda Stadt (454863) into db  — downloads Hessen P
 make import2      # imports Neuhof (454881) into db2 — reuses cached PBF
 ```
 
-`registry.json` lists both backends (`/api` = Fulda, `/api2` = Neuhof). Open `http://localhost:8080` to see the Hub with two real regions.
+With the bundled seed fixtures instead (fast, no download):
+
+```bash
+# In .env: set APP_MODE=hub
+make up
+make seed-load    # 4 Fulda playgrounds  → db
+make seed-load2   # 5 Neuhof playgrounds → db2
+make docker-build
+```
+
+`registry.json` (`app/public/registry.json`) lists both backends (`/api` = Fulda, `/api2` = Neuhof); nginx proxies each to its own PostgREST. Open `http://localhost:8080` to see the Hub with two real regions.
+
+The second backend uses `OSM_RELATION_ID2` from `.env` (default `454881` = Neuhof). To test a different second region, set it and re-run `make import2`.
 
 ## Frontend-only (no database)
 
@@ -42,58 +80,56 @@ make install
 make dev
 ```
 
-## Changing the app icon
-
-The installable-app icons live in `app/public/icons/` (#939). `icon-192.png` and `icon-512.png` are the free-standing pin; the *maskable* variants that Android launchers and some desktops cut into a circle are generated from `icon-512.png`:
-
-```bash
-make app-icons            # rewrites app/public/icons/icon-maskable-{192,512}.png
-make holiday-states       # rewrites app/src/lib/holidayStates.generated.json — after bumping opening_hours
+```mermaid
+flowchart TD
+    browser["Browser"] --> vite["Vite dev server<br/>(hot-reload JS/CSS)"]
+    vite --> q{"apiBaseUrl empty?"}
+    q -- yes --> overpass["Overpass<br/>(live OSM queries)"]
+    q -- no --> postgrest["PostgREST<br/>(Docker stack via make up)"]
 ```
 
-Commit the regenerated files. They are served under stable names with a one-day cache, so an installed app picks up a new icon within a day.
+To test against the full PostgREST backend instead, start `make up` and set `apiBaseUrl` in `app/public/config.js`.
 
-## Adding or changing an equipment illustration
-
-The device and pitch tables (`app/src/lib/objPlaygroundEquipment.js`, `app/src/lib/equipmentAttributes.js`) name illustrations as MediaWiki `File:` titles. Those names are resolved to real file URLs at build time, so after adding or changing one:
+## Testing on a phone
 
 ```bash
-make equipment-images     # re-resolve, rewriting app/src/lib/equipmentImages.generated.json
+make lan-url
 ```
 
-Commit the regenerated file with your change. It is checked in on purpose, like the basemap assets, so a build never depends on someone else's API being up.
+Prints your machine's LAN IP and ready-to-use URLs. The Vite dev server and Docker stack both bind to all interfaces, so the printed URLs work immediately on any device on the same WiFi.
 
-Two things to expect:
+!!! warning "Geolocation on mobile"
+    Browsers block the geolocation API on plain HTTP. If you need to test the location button on a phone, use Chrome and enable "Insecure origins treated as secure" at `chrome://flags`, or test against the production HTTPS URL.
 
-- **A name that resolves on neither Commons nor the OSM wiki fails the target.** That is the point: such a name used to render nothing while costing two failing requests. Fix the name, or drop the entry — there is no allow-list for missing files any more (#867).
-- **The resolved URL is not `Special:FilePath`.** It is the real file path on a Wikimedia or OSM-wiki host, which the `/ext/wikimedia/` proxy serves, so the visitor's browser never contacts either wiki. Do not reintroduce a `Special:FilePath` URL in the frontend — CI rejects it.
-
-`make check-equipment-images` re-resolves and fails if the committed map no longer points at the same files. It is not wired into CI, because it depends on two live APIs; run it by hand if illustrations start disappearing.
-
-## Printing the poster
-
-`marketing/poster/` holds a poster for hanging up locally (#1004): pixel-art scene in the logo's style, QR code to `spieli.eu`. One template designed on A5, three languages — `poster.html?lang=de|en|sk` (default `de`); the texts are in the `TEXT` table at the bottom of the file. Open it in a browser to preview.
+Without `make`, the same IP comes from:
 
 ```bash
-make poster               # rewrites marketing/poster/print/poster-<lang>-a4.pdf, -2up-a4.pdf and .png
+ip route get 1 | awk '{print $7; exit}'
 ```
 
-Per language, `make poster` writes three files:
+Then open `http://<that-ip>:8080` on your phone.
 
-| File | What it is |
-|---|---|
-| `poster-<lang>-2up-a4.pdf` | Two posters on A4 landscape, for handing out. Laid out like the OSM Fulda Aushang sheets: each poster is cut to 137 × 194 mm (the A5 ratio, as large as fits with room for the marks), the two touch in the middle, cut marks sit outside, light hairlines run across the sheet — five cuts. The paper margin is cut away, so a printer's unprintable edge does not matter, and a printer that shrinks the page to about 97 % shrinks the marks with it (`sheet.html`). |
-| `poster-<lang>-a4.pdf` | One poster filling an A4 page (`a4.html`; A4 and A5 share their ratio, so the design is only scaled). |
-| `poster-<lang>.png` | The poster on its own, 150 dpi on A4, for use online. Rendered from the A4 PDF. |
+## Troubleshooting
 
-Needs a Chromium (`CHROME=` to point at one), Ghostscript (`gs`) and network access, because the fonts come from Google Fonts and jsDelivr.
+### Changes don't appear
 
-Chromium's PDF is flattened into one opaque 600 dpi image per page. Printers that interpret PDF themselves (e.g. a Brother inkjet over IPP) silently drop images with transparency — every pin — and Type 3 fonts; a flattened page prints the same everywhere. Check a new build with `pdfimages -list` (no `smask` rows) and `pdffonts` (empty).
+**Symptom:** You edited a JS or CSS file, but the browser still shows the old version.
 
-The files are **committed**, so anyone can print the poster straight from the repository. After changing the template, run `make poster` and commit the outputs with it. Only rebuild them for a real change: they add about 5 MB to the history each time.
+**Fix:** Vite hot-reload should pick up changes automatically. If it doesn't:
 
-`marketing/poster/preview.png` shows all three languages side by side, for the PR and anyone browsing the folder. It is not built by `make poster`; after a visible change, regenerate it from the PNGs (`magick poster-{de,en,sk}.png -resize x900 -bordercolor white -border 20 +append ../preview.png` in `print/`).
+1. Check the terminal running `make dev` — a build error will prevent the browser from updating.
+2. Try a hard reload: `Ctrl+Shift+R` / `Cmd+Shift+R`.
+3. If you changed `index.html` or a file in `public/`, stop and restart `make dev`.
 
-When printing, choose **actual size / 100 %**, not "fit to page". The design keeps a white margin around its frame because inkjets cannot print borderless, and a light sky to save ink. The QR code keeps a white quiet zone of 4 modules (ISO/IEC 18004). Scan the QR code off the printout before hanging it up.
+When testing against the Docker stack, rebuild and restart the app container after changes:
 
-Keep the bubble to things spieli really shows. Shade, for instance, is barely mapped (12 of 473 playgrounds in Landkreis Fulda), so promising it disappoints.
+```bash
+docker compose up -d --build app   # or: make docker-build
+```
+
+See also the [operator troubleshooting page](../ops/troubleshooting.md) for problems with the Docker stack itself.
+
+## How-to pages for generated files
+
+- [Update Generated Assets](generated-assets.md): app icons and equipment illustrations
+- [Build the Poster](poster.md)

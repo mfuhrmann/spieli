@@ -24,50 +24,37 @@ Two images are published to GHCR on every release:
 
 ## Release checklist
 
+`main` is protected by the same rule as every other change: version bumps go through a pull request too.
+
 ```bash
 # 1. Make sure main is green and all intended PRs are merged.
+#    Check the merged PRs' labels (requires-schema-update, requires-reimport,
+#    requires-env-update, requires-compose-update): any of them → minor bump,
+#    none → patch bump.
 
-# 2. Remove the -rc suffix in app/package.json.
-#    Example: "0.2.6-rc" → "0.2.6"
-$EDITOR app/package.json
+# 2. On a branch, remove the -rc suffix (e.g. "0.2.6-rc" → "0.2.6") in
+#    app/package.json and app/package-lock.json, and set TAG= to the new tag
+#    in the install block of docs/getting-started/quick-start.md.
+#    Commit as "chore: release v0.2.6", open a PR, merge it.
 
-# 3. Commit.
-git add app/package.json && git commit -m "chore: release v0.2.6"
-
-# 4. Tag and push the tag.  CI fires on the tag push and publishes
-#    :latest, :0.2.6, and :0.2 for both images.
+# 3. Tag the merge commit on main and push the tag.
+git switch main && git pull
 git tag v0.2.6
-git push origin main
 git push origin v0.2.6
 
-# 5. Create the GitHub release.  This is NOT done automatically by CI —
-#    without this step the tag exists but the Releases page stays stale
-#    and operators have no release notes.
-gh release create v0.2.6 \
-  --title "v0.2.6 — <short summary>" \
-  --notes "$(cat <<'EOF'
-## What's new
-- ...
+#    CI fires on the tag push. It publishes :latest, :0.2.6 and :0.2 for both
+#    images, then creates the GitHub release itself: release notes generated
+#    from the merged PRs, an upgrade table as footer, and install.sh plus
+#    install.sh.sha256 as release assets. Nothing to do by hand.
 
-## Breaking changes
-- none
-
-## Images
-\`\`\`
-ghcr.io/mfuhrmann/spieli:0.2.6
-ghcr.io/mfuhrmann/spieli-importer:0.2.6
-\`\`\`
-EOF
-)"
-
-# 6. Verify both images are visible in GHCR and :latest is updated.
+# 4. Verify the release page and that both images are visible in GHCR with
+#    :latest updated.
+#    https://github.com/mfuhrmann/spieli/releases
 #    https://github.com/mfuhrmann?tab=packages&repo_name=spieli
 
-# 7. Bump main to the next -rc.
-#    Example: "0.2.6" → "0.2.7-rc"
-$EDITOR app/package.json
-git add app/package.json && git commit -m "chore: bump version to 0.2.7-rc"
-git push origin main
+# 5. On a branch, bump to the next -rc ("0.2.6" → "0.2.7-rc") in
+#    app/package.json and app/package-lock.json.
+#    Commit as "chore: bump version to 0.2.7-rc", open a PR, merge it.
 ```
 
 ## E2E tests and tag pushes

@@ -1,21 +1,65 @@
-# Translate spieli
+# Translation Workflow
 
-[![Translation status](https://hosted.weblate.org/widget/spieli/ui-strings/svg-badge.svg)](https://hosted.weblate.org/engage/spieli/)
+How translations get into spieli, for developers and maintainers. Translating itself happens on Weblate and needs no GitHub account: see the [Translation Guide](translation-guide.md).
 
-spieli is translated with [Weblate](https://weblate.org/), which hosts the project free of charge under its [Libre plan](https://weblate.org/hosting/) for free software projects. Translators work through a web UI — no GitHub account or knowledge of JSON is required.
+## Adding new UI strings (developer workflow)
 
-**[Help translate spieli →](https://hosted.weblate.org/engage/spieli/)**
+New translatable strings **must** be added to `locales/en.json` first. `locales/de.json` must be updated in the **same commit**. Adding a key only to `de.json` breaks Weblate — it uses `locales/en.json` as the source template and won't surface keys that are absent from it.
+
+**Never edit the other locale files by hand.** `es.json`, `fr.json`, `sk.json` and the rest are owned by Weblate. Editing one directly collides with whatever a translator has pending for that same file, and Weblate's rebase onto `main` breaks — which is exactly how the component sat in a merge-conflict error state from May to July 2026, blocking every translation from reaching the repo.
+
+The `i18n Guard` CI job (`.github/workflows/i18n-guard.yml`) enforces this: a PR touching any locale other than `en.json` or `de.json` fails.
+
+| File | Who edits it |
+|---|---|
+| `locales/en.json` | Developers — Weblate's source template |
+| `locales/de.json` | Developers — maintainer-authored, primary deployment language |
+| everything else | Weblate translators only |
+
+Two legitimate exceptions bypass the guard:
+
+- PRs from the `weblate-translations` branch — Weblate's own translation pushes
+- PRs labelled `i18n-manual` — landing or repairing a translation out-of-band
+
+Keys follow the existing nested structure. Plural strings use ICU inline format:
+
+```json
+"deviceCount": "{count, plural, one {# piece of equipment} other {# pieces of equipment}}"
+```
+
+When you add a new key, Weblate automatically marks it as needing translation in all registered languages.
+
+## Language graduation
+
+Weblate collects translations for every registered language, but the app loads only the languages listed in `SUPPORTED` in `app/src/lib/i18n.js` — today that is `de`, `en` and `sk`. There is no automatic threshold: reaching 100% in Weblate does not by itself make a language visible. Until a maintainer registers it, the locale file sits in the repo and users with that browser language fall back to English.
+
+**≥ 80% completion** is the bar a maintainer uses to decide a language is ready to activate. When a language crosses it:
+
+1. Open a PR editing `app/src/lib/i18n.js`:
+    - Add the language code to the `SUPPORTED` array
+    - Add a `register()` call: `register('<lang>', () => import('../../../locales/<lang>.json'));`
+
+2. Title the PR: `feat(i18n): add <Language> language support`
+3. After merging, the language is live with the next release (locally after `make docker-build`) for users with that browser language
+
+`app/src/lib/i18n.test.js` enforces both halves of that: a `register()` call without a `SUPPORTED` entry (or the reverse) fails the build, because either on its own is a silent no-op — the locale is simply never selected, with nothing logged. That is how Slovak sat complete and unreachable for weeks ([#814](https://github.com/mfuhrmann/spieli/issues/814)).
+
+The same test requires **every** locale file — registered or not — to parse under `intl-messageformat`, with the options svelte-i18n uses, and to use only placeholders its English source has (a translated `{nombreRegion}` is never passed and throws too). A string it cannot parse **throws at render** rather than degrading, so one bad string breaks whichever view uses it. Until [#751](https://github.com/mfuhrmann/spieli/issues/751) only registered languages were checked, and ten unregistered ones carried 190 i18next-style `{{placeholder}}` strings unnoticed, so any of them would have needed a repair before it could graduate. Now the Weblate PR that brings in a bad string fails CI: fix the string in Weblate, not in the file, then push from Weblate (Operations → Repository maintenance → Commit, Push; or `wlc push`) so the PR picks it up. A locked component does not push — check `wlc lock-status`.
+
+Placeholders take one brace: `{regionName}`, never `{{regionName}}`. When repairing them with Weblate's *Search and replace*, do not replace `}}` on its own — a plural string legitimately ends in `}}` (`… other {# bancos}}`), and a blanket replace breaks every one of them.
+
+The test also asserts the *reason* each unregistered language is excluded — below 80% key coverage, or a recorded decision not to ship it (`DECLINED` in the test; `es` and `fr` today, since no backend serves those languages, #752) — so any other language that reaches the bar fails the build until someone registers it. The exclusion stays a decision rather than decaying into an oversight.
 
 ## How translations reach the app
 
 ```
 Translator edits strings       Weblate pushes commit         Maintainer merges PR
 on hosted.weblate.org    →     to weblate-translations   →   into main
-  (web UI, no GitHub)           branch on GitHub              → make docker-build
-                                                               → live in app
+  (web UI, no GitHub)           branch on GitHub              → next release image
+                                                               → live on instances
 ```
 
-Weblate batches translation saves and periodically pushes a commit to the `weblate-translations` branch, then opens — or reuses — a pull request against `main`. It keeps **one long-lived PR** ("Translations update from Hosted Weblate") rather than opening a new one per batch, so the same PR number accumulates commits until a maintainer merges it. The maintainer reviews the JSON diff and merges; the next `make docker-build` bundles the updated locale files into the app.
+Weblate batches translation saves and periodically pushes a commit to the `weblate-translations` branch, then opens — or reuses — a pull request against `main`. It keeps **one long-lived PR** ("Translations update from Hosted Weblate") rather than opening a new one per batch, so the same PR number accumulates commits until a maintainer merges it. The maintainer reviews the JSON diff and merges. Deployed instances get the new strings with the next release image (with Watchtower, within a day of the release); a local checkout sees them after `make docker-build`.
 
 Weblate never pushes directly to `main` — every translation update goes through a PR.
 
@@ -126,54 +170,6 @@ https://hosted.weblate.org/api/ = YOUR_API_KEY
 
 Lock state is not in `wlc show` — use `wlc lock-status`, which reads `GET /api/components/spieli/ui-strings/lock/`.
 
-## Language graduation
-
-Weblate collects translations for every registered language, but the app loads only the languages listed in `SUPPORTED` in `app/src/lib/i18n.js` — today that is `de`, `en` and `sk`. There is no automatic threshold: reaching 100% in Weblate does not by itself make a language visible. Until a maintainer registers it, the locale file sits in the repo and users with that browser language fall back to English.
-
-**≥ 80% completion** is the bar a maintainer uses to decide a language is ready to activate. When a language crosses it:
-
-1. Open a PR editing `app/src/lib/i18n.js`:
-    - Add the language code to the `SUPPORTED` array
-    - Add a `register()` call: `register('<lang>', () => import('../../../locales/<lang>.json'));`
-
-2. Title the PR: `feat(i18n): add <Language> language support`
-3. After merging, run `make docker-build` — users with that browser language now see the app in their language
-
-`app/src/lib/i18n.test.js` enforces both halves of that: a `register()` call without a `SUPPORTED` entry (or the reverse) fails the build, because either on its own is a silent no-op — the locale is simply never selected, with nothing logged. That is how Slovak sat complete and unreachable for weeks ([#814](https://github.com/mfuhrmann/spieli/issues/814)).
-
-The same test requires **every** locale file — registered or not — to parse under `intl-messageformat`, with the options svelte-i18n uses, and to use only placeholders its English source has (a translated `{nombreRegion}` is never passed and throws too). A string it cannot parse **throws at render** rather than degrading, so one bad string breaks whichever view uses it. Until [#751](https://github.com/mfuhrmann/spieli/issues/751) only registered languages were checked, and ten unregistered ones carried 190 i18next-style `{{placeholder}}` strings unnoticed, so any of them would have needed a repair before it could graduate. Now the Weblate PR that brings in a bad string fails CI: fix the string in Weblate, not in the file, then push from Weblate (Operations → Repository maintenance → Commit, Push; or `wlc push`) so the PR picks it up. A locked component does not push — check `wlc lock-status`.
-
-Placeholders take one brace: `{regionName}`, never `{{regionName}}`. When repairing them with Weblate's *Search and replace*, do not replace `}}` on its own — a plural string legitimately ends in `}}` (`… other {# bancos}}`), and a blanket replace breaks every one of them.
-
-It also asserts the *reason* each unregistered language is excluded — below 80% key coverage, or a recorded decision not to ship it (`DECLINED` in the test; `es` and `fr` today, since no backend serves those languages, #752) — so any other language that reaches the bar fails the build until someone registers it. The exclusion stays a decision rather than decaying into an oversight.
-
-## Adding new UI strings (developer workflow)
-
-New translatable strings **must** be added to `locales/en.json` first. `locales/de.json` must be updated in the **same commit**. Adding a key only to `de.json` breaks Weblate — it uses `locales/en.json` as the source template and won't surface keys that are absent from it.
-
-**Never edit the other locale files by hand.** `es.json`, `fr.json`, `sk.json` and the rest are owned by Weblate. Editing one directly collides with whatever a translator has pending for that same file, and Weblate's rebase onto `main` breaks — which is exactly how the component sat in a merge-conflict error state from May to July 2026, blocking every translation from reaching the repo.
-
-The `i18n Guard` CI job (`.github/workflows/i18n-guard.yml`) enforces this: a PR touching any locale other than `en.json` or `de.json` fails.
-
-| File | Who edits it |
-|---|---|
-| `locales/en.json` | Developers — Weblate's source template |
-| `locales/de.json` | Developers — maintainer-authored, primary deployment language |
-| everything else | Weblate translators only |
-
-Two legitimate exceptions bypass the guard:
-
-- PRs from the `weblate-translations` branch — Weblate's own translation pushes
-- PRs labelled `i18n-manual` — landing or repairing a translation out-of-band
-
-Keys follow the existing nested structure. Plural strings use ICU inline format:
-
-```json
-"deviceCount": "{count, plural, one {# piece of equipment} other {# pieces of equipment}}"
-```
-
-When you add a new key, Weblate automatically marks it as needing translation in all registered languages.
-
 ## Weblate component settings
 
 The `.weblate.yml` file in the repo root records the component configuration. Weblate does not read it — it is a checklist for manual setup and a record of what the live component is set to.
@@ -207,7 +203,7 @@ It squashes the commits, not their messages: the add-on's own *Commit message* o
 
 There is **no Git exporter add-on** on this project. Hosted Weblate serves the component's repository at the `git_export` URL natively, so the recovery procedure's `weblate` remote needs nothing enabled.
 
-Commit message templates use Conventional Commits, matching the rest of the repo. They had drifted from `.weblate.yml` and were corrected on the live component on 2026-07-31 (#796); the bullets above predate that.
+Commit message templates use Conventional Commits, matching the rest of the repo. They had drifted from `.weblate.yml` and were corrected on the live component on 2026-07-31 (#796).
 
 !!! note "Auditing the configuration over the API"
 

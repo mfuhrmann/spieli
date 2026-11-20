@@ -8,7 +8,7 @@ spieli is a free, interactive web map for exploring playgrounds based on OpenStr
 
 | Item | Value |
 |---|---|
-| Current version | `0.4.1-rc` (see `app/package.json`) |
+| Current version | see `app/package.json` (`main` carries the next `-rc`) |
 | Primary language | JavaScript / Svelte 5 (frontend), SQL (API layer), Shell (operations) |
 | License | GNU GPL v3.0 |
 | Origin | Fork of [Berliner Spielplatzkarte](https://github.com/SupaplexOSM/spielplatzkarte) by Alex Seidel |
@@ -25,7 +25,7 @@ spieli is a free, interactive web map for exploring playgrounds based on OpenStr
 │  Svelte 5 app, OpenLayers map, Bootstrap + Tailwind UI              │
 └───────────────────────────────┬─────────────────────────────────────┘
                                 │ HTTP
-                ┌────────────��──▼──────────────────┐
+                ┌───────────────▼──────────────────┐
                 │  nginx (oci/app/nginx.conf)       │
                 │  serves static assets             │
                 │  writes config.js at startup      │
@@ -52,8 +52,8 @@ Two orthogonal switches define how the stack runs:
 
 | `DEPLOY_MODE` | Services started |
 |---|---|
-| `data-node` | db + PostgREST (no web UI) |
-| `ui` | app/nginx only (no database) |
+| `data-node` | db + importer + PostgREST (no web UI) |
+| `ui` | app (nginx) only, no database |
 | `data-node-ui` | full stack (default) |
 
 | `APP_MODE` | Frontend behaviour |
@@ -77,11 +77,10 @@ The most common configuration is `DEPLOY_MODE=data-node-ui` + `APP_MODE=standalo
 | `app/src/standalone/` | Standalone-mode root component |
 | `db/` | PostgreSQL schema initialisation (`init.sql`) |
 | `importer/` | osm2pgsql import script + PostgREST API SQL (`api.sql`) |
-| `processing/` | Lua rules + SQL scripts used during OSM import |
 | `oci/app/` | Docker build context: nginx config, entrypoint, Dockerfile |
-| `oci/docker-entrypoint.sh` | Hub-level entrypoint (federation polling cron) |
+| `oci/app/poll-federation.sh` | Hub federation polling (writes `/federation-status.json` and `/metrics`) |
 | `locales/` | Translation files (`*.json`, one per language) |
-| `deploy/` | Systemd unit files for scheduled weekly imports on Linux |
+| `deploy/` | Traefik HTTPS stack, shared basemap cache, monitoring stack, systemd import timer |
 | `tests/` | Playwright E2E test suites |
 | `openspec/` | Capability specs and archived change decisions |
 | `docs/` | MkDocs documentation site source |
@@ -93,7 +92,7 @@ The most common configuration is `DEPLOY_MODE=data-node-ui` + `APP_MODE=standalo
 | Layer | Technology |
 |---|---|
 | Map rendering | OpenLayers 10 |
-| UI framework | Svelte 5 + Vite 6 |
+| UI framework | Svelte 5 + Vite 8 |
 | Styling | Bootstrap 5 + Tailwind CSS 4 |
 | Database | PostgreSQL 16 + PostGIS 3.4 |
 | API layer | PostgREST v12 |
@@ -118,7 +117,7 @@ osmium extract (bbox clip)
 osmium tags-filter (keep playground/tree/pitch/POI tags)
         │
         ▼
-osm2pgsql → PostgreSQL tables (planet_osm_point, planet_osm_polygon)
+osm2pgsql → PostgreSQL tables (planet_osm_point, planet_osm_line, planet_osm_polygon)
         │
         ▼
 api.sql → playground_stats materialized view + api schema functions

@@ -4,17 +4,19 @@ A single-host federation runs a **pure hub** (no database) and multiple regional
 
 ## Topology
 
-```
-                 spieli (hub)
-                 DEPLOY_MODE=ui
-                 port 8080
-                      │
-      ┌───────────────┼───────────────┐
-      ▼               ▼               ▼
-spieli-hessen    spieli-berlin    spieli-nrw  …
-DEPLOY_MODE=     DEPLOY_MODE=     DEPLOY_MODE=
-data-node-ui     data-node-ui     data-node-ui
-port 8081        port 8082        port 8088
+```mermaid
+flowchart TD
+    subgraph vps["one VPS"]
+        hub["spieli (hub)<br/>DEPLOY_MODE=ui<br/>port 8080"]
+        hessen["spieli-hessen<br/>data-node-ui<br/>port 8081"]
+        berlin["spieli-berlin<br/>data-node-ui<br/>port 8082"]
+        more["spieli-nrw …<br/>data-node-ui<br/>port 8088"]
+    end
+    browser["Browser"]
+    browser --> hub
+    browser --> hessen
+    browser --> berlin
+    browser --> more
 ```
 
 The hub serves the frontend and `registry.json`. Browsers fetch playground data cross-origin from each data-node's `/api/`. The hub itself has no database and no importer.
@@ -47,23 +49,7 @@ echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
 
 ### Per-backend RAM and disk
 
-Measured on the production host (15 Bundesländer on one 8 GB VPS, November 2026). RAM is the whole stack while serving; disk is the database plus the cached extract (`pbf_cache`):
-
-| Size class | Examples | pgdata + pbf_cache | RAM (serving) |
-|---|---|---|---|
-| Small | Bremen, Saarland, Berlin, Hamburg | 0.2–0.5 GB | ~75–300 MiB |
-| Medium | Thüringen, MV, Sachsen-Anhalt, SH | 0.7–0.8 GB | ~115–150 MiB |
-| Medium-large | Hessen, RLP, Brandenburg, Sachsen | 1.2–1.5 GB | ~145–165 MiB |
-| Large | Niedersachsen, NRW, Bayern | 2.1–3.6 GB | ~165–550 MiB |
-
-Serving is cheap; the import is the peak, which is why imports must not overlap (see swap above and [Scheduled Import](scheduled-import.md)). A container's `memory.peak` is no guide to it: it counts reclaimable file cache, and shows 3.7–4.6 GiB for every importer, Bremen included.
-
-Check free RAM before adding large backends:
-
-```bash
-free -h
-docker stats --no-stream --format "table {{.Name}}\t{{.MemUsage}}" | sort -k2 -h
-```
+See [Sizing](../reference/sizing.md): measured memory and disk per region class, and what an import needs on top. Plan for the sum of the serving memory plus **one** import at a time, which is why imports must not overlap (see swap above and [Scheduled Import](scheduled-import.md)).
 
 ## Port allocation
 
@@ -118,9 +104,7 @@ For each backend the script creates the directory, patches `compose.yml`, writes
 
 ### First import — one-shot before daemon
 
-**Do not start the importer in daemon mode on a fresh database.** The daemon applies `api.sql` on startup before checking whether a reimport is needed. On an empty DB this fails because `planet_osm_polygon` does not exist yet, causing a crash-restart loop.
-
-Instead, run the first import as a one-shot (no daemon env vars), then start the daemon:
+On a fresh database the daemon imports right away (after `REIMPORT_STARTUP_JITTER_MAX_HOURS`, if set); it defers the schema apply until that first import has finished (#759). On a shared host, though, you want to decide *when* each first import runs, so that two large ones never overlap. So run the first import as a one-shot (no daemon env vars), then start the daemon:
 
 ```bash
 cd ~/spieli-<slug>
@@ -141,30 +125,91 @@ docker compose --profile data-node-ui up -d importer
 
 Import large backends one at a time. Check `free -h` before each large one.
 
-### Startup jitter
+### Keeping imports apart
 
-`REIMPORT_STARTUP_JITTER_MAX_HOURS` delays the **first import on a fresh DB** by a random amount. This prevents all backends started at the same time from importing in parallel during initial setup.
+Two settings spread the imports of stacks that share a host:
 
-!!! warning "Jitter does not affect ongoing daily reimports"
-    Once a backend has data, the next reimport fires at `last_import_time + interval`. Jitter has no effect on this schedule. The spread between daily reimports comes from the natural difference in when each backend's first import completed. This is why swap is important — even with good timing, two backends may occasionally overlap.
+- **`REIMPORT_JITTER_HOURS`** (default `6`) adds a random 0–N hours to every scheduled wait, and to an import that is already overdue when the container starts. Stacks that once imported together (after an upgrade sweep or a reboot) drift apart instead of keeping a shared slot (#882).
+- **`REIMPORT_STARTUP_JITTER_MAX_HOURS`** (default `0`) delays only the **first** import on a fresh database by a random amount, so backends set up at the same time do not all import at once. It has no effect once a backend has data, so set it before the first start, not afterwards.
 
-Add jitter to `.env` after the first import completes:
-
-```bash
-echo "REIMPORT_STARTUP_JITTER_MAX_HOURS=12" >> ~/spieli-<slug>/.env
-```
+Neither rules out an overlap; two imports can still land close together, which is why swap is required. See [Scheduled Import → Keeping stacks from importing at the same time](scheduled-import.md#keeping-stacks-from-importing-at-the-same-time).
 
 ## Upgrading
 
-See [Upgrading — Single-host federation](upgrade.md#single-host-federation-multiple-stacks-on-one-vps) for the full procedure. The short version: use `scripts/upgrade-stacks.sh`, which upgrades all stacks sequentially (data-nodes first, hub last) and handles the `API_ONLY=1` ordering automatically.
+When the hub and its data-nodes share a single VPS, use `scripts/upgrade-stacks.sh`. It handles the correct order (data-nodes first, hub last) and runs each stack sequentially to avoid OOM from concurrent importer runs.
 
-Standard releases with Watchtower active require no manual action — the daemon importer applies `api.sql` on every restart. Only [breaking-label releases](upgrade.md#breaking-label-procedures) need manual steps.
+Copy the script to the VPS once, then edit the `STACKS` array to match your port layout:
+
+```bash
+scp scripts/upgrade-stacks.sh user@vps:~/upgrade-stacks.sh
+```
+
+```bash
+STACKS=(
+  "$HOME/spieli-hessen:data-node-ui:8081"
+  "$HOME/spieli-berlin:data-node-ui:8082"
+  "$HOME/spieli:ui auto-update:8080"   # hub last
+)
+```
+
+Run:
+
+```bash
+bash ~/upgrade-stacks.sh
+```
+
+Per stack, in this order — the order is the point:
+
+1. **Pull images.**
+2. **Stop the daemon importer** (data-nodes only), so it cannot race the schema
+   apply. The [manual procedure](upgrade.md#manual-upgrade) says this step is not optional; the script does
+   it for you.
+3. **Apply `api.sql`** via a one-shot `API_ONLY=1` importer, which never
+   triggers a full reimport. If it fails, the daemon importer is brought back
+   up *before* the sweep aborts, so a failed run never leaves a stack with its
+   importer stopped.
+4. **Recreate the daemon importer** with `up -d --force-recreate`. The plain
+   restart form is what left daemons running the old image during the v0.9.0
+   sweep.
+5. **Restart the app container** — last, so it never serves against a schema
+   the database does not have yet.
+6. **Verify** by polling `get_meta` for up to 180 s, treating only `200` and
+   `404` as settled. Verifying before step 4 is precisely what made [#800]
+   invisible: the old schema is internally consistent enough to pass.
+
+[#800]: https://github.com/mfuhrmann/spieli/issues/800
+
+The hub entry skips steps 2–4 automatically.
+
+**The sweep runs one heavy job at a time** (#971). After a data-node's app is restarted and verified, the sweep waits until its importer logs `[importer] settled` — no schema rebuild or import running or imminent — before touching the next stack; a stack that was mid-import waits for that import to end, and the zero-playground safety-net reimport now runs in the foreground. It waits up to `SETTLE_TIMEOUT_MIN` (default 120) minutes per stack, then stops rather than overlap two stacks. Before, it moved on as soon as `get_meta` answered, which it does at once because the old view keeps serving during a rebuild; during the v0.12.0 sweep two stacks' rebuilds overlapped and the host ran out of memory. Combined with the daemon skipping an unchanged startup apply, a sweep of already-current stacks does no rebuild at all.
+
+**A sweep restarts every import clock.** Recreating the daemon importer runs
+its startup grace check, and every stack whose import is overdue imports right
+then. Since #882 each such import first waits a random 0–`REIMPORT_JITTER_HOURS`
+(default 6 h), so a sweep no longer stamps all of them into one window — but on
+a memory-constrained host it is still worth checking the spread afterwards
+(see [Keeping imports apart](#keeping-imports-apart)).
+
+**A stack that is mid-import is skipped, not forced.** If `get_meta` reports
+`importing: true`, the script leaves the schema alone and says so: stopping the
+importer there would SIGKILL `osm2pgsql` after 10 s and leave the database
+partially imported. The app is still upgraded, and the stack is listed
+separately at the end — re-run the sweep for it once the import has finished.
+
+> **The script does not touch `.env` or `compose.yml`.** A release labelled
+> `requires-env-update` or `requires-compose-update` needs those applied to
+> every stack **before** the sweep. It is easy to miss, because the script
+> otherwise looks like the whole federation procedure.
+
+**Verification is not fatal to the sweep.** By the time a stack is verified its images are already pulled and its containers restarted, so a failed check means the upgrade worked but the stack is not serving data yet. The script records the stack, carries on with the rest, and exits non-zero at the end listing every inconclusive one. A data-node that has never completed an import answers `404` on `get_meta` and is called out as such — expected until its first import finishes.
+
+If the sweep does abort — a failed image pull or container start — it prints which stacks were upgraded, which one it stopped on, and that everything from there onward was not reached. Completed stacks are idempotent, so re-run after fixing the cause. One caveat it will warn you about: if a forced reimport was launched in the background before the abort, wait for it to finish first, or the next run's `API_ONLY=1` step races it on the `playground_stats` rebuild.
+
+Standard releases with Watchtower active need no sweep — the daemon importer applies a changed `api.sql` when it restarts (an unchanged one is skipped, #971). Only [breaking-label releases](upgrade.md#breaking-label-procedures) need manual steps.
 
 ## Watchtower
 
-Only the hub stack runs `--profile auto-update`. Adding a second Watchtower to any data-node stack causes both instances to fight over the same containers.
-
-The single Watchtower instance in the hub stack watches all containers on the Docker host automatically — data-node containers are restarted even though their stacks don't include `auto-update`.
+Only the hub stack runs `--profile auto-update`; its Watchtower updates every stack on the host. Why: [Upgrading → One Watchtower per host](upgrade.md#automatic-upgrade-watchtower).
 
 ## See also
 

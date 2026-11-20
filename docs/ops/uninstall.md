@@ -28,13 +28,14 @@ cd ..
 rm -rf spieli/ install.sh
 ```
 
-No `--profile` flag needed — `down` stops all containers in the project regardless of which profile started them (including watchtower if auto-update was enabled). `--remove-orphans` cleans up dangling networks.
+No `--profile` flag needed — `down` stops all containers in the project regardless of which profile started them (including watchtower if auto-update was enabled). `--remove-orphans` also removes containers of services that are no longer in `compose.yml`.
 
 If a volume removal fails with "volume is in use", a stopped container is still referencing it. Prune stopped containers first, then remove the volumes manually:
 
 ```bash
 docker container prune -f
-docker volume rm spieli_pgdata spieli_pgdata2 spieli_pbf_cache 2>/dev/null || true
+# the prefix is the compose project name; `docker volume ls` shows the exact names
+docker volume rm spieli_pgdata spieli_pbf_cache spieli_basemap_cache spieli_ext_cache 2>/dev/null || true
 ```
 
 ## 3. Remove Docker images (optional)
