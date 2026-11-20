@@ -3,9 +3,9 @@
 # Downloads the production compose file and db schema, then walks through
 # configuration interactively.
 #
-# Usage (download first so stdin stays attached to the terminal):
-#   curl -fsSL https://raw.githubusercontent.com/mfuhrmann/spieli/main/install.sh -o install.sh
-#   bash install.sh
+# Usage: download install.sh and install.sh.sha256 from a tagged release, verify
+# the checksum, then run it (download first so stdin stays attached to the
+# terminal). The exact commands: https://mfuhrmann.github.io/spieli/getting-started/quick-start/#install
 
 set -euo pipefail
 
@@ -215,17 +215,6 @@ if [[ "$APP_MODE" == "hub" ]]; then
     ask_optional HUB_POLL_INTERVAL "Hub poll interval in seconds (leave empty for default: 300)"
 fi
 
-# ── Hub federation — register with external hub (standalone only) ──────────────
-
-PARENT_ORIGIN=""
-if [[ "$APP_MODE" == "standalone" && "$DEPLOY_MODE" != "data-node" ]]; then
-    printf "\n${BOLD}── Hub federation (optional) ────────────────────────────────────${RESET}\n"
-    printf "If this instance will appear as a backend in an external hub,\n"
-    printf "set the hub's full origin to enable cross-origin embedding.\n\n"
-    ask_optional PARENT_ORIGIN "External hub origin (e.g. https://hub.example.com)"
-    [[ -n "$PARENT_ORIGIN" ]] && success "PARENT_ORIGIN set — this instance will accept embedding from ${BOLD}${PARENT_ORIGIN}${RESET}."
-fi
-
 # ── Optional UI links (standalone mode only) ───────────────────────────────────
 
 REGION_PLAYGROUND_WIKI_URL=""
@@ -427,17 +416,6 @@ fi
         printf "\n"
     fi
 
-    if [[ "$APP_MODE" == "standalone" && "$DEPLOY_MODE" != "data-node" ]]; then
-        if [[ -n "$PARENT_ORIGIN" ]]; then
-            printf "# ── Hub federation ──────────────────────────────────────────────\n"
-            printf "# This instance is registered as a backend in an external hub.\n"
-            printf "PARENT_ORIGIN=%s\n\n" "$PARENT_ORIGIN"
-        else
-            printf "# ── Hub federation (optional) ───────────────────────────────────\n"
-            printf "# Set to the hub's full origin if this instance is registered in an external hub.\n"
-            printf "# PARENT_ORIGIN=\n\n"
-        fi
-    fi
 
     if [[ "$DEPLOY_MODE" != "data-node" && "$APP_MODE" != "hub" ]]; then
         printf "# ── Optional: UI links ──────────────────────────────────────────\n"
@@ -585,15 +563,15 @@ printf "  docker compose --profile %s down         # stop the stack\n" "$DEPLOY_
 
 if [[ "$DEPLOY_MODE" != "ui" ]]; then
     if [[ "$AUTO_UPDATE" == "true" ]]; then
-        printf "  docker compose restart importer             # trigger an early re-import\n"
+        printf "  Re-import now: a restart does not; stop the importer, run it once, start it again:\n"
+        printf "    ${CYAN}https://mfuhrmann.github.io/spieli/ops/refresh-data/#daemon-mode${RESET}\n"
     else
         printf "  docker compose --profile %s run --rm importer  # re-import OSM data\n" "$DEPLOY_MODE"
         printf "\n"
         printf "${YELLOW}Manual update reminders:${RESET}\n"
         printf "  • Re-run the importer periodically to refresh OSM data.\n"
         printf "  • Pull updated images with: ${CYAN}docker compose pull${RESET}\n"
-        printf "  • Systemd timer units for scheduled imports: ${CYAN}%s/deploy/${RESET}\n" \
-            "$(cd "$DEPLOY_DIR" && pwd)"
+        printf "  • Scheduled imports with a systemd timer: ${CYAN}https://mfuhrmann.github.io/spieli/ops/scheduled-import/#systemd-timer${RESET}\n"
     fi
 fi
 

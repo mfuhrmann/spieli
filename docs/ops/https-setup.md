@@ -35,7 +35,7 @@ Traefik issues the TLS certificate on the first HTTPS request (takes ~10 seconds
 
 ## 2. Install spieli
 
-If you haven't installed the spieli app stack yet, follow [Quick Start → Install](../getting-started/quick-start.md#install). It installs a tagged release and verifies the installer's checksum. (The Traefik installer's own closing hint downloads `install.sh` from `main` without a checksum; see [#1063](https://github.com/mfuhrmann/spieli/issues/1063).)
+If you haven't installed the spieli app stack yet, follow [Quick Start → Install](../getting-started/quick-start.md#install). It installs a tagged release and verifies the installer's checksum.
 
 When the spieli installer asks for the public URL of the instance (part of the imprint and privacy setup), enter `https://spieli.example.com`.
 
