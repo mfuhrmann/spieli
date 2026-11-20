@@ -47,11 +47,12 @@ nav:
           - Security: ops/security.md
           - Customise your own image: ops/customise-image.md
       - Operate:
-          - Upgrading: ops/upgrade.md
           - Scheduled Import: ops/scheduled-import.md
           - Refresh Data: ops/refresh-data.md
-          - Switching Regions: ops/switch-region.md
+          - Watching your instance: ops/watch-instance.md
+          - Upgrading: ops/upgrade.md
           - Backup and Restore: ops/backup-restore.md
+          - Switching Regions: ops/switch-region.md
           - Uninstall: ops/uninstall.md
       - Troubleshooting: ops/troubleshooting.md
       - Run a federation:

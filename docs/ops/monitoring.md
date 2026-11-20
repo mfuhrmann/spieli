@@ -1,5 +1,7 @@
 # Monitoring
 
+This page is for hub operators. Watching a single data-node or standalone map works differently: see [Watching your instance](watch-instance.md).
+
 The hub container exposes two endpoints for observing federation health:
 
 | Endpoint | Format | Purpose |
