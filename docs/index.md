@@ -2,7 +2,7 @@
 
 A free, interactive map of playgrounds, built from [OpenStreetMap](https://www.openstreetmap.org) data. It shows where playgrounds are, what is on them and who may use them — and, for mappers, what is still missing.
 
-> **Origin:** spieli is a further development of the original [Berliner Spielplatzkarte](https://github.com/SupaplexOSM/spielplatzkarte) by Alex Seidel.
+> **Origin:** spieli grew out of the original [Berliner Spielplatzkarte](https://github.com/SupaplexOSM/spielplatzkarte) by Alex Seidel.
 
 ## See it in action
 

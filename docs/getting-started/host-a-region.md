@@ -2,7 +2,7 @@
 
 [spieli.eu](https://spieli.eu) is a public playground map. It holds no data of its own. Every region on it comes from a data-node that someone runs for that region. At the moment these are the German states, and we are looking for people to add more. A region does not have to be a whole country: a single state, district or city is just as welcome.
 
-You can see which regions are already covered on the map itself, in the list of regions on [spieli.eu](https://spieli.eu), or in [spieli.eu/registry.json](https://spieli.eu/registry.json). Before you start, please come to [#spieli:matrix.org](https://matrix.to/#/#spieli:matrix.org) anyway: someone may already be setting up your region, and we can help you choose its boundary.
+You can see which regions are already covered on the map itself, in the list of regions on [spieli.eu](https://spieli.eu), or in [spieli.eu/registry.json](https://spieli.eu/registry.json). Even so, please come to [#spieli:matrix.org](https://matrix.to/#/#spieli:matrix.org) before you start: someone may already be setting up your region, and we can help you choose its boundary.
 
 An example of a well-mapped playground is [Carl-Schurz-Straße in Fulda](https://spieli.eu/#hessen/W818585707).
 
@@ -29,7 +29,7 @@ Once it runs, there is little to do: keep the server's operating system up to da
 
 ## Choosing a region
 
-A data-node covers one OpenStreetMap boundary relation. That can be a whole country, but a state, a district or a single city of a country is fine too; other people can add the neighbouring regions later. The region is cut out of a [Geofabrik](https://download.geofabrik.de) extract that contains the region. The [measured figures](../reference/sizing.md) go up to Bavaria, which has 13 million inhabitants. Larger countries work as well but need more memory and disk; please ask in the chat first.
+A data-node covers one OpenStreetMap boundary relation. That can be a whole country, but a state, a district or a single city is fine too; other people can add the neighbouring regions later. spieli cuts it out of a [Geofabrik](https://download.geofabrik.de) extract that contains it. The [measured figures](../reference/sizing.md) go up to Bavaria, which has 13 million inhabitants. Larger countries work as well but need more memory and disk; please ask in the chat first.
 
 ## Setting it up
 
@@ -45,11 +45,11 @@ You need a Linux server with Docker and the Compose plugin, a domain or subdomai
     curl -i https://my-playground-map.at/api/rpc/get_meta
     ```
 
-4. Send us the API address (`https://my-playground-map.at/api`), the name of the region and its country in [#spieli:matrix.org](https://matrix.to/#/#spieli:matrix.org), and we add it to spieli.eu.
+4. Send us the API address (`https://my-playground-map.at/api`), the name of the region and its country in [#spieli:matrix.org](https://matrix.to/#/#spieli:matrix.org), and we will add it to spieli.eu.
 
 ## Legal and privacy
 
-The legal requirements depend on your country, and we cannot give legal advice. Two things spieli can do for you:
+The legal requirements depend on your country, and we cannot give legal advice. Two things to know:
 
 - If you set `IMPRESSUM_NAME`, `IMPRESSUM_ADDRESS` and `IMPRESSUM_EMAIL` in `.env`, spieli generates an imprint and a privacy notice. If you already have such pages, set `IMPRESSUM_URL` and `PRIVACY_URL` instead. spieli.eu links them from your region. In Germany a public service needs an imprint. How it works and what to restart after a change: [Configure the instance → Legal pages](../ops/configure.md#legal-pages).
 - For your privacy notice: visitors' browsers connect to your server, which therefore sees their IP address. By default nothing is logged or stored, and no cookies are set.
