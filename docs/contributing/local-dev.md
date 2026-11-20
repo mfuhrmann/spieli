@@ -80,16 +80,12 @@ make install
 make dev
 ```
 
-```
-  Browser ──────► Vite dev server ──────► (hot-reload JS/CSS)
-                                          ↓
-                                   apiBaseUrl empty?
-                                   ┌─────┴──────┐
-                                  yes            no
-                                   ↓              ↓
-                               Overpass      PostgREST
-                               (live OSM     (Docker stack
-                                queries)      via make up)
+```mermaid
+flowchart TD
+    browser["Browser"] --> vite["Vite dev server<br/>(hot-reload JS/CSS)"]
+    vite --> q{"apiBaseUrl empty?"}
+    q -- yes --> overpass["Overpass<br/>(live OSM queries)"]
+    q -- no --> postgrest["PostgREST<br/>(Docker stack via make up)"]
 ```
 
 To test against the full PostgREST backend instead, start `make up` and set `apiBaseUrl` in `app/public/config.js`.

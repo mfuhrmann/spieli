@@ -4,17 +4,19 @@ A single-host federation runs a **pure hub** (no database) and multiple regional
 
 ## Topology
 
-```
-                 spieli (hub)
-                 DEPLOY_MODE=ui
-                 port 8080
-                      │
-      ┌───────────────┼───────────────┐
-      ▼               ▼               ▼
-spieli-hessen    spieli-berlin    spieli-nrw  …
-DEPLOY_MODE=     DEPLOY_MODE=     DEPLOY_MODE=
-data-node-ui     data-node-ui     data-node-ui
-port 8081        port 8082        port 8088
+```mermaid
+flowchart TD
+    subgraph vps["one VPS"]
+        hub["spieli (hub)<br/>DEPLOY_MODE=ui<br/>port 8080"]
+        hessen["spieli-hessen<br/>data-node-ui<br/>port 8081"]
+        berlin["spieli-berlin<br/>data-node-ui<br/>port 8082"]
+        more["spieli-nrw …<br/>data-node-ui<br/>port 8088"]
+    end
+    browser["Browser"]
+    browser --> hub
+    browser --> hessen
+    browser --> berlin
+    browser --> more
 ```
 
 The hub serves the frontend and `registry.json`. Browsers fetch playground data cross-origin from each data-node's `/api/`. The hub itself has no database and no importer.

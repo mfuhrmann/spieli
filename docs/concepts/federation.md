@@ -8,28 +8,24 @@ This page explains why spieli is built that way, and what follows from it. If yo
 
 ## The picture
 
-```
-                     ┌──────────────────────┐
-                     │   hub (spieli.eu)    │
-                     │  app + a list of     │
-                     │  data-node addresses │
-                     └──────────┬───────────┘
-                                │ 1. "who covers what?"
-                                ▼
-   ┌──────────────────────────────────────────────────────┐
-   │                    your browser                      │
-   └───────┬──────────────────┬──────────────────┬────────┘
-           │ 2. only the      │ regions you      │ are looking at
-           ▼                  ▼                  ▼
-   ┌───────────────┐  ┌───────────────┐  ┌───────────────┐
-   │  data-node    │  │  data-node    │  │  data-node    │
-   │  Hessen       │  │  Bayern       │  │  your region  │
-   │               │  │               │  │  (+ own map)  │
-   └───────────────┘  └───────────────┘  └───────────────┘
-           ▲                  ▲                  ▲
-           └──────────────────┴──────────────────┘
-                   OpenStreetMap, re-imported
-                       every few days
+```mermaid
+flowchart TD
+    hub["hub (spieli.eu)<br/>app + a list of data-node addresses"]
+    browser["your browser"]
+    subgraph nodes["data-nodes"]
+        hessen["Hessen"]
+        bayern["Bayern"]
+        yours["your region<br/>(+ own map)"]
+    end
+    osm["OpenStreetMap<br/>re-imported every few days"]
+
+    hub -- "1. who covers what?" --> browser
+    browser -- "2. only the regions you are looking at" --> hessen
+    browser --> bayern
+    browser --> yours
+    osm --> hessen
+    osm --> bayern
+    osm --> yours
 ```
 
 ## What makes this work

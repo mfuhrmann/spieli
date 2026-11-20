@@ -10,15 +10,14 @@ A typical web map loads its background tiles from a tile provider, its search fr
 
 In a default spieli deployment, the browser talks to **one** server: the spieli instance it opened (on a hub, also the servers of the regions on screen, see [below](#federation-keeps-it-split)). That instance fetches everything else on the visitor's behalf and keeps a cache:
 
-```
-                      ┌─────────────────────────────┐
-                      │       spieli instance       │      background map
-  your browser ─────► │                             │ ───► search (Nominatim)
-     (only this       │   app · API · cache         │      photos (Wikimedia Commons)
-      connection)     │                             │      reviews (Mangrove)
-                      └─────────────────────────────┘
-                                  fetches on your behalf,
-                                  without your address
+```mermaid
+flowchart LR
+    browser["your browser"]
+    instance["spieli instance<br/>app · API · cache"]
+    services["background map<br/>search (Nominatim)<br/>photos (Wikimedia Commons)<br/>reviews (Mangrove)"]
+
+    browser -- "the only connection" --> instance
+    instance -- "fetches on your behalf,<br/>without your address" --> services
 ```
 
 The outbound requests carry no cookies, no referrer, no browser language and no forwarded IP address. The services see a spieli server, not a visitor. And many visitors share one cached answer: the background map of Fulda is fetched once, not once per family.

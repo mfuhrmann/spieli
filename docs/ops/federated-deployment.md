@@ -6,24 +6,16 @@ This walkthrough stands up the topology end-to-end. For a single-region deployme
 
 ## Topology
 
-```
-                ┌──────────────────────────────────────────────┐
-                │                                              │
-                │    Hub UI (DEPLOY_MODE=ui, APP_MODE=hub)     │
-  Browser ────► │    • serves the app bundle                   │
-                │    • serves registry.json                    │
-                │    • NO database, NO /api                    │
-                │                                              │
-                └──────────┬─────────────────┬─────────────────┘
-                           │                 │
-                           │ CORS            │ CORS
-                           ▼                 ▼
-      ┌───────────────────────────┐ ┌───────────────────────────┐
-      │ Data-node A               │ │ Data-node B               │
-      │ DEPLOY_MODE=data-node-ui  │ │ DEPLOY_MODE=data-node-ui  │
-      │ • PostGIS + PostgREST     │ │ • PostGIS + PostgREST     │
-      │ • nginx serves /api/+CORS │ │ • nginx serves /api/+CORS │
-      └───────────────────────────┘ └───────────────────────────┘
+```mermaid
+flowchart TD
+    browser["Browser"]
+    hub["Hub UI<br/>DEPLOY_MODE=ui, APP_MODE=hub<br/>serves the app and registry.json<br/>no database, no /api/"]
+    a["Data-node A<br/>DEPLOY_MODE=data-node-ui<br/>PostGIS + PostgREST<br/>nginx serves /api/ with CORS"]
+    b["Data-node B<br/>DEPLOY_MODE=data-node-ui<br/>PostGIS + PostgREST<br/>nginx serves /api/ with CORS"]
+
+    browser -- "app + registry.json" --> hub
+    browser -- "/api/ (cross-origin)" --> a
+    browser -- "/api/ (cross-origin)" --> b
 ```
 
 Each data-node runs the full `data-node-ui` profile so the shipped nginx config serves `/api/` with the CORS headers the Hub's browser clients need. The Hub is the same frontend image flipped to `APP_MODE=hub` with a `registry.json` listing the data-node API URLs, and no database of its own.
