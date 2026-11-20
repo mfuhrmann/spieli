@@ -5,7 +5,7 @@ This page documents every equipment type that spieli recognises. The definitions
 - `app/src/lib/objPlaygroundEquipment.js` — `objDevices`, `objFitnessStation`, `objFeatures`
 - `app/src/lib/equipmentAttributes.js` — `pitchImages`
 
-These tables decide a feature's symbol, label and example image. An OSM value not listed here still shows, with a generic symbol, the tag value tidied up as its label (`baby_swing` → "Baby swing"), and no image. Which tags make a playground match a filter or count for mapping detail: [OSM Tags spieli Reads](osm-tags.md).
+These tables decide a feature's symbol, label and example image. An OSM value not listed here still shows, with less information: see [Fallback behaviour](#fallback-behaviour). Which tags make a playground match a filter or count for mapping detail: [OSM Tags spieli Reads](osm-tags.md).
 
 ---
 

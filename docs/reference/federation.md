@@ -1,13 +1,6 @@
 # Federation
 
-Multiple regional instances can be aggregated into a single global map using the **Hub mode** built into this codebase. The Hub is not a separate repository — it is the same app deployed with `APP_MODE=hub`.
-
-```
-APP_MODE=standalone   →  regional map (one city / Kreis / Bundesland)
-APP_MODE=hub          →  aggregation map that fetches from all registered instances
-```
-
-This page is the technical reference: what the hub asks each data-node, and what its rings mean. For *why* spieli is federated, see [Federation: one map, many owners](../concepts/federation.md). To set a hub up, see [Federated Deployment](../ops/federated-deployment.md); to run one locally for development, see [Local Development → Hub mode](../contributing/local-dev.md#hub-mode).
+A hub is the same spieli release with `APP_MODE=hub` ([Deployment modes](deployment-modes.md)). It reads its data-nodes from a [`registry.json`](registry-json.md) and fetches their data from the visitor's browser. This page is the technical reference: what the hub asks each data-node, and what its rings mean. For *why* spieli is federated, see [Federation: one map, many owners](../concepts/federation.md). To set a hub up, see [Federated Deployment](../ops/federated-deployment.md); to run one locally for development, see [Local Development → Hub mode](../contributing/local-dev.md#hub-mode).
 
 ## Federation endpoints
 
@@ -25,11 +18,7 @@ A data-node joins a hub by answering these RPCs under its public `/api/`, with C
 | `get_legal` | The region's legal text, when it has `has_legal` but no legal URLs |
 | `get_playgrounds` | **Deprecated** fallback: used once per backend and session if a tier RPC answers 404, with a one-time warning |
 
-Backends older than the tiered API (before v0.4.9: no tier RPCs, no mapping-detail counts in `get_meta`) still join: the macro view shows them as "mapping detail unknown" (a flat violet ring), and the cluster tier skips them rather than fetching the whole region through the legacy RPC only to discard it.
-
-## Registry
-
-The Hub discovers instances from a `registry.json` file — see the [`registry.json` reference](registry-json.md) for schema, slug rules, and the derived aggregate behaviours (aggregated bounding box).
+Backends older than the tiered API (before v0.4.9) still join: the cluster tier skips them rather than fetching the whole region through the legacy RPC only to discard it, and the macro view marks them (see [Ring states](#ring-states)).
 
 ## Hub UI
 
