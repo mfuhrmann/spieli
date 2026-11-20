@@ -15,14 +15,37 @@ docker compose --profile <mode> down
 docker compose --profile <mode> up -d
 ```
 
-> **Legal pages — what to restart.** Changing `IMPRESSUM_*`, `SITE_URL`, `IMPRESSUM_URL` or `PRIVACY_URL`:
->
-> 1. **This instance's own pages:** recreate the app container. `docker-entrypoint.sh` regenerates `impressum.html` / `datenschutz.html` and `config.js`:
->    ```bash
->    docker compose --profile <mode> up -d app
->    ```
-> 2. **The links a hub shows** come from `get_meta()`, which bakes the URLs in when `api.sql` is applied. Recreate the daemon importer (`up -d importer`: it applies a changed `api.sql` on startup), or run `run --rm -e API_ONLY=1 importer`.
-> 3. **The legal text a hub shows for a data-node** (`api.legal_content`) is rewritten only at the end of a **full** import. See [Refresh Data](refresh-data.md).
+Changing the legal settings needs more than an app restart: see [Legal pages → Applying changes](#applying-legal-changes).
+
+## Legal pages
+
+In Germany a public service needs an imprint (*Impressum*) and a privacy notice (*Datenschutzerklärung*); other countries have their own rules. We cannot give legal advice. What spieli does for you: the installer asks for the details (or lets you skip them), and the settings below decide what is generated.
+
+**Option 1: let spieli generate the pages.** Set the contact details in `.env`:
+
+| Page | Served at | Needs |
+|---|---|---|
+| Imprint | `/legal/impressum` | `IMPRESSUM_NAME` and `IMPRESSUM_ADDRESS`; `IMPRESSUM_ORG`, `IMPRESSUM_EMAIL`, `IMPRESSUM_PHONE` appear when set |
+| Privacy notice | `/legal/datenschutz` | `IMPRESSUM_NAME` and `IMPRESSUM_EMAIL` |
+
+The app container writes both pages at startup, in German. Without the required values a page still exists but says that the operator's details have not been configured yet. The privacy notice is generated from the actual configuration: which external services the visitor's browser contacts, and which only your server does, follows the `PROXY_*` and basemap settings ([Basemap and external services](basemap-and-services.md)), so it does not need editing by hand when those change.
+
+**Option 2: link pages you already have.** Set `IMPRESSUM_URL` and `PRIVACY_URL`. The corresponding page is then not generated, and the app links your URL instead.
+
+**`SITE_URL`** (for example `https://spieli.example.com`) should be set whenever the instance is public. A hub links your legal pages from absolute URLs, which `get_meta()` builds from `SITE_URL` unless `IMPRESSUM_URL` / `PRIVACY_URL` give them directly; with neither, the hub gets no URL.
+
+**What a hub shows for your region.** In its region list a hub links the URLs from your `get_meta()`. On a data-node the importer also stores the generated imprint and privacy text in the database (when `IMPRESSUM_NAME` and `IMPRESSUM_ADDRESS` are set), so a hub can show it even when no URL is available.
+
+### Applying legal changes
+
+After changing `IMPRESSUM_*`, `SITE_URL`, `IMPRESSUM_URL` or `PRIVACY_URL`, three things are refreshed separately:
+
+1. **This instance's own pages:** recreate the app container (`restart` would keep the old environment):
+   ```bash
+   docker compose --profile <mode> up -d app
+   ```
+2. **The links a hub shows** come from `get_meta()`, which bakes the URLs in when `api.sql` is applied. Recreate the daemon importer (`up -d importer`: it applies a changed `api.sql` on startup), or run `docker compose --profile <mode> run --rm -e API_ONLY=1 importer`.
+3. **The legal text a hub shows for a data-node** is rewritten only at the end of a **full** import. See [Refresh Data](refresh-data.md).
 
 ## Language settings
 

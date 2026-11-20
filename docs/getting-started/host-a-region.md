@@ -56,7 +56,7 @@ You need a Linux server with Docker and the Compose plugin, a domain or subdomai
 
 The legal requirements depend on your country, and we cannot give legal advice. Two things spieli can do for you:
 
-- If you set `IMPRESSUM_NAME`, `IMPRESSUM_ADDRESS` and `IMPRESSUM_EMAIL` in `.env`, spieli generates an imprint and a privacy notice. If you already have such pages, set `IMPRESSUM_URL` and `PRIVACY_URL` instead. spieli.eu links them from your region. In Germany a public service needs an imprint. All settings are described in [Configuration](../ops/configuration.md).
+- If you set `IMPRESSUM_NAME`, `IMPRESSUM_ADDRESS` and `IMPRESSUM_EMAIL` in `.env`, spieli generates an imprint and a privacy notice. If you already have such pages, set `IMPRESSUM_URL` and `PRIVACY_URL` instead. spieli.eu links them from your region. In Germany a public service needs an imprint. How it works and what to restart after a change: [Configure the instance → Legal pages](../ops/configure.md#legal-pages).
 - For your privacy notice: visitors' browsers connect to your server, which therefore sees their IP address. By default nothing is logged or stored, and no cookies are set.
 
 The data is © OpenStreetMap contributors and licensed under the ODbL. spieli.eu shows the attribution.
