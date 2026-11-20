@@ -29,7 +29,7 @@ Once it runs, there is little to do: keep the server's operating system up to da
 
 ## Choosing a region
 
-A data-node covers one OpenStreetMap boundary relation. That can be a whole country, but a state, a district or a single city of a country is fine too; other people can add the neighbouring regions later. The region is cut out of a [Geofabrik](https://download.geofabrik.de) extract that contains the region. The table above goes up to Bavaria, which has 13 million inhabitants. Larger countries work as well but need more memory and disk; please ask in the chat first.
+A data-node covers one OpenStreetMap boundary relation. That can be a whole country, but a state, a district or a single city of a country is fine too; other people can add the neighbouring regions later. The region is cut out of a [Geofabrik](https://download.geofabrik.de) extract that contains the region. The [measured figures](../reference/sizing.md) go up to Bavaria, which has 13 million inhabitants. Larger countries work as well but need more memory and disk; please ask in the chat first.
 
 ## Setting it up
 
@@ -37,12 +37,7 @@ You need a Linux server with Docker and the Compose plugin, a domain or subdomai
 
 1. Run the installer. The command for the current release is in the [Quick Start](quick-start.md#install), which also explains how to find your region's relation ID and extract. Choose `data-node` or `data-node-ui`, and answer yes to automatic updates. The question about an external hub origin can stay empty.
 
-2. Set up HTTPS with the Traefik installer, which gets a certificate from Let's Encrypt. Choose mode 1, `data-node-ui`; the app's nginx then serves the API with the CORS headers spieli.eu needs. (The installer's `data-node` mode cannot reach the API at the moment, [#1062](https://github.com/mfuhrmann/spieli/issues/1062); until that is fixed, install spieli as `data-node-ui` in step 1 too.)
-
-    ```bash
-    curl -fsSL https://raw.githubusercontent.com/mfuhrmann/spieli/main/deploy/traefik/install-traefik.sh -o install-traefik.sh
-    bash install-traefik.sh
-    ```
+2. Set up HTTPS with the Traefik installer, which gets a certificate from Let's Encrypt: [HTTPS setup](../ops/https-setup.md). Choose mode 1, `data-node-ui`; the app's nginx then serves the API with the CORS headers spieli.eu needs. (The installer's `data-node` mode cannot reach the API at the moment, [#1062](https://github.com/mfuhrmann/spieli/issues/1062); until that is fixed, install spieli as `data-node-ui` in step 1 too.)
 
 3. When the first import has finished, check the API from another machine. The answer should be `200 OK` with the header `Access-Control-Allow-Origin: *`, and `playground_count` should be above 0. With `data-node-ui`, your map is now at `https://my-playground-map.at`.
 
@@ -63,7 +58,7 @@ The data is © OpenStreetMap contributors and licensed under the ODbL. spieli.eu
 
 ## Languages
 
-The map is available in German, English and Slovak. French and Spanish are about 80 % translated, other languages less. Translation happens on [Weblate](https://hosted.weblate.org/engage/spieli/), and help there is welcome too.
+The map is available in German, English and Slovak. Other languages are being translated on [Weblate](https://hosted.weblate.org/engage/spieli/), where help is welcome; a language appears in the map once it has been switched on in a release. A region in another language is still fine: the playground names come from OpenStreetMap as mapped.
 
 ## See also
 

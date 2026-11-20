@@ -25,21 +25,14 @@ spieli.eu holds no playground data of its own. Each region comes from its own se
 | Run a map for my region | [Quick Start](getting-started/quick-start.md) |
 | Run a hub over several regions | [Federated Deployment](ops/federated-deployment.md) |
 | Add or fix playground data | [User Guide → Adding or improving data](user-guide.md#adding-or-improving-data) · [OSM Tags spieli Reads](reference/osm-tags.md) |
-| Translate spieli | [Translation Guide](contributing/translation-guide.md) |
+| Translate spieli | [Translation Guide](contributing/translation-guide.md) · [Weblate](https://hosted.weblate.org/engage/spieli/), no GitHub account needed |
+| Make spieli known locally | [Printable poster](user-guide.md#print-a-poster) with a QR code, in German, English and Slovak |
 | Work on spieli's code | [Local Development](contributing/local-dev.md) |
 | Look something up | [Configuration](ops/configuration.md) · [API](reference/api.md) · [Glossary](reference/glossary.md) |
 
 Something broken? [Troubleshooting](ops/troubleshooting.md), or ask in [#spieli:matrix.org](https://matrix.to/#/#spieli:matrix.org).
 
-## Spread the word
-
-There is a printable poster with a QR code to spieli.eu, in German, English and Slovak: [User Guide → Print a poster](user-guide.md#print-a-poster).
-
-## Translations
-
-[![Translation status](https://hosted.weblate.org/widget/spieli/ui-strings/svg-badge.svg)](https://hosted.weblate.org/engage/spieli/)
-
-spieli is translated on [Weblate](https://weblate.org/), which hosts the project free of charge under its [Libre plan](https://weblate.org/hosting/). No GitHub account needed: **[help translate spieli →](https://hosted.weblate.org/engage/spieli/)**
+[![Translation status](https://hosted.weblate.org/widget/spieli/ui-strings/svg-badge.svg)](https://hosted.weblate.org/engage/spieli/) spieli is translated on [Weblate](https://weblate.org/), which hosts the project free of charge under its [Libre plan](https://weblate.org/hosting/).
 
 ## License
 
