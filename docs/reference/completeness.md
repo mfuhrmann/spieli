@@ -1,4 +1,4 @@
-# Mapping detail (Erfasste Details)
+# Mapping detail
 
 Every playground is assigned one of three mapping-detail states, based on how much of it has been mapped in OpenStreetMap. The state describes **the map, not the playground** — a playground in the lowest state is not a bad playground, it is one nobody has written up yet.
 
@@ -22,7 +22,7 @@ A playground is judged on two things: whether its **play equipment** is mapped (
 
 **Street furniture** — `amenity=bench`, `amenity=shelter`, `leisure=picnic_table` — is excluded. These are frequently mapped inside a playground area by someone who never mapped the play equipment itself, so counting them lifted playgrounds that have nothing to play on. In Fulda, 63 of 221 playgrounds registering as "has equipment" were carried by furniture alone.
 
-Pitches *do* count: a football pitch (*Bolzplatz*) or a basketball hoop is real play infrastructure, merely tagged `leisure=pitch` rather than `playground=*`.
+Pitches *do* count: a football pitch or a basketball hoop is real play infrastructure, merely tagged `leisure=pitch` rather than `playground=*`.
 
 **Derived flags** — `is_water`, `for_baby`, `for_toddler`, `for_wheelchair` — are also excluded. A genuine playground device already satisfies the `playground=*` test, so they add nothing there; on their own they can be set by a bench tagged `wheelchair=yes`, which is the same false signal ([#776](https://github.com/mfuhrmann/spieli/issues/776)). They remain available as filter flags, they just do not feed the state.
 
