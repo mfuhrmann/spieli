@@ -350,6 +350,18 @@ Three things follow from that, and each fixed a real defect:
 - **The OSM wiki is no longer an undisclosed host.** 14 of the 98 illustrations exist only there, and the frontend used to reach them through an `<img onerror>` fallback that appeared in neither this page nor the CSP. It is listed in [External Services](../reference/external-services.md) now, and it is proxied like the rest.
 - **A name that resolves nowhere fails the build.** 14 of them did, all pitch illustrations, and in production each one cost two failing requests before an `onerror` handler hid the element. They were replaced with verified Commons files in #867 (hockey, which has no free pitch diagram, has no illustration), so every name now resolves and any new one that does not fails the build.
 
+### Checking what a panel section contacts
+
+`PlaygroundPanel.svelte` mounts each accordion section's component only while the section is open (`openSections`, default `['photos', 'equipment', 'pois']`), so a closed section's fetch code never runs. Reading a fetch call alone gives the wrong answer about when a service is contacted: check the section's default state too. Reviews start closed; photos start open.
+
+### Reviews ask once per label
+
+Mangrove matches a review on its coordinates *and* its `q` label, and clients file playgrounds under different labels (spieli used `osm_playground_<id>`; MapComplete and mangrove.reviews use `playground` or the place's name). The reviews section asks once per label and merges the answers by signature (#914); new reviews are written under the shared label. The submit path is a `PUT` whose signature covers the JWT's own claims, so the proxy is transparent to verification.
+
+### Keep the privacy template in sync
+
+`oci/app/datenschutz.template.html` carries a service table of its own. When a service is added or removed, update it together with [External Services](../reference/external-services.md). Describe what the code does rather than claiming spieli "does not track users": that depends on each deployment's configuration.
+
 ### Settled questions — recorded so they are not re-investigated
 
 - **Commons URLs from OSM tags are host-validated** in `app/src/lib/commons.js` before rendering, so a crafted `image` tag cannot point the browser at an arbitrary host. The Content Security Policy is a second line behind that check, not a replacement for it. Both are tested: `tests/hostile-image-tag.spec.js` and the `CSP must follow the configuration` CI job.
