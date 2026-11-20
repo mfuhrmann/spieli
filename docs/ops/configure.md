@@ -93,8 +93,8 @@ A state code such as `he` and a state name such as `Hessen` both work; with eith
 > Without `API_ONLY=1` this runs a full import — or, on a stack with
 > automatic updates, starts a second importer daemon next to the running one.
 
-!!! warning "The compose files currently pass higher values"
-    The defaults below are what `importer/import.sh` and `.env.example` intend. `compose.yml` and `compose.prod.yml` still pass the older, higher values (6 / 4 / 4 · `512MB` · `128MB`, a peak of about 3 GB), and they win whenever `.env` does not set the variables, which the installer does not do. Until [#1060](https://github.com/mfuhrmann/spieli/issues/1060) is fixed, set the values from the table below in `.env` explicitly, especially on hosts with 4 GB or less.
+!!! note "Stacks installed from an older release"
+    Until the release that fixed [#1060](https://github.com/mfuhrmann/spieli/issues/1060), the compose files passed higher values (6 / 4 / 4 · `512MB` · `128MB`, a peak of about 3 GB), and they win whenever `.env` does not set the variables. A stack keeps its `compose.yml` across upgrades, so it keeps those values until you fetch the new `compose.yml` ([Upgrading → requires-compose-update](upgrade.md#requires-compose-update)) or set the values from the table below in `.env`.
 
 Defaults are sized for a **2-core / 4 GB host** (peak ≈ 1.5 GB during the
 heaviest single operation, `CREATE INDEX`). Recommended values per host
