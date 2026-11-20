@@ -16,15 +16,15 @@ The names in the first column are what the data carries internally; visitors onl
 
 ## Criteria
 
-A playground is judged on two things: whether its **play equipment** is mapped (any play device inside it, or a ball court), and whether it has **any detail** — its surface, opening hours, or a restricted access. One qualifying item is enough on each side; a playground needs only one of the three details, not all of them. The exact tags: [OSM Tags spieli Reads → Mapping detail](osm-tags.md#mapping-detail).
+A playground is judged on two things: whether its **play equipment** is mapped (any play device inside it, or a ball court), and whether it has **any detail** — its surface, opening hours, or restricted access. One qualifying item is enough on each side; a playground needs only one of the three details, not all of them. The exact tags: [OSM Tags spieli Reads → Mapping detail](osm-tags.md#mapping-detail).
 
 ### What does not count as equipment
 
 **Street furniture** — `amenity=bench`, `amenity=shelter`, `leisure=picnic_table` — is excluded. These are frequently mapped inside a playground area by someone who never mapped the play equipment itself, so counting them lifted playgrounds that have nothing to play on. In Fulda, 63 of 221 playgrounds registering as "has equipment" were carried by furniture alone.
 
-Pitches *do* count: a bolzplatz or basketball hoop is real play infrastructure, merely tagged `leisure=pitch` rather than `playground=*`.
+Pitches *do* count: a football pitch (*Bolzplatz*) or a basketball hoop is real play infrastructure, merely tagged `leisure=pitch` rather than `playground=*`.
 
-**Derived flags** — `is_water`, `for_baby`, `for_toddler`, `for_wheelchair` — are also excluded. A genuine playground device already satisfies the `playground=*` test, so they add nothing there; on their own they can be set by a bench tagged `wheelchair=yes`, which is the same false signal ([#776](https://github.com/mfuhrmann/spieli/issues/776)). They remain available as filter flags, they just do not feed the rating.
+**Derived flags** — `is_water`, `for_baby`, `for_toddler`, `for_wheelchair` — are also excluded. A genuine playground device already satisfies the `playground=*` test, so they add nothing there; on their own they can be set by a bench tagged `wheelchair=yes`, which is the same false signal ([#776](https://github.com/mfuhrmann/spieli/issues/776)). They remain available as filter flags, they just do not feed the state.
 
 ### Photos are not a criterion
 
@@ -57,7 +57,7 @@ The palette is a **single-hue green ramp ending in a cool slate**, not a traffic
 
 Ordering is by **lightness, and monotonic**: `complete` L\* 79, `partial` L\* 47, `missing` L\* 36. The brightest step marks the best-mapped playgrounds, and a viewer with deuteranopia or protanopia can recover the ordering without relying on the green-versus-slate hue split.
 
-The zero case is a cool slate rather than a plain grey: neutral enough to read as "nothing here yet" instead of "bad", but with enough blue cast to stay off the basemap's own warm greys (residential `#e0dfdf`, buildings `#d9d0c9`), which a plain grey at low alpha disappeared into.
+The zero case is a cool slate rather than a plain grey: neutral enough to read as "nothing here yet" instead of "bad", but with enough blue cast to stand out from the basemap's own warm greys (residential `#e0dfdf`, buildings `#d9d0c9`), which a plain grey at low alpha disappeared into.
 
 On the map, the coloured ring segments carry a thin dark outline. Bright green alone is too faint against the background map, so the outline carries the contrast and the colours can be chosen for their meaning. The measurements behind this are in [Frontend Guide → The mapping-detail palette](../contributing/frontend-guide.md#the-mapping-detail-palette).
 

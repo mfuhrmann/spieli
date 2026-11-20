@@ -46,7 +46,7 @@ A data-node is run by someone who cares about that region: a local OpenStreetMap
 
 ### Joining gives you something, rather than taking something
 
-A data-node can also serve its own map under its own name (`data-node-ui`). Someone covering Austria could run `my-playground-map.at` for people there and appear on spieli.eu at the same time, from the same server and the same data. Taking part in the shared map does not mean giving up your own one.
+A data-node can also serve its own map under its own name (`data-node-ui`). Someone covering Austria could run `my-playground-map.at` for people there and appear on spieli.eu at the same time, from the same server and the same data. Taking part in the shared map does not mean giving up your own.
 
 ### Start small, grow from below
 
@@ -58,13 +58,13 @@ There is no separate "hub software" and "node software". Hub, data-node and a st
 
 ### A failure stays local
 
-If one data-node goes down, only its region is missing. The hub draws it as an *offline* ring and every other region keeps working. The same goes for a region that is in the middle of a re-import: it shows as *updating* instead of disappearing. See [Federation → Ring states](../reference/federation.md#ring-states).
+If one data-node goes down, only its region is missing. The hub draws it as an *offline* ring and every other region keeps working. The same goes for a region that is in the middle of a re-import: it shows as *updating* instead of disappearing. See [Federation reference → Ring states](../reference/federation.md#ring-states).
 
 This holds per data-node, not per machine: data-nodes that share a server also share its outages.
 
 ### It stays fast however many regions join
 
-Your browser only asks the data-nodes whose area overlaps what you are looking at. A view of Berlin sends no request to a server covering Bavaria. Zoomed out to the whole country, it draws one ring per region from numbers it already has, and asks the data-nodes only while a filter is active. Answers are drawn as they arrive, so a slow region never holds up a fast one. See [How the hub works internally](../contributing/hub-internals.md).
+Your browser only asks the data-nodes whose area overlaps what you are looking at. A view of Berlin sends no request to a server covering Bavaria. Zoomed out to the whole country, the map draws one ring per region from numbers it already has, and asks the data-nodes only while a filter is active. Answers are drawn as they arrive, so a slow region never holds up a fast one. See [How the hub works internally](../contributing/hub-internals.md).
 
 ### The data is OpenStreetMap's, not ours
 

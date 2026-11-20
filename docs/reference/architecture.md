@@ -22,7 +22,7 @@ One region, one database. `APP_MODE=standalone` (the default).
 
 Your browser loads the app from nginx. When it needs playground data, it calls `/api/`, which nginx forwards to PostgREST. PostgREST runs a SQL function in PostgreSQL and returns the results as JSON — no custom server code needed. The data comes from the importer, which downloads the OpenStreetMap extract for the region, cuts the region out and loads it with osm2pgsql — on a schedule, or whenever you re-run it ([Scheduled Import](../ops/scheduled-import.md)).
 
-Everything else the map shows (the background map, search, photos, reviews) nginx fetches from the third-party service on the visitor's behalf and caches, so the browser contacts no one but this instance. Why: [Privacy by design](../concepts/privacy.md).
+Everything else the map shows (the background map, search, photos, reviews) nginx fetches from the third-party services on the visitor's behalf and caches, so the browser contacts no one but this instance. Why: [Privacy by design](../concepts/privacy.md).
 
 ## Hub mode
 
@@ -38,7 +38,7 @@ Multiple regional instances aggregated onto one shared map. `APP_MODE=hub`.
                          results from A and B are merged in the browser
 ```
 
-The browser loads the app and `registry.json` from the hub, then fetches playground data **directly from each data-node** listed there, which is why every data-node's `/api/` must be public and send CORS headers. The hub itself never relays playground data. Why it is built this way: [Federation: one map, many owners](../concepts/federation.md). How the hub decides which data-nodes to ask: [Federation reference](federation.md). Setting one up: [Federated Deployment](../ops/federated-deployment.md).
+The browser loads the app and `registry.json` from the hub, then fetches playground data **directly from each data-node** listed there, which is why every data-node's `/api/` must be public and send CORS headers. The hub itself never relays playground data. Why it is built this way: [Federation: one map, many owners](../concepts/federation.md). How the hub decides which data-nodes to ask: [How the hub works internally](../contributing/hub-internals.md). Setting one up: [Federated Deployment](../ops/federated-deployment.md).
 
 ## Deployment modes
 
