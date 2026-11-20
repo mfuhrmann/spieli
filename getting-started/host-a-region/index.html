@@ -3302,7 +3302,7 @@
 <p>You need a Linux server with Docker and the Compose plugin, a domain or subdomain that points to it, and ports 80 and 443 open. The examples below use <code>my-playground-map.at</code> for a data-node covering Austria.</p>
 <ol>
 <li>
-<p>Run the installer. The command for the current release is in the <a href="../quick-start/#install">Quick Start</a>, which also explains how to find your region's relation ID and extract. Choose <code>data-node</code> or <code>data-node-ui</code>, and answer yes to automatic updates. The question about an external hub origin can stay empty.</p>
+<p>Run the installer. The command for the current release is in the <a href="../quick-start/#install">Quick Start</a>, which also explains how to find your region's relation ID and extract. Choose <code>data-node</code> or <code>data-node-ui</code>, and answer yes to automatic updates.</p>
 </li>
 <li>
 <p>Set up HTTPS with the Traefik installer, which gets a certificate from Let's Encrypt: <a href="../../ops/https-setup/">HTTPS setup</a>. Choose mode 1, <code>data-node-ui</code>; the app's nginx then serves the API with the CORS headers spieli.eu needs. (The installer's <code>data-node</code> mode cannot reach the API at the moment, <a href="https://github.com/mfuhrmann/spieli/issues/1062">#1062</a>; until that is fixed, install spieli as <code>data-node-ui</code> in step 1 too.)</p>
