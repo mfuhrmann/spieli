@@ -14,4 +14,16 @@ Every spieli stack runs the same release. Two settings decide which role it play
 
 For the hub scenarios the installer asks for `REGISTRY_URL` and writes a starter `registry.json`; edit it afterwards to list your data-nodes. How a hub works: [Federation: one map, many owners](../concepts/federation.md).
 
-`APP_MODE` is not asked for `data-node`, which has no frontend. The containers each `DEPLOY_MODE` starts are the compose profiles of the same name; see [Configuration → Compose profiles](../ops/configuration.md#compose-profiles).
+`APP_MODE` is not asked for `data-node`, which has no frontend.
+
+## Compose profiles
+
+Each `DEPLOY_MODE` is a compose profile of the same name, so every `docker compose` command takes `--profile <mode>`:
+
+| Profile | Starts |
+|---|---|
+| `data-node` | `db`, `importer`, `postgrest` — no frontend |
+| `data-node-ui` | `db`, `importer`, `postgrest`, `app` |
+| `ui` | `app` only, talking to the API in `API_BASE_URL` |
+| `auto-update` | Watchtower, which installs new spieli images from GHCR once a day. Added on top of the mode (`--profile data-node-ui --profile auto-update`); the installer enables it when you choose automatic updates, and then also sets `REIMPORT_INTERVAL_*` so the importer runs in daemon mode. Only one per host: [Upgrading → Automatic upgrade](../ops/upgrade.md#automatic-upgrade-watchtower) |
+
