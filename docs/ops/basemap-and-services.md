@@ -149,7 +149,7 @@ Each service can be opted out individually with the `PROXY_*` variables ([Config
 
 **Panoramax is not proxied at all.** Its thumbnail endpoint answers `308` with a `Location` on a per-instance derivative host, and nginx cannot follow a redirect — relaying it would send the browser to a host the privacy page does not name and the CSP does not allow. Its viewer is an `<iframe>`, and serving a whole interactive third-party application from this origin would grant it same-origin privileges here. Both stay cross-origin, are named in the CSP, and keep their privacy-page rows.
 
-Equipment illustrations used to be a second exception, because they were rendered from `Special:FilePath` redirects. Since #867 their file names are resolved at build time (`make equipment-images`), and the images are served through `/ext/wikimedia/` like the photo gallery. See [External Services → Equipment illustrations](../reference/external-services.md#equipment-illustrations-come-through-the-same-proxy).
+Equipment illustrations used to be a second exception, because they were rendered from `Special:FilePath` redirects. Since #867 their file names are resolved at build time (`make equipment-images`), and the images are served through `/ext/wikimedia/` like the photo gallery. See [External Services → Equipment illustrations](../reference/external-services.md#fetched-server-side-proxied).
 
 ### Nothing is logged
 

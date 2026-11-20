@@ -32,6 +32,22 @@ How much of a playground has been mapped in OpenStreetMap: *detailed*, *basic* o
 
 The default look of the map, with mapping detail off: neutral green circles and pins. See [User Guide → Navigating the map](../user-guide.md#navigating-the-map).
 
+### DEPLOY_MODE and APP_MODE
+
+The two settings that decide a stack's role. `DEPLOY_MODE` picks which containers run (`data-node`, `ui`, `data-node-ui`), `APP_MODE` how the map behaves (`standalone`, `hub`). See [Deployment modes](deployment-modes.md).
+
+### Tiers: macro, cluster, polygon
+
+How the map loads playgrounds depending on the zoom level. Zoomed out (up to zoom 13 by default) it shows **clusters**, counts the server has already grouped; zoomed in, the **polygon** tier shows each playground. A hub adds the **macro** tier below that (up to zoom 7): one ring per region, drawn from numbers it already has. See [Federation reference → Ring states](federation.md#ring-states).
+
+### Ring
+
+The circle a hub draws for a region at the macro tier, sized by its playground count. Its look says whether the region is healthy, offline, updating or empty. See [Federation reference → Ring states](federation.md#ring-states).
+
+### External-service proxy
+
+The paths under `/ext/` through which an instance fetches search, photos and reviews on the visitor's behalf, so the browser does not contact those services itself. The basemap works the same way under `/basemap/`. See [External Services](external-services.md).
+
 ### Daemon mode
 
 The importer container running permanently and re-importing every few days on its own, instead of once (one-shot). Switched on by `REIMPORT_INTERVAL_MIN_DAYS` / `MAX_DAYS`; the installer does this when you choose automatic updates. See [Scheduled Import](../ops/scheduled-import.md).
