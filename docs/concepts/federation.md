@@ -50,11 +50,11 @@ A data-node can also serve its own map under its own name (`data-node-ui`). Some
 
 ### Start small, grow from below
 
-A region does not have to be a country. A state, a district or a single city is enough, and neighbours can add the areas around it later. Once imported, Bremen and Berlin each use under 100 MB of memory while serving, and even Bavaria stays around 550 MB. The import itself needs more, about 2 GB plus swap for a single region. See [Sizing](../reference/sizing.md).
+A region does not have to be a country. A state, a district or a single city is enough, and neighbours can add the areas around it later. A small VPS carries even a large state; the import is the only demanding moment. Measured figures: [Sizing](../reference/sizing.md).
 
 ### One program, different roles
 
-There is no separate "hub software" and "node software". Hub, data-node and a stand-alone regional map are the same spieli release with a different setting (`DEPLOY_MODE`, `APP_MODE`). Anything new in spieli reaches every role with the same upgrade, and anyone who can run one part can run all of them. See [Architecture → Deployment modes](../reference/architecture.md#deployment-modes).
+There is no separate "hub software" and "node software". Hub, data-node and a stand-alone regional map are the same spieli release with a different setting (`DEPLOY_MODE`, `APP_MODE`). Anything new in spieli reaches every role with the same upgrade, and anyone who can run one part can run all of them. See [Deployment modes](../reference/deployment-modes.md).
 
 ### A failure stays local
 
@@ -64,7 +64,7 @@ This holds per data-node, not per machine: data-nodes that share a server also s
 
 ### It stays fast however many regions join
 
-Your browser only asks the data-nodes whose area overlaps what you are looking at. A view of Berlin sends no request to a server covering Bavaria. Zoomed out to the whole country, the hub asks no data-node at all: it draws one ring per region from numbers it already has. Answers are drawn as they arrive, so a slow region never holds up a fast one. See [How the hub works internally](../contributing/hub-internals.md).
+Your browser only asks the data-nodes whose area overlaps what you are looking at. A view of Berlin sends no request to a server covering Bavaria. Zoomed out to the whole country, it draws one ring per region from numbers it already has, and asks the data-nodes only while a filter is active. Answers are drawn as they arrive, so a slow region never holds up a fast one. See [How the hub works internally](../contributing/hub-internals.md).
 
 ### The data is OpenStreetMap's, not ours
 
@@ -72,11 +72,11 @@ No data-node invents or edits anything. Each one re-imports its region from [Ope
 
 ### Privacy follows the same split
 
-Your browser talks to the data-node of the region you look at. Once regions are run by different people, no single operator sees which regions a visitor looks at. Data-nodes have no accounts and no cookies, nobody can write anything through them, and by default nothing is logged. See [External Services](../reference/external-services.md).
+Once regions are run by different people, no single operator sees every region a visitor looks at. See [Privacy by design](privacy.md).
 
 ## How it runs today
 
-Honestly: spieli.eu is still mostly one person's server. At the time of writing, the hub and 15 German states run side by side as separate stacks on one VPS, operated by the project maintainer. While serving, all of them together use about 2.6 GB of memory; the rest of the machine is headroom for the one re-import that runs at a time. The federation is real in the software, not yet in who runs it.
+Honestly: spieli.eu is still mostly one person's server. At the time of writing, the hub and 15 German states run side by side as separate stacks on one VPS, operated by the project maintainer, with room left for the one re-import that runs at a time ([Sizing → Several regions on one host](../reference/sizing.md#several-regions-on-one-host)). The federation is real in the software, not yet in who runs it.
 
 That is a starting point, not the plan. Each state is already its own data-node with its own database and address, so handing one over to someone else, or adding a region from somewhere else, needs no change to spieli at all. That is what [Host a Region](../getting-started/host-a-region.md) is for.
 

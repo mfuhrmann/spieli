@@ -58,7 +58,7 @@ spieli stores a few things in the browser itself. None of them is sent anywhere:
 
 ## Federation keeps it split
 
-In a [federation](federation.md), the browser fetches each region's playgrounds from that region's own server. Once regions are run by different people, no single operator sees every region a visitor looks at.
+In a [federation](federation.md), the browser fetches each region's playgrounds from that region's own server. Once regions are run by different people, no single operator sees every region a visitor looks at. Data-nodes have no accounts and no cookies, nobody can write anything through them, and by default they log nothing either.
 
 ## The operator decides, and the privacy page follows
 
@@ -73,4 +73,4 @@ That is also why we do not write that spieli "does not track anyone". What a giv
 | See every external service and how it is reached | [External Services](../reference/external-services.md) |
 | Switch a proxy off, or size the cache | [Basemap and external services → External-service proxies](../ops/basemap-and-services.md#external-service-proxies) |
 | Understand the Content Security Policy | [Security → nginx security headers](../ops/security.md#nginx-security-headers) |
-| Write the imprint and privacy notice for my instance | [Host a Region → Legal and privacy](../getting-started/host-a-region.md#legal-and-privacy) |
+| Write the imprint and privacy notice for my instance | [Configure the instance → Legal pages](../ops/configure.md#legal-pages) |
