@@ -56,7 +56,7 @@ The panel shows `equipment.devices.<key>` from the locale files; a locale withou
 
 If you can't find a suitable image, omit the `image` field. No broken icon will appear.
 
-## Step 5 — Verify locally
+## Check it
 
 ```bash
 make dev
@@ -67,13 +67,11 @@ Open the app at `http://localhost:5173`, navigate to a playground that has the d
 !!! tip "Finding a playground with a specific device"
     Use [Overpass Turbo](https://overpass-turbo.eu) — search for `playground=balance_beam` (replace with your tag value) to locate playgrounds that have it mapped.
 
-## Step 6 — Commit and open a PR
+## Open a pull request
 
-```bash
-git checkout -b feat/add-balance-beam-device
-git add app/src/lib/objPlaygroundEquipment.js app/src/lib/equipmentImages.generated.json locales/en.json locales/de.json
-git commit -m "feat: add balance_beam playground device"
-git push -u origin feat/add-balance-beam-device
-```
+Branch, commit and open the pull request as described in [Local Development → Start here](local-dev.md#start-here). The change touches `app/src/lib/objPlaygroundEquipment.js`, `app/src/lib/equipmentImages.generated.json`, `locales/en.json` and `locales/de.json`.
 
-Then open a pull request on GitHub. See [CONTRIBUTING.md](https://github.com/mfuhrmann/spieli/blob/main/CONTRIBUTING.md) for the full PR walkthrough.
+## See also
+
+- [Equipment Types](../reference/equipment.md): every device spieli already knows
+- [Update Generated Assets → Equipment illustrations](generated-assets.md#equipment-illustrations)

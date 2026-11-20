@@ -71,4 +71,6 @@ AND (
 
 Run `make test-unit`, then import a region that has playgrounds with the feature and check that the filter narrows both tiers (zoomed out and zoomed in) and shows a chip you can remove. In a hub, a backend on an older release cannot apply the new parameter; the hub then shows it as *unfiltered* ([Ring states](../reference/federation.md#ring-states)).
 
-Then open a pull request; see [CONTRIBUTING.md](https://github.com/mfuhrmann/spieli/blob/main/CONTRIBUTING.md). Tag it `requires-schema-update`, since `api.sql` changed.
+## Open a pull request
+
+Branch, commit and open the pull request as described in [Local Development → Start here](local-dev.md#start-here). Tag it `requires-schema-update`, since `api.sql` changed.
