@@ -26,6 +26,11 @@ Most strings are short UI labels like buttons, tooltips, and status messages:
 | `Filter` | `Filter` |
 | `Reset all` | `Alle zurücksetzen` |
 
+## Things to keep as-is
+
+- Placeholders like `{regionName}`, `{count}`, `{name}` — do not translate these
+- The `{count, plural, ...}` structure — only translate the text inside the `{}`
+
 ## Plural forms
 
 Some strings contain a count, like:
@@ -91,11 +96,6 @@ new Intl.PluralRules('pl').select(5)   // "many"
 This is the same rule the app uses at runtime, so it is authoritative.
 
 Weblate will warn you if the ICU *syntax* is broken — fix any flagged strings before saving. It cannot tell you that a grammatically correct form is sitting in the wrong category, so that part is on you.
-
-## Things to keep as-is
-
-- Placeholders like `{regionName}`, `{count}`, `{name}` — do not translate these
-- The `{count, plural, ...}` structure — only translate the text inside the `{}`
 
 ## When does my translation go live?
 
