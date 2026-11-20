@@ -41,12 +41,11 @@ nav:
           - Quick Start: getting-started/quick-start.md
           - HTTPS Setup: ops/https-setup.md
       - Host a Region for spieli.eu: getting-started/host-a-region.md
-      - Run a federation:
-          - Federated Deployment: ops/federated-deployment.md
-          - Single-host Federation: ops/single-host-federation.md
-          - Add a Data-node: ops/add-data-node.md
-          - Shared Basemap Cache: ops/shared-basemap-cache.md
-          - Monitoring: ops/monitoring.md
+      - Configure & secure:
+          - Configure the instance: ops/configure.md
+          - Basemap and external services: ops/basemap-and-services.md
+          - Security: ops/security.md
+          - Customise your own image: ops/customise-image.md
       - Operate:
           - Upgrading: ops/upgrade.md
           - Scheduled Import: ops/scheduled-import.md
@@ -54,12 +53,13 @@ nav:
           - Switching Regions: ops/switch-region.md
           - Backup and Restore: ops/backup-restore.md
           - Uninstall: ops/uninstall.md
-      - Configure & secure:
-          - Configure the instance: ops/configure.md
-          - Basemap and external services: ops/basemap-and-services.md
-          - Security: ops/security.md
-          - Customise your own image: ops/customise-image.md
       - Troubleshooting: ops/troubleshooting.md
+      - Run a federation:
+          - Federated Deployment: ops/federated-deployment.md
+          - Single-host Federation: ops/single-host-federation.md
+          - Add a Data-node: ops/add-data-node.md
+          - Shared Basemap Cache: ops/shared-basemap-cache.md
+          - Monitoring: ops/monitoring.md
   - Translate:
       - Translation Guide: contributing/translation-guide.md
   - Develop:
