@@ -6,7 +6,7 @@
 
 **Cause:** Two sessions applied `api.sql` around the same time, and the one that finished last came from the **older image**. The daemon importer applies the schema on container startup, so any restart of it during an upgrade makes it a second writer; and a plain `docker compose up -d importer` *restarts* the existing container rather than recreating it, so that writer is still running the previous image. The old schema is internally consistent, so every health check passes ([#800](https://github.com/mfuhrmann/spieli/issues/800)).
 
-This is what happened sweeping v0.9.0: a stack ran the v0.9.0 app against the v0.8.0 matview, with `has_theme` missing and `has_fence` still matching `barrier=fence` only.
+This is what happened during the v0.9.0 upgrade sweep: a stack ran the v0.9.0 app against the v0.8.0 `playground_stats` view, with `has_theme` missing and `has_fence` still matching `barrier=fence` only.
 
 **Diagnose** by comparing the version `get_meta` reports against the release you installed:
 
@@ -73,7 +73,7 @@ docker compose -f compose.yml --profile <mode> up -d
 docker compose ps   # all containers should show "running" or "healthy"
 ```
 
-If you are using the local development setup, `make import` is equivalent. If the database shows as unhealthy, try stopping and restarting the stack.
+Then start the import ([Refresh Data](refresh-data.md)). If the database shows as unhealthy, try stopping and restarting the stack.
 
 ---
 
@@ -89,7 +89,7 @@ importer-1  | psql:/tmp/tmp.JsTPhaBgfJ:87: ERROR:  relation "planet_osm_point" d
 importer-1 exited with code 3 (restarting)
 ```
 
-**Cause:** Fixed in spieli 0.9.0 and later. Older images applied `api.sql` on daemon startup before the first import had created the `planet_osm_*` tables, so the schema apply failed and the container restarted before it ever reached the import. The `API_ONLY mode` line in the log is misleading — that banner was printed unconditionally; `API_ONLY` was not actually set.
+**Cause:** Images before spieli 0.9.0 applied `api.sql` on daemon startup before the first import had created the `planet_osm_*` tables, so the schema apply failed and the container restarted before it ever reached the import. The `API_ONLY mode` line in the log is misleading — that banner was printed unconditionally; `API_ONLY` was not actually set.
 
 **Fix:** Pull a current image and restart:
 
@@ -211,7 +211,7 @@ curl https://the-data-node.example.com/api/rpc/get_meta
 
 If `playground_count` is `0` and `bbox` is `[null,null,null,null]`, the database has no playground data. Pass the findings to the data-node operator.
 
-If `playground_count` is `> 0` and `bbox` contains real coordinates, the data-node is healthy. The hub has stale cached state — see **Hub operator** below.
+If `playground_count` is `> 0` and `bbox` contains real coordinates, the data-node is healthy and the hub has stale cached state — see the next step.
 
 **Hub operator — stale cached state (`playground_count > 0`, valid `bbox`):**
 
@@ -431,7 +431,7 @@ This matters most for an upgrade sweep across several stacks, which would otherw
 
 ## Photos, search or reviews stopped working after an upgrade
 
-Since the external-service proxies landed, these features are served through `/ext/` paths on your own instance rather than fetched from the third party by the browser. Three things go wrong quietly.
+These features are served through `/ext/` paths on your own instance rather than fetched from the third party by the browser. Three things go wrong quietly.
 
 **A cold cache after a rebuild.** Recreating the container (an upgrade, `up -d` after a config change) replaces it, and a cache on the writable layer goes with it. `compose.yml` mounts a named volume (`ext_cache`) so this should not happen — check it is actually mounted:
 

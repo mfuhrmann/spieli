@@ -29,7 +29,7 @@ This walkthrough stands up the topology end-to-end. For a single-region deployme
 Each data-node runs the full `data-node-ui` profile so the shipped nginx config serves `/api/` with the CORS headers the Hub's browser clients need. The Hub is the same frontend image flipped to `APP_MODE=hub` with a `registry.json` listing the data-node API URLs, and no database of its own.
 
 !!! note "Pure `DEPLOY_MODE=data-node` (advanced)"
-    The `data-node` profile (invoked with `--profile data-node`) ships db + PostgREST only — no HTTP server, no port publish, no CORS handling. You can use it if you run your own reverse proxy in front of the PostgREST container and add the right `Access-Control-Allow-*` headers to `/api/` responses. For the happy path, prefer `data-node-ui` — it's what this walkthrough assumes. In `data-node-ui` mode only `/api/` needs to be reachable from the Hub's origin; front the `APP_PORT` with a reverse proxy that blocks paths other than `/api/` if you don't want the secondary standalone UI publicly reachable.
+    The `data-node` profile (invoked with `--profile data-node`) ships db + PostgREST only — no HTTP server, no port publish, no CORS handling. You can use it if you run your own reverse proxy in front of the PostgREST container and add the right `Access-Control-Allow-*` headers to `/api/` responses. In the usual setup, use `data-node-ui` — it is what this walkthrough assumes. In `data-node-ui` mode only `/api/` needs to be reachable from the Hub's origin; front the `APP_PORT` with a reverse proxy that blocks paths other than `/api/` if you don't want the secondary standalone UI publicly reachable.
 
 ## Prerequisites
 
@@ -38,7 +38,7 @@ Each data-node runs the full `data-node-ui` profile so the shipped nginx config 
 - One OSM relation ID and one Geofabrik PBF URL per data-node ([how to find them](../getting-started/quick-start.md#finding-your-region)).
 - HTTPS-terminating reverse proxy in front of each data-node in production — the browser must be able to fetch the data-node's `/api/` over HTTPS when the Hub itself is served over HTTPS.
 - When co-locating nodes on one host, give each its own `APP_PORT` (e.g. `8080`, `8081`, `8082`) and its own `COMPOSE_PROJECT_NAME` (e.g. `spieli-fulda`, `spieli-neuhof`, `spieli-hub`) so port bindings and Docker resource names don't collide.
-- **Data-node version**: each data-node must run a release that ships the tiered playground API (`get_playground_clusters`, `get_playgrounds_bbox`, `get_playground`) and the completeness fields on `get_meta` (`complete`, `partial`, `missing`). These landed in the same release that introduced this walkthrough; an older data-node still joins successfully but degrades to a legacy fallback path — see the [federation reference's Federation endpoints table](../reference/federation.md#federation-endpoints) for the degradation matrix. If you can, upgrade every data-node before pointing a current Hub at it.
+- **Data-node version**: each data-node must run a release that ships the tiered playground API (`get_playground_clusters`, `get_playgrounds_bbox`, `get_playground`) and the completeness fields on `get_meta` (`complete`, `partial`, `missing`). These exist since v0.4.9; an older data-node still joins successfully but degrades to a legacy fallback path — see the [federation reference's Federation endpoints table](../reference/federation.md#federation-endpoints) for the degradation matrix. If you can, upgrade every data-node before pointing a current Hub at it.
 
 ## Step 1 — Stand up each data-node
 
@@ -46,7 +46,7 @@ Repeat on every data-node host. For this walkthrough the two backends are "Fulda
 
 ### Data-node `.env`
 
-Replace `<strong-random-password>` with an actual generated secret (`openssl rand -base64 24` is fine) — the angle brackets are a placeholder, not a literal value.
+Replace `<strong-random-password>` with an actual generated secret (`openssl rand -hex 32`; base64 characters such as `/`, `+` and `=` break the database connection URI) — the angle brackets are a placeholder, not a literal value.
 
 ```env
 DEPLOY_MODE=data-node-ui
@@ -158,7 +158,7 @@ The Hub has no importer, no database, no `run --rm importer` step.
 ## Step 4 — Verify
 
 1. Open the Hub URL in a browser (e.g. `https://hub.example.com`).
-2. You should see the map render, fit to the union of all configured regions, with the instance pill in the bottom-left showing the aggregated region + playground counts (localized German: e.g. `2 Regionen · <count> Spielplätze` with a globe icon).
+2. You should see the map render, fit to the union of all configured regions, with the instance pill in the bottom-left showing the aggregated region + playground counts (in German, for example `2 Regionen · <count> Spielplätze`, with a globe icon).
 3. Open DevTools → Network and reload. You should see:
    - One `GET /registry.json` from the Hub's origin.
    - One `GET /rpc/get_meta` per data-node, cross-origin, returning 200 with `playground_count` + `bbox` + completeness fields.

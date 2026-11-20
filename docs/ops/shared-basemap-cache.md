@@ -6,7 +6,7 @@ A single-stack operator needs nothing here: every instance already caches basema
 ## Why
 
 Each stack fetches tiles from `BASEMAP_UPSTREAM` and caches them itself.
-That is the right default — it is portable and needs no extra component — but on the federated host it multiplies:
+That is the right default — it is portable and needs no extra component — but on a host with many stacks it multiplies:
 
 | | Per-stack caches (default) | One shared cache |
 |---|---|---|
@@ -139,4 +139,4 @@ BASEMAP_UPSTREAM=http://tileserver:8080
 BASEMAP_UPSTREAM_HOST=tileserver:8080
 ```
 
-If that server's URL layout differs from the provider's, the bundled style needs rebuilding against it too — see [Configuration](basemap-and-services.md#basemap). The stacks need no change either way.
+If that server's URL layout differs from the provider's, the bundled style needs rebuilding against it too — see [Customise your own image → Your own tileserver](customise-image.md#your-own-tileserver). The stacks need no change either way.

@@ -26,7 +26,7 @@ GET https://<hub-host>/federation-status.json
 Check that:
 
 1. The response is `200 OK`.
-2. `generated_at` is within the last 5 minutes (guards against cron death).
+2. `generated_at` is within the last 5 minutes (catches a stopped cron job).
 3. All expected `backends.<slug>.up` values are `true`.
 
 ### Recipe 2 — BYO Prometheus + Grafana
@@ -108,6 +108,6 @@ spieli ships no frontend error reporting, and adding one needs your own image: s
 
 ## See also
 
-- [Federation](../reference/federation.md) — overall federation architecture, `registry.json` format.
+- [Federation reference](../reference/federation.md) — what the hub asks each data-node, and the ring states.
 - [registry.json reference](../reference/registry-json.md) — backend slug, URL, and metadata fields.
 - [API reference](../reference/api.md) — `get_meta()` response shape including `last_import_at`.
