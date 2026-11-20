@@ -28,7 +28,7 @@ Every moveend constructs a fresh `AbortController` and aborts the previous one, 
 
 ## Cross-backend re-clustering
 
-At the cluster tier, two backends covering adjacent regions both ship their own bucket grids. Without re-clustering, the seam at their shared border shows as two overlapping rings. The Hub collects every backend's buckets and merges those whose markers would overlap on screen (`lib/clusterMerge.js`, the same rule the standalone client uses): `{count, complete, partial, missing}` are summed, the position is the count-weighted mean — a single seamless ring where two backends meet.
+At the cluster tier, two backends covering adjacent regions both ship their own bucket grids. Without re-clustering, the seam at their shared border shows as two overlapping rings. The Hub collects every backend's buckets and runs them through the same merge the standalone client uses ([Frontend Guide → Cluster buckets](frontend-guide.md#cluster-buckets-grouping-position-and-merging)), so two backends meet in a single seamless ring.
 
 The polygon tier doesn't re-cluster — every backend's polygons render in a single vector source, each feature tagged with `_backendUrl` so selection routes back to the right backend.
 
@@ -40,7 +40,7 @@ At the macro tier the hub draws one ring per backend from cached `get_meta` data
 flowchart LR
     user[User pans / zooms map] --> moveend[Debounced moveend<br/>300 ms]
     moveend --> tier{tierForZoom}
-    tier -- "z ≤ 7" --> macro[Macro view<br/>reads cached get_meta]
+    tier -- "z ≤ 7" --> macro[Macro view<br/>cached get_meta;<br/>with a filter: clusters per backend]
     tier -- "z 8–13" --> cluster[Cluster tier]
     tier -- "z ≥ 14" --> polygon[Polygon tier]
 

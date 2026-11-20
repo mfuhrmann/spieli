@@ -36,7 +36,7 @@
 
 ## Known limitations / future work
 
-- **Most locales are unfinished** — the interface ships in German, English and Slovak; device names are translated in de, en, sk, fr and es (elsewhere svelte-i18n falls back to English), and most other languages are far below the 80% bar (see [Translation Workflow → Language graduation](../contributing/translations.md#language-graduation)).
+- **Most locales are unfinished** — which languages are live and when one is switched on: [Translation Workflow → Language graduation](../contributing/translations.md#language-graduation).
 - **Svelte stores vs runes** — the app uses Svelte 4-style writable stores. Migration to Svelte 5 runes is desirable but not yet done.
 - **`unsafe-inline` in CSP** — Bootstrap and OpenLayers require inline styles. A nonce-based approach would tighten the CSP but requires changes to the nginx entrypoint.
 - **No server-side rendering** — the app is a pure client-side SPA. SEO and initial paint performance are limited by bundle load time.
