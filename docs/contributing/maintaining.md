@@ -4,13 +4,7 @@ This guide is for maintainers who manage the project's dependencies, toolchain, 
 
 ## Release procedure
 
-See [RELEASING.md](https://github.com/mfuhrmann/spieli/blob/main/RELEASING.md) for the full release checklist. Summary:
-
-1. In a PR: remove the `-rc` suffix in `app/package.json` and `app/package-lock.json` (e.g. `0.4.1-rc` → `0.4.1`), set `TAG=` in the install block of `docs/getting-started/quick-start.md`. Commit: `chore: release v0.4.1`
-2. Tag the merge commit: `git tag v0.4.1 && git push origin v0.4.1`. CI publishes `:latest`, `:0.4.1`, `:0.4` images and creates the GitHub release with generated notes and the `install.sh` assets
-3. In a PR: bump `main` to the next `-rc`: `0.4.2-rc`
-
-`main` always carries the next `-rc` version between releases.
+The checklist lives in [RELEASING.md](https://github.com/mfuhrmann/spieli/blob/main/RELEASING.md): release commit, tag, then bump `main` to the next `-rc`. `main` always carries the next `-rc` version between releases.
 
 ---
 
