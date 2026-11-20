@@ -124,11 +124,11 @@ docker compose --profile <mode> up -d importer
 
 **Possible causes:**
 
-1. **Import not run** — Run the importer after starting the stack. Playground data is not loaded automatically:
+1. **Import not run or still running** — With automatic updates (daemon mode) the importer starts the first import by itself; follow it with `docker compose logs -f importer`. Without them, run it once:
    ```bash
    docker compose --profile <mode> run --rm importer
    ```
-2. **Wrong relation ID** — Check `OSM_RELATION_ID` in `.env`. An incorrect ID filters out all playgrounds. Verify at [nominatim.openstreetmap.org](https://nominatim.openstreetmap.org).
+2. **Wrong relation ID** — Check `OSM_RELATION_ID` in `.env`. The importer uses it to cut your region out of the extract, so a wrong ID cuts out a different area or none. Verify at [nominatim.openstreetmap.org](https://nominatim.openstreetmap.org), then run a full import ([Refresh Data](refresh-data.md)).
 3. **PBF doesn't cover the relation** — The PBF extract must geographically contain the relation. If `OSM_RELATION_ID` is a large region (e.g. a whole state), the `PBF_URL` must point to a matching extract — a district or city PBF will silently produce 0 playgrounds. Check [download.geofabrik.de](https://download.geofabrik.de) for the right extract.
 4. **Docker stack not running** — The app requires a live PostgREST backend. Confirm the stack is running and healthy (`docker compose ps`).
 5. **Browser cache** — Try a hard reload: `Ctrl+Shift+R` (Windows/Linux) or `Cmd+Shift+R` (Mac).
@@ -146,42 +146,6 @@ docker compose --profile <mode> up -d importer
 - Test geolocation on the **production HTTPS URL**.
 - On Android with **Chrome**: go to `chrome://flags`, search for "Insecure origins treated as secure", add your local URL, and relaunch Chrome.
 - DuckDuckGo and Brave do not offer this workaround — use Chrome for local geolocation testing.
-
----
-
-## Dev server starts but changes don't appear
-
-!!! note "Source-clone / local dev only"
-    This section applies when running the Vite dev server (`make dev`) from a source clone. Skip if using pre-built images.
-
-**Symptom:** You edited a JS or CSS file, but the browser still shows the old version.
-
-**Fix:** Vite hot-reload should pick up changes automatically. If it doesn't:
-
-1. Check the terminal running `make dev` — a build error will prevent the browser from updating.
-2. Try a hard reload: `Ctrl+Shift+R` / `Cmd+Shift+R`.
-3. If you changed `index.html` or a file in `public/`, stop and restart `make dev`.
-
-When testing against the Docker stack, rebuild and restart the app container after changes:
-
-```bash
-docker compose -f compose.yml --profile <mode> up -d --build app
-```
-
----
-
-## LAN IP for mobile testing
-
-!!! note "Source-clone / local dev only"
-    `make lan-url` is only available from a source clone. Skip if using pre-built images.
-
-Run this command to find your LAN IP:
-
-```bash
-ip route get 1 | awk '{print $7; exit}'
-```
-
-Then open `http://<that-ip>:8080` on your phone.
 
 ---
 
@@ -264,7 +228,7 @@ The hub polls each backend's `get_meta` at startup and every 5 minutes. If the l
      https://the-data-node.example.com/api/rpc/get_meta
    ```
 
-   Response times consistently above 3 seconds will flip `up: false` on the next hub poll cycle. Investigate slow PostgREST response times on the data-node side (see [Map loads but shows no playgrounds](#map-loads-but-shows-no-playgrounds) for database health checks). If the latency is transient, the hub auto-recovers within 60 seconds once the backend is fast again. If the hub container is stuck showing a backend as down despite it being healthy, restart it:
+   Response times consistently above 3 seconds will flip `up: false` on the next hub poll cycle. Investigate slow PostgREST response times on the data-node side (see [Map loads but shows no playgrounds](#map-loads-but-shows-no-playgrounds) for database health checks). If the latency is transient, the hub recovers by itself once the backend is fast again: the cron rewrites the status every 60 seconds, and browsers re-read it every `HUB_POLL_INTERVAL` (default 300 s). If the hub container is stuck showing a backend as down despite it being healthy, restart it:
 
    ```bash
    docker compose restart app   # run on the hub host
@@ -341,15 +305,16 @@ curl https://the-data-node.example.com/api/rpc/get_meta
 
 **Data-node operator — fix:**
 
-The image predates the tiered-fetch functions added in v0.4.9. Update and re-import:
+The image predates the tiered-fetch functions added in v0.4.9. Update and re-import, replacing `<mode>` with the stack's `DEPLOY_MODE`:
 
 ```bash
 cd ~/spieli   # or wherever spieli was installed
 docker compose pull
-docker compose --profile data-node down
-docker compose --profile data-node up -d
-docker compose --profile data-node run --rm importer
+docker compose --profile <mode> down
+docker compose --profile <mode> up -d
 ```
+
+Then run a full import as in [Refresh Data](refresh-data.md) (the daemon form if automatic updates are on).
 
 **Hub operator — verify after the data-node operator confirms the update:**
 
@@ -387,15 +352,18 @@ docker compose -f compose.yml --profile <mode> run --rm importer
 
 **Symptom:** The `pgdata` Docker volume grows beyond expectations over time.
 
-**Cause:** `api.sql` uses `DROP MATERIALIZED VIEW … CASCADE` + `CREATE MATERIALIZED VIEW` on every apply. PostgreSQL does not reclaim the space immediately — it marks pages as dead and waits for autovacuum. After many re-imports, dead tuple bloat can be significant.
+**Not the cause:** `playground_stats`. Every apply builds it under a staging name and drops the old one, and dropping a relation returns its files to the filesystem at once; there is nothing for `VACUUM` to reclaim there.
 
-**Fix:** Run VACUUM FULL (briefly locks the table):
+**Find out what is large:**
 
 ```bash
-docker compose -f compose.yml exec db psql -U osm osm -c "VACUUM FULL public.playground_stats;"
+docker compose exec db psql -U osm osm -c "
+  SELECT relname, pg_size_pretty(pg_total_relation_size(oid)) AS size
+  FROM pg_class WHERE relkind IN ('r','m')
+  ORDER BY pg_total_relation_size(oid) DESC LIMIT 10;"
 ```
 
-Or simply recreate the data volume after a re-import — the volume will start clean.
+The `planet_osm_*` tables are replaced by every full import. If the total is far above the sizes in [Sizing](../reference/sizing.md), recreating the data volume and importing once is the quickest clean state.
 
 ---
 
@@ -408,9 +376,7 @@ Or simply recreate the data volume after a re-import — the volume will start c
 **Self-healing:** The importer clears the flag automatically at startup. Restarting the container is usually enough:
 
 ```bash
-docker compose restart importer
-# or, in daemon mode, the container is already running — it will clear the flag
-# on its next scheduled run
+docker compose restart importer   # the daemon clears the flag on startup
 ```
 
 **Manual fix** (if you need it cleared immediately without waiting for a restart):
@@ -421,101 +387,47 @@ docker compose exec db psql -U osm -d osm \
   -c "UPDATE api.import_status SET importing = false WHERE id = 1;"
 ```
 
-The Hub will pick up the corrected value on its next poll cycle (within 60 seconds).
+The Hub picks up the corrected value within a few minutes: the cron rewrites the status every 60 seconds, browsers re-read it every `HUB_POLL_INTERVAL`.
 
 ---
 
-### Legal pages missing or showing wrong contact details
+## Legal pages missing or showing wrong contact details
 
-**Symptom:** `/impressum` or `/datenschutz` returns 404, or the pages show stale contact information after updating `IMPRESSUM_*` vars.
+**Symptom:** `/legal/impressum` or `/legal/datenschutz` returns 404, or the pages show stale contact information after updating `IMPRESSUM_*` vars.
 
-**Cause:** The HTML files are generated by `docker-entrypoint.sh` at container startup. A rebuild is required to pick up changed env vars.
+**Cause:** The HTML files are generated by `docker-entrypoint.sh` when the app container starts, from the environment it was created with.
 
-**Fix:** Restart the app container to regenerate legal pages from current env vars:
-
-```bash
-docker compose -f compose.yml --profile <mode> up -d app
-```
-
-If `get_meta()` still returns the old `impressum_url` / `privacy_url`, the legal URLs are baked into the database at import time. Re-run the importer to apply them:
+**Fix:** Recreate the app container (`restart` would keep the old environment):
 
 ```bash
-docker compose -f compose.yml --profile <mode> run --rm importer
+docker compose --profile <mode> up -d app
 ```
 
-**Symptom:** `/impressum` returns 404 despite `IMPRESSUM_NAME` being set.
+If `get_meta()` still returns the old `impressum_url` / `privacy_url`, those are baked in when `api.sql` is applied. Recreate the daemon importer (`up -d importer`, it applies a changed `api.sql` on startup) or run `run --rm -e API_ONLY=1 importer`. The legal *text* a hub shows for a data-node is rewritten only by a full import. Details: [Configure the instance → Legal pages](configure.md#applying-changes).
 
-**Cause:** `IMPRESSUM_ADDRESS` is also required. The entrypoint skips generation when either of the two required vars is empty.
+**Symptom:** `/legal/impressum` returns 404 despite `IMPRESSUM_NAME` being set.
 
-**Fix:** Set both `IMPRESSUM_NAME` and `IMPRESSUM_ADDRESS` in `.env`, then `make docker-build`.
+**Cause:** `IMPRESSUM_ADDRESS` is also required; the entrypoint skips the Impressum when either is empty. The Datenschutz page likewise needs `IMPRESSUM_NAME` and `IMPRESSUM_EMAIL`.
+
+**Fix:** Set them in `.env`, then recreate the app container as above.
+
+**Symptom:** PostgREST logs `relation "public.playground_stats" does not exist` after an upgrade: see [Schema apply fails](#schema-apply-fails-with-relation-publicplayground_stats-does-not-exist) at the top of this page.
 
 ---
 
-**Symptom:** PostgREST logs `relation "public.playground_stats" does not exist` after an upgrade.
+## The map renders, but labels or icons are missing — or the container refuses to start with `style.local.json is missing from the image`
 
-**Cause:** The `API_ONLY=1` importer run dropped the `playground_stats` materialised view but failed before recreating it, leaving the database in a broken state.
-
-**Fix:** Run a full re-import to rebuild everything from scratch:
-
-```bash
-docker compose -f compose.yml --profile <mode> run --rm importer
-```
-
-This re-applies `api.sql` (recreating `playground_stats`) and re-imports OSM data. It takes longer than `API_ONLY=1` but is always safe.
-
-## The map renders, but labels or icons are missing
-
-**Symptom:** the basemap draws roads, water and landcover, but place names are missing, or they render in a system font that looks wrong next to the rest of the UI.
-
-**Cause:** the webfonts the style asks for are not vendored in the image. Labels are drawn from `/basemap/fonts/<family>/<weight>.css`, not from the style's `glyphs` endpoint, and a missing weight fails silently: MapLibre falls back to a system font and the map still renders. It also puts a request the tile server cannot answer on every page load.
-
-**Fix:** check which weights the style asks for and re-vendor them.
-
-```bash
-# Lists the style's font stacks and fails if one has no vendored file
-make basemap-fonts
-# What is actually in the image:
-docker compose exec app ls /usr/share/nginx/html/basemap/fonts/noto-sans/
-```
-
-`Noto Sans Bold` needs `700.css`, `Noto Sans Italic` needs `400-italic.css`, and so on. `make basemap-fonts` fetches all of them and then asserts the coverage, so a green run means every stack in the style resolves.
-
-Missing *icons* rather than labels point at the sprite sheet instead: check that `/basemap/sprites/…` returns 200 and not 404.
-
-```bash
-curl -sI http://localhost:8080/basemap/sprites/ofm_f384/ofm.png | head -1
-```
-
-A 404 there usually means an nginx location-precedence problem — regex locations are matched before plain prefixes, so a `~* \.png$` block can claim these paths unless the `/basemap/` location uses `^~`.
-
----
-
-## Container refuses to start: `style.local.json is missing from the image`
-
-**Symptom:** the app container exits immediately with
-
-```
-[spieli] FATAL: app/public/basemap/style.local.json is missing from the image.
-```
-
-**Cause:** `style.local.json` is a build artefact, not a checked-in-by-hand file, and the build did not produce it. This is deliberate: the entrypoint refuses to fall back to `style.json`, whose assets point at the public tile server, because that would silently send every visitor to a third party while the docs promise the opposite.
-
-**Fix:** regenerate both style variants and rebuild.
-
-```bash
-make basemap-style     # writes style.json and style.local.json from one fetch
-make docker-build
-```
+Both come from building an image yourself: the published images carry the vendored fonts and the generated style. See [Customise your own image → Build problems](customise-image.md#build-problems). On a published image, report it as a bug.
 
 ---
 
 ## Basemap tiles are slow or fail after an upgrade
 
-**Symptom:** the map is sluggish or patchy for a while after `make docker-build`, then recovers.
+**Symptom:** the map is sluggish or patchy for a while after an upgrade or a container rebuild, then recovers.
 
 **Cause:** the tile cache lives at `/var/cache/nginx/basemap`. Without a volume it sits on the container's writable layer and is discarded on every rebuild, so the next visitors refill it from the upstream one tile at a time.
 
-**Fix:** mount a volume so it survives rebuilds. `compose.yml` ships one (`basemap_cache`); if you deploy from `compose.prod.yml` or a hand-written file, add the equivalent:
+**Fix:** mount a volume so it survives rebuilds. Both `compose.yml` and `compose.prod.yml` ship one (`basemap_cache`); if you deploy from a hand-written or older compose file, add the equivalent:
 
 ```yaml
 services:
@@ -532,7 +444,7 @@ This matters most for an upgrade sweep across several stacks, which would otherw
 
 Since the external-service proxies landed, these features are served through `/ext/` paths on your own instance rather than fetched from the third party by the browser. Three things go wrong quietly.
 
-**A cold cache after a rebuild.** `make docker-build` replaces the container, and a cache on the writable layer goes with it. `compose.yml` mounts a named volume (`ext_cache`) so this should not happen — check it is actually mounted:
+**A cold cache after a rebuild.** Recreating the container (an upgrade, `up -d` after a config change) replaces it, and a cache on the writable layer goes with it. `compose.yml` mounts a named volume (`ext_cache`) so this should not happen — check it is actually mounted:
 
 ```bash
 docker compose exec app du -sh /var/cache/nginx/ext
@@ -545,7 +457,7 @@ docker compose config | grep -A2 ext_cache
 docker compose logs app | grep "limiting requests"
 ```
 
-If you see it routinely, your instance is busy enough to want its own Nominatim; point the frontend at it by setting `PROXY_NOMINATIM=false` and running one on your own network.
+If you see it routinely, `PROXY_NOMINATIM=false` sends each visitor's searches to the public Nominatim directly, so the limit applies per visitor instead of to your server, at the cost of that privacy property. There is no setting to point spieli at a Nominatim of your own; the upstream is fixed.
 
 **Images render as broken.** Check whether the request 404s at your instance or at Wikimedia:
 

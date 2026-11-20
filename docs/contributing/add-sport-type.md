@@ -1,6 +1,6 @@
 # Add a Sport Pitch Type
 
-Playground maps often include sports pitches — football fields, basketball courts, skate parks, BMX tracks, and many more. Each pitch type is identified by the OSM `sport` tag on a `leisure=pitch` feature. Adding a new sport type means adding translations to both locale files so the equipment list renders a readable label instead of the raw OSM tag value.
+Playground maps often include sports pitches — football fields, basketball courts, skate parks, BMX tracks, and many more. Each pitch type is identified by the OSM `sport` tag on a `leisure=pitch` feature. Adding a new sport type means adding translations to both locale files so the app shows a readable label instead of a tidied-up tag value (`roller_hockey` → "Roller hockey").
 
 ## Step 1 — Find the OSM tag value
 
@@ -40,7 +40,20 @@ Then open `locales/de.json` and add the German translation at the same path:
 }
 ```
 
-Both files must be updated — a key present in one but missing in the other will fall back to the raw OSM value in the missing language.
+Both files must be updated — a key missing in one falls back to the tag value with underscores replaced and the first letter capitalised.
+
+There is a second namespace for the sport on its own, `pitch.sports.<value>` ("Roller hockey" rather than "Roller hockey rink"). The panel of a pitch outside a playground (`PitchPanel`) shows its sports as chips from it, and the hover tooltip uses it when `equipment.pitches` has no entry. Add the key there too, in both files:
+
+```json
+"pitch": {
+  "sports": {
+    ...
+    "roller_hockey": "Roller hockey"
+  }
+}
+```
+
+Two optional extras, both code changes: a sport-specific pin symbol in `BY_SPORT` in `app/src/lib/sportGlyphs.js` (otherwise the generic flag), and an illustration in `pitchImages` in `app/src/lib/equipmentAttributes.js`, which then needs `make equipment-images` ([Update Generated Assets](generated-assets.md#equipment-illustrations)).
 
 ## Step 3 — Handle multi-value sport tags (no extra work needed)
 
@@ -52,7 +65,7 @@ OSM allows semicolon-separated multi-values on `sport` (e.g. `sport=cycling;bmx`
 make dev
 ```
 
-Open the app at `http://localhost:5173`, navigate to a playground that contains a pitch with your sport tag, and check the equipment list. The pitch should show your translated label instead of the raw tag value.
+Open the app at `http://localhost:5173`, navigate to a playground that contains a pitch with your sport tag, and check the equipment list. The pitch should show your translated label. For a pitch outside any playground, turn on **Sports pitches (outside playgrounds)** in the filter panel and open it.
 
 !!! tip "Finding a playground with a specific pitch"
     Use [Overpass Turbo](https://overpass-turbo.eu) to locate an OSM node or way with `leisure=pitch` and `sport=<your_value>`, note its coordinates, and navigate there in the app.

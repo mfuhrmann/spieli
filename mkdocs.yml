@@ -29,51 +29,74 @@ theme:
 
 nav:
   - Home: index.md
-  - User Guide: user-guide.md
-  - Getting Started:
-      - Quick Start: getting-started/quick-start.md
-      - Host a Region for spieli.eu: getting-started/host-a-region.md
-  - Operations:
-      - Manual Deploy: ops/manual-deploy.md
-      - HTTPS Setup: ops/https-setup.md
-      - Federated Deployment: ops/federated-deployment.md
-      - Single-host Federation: ops/single-host-federation.md
-      - Add a Data-node: ops/add-data-node.md
-      - Configuration: ops/configuration.md
-      - Shared Basemap Cache: ops/shared-basemap-cache.md
-      - Upgrading: ops/upgrade.md
-      - Switching Regions: ops/switch-region.md
-      - Scheduled Import: ops/scheduled-import.md
-      - Refresh Data: ops/refresh-data.md
-      - Backup and Restore: ops/backup-restore.md
-      - Monitoring: ops/monitoring.md
-      - Security: ops/security.md
-      - Troubleshooting: ops/troubleshooting.md
-      - Uninstall: ops/uninstall.md
-  - Contributing:
-      - Local Development: contributing/local-dev.md
-      - Frontend Guide: contributing/frontend-guide.md
-      - Import Pipeline: contributing/import-pipeline.md
-      - Testing Guide: contributing/testing.md
-      - Add a Playground Device: contributing/add-device.md
-      - Add a Sport Pitch Type: contributing/add-sport-type.md
-      - Translate spieli: contributing/translations.md
-      - Translation Guide: contributing/translation-guide.md
-      - Maintainer Guide: contributing/maintaining.md
-  - Reference:
+  - Use the map:
+      - User Guide: user-guide.md
+  - How spieli works:
+      - "Federation: one map, many owners": concepts/federation.md
       - Architecture: reference/architecture.md
-      - Tech Stack: reference/tech-stack.md
-      - API: reference/api.md
-      - Federation: reference/federation.md
-      - registry.json: reference/registry-json.md
-      - External Services: reference/external-services.md
-      - Equipment Types: reference/equipment.md
       - Mapping Detail: reference/completeness.md
+      - Privacy by design: concepts/privacy.md
+  - Run spieli:
+      - Get started:
+          - Quick Start: getting-started/quick-start.md
+          - HTTPS Setup: ops/https-setup.md
+      - Host a Region for spieli.eu: getting-started/host-a-region.md
+      - Run a federation:
+          - Federated Deployment: ops/federated-deployment.md
+          - Single-host Federation: ops/single-host-federation.md
+          - Add a Data-node: ops/add-data-node.md
+          - Shared Basemap Cache: ops/shared-basemap-cache.md
+          - Monitoring: ops/monitoring.md
+      - Operate:
+          - Upgrading: ops/upgrade.md
+          - Scheduled Import: ops/scheduled-import.md
+          - Refresh Data: ops/refresh-data.md
+          - Switching Regions: ops/switch-region.md
+          - Backup and Restore: ops/backup-restore.md
+          - Uninstall: ops/uninstall.md
+      - Configure & secure:
+          - Configure the instance: ops/configure.md
+          - Security: ops/security.md
+          - Customise your own image: ops/customise-image.md
+      - Troubleshooting: ops/troubleshooting.md
+  - Translate:
+      - Translation Guide: contributing/translation-guide.md
+  - Develop:
+      - Setup:
+          - Local Development: contributing/local-dev.md
+          - Testing Guide: contributing/testing.md
+      - Understand:
+          - Frontend Guide: contributing/frontend-guide.md
+          - Import Pipeline: contributing/import-pipeline.md
+          - Tech Stack: reference/tech-stack.md
+          - How the hub works internally: contributing/hub-internals.md
+      - How-to:
+          - Add a Playground Device: contributing/add-device.md
+          - Add a Sport Pitch Type: contributing/add-sport-type.md
+          - Add a POI Category: contributing/add-poi-category.md
+          - Update Generated Assets: contributing/generated-assets.md
+      - Maintain:
+          - Maintainer Guide: contributing/maintaining.md
+          - Translation Workflow: contributing/translations.md
+          - Build the Poster: contributing/poster.md
+          - ADR-0001 — OpenSpec sharing policy: adr/0001-openspec-sharing-policy.md
+          - Project Overview (AI context): project-overview.md
+          - Source Tree (AI context): source-tree-analysis.md
+  - Reference:
+      - Data:
+          - OSM Tags spieli Reads: reference/osm-tags.md
+          - Equipment Types: reference/equipment.md
+      - API:
+          - API: reference/api.md
+          - Federation: reference/federation.md
+          - registry.json: reference/registry-json.md
+          - Hub Status and Metrics: reference/hub-status.md
+      - Instance:
+          - Configuration: ops/configuration.md
+          - Deployment Modes: reference/deployment-modes.md
+          - Sizing: reference/sizing.md
+          - External Services: reference/external-services.md
       - Glossary: reference/glossary.md
-      - Project Overview: project-overview.md
-      - Source Tree: source-tree-analysis.md
-  - Decisions:
-      - ADR-0001 — OpenSpec sharing policy: adr/0001-openspec-sharing-policy.md
 
 markdown_extensions:
   - admonition

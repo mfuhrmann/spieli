@@ -38,6 +38,20 @@ This is why the shared cache needs no Traefik router, no CORS exception and no C
 
 ## Set it up
 
+### 0. Get the files
+
+The installer does not download these. From a clone, they are `deploy/basemap-cache/` and `compose.override.basemap-cache.yml` in the repository root. On an installed host, fetch them for the release you run (the same `TAG` as in the [Quick Start](../getting-started/quick-start.md#install)):
+
+```bash
+TAG=vX.Y.Z   # the release you run (docker compose images shows it)
+RAW=https://raw.githubusercontent.com/mfuhrmann/spieli/${TAG}
+mkdir -p deploy/basemap-cache
+curl -fsSL "$RAW/deploy/basemap-cache/compose.yml"         -o deploy/basemap-cache/compose.yml
+curl -fsSL "$RAW/deploy/basemap-cache/nginx.conf.template" -o deploy/basemap-cache/nginx.conf.template
+# and into every stack's directory, next to its compose.yml:
+curl -fsSL "$RAW/compose.override.basemap-cache.yml" -o compose.override.basemap-cache.yml
+```
+
 ### 1. Start the cache
 
 It creates the `spieli-basemap` network the stacks join, so it goes up first.
@@ -125,4 +139,4 @@ BASEMAP_UPSTREAM=http://tileserver:8080
 BASEMAP_UPSTREAM_HOST=tileserver:8080
 ```
 
-If that server's URL layout differs from the provider's, the bundled style needs rebuilding against it too — see [Configuration](configuration.md#basemap). The stacks need no change either way.
+If that server's URL layout differs from the provider's, the bundled style needs rebuilding against it too — see [Configuration](configure.md#basemap). The stacks need no change either way.

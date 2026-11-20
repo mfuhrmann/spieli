@@ -34,7 +34,8 @@ If a volume removal fails with "volume is in use", a stopped container is still 
 
 ```bash
 docker container prune -f
-docker volume rm spieli_pgdata spieli_pgdata2 spieli_pbf_cache 2>/dev/null || true
+# the prefix is the compose project name; `docker volume ls` shows the exact names
+docker volume rm spieli_pgdata spieli_pbf_cache spieli_basemap_cache spieli_ext_cache 2>/dev/null || true
 ```
 
 ## 3. Remove Docker images (optional)

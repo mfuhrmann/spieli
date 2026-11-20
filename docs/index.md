@@ -1,104 +1,46 @@
 # spieli
 
-A free, interactive web map for exploring playgrounds based on [OpenStreetMap](https://openstreetmap.org) data — configurable for any region.
+A free, interactive map of playgrounds, built from [OpenStreetMap](https://www.openstreetmap.org) data. It shows where playgrounds are, what is on them and who may use them — and, for mappers, what is still missing.
 
-> **Origin:** This project is a further development of the original [Berliner Spielplatzkarte](https://github.com/SupaplexOSM/spielplatzkarte) by Alex Seidel.
-
----
-
-## Architecture
-
-```
-                  ┌─────────────────────────────────────────────────────┐
-                  │                   Production                        │
-                  │                                                     │
-  Browser ──────► | nginx ──────► PostgREST ──────► PostgreSQL/PostGIS  │
-  (your phone     | (serves        (turns SQL          (holds all the   │
-   or laptop)     | the app,       functions into      OSM playground   │
-                  | proxies API    HTTP endpoints)     data)            │
-                  | requests)                                           │
-                  └─────────────────────────────────────────────────────┘
-```
-
-Your browser loads the app from nginx. Playground data requests go to `/api/`, which nginx forwards to PostgREST. PostgREST runs a SQL function in PostgreSQL and returns JSON — no custom server code needed. The database is pre-loaded with OpenStreetMap data by the osm2pgsql importer.
-
-Multiple regional instances can be aggregated into a single **Hub** map — see [Architecture](reference/architecture.md) and [Federation](reference/federation.md) for details.
-
----
+> **Origin:** spieli is a further development of the original [Berliner Spielplatzkarte](https://github.com/SupaplexOSM/spielplatzkarte) by Alex Seidel.
 
 ## See it in action
 
-The public map runs at [spieli.eu](https://spieli.eu). Two well-mapped playgrounds in Fulda, both with 360° photos:
+The public map runs at **[spieli.eu](https://spieli.eu)**. Two well-mapped playgrounds in Fulda, both with 360° photos:
 
 - [Carl-Schurz-Straße](https://spieli.eu/#hessen/W818585707): 30 play devices, opening hours and operator
 - [Galgengraben](https://spieli.eu/#hessen/W143374809): 25 play devices and several photos
 
-To add your own region, see [Host a Region for spieli.eu](getting-started/host-a-region.md).
+## One map, many owners
 
----
+spieli.eu holds no playground data of its own. Each region comes from its own server, a *data-node*, and visitors' browsers put the regions together on one map. Anyone can run a data-node for their city, district or country and, with it, a map of their own. Why it is built this way: [Federation: one map, many owners](concepts/federation.md).
 
-## Getting started
-
-| I want to… | Go to… |
-|---|---|
-| Deploy spieli for my region | [Quick Start](getting-started/quick-start.md) |
-| Deploy from source | [Manual Deploy](ops/manual-deploy.md) |
-| Host my region for spieli.eu | [Host a Region](getting-started/host-a-region.md) |
-| Connect my backend to an existing Hub | [Quick Start → Contributing your region to a Hub](getting-started/quick-start.md#contributing-your-region-to-a-hub) |
-
-## Using the map
+## Where to start
 
 | I want to… | Go to… |
 |---|---|
-| Learn how to use the map | [User Guide](user-guide.md) |
-| Understand the mapping detail colours | [User Guide → Mapping detail colours](user-guide.md#mapping-detail-colours) |
-| Add or improve playground data | [User Guide → Adding data](user-guide.md#adding-or-improving-data) |
+| Use the map | [User Guide](user-guide.md) |
+| Understand how spieli works | [Federation](concepts/federation.md) · [Privacy by design](concepts/privacy.md) · [Mapping detail](reference/completeness.md) |
+| Put my region on spieli.eu | [Host a Region for spieli.eu](getting-started/host-a-region.md) |
+| Run a map for my region | [Quick Start](getting-started/quick-start.md) |
+| Run a hub over several regions | [Federated Deployment](ops/federated-deployment.md) |
+| Add or fix playground data | [User Guide → Adding or improving data](user-guide.md#adding-or-improving-data) · [OSM Tags spieli Reads](reference/osm-tags.md) |
+| Translate spieli | [Translation Guide](contributing/translation-guide.md) |
+| Work on spieli's code | [Local Development](contributing/local-dev.md) |
+| Look something up | [Configuration](ops/configuration.md) · [API](reference/api.md) · [Glossary](reference/glossary.md) |
 
-## Operations
+Something broken? [Troubleshooting](ops/troubleshooting.md), or ask in [#spieli:matrix.org](https://matrix.to/#/#spieli:matrix.org).
 
-| I want to… | Go to… |
-|---|---|
-| Configure environment variables | [Configuration](ops/configuration.md) |
-| Stand up a Hub + multiple data-nodes | [Federated Deployment](ops/federated-deployment.md) |
-| Upgrade to a newer version | [Upgrading](ops/upgrade.md) |
-| Automate weekly data refreshes | [Scheduled Import](ops/scheduled-import.md) |
-| Back up or restore the database | [Backup and Restore](ops/backup-restore.md) |
-| Monitor a running instance | [Monitoring](ops/monitoring.md) |
-| Harden for production (HTTPS, passwords) | [Security](ops/security.md) |
-| Fix a problem | [Troubleshooting](ops/troubleshooting.md) |
+## Spread the word
 
-## Contributing
-
-| I want to… | Go to… |
-|---|---|
-| Set up a local dev environment | [Local Development](contributing/local-dev.md) |
-| Understand the frontend codebase | [Frontend Guide](contributing/frontend-guide.md) |
-| Add a new playground device type | [Add a Device](contributing/add-device.md) |
-| Add a new sport type | [Add a Sport Type](contributing/add-sport-type.md) |
-| Add a new filter option | [Frontend Guide → Adding a new filter](contributing/frontend-guide.md#adding-a-new-filter) |
-| Understand the OSM import pipeline | [Import Pipeline](contributing/import-pipeline.md) |
-| Write or run tests | [Testing Guide](contributing/testing.md) |
-| Translate the app (Weblate) | [Translator Instructions](contributing/translation-guide.md) |
-| Understand the translation workflow | [Translation Workflow](contributing/translations.md) |
-| Cut a release or upgrade dependencies | [Maintainer Guide](contributing/maintaining.md) |
+There is a printable poster with a QR code to spieli.eu, in German, English and Slovak: [User Guide → Print a poster](user-guide.md#print-a-poster).
 
 ## Translations
 
 [![Translation status](https://hosted.weblate.org/widget/spieli/ui-strings/svg-badge.svg)](https://hosted.weblate.org/engage/spieli/)
 
-spieli is translated with [Weblate](https://weblate.org/), a libre web-based translation platform that hosts this project free of charge under its [Libre plan](https://weblate.org/hosting/). **[Help translate spieli →](https://hosted.weblate.org/engage/spieli/)**
+spieli is translated on [Weblate](https://weblate.org/), which hosts the project free of charge under its [Libre plan](https://weblate.org/hosting/). No GitHub account needed: **[help translate spieli →](https://hosted.weblate.org/engage/spieli/)**
 
-## Reference
+## License
 
-| Topic | Go to… |
-|---|---|
-| System architecture & deployment modes | [Architecture](reference/architecture.md) |
-| PostgREST API endpoints | [API Reference](reference/api.md) |
-| Hub federation protocol | [Federation](reference/federation.md) |
-| `registry.json` schema | [Registry JSON](reference/registry-json.md) |
-| Tech stack (with versions and rationale) | [Tech Stack](reference/tech-stack.md) |
-| External services used at runtime | [External Services](reference/external-services.md) |
-| OSM and project terminology | [Glossary](reference/glossary.md) |
-| Project overview (AI context) | [Project Overview](project-overview.md) |
-| Annotated source tree | [Source Tree Analysis](source-tree-analysis.md) |
-| Architecture Decision Records | [ADR-0001 OpenSpec sharing policy](adr/0001-openspec-sharing-policy.md) |
+The code is under the [GNU General Public License v3.0](https://github.com/mfuhrmann/spieli/blob/main/LICENSE). Map data © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, under the Open Database License (ODbL).

@@ -9,7 +9,7 @@ Check [GitHub Releases](https://github.com/mfuhrmann/spieli/releases) for the la
 | `requires-env-update` | New or removed env var | Update `.env` **before** pulling the new image |
 | `requires-compose-update` | `compose.yml` changed structurally | Re-run `install.sh` or update `compose.yml` manually **before** restarting |
 | `requires-reimport` | OSM data model changed | Trigger a full re-import **after** the image update lands |
-| `requires-schema-update` | `api.sql` changed | Covered automatically — no extra step needed |
+| `requires-schema-update` | `api.sql` changed | With Watchtower: nothing, the daemon applies it on restart. Manual upgrade: steps 2–4 below |
 
 To check what version is currently running:
 
@@ -26,7 +26,7 @@ docker compose images
 If you installed with the `auto-update` profile active, Watchtower handles standard releases with no manual intervention:
 
 - New image published → Watchtower pulls and restarts `app` and `importer`.
-- The daemon importer applies `api.sql` on every container startup, so schema changes take effect immediately after the restart — no separate `API_ONLY=1` step needed.
+- The daemon importer applies a changed `api.sql` when its container starts, so schema changes take effect right after the restart — no separate `API_ONLY=1` step needed. An unchanged `api.sql` is skipped (#971).
 
 **Standard releases (no breaking labels): nothing to do.** Wait for Watchtower to pick up the new image (default poll interval: 5 minutes).
 
@@ -96,8 +96,8 @@ docker compose --profile <mode> up -d --force-recreate importer
 
 `--force-recreate` matters. A plain `up -d importer` **restarts the existing container**, which leaves the daemon on the *old* image — and since its startup path applies `api.sql`, the old image then becomes the last writer and quietly restores the old schema. That is what happened during the v0.9.0 sweep ([#800](https://github.com/mfuhrmann/spieli/issues/800)): the stack ran the new app against the old schema, with two filters silently wrong while `get_meta` and row counts looked healthy.
 
-!!! warning "The API is unavailable for a few minutes after this step"
-    The freshly recreated daemon applies `api.sql` again on startup. That drops and rebuilds `playground_stats`, which takes minutes on a large region, and terminates PostgREST's connections while it runs. During that window `get_meta` answers 5xx or reports a missing relation. **This is expected**, and it is why the verification below polls instead of being run once. Watch the importer log and wait for the apply to finish before concluding anything:
+!!! info "What the recreated daemon does on startup"
+    It compares the `api.sql` it would apply with the one step 3 just applied. They match, so it skips the apply and logs `api.sql and the live schema unchanged since the last completed apply — skipping the startup apply` (#971). If it logs `Applying API schema on startup` instead, it rebuilds `playground_stats`, which takes minutes on a large region. The API keeps serving meanwhile, from the previous view, which is swapped out only at the end. Either way, check the log before verifying:
 
     ```bash
     docker compose --profile <mode> logs -f importer
@@ -146,29 +146,36 @@ curl -sf http://localhost:<port>/api/rpc/get_meta | \
 
 `compose.yml` has structural changes (new service, renamed service, removed volume).
 
+The installed `compose.yml` is the repository's `compose.prod.yml`, renamed. Fetch it from the release you are upgrading to, not from `main`, and not the repository's own `compose.yml` (that is the development stack):
+
 ```bash
-# Download the updated file:
-curl -O https://raw.githubusercontent.com/mfuhrmann/spieli/main/compose.yml
+TAG=vX.Y.Z   # the release you are upgrading to
+cp compose.yml compose.yml.bak
+curl -fsSL "https://raw.githubusercontent.com/mfuhrmann/spieli/${TAG}/compose.prod.yml" -o compose.yml
 
 # Recreate the stack:
 docker compose --profile <mode> down
 docker compose --profile <mode> up -d
 ```
 
-Or re-run `install.sh` — it re-downloads and applies `compose.yml` automatically.
+Compare with `compose.yml.bak` for anything you changed by hand. On a hub set up by the installer that includes the `registry.json` bind-mount, which the installer enabled by uncommenting a line: uncomment it again.
+
+Or re-run `install.sh`. It downloads the new `compose.yml` and keeps your database password and modes, but asks all other questions again and rewrites `.env`.
 
 ### requires-reimport
 
 A new OSM tag type was added. Existing data doesn't have the new columns until a fresh import.
 
-After the image update (Watchtower or manual steps 1–2):
+After the image update (Watchtower or manual steps 1–2), run one full import with the daemon stopped:
 
 ```bash
-# Full re-import — also applies api.sql, so no separate API_ONLY step needed
-docker compose --profile <mode> run --rm importer
+docker compose --profile <mode> stop importer
+docker compose --profile <mode> run --rm \
+  -e REIMPORT_INTERVAL_MIN_DAYS= -e REIMPORT_INTERVAL_MAX_DAYS= importer
+docker compose --profile <mode> up -d importer
 ```
 
-This takes several minutes for large regions. The separate `API_ONLY=1` step is not needed — a full re-import also updates all schema functions.
+The empty `REIMPORT_INTERVAL_*` values make this run a one-shot import; without them, on a stack with automatic updates, it would start a second daemon that just goes back to sleep. A full import also applies `api.sql`, so no separate `API_ONLY=1` step is needed. It takes 10 to 40 minutes for a state.
 
 ---
 
@@ -256,16 +263,16 @@ If the sweep does abort — a failed image pull or container start — it prints
 
 `get_meta` returns `playground_count: 0` after an upgrade when `playground_stats` was left in a broken state (see the API_ONLY race warning above), or when the database volume was wiped.
 
-Recovery: run a full re-import.
+Recovery: run a full re-import, with the daemon stopped so it is the only writer.
 
 ```bash
+docker compose --profile <mode> stop importer
 docker compose --profile <mode> run --rm \
-  -e REIMPORT_INTERVAL_MIN_DAYS= \
-  -e REIMPORT_INTERVAL_MAX_DAYS= \
-  importer
+  -e REIMPORT_INTERVAL_MIN_DAYS= -e REIMPORT_INTERVAL_MAX_DAYS= importer
+docker compose --profile <mode> up -d importer
 ```
 
-The empty `REIMPORT_INTERVAL_*` overrides force the importer to run immediately regardless of when data was last imported.
+The empty `REIMPORT_INTERVAL_*` overrides make the run a one-shot import that starts immediately, regardless of when data was last imported.
 
 ### If you deleted the database volume
 
@@ -283,7 +290,7 @@ The empty `REIMPORT_INTERVAL_*` overrides force the importer to run immediately 
     docker volume rm <stack>_pbf_cache
     ```
 
-3. Run a full re-import:
+3. Run a full re-import. With automatic updates, simply start the stack: on an empty database the daemon imports right away. Without them, run it once:
 
     ```bash
     docker compose --profile <mode> run --rm importer
@@ -291,13 +298,27 @@ The empty `REIMPORT_INTERVAL_*` overrides force the importer to run immediately 
 
 4. Verify with `get_meta` as shown in the manual upgrade section.
 
+### PostgreSQL major version
+
+A release that moves to a new PostgreSQL major version (e.g. 16 → 17) carries `requires-compose-update` and `requires-reimport`, and its notes say so. The new PostgreSQL cannot read the old data directory, so the database volume is recreated and the data imported again — it all comes from OpenStreetMap, so nothing is lost:
+
+```bash
+docker compose --profile <mode> down
+# fetch the new compose.yml as under requires-compose-update above
+docker volume rm <project>_pgdata          # docker volume ls shows the exact name
+docker compose --profile <mode> up -d
+```
+
+With automatic updates, the daemon then imports by itself because the database is empty. Without them, run `docker compose --profile <mode> run --rm importer` once. Back up first only if you keep data in the database that does not come from the import.
+
 ### Downgrading
 
 Supported only within the same minor version. Pin a specific version by editing `compose.yml`:
 
 ```yaml
-# Change :latest to the version you want:
+# Change :latest to the version you want, for both images:
 image: ghcr.io/mfuhrmann/spieli:0.4.0
+image: ghcr.io/mfuhrmann/spieli-importer:0.4.0
 ```
 
 ```bash

@@ -16,25 +16,28 @@ curl -fsSL https://raw.githubusercontent.com/mfuhrmann/spieli/main/deploy/traefi
 bash install-traefik.sh
 ```
 
-The installer prompts for your domain, email address, and deployment mode, then:
+The installer prompts for an installation directory (default `./spieli-traefik`), your domain, email address, and a mode, then:
 
 1. Downloads the Compose file
 2. Generates `traefik.yml` with your email for Let's Encrypt
 3. Generates `dynamic/app.yml` with your domain and routing rules
 4. Starts Traefik
 
+Which mode to choose:
+
+| Your spieli `DEPLOY_MODE` | Traefik mode |
+|---|---|
+| `data-node-ui` | 1 (`data-node-ui`, proxies to the app on port 8080) |
+| `ui` (a hub, or a remote frontend) | 1 as well: the app is on port 8080 |
+| `data-node` | 2 (`data-node`) — **currently broken**: it proxies to port 3000, which the installed stack does not publish ([#1062](https://github.com/mfuhrmann/spieli/issues/1062)). Run `data-node-ui` and mode 1 instead |
+
 Traefik issues the TLS certificate on the first HTTPS request (takes ~10 seconds). If your browser shows a certificate error immediately after startup, wait a moment and reload.
 
 ## 2. Install spieli
 
-If you haven't installed the spieli app stack yet:
+If you haven't installed the spieli app stack yet, follow [Quick Start → Install](../getting-started/quick-start.md#install). It installs a tagged release and verifies the installer's checksum. (The Traefik installer's own closing hint downloads `install.sh` from `main` without a checksum; see [#1063](https://github.com/mfuhrmann/spieli/issues/1063).)
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/mfuhrmann/spieli/main/install.sh -o install.sh
-bash install.sh
-```
-
-When the installer asks for the public URL, enter `https://yourdomain.example.com`.
+When the spieli installer asks for the public URL of the instance (part of the imprint and privacy setup), enter `https://yourdomain.example.com`.
 
 ## Renewal
 
@@ -68,5 +71,5 @@ ufw deny 8080/tcp
 | `502 Bad Gateway` | spieli stack not running on port 8080 — run `docker compose ps` from the spieli directory |
 | Certificate not issued | Port 80 blocked (cloud firewall or UFW), or DNS not yet pointing to this server |
 | `host.docker.internal` not resolved | Docker Engine < 20.10 — upgrade Docker |
-| Mixed-content warnings | `SITE_URL` not set to `https://` — re-run the spieli installer or edit `.env` |
+| Imprint or privacy links open `http://` | `SITE_URL` in the spieli `.env` is set to `http://…`. Fix it and restart the app container. On a data-node that a hub lists, the hub's links come from the database: also re-apply the schema (`run --rm -e API_ONLY=1 importer`, see [Upgrading](upgrade.md)) |
 | Logs | `docker compose logs -f` from the `spieli-traefik/` directory |

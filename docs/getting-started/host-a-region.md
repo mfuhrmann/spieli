@@ -23,16 +23,7 @@ Choose `data-node-ui` if you want a map you can point people to locally under it
 
 ## Server requirements
 
-A small VPS is enough. On our production server, 15 German states run side by side on one VPS with 8 GB RAM. Per region:
-
-| Region size | Example | RAM while serving | Disk (database and extract) |
-|---|---|---|---|
-| City | Bremen, Saarland | about 100 MB | 0.2–0.3 GB |
-| Large city | Berlin, Hamburg | 100–300 MB | about 0.5 GB |
-| Medium-sized state | Hesse, Saxony, Schleswig-Holstein | 130–200 MB | 0.7–1.5 GB |
-| Large state | Bavaria, North Rhine-Westphalia | 200–550 MB | 3–4 GB |
-
-An import needs more memory than serving. For a single region, 2 GB RAM plus swap is enough in most cases, and 4 GB for the largest. The Docker images take another 1–2 GB of disk, and the database temporarily grows during an import, so plan for about twice the disk size in the table. The CPU hardly matters. Importing a state takes 10 to 40 minutes.
+A small VPS is enough. A city-sized region uses about 100 MB of memory while serving and a large state up to about 550 MB; an import needs more, about 2 GB plus swap for a single region. Disk needs range from 0.2 GB for a city to about 4 GB for a large state, plus room for the import. Measured figures per region, and what to watch during an import: [Sizing](../reference/sizing.md).
 
 Once it runs, there is little to do: keep the server's operating system up to date and read the [release notes](https://github.com/mfuhrmann/spieli/releases) now and then. If a release needs more than pulling the new images, its notes say so (see also [Upgrading](../ops/upgrade.md)).
 
@@ -46,7 +37,7 @@ You need a Linux server with Docker and the Compose plugin, a domain or subdomai
 
 1. Run the installer. The command for the current release is in the [Quick Start](quick-start.md#install), which also explains how to find your region's relation ID and extract. Choose `data-node` or `data-node-ui`, and answer yes to automatic updates. The question about an external hub origin can stay empty.
 
-2. Set up HTTPS with the Traefik installer, which gets a certificate from Let's Encrypt. Choose the same mode as in the first step. In both modes the API then sends the CORS headers spieli.eu needs.
+2. Set up HTTPS with the Traefik installer, which gets a certificate from Let's Encrypt. Choose mode 1, `data-node-ui`; the app's nginx then serves the API with the CORS headers spieli.eu needs. (The installer's `data-node` mode cannot reach the API at the moment, [#1062](https://github.com/mfuhrmann/spieli/issues/1062); until that is fixed, install spieli as `data-node-ui` in step 1 too.)
 
     ```bash
     curl -fsSL https://raw.githubusercontent.com/mfuhrmann/spieli/main/deploy/traefik/install-traefik.sh -o install-traefik.sh

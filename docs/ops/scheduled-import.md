@@ -54,10 +54,10 @@ REIMPORT_INTERVAL_MIN_DAYS=6
 REIMPORT_INTERVAL_MAX_DAYS=8
 ```
 
-Then restart the importer so it picks up the new env:
+Then recreate the importer so it picks up the new env (`restart` would keep the old container and its old environment):
 
 ```bash
-docker compose --profile data-node-ui restart importer
+docker compose --profile data-node-ui up -d importer
 ```
 
 Check that it entered daemon mode:
@@ -113,7 +113,7 @@ Enable Watchtower by including the `auto-update` profile:
 docker compose --profile data-node-ui --profile auto-update up -d
 ```
 
-Or add `auto-update` to any existing `up` invocation. Watchtower polls Docker Hub every 24 hours and cleans up old images automatically.
+Or add `auto-update` to any existing `up` invocation. Watchtower checks the image registry (spieli's images are on GHCR) every 24 hours and removes the replaced images afterwards.
 
 ## How long does an import take?
 
@@ -141,20 +141,22 @@ If you prefer external scheduling, leave `REIMPORT_INTERVAL_MIN_DAYS` and `REIMP
 
 ### systemd timer
 
-spieli ships unit files in `deploy/` for Linux hosts with systemd:
+spieli ships unit files in the repository's `deploy/` directory for Linux hosts with systemd. The installer does not download them; fetch them for your release:
 
 ```bash
-sudo cp deploy/spieli-import.service /etc/systemd/system/
-sudo cp deploy/spieli-import.timer   /etc/systemd/system/
+TAG=vX.Y.Z   # the release you run (docker compose images shows it)
+RAW=https://raw.githubusercontent.com/mfuhrmann/spieli/${TAG}/deploy
+sudo curl -fsSL "$RAW/spieli-import.service" -o /etc/systemd/system/spieli-import.service
+sudo curl -fsSL "$RAW/spieli-import.timer"   -o /etc/systemd/system/spieli-import.timer
 ```
 
 Open `/etc/systemd/system/spieli-import.service` and set:
 
 - `WorkingDirectory=` — directory where `compose.yml` and `.env` live (e.g. `/opt/spieli`)
 - `EnvironmentFile=` — path to `.env` (usually `WorkingDirectory/.env`)
-- `User=` — user in the `docker` group that owns the deployment directory
+- `User=` — add it, set to a user in the `docker` group that owns the deployment directory (the shipped unit has none, so it runs as root)
 
-The default timer fires weekly on Sunday at 04:00. Change the schedule in `spieli-import.timer`:
+The shipped timer uses `OnCalendar=weekly`, which systemd reads as Monday 00:00, with `Persistent=true` so a run missed while the host was off happens at the next boot. Change the schedule in `spieli-import.timer`, for example:
 
 ```ini
 [Timer]

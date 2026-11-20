@@ -11,7 +11,7 @@ The only persistent state in spieli is the PostgreSQL database. All other data c
 | Configuration | `.env` file | **Yes** — contains your passwords and settings |
 | Custom `registry.json` | your deployment directory | **Yes** (if Hub mode) |
 
-The most important thing to back up is your `.env` file. The database can always be rebuilt from the Geofabrik PBF — a full import takes 2–5 minutes. A lost `.env` means a lost `POSTGRES_PASSWORD` and requires recreating the stack from scratch.
+The most important thing to back up is your `.env` file. The database can always be rebuilt from the Geofabrik PBF — a full import takes minutes for a district and 10 to 40 minutes for a state. A lost `.env` means a lost `POSTGRES_PASSWORD` and requires recreating the stack from scratch.
 
 ## Back up the database
 
@@ -52,8 +52,9 @@ docker compose --profile data-node-ui up -d db
 # Restore
 gunzip -c spieli-backup-20260501.sql.gz | docker compose exec -T db psql -U osm osm
 
-# Apply the API schema (recreates PostgREST functions + materialised view)
-docker compose --profile data-node-ui run --rm importer
+# Apply the API schema (recreates PostgREST functions + materialised view).
+# API_ONLY matters: without it this would be a full import that overwrites the restored data.
+docker compose --profile data-node-ui run --rm -e API_ONLY=1 importer
 
 # Restart the full stack
 docker compose --profile data-node-ui up -d
@@ -61,14 +62,15 @@ docker compose --profile data-node-ui up -d
 
 ## Re-import instead of restoring
 
-Because the PBF is re-downloadable and imports are fast (~30 seconds when the PBF is cached), a re-import is often simpler than a full restore:
+Because the PBF is re-downloadable, a re-import is often simpler than a full restore:
 
 ```bash
 docker compose --profile data-node-ui down
 docker volume rm spieli_pgdata      # clear the database
 docker compose --profile data-node-ui up -d
-docker compose --profile data-node-ui run --rm importer   # re-import from cached PBF
 ```
+
+With automatic updates (daemon mode), the importer now starts the import by itself, because the database is empty; do not start a second one by hand. Without automatic updates, run it once: `docker compose --profile data-node-ui run --rm importer`.
 
 The PBF files are stored in the `pbf_cache` volume and are reused automatically. If you deleted the volume too, the importer downloads a fresh copy (~300 MB for a Bundesland extract).
 

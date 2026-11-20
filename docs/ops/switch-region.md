@@ -40,14 +40,22 @@ cd ~/spieli
 docker compose --profile data-node-ui down
 
 # Delete the database and cached PBF
+# (the prefix is the compose project name — the directory name unless COMPOSE_PROJECT_NAME is set;
+#  `docker volume ls` shows the exact names)
 docker volume rm spieli_pgdata spieli_pbf_cache
 
 # Start the stack (initialises a fresh database)
 docker compose --profile data-node-ui up -d
-
-# Run the importer
-docker compose run --rm importer
 ```
+
+Then start the import, depending on how the stack runs:
+
+- **With automatic updates** (daemon mode, `REIMPORT_INTERVAL_*` set in `.env`): nothing to do. On an empty database the daemon starts the import by itself. Running the importer by hand as well would start a second import alongside it. Follow it with `docker compose logs -f importer`.
+- **Without automatic updates:** run it once:
+
+    ```bash
+    docker compose --profile data-node-ui run --rm importer
+    ```
 
 The app will return empty responses until the import finishes.
 

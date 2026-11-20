@@ -2,6 +2,9 @@
 
 Annotated directory tree for the spieli monorepo. Excludes `node_modules`, `dist`, `.git`, and build artefacts.
 
+!!! note "A selective tour, not a complete listing"
+    It names the files worth knowing first. Today `app/src/` holds 22 shared components, 17 stores and some 36 library modules; `CLAUDE.md` in the repository root keeps the full component and store tables, and the [Frontend Guide](contributing/frontend-guide.md) explains how they fit together.
+
 ```
 spieli/                            ← Monorepo root
 │
@@ -12,7 +15,10 @@ spieli/                            ← Monorepo root
 │   ├── postcss.config.js          ← Tailwind PostCSS integration
 │   ├── public/                    ← Static assets served by Vite / nginx
 │   │   ├── config.js              ← Runtime config (overwritten by docker-entrypoint.sh)
-│   │   └── img/                   ← Static images
+│   │   ├── basemap/               ← Vendored basemap style, fonts, world outline
+│   │   ├── icons/                 ← App icons (incl. maskable)
+│   │   ├── manifest.webmanifest   ← Dev fallback; the container generates its own
+│   │   └── registry.json          ← Dev hub registry (/api, /api2)
 │   └── src/                       ← Frontend source
 │       ├── main.js                ← Entry point — mounts StandaloneApp or HubApp
 │       ├── styles/app.css         ← Global styles (Tailwind base + Bootstrap overrides)
@@ -46,7 +52,7 @@ spieli/                            ← Monorepo root
 │       │   └── hubLoading.js      ← Hub fan-out load progress {loaded, total, settling}
 │       │
 │       ├── components/            ← Shared Svelte UI components
-│       │   ├── Map.svelte         ★ OL map, 5 layers, click/hover handlers
+│       │   ├── Map.svelte         ★ OL map, all layers, click/hover handlers
 │       │   ├── PlaygroundPanel.svelte ★ Detail panel (equipment, trees, POIs, reviews)
 │       │   ├── FilterPanel.svelte ← Filter dropdown + layer toggles
 │       │   ├── SearchBar.svelte   ← Nominatim location search
@@ -57,7 +63,7 @@ spieli/                            ← Monorepo root
 │       │   ├── AppShell.svelte    ← Top-level layout shell + deeplink restore
 │       │   ├── CompletenessLegend.svelte ← Colour legend
 │       │   ├── FilterChips.svelte ← Active filter chip row
-│       │   ├── DataContributionModal.svelte ← "Daten ergänzen" OSM link modal
+│       │   ├── DataContributionModal.svelte ← About dialog (data, contributing, install, legal links)
 │       │   ├── MapCompleteLink.svelte ← MapComplete contribution link
 │       │   ├── PanoramaxViewer.svelte ← Panoramax photo iframe
 │       │   ├── POIPanel.svelte    ← Nearby POIs panel

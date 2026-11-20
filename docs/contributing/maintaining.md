@@ -6,11 +6,9 @@ This guide is for maintainers who manage the project's dependencies, toolchain, 
 
 See [RELEASING.md](https://github.com/mfuhrmann/spieli/blob/main/RELEASING.md) for the full release checklist. Summary:
 
-1. Remove `-rc` suffix from `app/package.json` (e.g. `0.4.1-rc` → `0.4.1`)
-2. Commit: `chore: release v0.4.1`
-3. Tag: `git tag v0.4.1 && git push origin v0.4.1` — CI publishes `:latest`, `:0.4.1`, `:0.4` images
-4. Create GitHub release with `gh release create v0.4.1 --title "…" --notes "…"`
-5. Bump `main` to next `-rc`: `0.4.2-rc`
+1. In a PR: remove the `-rc` suffix in `app/package.json` and `app/package-lock.json` (e.g. `0.4.1-rc` → `0.4.1`), set `TAG=` in the install block of `docs/getting-started/quick-start.md`. Commit: `chore: release v0.4.1`
+2. Tag the merge commit: `git tag v0.4.1 && git push origin v0.4.1`. CI publishes `:latest`, `:0.4.1`, `:0.4` images and creates the GitHub release with generated notes and the `install.sh` assets
+3. In a PR: bump `main` to the next `-rc`: `0.4.2-rc`
 
 `main` always carries the next `-rc` version between releases.
 
@@ -70,16 +68,11 @@ Check that utility classes still apply by opening the app. Tailwind 4's `@theme`
 
 ### PostgreSQL
 
-PostgreSQL major version upgrades (e.g. 16 → 17) require a `pg_upgrade` or dump-restore migration. The database is stored in the `pgdata` Docker volume.
+A PostgreSQL major version (e.g. 16 → 17) cannot read the previous version's data directory, so bumping the image tag is a breaking change for every operator.
 
-Steps:
-1. Back up the database: `docker compose exec db pg_dump -U osm osm > backup.sql`
-2. Update the PostgreSQL image tag in `compose.yml` and `compose.prod.yml`
-3. Stop the stack and **remove the volume**: `docker volume rm <project>_pgdata`
-4. Start the stack (init.sql runs again, creating a fresh empty database)
-5. Re-import: `docker compose run --rm importer`
-
-The data volume is not forward-compatible between major PostgreSQL versions — you must re-import rather than reuse the volume.
+1. Update the PostgreSQL image tag in `compose.yml` and `compose.prod.yml`.
+2. Label the PR `requires-compose-update` and `requires-reimport`, and say in the release notes that the `pgdata` volume must be recreated.
+3. Test it on a local stack the way operators will do it: [Upgrading → PostgreSQL major version](../ops/upgrade.md#postgresql-major-version).
 
 ### PostgREST
 
@@ -97,9 +90,8 @@ After upgrading PostgREST:
 
 These are installed in the importer Docker image (`importer/Dockerfile`). To upgrade:
 
-1. Update the base image or `apt install` versions in `importer/Dockerfile`
-2. Run `make docker-build` (rebuilds the importer image)
-3. Run `make import` to test the new version
+1. Update the `apt install` versions (or the `debian:bookworm-slim` base) in `importer/Dockerfile`
+2. Run `make import`, which rebuilds the importer image (`--build`) and imports with it
 
 The importer uses osm2pgsql in default pgsql mode (`--slim --drop --hstore`) — no Lua script. Check the [osm2pgsql changelog](https://osm2pgsql.org/news/) for breaking changes to the pgsql output schema or CLI flags when upgrading.
 
@@ -107,18 +99,19 @@ The importer uses osm2pgsql in default pgsql mode (`--slim --drop --hstore`) —
 
 ## Docker base images
 
-The app image (`oci/app/Dockerfile`) uses an nginx base image. The importer image (`importer/Dockerfile`) uses an osm2pgsql base image or builds from a Debian/Ubuntu base.
+The app image (`oci/app/Dockerfile`) builds the frontend on `node:20-alpine` and serves it from `nginx:alpine`. The importer image (`importer/Dockerfile`) is `debian:bookworm-slim` with osm2pgsql and osmium-tool from apt.
 
-Update base images by changing the `FROM` line and rebuilding:
+Update a base image by changing its `FROM` line and rebuilding:
 
 ```bash
-make docker-build   # rebuilds oci/app + importer images
+make docker-build   # rebuilds and restarts the app container only
+make import         # rebuilds the importer image and runs an import with it
 ```
 
-After rebuilding, run the full E2E suite:
+Then run the tests. The E2E suite builds and serves the frontend itself and stubs the API, so it needs no running stack:
 
 ```bash
-make up && make seed-load && make test
+make test
 ```
 
 ---
@@ -163,7 +156,7 @@ What else did we evaluate and why did we reject it?
 What are the positive and negative effects of this decision?
 ```
 
-See [ADR-0001](../adr/0001-openspec-sharing-policy.md) for an example.
+See [ADR-0001](../adr/0001-openspec-sharing-policy.md) for an example. Add the new file to the *Develop → Maintain* section of `nav:` in `mkdocs.yml`, or it does not appear on the site.
 
 ---
 
@@ -180,53 +173,6 @@ npm audit && npm outdated
 ```
 
 GitHub Dependabot is configured in `.github/dependabot.yml` and will open PRs for dependency updates automatically.
-
-## Adding or removing a POI category
-
-Nearby POIs (toilets, shops, bus stops, etc.) are shown in the playground detail panel. To add or remove a category, edit three files:
-
-### 1. Importer: `importer/import.sh` → osmium tags-filter
-
-The osmium `tags-filter` allowlist controls which OSM tags survive the pre-import clip. If a tag is not listed here, nodes/ways carrying it are dropped before osm2pgsql loads them and the database never sees them.
-
-Add or remove entries for both nodes (`n/`) and ways (`w/`):
-
-```bash
-# Node tags (line ~264)
-n/shop=bakery \
-# Way tags (line ~280)
-w/shop=bakery \
-```
-
-After editing, a full re-import is required (`make import`). Tag the PR with `requires-reimport`.
-
-### 2. Database: `importer/api.sql` → `get_pois()`
-
-The `pois_point` and `pois_polygon` CTEs filter OSM nodes and polygons by tag. Add or remove entries from the `WHERE` clause in both CTEs:
-
-```sql
--- pois_point (line ~1106) and pois_polygon (line ~1128)
-OR p.shop IN ('chemist', 'supermarket', 'convenience', 'bakery')
-```
-
-After editing, run `make db-apply` to reload the function. Tag the PR with `requires-schema-update`.
-
-### 3. Frontend: `app/src/components/POIPanel.svelte` → `CATEGORIES`
-
-Each category in the `CATEGORIES` array has:
-
-- `icon` — emoji displayed next to the category
-- `label` — i18n key for the category name
-- `match` — function that tests a POI's tags (must match the SQL filter)
-- `fallback` — i18n key shown when no POIs are found
-
-To add a new category, add an entry to the array. To add an OSM tag to an existing category, extend its `match` function.
-
-### 3. Translations (if adding a new category)
-
-Add `poi.categories.<name>` and `poi.fallbacks.<name>` keys to all locale files in `app/src/i18n/`.
-
----
 
 ## See also
 

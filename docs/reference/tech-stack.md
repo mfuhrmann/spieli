@@ -6,15 +6,15 @@
 |---|---|---|---|
 | Map rendering | [OpenLayers](https://openlayers.org/) | 10.x | Vector/tile layers, cluster rendering, click/hover handling |
 | UI framework | [Svelte](https://svelte.dev/) | 5.x | Reactive components, store-based state |
-| Build tool | [Vite](https://vitejs.dev/) | 6.x | Dev server, production bundler |
+| Build tool | [Vite](https://vitejs.dev/) | 8.x | Dev server, production bundler |
 | Styling | [Bootstrap](https://getbootstrap.com/) | 5.x | Component classes (buttons, cards, modals) |
 | Styling | [Tailwind CSS](https://tailwindcss.com/) | 4.x | Utility classes, layout |
-| Icons | [lucide-svelte](https://lucide.dev/) | 0.4x | SVG icon set |
+| Icons | [lucide-svelte](https://lucide.dev/) | 1.x | SVG icon set |
 | Translations | [svelte-i18n](https://github.com/kaisermann/svelte-i18n) | 4.x | ICU message format, runtime locale switching |
 | Database | [PostgreSQL](https://www.postgresql.org/) | 16 | Relational store for playground data |
 | Spatial extension | [PostGIS](https://postgis.net/) | 3.4 | Geometry types, spatial functions (ST_Within, ST_DWithin, …) |
 | API layer | [PostgREST](https://postgrest.org/) | v12 | Auto-generates HTTP endpoints from `api` schema SQL functions |
-| OSM importer | [osm2pgsql](https://osm2pgsql.org/) | — | Reads PBF → PostgreSQL; uses Lua transform rules |
+| OSM importer | [osm2pgsql](https://osm2pgsql.org/) | — | Reads PBF → PostgreSQL in the default pgsql output with `--hstore`; no Lua |
 | Pre-filter | [osmium-tool](https://osmcode.org/osmium-tool/) | — | Bbox clip + tag filter before osm2pgsql (reduces ~300 MB → ~5 MB) |
 | Web server | [nginx](https://nginx.org/) | — | Serves static build, proxies `/api/`, security headers, CORS |
 | Containers | Docker / Docker Compose | — | Packaging, orchestration, profiles |
@@ -36,7 +36,7 @@
 
 ## Known limitations / future work
 
-- **i18n partial** — svelte-i18n is integrated but device names in `objPlaygroundEquipment.js` are still German-only. Full i18n is tracked in epic #157.
+- **Most locales are unfinished** — the interface ships in German, English and Slovak; device names are translated in de, en, sk, fr and es (elsewhere svelte-i18n falls back to English), and most other languages are far below the 80% bar (see [Translation Workflow → Language graduation](../contributing/translations.md#language-graduation)).
 - **Svelte stores vs runes** — the app uses Svelte 4-style writable stores. Migration to Svelte 5 runes is desirable but not yet done.
 - **`unsafe-inline` in CSP** — Bootstrap and OpenLayers require inline styles. A nonce-based approach would tighten the CSP but requires changes to the nginx entrypoint.
 - **No server-side rendering** — the app is a pure client-side SPA. SEO and initial paint performance are limited by bundle load time.

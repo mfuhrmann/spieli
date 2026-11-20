@@ -27,17 +27,9 @@ It is named in the generated Content Security Policy and keeps its rows on the g
 
 Opting a service out restores the old behaviour for it: the browser contacts that host directly, the generated CSP names it, and the privacy page grows its row back. See [Security Hardening](../ops/security.md#nginx-security-headers).
 
-### Equipment illustrations are resolved at build time
+### Equipment illustrations come through the same proxy
 
-The device and pitch tables name their illustrations as MediaWiki `File:` titles. Turning one into a URL used to mean a `Special:FilePath` request, which is a redirect chain, and that chain cannot be proxied without allowing `/w/index.php` — a full MediaWiki entry point — through the cache.
-
-So the redirect is followed at **build time** instead. `tools/build-equipment-images.py` resolves each name against Commons and then the OSM wiki, and commits `app/src/lib/equipmentImages.generated.json` holding the real file URL plus author and licence. Rebuild it with `make equipment-images`.
-
-Three things follow from that, and each fixed a real defect:
-
-- **The bytes come from this instance.** The resolved URL is an ordinary image path on a MediaWiki file host, which `/ext/wikimedia/<host>/` already serves.
-- **The OSM wiki is no longer an undisclosed host.** 14 of the 98 illustrations exist only there, and the frontend used to reach them through an `<img onerror>` fallback that appeared in neither this page nor the CSP. It is listed above now, and it is proxied like the rest.
-- **A name that resolves nowhere fails the build.** 14 of them did, all pitch illustrations, and in production each one cost two failing requests before an `onerror` handler hid the element. They were replaced with verified Commons files in #867 (hockey, which has no free pitch diagram, has no illustration), so every name now resolves and any new one that does not fails the build.
+The example illustrations of devices and pitches are served from this instance via `/ext/wikimedia/`, like the photo gallery. Their file names are resolved once at build time, so the browser never contacts Commons or the OSM wiki for them. How that works: [Frontend Guide → External services](../contributing/frontend-guide.md#external-services-implementation-notes).
 
 Serving these bytes through our own origin makes us their distributor, so the CC attribution obligation is ours rather than Commons'. The author and licence are rendered under each illustration where the wiki exposes them; the OSM wiki returns no `extmetadata`, so its 14 files carry no credit.
 
@@ -64,14 +56,9 @@ When it is created, the iframe carries `referrerpolicy="no-referrer"` and `sandb
 
 Three consequences worth being explicit about:
 
-- **The basemap is not in the browser-contacted group, and that is the point.** It used to be the largest entry in it, contacted by every visitor on every map movement. It is now fetched server-side and cached. See [Basemap](../ops/configuration.md#basemap).
+- **The basemap is not in the browser-contacted group, and that is the point.** It used to be the largest entry in it, contacted by every visitor on every map movement. It is now fetched server-side and cached. See [Basemap](../ops/configure.md#basemap).
 - **Reviews create a persistent pseudonymous identifier.** `app/src/lib/reviews.js` generates a P-256 keypair on the first review submission and stores it in `localStorage` under `spieli-mangrove-keypair`. It is not created by merely viewing the map. Proxying does not change this: the keypair is the visitor's identity to Mangrove, not an address.
 - **A panel section that is collapsed by default contacts nothing.** `PlaygroundPanel.svelte` mounts each accordion section's component only while that section is open (`openSections`, default `['photos', 'equipment', 'pois']`), so a closed section's fetch code never runs. Reviews are closed by default; photos are open. Reading a fetch call alone gives the wrong answer — check the section's default state too.
-
-Two things that are fine and worth recording so they are not re-investigated:
-
-- **Commons URLs from OSM tags are host-validated** in `app/src/lib/commons.js` before rendering, so a crafted `image` tag cannot point the browser at an arbitrary host. The Content Security Policy is a second line behind that check, not a replacement for it. Both are tested: `tests/hostile-image-tag.spec.js` and the `CSP must follow the configuration` CI job.
-- **Which Wikimedia host serves a file is not fixed.** The imageinfo API currently returns thumbnails on `thumb.wikimedia.org` and originals on `upload.wikimedia.org`. `proxiedImageUrl` therefore carries the original host in the proxy path rather than assuming one; a rewrite pinned to a single host silently sends every thumbnail straight to Wikimedia while appearing to work.
 
 Operators must disclose all of the above.
 `oci/app/datenschutz.template.html` ships a service table that already does; keep the two in sync when a service is added or removed.
@@ -83,7 +70,7 @@ Contacted by the importer or the container, never by the visitor's browser.
 | Service | Purpose |
 |---|---|
 | [Geofabrik](https://download.geofabrik.de) | Source of OSM PBF extracts for import |
-| [OpenFreeMap](https://openfreemap.org) / [OpenMapTiles](https://www.openmaptiles.org) | Background map tiles, fetched **server-side and cached**. Configurable via `BASEMAP_UPSTREAM`, including pointing it at a tileserver you run yourself. See [Security](../ops/security.md#the-basemap-is-same-origin-by-default) and [Shared Basemap Cache](../ops/shared-basemap-cache.md). |
+| [OpenFreeMap](https://openfreemap.org) / [OpenMapTiles](https://www.openmaptiles.org) | Background map tiles, fetched **server-side and cached**. Configurable via `BASEMAP_UPSTREAM`, including pointing it at a tileserver you run yourself. See [Configuration → Basemap](../ops/configure.md#basemap) and [Shared Basemap Cache](../ops/shared-basemap-cache.md). |
 
 An operator can move the basemap back into the first group by setting `BASEMAP_URL` or `BASEMAP_STYLE_URL` to a third party. That is a deliberate opt-out, it requires `BASEMAP_ATTRIBUTION`, and the generated Datenschutzerklärung names the provider when it happens.
 

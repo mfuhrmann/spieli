@@ -9,7 +9,7 @@ make test          # unit tests + Playwright E2E
 make test-unit     # unit tests only (fast, no browser)
 ```
 
-E2E tests run against `http://localhost:8080` (the Docker stack). The stack must be running (`make up`) and have data loaded (`make seed-load`) before running E2E tests locally.
+E2E tests need no Docker stack and no data. Playwright builds the app and serves it with `vite preview` on `http://localhost:4173` (`playwright.config.js`), and every API response is stubbed in the browser (see [Key test helpers](#key-test-helpers-testshelpersjs)).
 
 CI runs both layers automatically on every pull request (`e2e.yml` + the `build-app` gate in `build.yml`).
 
@@ -17,47 +17,38 @@ CI runs both layers automatically on every pull request (`e2e.yml` + the `build-
 
 ## Unit tests
 
-Unit tests live alongside the source file they test, suffixed `.test.js`:
+Unit tests live next to the module they test, suffixed `.test.js`, in `app/src/lib/`, `app/src/stores/` and `app/src/hub/`:
 
 ```
-app/src/lib/equipmentGrouping.test.js
+app/src/lib/completeness.test.js
+app/src/stores/filters.test.js
+app/src/hub/registryEntry.test.js
 ```
 
-Run them with:
+`make test-unit` runs `npm --prefix app run test:unit`, which is an explicit chain of `node <file>` calls in `app/package.json`. They are pure Node.js (no bundler, no browser) and run in seconds. One file can be run on its own:
 
 ```bash
-make test-unit
-# equivalent: node app/src/lib/equipmentGrouping.test.js
+node app/src/lib/completeness.test.js
 ```
-
-These tests are pure Node.js (no bundler, no browser) and run in a few milliseconds. They test the `groupEquipment()` function, which groups devices inside `playground=structure` polygons using ray-casting geometry.
 
 ### Writing a new unit test
 
-Add a `*.test.js` file next to the module under test. Use `assert` from the Node.js standard library:
+Add a `*.test.js` file next to the module under test and use `node:assert/strict`:
 
 ```js
-import assert from 'assert';
-import { groupEquipment } from './equipmentGrouping.js';
+import assert from 'node:assert/strict';
+import { playgroundCompleteness } from './completeness.js';
 
-const features = [ /* GeoJSON features */ ];
-const { groups, standalone } = groupEquipment(features);
-assert.strictEqual(groups.length, 1, 'one group expected');
+assert.equal(playgroundCompleteness({ device_count: 1, surface: 'sand' }), 'complete');
 ```
 
-Then add a script entry to `app/package.json`:
-
-```json
-"test:mymodule": "node src/lib/mymodule.test.js"
-```
-
-And include it in the `make test-unit` target in `Makefile`.
+Then append it to the `test:unit` chain in `app/package.json`; a file that is not in the chain never runs. Tests that import Svelte stores need `node --conditions=node …`, as the existing store tests show. The `Makefile` needs no change.
 
 ---
 
 ## Playwright E2E tests
 
-Tests live in `tests/`. Each file covers one area of the app:
+Tests live in `tests/`, one area of the app per file. Some examples (there are about 40):
 
 | File | What it tests |
 |---|---|
@@ -77,7 +68,7 @@ Tests live in `tests/`. Each file covers one area of the app:
 
 ### Key test helpers (`tests/helpers.js`)
 
-All test files import two shared helpers:
+The two used by almost every test:
 
 **`injectApiConfig(page, overrides?)`**
 
@@ -89,7 +80,9 @@ await injectApiConfig(page, { clusterMaxZoom: 13, mapZoom: 12 });
 
 **`stubApiRoutes(page)`**
 
-Intercepts all `/api/rpc/*` requests and returns fixture JSON from `tests/fixtures/`. This means tests run without a live database — the Docker stack provides nginx + static assets only (or can be mocked entirely). Fixtures are minimal valid responses that satisfy the app's data contracts.
+Intercepts the `/api/rpc/*` requests the map makes and answers them in the browser: the playground fixture (`tests/fixtures/playground.json`, or a FeatureCollection you pass) for `get_playgrounds*` and `get_playground`, one cluster bucket covering all of them for `get_playground_clusters` (or the array you pass), and empty results for equipment, trees and POIs. No database or server is involved.
+
+For hub tests, `injectHubConfig`, `stubHubRegistry` and `stubFederationStatus` do the same for the hub's config, `registry.json` and `federation-status.json`; `makePlayground` builds a single fixture feature.
 
 ### Running a single test file
 
@@ -105,17 +98,7 @@ npx playwright test --ui
 
 ### Updating fixtures
 
-Fixtures in `tests/fixtures/` are static JSON files matching the shapes documented in [API reference](../reference/api.md). Update them when the API response schema changes:
-
-```
-tests/fixtures/
-├── get_playground_clusters.json   # array of { lon, lat, count, complete, partial, missing }
-├── get_playgrounds_bbox.json      # GeoJSON FeatureCollection
-├── get_playground.json            # single GeoJSON Feature
-├── get_equipment.json             # array of GeoJSON features
-├── get_meta.json                  # { relation_id, name, playground_count, bbox, … }
-└── …
-```
+There is one static fixture, `tests/fixtures/playground.json` (a FeatureCollection of playgrounds). Every other response is built in `tests/helpers.js` or in the test itself. When an API response shape changes (see [API reference](../reference/api.md)), update the fixture and the stubs in `helpers.js` together.
 
 ### Writing a new E2E test
 

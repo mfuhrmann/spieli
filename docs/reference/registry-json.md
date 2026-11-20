@@ -1,6 +1,6 @@
 # `registry.json` Reference
 
-The Hub reads a `registry.json` file at startup and on a short poll interval (`HUB_POLL_INTERVAL`, default 5 min). Each entry points to one regional PostgREST backend. The Hub fetches `get_playgrounds` and `get_meta` from each backend, merges them onto a shared map, and tags every feature with its source backend so deep-links round-trip.
+The Hub reads a `registry.json` file listing the regional PostgREST backends, one entry each. Browsers load it once per page load and then refresh each listed backend's `get_meta` every `HUB_POLL_INTERVAL` (default 5 min). After editing the file, restart the hub's app container (`docker compose --profile ui restart app`): the Content Security Policy's `connect-src` is generated from it at startup, so a new backend is otherwise missing from it. The Hub fetches `get_meta` from each backend and, for the current view, the tier RPCs of the backends it overlaps, merges them onto a shared map, and tags every feature with its source backend so deep-links round-trip.
 
 ## Location
 
@@ -65,7 +65,7 @@ All three of these happened on one entry, and each one fails without an error in
 | Upper-case `slug` (`"Kosice"`) | Deep links fall back to the bare `#W<id>` form for that backend | Use lower case (`"kosice"`). Not repaired automatically: the slug is part of links people share, so the hub must not serve a different spelling than the registry |
 
 !!! note "Runtime-populated fields"
-    The Hub does **not** read `version` or `region` from `registry.json` entries — adding those keys to the file has no effect. Both are derived at runtime from each backend's `/api/rpc/get_meta` response: `region` from the OSM relation name, `version` from a `version` key the response *would* carry. The current `get_meta` SQL function (`importer/api.sql`) does not return `version`, so `version` stays `null` and the instance drawer's version badge remains empty until a future release wires one through.
+    The Hub does **not** read `version` or `region` from `registry.json` entries — adding those keys to the file has no effect. Both come at runtime from each backend's `/api/rpc/get_meta` response: the region name from the OSM relation, `version` from the release that last applied the backend's `api.sql`. The region list shows that version as a badge.
 
 ### Slug validation
 
@@ -75,7 +75,7 @@ Slugs should be **stable** — they are persisted in URLs shared by users. Renam
 
 ## Derived capabilities
 
-Once the registry is loaded, the Hub derives two aggregate behaviours:
+Once the registry is loaded, the Hub derives one aggregate from it:
 
 ### Aggregated bounding box
 
@@ -90,6 +90,8 @@ The Hub unions every backend's `get_meta().bbox` into a single extent and uses i
 | `#<anything>/W<osm_id>`   | Standalone mode ignores the slug prefix and selects the `osm_id` from its sole configured backend. |
 
 When a user selects a playground, the Hub rewrites the hash to its canonical slug-scoped form if the backend has a slug, otherwise to the bare `W<osm_id>` form.
+
+A standalone pitch uses `P` instead of `W` in every form (`#<slug>/P<osm_id>`, `#P<osm_id>`). A slug-less pitch link is resolved by asking every backend's `get_pitch`.
 
 ## See also
 

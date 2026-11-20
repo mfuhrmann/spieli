@@ -47,23 +47,7 @@ echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
 
 ### Per-backend RAM and disk
 
-Measured on the production host (15 Bundesländer on one 8 GB VPS, November 2026). RAM is the whole stack while serving; disk is the database plus the cached extract (`pbf_cache`):
-
-| Size class | Examples | pgdata + pbf_cache | RAM (serving) |
-|---|---|---|---|
-| Small | Bremen, Saarland, Berlin, Hamburg | 0.2–0.5 GB | ~75–300 MiB |
-| Medium | Thüringen, MV, Sachsen-Anhalt, SH | 0.7–0.8 GB | ~115–150 MiB |
-| Medium-large | Hessen, RLP, Brandenburg, Sachsen | 1.2–1.5 GB | ~145–165 MiB |
-| Large | Niedersachsen, NRW, Bayern | 2.1–3.6 GB | ~165–550 MiB |
-
-Serving is cheap; the import is the peak, which is why imports must not overlap (see swap above and [Scheduled Import](scheduled-import.md)). A container's `memory.peak` is no guide to it: it counts reclaimable file cache, and shows 3.7–4.6 GiB for every importer, Bremen included.
-
-Check free RAM before adding large backends:
-
-```bash
-free -h
-docker stats --no-stream --format "table {{.Name}}\t{{.MemUsage}}" | sort -k2 -h
-```
+See [Sizing](../reference/sizing.md): measured memory and disk per region class, and what an import needs on top. Plan for the sum of the serving memory plus **one** import at a time, which is why imports must not overlap (see swap above and [Scheduled Import](scheduled-import.md)).
 
 ## Port allocation
 
@@ -118,9 +102,7 @@ For each backend the script creates the directory, patches `compose.yml`, writes
 
 ### First import — one-shot before daemon
 
-**Do not start the importer in daemon mode on a fresh database.** The daemon applies `api.sql` on startup before checking whether a reimport is needed. On an empty DB this fails because `planet_osm_polygon` does not exist yet, causing a crash-restart loop.
-
-Instead, run the first import as a one-shot (no daemon env vars), then start the daemon:
+On a fresh database the daemon imports right away (after `REIMPORT_STARTUP_JITTER_MAX_HOURS`, if set); it defers the schema apply until that first import has finished (#759). On a shared host, though, you want to decide *when* each first import runs, so that two large ones never overlap. So run the first import as a one-shot (no daemon env vars), then start the daemon:
 
 ```bash
 cd ~/spieli-<slug>
@@ -141,24 +123,20 @@ docker compose --profile data-node-ui up -d importer
 
 Import large backends one at a time. Check `free -h` before each large one.
 
-### Startup jitter
+### Keeping imports apart
 
-`REIMPORT_STARTUP_JITTER_MAX_HOURS` delays the **first import on a fresh DB** by a random amount. This prevents all backends started at the same time from importing in parallel during initial setup.
+Two settings spread the imports of stacks that share a host:
 
-!!! warning "Jitter does not affect ongoing daily reimports"
-    Once a backend has data, the next reimport fires at `last_import_time + interval`. Jitter has no effect on this schedule. The spread between daily reimports comes from the natural difference in when each backend's first import completed. This is why swap is important — even with good timing, two backends may occasionally overlap.
+- **`REIMPORT_JITTER_HOURS`** (default `6`) adds a random 0–N hours to every scheduled wait, and to an import that is already overdue when the container starts. Stacks that once imported together (after an upgrade sweep or a reboot) drift apart instead of keeping a shared slot (#882).
+- **`REIMPORT_STARTUP_JITTER_MAX_HOURS`** (default `0`) delays only the **first** import on a fresh database by a random amount, so backends set up at the same time do not all import at once. It has no effect once a backend has data, so set it before the first start, not afterwards.
 
-Add jitter to `.env` after the first import completes:
-
-```bash
-echo "REIMPORT_STARTUP_JITTER_MAX_HOURS=12" >> ~/spieli-<slug>/.env
-```
+Neither rules out an overlap; two imports can still land close together, which is why swap is required. See [Scheduled Import → Keeping stacks from importing at the same time](scheduled-import.md#keeping-stacks-from-importing-at-the-same-time).
 
 ## Upgrading
 
 See [Upgrading — Single-host federation](upgrade.md#single-host-federation-multiple-stacks-on-one-vps) for the full procedure. The short version: use `scripts/upgrade-stacks.sh`, which upgrades all stacks sequentially (data-nodes first, hub last) and handles the `API_ONLY=1` ordering automatically.
 
-Standard releases with Watchtower active require no manual action — the daemon importer applies `api.sql` on every restart. Only [breaking-label releases](upgrade.md#breaking-label-procedures) need manual steps.
+Standard releases with Watchtower active require no manual action — the daemon importer applies a changed `api.sql` when it restarts (an unchanged one is skipped, #971). Only [breaking-label releases](upgrade.md#breaking-label-procedures) need manual steps.
 
 ## Watchtower
 

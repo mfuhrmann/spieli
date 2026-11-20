@@ -14,7 +14,7 @@ const exporters = [
   read('../../../oci/app/docker-entrypoint.sh'),
 ];
 const dashboard = JSON.parse(read('../../../deploy/monitoring/grafana/dashboards/federation.json'));
-const docs = read('../../../docs/ops/monitoring.md');
+const docs = read('../../../docs/reference/hub-status.md');
 
 // Every metric the exporter declares with a HELP line.
 const exported = new Set(exporters.flatMap(s => [...s.matchAll(/# HELP (spielplatz_\w+)/g)].map(m => m[1])));
@@ -34,7 +34,7 @@ const queried = new Set(
 
 for (const metric of exported) {
   assert.ok(queried.has(metric), `${metric} is exported but no dashboard panel queries it`);
-  assert.ok(docs.includes(metric), `${metric} is exported but not documented in docs/ops/monitoring.md`);
+  assert.ok(docs.includes(metric), `${metric} is exported but not documented in docs/reference/hub-status.md`);
 }
 for (const metric of queried) {
   assert.ok(exported.has(metric), `dashboard queries ${metric}, which the exporter does not emit`);

@@ -11,11 +11,11 @@ spieli is translated with [Weblate](https://weblate.org/), which hosts the proje
 ```
 Translator edits strings       Weblate pushes commit         Maintainer merges PR
 on hosted.weblate.org    →     to weblate-translations   →   into main
-  (web UI, no GitHub)           branch on GitHub              → make docker-build
-                                                               → live in app
+  (web UI, no GitHub)           branch on GitHub              → next release image
+                                                               → live on instances
 ```
 
-Weblate batches translation saves and periodically pushes a commit to the `weblate-translations` branch, then opens — or reuses — a pull request against `main`. It keeps **one long-lived PR** ("Translations update from Hosted Weblate") rather than opening a new one per batch, so the same PR number accumulates commits until a maintainer merges it. The maintainer reviews the JSON diff and merges; the next `make docker-build` bundles the updated locale files into the app.
+Weblate batches translation saves and periodically pushes a commit to the `weblate-translations` branch, then opens — or reuses — a pull request against `main`. It keeps **one long-lived PR** ("Translations update from Hosted Weblate") rather than opening a new one per batch, so the same PR number accumulates commits until a maintainer merges it. The maintainer reviews the JSON diff and merges. Deployed instances get the new strings with the next release image (with Watchtower, within a day of the release); a local checkout sees them after `make docker-build`.
 
 Weblate never pushes directly to `main` — every translation update goes through a PR.
 
@@ -137,7 +137,7 @@ Weblate collects translations for every registered language, but the app loads o
     - Add a `register()` call: `register('<lang>', () => import('../../../locales/<lang>.json'));`
 
 2. Title the PR: `feat(i18n): add <Language> language support`
-3. After merging, run `make docker-build` — users with that browser language now see the app in their language
+3. After merging, the language is live with the next release (locally after `make docker-build`) for users with that browser language
 
 `app/src/lib/i18n.test.js` enforces both halves of that: a `register()` call without a `SUPPORTED` entry (or the reverse) fails the build, because either on its own is a silent no-op — the locale is simply never selected, with nothing logged. That is how Slovak sat complete and unreachable for weeks ([#814](https://github.com/mfuhrmann/spieli/issues/814)).
 
