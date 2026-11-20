@@ -122,7 +122,7 @@ curl -sf http://localhost:<port>/api/rpc/get_meta | \
   python3 -c "import sys,json; d=json.load(sys.stdin); print('version:', d['version'], ' playgrounds:', d['playground_count'])"
 ```
 
-Both `version` and `playground_count` should be non-zero. If `playground_count` is 0, see [If playground_count is zero after upgrade](#if-playground_count-is-zero-after-upgrade) below.
+Both `version` and `playground_count` should be non-zero. If `playground_count` is 0, see [Troubleshooting → Map loads but shows no playgrounds](troubleshooting.md#map-loads-but-shows-no-playgrounds).
 
 Retry it for a few minutes if it fails: the daemon's startup apply from step 4 has to finish first, and until it does the API is legitimately unavailable.
 
@@ -253,44 +253,7 @@ If the sweep does abort — a failed image pull or container start — it prints
 
 ## Special cases
 
-### If playground_count is zero after upgrade
-
-`get_meta` returns `playground_count: 0` after an upgrade when `playground_stats` was left in a broken state (see the API_ONLY race warning above), or when the database volume was wiped.
-
-Recovery: run a full re-import, with the daemon stopped so it is the only writer.
-
-```bash
-docker compose --profile <mode> stop importer
-docker compose --profile <mode> run --rm \
-  -e REIMPORT_INTERVAL_MIN_DAYS= -e REIMPORT_INTERVAL_MAX_DAYS= importer
-docker compose --profile <mode> up -d importer
-```
-
-The empty `REIMPORT_INTERVAL_*` overrides make the run a one-shot import that starts immediately, regardless of when data was last imported.
-
-### If you deleted the database volume
-
-`docker compose down -v` or `docker volume rm <stack>_pgdata` wipes all imported data. Before re-importing:
-
-1. Check whether the PBF cache volume survived:
-
-    ```bash
-    docker volume ls | grep pbf_cache
-    ```
-
-2. If it exists, clear it — a previously interrupted import may have left a corrupt filtered PBF. The importer checks timestamps but not content; a corrupt cache causes it to process 0 objects and leave the database silently empty.
-
-    ```bash
-    docker volume rm <stack>_pbf_cache
-    ```
-
-3. Run a full re-import. With automatic updates, simply start the stack: on an empty database the daemon imports right away. Without them, run it once:
-
-    ```bash
-    docker compose --profile <mode> run --rm importer
-    ```
-
-4. Verify with `get_meta` as shown in the manual upgrade section.
+If you deleted the database volume, see [Refresh Data → After deleting the database](refresh-data.md#after-deleting-the-database).
 
 ### PostgreSQL major version
 

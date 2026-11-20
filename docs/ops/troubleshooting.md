@@ -126,10 +126,17 @@ docker compose --profile <mode> up -d importer
    ```bash
    docker compose --profile <mode> run --rm importer
    ```
-2. **Wrong relation ID** — Check `OSM_RELATION_ID` in `.env`. The importer uses it to cut your region out of the extract, so a wrong ID cuts out a different area or none. Verify at [nominatim.openstreetmap.org](https://nominatim.openstreetmap.org), then run a full import ([Refresh Data](refresh-data.md)).
+2. **Wrong relation ID** — Check `OSM_RELATION_ID` in `.env`. The importer uses it to cut your region out of the extract, and `get_meta` uses it for the region's name and bounding box, so a wrong ID shows up as a missing or wrong `name` in `get_meta`, or as playgrounds from a different area. For a state you can check which boundary is in the database (the relation ID with a minus sign):
+   ```bash
+   docker compose exec -u postgres db psql -U osm osm \
+     -c "SELECT osm_id, name FROM planet_osm_polygon WHERE boundary='administrative' AND admin_level='4';"
+   ```
+   Several commonly cited IDs for German states are off; confirmed values: Mecklenburg-Vorpommern **28322**, Sachsen-Anhalt **62607**, Schleswig-Holstein **51529**. Verify at [nominatim.openstreetmap.org](https://nominatim.openstreetmap.org), fix `.env`, then run a **full** import ([Refresh Data](refresh-data.md)) — the data was cut out with the wrong area.
 3. **PBF doesn't cover the relation** — The PBF extract must geographically contain the relation. If `OSM_RELATION_ID` is a large region (e.g. a whole state), the `PBF_URL` must point to a matching extract — a district or city PBF will silently produce 0 playgrounds. Check [download.geofabrik.de](https://download.geofabrik.de) for the right extract.
 4. **Docker stack not running** — The app requires a live PostgREST backend. Confirm the stack is running and healthy (`docker compose ps`).
 5. **Browser cache** — Try a hard reload: `Ctrl+Shift+R` (Windows/Linux) or `Cmd+Shift+R` (Mac).
+6. **Corrupt PBF cache** — `get_meta` reports `playground_count: 0` although the import logged success. A file left broken by an interrupted run is reused, because the importer checks timestamps, not content. [Clear the PBF cache](refresh-data.md#clearing-the-pbf-cache) and import again.
+7. **Right after an upgrade** — on v0.9.0 and earlier a failed schema apply could leave `playground_stats` broken. Run a full import ([Refresh Data](refresh-data.md)); see also [A stack serves the old schema after an upgrade](#a-stack-serves-the-old-schema-after-an-upgrade).
 
 ---
 

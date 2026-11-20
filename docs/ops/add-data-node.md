@@ -103,51 +103,7 @@ curl -s https://berlin.example.com/api/rpc/get_meta | \
   python3 -c "import sys,json; d=json.load(sys.stdin); print(d['playground_count'], d['relation_id'])"
 ```
 
-`playground_count` must be greater than zero. If it returns `0` despite a successful import, see [Forcing a re-import](#forcing-a-re-import-corrupt-cache); if `name` is missing or names the wrong region, see [Wrong relation ID](#wrong-relation-id).
-
-### Forcing a re-import (corrupt cache)
-
-If `get_meta` returns `playground_count: 0` after the import, the bbox/tags cache in `pbf_cache`
-may be corrupt (this can happen when the importer ran against a broken DB and cached empty
-osmium output). Fix:
-
-```bash
-# Replace berlin-latest with your region's PBF basename
-docker run --rm -v spieli-berlin_pbf_cache:/cache alpine \
-  sh -c "rm -f /cache/*_${OSM_RELATION_ID}.pbf /cache/*_${OSM_RELATION_ID}_tags.pbf"
-
-docker exec -u postgres spieli-berlin-db-1 psql -U osm osm \
-  -c "DELETE FROM api.import_status WHERE id = 1;"
-
-docker compose --profile data-node-ui up -d --force-recreate importer
-docker logs -f spieli-berlin-importer-1
-```
-
-### Wrong relation ID
-
-The importer uses `OSM_RELATION_ID` to cut your region out of the extract (via its bounding box from Nominatim), and `get_meta` uses it for the region's name and bounding box. A wrong ID therefore shows up as a missing or wrong `name` in `get_meta`, or as playgrounds from a different area.
-
-**Diagnose:** check which state boundary is in the database:
-
-```bash
-docker exec spieli-berlin-db-1 psql -U osm osm \
-  -c "SELECT osm_id, name FROM planet_osm_polygon WHERE boundary='administrative' AND admin_level='4';"
-```
-
-`osm_id` is the relation ID with a minus sign. If it reads `-62423` but your `.env` has `OSM_RELATION_ID=62422`, fix the `.env` and run a **full** import, because the data was cut out with the wrong area:
-
-```bash
-sed -i 's/OSM_RELATION_ID=62422/OSM_RELATION_ID=62423/' .env
-docker compose --profile data-node-ui stop importer
-docker compose --profile data-node-ui run --rm \
-  -e REIMPORT_INTERVAL_MIN_DAYS= -e REIMPORT_INTERVAL_MAX_DAYS= importer
-docker compose --profile data-node-ui up -d importer
-```
-
-!!! note "OSM relation IDs for German Bundesländer"
-    Several commonly-cited relation IDs are off. Confirmed correct values:
-    Mecklenburg-Vorpommern → **28322**, Sachsen-Anhalt → **62607**, Schleswig-Holstein → **51529**.
-    After any new import, run the boundary check above to confirm.
+`playground_count` must be greater than zero. If it is `0`, or `name` is missing or names the wrong region, see [Troubleshooting → Map loads but shows no playgrounds](troubleshooting.md#map-loads-but-shows-no-playgrounds) (corrupt cache, wrong relation ID).
 
 ## Step 5 — Expose via reverse proxy
 
