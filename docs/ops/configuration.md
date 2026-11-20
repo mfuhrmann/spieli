@@ -28,7 +28,7 @@ Every variable a stack reads from `.env`. The installer writes most of them; edi
 | `MAP_ZOOM` | `12` | app | Initial map zoom level. The installer writes `12` (standalone) or `6` (hub) |
 | `MAP_MIN_ZOOM` | `10` | app | Minimum zoom level. The installer writes `7` (standalone) or `4` (hub) |
 | `POI_RADIUS_M` | `5000` | app | Radius in metres for nearby POI search |
-| `REGION_PLAYGROUND_WIKI_URL` | Generic OSM wiki | app | Wiki page linked in the "Contribute" modal |
+| `REGION_PLAYGROUND_WIKI_URL` | Generic OSM wiki | app | Wiki page linked in the "Contribute data" modal |
 | `REGION_CHAT_URL` | *(hidden)* | app | Community chat link shown in the "Contribute data" modal; leave empty to hide the button. In hub mode this is the hub operator's own channel — backends do not contribute one. |
 | `PARENT_ORIGIN` | *(unset)* | app | **Currently has no effect.** It is written into `config.js` as `parentOrigin`, but no part of the frontend reads it. Appearing in a hub needs nothing on the data-node beyond a public `/api/` with CORS; leave it unset. Removal tracked in [#1061](https://github.com/mfuhrmann/spieli/issues/1061) |
 

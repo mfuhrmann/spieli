@@ -1,6 +1,6 @@
 # API Reference
 
-PostgREST exposes the `api` schema as JSON-RPC endpoints under `/api/rpc/`. All endpoints accept GET requests with query-string parameters.
+PostgREST exposes the functions of the `api` schema as endpoints under `/api/rpc/` that return JSON. All endpoints accept GET requests with query-string parameters.
 
 ## Full RPC index
 
@@ -188,7 +188,7 @@ Returns lightweight per-playground rows for a bbox — `osm_id`, lon/lat, comple
 
 spieli's own frontend does not call it: the server-bucketed cluster tier covers zoom ≤ 13 in both modes, and the hub merges those buckets across backends. `fetchPlaygroundCentroids()` in `app/src/lib/api.js` exists but is unused.
 
-> Note: the `filter_attrs` object includes `has_fence`, `has_dogs`, `has_theme`, `has_shade` and `has_lit` for the playground filters. Both are nullable — `has_shade` is `true` when `shade=yes`, `false` when `shade=no`; `has_lit` is `true` for a recognised lighting value (`yes`, `24/7`, `automatic`, `limited`, `interval`, times), `false` for `no` / `disused`; each is `null` when untagged (`has_lit` also when the value is not recognised).
+> Note: the `filter_attrs` object includes `has_fence`, `has_dogs`, `has_theme`, `has_shade` and `has_lit` for the playground filters. `has_shade` and `has_lit` are nullable — `has_shade` is `true` when `shade=yes`, `false` when `shade=no`; `has_lit` is `true` for a recognised lighting value (`yes`, `24/7`, `automatic`, `limited`, `interval`, times), `false` for `no` / `disused`; each is `null` when untagged (`has_lit` also when the value is not recognised).
 
 ## Deprecated: `get_playgrounds(relation_id)`
 
@@ -401,7 +401,7 @@ curl 'https://example.com/api/rpc/get_meta'
 
 ## `get_legal(type)`
 
-Returns generated legal HTML for `data-node` backends (no nginx web UI). The Hub calls this when `get_meta()` returns a `null` `impressum_url` or `privacy_url`.
+Returns the legal HTML a data-node stored during its last full import. The Hub calls this when `get_meta()` returns a `null` `impressum_url` or `privacy_url`.
 
 **Parameters**
 
@@ -415,7 +415,7 @@ Returns generated legal HTML for `data-node` backends (no nginx web UI). The Hub
 { "content": "<html>...</html>" }
 ```
 
-Returns `null` (HTTP 200) when no content has been stored for the requested type (i.e. `IMPRESSUM_NAME` was not set when the container started).
+Returns `null` (HTTP 200) when no content has been stored for the requested type, that is, when no full import has run with `IMPRESSUM_NAME` and `IMPRESSUM_ADDRESS` set.
 
 **Example**
 
@@ -470,7 +470,7 @@ curl 'https://example.com/api/rpc/get_nearest_playgrounds?lat=50.54&lon=9.71'
 ## See also
 
 - [Federation](federation.md) — Hub-mode discovery, `registry.json`, federation endpoints overview.
-- [Architecture](architecture.md) — DEPLOY_MODE × APP_MODE matrix, where `apiBaseUrl` is set.
+- [Deployment modes](deployment-modes.md) — the `DEPLOY_MODE` × `APP_MODE` combinations.
 - `importer/api.sql` — authoritative SQL source for every RPC.
 - `app/src/lib/api.js` — all client fetchers (each with JSDoc).
 - `app/src/lib/tieredOrchestrator.js` — moveend-driven tier picker that calls these RPCs.

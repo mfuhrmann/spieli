@@ -28,7 +28,7 @@
 
 **PostgREST over a custom API server:** The entire data layer is SQL functions. PostgREST exposes them as HTTP endpoints automatically — no custom backend code to maintain. Schema changes are applied by re-running `api.sql` with no service restarts beyond a `NOTIFY pgrst, 'reload schema'`.
 
-**osm2pgsql + osmium:** osm2pgsql is the standard tool for the OSM → PostgreSQL pipeline and has active maintenance. osmium handles the pre-filter step (bbox + tag filtering) that reduces import time from minutes to seconds by giving osm2pgsql a small, focused PBF instead of a full Bundesland extract.
+**osm2pgsql + osmium:** osm2pgsql is the standard tool for the OSM → PostgreSQL pipeline and has active maintenance. osmium handles the pre-filter step (bbox + tag filtering) that reduces import time from minutes to seconds by giving osm2pgsql a small, focused PBF instead of a whole state extract.
 
 **Svelte 5 over React/Vue:** Svelte compiles to vanilla JS with minimal runtime overhead — important for a map-heavy app where the OL canvas is doing most of the work. The reactive store model maps naturally to "map state → UI state" flows. The app was started on Svelte 4 and migrated to Svelte 5; it still uses legacy stores rather than runes in most places.
 

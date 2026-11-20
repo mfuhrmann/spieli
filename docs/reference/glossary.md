@@ -64,7 +64,7 @@ Every city, district or region in OpenStreetMap has a numeric **relation ID**. A
 
 ### PBF file
 
-A compressed snapshot of OpenStreetMap data for a region (Protocolbuffer Binary Format). Geofabrik publishes daily extracts at [download.geofabrik.de](https://download.geofabrik.de). The importer reads one; it only needs to *contain* your region.
+A compressed snapshot of OpenStreetMap data for a region (Protocol Buffer Binary Format). Geofabrik publishes daily extracts at [download.geofabrik.de](https://download.geofabrik.de). The importer reads one; it only needs to *contain* your region.
 
 ### osm2pgsql
 
