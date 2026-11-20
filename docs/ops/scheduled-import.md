@@ -20,11 +20,11 @@ A random interval in `[MIN, MAX]` days is chosen after each successful import, s
 
 Every daemon-mode start runs the same three steps before the schedule takes over:
 
-1. **Apply `api.sql`** — so schema changes carried by a new image take effect at once instead of waiting up to `REIMPORT_INTERVAL_MAX_DAYS` for the next import. Without this a Watchtower update would leave the app on the old schema. **Skipped when nothing changed** (#971): every completed apply records in `public.spieli_schema_apply` a hash of the rendered `api.sql` (settings such as `PG_WORK_MEM` and the legal URLs included) and a fingerprint of the live schema (the `api` functions and the `playground_stats` definition). A start skips only when both still match — it logs `api.sql and the live schema unchanged since the last completed apply — skipping the startup apply.` Anything else that touched the schema (a rollback image, `make db-apply` of an edited file, an import killed after `osm2pgsql` dropped the tables — the record is also cleared before every import) changes the fingerprint, and the start applies as before. Rebuilding `playground_stats` is the importer's memory peak; running it on every restart is what let an upgrade sweep's rebuilds overlap and exhaust a 7.7 GB host.
-
-When the daemon is about to be idle for 30 minutes or more it logs `[importer] settled — idle for …s`. `scripts/upgrade-stacks.sh` waits for that line, so keep it if you change the log output.
+1. **Apply `api.sql`** — so schema changes carried by a new image take effect at once instead of waiting up to `REIMPORT_INTERVAL_MAX_DAYS` for the next import. Without this a Watchtower update would leave the app on the old schema. **Skipped when nothing changed** (#971). Every completed apply records two things in `public.spieli_schema_apply`: a hash of the rendered `api.sql` (including settings such as `PG_WORK_MEM` and the legal URLs) and a fingerprint of the live schema (the `api` functions and the `playground_stats` definition). A start skips the apply only when both still match, and logs `api.sql and the live schema unchanged since the last completed apply — skipping the startup apply.` Anything else that touched the schema changes the fingerprint, and the start applies as before: a rollback image, `make db-apply` of an edited file, or an import killed after `osm2pgsql` dropped the tables (the record is also cleared before every import). This matters because rebuilding `playground_stats` is the importer's memory peak: running it on every restart let an upgrade sweep's rebuilds overlap and exhaust a 7.7 GB host.
 2. **Grace check** — if a recent import is on record, sleep the remainder of the interval instead of re-importing.
 3. **Import** — otherwise run the import immediately, then loop.
+
+When the daemon is about to be idle for 30 minutes or more it logs `[importer] settled — idle for …s`. `scripts/upgrade-stacks.sh` waits for that line, so keep it if you change the log output.
 
 Step 1 is **skipped when no import has ever completed**. `api.sql` builds views over the `planet_osm_*` tables that only exist after the first import, so applying it on a fresh database would fail and restart-loop the container before the import could run. You will see this on a first start:
 
@@ -82,8 +82,8 @@ memory peak of the whole pipeline. Two mechanisms spread them out (#882):
   times kept their shared slot. With it, slots drift apart every cycle. Set
   it to `0` only if a single stack runs on the host.
 
-Jitter makes overlap unlikely, not impossible: there is no lock between
-stacks on one host (tracked in #961).
+    Jitter makes overlap unlikely, not impossible: there is no lock between
+    stacks on one host (tracked in #961).
 - **`REIMPORT_STARTUP_JITTER_MAX_HOURS`** (default `0`) staggers the *first*
   import on a fresh database, for deploying many stacks at once.
 
@@ -168,5 +168,5 @@ systemctl list-timers spieli-import.timer
 
 - [Refresh Data](refresh-data.md) — trigger an immediate re-import outside of the schedule
 - [Monitoring](monitoring.md) — observe import freshness via federation-status and Prometheus
-- [Backup and Restore](backup-restore.md) — database backups before major import runs
+- [Backup and Restore](backup-restore.md) — what to keep a copy of
 - [Configuration reference](configuration.md) — `OSM_RELATION_ID`, `PBF_URL`, `OSM2PGSQL_THREADS`, `REIMPORT_INTERVAL_MIN_DAYS`, `REIMPORT_INTERVAL_MAX_DAYS`

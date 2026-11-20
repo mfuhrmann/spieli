@@ -82,8 +82,8 @@ During the current release the container sends **both** of these:
 | `Content-Security-Policy-Report-Only` | narrowed to the hosts actually used | **Observed only** |
 
 The narrowed policy is delivered in report-only form first because the failure mode of an over-tight CSP is silent: photos simply do not appear, with nothing but a browser console message.
-The path most likely to break is therefore a rarely-taken one, in production.
-Once the report set has been confirmed empty across both app modes and both basemap postures, the report-only policy becomes the enforced one and the wildcard policy is deleted.
+So the first breakage would show up in production, on a rarely used path.
+Once testing in both app modes and both basemap setups shows no violations in the browser console, the report-only policy becomes the enforced one and the wildcard policy is deleted.
 
 If you see console messages beginning `Content Security Policy` while running this release, nothing is being blocked — but please report them, because they are exactly what the observation period is for.
 
@@ -99,7 +99,7 @@ There is deliberately **no `report-uri`**. It would collect a per-visitor record
 - `frame-src https://panoramax.xyz https://api.panoramax.xyz` — the street-level photo viewer. Already narrow, and the model the rest of the policy now follows.
 - `frame-ancestors 'self' https:` — **still a wildcard, deliberately.** It governs who may embed spieli, not what spieli discloses, and a hub embeds standalone instances.
 
-Why narrow `img-src` and `connect-src` at all, given the services above are all wanted: the values that reach the URL builders come from OSM tags, which are arbitrary attacker-editable strings.
+Why narrow `img-src` and `connect-src` at all, when every service above is wanted? Because the values that reach the URL builders come from OSM tags, which are arbitrary attacker-editable strings.
 `commons.js` validates that an `image` tag points at a Wikimedia host before rendering it, and with a `https:` wildcard that code check is the *only* thing between a crafted tag and a visitor's browser fetching from a host of the tagger's choosing.
 The policy is the second line behind that check.
 Both are tested: `tests/hostile-image-tag.spec.js` covers the code check, and the `CSP must follow the configuration` CI job covers the generated policy.

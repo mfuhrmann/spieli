@@ -28,7 +28,7 @@ cd ..
 rm -rf spieli/ install.sh
 ```
 
-No `--profile` flag needed — `down` stops all containers in the project regardless of which profile started them (including watchtower if auto-update was enabled). `--remove-orphans` cleans up dangling networks.
+No `--profile` flag needed — `down` stops all containers in the project regardless of which profile started them (including watchtower if auto-update was enabled). `--remove-orphans` also removes containers of services that are no longer in `compose.yml`.
 
 If a volume removal fails with "volume is in use", a stopped container is still referencing it. Prune stopped containers first, then remove the volumes manually:
 

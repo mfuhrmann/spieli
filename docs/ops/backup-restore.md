@@ -1,6 +1,6 @@
 # Backup and Restore
 
-The only persistent state in spieli is the PostgreSQL database. All other data can be regenerated from the OSM PBF file.
+Everything in the database can be regenerated from the OSM extract. What cannot be regenerated is your configuration.
 
 ## What to back up
 
@@ -72,7 +72,7 @@ docker compose --profile data-node-ui up -d
 
 The import then starts as described in [Refresh Data → After deleting the database](refresh-data.md#after-deleting-the-database).
 
-The PBF files are stored in the `pbf_cache` volume and are reused automatically. If you deleted the volume too, the importer downloads a fresh copy (~300 MB for a Bundesland extract).
+The PBF files are stored in the `pbf_cache` volume and are reused automatically. If you deleted the volume too, the importer downloads a fresh copy (~300 MB for a state extract).
 
 ## Scheduled backups
 

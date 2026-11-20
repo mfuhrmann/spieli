@@ -37,7 +37,7 @@ docker compose --profile <mode> run --rm importer
 
 When `REIMPORT_INTERVAL_MIN_DAYS` and `REIMPORT_INTERVAL_MAX_DAYS` are set, the importer container runs in a loop. On startup it checks `last_import_at` in the database — if the last import was recent (within a randomly chosen interval), it sleeps until the next scheduled time rather than importing again.
 
-This means **restarting the container does not force an immediate re-import** unless the data is already overdue. And the one-shot command above is wrong here: with the interval variables in `.env`, `run --rm importer` starts a **second daemon** next to the running one.
+This means **restarting the container does not force an immediate re-import** unless the data is already overdue. Do not use the one-shot command above here: with the interval variables in `.env`, `run --rm importer` starts a **second daemon** next to the running one.
 
 To force a re-import right now:
 
@@ -93,7 +93,7 @@ Or from outside the host:
 curl -s https://your-domain.example.com/api/rpc/get_meta | python3 -m json.tool | grep last_import_at
 ```
 
-`last_import_at` is the timestamp of when the importer script ran. What the other timestamp means: [Scheduled Import → How fresh is the data?](scheduled-import.md#how-fresh-is-the-data)
+`last_import_at` is when the last import ran. What the other timestamp means: [Scheduled Import → How fresh is the data?](scheduled-import.md#how-fresh-is-the-data)
 
 ## How long does it take?
 

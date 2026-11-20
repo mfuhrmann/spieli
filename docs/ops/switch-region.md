@@ -1,6 +1,6 @@
 # Switching regions
 
-This guide covers changing the geographic coverage of a running spieli instance — for example, switching from a Landkreis to a full Bundesland, or expanding to all of Germany.
+This guide covers changing the geographic coverage of a running spieli instance — for example, switching from a district to a whole state, or expanding to all of Germany.
 
 The process requires a full database re-import. Plan for downtime proportional to the size of the new extract (see [Import duration](#import-duration)).
 
@@ -8,7 +8,7 @@ The process requires a full database re-import. Plan for downtime proportional t
 
 **OSM relation ID** — search on [Nominatim](https://nominatim.openstreetmap.org). The relation ID appears in the URL: `openstreetmap.org/relation/51477` → ID is `51477`.
 
-**PBF extract** — browse [download.geofabrik.de](https://download.geofabrik.de) for an extract that covers your target region. The extract only needs to *contain* your region — a country extract works fine for a single Bundesland.
+**PBF extract** — browse [download.geofabrik.de](https://download.geofabrik.de) for an extract that covers your target region. The extract only needs to *contain* your region — a country extract works fine for a single state.
 
 Common extracts:
 
@@ -54,7 +54,7 @@ Then start the import, depending on how the stack runs:
 - **Without automatic updates:** run it once:
 
     ```bash
-    docker compose --profile data-node-ui run --rm importer
+    docker compose --profile <mode> run --rm importer
     ```
 
 The app will return empty responses until the import finishes.

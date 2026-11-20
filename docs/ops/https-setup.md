@@ -37,7 +37,7 @@ Traefik issues the TLS certificate on the first HTTPS request (takes ~10 seconds
 
 If you haven't installed the spieli app stack yet, follow [Quick Start → Install](../getting-started/quick-start.md#install). It installs a tagged release and verifies the installer's checksum. (The Traefik installer's own closing hint downloads `install.sh` from `main` without a checksum; see [#1063](https://github.com/mfuhrmann/spieli/issues/1063).)
 
-When the spieli installer asks for the public URL of the instance (part of the imprint and privacy setup), enter `https://yourdomain.example.com`.
+When the spieli installer asks for the public URL of the instance (part of the imprint and privacy setup), enter `https://spieli.example.com`.
 
 ## Renewal
 
@@ -53,7 +53,7 @@ docker compose up -d  # start (cert is stored in the letsencrypt volume — no r
 
 ## Firewall
 
-Open ports 80 (ACME challenge) and 443 (HTTPS). Block 8080 from public access — traffic should only reach it through Traefik.
+Open ports 80 (ACME challenge) and 443 (HTTPS). Block 8080 from public access — traffic should only reach it through Traefik. UFW alone does not do that: Docker opens published ports past UFW's rules, so block 8080 in your provider's firewall (or with a rule in iptables' `DOCKER-USER` chain).
 
 ```bash
 ufw allow 80/tcp

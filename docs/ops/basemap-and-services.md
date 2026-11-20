@@ -4,7 +4,7 @@ The background map, search, photos and reviews come from third-party services. B
 
 ## Basemap
 
-The basemap is the one service every visitor contacts on every map movement, so how it is delivered is a privacy decision as much as a rendering one. The reasoning behind the default is in [Privacy by design](../concepts/privacy.md); this section covers the settings.
+The basemap is requested on every map movement, so how it is delivered is a privacy decision as much as a rendering one. The reasoning behind the default is in [Privacy by design](../concepts/privacy.md); this section covers the settings.
 
 ### The default: a cached public tile server
 
@@ -19,7 +19,7 @@ That arrangement does two jobs at once:
 
 No request is written to the access log (#988, `oci/app/00-no-access-log.conf`). This covers the *access* log only. `error_log` still records the URI of a request that fails upstream, which is what keeps outages diagnosable; it is a record of failures rather than of browsing, but it is not nothing, so treat the container's error log with the same care as any other log that can name a path a visitor requested.
 
-The cache lives on the container's writable layer, so `make docker-build` discards it and the next visitors refill it from the upstream. Mount a volume at `/var/cache/nginx/basemap` to keep it, which matters more here than for `/tiles/`: this cache is on by default, and an upgrade sweep across stacks otherwise sends every one of them cold at the public server. `compose.yml` and `compose.prod.yml` both ship a `basemap_cache` volume for this.
+Without a volume the cache lives on the container's writable layer, and every rebuild or upgrade discards it, so the next visitors refill it from the upstream. That matters more here than for `/tiles/`: this cache is on by default, and an upgrade sweep across stacks would send every one of them cold at the public server. Both compose files mount a `basemap_cache` volume at `/var/cache/nginx/basemap`, so an installed stack keeps it.
 
 Running **several stacks on one host**? Point them all at a single shared cache instead of running one per stack — see [Shared Basemap Cache](shared-basemap-cache.md). Fifteen caches at the 4 GB default is up to 60 GB of disk and fifteen separate clients hitting the public tile server, all going cold together on every upgrade sweep.
 
@@ -29,7 +29,7 @@ Running **several stacks on one host**? Point them all at a single shared cache 
 
 ### Two source shapes
 
-Leave both unset and you get the bundled vector style. The container serves `/basemap/style.local.json` and the `make dev` server falls back to `/basemap/style.json`; both are compiled-in defaults, **not** the env var's default — do not copy either into `.env` as a value. Setting `BASEMAP_STYLE_URL` marks the basemap as *configured*, which then requires `BASEMAP_ATTRIBUTION` — the container refuses to start without it. A style whose assets point at a third party is also rejected alongside `BASEMAP_PROXY`, since the style would bypass the proxy; the bundled style is same-origin and is accepted.
+Leave `BASEMAP_STYLE_URL` and `BASEMAP_URL` unset and you get the bundled vector style. The container serves `/basemap/style.local.json` and the `make dev` server falls back to `/basemap/style.json`; both are compiled-in defaults, **not** the env var's default — do not copy either into `.env` as a value. Setting `BASEMAP_STYLE_URL` marks the basemap as *configured*, which then requires `BASEMAP_ATTRIBUTION` — the container refuses to start without it. A style whose assets point at a third party is also rejected alongside `BASEMAP_PROXY`, since the style would bypass the proxy; the bundled style is same-origin and is accepted.
 
 Precedence when you do set them:
 
@@ -61,7 +61,7 @@ For a **vector** basemap you normally do not have to do anything: a tile server 
 
 Setting `BASEMAP_ATTRIBUTION` overrides that. Only do so when you have a credit the server cannot know about, because an override that goes stale credits the wrong party silently — that is how a map built from self-hosted tiles came to display "© OpenFreeMap".
 
-Note this follows the **tile server**, not `BASEMAP_UPSTREAM`. With a shared cache the upstream is an internal host while the tiles still originate from the public server, so the hostname says nothing about who to credit.
+Note that this follows the **tile server**, not `BASEMAP_UPSTREAM`. With a shared cache the upstream is an internal host while the tiles still originate from the public server, so the hostname says nothing about who to credit.
 
 A **raster** basemap has no TileJSON to ask, which is why `BASEMAP_URL` requires `BASEMAP_ATTRIBUTION` and the container refuses to start without it.
 
@@ -75,8 +75,6 @@ A **raster** basemap has no TileJSON to ask, which is why `BASEMAP_URL` requires
 
 A fourth mode, **mirrored** — shipping the tileset with the instance so no provider is contacted even server-side — is not implemented. A DE + CZ + SK PMTiles build is around 5 GB per stack, against a demand-driven cache that costs a fraction of that; `BASEMAP_UPSTREAM` is what makes the swap cheap if that changes.
 
-Note `BASEMAP_STYLE_URL=/basemap/style.json` is **not** the default and is not same-origin delivery: the committed `style.json` is served locally but still points its tiles, fonts and sprites at `tiles.openfreemap.org`. The container serves `style.local.json`, the `--asset-base` variant, whose assets all resolve under `/basemap/`. Both are built by `make basemap-style`; only the second one keeps the browser on your origin.
-
 Proxying has no fallback to direct delivery. If the upstream is unreachable, tiles fail and the map renders without a basemap. That is deliberate: falling back would leak exactly the addresses proxying was enabled to protect, at the moment something is already wrong.
 
 For the same reason, enabling `BASEMAP_PROXY` alongside a vector style is **rejected at startup** whenever that style would still send the browser to a third party — the style takes precedence over the raster URL, so the browser would fetch everything directly while the proxy sat unused and the privacy page claimed otherwise.
@@ -87,7 +85,7 @@ That check looks at the style *document*, not just its URL. A same-origin `BASEM
 
 Proxied tiles are served twice from the operator's point of view — inbound on a cache miss, outbound to every visitor always — so tile egress moves onto your server. Budget accordingly, and check that your chosen provider's terms permit proxying and caching; that is your responsibility, not spieli's.
 
-**The cache is not persistent by default.** It lives on the container's writable layer, so `make docker-build` — the documented way to ship any change — discards it and the next visitors refill it from the upstream. Mount a volume at `/var/cache/nginx/tiles` if you want it to survive rebuilds.
+**The `/tiles/` cache is not persistent by default.** Without a volume it lives on the container's writable layer, so every rebuild or upgrade discards it and the next visitors refill it from the upstream. Mount a volume at `/var/cache/nginx/tiles` if you want it to survive rebuilds.
 
 Invalid cache values fail at startup rather than being silently rewritten: `4.5g` is rejected instead of quietly becoming `45g`.
 

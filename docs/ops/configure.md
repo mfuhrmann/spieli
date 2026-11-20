@@ -1,6 +1,6 @@
 # Configure the instance
 
-How the settings in `.env` work together, for the areas where that takes more than one line. Every single variable, with its default, is listed in the [Configuration Reference](configuration.md).
+How the settings in `.env` work together, for the areas where that takes more than one line. Every variable, with its default, is listed in the [Configuration Reference](configuration.md).
 
 ## Applying changes
 
@@ -77,11 +77,10 @@ Only `opening_hours` values with `PH` (public holiday) are affected — 69 of
 cannot resolve is ignored and logged in the browser console as
 `[config] REGION_STATE "…" is not a state of …`, listing the codes it knows.
 
-**Behaviour change in #878:** before it, a code such as `he` was ignored, so
-stacks configured with the previously documented `REGION_STATE=he` evaluated
-holidays without a state. After upgrading they honour their state's holidays —
-a playground tagged `PH off` now shows as closed on e.g. Corpus Christi in
-Hessen. No action is needed.
+A state code such as `he` and a state name such as `Hessen` both work; with either, a playground tagged `PH off` shows as closed on that state's holidays, for example Corpus Christi in Hessen.
+
+
+## RAM sizing
 
 > **How `PG_*` values are applied.** The importer runs `ALTER SYSTEM SET …`
 > at the top of `api.sql`, then `SELECT pg_reload_conf()`. The values are
@@ -93,8 +92,6 @@ Hessen. No action is needed.
 > ```
 > Without `API_ONLY=1` this runs a full import — or, on a stack with
 > automatic updates, starts a second importer daemon next to the running one.
-
-## RAM sizing
 
 !!! warning "The compose files currently pass higher values"
     The defaults below are what `importer/import.sh` and `.env.example` intend. `compose.yml` and `compose.prod.yml` still pass the older, higher values (6 / 4 / 4 · `512MB` · `128MB`, a peak of about 3 GB), and they win whenever `.env` does not set the variables, which the installer does not do. Until [#1060](https://github.com/mfuhrmann/spieli/issues/1060) is fixed, set the values from the table below in `.env` explicitly, especially on hosts with 4 GB or less.
