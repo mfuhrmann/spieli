@@ -5,207 +5,192 @@ This page documents every equipment type that spieli recognises. The definitions
 - `app/src/lib/objPlaygroundEquipment.js` — `objDevices`, `objFitnessStation`, `objFeatures`
 - `app/src/lib/equipmentAttributes.js` — `pitchImages`
 
-These objects drive map icon rendering, colour coding, display labels, attribute filters, and example images. An OSM tag not listed here still renders, but falls back to a grey icon, the raw tag value as the label, and no example image.
+These tables decide a feature's symbol, label and example image. An OSM value not listed here still shows, with less information: see [Fallback behaviour](#fallback-behaviour). Which tags make a playground match a filter or count for mapping detail: [OSM Tags spieli Reads](osm-tags.md).
 
 ---
 
 ## Playground devices (`objDevices`)
 
-Keyed by the OSM `playground=*` tag value. 85 entries.
+Keyed by the OSM `playground=*` tag value. 85 entries, grouped by `category`, which decides the device's symbol in the equipment list and on the map. Labels come from `equipment.devices.<key>` in the locale files (English and German shown here); the `name_de` field in `objDevices` is only the last fallback. "Image" marks entries with an example illustration.
 
-### Entry fields
+Some keys cover mappers who use a generic value instead of a specific one (`balance`, `climbing`, `rotator`, `water`, `sand`); they are listed under their category.
 
-| Field | Required | Effect |
-|---|---|---|
-| `name_de` | Yes | German label shown in the equipment list and tooltip |
-| `image` | No | Wikimedia Commons filename (`File:…`) for an example photo. Omitted → no image shown |
-| `category` | No | Groups the device under a filter heading. See category list below |
-| `filterable` | No | `true` → device appears as a sidebar filter checkbox |
-| `filter_attr` | No | OSM sub-attributes exposed as filter controls (e.g. `["length", "height"]`). Only useful when `filterable: true` |
-
-To add a new device, see [Add a Playground Device](../contributing/add-device.md).
+To add a device: [Add a Playground Device](../contributing/add-device.md).
 
 ### Stationary
 
-| Key | Label | Filterable | Filter attrs |
+| Key | English | German | Image |
 |---|---|---|---|
-| `slide` | Rutsche | ✓ | length, height |
-| `seesaw` | Wippe | ✓ | |
-| `springy` | Federwipptier | | |
+| `slide` | Slide | Rutsche | ✓ |
+| `seesaw` | Seesaw | Wippe | ✓ |
+| `springy` | Spring rider | Federwipptier | ✓ |
 
 ### Structure parts
 
-| Key | Label | Filterable | Filter attrs |
+| Key | English | German | Image |
 |---|---|---|---|
-| `structure` | Spielstruktur | | |
-| `bridge` | Brücke | | |
-| `wobble_bridge` | Hängebrücke | ✓ | length |
-| `platform` | Plattform | | |
-| `steps` | Treppe | | |
-| `ladder` | Leiter | | |
+| `structure` | Play structure | Spielstruktur | ✓ |
+| `bridge` | Bridge | Brücke | ✓ |
+| `wobble_bridge` | Rope bridge | Hängebrücke | ✓ |
+| `platform` | Platform | Plattform | ✓ |
+| `steps` | Steps | Treppe | ✓ |
+| `ladder` | Ladder | Leiter | ✓ |
 
 ### Swings
 
-| Key | Label | Filterable |
-|---|---|---|
-| `swing` | Schaukel | |
-| `baby_swing` | Babyschaukel | |
-| `basketswing` | Korbschaukel | ✓ |
-| `tire_swing` | Reifenschaukel | |
-| `rope_swing` | Tampenschaukel | |
+| Key | English | German | Image |
+|---|---|---|---|
+| `swing` | Swing | Schaukel | ✓ |
+| `baby_swing` | Baby swing | Babyschaukel | ✓ |
+| `basketswing` | Basket swing | Korbschaukel | ✓ |
+| `tire_swing` | Tyre swing | Reifenschaukel | ✓ |
+| `rope_swing` | Rope swing | Tampenschaukel | ✓ |
 
 ### Balance
 
-| Key | Label | Filterable |
-|---|---|---|
-| `agility_trail` | Bewegungsparcours | |
-| `balancebeam` | Balancierbalken | |
-| `rope_traverse` | Balancierseil | |
-| `stepping_stone` | Trittsteine | |
-| `stepping_post` | Trittpfosten | |
+| Key | English | German | Image |
+|---|---|---|---|
+| `agility_trail` | Agility trail | Bewegungsparcours | ✓ |
+| `balancebeam` | Balance beam | Balancierbalken | ✓ |
+| `rope_traverse` | Balance rope | Balancierseil | ✓ |
+| `stepping_stone` | Stepping stones | Trittsteine | ✓ |
+| `stepping_post` | Stepping posts | Trittpfosten | ✓ |
+| `balance` | Balance equipment | Balanciergerät |  |
 
 ### Climbing
 
-| Key | Label | Filterable | Filter attrs |
+| Key | English | German | Image |
 |---|---|---|---|
-| `climbingframe` | Klettergerüst | ✓ | height |
-| `climbingwall` | Kletterwand | ✓ | height |
-| `climbing_slope` | Kletterrampe | | |
-| `climbing_pole` | Kletterstange | | |
-| `monkey_bars` | Hangelstrecke | | |
+| `climbingframe` | Climbing frame | Klettergerüst | ✓ |
+| `climbingwall` | Climbing wall | Kletterwand | ✓ |
+| `climbing_slope` | Climbing ramp | Kletterrampe | ✓ |
+| `climbing_pole` | Climbing pole | Kletterstange | ✓ |
+| `monkey_bars` | Monkey bars | Hangelstrecke | ✓ |
+| `climbing` | Climbing equipment | Klettergerät |  |
 
 ### Rotating
 
-| Key | Label |
-|---|---|
-| `roundabout` | Karussell |
-| `basketrotator` | Korbkarusell |
-| `aerialrotator` | Hängedrehkreisel |
-| `spinner` | Drehbrett |
-| `spinning_disc` | Drehscheibe |
-| `spinning_circle` | Drehring |
-| `spinner_bowl` | Drehschale |
+| Key | English | German | Image |
+|---|---|---|---|
+| `roundabout` | Merry-go-round | Karussell | ✓ |
+| `basketrotator` | Basket rotator | Korbkarusell | ✓ |
+| `aerialrotator` | Aerial rotator | Hängedrehkreisel | ✓ |
+| `spinner` | Spinner | Drehbrett | ✓ |
+| `spinning_disc` | Spinning disc | Drehscheibe | ✓ |
+| `spinning_circle` | Spinning ring | Drehring | ✓ |
+| `spinner_bowl` | Spinner bowl | Drehschale | ✓ |
+| `rotator` | Rotator | Rotationsgerät |  |
 
 ### Sand
 
-| Key | Label | Filterable |
-|---|---|---|
-| `sandpit` | Sandkasten | |
-| `chute` | Sandrohr | |
-| `sieve` | Sieb | |
-| `sand_wheel` | Sandrad | |
-| `sand_seesaw` | Sandwippe | |
-| `sand_pulley` | Sandaufzug | |
-| `excavator` | Spielbagger | ✓ |
-| `table` | Spieltisch | |
+| Key | English | German | Image |
+|---|---|---|---|
+| `sandpit` | Sandpit | Sandkasten | ✓ |
+| `chute` | Sand chute | Sandrohr | ✓ |
+| `sieve` | Sand sieve | Sieb | ✓ |
+| `sand_wheel` | Sand wheel | Sandrad | ✓ |
+| `sand_seesaw` | Sand seesaw | Sandwippe | ✓ |
+| `sand_pulley` | Sand pulley | Sandaufzug | ✓ |
+| `excavator` | Sand excavator | Spielbagger | ✓ |
+| `table` | Play table | Spieltisch | ✓ |
+| `sand` | Sand play | Sandspielelement |  |
 
 ### Water
 
-| Key | Label | Filterable |
-|---|---|---|
-| `splash_pad` | Wasserspritzanlage | |
-| `pump` | Wasserpumpe | ✓ |
-| `water_channel` | Wasserkanal | |
-| `water_stream` | Wasserlauf | |
-| `water_seesaw` | Wasserwippe | |
-| `water_basin` | Wasserbecken | |
-| `water_barrier` | Wasserbarriere | |
-| `archimedes_screw` | Wasserschraube | |
-| `water_wheel` | Wasserrad | |
-| `water_cannon` | Wasserkanone | |
-| `water_sprayer` | Wasserdüse | |
+| Key | English | German | Image |
+|---|---|---|---|
+| `splash_pad` | Splash pad | Wasserspritzanlage | ✓ |
+| `pump` | Water pump | Wasserpumpe | ✓ |
+| `water_channel` | Water channel | Wasserkanal | ✓ |
+| `water_stream` | Water stream | Wasserlauf | ✓ |
+| `water_seesaw` | Water seesaw | Wasserwippe | ✓ |
+| `water_basin` | Water basin | Wasserbecken | ✓ |
+| `water_barrier` | Water barrier | Wasserbarriere | ✓ |
+| `archimedes_screw` | Archimedes screw | Wasserschraube | ✓ |
+| `water_wheel` | Water wheel | Wasserrad | ✓ |
+| `water_cannon` | Water cannon | Wasserkanone | ✓ |
+| `water_sprayer` | Water sprayer | Wasserdüse | ✓ |
+| `water` | Water play | Wasserspiele |  |
 
 ### Activity
 
-| Key | Label |
-|---|---|
-| `horizontal_bar` | Reckstange |
-| `parallel_bars` | Barren |
-| `bannister_bars` | Stangenrutsche |
-| `hamster_wheel` | Hamsterrolle |
-| `exercise` | Fitnessgerät |
+| Key | English | German | Image |
+|---|---|---|---|
+| `horizontal_bar` | Horizontal bar | Reckstange | ✓ |
+| `parallel_bars` | Parallel bars | Barren | ✓ |
+| `bannister_bars` | Pole slide | Stangenrutsche | ✓ |
+| `hamster_wheel` | Hamster wheel | Hamsterrolle | ✓ |
+| `exercise` | Exercise station | Fitnessgerät | ✓ |
 
 ### Motion
 
-| Key | Label | Filterable | Filter attrs |
+| Key | English | German | Image |
 |---|---|---|---|
-| `zipwire` | Seilbahn | ✓ | length |
-| `trampoline` | Trampolin | ✓ | |
-| `cushion` | Hüpfkissen | | |
-| `belt_bridge` | Hüpfbandbrücke | | |
-| `spring_board` | Wackelbrett | | |
-| `hopscotch` | Hüpfspiel | | |
-| `track` | Rennstrecke | | |
-| `sledding` | Rodelstrecke | | |
+| `zipwire` | Zip wire | Seilbahn | ✓ |
+| `trampoline` | Trampoline | Trampolin | ✓ |
+| `cushion` | Jumping cushion | Hüpfkissen | ✓ |
+| `belt_bridge` | Belt bridge | Hüpfbandbrücke | ✓ |
+| `spring_board` | Spring board | Wackelbrett | ✓ |
+| `hopscotch` | Hopscotch | Hüpfspiel | ✓ |
+| `track` | Race track | Rennstrecke | ✓ |
+| `sledding` | Sledding hill | Rodelstrecke | ✓ |
 
 ### Topographical
 
-| Key | Label |
-|---|---|
-| `mound` | Spielhügel |
-| `dome` | Halbkugel |
+| Key | English | German | Image |
+|---|---|---|---|
+| `mound` | Play mound | Spielhügel | ✓ |
+| `dome` | Dome | Halbkugel | ✓ |
 
 ### Other
 
-| Key | Label | Filterable |
-|---|---|---|
-| `activitypanel` | Spielwand | |
-| `playhouse` | Spielhaus | |
-| `teenshelter` | Unterstand | |
-| `tunnel_tube` | Kriechtunnel | ✓ |
-| `speaking_tube` | Sprechrohr | ✓ |
-| `funnel_ball` | Trichterball | |
-| `ball_pool` | Bällebad | |
-| `ride_on` | Sitztier | |
-| `marble_run` | Murmelspiel | |
-| `map` | Landkarte | |
-| `blackboard` | Tafel | |
-| `musical_instrument` | Musikinstrument | |
-| `seat` | Sitz | |
-| `hammock` | Hängematte | ✓ |
-| `youth_bench` | Jugendbank | |
-
-### OSM fallback values
-
-These keys cover mappers who use a generic tag value instead of a specific one. They have no example image.
-
-| Key | Label | Category |
-|---|---|---|
-| `balance` | Balanciergerät | balance |
-| `climbing` | Klettergerät | climbing |
-| `rotator` | Rotationsgerät | rotating |
-| `water` | Wasserspiele | water |
-| `sand` | Sandspielelement | sand |
+| Key | English | German | Image |
+|---|---|---|---|
+| `activitypanel` | Activity panel | Spielwand | ✓ |
+| `playhouse` | Playhouse | Spielhaus | ✓ |
+| `teenshelter` | Teen shelter | Unterstand | ✓ |
+| `tunnel_tube` | Tunnel tube | Kriechtunnel | ✓ |
+| `speaking_tube` | Speaking tube | Sprechrohr | ✓ |
+| `funnel_ball` | Funnel ball | Trichterball | ✓ |
+| `ball_pool` | Ball pool | Bällebad | ✓ |
+| `ride_on` | Ride-on animal | Sitztier | ✓ |
+| `marble_run` | Marble run | Murmelspiel | ✓ |
+| `map` | Map | Landkarte | ✓ |
+| `blackboard` | Blackboard | Tafel | ✓ |
+| `musical_instrument` | Musical instrument | Musikinstrument | ✓ |
+| `seat` | Seat | Sitz | ✓ |
+| `hammock` | Hammock | Hängematte | ✓ |
+| `youth_bench` | Youth bench | Jugendbank | ✓ |
 
 ---
 
 ## Fitness stations (`objFitnessStation`)
 
-Keyed by the OSM `fitness_station=*` tag value. 21 entries. These entries supply a German display label only — no image support, no filterable flag.
+Keyed by the OSM `fitness_station=*` tag value. 21 entries; labels from `equipment.fitness.<key>`, no example images.
 
-| Key | Label |
-|---|---|
-| `horizontal_bar` | Klimmzugstange |
-| `parallel_bars` | Barren |
-| `push_up` | Liegestützgerät |
-| `sit_up` | Bauchtrainer |
-| `balance_beam` | Balancierbalken |
-| `elliptical_trainer` | Crosstrainer |
-| `exercise_stairs` | Treppenstufen |
-| `rowing` | Rudergerät |
-| `bicycle` | Radergometer |
-| `sign` | Informationsschild |
-| `stepping_stone` | Trittsteine |
-| `training_wall` | Trainingswall |
-| `wall_bars` | Sprossenwand |
-| `dip` | Dip-Station |
-| `slalom_bars` | Slalomstangen |
-| `stretching` | Streckgerät |
-| `air_walker` | Luftläufer |
-| `chest_press` | Brustpresse |
-| `leg_press` | Beinpresse |
-| `rotary_torso` | Rumpfrotation |
-| `archery` | Bogenschießen |
+| Key | English | German |
+|---|---|---|
+| `horizontal_bar` | Pull-up bar | Klimmzugstange |
+| `parallel_bars` | Parallel bars | Barren |
+| `push_up` | Push-up station | Liegestützgerät |
+| `sit_up` | Sit-up station | Bauchtrainer |
+| `balance_beam` | Balance beam | Balancierbalken |
+| `elliptical_trainer` | Elliptical trainer | Crosstrainer |
+| `exercise_stairs` | Exercise stairs | Treppenstufen |
+| `rowing` | Rowing machine | Rudergerät |
+| `bicycle` | Exercise bike | Radergometer |
+| `sign` | Information sign | Informationsschild |
+| `stepping_stone` | Stepping stones | Trittsteine |
+| `training_wall` | Training wall | Trainingswall |
+| `wall_bars` | Wall bars | Sprossenwand |
+| `dip` | Dip station | Dip-Station |
+| `slalom_bars` | Slalom bars | Slalomstangen |
+| `stretching` | Stretching station | Streckgerät |
+| `air_walker` | Air walker | Luftläufer |
+| `chest_press` | Chest press | Brustpresse |
+| `leg_press` | Leg press | Beinpresse |
+| `rotary_torso` | Rotary torso | Rumpfrotation |
+| `archery` | Archery target | Bogenschießen |
 
 ---
 
@@ -237,27 +222,25 @@ The `size` field controls the rendered icon size in pixels on the map.
 
 ## Sport pitch images (`pitchImages`)
 
-Keyed by the OSM `sport=*` tag value on a `leisure=pitch` feature. Provides an example diagram or photo shown in the equipment detail panel. 17 entries.
+Keyed by the OSM `sport=*` tag value on a `leisure=pitch` feature. Provides an example diagram or photo shown in the equipment detail panel. 15 entries; a pitch with several sports (`soccer;basketball`) gets the `multi` image. The file names are resolved at build time (`make equipment-images`).
 
 | Key | Image (Wikimedia Commons) |
 |---|---|
-| `soccer` | `File:Association football pitch imperial.svg` |
-| `basketball` | `File:Basketball court dimensions in meters.svg` |
-| `table_tennis` | `File:Table tennis table blue.jpg` |
-| `volleyball` | `File:Volleyball court with dimensions.svg` |
-| `tennis` | `File:Hard tennis court 1.jpg` |
-| `handball` | `File:Handball court metric.svg` |
-| `badminton` | `File:Badminton court 8shuttle.svg` |
-| `hockey` | `File:Field Hockey Pitch Dimensions.svg` |
-| `field_hockey` | `File:Field Hockey Pitch Dimensions.svg` |
-| `boules` | `File:Boules-coloured.jpg` |
-| `petanque` | `File:Boules-coloured.jpg` |
-| `multi` | `File:Multi-use games area.jpg` |
-| `skateboard` | `File:Skatepark Vienna Praterstern 2015.jpg` |
-| `bmx` | `File:BMX track Canberra.jpg` |
+| `soccer` | `File:Football pitch metric.svg` |
+| `basketball` | `File:Basketball court fiba.svg` |
+| `table_tennis` | `File:Table Tennis Table Blue.svg` |
+| `volleyball` | `File:VolleyballCourt.svg` |
+| `tennis` | `File:Tennis court metric.svg` |
+| `handball` | `File:Handball Field diagram -en.svg` |
+| `badminton` | `File:Badminton court.svg` |
+| `boules` | `File:Haute-Avesnes - Terrain de pétanque du stade.jpg` |
+| `petanque` | `File:Haute-Avesnes - Terrain de pétanque du stade.jpg` |
+| `multi` | `File:Great Central Road Multi-use Games Area, Loughborough.jpg` |
+| `skateboard` | `File:Solvang Skatepark.jpg` |
+| `bmx` | `File:BMX Pump Track, Whitley Bay, UK.jpg` |
 | `athletics` | `File:Athletics track.jpg` |
-| `beachvolleyball` | `File:BeachvolleyballAthens04.jpg` |
-| `climbing` | `File:Outdoor bouldering wall.jpg` |
+| `beachvolleyball` | `File:Beach volleyball court in Kaukajärvi, Tampere, Finland.jpg` |
+| `climbing` | `File:Urduliz outdoor climbing wall.jpg` |
 
 ---
 
@@ -265,8 +248,8 @@ Keyed by the OSM `sport=*` tag value on a `leisure=pitch` feature. Provides an e
 
 An OSM tag not present in these objects still renders on the map and in the equipment list, but with reduced information:
 
-- Map icon: grey fallback style
-- Label: raw OSM tag value (no German translation)
+- Map icon: the generic fallback symbol
+- Label: the tag value tidied up (underscores to spaces, first letter capitalised), unless a locale file has a translation for it
 - Example image: none
 
 To add proper support for an unlisted type, follow [Add a Playground Device](../contributing/add-device.md) or [Add a Sport Pitch Type](../contributing/add-sport-type.md).

@@ -1,6 +1,6 @@
 # API Reference
 
-PostgREST exposes the `api` schema as JSON-RPC endpoints under `/api/rpc/`. All endpoints accept GET requests with query-string parameters.
+PostgREST exposes the functions of the `api` schema as endpoints under `/api/rpc/` that return JSON. All endpoints accept GET requests with query-string parameters.
 
 ## Full RPC index
 
@@ -9,7 +9,7 @@ PostgREST exposes the `api` schema as JSON-RPC endpoints under `/api/rpc/`. All 
 | [`get_playground_clusters`](#get_playground_clustersz-bbox) | Standalone cluster tier | zoom ≤ `clusterMaxZoom` |
 | [`get_playgrounds_bbox`](#get_playgrounds_bboxbbox) | Standalone polygon tier | zoom > `clusterMaxZoom` |
 | [`get_playground`](#get_playgroundosm_id) | Deeplink restore | single feature |
-| [`get_playground_centroids`](#get_playground_centroidsbbox-server-only-in-p1) | Federation re-clustering (P2), not consumed by standalone | server-shipped |
+| [`get_playground_centroids`](#get_playground_centroidsbbox) | Lightweight per-playground rows | not used by spieli's own frontend |
 | [`get_equipment`](#get_equipmentbbox) | PlaygroundPanel | devices, pitches, benches within a bbox |
 | [`get_standalone_equipment`](#get_standalone_equipmentbbox) | Standalone pitch layer | pitches/benches outside playgrounds |
 | [`get_pitch`](#get_pitchosm_id) | Pitch deeplink restore (`#P<osm_id>`) | single standalone pitch |
@@ -17,7 +17,7 @@ PostgREST exposes the `api` schema as JSON-RPC endpoints under `/api/rpc/`. All 
 | [`get_trees`](#get_treesbbox) | PlaygroundPanel tree layer | natural=tree nodes and natural=tree_row lines |
 | [`get_meta`](#get_meta) | Hub federation discovery | instance metadata + import freshness |
 | [`get_nearest_playgrounds`](#get_nearest_playgroundslat-lon) | Not used by the frontend since #949 | ordered by distance |
-| [`get_playgrounds` (deprecated)](#deprecated-get_playgroundsrelation_id) | Legacy fallback | region-scoped, will be removed |
+| [`get_playgrounds` (deprecated)](#deprecated-get_playgroundsrelation_id) | Legacy fallback | region-scoped, deprecated |
 
 ## Two-tier client contract
 
@@ -34,11 +34,11 @@ Single-feature hydration on demand:
 |---|---|
 | Deeplink restore at low zoom | `get_playground(osm_id)` |
 
-A third bbox-scoped RPC, `get_playground_centroids(bbox)`, ships server-side for future use (federated re-clustering across backends, lighter mid-zoom payloads) but is not consumed by the standalone client in this release.
+A third bbox-scoped RPC, `get_playground_centroids(bbox)`, returns one lightweight row per playground. Neither the standalone map nor the hub calls it (the hub merges cluster buckets instead, see [How the hub works internally](../contributing/hub-internals.md)); it is there for other clients.
 
 ## `get_playground_clusters(z, bbox)`
 
-Pre-aggregated cluster buckets for the cluster tier. Each bucket counts playgrounds whose centroid snaps to a zoom-appropriate grid cell, broken down by completeness and access.
+Pre-aggregated cluster buckets for the cluster tier. Each bucket counts playgrounds whose centroid snaps to a zoom-appropriate grid cell, broken down by mapping detail.
 
 **Parameters**
 
@@ -84,7 +84,7 @@ Pre-aggregated cluster buckets for the cluster tier. Each bucket counts playgrou
 
 **Invariant**: `count = complete + partial + missing` for every bucket. Every playground — including access-restricted ones — is counted into its completeness bucket; there is no separate `restricted` field. The `filter_private` parameter still excludes access-restricted playgrounds from the result when set.
 
-**Bucket centre**: emitted `lon` / `lat` is the **unweighted spatial mean of the bucket's member centroids** (`ST_Centroid(ST_Collect(centroid_3857))`, reprojected to WGS84) — not the grid anchor. The grid still defines *which* playgrounds share a bucket (the grouping key), but the dot is drawn at the geographic mean of those members so it tracks settlements rather than a lattice. Output is deterministic for a given `(z, bbox)` and dataset: identical inputs produce identical positions. See [Architecture — Tiered playground delivery](architecture.md#tiered-playground-delivery) for the grouping-vs-position split.
+**Bucket centre**: emitted `lon` / `lat` is the **unweighted spatial mean of the bucket's member centroids** (`ST_Centroid(ST_Collect(centroid_3857))`, reprojected to WGS84) — not the grid anchor. The grid still defines *which* playgrounds share a bucket (the grouping key), but the dot is drawn at the geographic mean of those members so it tracks settlements rather than a lattice. Output is deterministic for a given `(z, bbox)` and dataset: identical inputs produce identical positions. See [Frontend Guide — Cluster buckets](../contributing/frontend-guide.md#cluster-buckets-grouping-position-and-merging) for the grouping-vs-position split.
 
 **Example**
 
@@ -102,7 +102,7 @@ Polygon-tier RPC. Returns the same `FeatureCollection` shape as the legacy regio
 |---|---|---|
 | `min_lon`, `min_lat`, `max_lon`, `max_lat` | `float8` | WGS84 bounding box |
 
-**Response** — GeoJSON `FeatureCollection`. Each feature's `properties` include `osm_id`, `osm_type` (`R`, `W`, or `N`), `name`, `leisure`, `operator`, `access`, `surface`, `area`, the playground-stats counts (`tree_count` — `natural=tree` nodes within 15 m of the playground on the ground, `bench_count`, etc.), and the per-equipment booleans (`is_water`, `for_baby`, `for_toddler`, `for_wheelchair`, `has_soccer`, `has_basketball`, `has_fence`, `has_dogs`, `has_theme`, `has_shade`, `has_lit`), plus the tri-state `wheelchair_play` (`'yes'` | `'no'` | `null`). The original tag hstore is spread on top so any OSM tag is reachable. Node playgrounds (`osm_type = 'N'`) are returned as small circular polygons (5 m radius buffer around the node point).
+**Response** — GeoJSON `FeatureCollection`. Each feature's `properties` include `osm_id`, `osm_type` (`R`, `W`, or `N`), `name`, `leisure`, `operator`, `access`, `surface`, `area`, the playground-stats counts (`device_count`, `bench_count`, `shelter_count`, `picnic_count`, `table_tennis_count`, and `tree_count` — `natural=tree` nodes within 15 m of the playground on the ground), and the per-equipment booleans (`is_water`, `for_baby`, `for_toddler`, `for_wheelchair`, `has_soccer`, `has_basketball`, `has_fence`, `has_dogs`, `has_theme`, `has_shade`, `has_lit`), plus the tri-state `wheelchair_play` (`'yes'` | `'no'` | `null`). The original tag hstore is spread on top so any OSM tag is reachable. Node playgrounds (`osm_type = 'N'`) are returned as small circular polygons (5 m radius buffer around the node point).
 
 The equipment booleans are aggregated across all equipment within the playground polygon. `for_baby` is `true` when any equipment has `baby=yes`, `capacity:baby` set, or `playground` ∈ `baby_swing`, `basketswing`, `sandpit`, `springy`. See [Import Pipeline — filter flags](../contributing/import-pipeline.md#filter-flags-for_baby-for_toddler-is_water) for the full trigger list.
 
@@ -157,7 +157,7 @@ Single-feature lookup used by the deeplink-hydration path when the polygon sourc
 
 **Frontend convention**: callers throw on non-2xx responses and treat a `null` body as a legitimate "not found", so server errors and missing playgrounds can be acted on differently.
 
-## `get_playground_centroids(bbox)` *(server-only in P1)*
+## `get_playground_centroids(bbox)`
 
 Returns lightweight per-playground rows for a bbox — `osm_id`, lon/lat, completeness, and a nested `filter_attrs` object (`has_water`, `for_baby`, `for_toddler`, `for_wheelchair`, `has_soccer`, `has_basketball`, `access_restricted`). No polygon geometry, no tag hstore.
 
@@ -186,43 +186,13 @@ Returns lightweight per-playground rows for a bbox — `osm_id`, lon/lat, comple
 ]
 ```
 
-The standalone client doesn't consume this RPC in P1 — the server-bucketed cluster tier covers zoom ≤ 13 directly. The RPC ships now so federated hub clustering (`add-federated-playground-clustering`) and any future centroid tier can use it without a schema change.
+spieli's own frontend does not call it: the server-bucketed cluster tier covers zoom ≤ 13 in both modes, and the hub merges those buckets across backends. `fetchPlaygroundCentroids()` in `app/src/lib/api.js` exists but is unused.
 
-> Note: the `filter_attrs` object includes `has_fence`, `has_dogs`, `has_theme`, `has_shade` and `has_lit` for the playground filters. Both are nullable — `has_shade` is `true` when `shade=yes`, `false` when `shade=no`; `has_lit` is `true` for a recognised lighting value (`yes`, `24/7`, `automatic`, `limited`, `interval`, times), `false` for `no` / `disused`; each is `null` when untagged (`has_lit` also when the value is not recognised).
-
-## `get_meta()` — extended
-
-Existing federation-discovery RPC, extended with completeness counts.
-
-**Response shape** (changed in this release):
-
-```json
-{
-  "relation_id":      62700,
-  "name":             "Landkreis Fulda",
-  "playground_count": 4,
-  "complete":         2,
-  "partial":          1,
-  "missing":          1,
-  "bbox":             [9.43, 50.36, 10.08, 50.81]
-}
-```
-
-**Invariant**: `playground_count = complete + partial + missing`. Access-restricted playgrounds are rolled into the completeness counts (same as `get_playground_clusters`). Hub uses the three counts to render a country-level macro view — see `add-federated-playground-clustering`.
-
-Additional fields:
-
-| Field | Type | Notes |
-|---|---|---|
-| `last_import_at` | `timestamptz` \| `null` | Timestamp of the last successful `import.sh` run. `null` before any import has run (first deploy). |
-| `data_age_seconds` | `int` \| `null` | `EXTRACT(EPOCH FROM (now() - last_import_at))::int`. `null` when `last_import_at` is `null`. |
-| `region_geom` | GeoJSON geometry \| `null` | Simplified boundary polygon of the backend's region (`ST_SimplifyPreserveTopology` at 0.05°, WGS84). Used by the hub for accurate polygon-based overlap detection. `null` when the region relation is absent from `planet_osm_polygon`. Backends running a pre-0.4.13 image omit this field — the hub falls back to no overlap warning for those backends. |
-
-The hub reads `last_import_at` and `data_age_seconds` via `/federation-status.json` (written by the hub container's 60-second cron poll) — see [Monitoring](../ops/monitoring.md) for the full exposition format. `region_geom` is read directly by the browser-side registry store and used by `@turf/boolean-intersects` to determine whether two backends genuinely share geographic area.
+> Note: the `filter_attrs` object includes `has_fence`, `has_dogs`, `has_theme`, `has_shade` and `has_lit` for the playground filters. `has_shade` and `has_lit` are nullable — `has_shade` is `true` when `shade=yes`, `false` when `shade=no`; `has_lit` is `true` for a recognised lighting value (`yes`, `24/7`, `automatic`, `limited`, `interval`, times), `false` for `no` / `disused`; each is `null` when untagged (`has_lit` also when the value is not recognised).
 
 ## Deprecated: `get_playgrounds(relation_id)`
 
-The pre-tiered region-scoped RPC stays available for one release for compatibility with Playwright fixtures and external consumers. Marked DEPRECATED via SQL `COMMENT`; the client `fetchPlaygrounds` logs a one-time console warning. It will be removed in the release after next.
+The pre-tiered region-scoped RPC, deprecated since v0.3.0. It stays as the fallback a client or hub uses when a backend answers a tier RPC with 404, and for external consumers. Marked DEPRECATED via SQL `COMMENT`; the client `fetchPlaygrounds` logs a one-time console warning. No release for its removal is set.
 
 Migration: replace any caller with `fetchPlaygroundsBbox(extent, baseUrl)` driven by viewport extent.
 
@@ -238,7 +208,7 @@ Covers nodes, polygon ways, and linear ways. Used by `PlaygroundPanel` to popula
 |---|---|---|
 | `min_lon`, `min_lat`, `max_lon`, `max_lat` | `float8` | WGS84 bbox — typically the selected playground's extent |
 
-**Response** — GeoJSON `FeatureCollection`. Each feature's `properties` include `osm_id`, `osm_type` (`N` or `W`), `name`, `amenity`, `leisure`, `sport`, plus all OSM tags from the hstore column spread onto the properties object.
+**Response** — GeoJSON `FeatureCollection`. Each feature's `properties` include `osm_id`, `osm_type` (`N` or `W`), `name`, `amenity`, `leisure`, `sport`, `surface`, plus all OSM tags from the hstore column spread onto the properties object.
 
 ```json
 {
@@ -414,8 +384,12 @@ Returns instance metadata used by the Hub for federation discovery. Required for
 | `osm_data_age_seconds` | Seconds since `osm_data_timestamp`. `null` when `osm_data_timestamp` is null. |
 | `importing` | `true` while `osm2pgsql` is actively running (data partially rebuilt); `false` at all other times. `false` on older backends that pre-date this field. The Hub drawer shows an "updating" badge while this is `true`. |
 | `version` | spieli version string baked in at import time from `package.json` (e.g. `"0.4.1"`). Displayed in the Hub's instance drawer. |
-| `impressum_url` | Absolute URL of the Impressum page. `IMPRESSUM_URL` env var takes priority; otherwise constructed from `SITE_URL + /impressum`. `null` when neither is configured. Baked in at import time — run `make db-apply` after changing legal env vars. |
+| `impressum_url` | Absolute URL of the Impressum page. `IMPRESSUM_URL` env var takes priority; otherwise constructed from `SITE_URL + /impressum`. `null` when neither is configured. Baked in when `api.sql` is applied — re-apply it after changing legal env vars (see [Configure the instance → Applying legal changes](../ops/configure.md#applying-legal-changes)). |
 | `privacy_url` | Absolute URL of the Datenschutzerklärung. `PRIVACY_URL` env var takes priority; otherwise `SITE_URL + /datenschutz`. `null` when neither is configured. |
+| `has_legal` | `true` when the backend stores generated legal text in `api.legal_content` (written by a full import when `IMPRESSUM_NAME` and `IMPRESSUM_ADDRESS` are set). Lets the hub show the legal links via `get_legal` even when both URLs are `null`. |
+| `region_geom` | GeoJSON geometry \| `null`. Simplified boundary of the region (`ST_SimplifyPreserveTopology` at 0.05°, WGS84), used by the hub to detect a region lying entirely inside another (`@turf/boolean-contains`, checked both ways, in the browser). Regions that only partly overlap get no warning. `null` when the relation has no polygon; omitted by pre-0.4.13 backends, which then get no overlap warning. |
+
+The hub reads the import timestamps and `importing` through its own `/federation-status.json` (written every 60 seconds by the hub's cron poll, see [Monitoring](../ops/monitoring.md)); counts, `bbox` and `region_geom` come from each browser's direct `get_meta` call.
 
 **Example**
 
@@ -427,7 +401,7 @@ curl 'https://example.com/api/rpc/get_meta'
 
 ## `get_legal(type)`
 
-Returns generated legal HTML for `data-node` backends (no nginx web UI). The Hub calls this when `get_meta()` returns a `null` `impressum_url` or `privacy_url`.
+Returns the legal HTML a data-node stored during its last full import. The Hub calls this when `get_meta()` returns a `null` `impressum_url` or `privacy_url`.
 
 **Parameters**
 
@@ -441,7 +415,7 @@ Returns generated legal HTML for `data-node` backends (no nginx web UI). The Hub
 { "content": "<html>...</html>" }
 ```
 
-Returns `null` (HTTP 200) when no content has been stored for the requested type (i.e. `IMPRESSUM_NAME` was not set when the container started).
+Returns `null` (HTTP 200) when no content has been stored for the requested type, that is, when no full import has run with `IMPRESSUM_NAME` and `IMPRESSUM_ADDRESS` set.
 
 **Example**
 
@@ -496,7 +470,7 @@ curl 'https://example.com/api/rpc/get_nearest_playgrounds?lat=50.54&lon=9.71'
 ## See also
 
 - [Federation](federation.md) — Hub-mode discovery, `registry.json`, federation endpoints overview.
-- [Architecture](architecture.md) — DEPLOY_MODE × APP_MODE matrix, where `apiBaseUrl` is set.
+- [Deployment modes](deployment-modes.md) — the `DEPLOY_MODE` × `APP_MODE` combinations.
 - `importer/api.sql` — authoritative SQL source for every RPC.
 - `app/src/lib/api.js` — all client fetchers (each with JSDoc).
 - `app/src/lib/tieredOrchestrator.js` — moveend-driven tier picker that calls these RPCs.

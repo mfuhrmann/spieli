@@ -2,7 +2,7 @@
 
 [spieli.eu](https://spieli.eu) is a public playground map. It holds no data of its own. Every region on it comes from a data-node that someone runs for that region. At the moment these are the German states, and we are looking for people to add more. A region does not have to be a whole country: a single state, district or city is just as welcome.
 
-You can see which regions are already covered on the map itself, in the list of regions on [spieli.eu](https://spieli.eu), or in [spieli.eu/registry.json](https://spieli.eu/registry.json). Before you start, please come to [#spieli:matrix.org](https://matrix.to/#/#spieli:matrix.org) anyway: someone may already be setting up your region, and we can help you choose its boundary.
+You can see which regions are already covered on the map itself, in the list of regions on [spieli.eu](https://spieli.eu), or in [spieli.eu/registry.json](https://spieli.eu/registry.json). Even so, please come to [#spieli:matrix.org](https://matrix.to/#/#spieli:matrix.org) before you start: someone may already be setting up your region, and we can help you choose its boundary.
 
 An example of a well-mapped playground is [Carl-Schurz-Straße in Fulda](https://spieli.eu/#hessen/W818585707).
 
@@ -23,22 +23,13 @@ Choose `data-node-ui` if you want a map you can point people to locally under it
 
 ## Server requirements
 
-A small VPS is enough. On our production server, 15 German states run side by side on one VPS with 8 GB RAM. Per region:
-
-| Region size | Example | RAM while serving | Disk (database and extract) |
-|---|---|---|---|
-| City | Bremen, Saarland | about 100 MB | 0.2–0.3 GB |
-| Large city | Berlin, Hamburg | 100–300 MB | about 0.5 GB |
-| Medium-sized state | Hesse, Saxony, Schleswig-Holstein | 130–200 MB | 0.7–1.5 GB |
-| Large state | Bavaria, North Rhine-Westphalia | 200–550 MB | 3–4 GB |
-
-An import needs more memory than serving. For a single region, 2 GB RAM plus swap is enough in most cases, and 4 GB for the largest. The Docker images take another 1–2 GB of disk, and the database temporarily grows during an import, so plan for about twice the disk size in the table. The CPU hardly matters. Importing a state takes 10 to 40 minutes.
+A small VPS is enough. A city-sized region uses about 100 MB of memory while serving and a large state up to about 550 MB; an import needs more, about 2 GB plus swap for a single region. Disk needs range from 0.2 GB for a city to about 4 GB for a large state, plus room for the import. Measured figures per region, and what to watch during an import: [Sizing](../reference/sizing.md).
 
 Once it runs, there is little to do: keep the server's operating system up to date and read the [release notes](https://github.com/mfuhrmann/spieli/releases) now and then. If a release needs more than pulling the new images, its notes say so (see also [Upgrading](../ops/upgrade.md)).
 
 ## Choosing a region
 
-A data-node covers one OpenStreetMap boundary relation. That can be a whole country, but a state, a district or a single city of a country is fine too; other people can add the neighbouring regions later. The region is cut out of a [Geofabrik](https://download.geofabrik.de) extract that contains the region. The table above goes up to Bavaria, which has 13 million inhabitants. Larger countries work as well but need more memory and disk; please ask in the chat first.
+A data-node covers one OpenStreetMap boundary relation. That can be a whole country, but a state, a district or a single city is fine too; other people can add the neighbouring regions later. spieli cuts it out of a [Geofabrik](https://download.geofabrik.de) extract that contains it. The [measured figures](../reference/sizing.md) go up to Bavaria, which has 13 million inhabitants. Larger countries work as well but need more memory and disk; please ask in the chat first.
 
 ## Setting it up
 
@@ -46,12 +37,7 @@ You need a Linux server with Docker and the Compose plugin, a domain or subdomai
 
 1. Run the installer. The command for the current release is in the [Quick Start](quick-start.md#install), which also explains how to find your region's relation ID and extract. Choose `data-node` or `data-node-ui`, and answer yes to automatic updates. The question about an external hub origin can stay empty.
 
-2. Set up HTTPS with the Traefik installer, which gets a certificate from Let's Encrypt. Choose the same mode as in the first step. In both modes the API then sends the CORS headers spieli.eu needs.
-
-    ```bash
-    curl -fsSL https://raw.githubusercontent.com/mfuhrmann/spieli/main/deploy/traefik/install-traefik.sh -o install-traefik.sh
-    bash install-traefik.sh
-    ```
+2. Set up HTTPS with the Traefik installer, which gets a certificate from Let's Encrypt: [HTTPS setup](../ops/https-setup.md). Choose mode 1, `data-node-ui`; the app's nginx then serves the API with the CORS headers spieli.eu needs. (The installer's `data-node` mode cannot reach the API at the moment, [#1062](https://github.com/mfuhrmann/spieli/issues/1062); until that is fixed, install spieli as `data-node-ui` in step 1 too.)
 
 3. When the first import has finished, check the API from another machine. The answer should be `200 OK` with the header `Access-Control-Allow-Origin: *`, and `playground_count` should be above 0. With `data-node-ui`, your map is now at `https://my-playground-map.at`.
 
@@ -59,20 +45,20 @@ You need a Linux server with Docker and the Compose plugin, a domain or subdomai
     curl -i https://my-playground-map.at/api/rpc/get_meta
     ```
 
-4. Send us the API address (`https://my-playground-map.at/api`), the name of the region and its country in [#spieli:matrix.org](https://matrix.to/#/#spieli:matrix.org), and we add it to spieli.eu.
+4. Send us the API address (`https://my-playground-map.at/api`), the name of the region and its country in [#spieli:matrix.org](https://matrix.to/#/#spieli:matrix.org), and we will add it to spieli.eu.
 
 ## Legal and privacy
 
-The legal requirements depend on your country, and we cannot give legal advice. Two things spieli can do for you:
+The legal requirements depend on your country, and we cannot give legal advice. Two things to know:
 
-- If you set `IMPRESSUM_NAME`, `IMPRESSUM_ADDRESS` and `IMPRESSUM_EMAIL` in `.env`, spieli generates an imprint and a privacy notice. If you already have such pages, set `IMPRESSUM_URL` and `PRIVACY_URL` instead. spieli.eu links them from your region. In Germany a public service needs an imprint. All settings are described in [Configuration](../ops/configuration.md).
+- If you set `IMPRESSUM_NAME`, `IMPRESSUM_ADDRESS` and `IMPRESSUM_EMAIL` in `.env`, spieli generates an imprint and a privacy notice. If you already have such pages, set `IMPRESSUM_URL` and `PRIVACY_URL` instead. spieli.eu links them from your region. In Germany a public service needs an imprint. How it works and what to restart after a change: [Configure the instance → Legal pages](../ops/configure.md#legal-pages).
 - For your privacy notice: visitors' browsers connect to your server, which therefore sees their IP address. By default nothing is logged or stored, and no cookies are set.
 
 The data is © OpenStreetMap contributors and licensed under the ODbL. spieli.eu shows the attribution.
 
 ## Languages
 
-The map is available in German, English and Slovak. French and Spanish are about 80 % translated, other languages less. Translation happens on [Weblate](https://hosted.weblate.org/engage/spieli/), and help there is welcome too.
+The map is available in German, English and Slovak. Other languages are being translated on [Weblate](https://hosted.weblate.org/engage/spieli/), where help is welcome; a language appears in the map once it has been switched on in a release. A region in another language is still fine: the playground names come from OpenStreetMap as mapped.
 
 ## See also
 

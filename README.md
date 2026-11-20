@@ -15,6 +15,8 @@ In English, it is used as a neuter noun: "the spieli".
 
 A free, interactive web map for exploring playgrounds based on [OpenStreetMap](https://openstreetmap.org) data — configurable for any region.
 
+**See it live at [spieli.eu](https://spieli.eu)**: one map over many regions, each served by its own data-node. Anyone can run one for their city, district or country, and with it a map of their own ([why it works this way](https://mfuhrmann.github.io/spieli/concepts/federation/)).
+
 ### Historically
 
 > **Origin:** This project is a further development of the original [Berliner Spielplatzkarte](https://github.com/SupaplexOSM/spielplatzkarte) by Alex Seidel.
@@ -29,7 +31,7 @@ An interactive installer downloads everything it needs and walks you through con
 
 The command for the current release is in the [Quick Start](https://mfuhrmann.github.io/spieli/getting-started/quick-start/).
 
-For deploying from source, see [Manual Deploy](https://mfuhrmann.github.io/spieli/ops/manual-deploy/).
+To run it from a clone and work on it, see [Local Development](https://mfuhrmann.github.io/spieli/contributing/local-dev/).
 
 To add your region to [spieli.eu](https://spieli.eu), see [Host a Region for spieli.eu](https://mfuhrmann.github.io/spieli/getting-started/host-a-region/).
 
@@ -39,13 +41,13 @@ To add your region to [spieli.eu](https://spieli.eu), see [Host a Region for spi
 
 **[mfuhrmann.github.io/spieli](https://mfuhrmann.github.io/spieli/)**
 
-Includes deployment guides, configuration reference, contributing how-tos, and architecture docs.
+Sorted by who you are: using the map, how spieli works, running it, translating, developing, and a reference section for everything you look up.
 
 ---
 
 ## Tech stack
 
-Svelte 5 · Vite 6 · OpenLayers · Tailwind CSS · PostgreSQL/PostGIS · PostgREST · osm2pgsql · osmium · nginx · Docker
+Svelte 5 · Vite 8 · OpenLayers · Tailwind CSS · PostgreSQL/PostGIS · PostgREST · osm2pgsql · osmium · nginx · Docker
 
 Full details: [Tech stack reference](https://mfuhrmann.github.io/spieli/reference/tech-stack/)
 

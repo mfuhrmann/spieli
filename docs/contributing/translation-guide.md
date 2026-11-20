@@ -26,6 +26,11 @@ Most strings are short UI labels like buttons, tooltips, and status messages:
 | `Filter` | `Filter` |
 | `Reset all` | `Alle zurücksetzen` |
 
+## Things to keep as-is
+
+- Placeholders like `{regionName}`, `{count}`, `{name}` — do not translate these
+- The `{count, plural, ...}` structure — only translate the text inside the `{}`
+
 ## Plural forms
 
 Some strings contain a count, like:
@@ -35,7 +40,7 @@ Some strings contain a count, like:
 ```
 
 Keep the `{count, plural, ...}` wrapper and translate only the text inside.
-Weblate shows this as a **single input field** — you must write the complete ICU string including all plural forms for your language.
+Weblate shows this as a **single input field** — you must write the complete text, including the `{count, plural, …}` part with all plural forms for your language.
 
 **Languages with two plural forms** (German, Spanish, French, Italian, Dutch, Swedish, Portuguese):
 
@@ -90,23 +95,17 @@ new Intl.PluralRules('pl').select(5)   // "many"
 
 This is the same rule the app uses at runtime, so it is authoritative.
 
-Weblate will warn you if the ICU *syntax* is broken — fix any flagged strings before saving. It cannot tell you that a grammatically correct form is sitting in the wrong category, so that part is on you.
-
-## Things to keep as-is
-
-- Placeholders like `{regionName}`, `{count}`, `{name}` — do not translate these
-- The `{count, plural, ...}` structure — only translate the text inside the `{}`
+Weblate will warn you if the plural structure is broken — fix any flagged strings before saving. It cannot tell you that a grammatically correct form is sitting in the wrong category, so that part is on you.
 
 ## When does my translation go live?
 
-The app currently ships German and English only. Other languages are
-collected in Weblate and activated by a maintainer once they reach
-**80% completion** — it is a manual step, not an automatic threshold, so
-crossing 80% does not switch your language on by itself. Until then your
-work is saved in the repo and visible to other translators.
+The app currently ships **German, English and Slovak**. Other languages are collected in Weblate and switched on by a maintainer once they reach **80% completion**. That is a manual step: crossing 80% does not switch your language on by itself, but the project's tests then flag it, so it does not get forgotten. Until then your work is saved in the repository and visible to other translators.
 
-If your language is complete and still not live, open an issue — that is
-the signal to activate it.
+A language can also be held back on purpose. French and Spanish currently are ([#752](https://github.com/mfuhrmann/spieli/issues/752)): no region on the map serves those languages yet, so they wait until one does. Your work is kept and goes live with it.
+
+If your language has reached 80%, is not held back, and is still not live, open an issue — that is the signal to activate it.
+
+Browsers whose language is not live get the English version. See [User Guide → Language](../user-guide.md#language).
 
 ## Questions?
 

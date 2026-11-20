@@ -7,8 +7,8 @@
 // filtering); `loaded` increments per-backend as `onResult` fires; `settling`
 // is true between the start of a fan-out and its `Promise.all` resolution.
 //
-// Consumed by InstancePanel to surface partial-load state in the pill
-// ("3/5 regions loaded") so users see federation responsiveness.
+// Nothing reads it at the moment: the region pill's progress comes from the
+// registry store. Kept as a write-only signal for a future progress display.
 
 import { writable } from 'svelte/store';
 export const hubLoadingStore = writable({ loaded: 0, total: 0, settling: false });
