@@ -11,6 +11,8 @@ Check [GitHub Releases](https://github.com/mfuhrmann/spieli/releases) for the la
 | `requires-reimport` | OSM data model changed | Trigger a full re-import **after** the image update lands |
 | `requires-schema-update` | `api.sql` changed | With Watchtower: nothing, the daemon applies it on restart. Manual upgrade: steps 2–4 below |
 
+**No database backup needed.** Everything in the database comes from OpenStreetMap; if an upgrade goes wrong, a re-import rebuilds it. What cannot be rebuilt is your `.env` (and on a hub, `registry.json`) — keep a copy of those. Details: [Backup and Restore](backup-restore.md).
+
 To check what version is currently running:
 
 ```bash

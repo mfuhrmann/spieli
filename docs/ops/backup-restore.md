@@ -11,7 +11,7 @@ The only persistent state in spieli is the PostgreSQL database. All other data c
 | Configuration | `.env` file | **Yes** — contains your passwords and settings |
 | Custom `registry.json` | your deployment directory | **Yes** (if Hub mode) |
 
-The most important thing to back up is your `.env` file. The database can always be rebuilt from the Geofabrik PBF — a full import takes minutes for a district and 10 to 40 minutes for a state. A lost `.env` means a lost `POSTGRES_PASSWORD` and requires recreating the stack from scratch.
+The most important thing to back up is your `.env` file. The database can always be rebuilt from the Geofabrik PBF ([how long that takes](../reference/sizing.md#import-duration)). A lost `.env` means a lost `POSTGRES_PASSWORD` and requires recreating the stack from scratch.
 
 ## Back up the database
 
