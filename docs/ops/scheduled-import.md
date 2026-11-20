@@ -109,14 +109,7 @@ Watchtower complements daemon mode: it installs new spieli images once a day, an
 
 ## How long does an import take?
 
-| Scenario | Typical duration |
-|---|---|
-| First run, PBF not cached | download time + 2–5 min |
-| First run, PBF cached | 2–5 min |
-| Re-run, Geofabrik has a newer extract | download time + 2–5 min |
-| Re-run, Geofabrik extract unchanged | 30–60 s for small regions; 30+ min for large (e.g. all of Germany) |
-
-The source PBF is checked against Geofabrik on every run using HTTP `If-Modified-Since`. When no newer extract is available the download is skipped and the existing bbox and tag-filtered caches are reused — only the final osm2pgsql + api.sql step runs.
+See [Sizing → Import duration](../reference/sizing.md#import-duration).
 
 ## How fresh is the data?
 

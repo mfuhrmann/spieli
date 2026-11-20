@@ -19,7 +19,19 @@ All 15 states plus the hub use about 2.6 GB of memory together while serving.
 
 An import is the memory peak, well above serving: for a single region, 2 GB RAM plus swap is enough in most cases, and 4 GB for the largest. That assumes the database tuning values meant for small hosts ([Configuration → RAM sizing](../ops/configure.md#ram-sizing)); the installed compose file currently passes higher ones ([#1060](https://github.com/mfuhrmann/spieli/issues/1060)).
 
-The database temporarily grows during an import (the new `playground_stats` is built next to the old one), so plan for about twice the disk in the table. The Docker images take another 1–2 GB. The CPU hardly matters; a state imports in 10 to 40 minutes.
+The database temporarily grows during an import (the new `playground_stats` is built next to the old one), so plan for about twice the disk in the table. The Docker images take another 1–2 GB.
+
+### Import duration
+
+Import time scales with the size of the extract, not with the size of your region: a district is cut out of its state's extract, so it pays for reading the whole file.
+
+| Extract | PBF size | Approximate duration |
+|---|---|---|
+| City or district (cut from a state extract) | 0.2–1 GB | 5–20 min |
+| State | 0.5–2 GB | 10–40 min |
+| Germany | ~4.5 GB | 1–3 h |
+
+The first run adds the download. Later runs ask Geofabrik with `If-Modified-Since` and skip the download, and the cut, when no newer extract exists; `osm2pgsql` and the schema apply still run every time. More cores help a little: raise `OSM2PGSQL_THREADS` (default `4`).
 
 A container's `memory.peak` is no guide to the import's real need: it counts reclaimable file cache, and shows 3.7–4.6 GiB for every importer, Bremen included.
 

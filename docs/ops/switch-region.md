@@ -61,15 +61,7 @@ The app will return empty responses until the import finishes.
 
 ## Import duration
 
-Import time scales with extract size and available CPU/RAM:
-
-| Extract | PBF size | Approximate duration |
-|---|---|---|
-| Landkreis (via Bundesland extract) | 0.2–1 GB | 5–20 min |
-| Bundesland | 0.5–2 GB | 10–40 min |
-| Germany | ~4.5 GB | 1–3 h |
-
-Increase `OSM2PGSQL_THREADS` in `.env` to speed up the import on multi-core servers.
+See [Sizing → Import duration](../reference/sizing.md#import-duration).
 
 ## After the import
 

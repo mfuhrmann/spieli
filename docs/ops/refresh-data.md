@@ -97,9 +97,7 @@ curl -s https://your-domain.example.com/api/rpc/get_meta | python3 -m json.tool 
 
 ## How long does it take?
 
-See the timing table in [Scheduled Import → How long does an import take?](scheduled-import.md#how-long-does-an-import-take)
-
-For most small regions, subsequent imports complete in under a minute once the PBF is cached.
+See [Sizing → Import duration](../reference/sizing.md#import-duration).
 
 ## See also
 

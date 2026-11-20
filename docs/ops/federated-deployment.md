@@ -64,7 +64,7 @@ docker compose --profile data-node-ui up -d
 docker compose --profile data-node-ui run --rm importer
 ```
 
-The first command starts `db`, `postgrest`, and the `app` container (which hosts nginx in front of PostgREST). The second runs the importer once — see [Scheduled Import → How long does an import take?](scheduled-import.md#how-long-does-an-import-take) for timings, and [Import Pipeline](../contributing/import-pipeline.md) for what it does.
+The first command starts `db`, `postgrest`, and the `app` container (which hosts nginx in front of PostgREST). The second runs the importer once — see [Sizing → Import duration](../reference/sizing.md#import-duration) for timings, and [Import Pipeline](../contributing/import-pipeline.md) for what it does.
 
 ### Expose `/api/` to the Hub
 
