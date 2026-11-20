@@ -6,18 +6,22 @@ How the parts of a spieli instance fit together. The pages that follow build on 
 
 One region, one database. `APP_MODE=standalone` (the default).
 
-```
-                  ┌──────────────────────────── spieli instance ────────────────────────────┐
-                  │                                                                         │
-  Browser ──────► │ nginx ──────► PostgREST ──────► PostgreSQL/PostGIS ◄────── importer     │ ◄── OpenStreetMap extract
-  (your phone     │ (serves the   (turns SQL        (holds the region's        (osmium +    │     (Geofabrik, re-imported
-   or laptop)     │  app, proxies  functions into    playground data)           osm2pgsql)  │      every few days)
-                  │  /api/ and     HTTP endpoints)                                          │
-                  │  /ext/, caches)                                                         │
-                  └───┬─────────────────────────────────────────────────────────────────────┘
-                      │ fetched server-side, cached, without the visitor's address
-                      ▼
-                  background map · search (Nominatim) · photos (Wikimedia Commons) · reviews (Mangrove)
+```mermaid
+flowchart TD
+    browser["Browser<br/>(your phone or laptop)"]
+    subgraph instance["spieli instance"]
+        nginx["nginx<br/>serves the app, proxies /api/ and /ext/, caches"]
+        postgrest["PostgREST<br/>turns SQL functions into HTTP endpoints"]
+        db[("PostgreSQL/PostGIS<br/>the region's playground data")]
+        importer["importer<br/>osmium + osm2pgsql"]
+    end
+    osm["OpenStreetMap extract<br/>(Geofabrik, re-imported every few days)"]
+    services["background map · search · photos · reviews"]
+
+    browser --> nginx
+    nginx --> postgrest --> db
+    osm --> importer --> db
+    nginx -- "fetched server-side, cached,<br/>without the visitor's address" --> services
 ```
 
 Your browser loads the app from nginx. When it needs playground data, it calls `/api/`, which nginx forwards to PostgREST. PostgREST runs a SQL function in PostgreSQL and returns the results as JSON — no custom server code needed. The data comes from the importer, which downloads the OpenStreetMap extract for the region, cuts the region out and loads it with osm2pgsql — on a schedule, or whenever you re-run it ([Scheduled Import](../ops/scheduled-import.md)).
@@ -28,15 +32,23 @@ Everything else the map shows (the background map, search, photos, reviews) ngin
 
 Multiple regional instances aggregated onto one shared map. `APP_MODE=hub`.
 
-```
-                    ┌──► hub          nginx: the app + registry.json  (no database)
-                    │
-  Browser ──────────┼──► data-node A  nginx /api/ ──► PostgREST ──► PostgreSQL (region A)
-                    │
-                    └──► data-node B  nginx /api/ ──► PostgREST ──► PostgreSQL (region B)
+```mermaid
+flowchart TD
+    browser["Browser"]
+    hub["hub<br/>nginx: the app + registry.json<br/>(no database)"]
+    subgraph a["data-node A"]
+        a_nginx["nginx /api/"] --> a_pg["PostgREST"] --> a_db[("PostgreSQL<br/>region A")]
+    end
+    subgraph b["data-node B"]
+        b_nginx["nginx /api/"] --> b_pg["PostgREST"] --> b_db[("PostgreSQL<br/>region B")]
+    end
 
-                         results from A and B are merged in the browser
+    browser -- "1. app + registry.json" --> hub
+    browser -- "2. playground data" --> a_nginx
+    browser -- "2. playground data" --> b_nginx
 ```
+
+The browser merges the results from A and B.
 
 The browser loads the app and `registry.json` from the hub, then fetches playground data **directly from each data-node** listed there, which is why every data-node's `/api/` must be public and send CORS headers. The hub itself never relays playground data. Why it is built this way: [Federation: one map, many owners](../concepts/federation.md). How the hub decides which data-nodes to ask: [How the hub works internally](../contributing/hub-internals.md). Setting one up: [Federated Deployment](../ops/federated-deployment.md).
 
