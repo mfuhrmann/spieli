@@ -286,7 +286,7 @@ In practice the key is dominated by two kinds of non-theme usage: tagging noise 
 - `areaThemesOf(props)` — allowlisted themes on the playground's own area tag; drives the prominent banner near the title.
 - `aggregatePlaygroundThemes(areaProps, deviceProps)` — deduped, ordered theme list for a playground (area theme first, then device themes by frequency). `PlaygroundPanel` renders this as an icon-only chip row folded onto the **Equipment** header in the overview; `EquipmentList`/`EquipmentTooltip` render the per-device symbol inline.
 
-Themes are panel-only — no map symbols (discovery is deferred).
+Themes are panel-only; showing them on the map is not planned yet.
 
 ## External services: implementation notes
 

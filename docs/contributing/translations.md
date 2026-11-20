@@ -203,7 +203,7 @@ It squashes the commits, not their messages: the add-on's own *Commit message* o
 
 There is **no Git exporter add-on** on this project. Hosted Weblate serves the component's repository at the `git_export` URL natively, so the recovery procedure's `weblate` remote needs nothing enabled.
 
-Commit message templates use Conventional Commits, matching the rest of the repo. They had drifted from `.weblate.yml` and were corrected on the live component on 2026-07-31 (#796); the bullets above predate that.
+Commit message templates use Conventional Commits, matching the rest of the repo. They had drifted from `.weblate.yml` and were corrected on the live component on 2026-07-31 (#796).
 
 !!! note "Auditing the configuration over the API"
 

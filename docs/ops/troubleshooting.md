@@ -163,7 +163,7 @@ docker compose --profile <mode> up -d importer
 1. **PostgREST container not running** — Check `docker compose ps`. The `postgrest` service should be running and healthy.
 2. **Database not ready** — PostgREST starts before PostgreSQL finishes initialising on first launch. It retries automatically, but a `docker compose restart postgrest` usually resolves it.
 3. **Schema cache stale** — After applying schema changes, PostgREST needs a schema reload. The importer sends `NOTIFY pgrst, 'reload schema'` automatically, but if that notification was missed, restart PostgREST: `docker compose restart postgrest`.
-4. **`web_anon` role missing** — `db/init.sql` creates this role on first init. If you deleted and recreated the `pgdata` volume without re-running init.sql (e.g. by running `docker volume rm` but not recreating via `docker compose up`), the role is missing. Run `docker compose up -d` to let init.sql re-run, or run it manually.
+4. **`web_anon` role missing** — `db/init.sql` creates this role, and the database image runs it only when it finds an empty `pgdata` volume. If the role is missing anyway, `db/init.sql` was not mounted when the volume was created — see [Add a Data-node → Why copy db/init.sql?](add-data-node.md#step-1-create-the-backend-directory). Put the file in place, then recreate the volume, or run it once by hand with `psql`.
 
 ---
 

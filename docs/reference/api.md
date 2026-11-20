@@ -17,7 +17,7 @@ PostgREST exposes the functions of the `api` schema as endpoints under `/api/rpc
 | [`get_trees`](#get_treesbbox) | PlaygroundPanel tree layer | natural=tree nodes and natural=tree_row lines |
 | [`get_meta`](#get_meta) | Hub federation discovery | instance metadata + import freshness |
 | [`get_nearest_playgrounds`](#get_nearest_playgroundslat-lon) | Not used by the frontend since #949 | ordered by distance |
-| [`get_playgrounds` (deprecated)](#deprecated-get_playgroundsrelation_id) | Legacy fallback | region-scoped, will be removed |
+| [`get_playgrounds` (deprecated)](#deprecated-get_playgroundsrelation_id) | Legacy fallback | region-scoped, deprecated |
 
 ## Two-tier client contract
 
@@ -192,7 +192,7 @@ spieli's own frontend does not call it: the server-bucketed cluster tier covers 
 
 ## Deprecated: `get_playgrounds(relation_id)`
 
-The pre-tiered region-scoped RPC stays available for one release for compatibility with Playwright fixtures and external consumers. Marked DEPRECATED via SQL `COMMENT`; the client `fetchPlaygrounds` logs a one-time console warning. It will be removed in the release after next.
+The pre-tiered region-scoped RPC, deprecated since v0.3.0. It stays as the fallback a client or hub uses when a backend answers a tier RPC with 404, and for external consumers. Marked DEPRECATED via SQL `COMMENT`; the client `fetchPlaygrounds` logs a one-time console warning. No release for its removal is set.
 
 Migration: replace any caller with `fetchPlaygroundsBbox(extent, baseUrl)` driven by viewport extent.
 

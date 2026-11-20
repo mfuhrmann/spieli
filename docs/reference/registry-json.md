@@ -19,12 +19,12 @@ Two top-level shapes are accepted:
       "instances": [
         {
           "slug": "fulda",
-          "url":  "https://spielplatz.fulda.de/api",
+          "url":  "https://fulda.example.org/api",
           "name": "Fulda"
         },
         {
           "slug": "mv",
-          "url":  "https://spielplatz.mv.de/api",
+          "url":  "https://mv.example.org/api",
           "name": "Mecklenburg-Vorpommern",
           "centroid": [12.43, 53.81]
         }
@@ -36,8 +36,8 @@ Two top-level shapes are accepted:
 
     ```json
     [
-      { "slug": "fulda",  "url": "https://spielplatz.fulda.de/api",  "name": "Fulda"  },
-      { "slug": "berlin", "url": "https://spielplatz.berlin.de/api", "name": "Berlin" }
+      { "slug": "fulda",  "url": "https://fulda.example.org/api",  "name": "Fulda"  },
+      { "slug": "berlin", "url": "https://berlin.example.org/api", "name": "Berlin" }
     ]
     ```
 
