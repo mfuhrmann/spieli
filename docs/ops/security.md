@@ -32,28 +32,15 @@ The password is used only internally between PostgREST and PostgreSQL — it nev
 
 ## HTTPS with a reverse proxy
 
-The Docker stack listens on plain HTTP (port `APP_PORT`, default 8080). In production, put an HTTPS-terminating reverse proxy in front of it.
+The Docker stack listens on plain HTTP (port `APP_PORT`, default 8080). In production, put an HTTPS-terminating reverse proxy in front of it. The bundled Traefik installer does this with Let's Encrypt, including renewal: [HTTPS setup](https-setup.md).
 
-### Traefik (recommended)
-
-Use the bundled installer — it configures Traefik with Let's Encrypt and handles certificate issuance and renewal automatically:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/mfuhrmann/spieli/main/deploy/traefik/install-traefik.sh -o install-traefik.sh
-bash install-traefik.sh
-```
-
-See [HTTPS setup](https-setup.md) for the full walkthrough.
-
-### Caddy (alternative)
+Any other reverse proxy works too. With Caddy, which obtains certificates by itself:
 
 ```caddyfile
 playground.example.com {
     reverse_proxy localhost:8080
 }
 ```
-
-Caddy handles HTTPS automatically with Let's Encrypt.
 
 ## Restrict database port exposure
 
