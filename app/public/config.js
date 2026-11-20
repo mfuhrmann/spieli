@@ -14,7 +14,6 @@ window.APP_CONFIG = {
   poiRadiusM: 5000,
   // Empty = use Overpass fallback (no PostgREST required for local dev)
   apiBaseUrl: '',
-  parentOrigin: '',
 
   // UI language. Empty = auto-detect from browser. Supported: 'de', 'en'.
   defaultLocale: '',

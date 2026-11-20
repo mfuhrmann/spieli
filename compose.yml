@@ -176,6 +176,9 @@ services:
       REGION_STATE:                ${REGION_STATE:-}
       MAP_ZOOM:                    ${MAP_ZOOM:-12}
       MAP_MIN_ZOOM:                ${MAP_MIN_ZOOM:-10}
+      CLUSTER_MAX_ZOOM:            ${CLUSTER_MAX_ZOOM:-13}
+      MACRO_MAX_ZOOM:              ${MACRO_MAX_ZOOM:-7}
+      HUB_POLL_INTERVAL:           ${HUB_POLL_INTERVAL:-300}
       BASEMAP_UPSTREAM:            ${BASEMAP_UPSTREAM:-}
       BASEMAP_COVERAGE_BBOX:      ${BASEMAP_COVERAGE_BBOX:-}
       BASEMAP_URL:                 ${BASEMAP_URL:-}

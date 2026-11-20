@@ -30,7 +30,6 @@ Every variable a stack reads from `.env`. The installer writes most of them; edi
 | `POI_RADIUS_M` | `5000` | app | Radius in metres for nearby POI search |
 | `REGION_PLAYGROUND_WIKI_URL` | Generic OSM wiki | app | Wiki page linked in the "Contribute data" modal |
 | `REGION_CHAT_URL` | *(hidden)* | app | Community chat link shown in the "Contribute data" modal; leave empty to hide the button. In hub mode this is the hub operator's own channel — backends do not contribute one. |
-| `PARENT_ORIGIN` | *(unset)* | app | **Currently has no effect.** It is written into `config.js` as `parentOrigin`, but no part of the frontend reads it. Appearing in a hub needs nothing on the data-node beyond a public `/api/` with CORS; leave it unset. Removal tracked in [#1061](https://github.com/mfuhrmann/spieli/issues/1061) |
 
 ## Basemap
 
@@ -69,9 +68,9 @@ Every variable a stack reads from `.env`. The installer writes most of them; edi
 | `REIMPORT_INTERVAL_MAX_DAYS` | *(unset)* | importer | Maximum days between automatic OSM re-imports. The importer picks a random interval in `[MIN, MAX]` days after each successful run. Recommended: `2`–`10`. Must be set together with `REIMPORT_INTERVAL_MIN_DAYS`. |
 | `REIMPORT_JITTER_HOURS` | `6` | importer | Daemon mode: a random 0–N hours added to every scheduled wait, and before an import that is already overdue at startup, so stacks that once imported together (after an upgrade sweep or reboot) drift apart instead of sharing a slot (#882). An overdue import is never held back past `MAX_DAYS` + this window. `0` disables it; with `MIN == MAX` the importer then warns. Not a whole number → default, with a log warning. |
 | `REIMPORT_STARTUP_JITTER_MAX_HOURS` | `0` | importer | On a **fresh DB** (no prior import recorded), sleep a random duration between `0` and this many hours before the first import. Prevents a thundering herd when many backends are deployed simultaneously. Has no effect on restarts or routine cycles (that is `REIMPORT_JITTER_HOURS`). Recommended value for multi-backend deployments: `6`. Before #882 compose did not pass it to the importer, so a value in `.env` had no effect. |
-| `OSM_BBOX` | *(auto)* | importer | Manual bounding box for the osmium pre-filter (`west,south,east,north`). Skips Nominatim lookup when set. **Only effective when deploying from source** (`compose.yml`); the installed `compose.prod.yml` does not pass it yet ([#1061](https://github.com/mfuhrmann/spieli/issues/1061)). |
-| `OSM_BBOX_PADDING` | `0.15` | importer | Degrees of padding added to each side of the Nominatim bbox (≈ 15 km). Only effective when deploying from source, see `OSM_BBOX`. |
-| `OSM_PREFILTER_MIN_MB` | `20` | importer | Source PBF files smaller than this many MB skip the osmium pre-filter step. Only effective when deploying from source, see `OSM_BBOX`. |
+| `OSM_BBOX` | *(auto)* | importer | Manual bounding box for the osmium pre-filter (`west,south,east,north`). Skips Nominatim lookup when set. |
+| `OSM_BBOX_PADDING` | `0.15` | importer | Degrees of padding added to each side of the Nominatim bbox (≈ 15 km). |
+| `OSM_PREFILTER_MIN_MB` | `20` | importer | Source PBF files smaller than this many MB skip the osmium pre-filter step. |
 
 ## Database tuning
 
@@ -89,7 +88,8 @@ Every variable a stack reads from `.env`. The installer writes most of them; edi
 |---|---|---|---|
 | `REGISTRY_URL` | `/registry.json` | app | URL of the registry JSON listing backends. Default is same-origin; bind-mount or bake in a custom file. See [Federated Deployment](federated-deployment.md) and [`registry.json` reference](../reference/registry-json.md). |
 | `HUB_POLL_INTERVAL` | `300` | app | Seconds between the hub's refreshes of each backend's `get_meta` (counts, data age, health) and of `/federation-status.json`. The registry itself is read once per page load. Bare integer, no unit suffix. |
-| `MACRO_MAX_ZOOM` | `7` | app | Maximum zoom level at which the macro view (one summary ring per backend) is shown instead of individual cluster circles. Increase for deployments with many backends covering a small geographic area; decrease for sparse deployments covering a large area. **Currently has no effect:** no compose file passes it to the container ([#1061](https://github.com/mfuhrmann/spieli/issues/1061)). |
+| `MACRO_MAX_ZOOM` | `7` | app | Maximum zoom level at which the macro view (one summary ring per backend) is shown instead of individual cluster circles. Increase for deployments with many backends covering a small geographic area; decrease for sparse deployments covering a large area. |
+| `CLUSTER_MAX_ZOOM` | `13` | app | Highest zoom level at which playgrounds are drawn as clusters; above it, each playground is drawn on its own. Standalone and hub alike. |
 
 ## Legal pages
 

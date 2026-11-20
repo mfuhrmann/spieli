@@ -41,10 +41,9 @@ It checks that Docker, the Compose plugin and `openssl` are available, then asks
 2. The **deployment mode** (`data-node`, `ui` or `data-node-ui`): which containers run. See [Deployment modes](../reference/deployment-modes.md).
 3. The **app mode** (`standalone` or `hub`): how the map behaves. Skipped for `data-node`.
 4. Depending on the mode: your region's **OSM relation ID and Geofabrik PBF URL** (if it has a database), the remote **`API_BASE_URL`** (remote frontend), or the **registry URL** and poll interval (hub).
-5. A question about an **external hub origin**. Leave it empty: appearing in a hub needs nothing beyond a public `/api/`.
-6. Optional links for the About dialog (a regional wiki page and a community chat), the **map's start and minimum zoom**, the radius for **nearby places**, the **port**, and the number of **CPU threads** for the import.
-7. **Automatically keep data and software up to date?** (recommended). Answering yes starts Watchtower, which installs new spieli releases by itself, and sets the importer to refresh the data every 2 to 10 days.
-8. Whether to set up **imprint and privacy pages**: let spieli generate them from your name and address, or link pages you already have. Either way, it asks for the instance's public URL.
+5. Optional links for the About dialog (a regional wiki page and a community chat), the **map's start and minimum zoom**, the radius for **nearby places**, the **port**, and the number of **CPU threads** for the import.
+6. **Automatically keep data and software up to date?** (recommended). Answering yes starts Watchtower, which installs new spieli releases by itself, and sets the importer to refresh the data every 2 to 10 days.
+7. Whether to set up **imprint and privacy pages**: let spieli generate them from your name and address, or link pages you already have. Either way, it asks for the instance's public URL.
 
 Then it generates a database password, downloads `compose.yml` (and `db/init.sql` if the stack has a database), writes `.env`, creates `registry.json` for a hub, and offers to pull the images, start the stack and run the first import.
 

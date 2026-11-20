@@ -19,9 +19,6 @@ WEBROOT="/usr/share/nginx/html"
 safe_url() { printf '%s' "$1" | tr -cd 'A-Za-z0-9:/.+_%~?#&=@,;-'; }
 
 SAFE_API_BASE_URL=$(safe_url  "${API_BASE_URL:-}")
-# PARENT_ORIGIN is an origin (scheme://host[:port]) used for postMessage
-# targeting — no path, query or fragment allowed, so it keeps a tighter set.
-SAFE_PARENT_ORIGIN=$(printf '%s'   "${PARENT_ORIGIN:-}"   | tr -cd 'A-Za-z0-9:/.+-')
 SAFE_REGISTRY_URL=$(safe_url  "${REGISTRY_URL:-}")
 SAFE_WIKI_URL=$(safe_url      "${REGION_PLAYGROUND_WIKI_URL:-}")
 SAFE_CHAT_URL=$(safe_url      "${REGION_CHAT_URL:-}")
@@ -1482,7 +1479,6 @@ window.APP_CONFIG = {
   basemapCoverageBbox: '${SAFE_BASEMAP_COVERAGE_BBOX}',
   basemapUrl:        '${SAFE_BASEMAP_URL}',
   basemapAttribution:'${SAFE_BASEMAP_ATTRIBUTION}',
-  parentOrigin:      '${SAFE_PARENT_ORIGIN}',
   nominatimBaseUrl:  '${EXT_NOMINATIM_URL}',
   commonsApiUrl:     '${EXT_COMMONS_API_URL}',
   commonsFileBase:   '${EXT_COMMONS_FILE_BASE}',
@@ -1513,7 +1509,6 @@ window.APP_CONFIG = {
   basemapCoverageBbox:        '${SAFE_BASEMAP_COVERAGE_BBOX}',
   basemapUrl:                 '${SAFE_BASEMAP_URL}',
   basemapAttribution:         '${SAFE_BASEMAP_ATTRIBUTION}',
-  parentOrigin:               '${SAFE_PARENT_ORIGIN}',
   nominatimBaseUrl:           '${EXT_NOMINATIM_URL}',
   commonsApiUrl:              '${EXT_COMMONS_API_URL}',
   commonsFileBase:            '${EXT_COMMONS_FILE_BASE}',
