@@ -139,4 +139,4 @@ BASEMAP_UPSTREAM=http://tileserver:8080
 BASEMAP_UPSTREAM_HOST=tileserver:8080
 ```
 
-If that server's URL layout differs from the provider's, the bundled style needs rebuilding against it too — see [Configuration](configure.md#basemap). The stacks need no change either way.
+If that server's URL layout differs from the provider's, the bundled style needs rebuilding against it too — see [Configuration](basemap-and-services.md#basemap). The stacks need no change either way.

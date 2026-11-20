@@ -56,6 +56,7 @@ nav:
           - Uninstall: ops/uninstall.md
       - Configure & secure:
           - Configure the instance: ops/configure.md
+          - Basemap and external services: ops/basemap-and-services.md
           - Security: ops/security.md
           - Customise your own image: ops/customise-image.md
       - Troubleshooting: ops/troubleshooting.md

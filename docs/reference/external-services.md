@@ -56,7 +56,7 @@ When it is created, the iframe carries `referrerpolicy="no-referrer"` and `sandb
 
 Three consequences worth being explicit about:
 
-- **The basemap is not in the browser-contacted group, and that is the point.** It used to be the largest entry in it, contacted by every visitor on every map movement. It is now fetched server-side and cached. See [Basemap](../ops/configure.md#basemap).
+- **The basemap is not in the browser-contacted group, and that is the point.** It used to be the largest entry in it, contacted by every visitor on every map movement. It is now fetched server-side and cached. See [Basemap](../ops/basemap-and-services.md#basemap).
 - **Reviews create a persistent pseudonymous identifier.** `app/src/lib/reviews.js` generates a P-256 keypair on the first review submission and stores it in `localStorage` under `spieli-mangrove-keypair`. It is not created by merely viewing the map. Proxying does not change this: the keypair is the visitor's identity to Mangrove, not an address.
 - **A panel section that is collapsed by default contacts nothing.** `PlaygroundPanel.svelte` mounts each accordion section's component only while that section is open (`openSections`, default `['photos', 'equipment', 'pois']`), so a closed section's fetch code never runs. Reviews are closed by default; photos are open. Reading a fetch call alone gives the wrong answer — check the section's default state too.
 
@@ -70,7 +70,7 @@ Contacted by the importer or the container, never by the visitor's browser.
 | Service | Purpose |
 |---|---|
 | [Geofabrik](https://download.geofabrik.de) | Source of OSM PBF extracts for import |
-| [OpenFreeMap](https://openfreemap.org) / [OpenMapTiles](https://www.openmaptiles.org) | Background map tiles, fetched **server-side and cached**. Configurable via `BASEMAP_UPSTREAM`, including pointing it at a tileserver you run yourself. See [Configuration → Basemap](../ops/configure.md#basemap) and [Shared Basemap Cache](../ops/shared-basemap-cache.md). |
+| [OpenFreeMap](https://openfreemap.org) / [OpenMapTiles](https://www.openmaptiles.org) | Background map tiles, fetched **server-side and cached**. Configurable via `BASEMAP_UPSTREAM`, including pointing it at a tileserver you run yourself. See [Basemap and external services](../ops/basemap-and-services.md#basemap) and [Shared Basemap Cache](../ops/shared-basemap-cache.md). |
 
 An operator can move the basemap back into the first group by setting `BASEMAP_URL` or `BASEMAP_STYLE_URL` to a third party. That is a deliberate opt-out, it requires `BASEMAP_ATTRIBUTION`, and the generated Datenschutzerklärung names the provider when it happens.
 

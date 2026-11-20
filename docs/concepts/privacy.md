@@ -71,6 +71,6 @@ That is also why we do not write that spieli "does not track anyone". What a giv
 | I want to… | Go to… |
 |---|---|
 | See every external service and how it is reached | [External Services](../reference/external-services.md) |
-| Switch a proxy off, or size the cache | [Configuration → External-service proxies](../ops/configure.md#external-service-proxies) |
+| Switch a proxy off, or size the cache | [Basemap and external services → External-service proxies](../ops/basemap-and-services.md#external-service-proxies) |
 | Understand the Content Security Policy | [Security → nginx security headers](../ops/security.md#nginx-security-headers) |
 | Write the imprint and privacy notice for my instance | [Host a Region → Legal and privacy](../getting-started/host-a-region.md#legal-and-privacy) |

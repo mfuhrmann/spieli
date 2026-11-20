@@ -61,7 +61,7 @@ The second edit is a legibility change only. Dropping a style layer does not red
 
 Only the origin is stripped; the upstream's own paths are preserved verbatim. That 1:1 mapping is what lets a plain prefix proxy serve the result without reversing a mapping it cannot know. The build refuses to write an `--asset-base` output that still contains a third-party host, and drops any query string it finds, so rebuilding against a keyed provider cannot bake an API key into a committed style.
 
-`make basemap-assets` runs this together with `make basemap-fonts` and the world outline for the hub's macro view. How operators configure the basemap: [Configuration → Basemap](../ops/configure.md#basemap).
+`make basemap-assets` runs this together with `make basemap-fonts` and the world outline for the hub's macro view. How operators configure the basemap: [Basemap and external services](../ops/basemap-and-services.md#basemap).
 
 ## See also
 
