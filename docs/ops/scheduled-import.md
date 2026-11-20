@@ -105,15 +105,7 @@ done
 
 ## Automatic image updates with Watchtower
 
-Watchtower complements daemon mode: it pulls updated spieli images daily and restarts the affected containers. The importer's startup grace check (see above) prevents an unplanned re-import on Watchtower-triggered restarts.
-
-Enable Watchtower by including the `auto-update` profile:
-
-```bash
-docker compose --profile data-node-ui --profile auto-update up -d
-```
-
-Or add `auto-update` to any existing `up` invocation. Watchtower checks the image registry (spieli's images are on GHCR) every 24 hours and removes the replaced images afterwards.
+Watchtower complements daemon mode: it installs new spieli images once a day, and the startup grace check above keeps those restarts from triggering an unplanned re-import. How to enable it and what it does: [Upgrading → Automatic upgrade](upgrade.md#automatic-upgrade-watchtower).
 
 ## How long does an import take?
 

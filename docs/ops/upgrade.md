@@ -23,17 +23,23 @@ docker compose images
 
 ## Automatic upgrade (Watchtower)
 
-If you installed with the `auto-update` profile active, Watchtower handles standard releases with no manual intervention:
+The installer's "automatic updates" answer turns on the `auto-update` profile, which runs Watchtower. To enable it by hand, add the profile to your `up` command:
 
-- New image published → Watchtower pulls and restarts `app` and `importer`.
+```bash
+docker compose --profile <mode> --profile auto-update up -d
+```
+
+Watchtower checks the image registry (GHCR) once every 24 hours. When a new image is published it pulls it, restarts `app` and `importer`, and removes the replaced image:
+
 - The daemon importer applies a changed `api.sql` when its container starts, so schema changes take effect right after the restart — no separate `API_ONLY=1` step needed. An unchanged `api.sql` is skipped (#971).
+- The importer's startup grace check prevents an unplanned re-import: if a recent import is on record, it goes back to sleep ([Scheduled Import → What happens on container startup](scheduled-import.md#what-happens-on-container-startup)).
 
-**Standard releases (no breaking labels): nothing to do.** Wait for Watchtower to pick up the new image (default poll interval: 5 minutes).
+**Standard releases (no breaking labels): nothing to do.** A new release reaches your stack within a day.
 
-For **breaking-label releases**, follow the [Breaking label procedures](#breaking-label-procedures) below in addition to the Watchtower restart.
+For **breaking-label releases**, follow the [Breaking label procedures](#breaking-label-procedures) below in addition to the Watchtower restart. Subscribe to [GitHub Releases](https://github.com/mfuhrmann/spieli/releases) so you notice them.
 
-!!! note "One Watchtower covers all containers"
-    Only the hub stack (or your single standalone stack) should run `--profile auto-update`. Adding a second Watchtower to any data-node stack causes both instances to fight over the same containers. The single Watchtower instance watches all containers on the Docker host automatically, including any data-node stacks that don't run `auto-update` themselves.
+!!! note "One Watchtower per host"
+    Watchtower watches **every** container on the Docker host, not only its own stack. With several stacks on one host, only one of them (by convention the hub) runs `--profile auto-update`; a second Watchtower would fight the first over the same containers. The data-node stacks are still updated, without the profile.
 
 ---
 
@@ -251,9 +257,6 @@ separately at the end — re-run the sweep for it once the import has finished.
 **Verification is not fatal to the sweep.** By the time a stack is verified its images are already pulled and its containers restarted, so a failed check means the upgrade worked but the stack is not serving data yet. The script records the stack, carries on with the rest, and exits non-zero at the end listing every inconclusive one. A data-node that has never completed an import answers `404` on `get_meta` and is called out as such — expected until its first import finishes.
 
 If the sweep does abort — a failed image pull or container start — it prints which stacks were upgraded, which one it stopped on, and that everything from there onward was not reached. Completed stacks are idempotent, so re-run after fixing the cause. One caveat it will warn you about: if a forced reimport was launched in the background before the abort, wait for it to finish first, or the next run's `API_ONLY=1` step races it on the `playground_stats` rebuild.
-
-!!! note "Watchtower and the single-VPS setup"
-    On a single-VPS federation, only the hub stack runs `--profile auto-update`. The single Watchtower instance restarts all containers on the host, including data-node containers — their stacks don't need their own `auto-update` profile.
 
 ---
 

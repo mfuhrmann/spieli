@@ -140,9 +140,7 @@ Standard releases with Watchtower active require no manual action — the daemon
 
 ## Watchtower
 
-Only the hub stack runs `--profile auto-update`. Adding a second Watchtower to any data-node stack causes both instances to fight over the same containers.
-
-The single Watchtower instance in the hub stack watches all containers on the Docker host automatically — data-node containers are restarted even though their stacks don't include `auto-update`.
+Only the hub stack runs `--profile auto-update`; its Watchtower updates every stack on the host. Why: [Upgrading → One Watchtower per host](upgrade.md#automatic-upgrade-watchtower).
 
 ## See also
 
