@@ -2,7 +2,7 @@
 
 What happens in the browser between a pan or zoom on the hub map and the rings, clusters and polygons it draws. The contract each backend has to meet (endpoints, ring states) is in the [Federation reference](../reference/federation.md); why spieli is federated at all, in [Federation: one map, many owners](../concepts/federation.md).
 
-The Hub is designed to stay responsive across two and thirty backends without any per-deployment tuning. It does this with three zoom tiers and a bbox router, so a Europe-wide viewport doesn't pull every polygon from every backend, and a city-block viewport doesn't ship a redundant continental aggregate.
+The Hub is designed to stay responsive with anything from two to thirty backends without any per-deployment tuning. It does this with three zoom tiers and a bbox router, so a Europe-wide viewport doesn't pull every polygon from every backend, and a city-block viewport doesn't ship a redundant continental aggregate.
 
 ## Zoom tiers
 
@@ -18,7 +18,7 @@ The Hub is designed to stay responsive across two and thirty backends without an
 
 Every backend's `get_meta` response carries a `bbox`. On every (debounced) moveend, the Hub intersects the current viewport with each backend's bbox and only fans out to backends whose bbox intersects. A viewport over Berlin doesn't issue a request to a Köln-only backend; a viewport spanning the German-Polish border issues parallel requests to both backends.
 
-The bboxes are refreshed on the existing 5-minute registry poll, so a backend that extends its OSM relation mid-session sees the change at the next poll without a hub restart.
+The bboxes are refreshed on the registry poll (`HUB_POLL_INTERVAL`, default 5 minutes), so a backend that extends its OSM relation mid-session sees the change at the next poll without a hub restart.
 
 ## Fan-out and progressive render
 

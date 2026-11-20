@@ -48,7 +48,7 @@ The same test requires **every** locale file — registered or not — to parse 
 
 Placeholders take one brace: `{regionName}`, never `{{regionName}}`. When repairing them with Weblate's *Search and replace*, do not replace `}}` on its own — a plural string legitimately ends in `}}` (`… other {# bancos}}`), and a blanket replace breaks every one of them.
 
-It also asserts the *reason* each unregistered language is excluded — below 80% key coverage, or a recorded decision not to ship it (`DECLINED` in the test; `es` and `fr` today, since no backend serves those languages, #752) — so any other language that reaches the bar fails the build until someone registers it. The exclusion stays a decision rather than decaying into an oversight.
+The test also asserts the *reason* each unregistered language is excluded — below 80% key coverage, or a recorded decision not to ship it (`DECLINED` in the test; `es` and `fr` today, since no backend serves those languages, #752) — so any other language that reaches the bar fails the build until someone registers it. The exclusion stays a decision rather than decaying into an oversight.
 
 ## How translations reach the app
 

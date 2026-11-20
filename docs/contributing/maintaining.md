@@ -171,5 +171,5 @@ GitHub Dependabot is configured in `.github/dependabot.yml` and will open PRs fo
 ## See also
 
 - [RELEASING.md](https://github.com/mfuhrmann/spieli/blob/main/RELEASING.md) — full release checklist
-- [Contributing](local-dev.md) — local dev setup
+- [Local Development](local-dev.md) — local dev setup
 - [Tech Stack](../reference/tech-stack.md) — component versions

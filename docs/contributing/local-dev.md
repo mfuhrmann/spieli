@@ -136,4 +136,4 @@ See also the [operator troubleshooting page](../ops/troubleshooting.md) for prob
 ## How-to pages for generated files
 
 - [Update Generated Assets](generated-assets.md): app icons and equipment illustrations
-- [Print the Poster](poster.md)
+- [Build the Poster](poster.md)

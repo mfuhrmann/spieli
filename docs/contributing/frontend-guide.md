@@ -132,7 +132,7 @@ The orchestrator is created in `StandaloneApp.svelte` on mount and torn down on 
 
 The standalone client switches between two zoom-scoped layers at `clusterMaxZoom` (default 13). Below the boundary it calls `get_playground_clusters(z, bbox)` for pre-aggregated count buckets; above it, `get_playgrounds_bbox(bbox)` for full polygons. The cluster RPC keeps two concerns deliberately separate: **grouping** is grid-based — each playground centroid is snapped to a zoom-dependent cell that decides which features share a bucket — while **position** is the unweighted spatial mean of the bucket's member centroids, so the rendered dot tracks the geography of its members rather than the lattice.
 
-Because a grid cell is about as wide as a marker (≈ 64 px at z12 against a ≈ 52 px disc), neighbouring buckets routinely touch: two playgrounds 300 m apart on either side of a cell border become a disc and a pin side by side. Both modes therefore merge buckets client-side before drawing them (`lib/clusterMerge.js`, #941): buckets whose markers would overlap at the current resolution are combined, counts and completeness segments summed, the position the **count-weighted** mean. Marker size follows the count (`radiusForCount`), a single playground is sized as the finder pin in both modes, and passes repeat until nothing overlaps, since a merge grows the disc. In hub mode (see [Federation](../reference/federation.md)) the same merge runs over all backends' buckets together, which is what removes the seam where two backends meet.
+Because a grid cell is about as wide as a marker (≈ 64 px at z12 against a ≈ 52 px disc), neighbouring buckets routinely touch: two playgrounds 300 m apart on either side of a cell border become a disc and a pin side by side. Both modes therefore merge buckets client-side before drawing them (`lib/clusterMerge.js`, #941): buckets whose markers would overlap at the current resolution are combined, counts and completeness segments summed, the position the **count-weighted** mean. Marker size follows the count (`radiusForCount`), a single playground is sized as the finder pin in both modes, and passes repeat until nothing overlaps, since a merge grows the disc. In hub mode (see [Federation reference](../reference/federation.md)) the same merge runs over all backends' buckets together, which is what removes the seam where two backends meet.
 
 See [API reference — `get_playground_clusters`](../reference/api.md#get_playground_clustersz-bbox) for the response shape.
 
@@ -196,7 +196,7 @@ Translations live in `locales/*.json` and are loaded by `lib/i18n.js` using svel
 <p>{$_('myKey')}</p>
 ```
 
-Add new keys to `locales/en.json` and `locales/de.json`. Translation to other languages happens via [Weblate](translation-guide.md).
+Translation to other languages happens via [Weblate](translation-guide.md).
 
 ### Example illustrations and failed images
 
@@ -349,7 +349,7 @@ All UI strings live under the `mappingDetail.*` namespace in `locales/de.json` a
 
 Access is a separate axis from mapping detail and has its own `access.*` namespace (#1002): `access.private` / `access.customers` for the panel badge and `access.privateShort` / `access.customersShort` for the hover chip. The rule behind them is `accessKind()` in `app/src/lib/access.js`.
 
-The filter labels under `filter.mappingDetail.*` use the same wording (`detailliert` / `grundlegend` / `keine Details`); the filter keys themselves (`showComplete`, `showPartial`, `showMissing`) keep the identifier naming.
+The filter labels under `filter.mappingDetail.*` use the same wording (in German `detailliert` / `grundlegend` / `keine Details`); the filter keys themselves (`showComplete`, `showPartial`, `showMissing`) keep the identifier naming.
 
 The label key `mappingDetail.legendTitle` (`"Erfasste Details"` / `"Mapping detail"`) can be used wherever the concept needs a heading.
 
@@ -394,5 +394,5 @@ Two rendering traps worth knowing:
 
 - [Local Development](local-dev.md) — dev server setup
 - [Testing Guide](testing.md) — how to write and run tests
-- [Add a Device](add-device.md) — adding a new playground device type
-- [Source Tree Analysis](../source-tree-analysis.md) — annotated directory map
+- [Add a Playground Device](add-device.md) — adding a new playground device type
+- [Source Tree](../source-tree-analysis.md) — annotated directory map
