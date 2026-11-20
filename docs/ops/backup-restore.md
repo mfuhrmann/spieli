@@ -70,7 +70,7 @@ docker volume rm spieli_pgdata      # clear the database
 docker compose --profile data-node-ui up -d
 ```
 
-With automatic updates (daemon mode), the importer now starts the import by itself, because the database is empty; do not start a second one by hand. Without automatic updates, run it once: `docker compose --profile data-node-ui run --rm importer`.
+The import then starts as described in [Refresh Data → After deleting the database](refresh-data.md#after-deleting-the-database).
 
 The PBF files are stored in the `pbf_cache` volume and are reused automatically. If you deleted the volume too, the importer downloads a fresh copy (~300 MB for a Bundesland extract).
 

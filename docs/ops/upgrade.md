@@ -172,16 +172,7 @@ Or re-run `install.sh`. It downloads the new `compose.yml` and keeps your databa
 
 A new OSM tag type was added. Existing data doesn't have the new columns until a fresh import.
 
-After the image update (Watchtower or manual steps 1–2), run one full import with the daemon stopped:
-
-```bash
-docker compose --profile <mode> stop importer
-docker compose --profile <mode> run --rm \
-  -e REIMPORT_INTERVAL_MIN_DAYS= -e REIMPORT_INTERVAL_MAX_DAYS= importer
-docker compose --profile <mode> up -d importer
-```
-
-The empty `REIMPORT_INTERVAL_*` values make this run a one-shot import; without them, on a stack with automatic updates, it would start a second daemon that just goes back to sleep. A full import also applies `api.sql`, so no separate `API_ONLY=1` step is needed. It takes 10 to 40 minutes for a state.
+After the image update (Watchtower or manual steps 1–2), run one full import as described in [Refresh Data](refresh-data.md) — on a stack with automatic updates that means stopping the daemon first ([Daemon mode](refresh-data.md#daemon-mode)). A full import also applies `api.sql`, so no separate `API_ONLY=1` step is needed.
 
 ---
 
@@ -312,7 +303,7 @@ docker volume rm <project>_pgdata          # docker volume ls shows the exact na
 docker compose --profile <mode> up -d
 ```
 
-With automatic updates, the daemon then imports by itself because the database is empty. Without them, run `docker compose --profile <mode> run --rm importer` once. Back up first only if you keep data in the database that does not come from the import.
+The import then starts as described in [Refresh Data → After deleting the database](refresh-data.md#after-deleting-the-database). Back up first only if you keep data in the database that does not come from the import.
 
 ### Downgrading
 

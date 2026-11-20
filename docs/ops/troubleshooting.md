@@ -71,8 +71,6 @@ docker compose -f compose.yml --profile <mode> up -d
 
 ```bash
 docker compose ps   # all containers should show "running" or "healthy"
-# then run the importer — replace <mode> with your DEPLOY_MODE (data-node or data-node-ui)
-docker compose --profile <mode> run --rm importer
 ```
 
 If you are using the local development setup, `make import` is equivalent. If the database shows as unhealthy, try stopping and restarting the stack.
@@ -236,26 +234,10 @@ The hub polls each backend's `get_meta` at startup and every 5 minutes. If the l
 
 **Data-node operator — possible causes:**
 
-1. **Import not run** — The stack started but the importer was never triggered:
-   ```bash
-   cd ~/spieli   # or wherever spieli was installed
-   docker compose --profile data-node run --rm importer
-   # or watch daemon logs if auto-update is enabled:
-   docker compose logs -f importer
-   ```
+1. **Import not run** — The stack started but no import has completed. With automatic updates, follow it with `docker compose logs -f importer`; otherwise run it once ([Refresh Data](refresh-data.md)).
 2. **PBF doesn't cover the relation** — See [Map loads but shows no playgrounds](#map-loads-but-shows-no-playgrounds), cause 3.
 3. **Outdated image** — See [Hub backend returns "function not found" errors](#hub-backend-returns-function-not-found-errors).
-4. **Daemon importer sleeping after a failed/corrupt previous run** — If the importer ran but was OOM-killed during preprocessing, osm2pgsql may have ingested a partial file and recorded a successful `last_import_at`. The daemon will not retry until the next scheduled interval. Force an immediate one-shot reimport:
-   ```bash
-   # Clear any stale cached PBF files left by the killed run
-   docker compose run --rm importer sh -c "rm -f /data/*.pbf"
-   # Run a one-shot reimport regardless of last_import_at
-   docker compose run --rm \
-     -e REIMPORT_INTERVAL_MIN_DAYS= \
-     -e REIMPORT_INTERVAL_MAX_DAYS= \
-     importer
-   ```
-   Unsetting both interval variables forces one-shot mode, bypassing the grace check.
+4. **Daemon importer sleeping after a failed/corrupt previous run** — If the importer ran but was OOM-killed during preprocessing, osm2pgsql may have ingested a partial file and recorded a successful `last_import_at`. The daemon will not retry until the next scheduled interval. [Clear the PBF cache](refresh-data.md#clearing-the-pbf-cache), then force a re-import ([Daemon mode](refresh-data.md#daemon-mode)).
 
 ---
 
