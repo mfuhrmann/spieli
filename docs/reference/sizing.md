@@ -17,7 +17,7 @@ All 15 states plus the hub use about 2.6 GB of memory together while serving.
 
 ## During an import
 
-An import is the memory peak, well above serving: for a single region, 2 GB RAM plus swap is enough in most cases, and 4 GB for the largest. That assumes the database tuning values meant for small hosts ([Configuration → RAM sizing](../ops/configure.md#ram-sizing)); the installed compose file currently passes higher ones ([#1060](https://github.com/mfuhrmann/spieli/issues/1060)).
+An import is the memory peak, well above serving: for a single region, 2 GB RAM plus swap is enough in most cases, and 4 GB for the largest. That assumes the default database tuning values, which are meant for small hosts ([Configure the instance → RAM sizing](../ops/configure.md#ram-sizing)); a stack installed from an older release may still pass higher ones.
 
 The database temporarily grows during an import (the new `playground_stats` is built next to the old one), so plan for about twice the disk in the table. The Docker images take another 1–2 GB.
 
