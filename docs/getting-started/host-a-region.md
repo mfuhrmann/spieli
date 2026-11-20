@@ -35,7 +35,7 @@ A data-node covers one OpenStreetMap boundary relation. That can be a whole coun
 
 You need a Linux server with Docker and the Compose plugin, a domain or subdomain that points to it, and ports 80 and 443 open. The examples below use `my-playground-map.at` for a data-node covering Austria.
 
-1. Run the installer. The command for the current release is in the [Quick Start](quick-start.md#install), which also explains how to find your region's relation ID and extract. Choose `data-node` or `data-node-ui`, and answer yes to automatic updates. The question about an external hub origin can stay empty.
+1. Run the installer. The command for the current release is in the [Quick Start](quick-start.md#install), which also explains how to find your region's relation ID and extract. Choose `data-node` or `data-node-ui`, and answer yes to automatic updates.
 
 2. Set up HTTPS with the Traefik installer, which gets a certificate from Let's Encrypt: [HTTPS setup](../ops/https-setup.md). Choose mode 1, `data-node-ui`; the app's nginx then serves the API with the CORS headers spieli.eu needs. (The installer's `data-node` mode cannot reach the API at the moment, [#1062](https://github.com/mfuhrmann/spieli/issues/1062); until that is fixed, install spieli as `data-node-ui` in step 1 too.)
 

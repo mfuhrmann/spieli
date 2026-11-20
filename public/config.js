@@ -6,6 +6,5 @@ window.APP_CONFIG = {
   mapZoom: 12,
   mapMinZoom: 10,
   poiRadiusM: 5000,
-  apiBaseUrl: '',
-  parentOrigin: ''  // leave empty — defaults to '*' via js/config.js (messages reach any hub origin)
+  apiBaseUrl: ''
 };
