@@ -29,11 +29,11 @@ Click or tap any playground to open its detail panel.
 
 Suggestions appear once you have typed two characters. You can work the list entirely from the keyboard — **↓** and **↑** move through the suggestions, **Enter** jumps to the highlighted one (or runs a plain search if none is highlighted), and **Esc** closes the list without leaving the box — it also cancels a search you have typed but that has not run yet, so the list does not pop back up a moment later. Screen readers announce the list, your position in it, and whether a search is still running.
 
-**My location:** Tap the location button to centre the map on your current position. Your position is shown as a pulsing blue dot; at high zoom a translucent circle indicates the GPS accuracy. If your browser already granted location permission, spieli auto-locates on page load (unless you opened a deeplink or region link).
+**My location:** Tap the location button to centre the map on your current position. Your position is shown as a pulsing blue dot; at high zoom a translucent circle indicates the GPS accuracy. If your browser already allows spieli to see your location, the map centres on you when it opens (unless you opened a link to a playground or a region).
 
-> **Note:** Geolocation requires HTTPS and your browser's permission. If the button does nothing, check your browser's location settings.
+> **Note:** Showing your location only works on a secure (`https://`) address and with your browser's permission. If the button does nothing, check your browser's location settings.
 
-**Region links:** Visit a region by name in the URL — e.g. `spieli.eu/fulda` frames the map on Fulda. spieli geocodes the single path segment via Nominatim and pans to its bounding box (works in both standalone and hub mode). Share these links like any other URL.
+**Region links:** Visit a region by name in the URL — e.g. `spieli.eu/fulda` frames the map on Fulda. spieli looks the name up and shows that area; this works on every spieli map. Share these links like any other address.
 
 ### Filters
 
@@ -118,13 +118,13 @@ Click any playground to open its detail panel. The panel shows:
 
 - Name, operator, opening hours (when mapped)
 - Surface type and size, and lighting when it is mapped (most playgrounds do not record it yet, so nothing is shown then)
-- Status pills — the mapping-detail badge (only while [mapping detail](#mapping-detail-colours) is on), data age, and (when tagged) a shade pill (Shaded / No shade), baby / toddler suitability, and wheelchair-friendly equipment (see [Wheelchair accessibility](#wheelchair-accessibility))
+- Small labels — the mapping-detail badge (only while [mapping detail](#mapping-detail-colours) is on), data age, and (when tagged) a shade pill (Shaded / No shade), baby / toddler suitability, and wheelchair-friendly equipment (see [Wheelchair accessibility](#wheelchair-accessibility))
 - Theme highlight — a symbol for playgrounds with a theme, such as a ship or castle (see [Playground themes](#playground-themes))
-- Equipment list — devices, pitches, benches, and their sub-attributes, including each item's surface when tagged
+- Equipment list — devices, pitches, benches, and their details, including each item's surface when tagged
 - Photos — from Wikimedia Commons when the playground links them (tap one for full screen; the author and licence are shown with it), and street-level photos from Panoramax. The street-level viewer opens only when you tap the preview
 - Community reviews (from Mangrove.reviews, when available) — including reviews written in MapComplete or on mangrove.reviews, and yours show up there too
 - Nearby places — toilets, bus stops, ice cream, shops (supermarket, convenience store, bakery), drugstores and emergency care near the playground (within 5 km by default; the site's operator can change the radius)
-- A "Take me there" button that opens navigation to the playground (geo: URL on mobile, OSM directions on desktop)
+- A "Take me there" button that opens navigation to the playground (your phone's map app, or OpenStreetMap directions on a computer)
 - **Share playground**, which copies a link to this playground (see [Sharing a playground](#sharing-a-playground))
 - **Edit on MapComplete**, to add or improve information in OpenStreetMap
 
@@ -143,7 +143,7 @@ Themes come straight from the `playground:theme` tag in OpenStreetMap — you ca
 
 ### Sharing a playground
 
-Each playground has a unique URL. When you open a playground, the URL bar updates to include a hash like `#W37808214`. Share that URL, or use **Share playground** in the panel, to link directly to a specific playground. A sports pitch's link uses `P` instead (`#P123456`). On the all-regions map the link also names the region, e.g. `#hessen/W37808214`.
+Each playground has a unique URL. When you open a playground, the address in your browser changes to end in something like `#W37808214`. Share that URL, or use **Share playground** in the panel, to link directly to a specific playground. A sports pitch's link uses `P` instead (`#P123456`). On the all-regions map the link also names the region, e.g. `#hessen/W37808214`.
 
 ## The all-regions map
 
@@ -243,7 +243,7 @@ Play equipment means slides, swings, climbing frames and the like, plus ball cou
 
 With mapping detail on, a playground's panel also says under its badge what is missing for the next step — for example "Not mapped yet: the play equipment". The MapComplete links further down in the panel open this playground to add it. Detailed playgrounds get no hint.
 
-A camera glyph marks playgrounds that also have a photo. Photos are a bonus, not part of the rating — a playground with everything mapped except a picture still counts as detailed.
+A camera glyph marks playgrounds that also have a photo. Photos are a bonus, not part of mapping detail — a playground with everything mapped except a picture still counts as detailed.
 
 The colours describe the OSM data, not the real-world quality of the playground. The lowest step means nobody has mapped it yet, which is an invitation to help rather than a warning.
 

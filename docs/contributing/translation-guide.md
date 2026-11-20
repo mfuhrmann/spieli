@@ -40,7 +40,7 @@ Some strings contain a count, like:
 ```
 
 Keep the `{count, plural, ...}` wrapper and translate only the text inside.
-Weblate shows this as a **single input field** — you must write the complete ICU string including all plural forms for your language.
+Weblate shows this as a **single input field** — you must write the complete text, including the `{count, plural, …}` part with all plural forms for your language.
 
 **Languages with two plural forms** (German, Spanish, French, Italian, Dutch, Swedish, Portuguese):
 
@@ -95,7 +95,7 @@ new Intl.PluralRules('pl').select(5)   // "many"
 
 This is the same rule the app uses at runtime, so it is authoritative.
 
-Weblate will warn you if the ICU *syntax* is broken — fix any flagged strings before saving. It cannot tell you that a grammatically correct form is sitting in the wrong category, so that part is on you.
+Weblate will warn you if the plural structure is broken — fix any flagged strings before saving. It cannot tell you that a grammatically correct form is sitting in the wrong category, so that part is on you.
 
 ## When does my translation go live?
 
