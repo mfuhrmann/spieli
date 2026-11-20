@@ -32,10 +32,10 @@ nav:
   - Use the map:
       - User Guide: user-guide.md
   - How spieli works:
-      - "Federation: one map, many owners": concepts/federation.md
       - Architecture: reference/architecture.md
-      - Mapping Detail: reference/completeness.md
+      - "Federation: one map, many owners": concepts/federation.md
       - Privacy by design: concepts/privacy.md
+      - Mapping Detail: reference/completeness.md
   - Run spieli:
       - Get started:
           - Host a Region for spieli.eu: getting-started/host-a-region.md
