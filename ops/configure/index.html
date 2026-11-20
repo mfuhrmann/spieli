@@ -3371,9 +3371,9 @@ container. To re-tune, edit <code>.env</code> and re-apply the schema only:
 Without <code>API_ONLY=1</code> this runs a full import — or, on a stack with
 automatic updates, starts a second importer daemon next to the running one.</p>
 </blockquote>
-<div class="admonition warning">
-<p class="admonition-title">The compose files currently pass higher values</p>
-<p>The defaults below are what <code>importer/import.sh</code> and <code>.env.example</code> intend. <code>compose.yml</code> and <code>compose.prod.yml</code> still pass the older, higher values (6 / 4 / 4 · <code>512MB</code> · <code>128MB</code>, a peak of about 3 GB), and they win whenever <code>.env</code> does not set the variables, which the installer does not do. Until <a href="https://github.com/mfuhrmann/spieli/issues/1060">#1060</a> is fixed, set the values from the table below in <code>.env</code> explicitly, especially on hosts with 4 GB or less.</p>
+<div class="admonition note">
+<p class="admonition-title">Stacks installed from an older release</p>
+<p>Until the release that fixed <a href="https://github.com/mfuhrmann/spieli/issues/1060">#1060</a>, the compose files passed higher values (6 / 4 / 4 · <code>512MB</code> · <code>128MB</code>, a peak of about 3 GB), and they win whenever <code>.env</code> does not set the variables. A stack keeps its <code>compose.yml</code> across upgrades, so it keeps those values until you fetch the new <code>compose.yml</code> (<a href="../upgrade/#requires-compose-update">Upgrading → requires-compose-update</a>) or set the values from the table below in <code>.env</code>.</p>
 </div>
 <p>Defaults are sized for a <strong>2-core / 4 GB host</strong> (peak ≈ 1.5 GB during the
 heaviest single operation, <code>CREATE INDEX</code>). Recommended values per host

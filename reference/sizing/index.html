@@ -3242,7 +3242,7 @@
 </table>
 <p>All 15 states plus the hub use about 2.6 GB of memory together while serving.</p>
 <h2 id="during-an-import">During an import<a class="headerlink" href="#during-an-import" title="Permanent link">&para;</a></h2>
-<p>An import is the memory peak, well above serving: for a single region, 2 GB RAM plus swap is enough in most cases, and 4 GB for the largest. That assumes the database tuning values meant for small hosts (<a href="../../ops/configure/#ram-sizing">Configuration → RAM sizing</a>); the installed compose file currently passes higher ones (<a href="https://github.com/mfuhrmann/spieli/issues/1060">#1060</a>).</p>
+<p>An import is the memory peak, well above serving: for a single region, 2 GB RAM plus swap is enough in most cases, and 4 GB for the largest. That assumes the default database tuning values, which are meant for small hosts (<a href="../../ops/configure/#ram-sizing">Configure the instance → RAM sizing</a>); a stack installed from an older release may still pass higher ones.</p>
 <p>The database temporarily grows during an import (the new <code>playground_stats</code> is built next to the old one), so plan for about twice the disk in the table. The Docker images take another 1–2 GB.</p>
 <h3 id="import-duration">Import duration<a class="headerlink" href="#import-duration" title="Permanent link">&para;</a></h3>
 <p>Import time scales with the size of the extract, not with the size of your region: a district is cut out of its state's extract, so it pays for reading the whole file.</p>
