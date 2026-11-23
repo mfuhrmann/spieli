@@ -2633,7 +2633,18 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Filters">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#activities-and-highlights-detail-panel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Activities and highlights (detail panel)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Activities and highlights (detail panel)">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -3211,7 +3222,18 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Filters">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#activities-and-highlights-detail-panel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Activities and highlights (detail panel)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Activities and highlights (detail panel)">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -3445,7 +3467,7 @@
 </tr>
 <tr>
 <td>With shade</td>
-<td><code>shade=yes</code> on the area (<code>shade=no</code> shows <em>No shade</em> in the panel; untagged shows nothing)</td>
+<td><code>shade=yes</code> on the area. The panel reads the tag itself: <code>yes</code> <em>Shaded</em>, <code>partial</code> <em>Partly shaded</em>, <code>no</code> <em>No shade</em>, untagged nothing (the filter does not match <code>partial</code> yet, #1072)</td>
 </tr>
 <tr>
 <td>Lit at night</td>
@@ -3454,6 +3476,60 @@
 </tbody>
 </table>
 <p>Values separated by <code>;</code> are split for <code>sport</code> and <code>playground:theme</code>.</p>
+<h2 id="activities-and-highlights-detail-panel">Activities and highlights (detail panel)<a class="headerlink" href="#activities-and-highlights-detail-panel" title="Permanent link">&para;</a></h2>
+<p>The panel's <em>What kids can do</em> row and its highlights line are derived from the play devices inside the playground — separately mapped <code>playground=*</code> objects <strong>and</strong> <code>playground:&lt;device&gt;=yes|&lt;n&gt;</code> on the area itself. Each device type in <code>app/src/lib/objPlaygroundEquipment.js</code> declares its <code>activity</code> and whether it is a <code>highlight</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Activity</th>
+<th>Devices (<code>playground=*</code>)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Swing</td>
+<td><code>swing</code>, <code>baby_swing</code>, <code>basketswing</code>, <code>tire_swing</code>, <code>rope_swing</code></td>
+</tr>
+<tr>
+<td>Slide</td>
+<td><code>slide</code></td>
+</tr>
+<tr>
+<td>Rock</td>
+<td><code>seesaw</code>, <code>springy</code></td>
+</tr>
+<tr>
+<td>Climb</td>
+<td><code>climbingframe</code>, <code>climbingwall</code>, <code>climbing_slope</code>, <code>climbing_pole</code>, <code>monkey_bars</code>, <code>climbing</code>, <code>mound</code>, <code>dome</code></td>
+</tr>
+<tr>
+<td>Balance</td>
+<td><code>balancebeam</code>, <code>rope_traverse</code>, <code>stepping_stone</code>, <code>stepping_post</code>, <code>balance</code>, <code>agility_trail</code>, <code>wobble_bridge</code>, <code>belt_bridge</code></td>
+</tr>
+<tr>
+<td>Spin</td>
+<td><code>roundabout</code>, <code>basketrotator</code>, <code>aerialrotator</code>, <code>spinner</code>, <code>spinning_disc</code>, <code>spinning_circle</code>, <code>spinner_bowl</code>, <code>rotator</code></td>
+</tr>
+<tr>
+<td>Bounce</td>
+<td><code>trampoline</code>, <code>cushion</code>, <code>spring_board</code>, <code>hopscotch</code></td>
+</tr>
+<tr>
+<td>Exercise</td>
+<td><code>horizontal_bar</code>, <code>parallel_bars</code>, <code>bannister_bars</code>, <code>hamster_wheel</code>, <code>exercise</code></td>
+</tr>
+<tr>
+<td>Dig</td>
+<td><code>sandpit</code>, <code>chute</code>, <code>sieve</code>, <code>sand_wheel</code>, <code>sand_seesaw</code>, <code>sand_pulley</code>, <code>excavator</code>, <code>table</code>, <code>sand</code></td>
+</tr>
+<tr>
+<td>Explore</td>
+<td><code>playhouse</code>, <code>tunnel_tube</code></td>
+</tr>
+</tbody>
+</table>
+<p>Structure parts (<code>structure</code>, <code>platform</code>, <code>ladder</code>, <code>steps</code>, <code>bridge</code>) and water devices are no activity.</p>
+<p><strong>Highlights</strong>, in this order: the playground's theme; <em>Water play</em> once for any water device (category <code>water</code>, or the server's water flag); then, in catalogue order, <code>aerialrotator</code>, <code>hamster_wheel</code>, <code>zipwire</code>, <code>trampoline</code>, <code>speaking_tube</code>, <code>funnel_ball</code>, <code>ball_pool</code>, <code>marble_run</code>, <code>musical_instrument</code>, <code>sledding</code>.</p>
 <h3 id="lighting-lit">Lighting (<code>lit</code>)<a class="headerlink" href="#lighting-lit" title="Permanent link">&para;</a></h3>
 <p>Read case-insensitively, on playgrounds and on standalone pitches alike:</p>
 <table>

@@ -2142,6 +2142,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#the-detail-panels" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The detail panels
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#internationalisation" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3640,6 +3651,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#the-detail-panels" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The detail panels
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#internationalisation" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3932,9 +3954,10 @@
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>  └── StandaloneApp.svelte  or  HubApp.svelte
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>        ├── Map.svelte             (OpenLayers map, all layers)
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>        ├── PlaygroundPanel.svelte (detail panel for selected playground)
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>        ├── FilterPanel.svelte     (filter dropdown)
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>        ├── SearchBar.svelte       (Nominatim search)
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>        └── ...
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>        │     └── panel/*          (zones shared with PitchPanel, see below)
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>        ├── FilterPanel.svelte     (filter dropdown)
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>        ├── SearchBar.svelte       (Nominatim search)
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>        └── ...
 </code></pre></div>
 <p>The app mounts either <code>StandaloneApp</code> or <code>HubApp</code> based on <code>appMode</code> from <code>lib/config.js</code>. The two modes share most components; the hub adds federation components in <code>src/hub/</code>.</p>
 <h2 id="state-management">State management<a class="headerlink" href="#state-management" title="Permanent link">&para;</a></h2>
@@ -4292,6 +4315,83 @@
 <p><code>selection.select()</code> automatically writes the hash. On page load, <code>AppShell.svelte</code> reads the hash and dispatches <code>fetchPlaygroundByOsmId</code> to hydrate the polygon source before selecting.</p>
 <h2 id="adding-a-new-filter">Adding a new filter<a class="headerlink" href="#adding-a-new-filter" title="Permanent link">&para;</a></h2>
 <p>Step by step, from the database flag to the filter chip: <a href="../add-filter/">Add a Filter</a>. The one rule to know when reading the filter code: anything that fetches or draws reads <code>effectiveFilterStore</code>, never <code>filterStore</code> (see <a href="#filter-flow">Filter flow</a>).</p>
+<h2 id="the-detail-panels">The detail panels<a class="headerlink" href="#the-detail-panels" title="Permanent link">&para;</a></h2>
+<p><code>PlaygroundPanel</code> and <code>PitchPanel</code> are ordered by the parent's question (#1077), in three zones marked <code>data-testid="zone-a|zone-b|zone-c"</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Zone</th>
+<th>Playground</th>
+<th>Pitch</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A — decide</td>
+<td>header, mapper tools (mapping detail on), photos, pills (baby, toddler, shade, wheelchair, fenced, dogs), "what kids can do" (highlights, then activities) — or the contribution invitation</td>
+<td>header, sports, photos or example illustration, access / fee / booking</td>
+</tr>
+<tr>
+<td>B — go deeper</td>
+<td>description, "good to know" list, nearby (nearest per kind), all equipment (collapsed), reviews (collapsed)</td>
+<td>surface, lighting, hoops, opening hours, wheelchair</td>
+</tr>
+<tr>
+<td>C — background</td>
+<td>operator, contact, data age, MapComplete</td>
+<td>operator, MapComplete</td>
+</tr>
+</tbody>
+</table>
+<p>Both are built from <code>src/components/panel/</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>PanelHeader</code></td>
+<td>Title (with <code>lang</code>), place, hub region, access badge, navigate, share, close</td>
+</tr>
+<tr>
+<td><code>PhotoStrip</code></td>
+<td>Commons + Panoramax; a compact "no photo yet · add" line when empty; reports <code>status</code> (<code>loading</code> / <code>photos</code> / <code>none</code>)</td>
+</tr>
+<tr>
+<td><code>PillRow</code></td>
+<td>In this order: baby, toddler (<code>for_baby</code> / <code>for_toddler</code>), shade (<code>lib/shade.js</code>, reads the raw <code>shade</code> tag), wheelchair tri-state, fenced, dogs allowed</td>
+</tr>
+<tr>
+<td><code>ActivityRow</code></td>
+<td>The "what kids can do" block: <code>HighlightsLine</code> first, then the activities from <code>lib/activities.js</code></td>
+</tr>
+<tr>
+<td><code>HighlightsLine</code></td>
+<td>Themes, water play, catalogue highlights</td>
+</tr>
+<tr>
+<td><code>MapperTools</code></td>
+<td>Mapping-detail badge, next-step hint, MapComplete — only while mapping detail is on</td>
+</tr>
+<tr>
+<td><code>ContributeInvite</code></td>
+<td>Replaces zone A when nothing is known, after equipment has loaded</td>
+</tr>
+<tr>
+<td><code>ZoneBackground</code></td>
+<td>Zone C; <code>DataAgeChip</code> holds the data-age popover</td>
+</tr>
+</tbody>
+</table>
+<p>Rules:</p>
+<ul>
+<li><strong>Mapping detail adds, it never reorders.</strong> The tool block appears under the header; the MapComplete link moves between it and zone C.</li>
+<li><strong>Anything a visitor can filter by is visible in the panel</strong> when it applies. A new filter needs a place in a zone.</li>
+<li><strong>Activities and highlights come from the catalogue.</strong> Every device in <code>objPlaygroundEquipment.js</code> declares <code>activity</code> (one of <code>ACTIVITIES</code> in <code>lib/activities.js</code>, or <code>null</code>) and <code>highlight</code>; <code>activities.test.js</code> fails when one is missing. Both read separately mapped devices and the area-level <code>playground:&lt;device&gt;=yes|&lt;n&gt;</code> tags.</li>
+</ul>
 <h2 id="internationalisation">Internationalisation<a class="headerlink" href="#internationalisation" title="Permanent link">&para;</a></h2>
 <p>New UI strings go into <code>locales/en.json</code> and <code>locales/de.json</code> in the same commit, and no other locale file is edited by hand. The full workflow, including how strings reach Weblate and back: <a href="../translations/#adding-new-ui-strings-developer-workflow">Translation Workflow → Adding new UI strings</a>.</p>
 <p>Translations live in <code>locales/*.json</code> and are loaded by <code>lib/i18n.js</code> using svelte-i18n. In components, use the <code>$_</code> store, as every component does:</p>
@@ -4349,8 +4449,8 @@ and the returned string cannot tell you which. Ask <code>hasOsmName(attr)</code>
 <a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>…
 <a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>&lt;h2 lang={titleLang}&gt;{getPlaygroundTitle(attr, $_)}&lt;/h2&gt;
 </code></pre></div>
-<p>Current name render sites: <code>HoverPreview</code>, <code>PlaygroundPanel</code> (both header
-variants). If you add another, annotate it — an
+<p>Current name render sites: <code>HoverPreview</code>, <code>panel/PanelHeader</code> (used by
+<code>PlaygroundPanel</code> and <code>PitchPanel</code>, both of which pass <code>titleLang</code>). If you add another, annotate it — an
 unannotated name silently inherits the interface language.</p>
 <h2 id="the-search-combobox">The search combobox<a class="headerlink" href="#the-search-combobox" title="Permanent link">&para;</a></h2>
 <p><code>SearchBar.svelte</code> implements the <a href="https://www.w3.org/WAI/ARIA/apg/patterns/combobox/">ARIA 1.2 combobox pattern</a> over the Nominatim suggestion list. If you touch it, keep these invariants:</p>
@@ -4371,8 +4471,8 @@ unannotated name silently inherits the interface language.</p>
 <li><code>themeIcon(value)</code> — curated emoji per allowlisted theme value. <code>FALLBACK_ICON</code> (✨) is a defensive backstop only; it never renders for non-allowlisted values, which are filtered out upstream.</li>
 <li><code>themeName(value, t)</code> — localised label from <code>equipAttr.themes.*</code>, falling back to the raw value.</li>
 <li><code>themeOf(props)</code> — the first allowlisted theme on a single feature, used for the inline device symbol.</li>
-<li><code>areaThemesOf(props)</code> — allowlisted themes on the playground's own area tag; drives the prominent banner near the title.</li>
-<li><code>aggregatePlaygroundThemes(areaProps, deviceProps)</code> — deduped, ordered theme list for a playground (area theme first, then device themes by frequency). <code>PlaygroundPanel</code> renders this as an icon-only chip row folded onto the <strong>Equipment</strong> header in the overview; <code>EquipmentList</code>/<code>EquipmentTooltip</code> render the per-device symbol inline.</li>
+<li><code>areaThemesOf(props)</code> — allowlisted themes on the playground's own area tag; that theme is worded "a … playground" in the highlights line.</li>
+<li><code>aggregatePlaygroundThemes(areaProps, deviceProps)</code> — deduped, ordered theme list for a playground (area theme first, then device themes by frequency). <code>PlaygroundPanel</code> passes it to <code>highlightsOf()</code>, so themes lead the highlights line in zone A; <code>EquipmentList</code>/<code>EquipmentTooltip</code> render the per-device symbol inline.</li>
 </ul>
 <p>Themes are panel-only; showing them on the map is not planned yet.</p>
 <h2 id="external-services-implementation-notes">External services: implementation notes<a class="headerlink" href="#external-services-implementation-notes" title="Permanent link">&para;</a></h2>
@@ -4387,7 +4487,7 @@ unannotated name silently inherits the interface language.</p>
 <li><strong>A name that resolves nowhere fails the build.</strong> 14 of them did, all pitch illustrations, and in production each one cost two failing requests before an <code>onerror</code> handler hid the element. They were replaced with verified Commons files in #867 (hockey, which has no free pitch diagram, has no illustration), so every name now resolves and any new one that does not fails the build.</li>
 </ul>
 <h3 id="checking-what-a-panel-section-contacts">Checking what a panel section contacts<a class="headerlink" href="#checking-what-a-panel-section-contacts" title="Permanent link">&para;</a></h3>
-<p><code>PlaygroundPanel.svelte</code> mounts each accordion section's component only while the section is open (<code>openSections</code>, default <code>['photos', 'equipment', 'pois']</code>), so a closed section's fetch code never runs. Reading a fetch call alone gives the wrong answer about when a service is contacted: check the section's default state too. Reviews start closed; photos start open.</p>
+<p><code>PlaygroundPanel.svelte</code> mounts each accordion section's component only while the section is open (<code>openSections</code>, empty by default: all equipment and reviews start collapsed), so a closed section's fetch code never runs. Reading a fetch call alone gives the wrong answer about when a service is contacted: check the section's default state too. Reviews start closed (<code>tests/reviews-deferral.spec.js</code>). One exception since #1077: while Mangrove is proxied (<code>mangroveApiUrl</code> same-origin, <code>headerRatingEnabled</code> in <code>lib/reviews.js</code>), the panel reads the reviews on selection to show the average under the name. The read goes through the same session cache, so opening the section later does not ask again; with the proxy off nothing changes. Photos are not an accordion section since #1077: <code>panel/PhotoStrip</code> loads Commons thumbnails on selection, as the open photos section did before, and Panoramax stays click-to-load.</p>
 <h3 id="reviews-ask-once-per-label">Reviews ask once per label<a class="headerlink" href="#reviews-ask-once-per-label" title="Permanent link">&para;</a></h3>
 <p>Mangrove matches a review on its coordinates <em>and</em> its <code>q</code> label, and clients file playgrounds under different labels (spieli used <code>osm_playground_&lt;id&gt;</code>; MapComplete and mangrove.reviews use <code>playground</code> or the place's name). The reviews section asks once per label and merges the answers by signature (#914); new reviews are written under the shared label. The submit path is a <code>PUT</code> whose signature covers the JWT's own claims, so the proxy is transparent to verification.</p>
 <h3 id="keep-the-privacy-template-in-sync">Keep the privacy template in sync<a class="headerlink" href="#keep-the-privacy-template-in-sync" title="Permanent link">&para;</a></h3>
@@ -4403,7 +4503,7 @@ unannotated name silently inherits the interface language.</p>
 <p>Mapping detail is opt-in (#924). With it off, <code>Map.svelte</code> swaps the tier styles for the ones in <code>src/lib/finderStyle.js</code> (cluster discs, pins at each playground's interior point, the selected playground's outline) and <code>hub/macroRingStyle.js</code>'s <code>finderMacroRingStyleFn</code> (neutral discs; health variants unchanged). The <code>FINDER</code> colours sit in <code>completenessPalette.js</code> with their contrast measurements. Style functions take the mode from their caller rather than reading the store, so they stay pure and unit-testable. Canvas markers draw in CSS pixels through <code>hidpiStyleOptions</code> (<code>lib/hidpiRenderer.js</code>), which also supplies their 1:1 hit-detection renderer, so the existing click/hover path selects pins — but a click inside the undrawn polygon off the pin does not.</p>
 <p>Whether mapping detail is on lives in <code>stores/mappingDetail.js</code> (persisted in <code>localStorage</code>, overridable per page load with <code>?detail=1|0</code>). While it is off, the <code>showComplete</code> / <code>showPartial</code> / <code>showMissing</code> filters are ignored everywhere — rendering, cluster request parameters, badges, hub macro aggregates — via <code>effectiveFilterStore</code>; their stored values return when it is switched back on.</p>
 <h4 id="the-hint-under-the-badge">The hint under the badge<a class="headerlink" href="#the-hint-under-the-badge" title="Permanent link">&para;</a></h4>
-<p><code>PlaygroundPanel</code> takes the hint from <code>mappingDetailHintKey()</code> in <code>completeness.js</code>, which reads the same <code>mappingDetailInputs()</code> as <code>playgroundCompleteness()</code>, so hint and badge cannot disagree. The texts are <code>mappingDetail.nextStep.*</code>.</p>
+<p><code>PlaygroundPanel</code> passes the hint to <code>panel/MapperTools</code> (the tool block under the header) from <code>mappingDetailHintKey()</code> in <code>completeness.js</code>, which reads the same <code>mappingDetailInputs()</code> as <code>playgroundCompleteness()</code>, so hint and badge cannot disagree. The texts are <code>mappingDetail.nextStep.*</code>.</p>
 <h4 id="mapping-detail-locale-keys">Mapping-detail locale keys<a class="headerlink" href="#mapping-detail-locale-keys" title="Permanent link">&para;</a></h4>
 <p>All UI strings live under the <code>mappingDetail.*</code> namespace in <code>locales/de.json</code> and <code>locales/en.json</code> (repo root).</p>
 <table>
