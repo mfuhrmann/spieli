@@ -9,6 +9,7 @@ main.js
   └── StandaloneApp.svelte  or  HubApp.svelte
         ├── Map.svelte             (OpenLayers map, all layers)
         ├── PlaygroundPanel.svelte (detail panel for selected playground)
+        │     └── panel/*          (zones shared with PitchPanel, see below)
         ├── FilterPanel.svelte     (filter dropdown)
         ├── SearchBar.svelte       (Nominatim search)
         └── ...
@@ -182,6 +183,35 @@ Two things are easy to get wrong here, and both were caught in review:
 
 Step by step, from the database flag to the filter chip: [Add a Filter](add-filter.md). The one rule to know when reading the filter code: anything that fetches or draws reads `effectiveFilterStore`, never `filterStore` (see [Filter flow](#filter-flow)).
 
+## The detail panels
+
+`PlaygroundPanel` and `PitchPanel` are ordered by the parent's question (#1077), in three zones marked `data-testid="zone-a|zone-b|zone-c"`:
+
+| Zone | Playground | Pitch |
+|---|---|---|
+| A — decide | header, mapper tools (mapping detail on), photos, pills (baby, toddler, shade, wheelchair, fenced, dogs), "what kids can do" (highlights, then activities) — or the contribution invitation | header, sports, photos or example illustration, access / fee / booking |
+| B — go deeper | description, "good to know" list, nearby (nearest per kind), all equipment (collapsed), reviews (collapsed) | surface, lighting, hoops, opening hours, wheelchair |
+| C — background | operator, contact, data age, MapComplete | operator, MapComplete |
+
+Both are built from `src/components/panel/`:
+
+| Component | Role |
+|---|---|
+| `PanelHeader` | Title (with `lang`), place, hub region, access badge, navigate, share, close |
+| `PhotoStrip` | Commons + Panoramax; a compact "no photo yet · add" line when empty; reports `status` (`loading` / `photos` / `none`) |
+| `PillRow` | In this order: baby, toddler (`for_baby` / `for_toddler`), shade (`lib/shade.js`, reads the raw `shade` tag), wheelchair tri-state, fenced, dogs allowed |
+| `ActivityRow` | The "what kids can do" block: `HighlightsLine` first, then the activities from `lib/activities.js` |
+| `HighlightsLine` | Themes, water play, catalogue highlights |
+| `MapperTools` | Mapping-detail badge, next-step hint, MapComplete — only while mapping detail is on |
+| `ContributeInvite` | Replaces zone A when nothing is known, after equipment has loaded |
+| `ZoneBackground` | Zone C; `DataAgeChip` holds the data-age popover |
+
+Rules:
+
+- **Mapping detail adds, it never reorders.** The tool block appears under the header; the MapComplete link moves between it and zone C.
+- **Anything a visitor can filter by is visible in the panel** when it applies. A new filter needs a place in a zone.
+- **Activities and highlights come from the catalogue.** Every device in `objPlaygroundEquipment.js` declares `activity` (one of `ACTIVITIES` in `lib/activities.js`, or `null`) and `highlight`; `activities.test.js` fails when one is missing. Both read separately mapped devices and the area-level `playground:<device>=yes|<n>` tags.
+
 ## Internationalisation
 
 New UI strings go into `locales/en.json` and `locales/de.json` in the same commit, and no other locale file is edited by hand. The full workflow, including how strings reach Weblate and back: [Translation Workflow → Adding new UI strings](translations.md#adding-new-ui-strings-developer-workflow).
@@ -255,8 +285,8 @@ $: titleLang = hasOsmName(attr) ? regionLang : $locale;
 <h2 lang={titleLang}>{getPlaygroundTitle(attr, $_)}</h2>
 ```
 
-Current name render sites: `HoverPreview`, `PlaygroundPanel` (both header
-variants). If you add another, annotate it — an
+Current name render sites: `HoverPreview`, `panel/PanelHeader` (used by
+`PlaygroundPanel` and `PitchPanel`, both of which pass `titleLang`). If you add another, annotate it — an
 unannotated name silently inherits the interface language.
 
 ## The search combobox
@@ -283,8 +313,8 @@ In practice the key is dominated by two kinds of non-theme usage: tagging noise 
 - `themeIcon(value)` — curated emoji per allowlisted theme value. `FALLBACK_ICON` (✨) is a defensive backstop only; it never renders for non-allowlisted values, which are filtered out upstream.
 - `themeName(value, t)` — localised label from `equipAttr.themes.*`, falling back to the raw value.
 - `themeOf(props)` — the first allowlisted theme on a single feature, used for the inline device symbol.
-- `areaThemesOf(props)` — allowlisted themes on the playground's own area tag; drives the prominent banner near the title.
-- `aggregatePlaygroundThemes(areaProps, deviceProps)` — deduped, ordered theme list for a playground (area theme first, then device themes by frequency). `PlaygroundPanel` renders this as an icon-only chip row folded onto the **Equipment** header in the overview; `EquipmentList`/`EquipmentTooltip` render the per-device symbol inline.
+- `areaThemesOf(props)` — allowlisted themes on the playground's own area tag; that theme is worded "a … playground" in the highlights line.
+- `aggregatePlaygroundThemes(areaProps, deviceProps)` — deduped, ordered theme list for a playground (area theme first, then device themes by frequency). `PlaygroundPanel` passes it to `highlightsOf()`, so themes lead the highlights line in zone A; `EquipmentList`/`EquipmentTooltip` render the per-device symbol inline.
 
 Themes are panel-only; showing them on the map is not planned yet.
 
@@ -306,7 +336,7 @@ Three things follow from that, and each fixed a real defect:
 
 ### Checking what a panel section contacts
 
-`PlaygroundPanel.svelte` mounts each accordion section's component only while the section is open (`openSections`, default `['photos', 'equipment', 'pois']`), so a closed section's fetch code never runs. Reading a fetch call alone gives the wrong answer about when a service is contacted: check the section's default state too. Reviews start closed; photos start open.
+`PlaygroundPanel.svelte` mounts each accordion section's component only while the section is open (`openSections`, empty by default: all equipment and reviews start collapsed), so a closed section's fetch code never runs. Reading a fetch call alone gives the wrong answer about when a service is contacted: check the section's default state too. Reviews start closed (`tests/reviews-deferral.spec.js`). One exception since #1077: while Mangrove is proxied (`mangroveApiUrl` same-origin, `headerRatingEnabled` in `lib/reviews.js`), the panel reads the reviews on selection to show the average under the name. The read goes through the same session cache, so opening the section later does not ask again; with the proxy off nothing changes. Photos are not an accordion section since #1077: `panel/PhotoStrip` loads Commons thumbnails on selection, as the open photos section did before, and Panoramax stays click-to-load.
 
 ### Reviews ask once per label
 
@@ -333,7 +363,7 @@ Whether mapping detail is on lives in `stores/mappingDetail.js` (persisted in `l
 
 #### The hint under the badge
 
-`PlaygroundPanel` takes the hint from `mappingDetailHintKey()` in `completeness.js`, which reads the same `mappingDetailInputs()` as `playgroundCompleteness()`, so hint and badge cannot disagree. The texts are `mappingDetail.nextStep.*`.
+`PlaygroundPanel` passes the hint to `panel/MapperTools` (the tool block under the header) from `mappingDetailHintKey()` in `completeness.js`, which reads the same `mappingDetailInputs()` as `playgroundCompleteness()`, so hint and badge cannot disagree. The texts are `mappingDetail.nextStep.*`.
 
 #### Mapping-detail locale keys
 

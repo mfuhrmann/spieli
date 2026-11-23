@@ -51,63 +51,59 @@
     dist: haversineDistance(centerLat, centerLon, p.lat, p.lon),
   }));
 
-  $: sections = CATEGORIES.map(cat => {
-    const seen = new Set();
-    const matches = enriched
+  // The nearest place of each kind, one row per kind (#1077): a second toilet
+  // 3.7 km away answers nothing the first did not.
+  $: rows = CATEGORIES.map(cat => {
+    const nearest = enriched
       .filter(p => cat.match(p.tags))
-      .sort((a, b) => a.dist - b.dist)
-      .filter(p => {
-        const key = (p.tags.name || cat.fallback).toLowerCase();
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      })
-      .slice(0, 2);
-    return { ...cat, matches };
-  }).filter(s => s.matches.length);
+      .sort((a, b) => a.dist - b.dist)[0];
+    return nearest ? { cat, poi: nearest } : null;
+  }).filter(Boolean);
 </script>
 
-{#if sections.length === 0}
+{#if rows.length === 0}
   <small class="text-muted">
     {$_('poi.noNearby', { values: { radius: (poiRadiusM / 1000).toFixed(0) } })}
   </small>
 {:else}
-  {#each sections as cat}
-    <div class="mb-2">
-      <small class="text-muted fw-bold text-uppercase" style="font-size:0.7rem;">
-        {cat.icon} {cat.label}
-      </small>
-      {#each cat.matches as poi}
-        {@const name = poi.tags.name || cat.fallback}
-        {@const hint = cat.hint ? cat.hint(poi) : null}
-        {@const geoUrl = `geo:${poi.lat},${poi.lon}?q=${poi.lat},${poi.lon}(${encodeURIComponent(name)})`}
-        {@const osmUrl = `https://www.openstreetmap.org/directions?engine=fossgis_osrm_foot&route=${centerLat},${centerLon};${poi.lat},${poi.lon}`}
+  <ul class="poi-list" data-testid="poi-list">
+    {#each rows as { cat, poi } (cat.label)}
+      {@const name = poi.tags.name || cat.fallback}
+      {@const hint = cat.hint ? cat.hint(poi) : null}
+      {@const geoUrl = `geo:${poi.lat},${poi.lon}?q=${poi.lat},${poi.lon}(${encodeURIComponent(name)})`}
+      {@const osmUrl = `https://www.openstreetmap.org/directions?engine=fossgis_osrm_foot&route=${centerLat},${centerLon};${poi.lat},${poi.lon}`}
+      <li>
         <a href={geoUrl} class="poi-row link-mobile-only" title={$_('poi.openNavApp')}>
-          <span class="poi-name">{name}{#if hint}<span class="poi-hint">({hint})</span>{/if}</span>
+          <span class="poi-icon" aria-hidden="true">{cat.icon}</span>
+          <span class="poi-name"><span class="poi-cat">{cat.label}</span> {name}{#if hint}<span class="poi-hint">({hint})</span>{/if}</span>
           <span class="poi-dist">{formatDistance(poi.dist)}</span>
         </a>
         <a href={osmUrl} target="_blank" rel="noopener" class="poi-row link-desktop-only" title={$_('poi.openInBrowser')}>
-          <span class="poi-name">{name}{#if hint}<span class="poi-hint">({hint})</span>{/if}</span>
+          <span class="poi-icon" aria-hidden="true">{cat.icon}</span>
+          <span class="poi-name"><span class="poi-cat">{cat.label}</span> {name}{#if hint}<span class="poi-hint">({hint})</span>{/if}</span>
           <span class="poi-dist">{formatDistance(poi.dist)}</span>
         </a>
-      {/each}
-    </div>
-  {/each}
+      </li>
+    {/each}
+  </ul>
 {/if}
 
 <style>
+  .poi-list { list-style: none; padding: 0; margin: 0; }
   .poi-row {
     display: flex;
     justify-content: space-between;
     align-items: baseline;
     gap: 0.5rem;
-    margin-top: 0.25rem;
-    font-size: smaller;
+    padding: 0.25rem 0;
+    font-size: 0.8125rem;
     color: var(--color-primary);
     text-decoration: none;
   }
   .poi-row:hover .poi-name { text-decoration: underline; }
-  .poi-name { flex: 1; }
+  .poi-icon { flex-shrink: 0; width: 1.25rem; }
+  .poi-name { flex: 1; min-width: 0; }
+  .poi-cat { color: #6b7280; margin-right: 0.25rem; }
   .poi-hint {
     color: #6b7280;
     margin-left: 0.25rem;

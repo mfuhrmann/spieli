@@ -935,5 +935,44 @@
     "customers": "For customers & guests only",
     "privateShort": "Private",
     "customersShort": "Customers only"
+  },
+  "panel": {
+    "noPhoto": "No photo yet",
+    "fenced": "Fenced",
+    "dogsAllowed": "Dogs allowed",
+    "partlyShaded": "Partly shaded",
+    "age": {
+      "baby": "Babies",
+      "toddler": "Toddlers"
+    },
+    "activities": {
+      "label": "What kids can do"
+    },
+    "activity": {
+      "swing": "Swing",
+      "slide": "Slide",
+      "rock": "Rock",
+      "climb": "Climb",
+      "balance": "Balance",
+      "spin": "Spin",
+      "bounce": "Bounce",
+      "exercise": "Exercise",
+      "dig": "Dig",
+      "explore": "Explore"
+    },
+    "highlights": {
+      "label": "Highlights",
+      "water": "Water play"
+    },
+    "invite": {
+      "text": "We know little about this playground yet. Have you been there?",
+      "addDetails": "Add details"
+    },
+    "hoursLabel": "Opening hours",
+    "goodToKnow": "Good to know",
+    "nearby": "Nearby",
+    "allEquipment": "All equipment",
+    "ratingLabel": "{rating} out of 5 stars, {count, plural, one {# rating} other {# ratings}}",
+    "ratingJump": "Show reviews and add one"
   }
 }

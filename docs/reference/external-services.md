@@ -23,7 +23,7 @@ Served to the browser from same-origin paths, cached on this instance. Opting a 
 | [Nominatim](https://nominatim.openstreetmap.org) | `nominatim.openstreetmap.org` | Place search; region names for URLs like `/fulda` | `/ext/nominatim/` | `PROXY_NOMINATIM=false` |
 | [Wikimedia Commons](https://commons.wikimedia.org) | `commons.wikimedia.org` (API), `upload.wikimedia.org`, `thumb.wikimedia.org` (files) | Playground photo gallery; device and pitch illustrations | `/ext/commons/`, `/ext/wikimedia/<host>/` | `PROXY_COMMONS=false` |
 | [OpenStreetMap wiki](https://wiki.openstreetmap.org) | `wiki.openstreetmap.org` | 14 device illustrations that exist only there | `/ext/wikimedia/<host>/` | `PROXY_COMMONS=false` |
-| [Mangrove.reviews](https://mangrove.reviews) | `api.mangrove.reviews` | Reading and submitting reviews, only once the reviews section is opened | `/ext/mangrove/` | `PROXY_MANGROVE=false` |
+| [Mangrove.reviews](https://mangrove.reviews) | `api.mangrove.reviews` | Reading and submitting reviews. Proxied (default): read on selecting a playground, for the rating under its name. With the proxy off: only once the reviews section is opened | `/ext/mangrove/` | `PROXY_MANGROVE=false` |
 
 What every proxy guarantees: no access log, no cookie, referrer, browser language or forwarded address on the outbound request, and no fallback to a direct connection when the upstream fails. Nominatim requests are limited to one per second, as its usage policy requires; cached answers are not counted. Details: [Privacy by design](../concepts/privacy.md) and [Basemap and external services → External-service proxies](../ops/basemap-and-services.md#external-service-proxies).
 

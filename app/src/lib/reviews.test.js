@@ -256,4 +256,17 @@ const ok = (reviews) => () => ({ ok: true, json: async () => ({ reviews }) });
     assert.deepEqual((await addOwnReview(LAT, LON, 9014, {}, own)).map(r => r.signature), ['mine']);
 }
 
+// --- Header rating (#1077) ---
+{
+    const { ratingSummary, headerRatingEnabled } = await import('./reviews.js');
+    // default config talks to Mangrove directly: no rating under the title
+    assert.equal(headerRatingEnabled, false);
+    assert.equal(ratingSummary([]), null);
+    assert.equal(ratingSummary([{ payload: { opinion: 'nice' } }]), null);
+    assert.deepEqual(
+        ratingSummary([{ payload: { rating: 100 } }, { payload: { rating: 60 } }, { payload: {} }]),
+        { avg: 80, count: 2 },
+    );
+}
+
 console.log('reviews.test.js: all assertions passed');

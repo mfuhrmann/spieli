@@ -54,10 +54,31 @@ From `access` on the playground area:
 | Fenced | The area has `enclosed=yes` or `barrier=fence`, **or** separately mapped `barrier=fence` ways run within 4 m of at least 75 % of its outline |
 | Dogs allowed | `dog=yes` on the area |
 | Themed | An allowlisted `playground:theme` on the area or on a device inside (see below) |
-| With shade | `shade=yes` on the area (`shade=no` shows *No shade* in the panel; untagged shows nothing) |
+| With shade | `shade=yes` on the area. The panel reads the tag itself: `yes` *Shaded*, `partial` *Partly shaded*, `no` *No shade*, untagged nothing (the filter does not match `partial` yet, #1072) |
 | Lit at night | `lit` on the area reads as lit (see below) |
 
 Values separated by `;` are split for `sport` and `playground:theme`.
+
+## Activities and highlights (detail panel)
+
+The panel's *What kids can do* row and its highlights line are derived from the play devices inside the playground — separately mapped `playground=*` objects **and** `playground:<device>=yes|<n>` on the area itself. Each device type in `app/src/lib/objPlaygroundEquipment.js` declares its `activity` and whether it is a `highlight`:
+
+| Activity | Devices (`playground=*`) |
+|---|---|
+| Swing | `swing`, `baby_swing`, `basketswing`, `tire_swing`, `rope_swing` |
+| Slide | `slide` |
+| Rock | `seesaw`, `springy` |
+| Climb | `climbingframe`, `climbingwall`, `climbing_slope`, `climbing_pole`, `monkey_bars`, `climbing`, `mound`, `dome` |
+| Balance | `balancebeam`, `rope_traverse`, `stepping_stone`, `stepping_post`, `balance`, `agility_trail`, `wobble_bridge`, `belt_bridge` |
+| Spin | `roundabout`, `basketrotator`, `aerialrotator`, `spinner`, `spinning_disc`, `spinning_circle`, `spinner_bowl`, `rotator` |
+| Bounce | `trampoline`, `cushion`, `spring_board`, `hopscotch` |
+| Exercise | `horizontal_bar`, `parallel_bars`, `bannister_bars`, `hamster_wheel`, `exercise` |
+| Dig | `sandpit`, `chute`, `sieve`, `sand_wheel`, `sand_seesaw`, `sand_pulley`, `excavator`, `table`, `sand` |
+| Explore | `playhouse`, `tunnel_tube` |
+
+Structure parts (`structure`, `platform`, `ladder`, `steps`, `bridge`) and water devices are no activity.
+
+**Highlights**, in this order: the playground's theme; *Water play* once for any water device (category `water`, or the server's water flag); then, in catalogue order, `aerialrotator`, `hamster_wheel`, `zipwire`, `trampoline`, `speaking_tube`, `funnel_ball`, `ball_pool`, `marble_run`, `musical_instrument`, `sledding`.
 
 ### Lighting (`lit`)
 
