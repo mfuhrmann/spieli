@@ -65,14 +65,10 @@ test.describe('Shade hint (tree_row)', () => {
     await page.goto(`/#W${OSM_ID}`);
     await expect(page.locator('aside.info-panel')).toBeVisible({ timeout: 8000 });
 
-    // The shade hint row is keyed by the "Reihen"/"rows" label substring.
-    const shadeRow = page.locator('.fact-item').filter({
-      has: page.locator('.info-label', { hasText: /Reihen|rows/i }),
-    });
-    await expect(shadeRow).toBeVisible({ timeout: 5000 });
-    // Row count in parentheses after label.
-    await expect(shadeRow.locator('.info-label')).toContainText('(1)');
-    // Length in metres in the value cell.
-    await expect(shadeRow.locator('.fact-value')).toContainText('42 m');
+    // Tree rows are part of the "good to know" ground line (#1077).
+    const ground = page.locator('[data-testid="good-to-know"] [data-fact="ground"]');
+    await expect(ground).toBeVisible({ timeout: 5000 });
+    await expect(ground).toContainText(/Reihen|rows/i);
+    await expect(ground).toContainText('42 m');
   });
 });

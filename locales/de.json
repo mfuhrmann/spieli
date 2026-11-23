@@ -935,5 +935,44 @@
     "customers": "Nur für Gäste & Kunden",
     "privateShort": "Privat",
     "customersShort": "Nur für Kunden"
+  },
+  "panel": {
+    "noPhoto": "Noch kein Foto",
+    "fenced": "Eingezäunt",
+    "dogsAllowed": "Hunde erlaubt",
+    "partlyShaded": "Teilweise schattig",
+    "age": {
+      "baby": "Babys",
+      "toddler": "Kleinkinder"
+    },
+    "activities": {
+      "label": "Was Kinder hier tun können"
+    },
+    "activity": {
+      "swing": "Schaukeln",
+      "slide": "Rutschen",
+      "rock": "Wippen",
+      "climb": "Klettern",
+      "balance": "Balancieren",
+      "spin": "Drehen",
+      "bounce": "Hüpfen",
+      "exercise": "Turnen",
+      "dig": "Buddeln",
+      "explore": "Entdecken"
+    },
+    "highlights": {
+      "label": "Highlights",
+      "water": "Wasserspiel"
+    },
+    "invite": {
+      "text": "Über diesen Spielplatz wissen wir noch wenig. Warst du schon mal da?",
+      "addDetails": "Details eintragen"
+    },
+    "hoursLabel": "Öffnungszeiten",
+    "goodToKnow": "Gut zu wissen",
+    "nearby": "In der Nähe",
+    "allEquipment": "Alle Geräte & Ausstattung",
+    "ratingLabel": "{rating} von 5 Sternen, {count, plural, one {# Bewertung} other {# Bewertungen}}",
+    "ratingJump": "Bewertungen anzeigen und selbst bewerten"
   }
 }

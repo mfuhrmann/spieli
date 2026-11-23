@@ -8,9 +8,16 @@
 </script>
 
 <script>
-  import { onMount, onDestroy } from 'svelte';
+  // The playground detail panel, ordered by the parent's question (#1077):
+  //   zone A — decide: header, photos, pills (incl. age), "what kids can do"
+  //            (highlights, then activities)
+  //            (or an invitation to contribute when nothing is known)
+  //   zone B — go deeper: description, facts, equipment list, nearby, reviews
+  //   zone C — background: operator, contact, data age, MapComplete
+  // Mapping detail adds a tool block under the header; it never reorders.
+  import { onMount, onDestroy, tick } from 'svelte';
   import { transform } from 'ol/proj';
-  import { X, Share2, Check, ChevronDown, ChevronUp, ChevronRight, Image, Package, Navigation, Star, Info, Phone, Mail, Accessibility, PencilLine, LockKeyhole, Coffee } from 'lucide-svelte';
+  import { ChevronDown, ChevronRight, Package, Star } from 'lucide-svelte';
   import { _, locale } from 'svelte-i18n';
   import { tagValuesLabel } from '../lib/deviceLabel.js';
 
@@ -25,22 +32,25 @@
   import { openingHoursState } from '../lib/openingHours.js';
   import { litInfo } from '../lib/pitchInfo.js';
   import { accessKind } from '../lib/access.js';
-  import { COMPLETENESS_PALETTE } from '../lib/completenessPalette.js';
+  import { shadeState } from '../lib/shade.js';
+  import { deviceKeysOf, activitiesOf, highlightsOf } from '../lib/activities.js';
   import { poiRadiusM, appMode, mapMinZoom, regionLang } from '../lib/config.js';
   import { getPlaygroundTitle, getPlaygroundLocation, hasOsmName, navigationUrl, isMobileUserAgent } from '../lib/playgroundHelpers.js';
-  import { aggregatePlaygroundThemes, areaThemesOf, themeIcon, themeName } from '../lib/playgroundThemes.js';
+  import { aggregatePlaygroundThemes, areaThemesOf } from '../lib/playgroundThemes.js';
   import { summarizeEquipment } from '../lib/equipmentSummary.js';
   import { cn } from '../lib/utils.js';
   import EquipmentList from './EquipmentList.svelte';
-  import MapCompleteLink from './MapCompleteLink.svelte';
   import POIPanel from './POIPanel.svelte';
-  import PanoramaxViewer from './PanoramaxViewer.svelte';
-  import CommonsGallery from './CommonsGallery.svelte';
   import ReviewsPanel from './ReviewsPanel.svelte';
-  import { radiusFromExtent } from '../lib/reviews.js';
+  import { radiusFromExtent, fetchReviewsCached, headerRatingEnabled, ratingSummary } from '../lib/reviews.js';
   import { panoramaxUuidsFromTags } from '../lib/panoramax.js';
-  import Badge from './ui/Badge.svelte';
-  import Button from './ui/Button.svelte';
+  import PanelHeader from './panel/PanelHeader.svelte';
+  import PhotoStrip from './panel/PhotoStrip.svelte';
+  import PillRow from './panel/PillRow.svelte';
+  import ActivityRow from './panel/ActivityRow.svelte';
+  import MapperTools from './panel/MapperTools.svelte';
+  import ContributeInvite from './panel/ContributeInvite.svelte';
+  import ZoneBackground from './panel/ZoneBackground.svelte';
 
   /** When true, renders without the fixed sidebar wrapper (for bottom sheet embedding) */
   export let embedded = false;
@@ -61,28 +71,21 @@
   let equipmentFeatures = [];
   let equipmentGroups = [];
 
-  // ── Playground themes (area tag + themed devices), deduped + ordered ───────
-  const THEME_CAP = 4;
+  // ── Themes, activities, highlights (zone A) ───────────────────────────────
   $: deviceProps = [
     ...equipmentFeatures.map(f => f.properties),
     ...equipmentGroups.flatMap(g => [g.structure.properties, ...g.children.map(c => c.properties)]),
   ];
   $: themes = attr ? aggregatePlaygroundThemes(attr, deviceProps) : [];
-  // The first area-tag theme gets a prominent banner ("this is an octopus
-  // playground"); every other theme — remaining area themes plus device-derived
-  // ones — becomes a chip. Only the banner theme is excluded from the chip row,
-  // so a multi-value area tag (`ship;castle`) never drops its extra themes.
-  $: areaThemes = attr ? areaThemesOf(attr) : [];
-  $: areaTheme = areaThemes[0] ?? null;
-  $: deviceThemes = themes.filter(v => v !== areaTheme);
-  $: visibleThemes = deviceThemes.slice(0, THEME_CAP);
-  $: themeOverflow = Math.max(0, deviceThemes.length - THEME_CAP);
+  $: areaTheme = attr ? (areaThemesOf(attr)[0] ?? null) : null;
+  $: deviceKeys = deviceKeysOf(equipmentFeatures, equipmentGroups, attr);
+  $: activities = activitiesOf(deviceKeys);
+  $: highlights = highlightsOf(deviceKeys, { themes, isWater: !!attr?.is_water });
 
-  // Equipment count summary, surfaced in the overview (not buried in the section).
+  // Seating and fitness counts go to zone B's "good to know"; the device
+  // total is gone — the activity row says what children can do.
   $: equipSummary = summarizeEquipment(equipmentFeatures, equipmentGroups);
-  $: equipSummaryItems = [
-    ['deviceCount', equipSummary.devices],
-    ['fitnessCount', equipSummary.fitness],
+  $: seating = [
     ['benches', equipSummary.benches],
     ['shelters', equipSummary.shelters],
     ['picnic', equipSummary.picnic],
@@ -135,80 +138,6 @@
 
   $: loadMeta(backendUrl);
   $: dataAgeFormatted = formatDataAge(osmDataAgeSec);
-  // Close the popover when the user picks a different playground / backend
-  // — the popover's body text references `dataAgeFormatted`, which would
-  // otherwise show stale content next to the new title until the user
-  // dismisses the popover.
-  $: if (backendUrl !== undefined) dataAgePopoverOpen = false;
-
-  // ── Data age popover ──────────────────────────────────────────────────────
-  let dataAgePopoverOpen = false;
-  let dataAgePopoverStyle = '';
-  let chipEl;
-
-  function recomputePopoverStyle() {
-    if (!chipEl) return;
-    const chip = chipEl.getBoundingClientRect();
-    // Clamp right edge against the panel's right boundary; floor the width
-    // so we never compute a zero/negative width on very narrow viewports.
-    const panel = chipEl.closest('aside, [data-panel]');
-    const panelRight = panel ? panel.getBoundingClientRect().right : window.innerWidth;
-    const maxWidth = Math.max(140, Math.min(260, panelRight - chip.left - 12));
-    dataAgePopoverStyle = [
-      `top:${chip.bottom + 6}px`,
-      `left:${chip.left}px`,
-      `width:${maxWidth}px`,
-    ].join(';');
-  }
-
-  function onDocumentClick(e) {
-    // Don't close when the click is inside the popover (so users can select
-    // text) or on the chip button itself (its own onclick handles toggle).
-    if (e.target?.closest?.('.data-age-popover, .data-age-chip')) return;
-    closeDataAgePopover();
-  }
-  function onPopoverKeydown(e) {
-    if (e.key === 'Escape' && dataAgePopoverOpen) {
-      // Stop propagation so the panel-level Escape handler doesn't also fire
-      // and close the entire panel.
-      e.stopPropagation();
-      closeDataAgePopover();
-    }
-  }
-  function onViewportChange() {
-    // Scroll/resize/sheet-drag invalidate the fixed-position style. Cheaper
-    // and less surprising to close than to chase the chip around the screen.
-    closeDataAgePopover();
-  }
-
-  function openDataAgePopover() {
-    recomputePopoverStyle();
-    dataAgePopoverOpen = true;
-    // Defer listener attachment by a tick so the click that opened the
-    // popover doesn't immediately close it via document-level capture.
-    setTimeout(() => {
-      window.addEventListener('click', onDocumentClick);
-      window.addEventListener('keydown', onPopoverKeydown);
-      window.addEventListener('resize', onViewportChange);
-      // capture: catches scroll on any ancestor (panel, bottom sheet, page)
-      window.addEventListener('scroll', onViewportChange, true);
-    }, 0);
-  }
-
-  function closeDataAgePopover() {
-    if (!dataAgePopoverOpen) return;
-    dataAgePopoverOpen = false;
-    window.removeEventListener('click', onDocumentClick);
-    window.removeEventListener('keydown', onPopoverKeydown);
-    window.removeEventListener('resize', onViewportChange);
-    window.removeEventListener('scroll', onViewportChange, true);
-  }
-
-  function toggleDataAgePopover(e) {
-    e.stopPropagation();
-    if (dataAgePopoverOpen) closeDataAgePopover();
-    else                    openDataAgePopover();
-  }
 
   // Centre of selected playground in WGS84
   let centerLat = 0, centerLon = 0;
@@ -221,6 +150,8 @@
   $: if (feature) {
     loadData(feature, backendUrl);
   } else {
+    ratingCtrl?.abort();
+    headerRating = null;
     equipmentFeatures = [];
     equipmentGroups = [];
     pois = [];
@@ -241,6 +172,7 @@
     centerLat = lat;
     centerLon = lon;
     reviewRadiusM = radiusFromExtent(ext);
+    loadHeaderRating(feat.getProperties(), reviewRadiusM, lat, lon);
 
     equipmentLoading = true;
     poisLoading = true;
@@ -329,12 +261,9 @@
   }
 
   // ── ESC to close ──────────────────────────────────────────────────────────
+  // The data-age popover and the photo dialogs listen in the capture phase and
+  // stop the event, so Escape closes them without reaching this handler.
   function handleKeydown(e) {
-    // The data-age popover has its own Escape handler. Both listeners sit on
-    // `window`; stopPropagation there can't stop this sibling, and we're
-    // registered first — so bail while the popover is open or Escape would
-    // close the whole panel (and zoom the map out) instead of just the popover.
-    if (dataAgePopoverOpen) return;
     if (e.key === 'Escape' && feature && !embedded) closePanel();
   }
 
@@ -345,70 +274,56 @@
 
   onDestroy(() => {
     overlayFeaturesStore.set({ equipment: [], trees: [] });
-    // Bail out cleanly if unmount happens while popover is open.
-    closeDataAgePopover();
   });
 
-  // ── Mapping-detail badge ──────────────────────────────────────────────────
-  // Tinted from the shared map palette rather than a semantic Badge variant,
-  // so the badge colour always equals the polygon the user just tapped. The
-  // old success/warning/destructive variants encoded a verdict ("this one is
-  // bad"), which is exactly the reading being removed (#733).
-  //
-  // The labels live in the `mappingDetail.*` namespace ("detailed" / "basic" /
-  // "no details yet") because the value describes how much has been MAPPED,
-  // not how good the playground is.
-  const MAPPING_DETAIL_KEY = {
-    complete: 'mappingDetail.detailed',
-    partial:  'mappingDetail.basic',
-    missing:  'mappingDetail.noDetails',
-  };
+  // ── Mapping detail (tool block) ───────────────────────────────────────────
   // Only while mapping detail is on: in the finder view the badge would bring
   // back exactly the data-quality reading the view leaves out (#924).
   $: completenessLevel = attr && $mappingDetail ? playgroundCompleteness(attr) : null;
-
-  // Under the badge: which of the rule's two inputs is missing — so "basic" or
-  // "no details yet" reads as an invitation, not a grade (#919). Same condition as the badge: only with
-  // mapping detail on; nothing for "detailed".
+  // Which of the rule's two inputs is missing — so "basic" or "no details
+  // yet" reads as an invitation, not a grade (#919). Nothing for "detailed".
   $: detailHintKey = completenessLevel ? mappingDetailHintKey(attr) : null;
-  $: completeness = completenessLevel
-    ? {
-        key: MAPPING_DETAIL_KEY[completenessLevel],
-        // Tinted background rather than the solid base: dark text on solid
-        // #15803d is unreadable. The dot carries the identity colour, so the
-        // badge still ties visually to the legend swatches and ring segments.
-        style: `background: ${COMPLETENESS_PALETTE[completenessLevel].fill};`
-             + `border-color: ${COMPLETENESS_PALETTE[completenessLevel].stroke};`
-             + 'color: #1f2937;',
-        dot: COMPLETENESS_PALETTE[completenessLevel].base,
-      }
-    : null;
 
-  // ── Opening hours ─────────────────────────────────────────────────────────
+  // ── Zone B facts ──────────────────────────────────────────────────────────
   $: openingHoursInfo = attr?.opening_hours ? openingHoursState(attr.opening_hours, $_) : null;
-
-  // ── Attribute helpers ─────────────────────────────────────────────────────
-  $: accessLabel = (() => {
-    if (!attr) return '';
-    const privateVal = attr.private;
-    if (privateVal === 'residents') return $_('details.access.residents');
-    if (privateVal === 'students')  return $_('details.access.students');
-    if (privateVal === 'employees') return $_('details.access.employees');
-    const access = attr.access ?? 'unknown';
-    return $_('details.access.' + access, { default: $_('details.access.unknown') });
-  })();
-
-  // Same rule as the map pin's badge and the hover card's chip, so the panel
-  // repeats the marker's signal instead of dropping it (#996), and tells a
-  // café's playground from a kindergarten's (#1002).
-  $: access = attr ? accessKind(attr) : 'public';
-  $: restricted = access !== 'public';
-
   $: litFact = attr ? litInfo(attr.lit) : null;
-
   $: surfaceLabel = attr?.surface
     ? tagValuesLabel(attr.surface, 'details.surfaceValues.', $_)
     : null;
+
+  // One line per topic, each only when something is recorded.
+  $: goodToKnow = !attr ? [] : [
+    openingHoursInfo && {
+      key: 'opening-hours', icon: '🕗',
+      dot: openingHoursInfo.open === null ? undefined : openingHoursInfo.open,
+      text: openingHoursInfo.open === null
+        ? openingHoursInfo.text
+        : `${openingHoursInfo.open ? $_('poi.open') : $_('poi.closed')}: ${openingHoursInfo.text}`,
+    },
+    seating.length && {
+      key: 'seating', icon: '🪑',
+      text: seating.map(([key, count]) => $_('equipment.' + key, { values: { count } })).join(' · '),
+    },
+    equipSummary.fitness > 0 && {
+      key: 'fitness', icon: '🏋️',
+      text: $_('equipment.fitnessCount', { values: { count: equipSummary.fitness } }),
+    },
+    (surfaceLabel || attr.area > 0 || attr.tree_count > 0 || treeRows.length > 0) && {
+      key: 'ground', icon: '🌳',
+      text: [
+        surfaceLabel,
+        attr.area > 0 ? `${(Math.round(attr.area / 10) * 10 || attr.area).toLocaleString($locale ?? undefined)} m²` : null,
+        attr.tree_count > 0 ? `${attr.tree_count} ${$_('hover.tagTrees')}` : null,
+        treeRows.length > 0 ? `${$_('details.treeShadow')}: ${treeRows.map(m => `${m} m`).join(', ')}` : null,
+      ].filter(Boolean).join(' · '),
+    },
+    // Only when tagged: 53 of 733 Fulda playgrounds carry `lit`, so
+    // "unknown" must stay silent rather than read as "not lit" (#934).
+    litFact && {
+      key: 'lit', icon: '💡',
+      text: $_(litFact.key, litFact.values ? { values: litFact.values } : undefined),
+    },
+  ].filter(Boolean);
 
   $: descriptionParts = (() => {
     if (!attr) return [];
@@ -422,39 +337,70 @@
     return parts;
   })();
 
+  // Same rule as the map pin's badge and the hover card's chip, so the panel
+  // repeats the marker's signal instead of dropping it (#996), and tells a
+  // café's playground from a kindergarten's (#1002). Shown in the header.
+  $: access = attr ? accessKind(attr) : 'public';
+
   $: mcOsmType = attr ? ({ W:'way', R:'relation', N:'node' }[attr.osm_type] ?? 'way') : 'way';
   $: mcUrl = attr ? `https://mapcomplete.org/playgrounds.html#${mcOsmType}/${attr.osm_id}` : '';
 
-  // ── Accordion state ───────────────────────────────────────────────────────
-  let openSections = new Set(['photos', 'equipment', 'pois']);
+  // ── Photos ────────────────────────────────────────────────────────────────
+  $: panoramaxUuids = panoramaxUuidsFromTags(attr);
+  $: commonsTag = attr?.['wikimedia_commons'] || '';
+  $: imageTag = attr?.['image'] || '';
+  let photoState = 'loading';
+
+  // ── Nearly empty: invite instead (#1077) ──────────────────────────────────
+  // Only once equipment has loaded, or the invitation would flash before the
+  // activities arrive.
+  $: hasPills = !!attr && (attr.for_baby === true || attr.for_toddler === true
+    || attr.has_fence === true || attr.has_dogs === true || shadeState(attr) !== null
+    || attr.wheelchair_play === 'yes' || attr.wheelchair_play === 'no');
+  $: knowsNothing = !!attr && !equipmentLoading && photoState === 'none' && !hasPills
+    && activities.length === 0 && highlights.length === 0;
+
+  // ── Accordion state (zone B) ──────────────────────────────────────────────
+  // Both start closed: the activities above already say what is there, and
+  // opening reviews contacts Mangrove (reviews-deferral.spec).
+  let openSections = new Set();
+  // From the rating under the name: open the reviews and land on them, where
+  // the visitor can also add one.
+  let reviewsEl;
+  async function showReviews() {
+    if (!openSections.has('reviews')) toggleSection('reviews');
+    await tick();
+    reviewsEl?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    reviewsEl?.querySelector('button.section-btn')?.focus({ preventScroll: true });
+  }
   function toggleSection(id) {
     const next = new Set(openSections);
     next.has(id) ? next.delete(id) : next.add(id);
     openSections = next;
   }
 
-  // ── Panoramax UUIDs from OSM tags ─────────────────────────────────────────
-  $: panoramaxUuids = panoramaxUuidsFromTags(attr);
+  // ── Rating under the title (#1077) ────────────────────────────────────────
+  // Only through this instance's Mangrove proxy (see lib/reviews.js). Shares
+  // the session cache with the reviews section, so opening it later does not
+  // ask again.
+  let headerRating = null;
+  let ratingCtrl = null;
+  // Called from loadData once the new playground's centre is known — a
+  // reactive call would first run with the previous playground's centre.
+  function loadHeaderRating(a, radiusM, lat, lon) {
+    ratingCtrl?.abort();
+    headerRating = null;
+    if (!headerRatingEnabled || !a) return;
+    const ctrl = ratingCtrl = new AbortController();
+    fetchReviewsCached(lat, lon, a.osm_id, ctrl.signal, { name: a.name ?? null, radiusM })
+      .then(list => { if (ratingCtrl === ctrl) headerRating = ratingSummary(list); })
+      .catch(() => {});
+  }
+  onDestroy(() => ratingCtrl?.abort());
 
-  // ── Wikimedia Commons photos from OSM tags (issue #650) ────────────────────
-  $: commonsTag = attr?.['wikimedia_commons'] || '';
-  $: imageTag = attr?.['image'] || '';
-  // How many photos the Commons gallery actually resolved (a tag can be present
-  // but yield nothing: unsafe/non-Wikimedia image URL, empty category, or a
-  // failed fetch). Bound from CommonsGallery so the Panoramax fallback below
-  // reflects what is really on screen, not just tag presence.
-  let commonsPhotoCount = 0;
-  // True only when a tag is present AND the gallery actually rendered photos.
-  // Tag-only-but-empty (or no tag at all) leaves this false so the Panoramax
-  // "add a photo" prompt is never orphaned behind a blank gallery.
-  $: commonsHasPhotos = (commonsTag || imageTag) && commonsPhotoCount > 0;
-
-  // ── Share button ──────────────────────────────────────────────────────────
-  let shareConfirmed = false;
-  let shareTimeout;
-
+  // ── Share ─────────────────────────────────────────────────────────────────
   async function sharePlayground() {
-    if (!attr) return;
+    if (!attr) return false;
     // Carry mapping detail only while it is on, so a contributor shares the
     // view they are looking at and everyone else's links stay as before (#924).
     const detail = $mappingDetail ? `?${DETAIL_PARAM}=1` : '';
@@ -476,11 +422,10 @@
         document.execCommand('copy');
         document.body.removeChild(ta);
       }
-      shareConfirmed = true;
-      clearTimeout(shareTimeout);
-      shareTimeout = setTimeout(() => { shareConfirmed = false; }, 2000);
+      return true;
     } catch (err) {
       if (err.name !== 'AbortError') console.warn('Share failed:', err);
+      return false;
     }
   }
 
@@ -511,416 +456,125 @@
     embedded ? '' : 'info-panel',
     embedded ? '' : 'lg:flex'
   )}>
-    <!-- Header -->
-    {#if !embedded}
-      <div class="info-panel__header">
-        <div class="flex-1 min-w-0">
-          <h2 class="panel-title" lang={titleLang}>{getPlaygroundTitle(attr, $_)}</h2>
-          {#if getPlaygroundLocation(attr, $_)}
-            <p class="text-sm text-muted-foreground mt-0.5">{getPlaygroundLocation(attr, $_)}</p>
-          {/if}
-          {#if backendName}
-            <p class="backend-name">{backendName}</p>
-          {/if}
-        </div>
-        <div class="flex items-center gap-1 shrink-0">
-          {#if navUrl}
-            <a
-              class="navigate-btn"
-              href={navUrl}
-              target={navIsMobile ? undefined : '_blank'}
-              rel={navIsMobile ? undefined : 'noopener'}
-            >{$_('info.navigateHere')}</a>
-          {/if}
-          <button class="panel-icon-btn" onclick={closePanel} aria-label={$_('info.closeBtn')}>
-            <X class="h-5 w-5" />
-          </button>
-        </div>
-      </div>
-    {:else}
-      <!-- Embedded header (mobile full-screen panel) -->
-      <div class="flex items-start justify-between gap-2 mb-4">
-        <div class="flex-1 min-w-0">
-          <h2 class="panel-title" lang={titleLang}>{getPlaygroundTitle(attr, $_)}</h2>
-          {#if getPlaygroundLocation(attr, $_)}
-            <p class="text-sm text-muted-foreground mt-0.5">{getPlaygroundLocation(attr, $_)}</p>
-          {/if}
-          {#if backendName}
-            <p class="backend-name">{backendName}</p>
-          {/if}
-        </div>
-        <div class="flex items-center gap-1">
-          {#if navUrl}
-            <a
-              class="navigate-btn"
-              href={navUrl}
-              target={navIsMobile ? undefined : '_blank'}
-              rel={navIsMobile ? undefined : 'noopener'}
-            >{$_('info.navigateHere')}</a>
-          {/if}
-          <button class="panel-icon-btn shrink-0" onclick={sharePlayground} aria-label={$_('info.copyLink')}>
-            {#if shareConfirmed}
-              <Check class="h-5 w-5 text-primary" />
-            {:else}
-              <Share2 class="h-5 w-5" />
-            {/if}
-          </button>
-        </div>
-      </div>
-    {/if}
+    <PanelHeader
+      {embedded}
+      title={getPlaygroundTitle(attr, $_)}
+      {titleLang}
+      subtitle={getPlaygroundLocation(attr, $_)}
+      {backendName}
+      access={access === 'public' ? null : access}
+      {navUrl}
+      navMobile={navIsMobile}
+      onShare={sharePlayground}
+      onClose={closePanel}
+      rating={headerRating}
+      onRatingClick={showReviews}
+    />
 
     <div class={cn(embedded ? '' : 'info-panel__body')}>
-      <!-- Area-level theme banner: the whole playground is themed -->
-      {#if areaTheme}
-        <div class="theme-banner mb-3">
-          <span class="theme-banner__icon" aria-hidden="true">{themeIcon(areaTheme)}</span>
-          <span class="theme-banner__label">{$_('details.themedPlayground', { values: { theme: themeName(areaTheme, $_) } })}</span>
-        </div>
-      {/if}
-
-      <!-- Description -->
-      {#each descriptionParts as part}
-        <p class="text-sm text-muted-foreground italic mb-3">{part}</p>
-      {/each}
-
-      <!-- Mapping detail + data age -->
-      {#if completeness || dataAgeFormatted}
-        <div class="status-row mb-4">
-          {#if completeness}
-            <Badge variant="outline" class="gap-1.5" style={completeness.style}>
-              <span class="detail-dot" style="background: {completeness.dot};" aria-hidden="true"></span>
-              {$_(completeness.key)}
-            </Badge>
-          {/if}
-          {#if dataAgeFormatted}
-            <button
-              bind:this={chipEl}
-              class="data-age-chip"
-              onclick={toggleDataAgePopover}
-              title={$_('details.osmDataAgeTitle')}
-              aria-haspopup="dialog"
-              aria-controls="data-age-popover"
-              aria-expanded={dataAgePopoverOpen}
-            >
-              <Info class="h-3 w-3" />
-              {$_('details.osmDataAgeChip', { values: { age: dataAgeFormatted } })}
-              {#if dataAgePopoverOpen}
-                <ChevronUp class="h-3 w-3" />
-              {:else}
-                <ChevronDown class="h-3 w-3" />
-              {/if}
-            </button>
-          {/if}
-        </div>
-        {#if detailHintKey}
-          <p class="detail-hint" data-testid="mapping-detail-hint">
-            <PencilLine class="h-4 w-4 shrink-0 mt-px text-blue-600" />
-            <span class="min-w-0">{$_(detailHintKey)}</span>
-          </p>
+      <!-- Zone A: decide -->
+      <section data-testid="zone-a">
+        {#if completenessLevel}
+          <MapperTools level={completenessLevel} hintKey={detailHintKey} {mcUrl} />
         {/if}
-      {/if}
-
-      <!-- Status pills: opening hours, baby/toddler, shade -->
-      {#if restricted || openingHoursInfo || attr.for_baby || attr.for_toddler || attr.wheelchair_play || attr.has_shade != null}
-        <div class="status-row mb-4">
-          {#if access === 'private'}
-            <Badge variant="privateSoft" class="gap-[5px] whitespace-nowrap" data-testid="restricted-badge" data-access="private">
-              <LockKeyhole class="h-3 w-3" aria-hidden="true" />{$_('access.private')}
-            </Badge>
-          {:else if access === 'customers'}
-            <Badge variant="customersSoft" class="gap-[5px] whitespace-nowrap" data-testid="restricted-badge" data-access="customers">
-              <Coffee class="h-3 w-3" aria-hidden="true" />{$_('access.customers')}
-            </Badge>
-          {/if}
-          {#if openingHoursInfo}
-            <Badge
-              variant={openingHoursInfo.open ? 'successSoft' : 'dangerSoft'}
-              class="gap-[5px] min-w-0 max-w-full overflow-hidden whitespace-nowrap"
-              aria-label={openingHoursInfo.open === null
-                ? openingHoursInfo.text
-                : `${openingHoursInfo.open ? $_('poi.open') : $_('poi.closed')}: ${openingHoursInfo.text}`}
-            >
-              <span class="status-dot" class:status-dot--open={openingHoursInfo.open} class:status-dot--closed={!openingHoursInfo.open} aria-hidden="true"></span>
-              <span class="truncate">{openingHoursInfo.text}</span>
-            </Badge>
-          {/if}
-          {#if attr.for_baby}
-            <Badge variant="info" class="whitespace-nowrap">{$_('details.forBaby')}</Badge>
-          {/if}
-          {#if attr.for_toddler}
-            <Badge variant="info" class="whitespace-nowrap">{$_('details.forToddler')}</Badge>
-          {/if}
-          <!-- Tri-state: a badge when suitable equipment is tagged, a plain note
-               when someone surveyed and found none, nothing at all when no play
-               device carries a wheelchair tag. The third case is unknown, not a
-               negative, and must not read as one. -->
-          {#if attr.wheelchair_play === 'yes'}
-            <Badge variant="info" class="gap-[5px] whitespace-nowrap">
-              <Accessibility class="h-3 w-3" aria-hidden="true" />{$_('details.wheelchairPlay')}
-            </Badge>
-          {:else if attr.wheelchair_play === 'no'}
-            <Badge variant="neutralSoft" class="gap-[5px] whitespace-nowrap">
-              <Accessibility class="h-3 w-3" aria-hidden="true" />{$_('details.wheelchairPlayNone')}
-            </Badge>
-          {/if}
-          {#if attr.has_shade != null}
-            <Badge variant={attr.has_shade ? 'successSoft' : 'dangerSoft'} class="whitespace-nowrap">
-              {$_(attr.has_shade ? 'details.shaded' : 'details.notShaded')}
-            </Badge>
-          {/if}
-        </div>
-      {/if}
-
-      <!-- At a glance -->
-      <h3 class="section-label">{$_('details.atGlance')}</h3>
-      <!-- Quick Facts Grid -->
-      <div class="grid grid-cols-2 gap-x-4 gap-y-2 mb-4">
-        {#if attr.area > 0}
-          <div class="fact-item">
-            <span class="info-label">{$_('details.sizeLabel')}</span>
-            <span class="fact-value">{Math.round(attr.area / 10) * 10 || attr.area} m²</span>
-          </div>
+        <PhotoStrip
+          commons={commonsTag}
+          image={imageTag}
+          {panoramaxUuids}
+          {mcUrl}
+          hideEmpty={knowsNothing}
+          bind:status={photoState}
+        />
+        {#if knowsNothing}
+          <ContributeInvite {mcUrl} />
+        {:else}
+          <PillRow {attr} />
+          <ActivityRow {activities} {highlights} {areaTheme} loading={equipmentLoading} />
         {/if}
+      </section>
 
-        <div class="fact-item">
-          <span class="info-label">{$_('details.accessLabel')}</span>
-          <span class="fact-value">{accessLabel}</span>
-        </div>
+      <!-- Zone B: go deeper -->
+      <section data-testid="zone-b">
+        {#each descriptionParts as part}
+          <p class="text-sm text-muted-foreground italic mb-3" data-testid="description">{part}</p>
+        {/each}
 
-        {#if surfaceLabel}
-          <div class="fact-item">
-            <span class="info-label">{$_('details.surfaceLabel')}</span>
-            <span class="fact-value">{surfaceLabel}</span>
-          </div>
-        {/if}
-
-        <!-- Only when tagged: 53 of 733 Fulda playgrounds carry `lit`, so
-             "unknown" must stay silent rather than read as "not lit" (#934). -->
-        {#if litFact}
-          <div class="fact-item" data-fact="lit">
-            <span class="info-label">{$_('pitch.lightingLabel')}</span>
-            <span class="fact-value">{$_(litFact.key, litFact.values ? { values: litFact.values } : undefined)}</span>
-          </div>
-        {/if}
-
-        {#if attr.tree_count > 0 || treeRows.length > 0}
-          <div class="fact-item">
-            <span class="info-label">{$_('details.treeShadow')}{treeRows.length > 0 ? ` (${treeRows.length})` : ''}</span>
-            <span class="fact-value">
-              {[
-                attr.tree_count > 0 ? `${attr.tree_count} ${$_('hover.tagTrees')}` : null,
-                treeRows.length > 0 ? treeRows.map(m => `${m} m`).join(', ') : null,
-              ].filter(Boolean).join(' / ')}
-            </span>
-          </div>
-        {/if}
-
-      </div>
-
-      <!-- Equipment overview: count summary with device theme chips folded onto the
-           header row. Themes are device-derived, so they belong with equipment;
-           inline icon-only chips (name via title/aria) keep the section compact. -->
-      {#if equipSummaryItems.length || visibleThemes.length}
-        <div class="equip-header" class:mb-1.5={equipSummaryItems.length} class:mb-4={!equipSummaryItems.length}>
-          <h3 class="section-label mb-0">{$_('details.equipmentSection')}</h3>
-          {#if visibleThemes.length}
-            <div class="theme-row" aria-label={$_('details.themes')}>
-              {#each visibleThemes as value (value)}
-                <span
-                  class="theme-chip theme-chip--icon"
-                  title={themeName(value, $_)}
-                  aria-label={themeName(value, $_)}
-                >
-                  <span class="theme-icon" aria-hidden="true">{themeIcon(value)}</span>
+        <!-- "Good to know": the playground itself, one line per topic. -->
+        {#if goodToKnow.length}
+          <h3 class="zone-b-label">{$_('panel.goodToKnow')}</h3>
+          <ul class="fact-list" data-testid="good-to-know">
+            {#each goodToKnow as row (row.key)}
+              <li data-fact={row.key}>
+                <span class="fact-icon" aria-hidden="true">{row.icon}</span>
+                <span class="min-w-0">
+                  {#if row.dot !== undefined}
+                    <span class="status-dot" class:status-dot--open={row.dot === true} class:status-dot--closed={row.dot === false} aria-hidden="true"></span>
+                  {/if}
+                  {row.text}
                 </span>
-              {/each}
-              {#if themeOverflow}
-                <span class="theme-chip theme-chip--more">+{themeOverflow}</span>
-              {/if}
-            </div>
-          {/if}
-        </div>
-        {#if equipSummaryItems.length}
-          <ul class="equip-summary mb-4">
-            {#each equipSummaryItems as [key, count]}
-              <li>{$_('equipment.' + key, { values: { count } })}</li>
+              </li>
             {/each}
           </ul>
         {/if}
-      {/if}
 
-      <!-- Contact Info -->
-      {#if attr['contact:email'] || attr.email || attr['contact:phone'] || attr.phone || attr.operator}
-        <h3 class="section-label">{$_('details.contactSection')}</h3>
+        <!-- Nearby: the nearest place of each kind. -->
+        <h3 class="zone-b-label">{$_('panel.nearby')}</h3>
         <div class="mb-4">
-          {#if attr.operator}
-            <div class="fact-item mb-1" data-testid="operator-value">
-              <span class="info-label">{$_('details.operatorLabel')}</span>
-              {#if attr['operator:wikidata']}
-                <a href="https://www.wikidata.org/wiki/{attr['operator:wikidata']}"
-                   target="_blank" rel="noopener" class="fact-value text-primary hover:underline">{attr.operator}</a>
+          {#if poisLoading}
+            <p class="text-sm text-muted-foreground italic py-2">{$_('details.loading')}</p>
+          {:else}
+            <POIPanel {pois} {centerLat} {centerLon} />
+          {/if}
+        </div>
+
+        <div class="border-t border-border">
+          <!-- Equipment -->
+          <div class="border-b border-border">
+            <button class="section-btn" onclick={() => toggleSection('equipment')}>
+              {#if openSections.has('equipment')}
+                <ChevronDown class="h-4 w-4 text-muted-foreground" />
               {:else}
-                <span class="fact-value">{attr.operator}</span>
+                <ChevronRight class="h-4 w-4 text-muted-foreground" />
               {/if}
-            </div>
-          {/if}
-          {#if attr['contact:phone'] || attr.phone || attr['contact:email'] || attr.email}
-            <div class="contact-row">
-              {#if attr['contact:phone'] || attr.phone}
-                {@const phone = attr['contact:phone'] || attr.phone}
-                {#if /^\+?\d/.test(phone.trim())}
-                  <a href="tel:{phone}" class="contact-link">
-                    <Phone class="h-3.5 w-3.5 shrink-0" /><span>{phone}</span>
-                  </a>
-                {:else}
-                  <span class="contact-link contact-link--plain">
-                    <Phone class="h-3.5 w-3.5 shrink-0" /><span>{phone}</span>
-                  </span>
-                {/if}
-              {/if}
-              {#if attr['contact:email'] || attr.email}
-                {@const email = attr['contact:email'] || attr.email}
-                {#if email.includes('@') && !/^javascript:/i.test(email.trim())}
-                  <a href="mailto:{email}" class="contact-link">
-                    <Mail class="h-3.5 w-3.5 shrink-0" /><span>{email}</span>
-                  </a>
-                {:else}
-                  <span class="contact-link contact-link--plain">
-                    <Mail class="h-3.5 w-3.5 shrink-0" /><span>{email}</span>
-                  </span>
-                {/if}
-              {/if}
-            </div>
-          {/if}
-        </div>
-      {/if}
-
-      <!-- MapComplete edit link -->
-      <div class="mb-3">
-        <MapCompleteLink href={mcUrl} label={$_('popup.editInMapComplete')} />
-      </div>
-
-      <!-- Accordion Sections -->
-      <div class="border-t border-border">
-        <!-- Photos -->
-        <div class="border-b border-border">
-          <button
-            class="section-btn"
-            onclick={() => toggleSection('photos')}
-          >
-            {#if openSections.has('photos')}
-              <ChevronDown class="h-4 w-4 text-muted-foreground" />
-            {:else}
-              <ChevronRight class="h-4 w-4 text-muted-foreground" />
-            {/if}
-            <Image class="h-4 w-4 text-muted-foreground" />
-            {$_('accordion.photos')}
-          </button>
-          {#if openSections.has('photos')}
-            <div class="pb-3">
-              {#if commonsTag || imageTag}
-                <CommonsGallery commons={commonsTag} image={imageTag} bind:count={commonsPhotoCount} />
-              {/if}
-              <!-- Show Panoramax when it has its own photos, or as the sole
-                   "add a photo" prompt when no Commons photos are on screen —
-                   avoids both a stray "No photos yet" under a populated Commons
-                   gallery and a fully blank section when a photo tag is present
-                   but the gallery resolved nothing (unsafe URL / fetch fail). -->
-              {#if panoramaxUuids.length > 0 || !commonsHasPhotos}
-                <PanoramaxViewer uuids={panoramaxUuids} {mcUrl} />
-              {/if}
-            </div>
-          {/if}
-        </div>
-
-        <!-- Equipment -->
-        <div class="border-b border-border">
-          <button
-            class="section-btn"
-            onclick={() => toggleSection('equipment')}
-          >
+              <Package class="h-4 w-4 text-muted-foreground" />
+              {$_('panel.allEquipment')}
+            </button>
             {#if openSections.has('equipment')}
-              <ChevronDown class="h-4 w-4 text-muted-foreground" />
-            {:else}
-              <ChevronRight class="h-4 w-4 text-muted-foreground" />
+              <div class="pb-3">
+                {#if equipmentLoading}
+                  <p class="text-sm text-muted-foreground italic py-2">{$_('details.loading')}</p>
+                {:else}
+                  <EquipmentList features={equipmentFeatures} groups={equipmentGroups} playgroundAttr={attr} />
+                {/if}
+              </div>
             {/if}
-            <Package class="h-4 w-4 text-muted-foreground" />
-            {$_('accordion.equipment')}
-          </button>
-          {#if openSections.has('equipment')}
-            <div class="pb-3">
-              {#if equipmentLoading}
-                <p class="text-sm text-muted-foreground italic py-2">{$_('details.loading')}</p>
-              {:else}
-                <EquipmentList features={equipmentFeatures} groups={equipmentGroups} playgroundAttr={attr} />
-              {/if}
-            </div>
-          {/if}
-        </div>
+          </div>
 
-        <!-- POIs -->
-        <div class="border-b border-border">
-          <button
-            class="section-btn"
-            onclick={() => toggleSection('pois')}
-          >
-            {#if openSections.has('pois')}
-              <ChevronDown class="h-4 w-4 text-muted-foreground" />
-            {:else}
-              <ChevronRight class="h-4 w-4 text-muted-foreground" />
-            {/if}
-            <Navigation class="h-4 w-4 text-muted-foreground" />
-            {$_('accordion.surroundings')}
-          </button>
-          {#if openSections.has('pois')}
-            <div class="pb-3">
-              {#if poisLoading}
-                <p class="text-sm text-muted-foreground italic py-2">{$_('details.loading')}</p>
+          <!-- Reviews -->
+          <div class="border-b border-border reviews-section" bind:this={reviewsEl} data-testid="reviews-section">
+            <button class="section-btn" onclick={() => toggleSection('reviews')}>
+              {#if openSections.has('reviews')}
+                <ChevronDown class="h-4 w-4 text-muted-foreground" />
               {:else}
-                <POIPanel {pois} {centerLat} {centerLon} />
+                <ChevronRight class="h-4 w-4 text-muted-foreground" />
               {/if}
-            </div>
-          {/if}
-        </div>
-
-        <!-- Reviews -->
-        <div class="border-b border-border">
-          <button
-            class="section-btn"
-            onclick={() => toggleSection('reviews')}
-          >
+              <Star class="h-4 w-4 text-muted-foreground" />
+              {$_('accordion.reviews')}
+            </button>
             {#if openSections.has('reviews')}
-              <ChevronDown class="h-4 w-4 text-muted-foreground" />
-            {:else}
-              <ChevronRight class="h-4 w-4 text-muted-foreground" />
+              <div class="pb-3">
+                <ReviewsPanel lat={centerLat} lon={centerLon} osmId={attr?.osm_id} name={attr?.name ?? null} radiusM={reviewRadiusM} />
+              </div>
             {/if}
-            <Star class="h-4 w-4 text-muted-foreground" />
-            {$_('accordion.reviews')}
-          </button>
-          {#if openSections.has('reviews')}
-            <div class="pb-3">
-              <ReviewsPanel lat={centerLat} lon={centerLon} osmId={attr?.osm_id} name={attr?.name ?? null} radiusM={reviewRadiusM} />
-            </div>
-          {/if}
+          </div>
         </div>
-      </div>
+      </section>
+
+      <!-- Zone C: background and contribute. With mapping detail on, the
+           MapComplete link is in the tool block instead. -->
+      <ZoneBackground {attr} dataAge={dataAgeFormatted} mcUrl={$mappingDetail ? '' : mcUrl} />
     </div>
   </aside>
-{/if}
-
-{#if dataAgePopoverOpen && dataAgeFormatted}
-  <div
-    id="data-age-popover"
-    class="data-age-popover"
-    style={dataAgePopoverStyle}
-    role="dialog"
-    aria-labelledby="data-age-popover-title"
-  >
-    <p id="data-age-popover-title" class="data-age-popover__title">{$_('details.osmDataAgeTitle')}</p>
-    <p class="data-age-popover__body">
-      {$_('details.osmDataAgeBody', { values: { age: dataAgeFormatted } })}
-    </p>
-  </div>
 {/if}
 
 <style>
@@ -957,19 +611,6 @@
     display: flex;
   }
 
-  .info-panel__header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 0.75rem;
-    padding: 1rem;
-    border-bottom: 1px solid #e5e7eb;
-    position: sticky;
-    top: 0;
-    background: #ffffff;
-    z-index: 1;
-  }
-
   .info-panel__body {
     padding: 1rem;
     flex: 1;
@@ -981,42 +622,6 @@
     }
   }
 
-  /* ── Typography ───────────────────────────────────────────────────────── */
-
-  .panel-title {
-    font-size: 17px;
-    font-weight: 600;
-    color: #1f2937;
-    line-height: 1.3;
-    margin: 0;
-    /* The title shares its row with the action buttons and may shrink to
-       nothing; a single long word ("Mehrzweckplatz" next to "Bring mich
-       hierher") then ran underneath them. Hyphenate where the browser has a
-       dictionary for the element's lang, otherwise break inside the word. */
-    overflow-wrap: break-word;
-    hyphens: auto;
-  }
-
-
-  .info-label {
-    display: block;
-    color: #9ca3af;
-    font-size: 11px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-  }
-
-  .fact-item {
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
-  }
-
-  .fact-value {
-    font-size: 13px;
-    color: #1f2937;
-  }
 
   .section-btn {
     width: 100%;
@@ -1041,120 +646,10 @@
     background: #fafafa;
   }
 
-  .panel-icon-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 2.25rem;
-    height: 2.25rem;
-    border: none;
-    background: transparent;
-    border-radius: 0.375rem;
-    cursor: pointer;
-    color: #6b7280;
-    transition: background 0.15s, color 0.15s;
-  }
+  /* Clear the sticky desktop header when jumped to from the rating. */
+  .reviews-section { scroll-margin-top: 5rem; }
 
-  .panel-icon-btn:hover {
-    background: #f3f4f6;
-    color: #1f2937;
-  }
-
-  /* ── Action row ─────────────────────────────────────── */
-  .action-row {
-    display: flex;
-    gap: 8px;
-    padding: 10px 1rem;
-    border-bottom: 1px solid #e5e7eb;
-  }
-
-  .action-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    border: none;
-    border-radius: 9px;
-    font-family: inherit;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    text-decoration: none;
-    transition: background 0.15s, opacity 0.15s;
-  }
-
-  .action-btn--primary {
-    flex: 1;
-    padding: 10px 0;
-    background: var(--color-primary);
-    color: #fff;
-  }
-  .action-btn--primary:hover { background: var(--color-primary-hover); }
-
-  .action-btn--icon {
-    width: 44px;
-    height: 44px;
-    background: #f3f4f6;
-    color: #6b7280;
-    border: 1px solid #e5e7eb;
-  }
-  .action-btn--icon:hover { background: #e5e7eb; color: #1f2937; }
-
-  /* ── Contact row (phone + email inline) ─────────────── */
-  .contact-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
-  }
-
-  .contact-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 13px;
-    color: var(--color-primary);
-    text-decoration: none;
-    min-width: 0;
-  }
-  .contact-link span {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .contact-link:hover { text-decoration: underline; }
-  .contact-link--plain { color: #1f2937; cursor: default; }
-  .contact-link--plain:hover { text-decoration: none; }
-
-  /* ── Status row (opening hours + age chip) ──────────── */
-  .status-row {
-    display: flex;
-    /* Chips must wrap: the row can hold opening hours, baby, toddler,
-       wheelchair and shade at once, which overflows the panel on any
-       realistic width. Without this they are clipped at the right edge
-       instead of moving to a second line. */
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .theme-banner {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 9px 12px;
-    border-radius: 10px;
-    background: linear-gradient(135deg, #eef2ff, #faf5ff);
-    border: 1px solid #e0e7ff;
-  }
-  .theme-banner__icon { font-size: 1.5rem; line-height: 1; }
-  .theme-banner__label {
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: #3730a3;
-  }
-
-  .section-label {
+  .zone-b-label {
     font-size: 0.7rem;
     font-weight: 700;
     letter-spacing: 0.05em;
@@ -1162,193 +657,25 @@
     color: #9ca3af;
     margin: 0 0 6px;
   }
-
-  .equip-summary {
+  .fact-list {
     list-style: none;
     padding: 0;
     margin: 0 0 1rem;
     display: flex;
-    flex-wrap: wrap;
-    gap: 4px 14px;
-    font-size: 13px;
-    color: #374151;
-  }
-
-  .equip-header {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 6px 10px;
-  }
-  .theme-row {
-    display: flex;
-    flex-wrap: wrap;
+    flex-direction: column;
     gap: 6px;
+    font-size: 0.875rem;
+    color: #1f2937;
   }
-  .theme-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 3px 9px 3px 7px;
-    border-radius: 999px;
-    background: #f3f4f6;
-    border: 1px solid #e5e7eb;
-    font-size: 0.78rem;
-    color: #374151;
-    line-height: 1.3;
-  }
-  /* Icon-only chip: tighter, symmetric padding. Declared after `.theme-chip`
-     so it wins on source order (equal specificity). */
-  .theme-chip--icon {
-    padding: 3px 6px;
-  }
-  .theme-icon { font-size: 1rem; }
-  .theme-chip--more {
-    color: #6b7280;
-    font-variant-numeric: tabular-nums;
-  }
+  .fact-list li { display: flex; gap: 8px; }
+  .fact-icon { flex-shrink: 0; width: 1.25rem; text-align: center; }
 
   .status-dot {
+    display: inline-block;
     width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+    vertical-align: middle;
+    margin-right: 2px;
   }
   .status-dot--open   { background: var(--color-primary); }
   .status-dot--closed { background: #ef4444; }
-
-  /* ── Stat cards grid ─────────────────────────────── */
-  .stat-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
-  }
-
-  .stat-card {
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-    background: #f3f4f6;
-    border: 1px solid #e5e7eb;
-    border-radius: 10px;
-    padding: 10px 12px;
-  }
-
-  .stat-value {
-    font-size: 15px;
-    font-weight: 700;
-    color: #1f2937;
-    line-height: 1.2;
-  }
-
-  .stat-label {
-    font-size: 10px;
-    font-weight: 700;
-    color: #9ca3af;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-  }
-
-  .backend-name {
-    margin: 0.15rem 0 0;
-    font-size: 11px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.07em;
-    color: #9ca3af;
-  }
-
-  /* ── Data-age chip + fixed popover ──────────────────────────────────── */
-  .detail-dot {
-    display: inline-block;
-    width: 0.5rem;
-    height: 0.5rem;
-    border-radius: 50%;
-    flex-shrink: 0;
-  }
-
-  /* A callout rather than a grey caption line, which went unnoticed among the
-     panel's other content (#982). Blue, not amber: the hint is an invitation,
-     and a warning colour next to the badge would read as the verdict the
-     mapping-detail palette avoids. Pulled up against the status row's mb-4 so
-     it stays attached to the badge. */
-  .detail-hint {
-    display: flex;
-    align-items: flex-start;
-    gap: 8px;
-    margin: -0.25rem 0 1rem;
-    padding: 8px 10px;
-    border-radius: 8px;
-    background: #eff6ff;
-    border: 1px solid #bfdbfe;
-    font-size: 0.8125rem;
-    line-height: 1.4;
-    color: #1e3a8a;
-  }
-
-  .data-age-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 3px;
-    padding: 2px 7px;
-    border-radius: 9999px;
-    font-size: 10px;
-    font-weight: 600;
-    color: #6b7280;
-    background: #f3f4f6;
-    border: 1px solid #e5e7eb;
-    cursor: pointer;
-    white-space: nowrap;
-    transition: background 0.15s, color 0.15s;
-    line-height: 1.4;
-  }
-
-  .data-age-chip:hover,
-  .data-age-chip[aria-expanded="true"] {
-    background: #e5e7eb;
-    color: #374151;
-  }
-
-  /* Rendered outside the aside so overflow-y: auto can't clip it. */
-  :global(.data-age-popover) {
-    position: fixed;
-    z-index: 500;
-    background: #ffffff;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-    padding: 10px 12px;
-  }
-
-  :global(.data-age-popover__title) {
-    font-size: 10px;
-    font-weight: 700;
-    color: #374151;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    margin: 0 0 4px;
-  }
-
-  :global(.data-age-popover__body) {
-    font-size: 12px;
-    color: #6b7280;
-    line-height: 1.5;
-    margin: 0;
-  }
-
-  /* ── Navigation button ────────────────────────────────────────────────── */
-  .navigate-btn {
-    padding: 6px 12px;
-    background: var(--color-primary);
-    color: var(--color-primary-foreground);
-    border: none;
-    border-radius: 6px;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    white-space: nowrap;
-    text-decoration: none;
-    transition: background 0.15s;
-  }
-  .navigate-btn:hover {
-    background: var(--color-primary-hover);
-    color: var(--color-primary-foreground);
-  }
 </style>

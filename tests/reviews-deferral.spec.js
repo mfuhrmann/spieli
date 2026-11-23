@@ -109,3 +109,46 @@ test.describe('Mangrove is not contacted until the visitor asks', () => {
     await expect(reviewsToggle(page)).not.toHaveText(/\d/);
   });
 });
+
+// #1077 — through this instance's /ext/mangrove/ proxy the browser talks only
+// to its own server, so the panel may read the rating on selection and show
+// it under the name. Mangrove itself is still never contacted by the browser.
+test.describe('Rating under the title, only through the proxy', () => {
+  test('proxied: selection reads the rating and shows it under the name', async ({ page }) => {
+    const direct = await stubMangrove(page);
+    const proxied = [];
+    await page.route('**/ext/mangrove/**', route => {
+      proxied.push(route.request().url());
+      return route.fulfill({
+        status: 200, contentType: 'application/json',
+        body: JSON.stringify({ reviews: [
+          { signature: 'a', payload: { rating: 100, iat: 2 } },
+          { signature: 'b', payload: { rating: 60, iat: 1 } },
+        ], issuers: null, maresi_subjects: null }),
+      });
+    });
+    await injectApiConfig(page, { mangroveApiUrl: '/ext/mangrove' });
+    await stubApiRoutes(page);
+    await page.goto(`/#W${OSM_ID}`);
+    const rating = page.locator('aside.info-panel [data-testid="header-rating"]');
+    await expect(rating).toBeVisible({ timeout: 8000 });
+    await expect(rating).toContainText('4.0 (2)');
+    expect(direct).toHaveLength(0);
+    // tapping the rating opens the reviews and lands there; the session cache
+    // means no second round
+    const before = proxied.length;
+    await rating.click();
+    const section = page.locator('aside.info-panel [data-testid="reviews-section"]');
+    await expect(section.locator('.review-aggregate')).toBeVisible({ timeout: 5000 });
+    await expect(section).toBeInViewport();
+    expect(proxied).toHaveLength(before);
+  });
+
+  test('direct (proxy off): no rating, no request on selection', async ({ page }) => {
+    const urls = await stubMangrove(page);
+    await loadWithSelection(page);
+    await page.waitForTimeout(1000);
+    await expect(page.locator('[data-testid="header-rating"]')).toHaveCount(0);
+    expect(urls).toHaveLength(0);
+  });
+});
