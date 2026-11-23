@@ -114,19 +114,20 @@ Click or tap a pitch to open its panel — in the same place as a playground's. 
 
 ### Playground detail panel
 
-Click any playground to open its detail panel. The panel shows:
+Click any playground to open its detail panel. It is ordered by the question you bring to it — *is this worth going to with my child?* — in three parts, the same on a phone and a computer:
 
-- Name, operator, opening hours (when mapped)
-- Surface type and size, and lighting when it is mapped (most playgrounds do not record it yet, so nothing is shown then)
-- Small labels — the mapping-detail badge (only while [mapping detail](#mapping-detail-colours) is on), data age, and (when tagged) a shade pill (Shaded / No shade), baby / toddler suitability, and wheelchair-friendly equipment (see [Wheelchair accessibility](#wheelchair-accessibility))
-- Theme highlight — a symbol for playgrounds with a theme, such as a ship or castle (see [Playground themes](#playground-themes))
-- Equipment list — devices, pitches, benches, and their details, including each item's surface when tagged
-- Photos — from Wikimedia Commons when the playground links them (tap one for full screen; the author and licence are shown with it), and street-level photos from Panoramax. The street-level viewer opens only when you tap the preview
-- Community reviews (from Mangrove.reviews, when available) — including reviews written in MapComplete or on mangrove.reviews, and yours show up there too
-- Nearby places — toilets, bus stops, ice cream, shops (supermarket, convenience store, bakery), drugstores and emergency care near the playground (within 5 km by default; the site's operator can change the radius)
-- A "Take me there" button that opens navigation to the playground (your phone's map app, or OpenStreetMap directions on a computer)
-- **Share playground**, which copies a link to this playground (see [Sharing a playground](#sharing-a-playground))
-- **Edit on MapComplete**, to add or improve information in OpenStreetMap
+**At the top: what decides a visit.** You see this without scrolling on a phone.
+
+- Name, place, the average review rating in stars when there are reviews (only on maps that reach Mangrove through their own server, which is the default), and a lock or cup badge when the playground is private or for customers only (see [Who can use a playground](#who-can-use-a-playground)). "Take me there" opens navigation (your phone's map app, or OpenStreetMap directions on a computer); **Share playground** copies a link (see [Sharing a playground](#sharing-a-playground))
+- Photos — from Wikimedia Commons when the playground links them (tap one for full screen; the author and licence are shown with it), and street-level photos from Panoramax. The street-level viewer opens only when you tap the preview. Without a photo there is one short line with a link to add one
+- Labels for what is recorded, and only then: **Babies** and **Toddlers** (equipment suited to them), **Shaded** / **Partly shaded** / **No shade**, **Wheelchair-friendly** equipment (see [Wheelchair accessibility](#wheelchair-accessibility)), **Fenced** and **Dogs allowed**
+- **What kids can do** — first the highlights: the playground's theme (see [Playground themes](#playground-themes)), water play, and rare equipment worth a detour (zip line, trampoline, marble run, funnel ball, sledding hill, musical instruments and similar). Below them the activities: swing, slide, rock, climb, balance, spin, bounce, exercise, dig, explore — worked out from the equipment. Five swings are one "swing"; parts of a climbing frame (platforms, ladders) are not counted
+
+When nothing of this is known yet — true for many playgrounds — the panel says so and invites you to add a photo or the details instead.
+
+**Further down: the details.** The description; **Good to know** — opening hours, benches, shelters and picnic tables, fitness stations, surface, size and trees, lighting, one line each and only when mapped; **Nearby** — the nearest toilet, bus stop, ice cream, shop (supermarket, convenience store, bakery), drugstore and emergency care (searched within 5 km by default; the site's operator can change the radius); **All equipment**, collapsed, with every device and its details; and community reviews from Mangrove.reviews, collapsed until you open them, so nothing is sent to Mangrove before that (including reviews written in MapComplete or on mangrove.reviews).
+
+**At the bottom: background.** The operator and contact details, how old the map data is, and **Edit on MapComplete** to add or improve information in OpenStreetMap.
 
 To close the panel, use its close or "back to map" button — or your browser's back: on a phone the back swipe takes you from the panel back to the map instead of leaving spieli.
 
@@ -134,8 +135,8 @@ To close the panel, use its close or "back to map" button — or your browser's 
 
 Some playgrounds have a theme — they are built around a motif like a ship, castle, or octopus. When OpenStreetMap records a theme for a playground, spieli highlights it in the detail panel:
 
-- A **banner** near the top ("Ship-themed playground") when the whole playground is themed.
-- A **symbol** next to the "Equipment" heading, and beside individual pieces of equipment, for themed devices.
+- First among the **Highlights** near the top: "Ship-themed playground" when the whole playground is themed, or the theme's name when only some equipment is.
+- A **symbol** beside individual pieces of equipment in the equipment list, for themed devices.
 
 To keep the highlight meaningful, spieli only shows a curated set of recognised whole-playground themes: ship, castle, spider web, water, adventure, rocket, dragon, octopus, and circus. Common animal spring-rider shapes (a horse or duck rocker) are *not* treated as playground themes, since almost any spring rider can take one of those shapes.
 
@@ -235,13 +236,13 @@ Mapping detail is off by default. Switch it on with the **bar-chart button** nex
 | Dark green | Basic — one of the two, not both |
 | Slate grey | No details yet — the playground exists in OSM but carries no equipment and no details |
 
-With mapping detail on, the playground panel also shows the playground's mapping-detail badge; with it off, it does not.
+With mapping detail on, the playground panel shows a small tool block right under its title: the playground's mapping-detail badge and the **Edit in MapComplete** link. The rest of the panel stays in the same order. With mapping detail off, the block is not there and the MapComplete link is at the bottom of the panel.
 
 Your choice is remembered in this browser. To send someone a link that opens with mapping detail on — say, to a fellow mapper — add `?detail=1` to the address (for example `…/fulda?detail=1`), or use the share button on a playground while mapping detail is on: the link it copies includes it. Opening such a link does not change the other person's own setting; `?detail=0` does the opposite.
 
 Play equipment means slides, swings, climbing frames and the like, plus ball courts. A bench or picnic table on its own does not make a playground "basic" — those are useful to know about, but they say nothing about whether there is anything to play on.
 
-With mapping detail on, a playground's panel also says under its badge what is missing for the next step — for example "Not mapped yet: the play equipment". The MapComplete links further down in the panel open this playground to add it. Detailed playgrounds get no hint.
+With mapping detail on, a playground's panel also says under its badge what is missing for the next step — for example "Not mapped yet: the play equipment". The MapComplete link next to the badge opens this playground to add it. Detailed playgrounds get no hint.
 
 A camera glyph marks playgrounds that also have a photo. Photos are a bonus, not part of mapping detail — a playground with everything mapped except a picture still counts as detailed.
 

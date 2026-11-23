@@ -245,6 +245,24 @@ export async function submitReview(lat, lon, rating100, opinion, opts = {}) {
     return res.ok ? { signature: b64urlBytes(sig), payload } : null;
 }
 
+// ── Rating under the title (#1077) ─────────────────────────────────────────
+// The panel header shows the average under the playground's name. That needs
+// a read on every selection, which the reviews section otherwise defers until
+// it is opened (#855, tests/reviews-deferral.spec.js). So it only happens
+// while Mangrove is reached through this instance's /ext/mangrove/ proxy: the
+// visitor's browser then talks to its own server, and Mangrove sees only the
+// server. With PROXY_MANGROVE=false the browser would contact Mangrove
+// directly on every selection, so there is no header rating at all.
+// Open questions are listed in the detail-panel-parents-first design (D12).
+export const headerRatingEnabled = typeof MANGROVE_API === 'string' && MANGROVE_API.startsWith('/');
+
+/** Average rating (0–100) and count of rated reviews, or null when none. */
+export function ratingSummary(reviews = []) {
+    const rated = reviews.filter(r => typeof r.payload?.rating === 'number');
+    if (rated.length === 0) return null;
+    return { avg: rated.reduce((s, r) => s + r.payload.rating, 0) / rated.length, count: rated.length };
+}
+
 // ── Display helpers ────────────────────────────────────────────────────────
 
 export function starsHtml(rating100, color = '#f59e0b') {

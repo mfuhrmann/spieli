@@ -7,7 +7,6 @@
   // tagged, never as "unknown".
   import { _, locale } from 'svelte-i18n';
   import { humanizeTagValue, tagValuesLabel } from '../lib/deviceLabel.js';
-  import { X, Share2, Check, Image } from 'lucide-svelte';
   import { transform } from 'ol/proj';
   import { getCenter } from 'ol/extent';
   import { selection } from '../stores/selection.js';
@@ -23,9 +22,9 @@
     reservationInfo, hoopsInfo, wheelchairInfo,
   } from '../lib/pitchInfo.js';
   import Badge from './ui/Badge.svelte';
-  import MapCompleteLink from './MapCompleteLink.svelte';
-  import PanoramaxViewer from './PanoramaxViewer.svelte';
-  import CommonsGallery from './CommonsGallery.svelte';
+  import PanelHeader from './panel/PanelHeader.svelte';
+  import PhotoStrip from './panel/PhotoStrip.svelte';
+  import ZoneBackground from './panel/ZoneBackground.svelte';
   import { pitchIllustrationHtml } from '../lib/equipmentAttributes.js';
   import { panoramaxUuidsFromTags } from '../lib/panoramax.js';
 
@@ -61,20 +60,12 @@
   $: commonsTag = attr?.wikimedia_commons || '';
   $: imageTag = attr?.image || '';
   $: illustration = attr ? pitchIllustrationHtml(attr.sport, $_) : '';
-  let commonsPhotoCount = 0;
-  let commonsLoaded = false;
-  // Reset per pitch: the gallery is unmounted once it resolves to nothing, so
-  // without this the next pitch would inherit "loaded, 0 photos" and never
-  // mount its gallery at all.
-  $: commonsTag, imageTag, resetCommons();
-  function resetCommons() { commonsLoaded = false; commonsPhotoCount = 0; }
-  // The example illustration stands in when there is no photo to show: no
-  // Panoramax photo, and the Commons/image tags (if any) resolved to nothing —
-  // an `image=` on a foreign host or an empty category must not leave an empty
-  // "Photos" section and no illustration either.
-  $: hasCommonsTags = !!(commonsTag || imageTag);
-  $: showIllustration = !!illustration && panoramaxUuids.length === 0
-    && (!hasCommonsTags || (commonsLoaded && commonsPhotoCount === 0));
+  // PhotoStrip reports whether any photo resolved; the example illustration
+  // stands in only when none did — no Panoramax photo, and the Commons/image
+  // tags (if any) resolved to nothing. An `image=` on a foreign host or an
+  // empty category must not leave neither photo nor illustration (#968).
+  let photoStatus = 'loading';
+  $: showIllustration = !!illustration && photoStatus === 'none';
 
   // ── Links ─────────────────────────────────────────────────────────────────
   $: mcOsmType = attr ? ({ W: 'way', R: 'relation', N: 'node' }[attr.osm_type] ?? 'way') : 'way';
@@ -91,10 +82,8 @@
     ? navigationUrl({ ...centre, title: titleText, mobile, origin: $location })
     : null;
 
-  let shareConfirmed = false;
-  let shareTimeout;
   async function share() {
-    if (!attr) return;
+    if (!attr) return false;
     const url = `${window.location.origin}${window.location.pathname}${window.location.search}`
       + writeHash({ slug: feature.get('_backendSlug') ?? null, osmId: attr.osm_id, kind: 'pitch' });
     try {
@@ -103,11 +92,10 @@
       } else if (navigator.clipboard) {
         await navigator.clipboard.writeText(url);
       }
-      shareConfirmed = true;
-      clearTimeout(shareTimeout);
-      shareTimeout = setTimeout(() => { shareConfirmed = false; }, 2000);
+      return true;
     } catch (err) {
       if (err.name !== 'AbortError') console.warn('Share failed:', err);
+      return false;
     }
   }
 
@@ -128,77 +116,77 @@
 <svelte:window onkeydown={onKeydown} />
 
 {#if feature && attr}
+  <!-- Same zones as the playground panel (#1077): A sports, photo, access;
+       B facts; C operator and MapComplete. -->
   <aside class={embedded ? 'pitch-panel--embedded' : 'info-panel pitch-panel'} aria-label={$_('pitch.label')}>
-    <header class={embedded ? 'pitch-header pitch-header--embedded' : 'pitch-header'}>
-      <div class="min-w-0 flex-1">
-        <p class="pitch-kicker">{$_('pitch.label')}</p>
-        <h2 class="panel-title" lang={titleLang}>{titleText}</h2>
-        {#if backendName}
-          <p class="backend-name">{backendName}</p>
-        {/if}
-      </div>
-      <div class="flex items-center gap-1 shrink-0">
-        {#if navUrl}
-          <a
-            class="navigate-btn"
-            href={navUrl}
-            target={mobile ? undefined : '_blank'}
-            rel={mobile ? undefined : 'noopener'}
-          >{$_('info.navigateHere')}</a>
-        {/if}
-        <button class="panel-icon-btn" onclick={share} aria-label={$_('info.copyLink')}>
-          {#if shareConfirmed}<Check class="h-5 w-5" />{:else}<Share2 class="h-5 w-5" />{/if}
-        </button>
-        {#if !embedded}
-          <button class="panel-icon-btn" onclick={close} aria-label={$_('info.closeBtn')}>
-            <X class="h-5 w-5" />
-          </button>
-        {/if}
-      </div>
-    </header>
+    <PanelHeader
+      {embedded}
+      kicker={$_('pitch.label')}
+      title={titleText}
+      {titleLang}
+      {backendName}
+      {navUrl}
+      navMobile={mobile}
+      onShare={share}
+      onClose={close}
+    />
 
     <div class={embedded ? '' : 'pitch-body'}>
-      {#if sports.length > 0}
-        <ul class="sport-chips" aria-label={$_('pitch.sportsLabel')}>
-          {#each sports as s (s)}
-            <li class="sport-chip">
-              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none"
-                   stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                {@html sportGlyph(sportKey(s))}
-              </svg>
-              {sportLabel(s, $_)}
-            </li>
-          {/each}
-        </ul>
-      {/if}
+      <section data-testid="zone-a">
+        {#if sports.length > 0}
+          <ul class="sport-chips" aria-label={$_('pitch.sportsLabel')}>
+            {#each sports as s (s)}
+              <li class="sport-chip">
+                <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none"
+                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  {@html sportGlyph(sportKey(s))}
+                </svg>
+                {sportLabel(s, $_)}
+              </li>
+            {/each}
+          </ul>
+        {/if}
 
-      {#if openingHoursInfo || lit || access.length > 0 || wheelchair}
-        <div class="status-row mb-4">
-          {#if openingHoursInfo}
-            <Badge variant={openingHoursInfo.open ? 'successSoft' : 'dangerSoft'} class="whitespace-nowrap">
-              {openingHoursInfo.text}
-            </Badge>
-          {/if}
-          {#if lit}
-            <Badge variant={lit.key === 'pitch.lit.no' ? 'outline' : 'info'} class="whitespace-nowrap" data-fact="lit">
-              {$_(lit.key, lit.values ? { values: lit.values } : undefined)}
-            </Badge>
-          {/if}
-          {#each access as a (a.key)}
-            <Badge variant="outline" class="whitespace-nowrap" data-fact="access">{$_(a.key)}</Badge>
-          {/each}
-          {#if wheelchair}
-            <Badge variant="outline" class="whitespace-nowrap">{$_(wheelchair.key)}</Badge>
-          {/if}
-        </div>
-      {/if}
+        <PhotoStrip
+          commons={commonsTag}
+          image={imageTag}
+          {panoramaxUuids}
+          {mcUrl}
+          hideEmpty={!!illustration}
+          bind:status={photoStatus}
+        />
+        {#if showIllustration}
+          <!-- No photo of this pitch: an example illustration of its sport, as
+               the pitch rows inside a playground show (#968). No "Photos"
+               heading — it is not a photo of this place; the caption says
+               "example image". data-illustration lets imageFallback.js hide the
+               whole section if the image fails. -->
+          <section class="mb-3 pitch-illustration" data-illustration>
+            {@html illustration}
+          </section>
+        {/if}
 
-      {#if surfaceLabel || hoops || attr.operator}
-        <div class="grid grid-cols-2 gap-x-4 gap-y-2 mb-4">
+        {#if access.length > 0}
+          <div class="status-row mb-3">
+            {#each access as a (a.key)}
+              <Badge variant="outline" class="whitespace-nowrap" data-fact="access">{$_(a.key)}</Badge>
+            {/each}
+          </div>
+        {/if}
+      </section>
+
+      {#if surfaceLabel || lit || hoops || openingHoursInfo || wheelchair}
+        <section class="grid grid-cols-2 gap-x-4 gap-y-2 mb-2" data-testid="zone-b">
           {#if surfaceLabel}
             <div class="fact-item" data-fact="surface">
               <span class="info-label">{$_('details.surfaceLabel')}</span>
               <span class="fact-value">{surfaceLabel}</span>
+            </div>
+          {/if}
+          {#if lit}
+            <div class="fact-item">
+              <span class="info-label">{$_('pitch.lightingLabel')}</span>
+              <span class="fact-value" data-fact="lit">{$_(lit.key, lit.values ? { values: lit.values } : undefined)}</span>
             </div>
           {/if}
           {#if hoops}
@@ -207,39 +195,21 @@
               <span class="fact-value">{$_(hoops.key, { values: hoops.values })}</span>
             </div>
           {/if}
-          {#if attr.operator}
+          {#if openingHoursInfo}
             <div class="fact-item">
-              <span class="info-label">{$_('details.operatorLabel')}</span>
-              <span class="fact-value">{attr.operator}</span>
+              <span class="info-label">{$_('panel.hoursLabel')}</span>
+              <span class="fact-value">{openingHoursInfo.text}</span>
             </div>
           {/if}
-        </div>
-      {/if}
-
-      {#if (hasCommonsTags && !(commonsLoaded && commonsPhotoCount === 0)) || panoramaxUuids.length > 0}
-        <section class="mb-4">
-          <h3 class="section-label"><Image class="h-3 w-3 inline" /> {$_('accordion.photos')}</h3>
-          {#if hasCommonsTags}
-            <CommonsGallery commons={commonsTag} image={imageTag} bind:count={commonsPhotoCount} bind:loaded={commonsLoaded} />
-          {/if}
-          {#if panoramaxUuids.length > 0}
-            <PanoramaxViewer uuids={panoramaxUuids} {mcUrl} />
+          {#if wheelchair}
+            <div class="fact-item">
+              <span class="fact-value">{$_(wheelchair.key)}</span>
+            </div>
           {/if}
         </section>
       {/if}
-      {#if showIllustration}
-        <!-- No photo of this pitch: an example illustration of its sport, as
-             the pitch rows inside a playground show (#968). No "Photos"
-             heading — it is not a photo of this place; the caption says
-             "example image". data-illustration lets imageFallback.js hide the
-             whole section if the image fails. -->
-        <section class="mb-4 pitch-illustration" data-illustration>
-          {@html illustration}
-        </section>
-      {/if}
 
-      <p class="add-details">{$_('pitch.addDetails')}</p>
-      <MapCompleteLink href={mcUrl} label={$_('popup.editInMapComplete')} />
+      <ZoneBackground {attr} {mcUrl} note={$_('pitch.addDetails')} />
     </div>
   </aside>
 {/if}
@@ -265,81 +235,7 @@
     .info-panel { display: none !important; }
   }
 
-  .pitch-header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 0.75rem;
-    padding: 1rem;
-    border-bottom: 1px solid #e5e7eb;
-    position: sticky;
-    top: 0;
-    background: #ffffff;
-    z-index: 1;
-  }
-  .pitch-header--embedded {
-    position: static;
-    padding: 0 0 0.75rem;
-    margin-bottom: 0.75rem;
-  }
   .pitch-body { padding: 1rem; }
-  /* Same as PlaygroundPanel's region subtitle. */
-  .backend-name {
-    margin: 0.15rem 0 0;
-    font-size: 11px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.07em;
-    color: #9ca3af;
-  }
-
-  .pitch-kicker {
-    margin: 0 0 2px;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    color: #9ca3af;
-  }
-  .panel-title {
-    font-size: 17px;
-    font-weight: 600;
-    color: #1f2937;
-    line-height: 1.3;
-    margin: 0;
-    /* The title shares its row with the action buttons and may shrink to
-       nothing; a single long word ("Mehrzweckplatz" next to "Bring mich
-       hierher") then ran underneath them. Hyphenate where the browser has a
-       dictionary for the element's lang, otherwise break inside the word. */
-    overflow-wrap: break-word;
-    hyphens: auto;
-  }
-
-  .navigate-btn {
-    padding: 6px 12px;
-    background: var(--color-primary);
-    color: var(--color-primary-foreground);
-    border-radius: 6px;
-    font-size: 13px;
-    font-weight: 600;
-    white-space: nowrap;
-    text-decoration: none;
-  }
-  .navigate-btn:hover { background: var(--color-primary-hover); color: var(--color-primary-foreground); }
-
-  .panel-icon-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 2.25rem;
-    height: 2.25rem;
-    border: none;
-    background: transparent;
-    border-radius: 0.375rem;
-    cursor: pointer;
-    color: #6b7280;
-  }
-  .panel-icon-btn:hover { background: #f3f4f6; color: #1f2937; }
 
   .sport-chips {
     list-style: none;
@@ -380,18 +276,4 @@
   .fact-item { display: flex; flex-direction: column; gap: 1px; }
   .fact-value { font-size: 13px; color: #1f2937; }
 
-  .section-label {
-    font-size: 0.7rem;
-    font-weight: 700;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    color: #9ca3af;
-    margin: 0 0 6px;
-  }
-
-  .add-details {
-    font-size: 12px;
-    color: #6b7280;
-    margin: 0 0 0.5rem;
-  }
 </style>

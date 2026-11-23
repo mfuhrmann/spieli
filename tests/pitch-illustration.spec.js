@@ -29,6 +29,8 @@ test('a pitch row expands to its attributes and illustration', async ({ page }) 
   const panel = page.locator('aside.info-panel');
   await expect(panel).toBeVisible({ timeout: 8000 });
 
+  // The equipment list starts collapsed since #1077.
+  await panel.locator('.section-btn', { hasText: /All equipment|Alle Geräte/ }).click();
   await panel.locator('button.device-toggle', { hasText: /Sports pitch|Sportpl/ }).click();
   const toggle = panel.locator('.pitch-toggle');
   await expect(toggle).toHaveAttribute('aria-expanded', 'false');
