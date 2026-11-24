@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { ACTIVITIES, deviceKeysOf, activitiesOf, highlightsOf } from './activities.js';
+import { ACTIVITIES, ACTIVITY_ICONS, deviceIcon, deviceKeysOf, activitiesOf, highlightsOf } from './activities.js';
 import { objDevices } from './objPlaygroundEquipment.js';
 
 const f = playground => ({ properties: { playground } });
@@ -72,5 +72,12 @@ assert.deepEqual(
   highlightsOf(deviceKeysOf([], [], { 'playground:trampoline': 'yes' })),
   [{ kind: 'device', key: 'trampoline' }],
 );
+
+// --- icons ---
+
+for (const a of ACTIVITIES) assert.ok(ACTIVITY_ICONS[a], `${a}: no icon`);
+assert.equal(deviceIcon('basketswing'), ACTIVITY_ICONS.swing);
+assert.equal(deviceIcon('zipwire'), null);   // no activity → text only
+assert.equal(deviceIcon('nonsense'), null);
 
 console.log('activities.test.js: all assertions passed');

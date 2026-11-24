@@ -203,7 +203,7 @@ Both are built from `src/components/panel/`:
 | `ActivityRow` | The "what kids can do" block: `HighlightsLine` first, then the activities from `lib/activities.js` |
 | `HighlightsLine` | Themes, water play, catalogue highlights |
 | `MapperTools` | Mapping-detail badge, next-step hint, MapComplete — only while mapping detail is on |
-| `ContributeInvite` | Replaces zone A when nothing is known, after equipment has loaded |
+| `ContributeInvite` | Replaces zone A when nothing is known, after equipment has loaded; its "tell us what is there" opens the hint (#1073). Otherwise PlaygroundPanel ends zone A with a "something missing? send a hint" link under the activities |
 | `ZoneBackground` | Zone C; `DataAgeChip` holds the data-age popover |
 
 Rules:
@@ -211,6 +211,12 @@ Rules:
 - **Mapping detail adds, it never reorders.** The tool block appears under the header; the MapComplete link moves between it and zone C.
 - **Anything a visitor can filter by is visible in the panel** when it applies. A new filter needs a place in a zone.
 - **Activities and highlights come from the catalogue.** Every device in `objPlaygroundEquipment.js` declares `activity` (one of `ACTIVITIES` in `lib/activities.js`, or `null`) and `highlight`; `activities.test.js` fails when one is missing. Both read separately mapped devices and the area-level `playground:<device>=yes|<n>` tags.
+
+### Hints about a known playground (#1073)
+
+The "missing playground" flow (`ReportMissingFlow`, `stores/reportMissing.js`) has a second entry: `startHint(target)` opens the dialog at its form step with `reportTarget` set (OSM type and id, interior point, known device keys, fence/shade/name known, MapComplete URL). Unlike `startReport()` it keeps the selection, so the dialog's history entry sits on top of the panel's and back returns to the panel. The panel's Escape handler stands down while a report step is open (`ReportMissingFlow` marks the event with `preventDefault`).
+
+The form hides what is known, offers shade and a name only for a target, and `buildNoteText({ target })` writes a note with the object link and area tags (`playground:<device>=yes`, `shade=*`). Chips come from `REPORT_EQUIPMENT` (14 devices, shared by both flows) with the icon of the device's activity (`deviceIcon()` in `lib/activities.js`). The session limit is shared. A hint cannot be sent empty, gets no own-note pin (it would sit on the playground's interior point and swallow taps meant for it), and its link under the activities appears only once equipment has loaded. `selection.js` ignores landing on a report entry, and `reportMissing.js` steps back off a stale one, so browser Forward after closing a hint does not close the panel.
 
 ## Internationalisation
 

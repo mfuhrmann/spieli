@@ -3,7 +3,9 @@ import {
     buildNoteText, noteWebUrl, createNote, fetchNoteStatus, mapCompleteAddUrl,
     readOwnNotes, addOwnNote, updateOwnNoteStatus,
     canSendMore, countSent, SESSION_LIMIT, _resetSessionCount, DETAILS_MAX,
+    osmObjectUrl, REPORT_EQUIPMENT,
 } from './osmNotes.js';
+import { objDevices } from './objPlaygroundEquipment.js';
 
 // --- note text -------------------------------------------------------------
 
@@ -43,6 +45,46 @@ import {
     assert.doesNotMatch(text, /trampoline/);
     assert.equal(buildNoteText({ details: 'x'.repeat(DETAILS_MAX + 50) }).includes('x'.repeat(DETAILS_MAX + 1)), false);
 }
+
+// --- note text for a known playground (#1073) ------------------------------
+
+{
+    const text = buildNoteText({
+        target: { osmType: 'W', osmId: 123 },
+        equipment: ['sandpit', 'slide'], shade: 'partial', fenced: true, details: 'Wasserpumpe kaputt', lang: 'de',
+    });
+    assert.equal(text, [
+        'Ein Besucher von spieli ergänzt diesen Spielplatz: https://www.openstreetmap.org/way/123',
+        'Weitere Angaben: Wasserpumpe kaputt',
+        '',
+        'Vorschlag für die Spielplatzfläche:',
+        // Area schema, chip order: the visitor names devices, not positions.
+        'playground:slide=yes',
+        'playground:sandpit=yes',
+        'shade=partial',
+        '',
+        'Zaun (eigene Linie):',
+        'barrier=fence',
+        '',
+        'Gemeldet ohne OSM-Konto. #spieli',
+    ].join('\n'));
+}
+{
+    // A name only when given; no leisure=playground for a known playground.
+    const named = buildNoteText({ target: { osmType: 'N', osmId: 5 }, name: 'Am Bach', lang: 'en' });
+    assert.match(named, /^A spieli visitor adds to this playground: https:\/\/www\.openstreetmap\.org\/node\/5/);
+    assert.match(named, /\nname=Am Bach\n/);
+    assert.doesNotMatch(named, /leisure=playground/);
+    // Nothing ticked: link and source only, no empty tag block.
+    const bare = buildNoteText({ target: { osmType: 'R', osmId: 9 }, lang: 'de' });
+    assert.doesNotMatch(bare, /Vorschlag|=yes|shade=/);
+    // An unknown shade value is not passed on.
+    assert.doesNotMatch(buildNoteText({ target: { osmType: 'W', osmId: 1 }, shade: 'umbrella' }), /shade=/);
+}
+assert.equal(osmObjectUrl({ osmType: 'W', osmId: 7 }), 'https://www.openstreetmap.org/way/7');
+assert.equal(osmObjectUrl({ osmType: 'relation', osmId: 7 }), 'https://www.openstreetmap.org/relation/7');
+// Every chip is a known catalogue device, so it has a name and a valid tag.
+for (const k of REPORT_EQUIPMENT) assert.ok(objDevices[k], `REPORT_EQUIPMENT: ${k} not in the catalogue`);
 
 // --- URLs ------------------------------------------------------------------
 

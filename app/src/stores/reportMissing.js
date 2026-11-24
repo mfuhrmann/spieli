@@ -12,6 +12,10 @@
 //
 // History (#997 rule): an open report owns one history entry, so the phone's
 // back gesture closes it instead of leaving spieli and losing what was typed.
+//
+// A hint about a known playground (#1073) uses the same flow from 'form' on:
+// startHint() sets `reportTarget` and keeps the detail panel open, so the
+// report's entry sits on top of the panel's and back returns to the panel.
 import { writable, derived, get } from 'svelte/store';
 import { selection, hasSelection } from './selection.js';
 
@@ -21,6 +25,13 @@ export const reportStep = writable(null);
 export const reportBusy = writable(false);
 
 export const reportPlacing = derived(reportStep, $s => $s === 'place' || $s === 'dupe');
+
+/**
+ * The known playground a hint is about, or null for a missing-playground
+ * report: { osmType, osmId, lat, lon, knownDevices: string[], fenceKnown,
+ * shadeKnown, hasName, mcUrl }.
+ */
+export const reportTarget = writable(null);
 
 const REPORT_STATE = { spieliReport: true };
 const hasHistory = typeof window !== 'undefined' && typeof history !== 'undefined';
@@ -40,7 +51,14 @@ if (hasHistory) {
             run();
             return;
         }
-        if (!get(reportStep) || onReportEntry()) return;
+        if (!get(reportStep)) {
+            // Forward onto the entry of a report that was already closed (a
+            // hint pushes it on top of the open panel): step back off it, so
+            // the panel's entry is current again and nothing reopens.
+            if (onReportEntry()) history.back();
+            return;
+        }
+        if (onReportEntry()) return;
         // The visitor's back left our entry while a report was open.
         if (get(reportBusy)) {
             // Mid-send: stay, the answer is about to arrive.
@@ -48,11 +66,13 @@ if (hasHistory) {
             return;
         }
         reportStep.set(null);
+        reportTarget.set(null);
     });
 }
 
 export function startReport() {
     if (get(reportStep)) return;
+    reportTarget.set(null);
     reportStep.set('place');
     if (!hasHistory) {
         if (get(hasSelection)) selection.clear();
@@ -72,6 +92,18 @@ export function startReport() {
 }
 
 /**
+ * Open the hint form for a playground spieli knows (#1073). Unlike
+ * startReport() the selection stays: the dialog opens over the panel, and
+ * its history entry goes on top of the panel's.
+ */
+export function startHint(target) {
+    if (get(reportStep) || !target) return;
+    reportTarget.set(target);
+    reportStep.set('form');
+    if (hasHistory) history.pushState(REPORT_STATE, '');
+}
+
+/**
  * Close the report. `then` runs once our history entry is gone, so a step
  * that pushes its own entry (opening a playground) does not race the back.
  */
@@ -80,6 +112,7 @@ export function cancelReport(then = null) {
     if (typeof then !== 'function') then = null;
     if (get(reportBusy)) return;
     reportStep.set(null);
+    reportTarget.set(null);
     if (onReportEntry()) {
         if (then) afterPop = then;
         history.back();
