@@ -9,8 +9,19 @@
 // the region's language (`regionLang`) rather than the UI's, and names the
 // OSM tags so a mapper can act on it without guessing.
 
-/** Equipment the form offers as chips, keyed by their `playground=*` value. */
-export const REPORT_EQUIPMENT = ['swing', 'slide', 'sandpit', 'climbingframe', 'seesaw', 'springy'];
+/**
+ * Equipment the form offers as chips, keyed by their `playground=*` value:
+ * the most common devices in Fulda's data (#1073). Shared by "missing
+ * playground" and "what is at this playground"; anything else goes into the
+ * free text.
+ */
+export const REPORT_EQUIPMENT = [
+    'swing', 'basketswing', 'slide', 'sandpit', 'seesaw', 'springy', 'climbingframe',
+    'climbingwall', 'roundabout', 'balancebeam', 'horizontal_bar', 'playhouse', 'zipwire', 'water',
+];
+
+/** Shade values the hint form offers. */
+export const REPORT_SHADE = ['yes', 'partial'];
 
 // Mapper-facing note text. Not UI strings: they never render in spieli, and
 // they must follow the region, not the visitor, so they live here rather than
@@ -23,6 +34,8 @@ const NOTE_TEXT = {
         equipmentTags: 'Ausstattung (je ein eigener Punkt)',
         fenceTags: 'Zaun (eigene Linie)',
         source: 'Gemeldet ohne OSM-Konto. #spieli',
+        hintIntro: 'Ein Besucher von spieli ergänzt diesen Spielplatz:',
+        hintAreaTags: 'Vorschlag für die Spielplatzfläche',
     },
     en: {
         intro: 'A spieli visitor reports a playground here that is missing from OpenStreetMap.',
@@ -31,6 +44,8 @@ const NOTE_TEXT = {
         equipmentTags: 'Equipment (one point each)',
         fenceTags: 'Fence (its own way)',
         source: 'Reported without an OSM account. #spieli',
+        hintIntro: 'A spieli visitor adds to this playground:',
+        hintAreaTags: 'Suggested tags for the playground area',
     },
 };
 
@@ -40,24 +55,48 @@ export const NAME_MAX = 100;
 
 /**
  * Builds the note text a mapper will read.
- * @param {{ equipment?: string[], fenced?: boolean, name?: string, details?: string, lang?: string }} report
+ *
+ * Without `target` it reports a missing playground: `leisure=playground` and
+ * each device as its own point. With `target` (a playground spieli already
+ * knows, #1073) it links the OSM object and suggests area tags
+ * (`playground:<device>=yes`, `shade=*`): the visitor names devices, not
+ * positions.
+ * @param {{ equipment?: string[], fenced?: boolean, shade?: string|null, name?: string,
+ *           details?: string, lang?: string, target?: { osmType: string, osmId: number|string }|null }} report
  */
-export function buildNoteText({ equipment = [], fenced = false, name = '', details = '', lang = 'en' } = {}) {
+export function buildNoteText({
+    equipment = [], fenced = false, shade = null, name = '', details = '', lang = 'en', target = null,
+} = {}) {
     const t = NOTE_TEXT[lang] ?? NOTE_TEXT.en;
     // Tags go one per line, in key=value form, so a mapper can select a block
     // and paste it straight into an editor's text view (iD, JOSM).
-    const lines = [t.intro];
+    const lines = [target ? `${t.hintIntro} ${osmObjectUrl(target)}` : t.intro];
     const cleanDetails = details.trim().slice(0, DETAILS_MAX);
     if (cleanDetails) lines.push(`${t.details}: ${cleanDetails}`);
     // A name is a single tag value; a line break in it would split the block.
     const cleanName = name.replace(/\s+/g, ' ').trim().slice(0, NAME_MAX);
-    lines.push('', `${t.areaTags}:`, 'leisure=playground');
-    if (cleanName) lines.push(`name=${cleanName}`);
     const known = REPORT_EQUIPMENT.filter(k => equipment.includes(k));
-    if (known.length) lines.push('', `${t.equipmentTags}:`, ...known.map(k => `playground=${k}`));
+    if (target) {
+        const area = [
+            ...(cleanName ? [`name=${cleanName}`] : []),
+            ...known.map(k => `playground:${k}=yes`),
+            ...(REPORT_SHADE.includes(shade) ? [`shade=${shade}`] : []),
+        ];
+        if (area.length) lines.push('', `${t.hintAreaTags}:`, ...area);
+    } else {
+        lines.push('', `${t.areaTags}:`, 'leisure=playground');
+        if (cleanName) lines.push(`name=${cleanName}`);
+        if (known.length) lines.push('', `${t.equipmentTags}:`, ...known.map(k => `playground=${k}`));
+    }
     if (fenced) lines.push('', `${t.fenceTags}:`, 'barrier=fence');
     lines.push('', t.source);
     return lines.join('\n');
+}
+
+/** openstreetmap.org page of a node, way or relation. */
+export function osmObjectUrl({ osmType, osmId }) {
+    const type = { N: 'node', W: 'way', R: 'relation' }[osmType] ?? osmType;
+    return `https://www.openstreetmap.org/${type}/${osmId}`;
 }
 
 function trimBase(base) {

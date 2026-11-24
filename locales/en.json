@@ -878,14 +878,6 @@
       "mcText": "Map the playground directly in OpenStreetMap with MapComplete. You need a free OpenStreetMap account.",
       "outside": "This map has no data for this area, so it cannot tell whether the playground is already in OpenStreetMap. MapComplete shows what is there."
     },
-    "equipment": {
-      "swing": "Swings",
-      "slide": "Slide",
-      "sandpit": "Sandpit",
-      "climbingframe": "Climbing frame",
-      "seesaw": "Seesaw",
-      "springy": "Spring rider"
-    },
     "form": {
       "title": "What's there?",
       "intro": "Your hint goes to OpenStreetMap as a note. Local mappers check it and add the playground. No account needed.",
@@ -928,6 +920,14 @@
         "hidden": "Removed by OpenStreetMap moderators.",
         "unknown": "The status could not be checked right now."
       }
+    },
+    "hint": {
+      "title": "What is at this playground?",
+      "intro": "Tap what you saw there. Your hint goes to OpenStreetMap as a note; local mappers add it to the map. You do not need an account.",
+      "shadeLabel": "Shade",
+      "open": "Tell us what is there",
+      "missing": "Something missing? Send a hint",
+      "limit": "You have sent {count} hints in this visit. To add more, please use MapComplete:"
     }
   },
   "access": {

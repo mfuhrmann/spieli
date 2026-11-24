@@ -17,7 +17,7 @@
   // Mapping detail adds a tool block under the header; it never reorders.
   import { onMount, onDestroy, tick } from 'svelte';
   import { transform } from 'ol/proj';
-  import { ChevronDown, ChevronRight, Package, Star } from 'lucide-svelte';
+  import { ChevronDown, ChevronRight, Package, Star, MessageCirclePlus } from 'lucide-svelte';
   import { _, locale } from 'svelte-i18n';
   import { tagValuesLabel } from '../lib/deviceLabel.js';
 
@@ -34,7 +34,8 @@
   import { accessKind } from '../lib/access.js';
   import { shadeState } from '../lib/shade.js';
   import { deviceKeysOf, activitiesOf, highlightsOf } from '../lib/activities.js';
-  import { poiRadiusM, appMode, mapMinZoom, regionLang } from '../lib/config.js';
+  import { poiRadiusM, appMode, mapMinZoom, regionLang, osmNotesUrl } from '../lib/config.js';
+  import { reportStep, startHint } from '../stores/reportMissing.js';
   import { getPlaygroundTitle, getPlaygroundLocation, hasOsmName, navigationUrl, isMobileUserAgent } from '../lib/playgroundHelpers.js';
   import { aggregatePlaygroundThemes, areaThemesOf } from '../lib/playgroundThemes.js';
   import { summarizeEquipment } from '../lib/equipmentSummary.js';
@@ -263,8 +264,12 @@
   // ── ESC to close ──────────────────────────────────────────────────────────
   // The data-age popover and the photo dialogs listen in the capture phase and
   // stop the event, so Escape closes them without reaching this handler.
+  // An open hint dialog (#1073) sits on top of this panel: Escape closes the
+  // dialog only. Its handler marks the event, or the step is still set when
+  // this one runs first.
   function handleKeydown(e) {
-    if (e.key === 'Escape' && feature && !embedded) closePanel();
+    if (e.key !== 'Escape' || e.defaultPrevented || $reportStep) return;
+    if (feature && !embedded) closePanel();
   }
 
   onMount(() => {
@@ -359,6 +364,32 @@
     || attr.wheelchair_play === 'yes' || attr.wheelchair_play === 'no');
   $: knowsNothing = !!attr && !equipmentLoading && photoState === 'none' && !hasPills
     && activities.length === 0 && highlights.length === 0;
+
+  // ── Hint about this playground (#1073) ───────────────────────────────────
+  // Only when the instance sends OSM notes at all. The note goes to the
+  // polygon's interior point (the bbox centre can lie outside an L-shape).
+  function interiorLonLat(geom) {
+    const type = geom?.getType?.();
+    const c = type === 'Polygon' ? geom.getInteriorPoint().getCoordinates()
+      : type === 'MultiPolygon' ? geom.getInteriorPoints().getCoordinates()[0]
+      : null;
+    return c ? transform([c[0], c[1]], 'EPSG:3857', 'EPSG:4326') : [centerLon, centerLat];
+  }
+  function openHint() {
+    if (!attr || !feature) return;
+    const [lon, lat] = interiorLonLat(feature.getGeometry());
+    startHint({
+      osmType: attr.osm_type,
+      osmId: attr.osm_id,
+      lat, lon,
+      knownDevices: [...deviceKeys],
+      fenceKnown: attr.has_fence === true,
+      shadeKnown: shadeState(attr) !== null,
+      hasName: hasOsmName(attr),
+      mcUrl,
+    });
+  }
+  $: onHint = osmNotesUrl ? openHint : null;
 
   // ── Accordion state (zone B) ──────────────────────────────────────────────
   // Both start closed: the activities above already say what is there, and
@@ -486,10 +517,19 @@
           bind:status={photoState}
         />
         {#if knowsNothing}
-          <ContributeInvite {mcUrl} />
+          <ContributeInvite {mcUrl} {onHint} />
         {:else}
           <PillRow {attr} />
           <ActivityRow {activities} {highlights} {areaTheme} loading={equipmentLoading} />
+          <!-- Right under what is known: that is when a visitor notices what
+               is missing (#1073). Small, so it does not get in the way. Only
+               once equipment has loaded: the form hides known devices, and a
+               tap before that would offer what is already mapped. -->
+          {#if onHint && !equipmentLoading}
+            <button type="button" class="hint-link" onclick={onHint} data-testid="hint-open-inline">
+              <MessageCirclePlus class="h-3.5 w-3.5" aria-hidden="true" />{$_('report.hint.missing')}
+            </button>
+          {/if}
         {/if}
       </section>
 
@@ -645,6 +685,21 @@
     color: #374151;
     background: #fafafa;
   }
+
+  .hint-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin: 0 0 0.75rem;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--color-primary);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .hint-link:hover { text-decoration: underline; }
 
   /* Clear the sticky desktop header when jumped to from the rating. */
   .reviews-section { scroll-margin-top: 5rem; }

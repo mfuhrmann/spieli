@@ -208,6 +208,12 @@ Know a playground that is not on the map? Press the green map pin with a plus at
 
 Nothing is sent until you press **Send hint**; opening or moving the map never contacts OpenStreetMap's notes service.
 
+### Telling us what is at a playground
+
+Been to a playground the map knows little about? Open it and tap **Tell us what is there** in the panel, or **Something missing? Send a hint** right under "What kids can do" in any playground's panel.
+
+A short form opens over the panel. It offers only what the map does not know yet: equipment (swing, slide, sandpit, climbing frame, …), whether it is fenced, whether there is shade, and a name if it has none. Add a note if you like and press **Send hint**. Like a [missing-playground report](#reporting-a-missing-playground), the hint becomes a public OpenStreetMap note at the playground, with a link to it and the matching tags, so local mappers can add it quickly. No account is needed; the same notice about what the OpenStreetMap Foundation stores applies, and together with missing-playground reports you can send three per visit. The back button or gesture, or Escape, closes the form and leaves the panel open.
+
 ### Adding or improving data
 
 All playground data comes from [OpenStreetMap](https://openstreetmap.org). If a playground is missing (see [above](#reporting-a-missing-playground)), has the wrong location, or lacks details:

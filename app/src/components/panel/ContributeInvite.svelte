@@ -1,13 +1,13 @@
 <script>
   // Zone A when nothing is known (#1077): for two thirds of playgrounds the
   // panel would otherwise be a title and nothing else. Invites the visitor to
-  // add a photo or the details. #1073 adds an anonymous tap-to-send note here.
+  // send a hint without an account (#1073), add a photo or the details.
   import { _ } from 'svelte-i18n';
   import { MessageCirclePlus } from 'lucide-svelte';
   import MapCompleteLink from '../MapCompleteLink.svelte';
 
-  /** @type {{ mcUrl?: string }} */
-  let { mcUrl = '' } = $props();
+  /** @type {{ mcUrl?: string, onHint?: (() => void) | null }} */
+  let { mcUrl = '', onHint = null } = $props();
 </script>
 
 <div class="invite" data-testid="contribute-invite">
@@ -15,6 +15,11 @@
     <MessageCirclePlus class="h-4 w-4 shrink-0 mt-px" aria-hidden="true" />
     <span>{$_('panel.invite.text')}</span>
   </p>
+  {#if onHint}
+    <button type="button" class="invite__hint" onclick={onHint} data-testid="hint-open">
+      <MessageCirclePlus class="h-4 w-4" aria-hidden="true" />{$_('report.hint.open')}
+    </button>
+  {/if}
   <div class="invite__actions">
     <MapCompleteLink href={mcUrl} label={$_('popup.addPhoto')} />
     <MapCompleteLink href={mcUrl} label={$_('panel.invite.addDetails')} />
@@ -37,6 +42,21 @@
     line-height: 1.4;
     color: #14532d;
   }
+  .invite__hint {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 2px 0 8px 24px;
+    padding: 6px 12px;
+    border: none;
+    border-radius: 8px;
+    background: var(--color-primary);
+    color: var(--color-primary-foreground);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .invite__hint:hover { background: var(--color-primary-hover); }
   .invite__actions {
     display: flex;
     flex-wrap: wrap;
