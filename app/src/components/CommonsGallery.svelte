@@ -7,7 +7,9 @@
   /** @type {{ commons?: string, image?: string, count?: number }} */
   // `loaded` turns true once the tags have been resolved (to photos or to
   // none), so a parent can tell "no photos" from "still loading".
-  let { commons = '', image = '', count = $bindable(0), loaded = $bindable(false) } = $props();
+  // strip: only a row of thumbnails, each opening the lightbox (#1081); the
+  // parent provides the scrolling row they flow into.
+  let { commons = '', image = '', count = $bindable(0), loaded = $bindable(false), strip = false } = $props();
 
   // How many thumbnails to show before collapsing into a "+N" tile.
   // Five fits the panel width on one row; the 5th becomes the "+N" tile.
@@ -67,6 +69,17 @@
   }
 </script>
 
+{#if strip}
+  {#if loading && photos.length === 0}
+    <div class="strip-skeleton" aria-label={$_('accordion.photos')}></div>
+  {/if}
+  {#each photos as photo, i (photo.thumb)}
+    <button type="button" class="strip-thumb" onclick={() => openModal(i)}
+            title={$_('photos.thumbnailTitle', { values: { n: i + 1, total: photos.length } })}>
+      <img src={photo.thumb} loading="lazy" alt={$_('photos.thumbnail', { values: { n: i + 1 } })} />
+    </button>
+  {/each}
+{:else}
 {#if loading && photos.length === 0}
   <!-- First load: a skeleton placeholder at hero height so the panel doesn't
        jump when the photos arrive. Reloads keep the old photos visible. -->
@@ -100,6 +113,7 @@
       {/each}
     </div>
   {/if}
+{/if}
 {/if}
 
 <!-- Fullscreen lightbox: attribution (CC author + license) lives here only, so
@@ -139,10 +153,31 @@
 {/if}
 
 <style>
+  .strip-thumb {
+    flex: 0 0 auto;
+    width: 104px;
+    height: 78px;
+    padding: 0;
+    border: 0;
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: pointer;
+    background: var(--color-muted);
+    scroll-snap-align: start;
+  }
+  .strip-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .strip-thumb:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+  .strip-skeleton {
+    flex: 0 0 auto;
+    width: 104px;
+    height: 78px;
+    border-radius: 12px;
+    background: var(--color-muted);
+  }
   .commons-skeleton {
     height: 200px;
     border-radius: 4px;
-    background: linear-gradient(100deg, #e9ecef 30%, #f3f5f7 50%, #e9ecef 70%);
+    background: linear-gradient(100deg, var(--color-muted) 30%, #f3f5f7 50%, var(--color-muted) 70%);
     background-size: 200% 100%;
     animation: commons-shimmer 1.2s ease-in-out infinite;
   }
@@ -197,7 +232,7 @@
     overflow: hidden;
     line-height: 0;
   }
-  .commons-thumb-active { border-color: #0d6efd; }
+  .commons-thumb-active { border-color: var(--color-primary); }
   .commons-thumb img {
     width: 52px;
     height: 38px;
@@ -270,12 +305,12 @@
   }
   .nav-btn:hover:not(:disabled) { background: #383838; }
   .nav-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-  .photo-counter { font-size: 0.8rem; color: #bbb; }
+  .photo-counter { font-size: 0.8rem; color: var(--color-muted-foreground); }
   .close-btn {
     background: none;
     border: none;
     font-size: 1rem;
-    color: #bbb;
+    color: var(--color-muted-foreground);
     cursor: pointer;
     padding: 0.25rem 0.5rem;
     border-radius: 4px;
@@ -299,7 +334,7 @@
     flex-shrink: 0;
     padding: 0.4rem 0.75rem;
     background: #1b1b1b;
-    color: #bbb;
+    color: var(--color-muted-foreground);
     font-size: 0.75rem;
     display: flex;
     gap: 0.4rem;

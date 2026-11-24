@@ -657,19 +657,19 @@
     border-radius: 50%;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
     cursor: pointer;
-    color: #666;
+    color: var(--color-muted-foreground);
     transition: background 0.15s, color 0.15s;
   }
 
   .control-btn:hover {
-    background: #f5f5f5;
-    color: #333;
+    background: var(--color-muted);
+    color: var(--color-foreground);
   }
 
   /* Compound selector, so .control-btn's grey cannot win on order. */
   .control-btn.report-btn,
   .control-btn.report-btn:hover {
-    color: #047857;
+    color: var(--color-primary);
   }
 
   .zoom-controls {
@@ -690,13 +690,13 @@
     background: white;
     border: none;
     cursor: pointer;
-    color: #666;
+    color: var(--color-muted-foreground);
     transition: background 0.15s, color 0.15s;
   }
 
   .zoom-btn:hover {
-    background: #f5f5f5;
-    color: #333;
+    background: var(--color-muted);
+    color: var(--color-foreground);
   }
 
   .zoom-in {
@@ -725,23 +725,17 @@
     z-index: 200;
     display: flex;
     flex-direction: column;
-    background: #ffffff;
+    background: var(--color-background);
     touch-action: pan-y;
     color-scheme: light;
-    --color-background: #ffffff;
-    --color-foreground: #1f2937;
-    --color-card: #ffffff;
-    --color-card-foreground: #1f2937;
-    --color-muted: #f3f4f6;
-    --color-muted-foreground: #6b7280;
-    --color-border: #e5e7eb;
   }
 
   .mobile-detail-header {
     display: flex;
     align-items: center;
     padding: 0.75rem 1rem;
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-surface);
     flex-shrink: 0;
   }
 
@@ -752,7 +746,7 @@
     border: none;
     background: transparent;
     cursor: pointer;
-    color: #4b5563;
+    color: var(--color-muted-foreground);
     font-size: 0.9rem;
     padding: 0.25rem 0;
   }
@@ -776,17 +770,6 @@
     overflow-y: auto;
     animation: slideInLeft 0.3s ease-out;
     color-scheme: light;
-
-    --color-background: #ffffff;
-    --color-foreground: #1f2937;
-    --color-card: #ffffff;
-    --color-card-foreground: #1f2937;
-    --color-popover: #ffffff;
-    --color-popover-foreground: #1f2937;
-    --color-muted: #f3f4f6;
-    --color-muted-foreground: #6b7280;
-    --color-border: #e5e7eb;
-    --color-input: #e5e7eb;
   }
 
   @keyframes slideInLeft {

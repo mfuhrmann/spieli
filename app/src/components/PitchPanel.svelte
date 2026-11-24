@@ -176,7 +176,7 @@
       </section>
 
       {#if surfaceLabel || lit || hoops || openingHoursInfo || wheelchair}
-        <section class="grid grid-cols-2 gap-x-4 gap-y-2 mb-2" data-testid="zone-b">
+        <section class="panel-section grid grid-cols-2 gap-x-4 gap-y-2 mb-2" data-testid="zone-b">
           {#if surfaceLabel}
             <div class="fact-item" data-fact="surface">
               <span class="info-label">{$_('details.surfaceLabel')}</span>
@@ -222,13 +222,13 @@
     left: 0;
     width: 380px;
     height: 100%;
-    background: #ffffff;
-    box-shadow: 4px 0 15px -3px rgb(0 0 0 / 0.1);
+    background: var(--color-background);
+    box-shadow: 4px 0 15px -3px rgb(22 48 42 / 0.12);
     z-index: 100;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    border-right: 1px solid #e5e7eb;
+    border-right: 1px solid var(--color-border);
     color-scheme: light;
   }
   @media (max-width: 1023px) {
@@ -251,7 +251,7 @@
     gap: 6px;
     padding: 4px 10px;
     border-radius: 999px;
-    border: 1px solid #a7f3d0;
+    border: 1px solid var(--color-chip-line);
     background: var(--color-primary-soft);
     color: var(--color-primary);
     font-size: 13px;
@@ -267,13 +267,13 @@
 
   .info-label {
     display: block;
-    color: #9ca3af;
+    color: var(--color-muted-foreground);
     font-size: 11px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.04em;
   }
   .fact-item { display: flex; flex-direction: column; gap: 1px; }
-  .fact-value { font-size: 13px; color: #1f2937; }
+  .fact-value { font-size: 13px; color: var(--color-foreground); }
 
 </style>

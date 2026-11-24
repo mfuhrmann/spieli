@@ -36,16 +36,16 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    color: #9ca3af;
+    color: var(--color-muted-foreground);
     text-decoration: none;
     transition: color 0.15s;
   }
   .mc-edit-link:hover {
-    color: #374151;
+    color: var(--color-foreground);
     text-decoration: underline;
   }
   .mc-edit-link:focus-visible {
-    outline: 2px solid #2563eb;
+    outline: 2px solid var(--color-primary);
     outline-offset: 2px;
     border-radius: 2px;
   }

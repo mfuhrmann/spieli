@@ -318,7 +318,7 @@
     align-items: center;
     justify-content: space-between;
     padding: 0.5rem 0.75rem;
-    border-bottom: 1px solid #dee2e6;
+    border-bottom: 1px solid var(--color-border);
   }
 
   .drawer__title {
@@ -338,7 +338,7 @@
     border: none;
     border-radius: 4px;
     background: transparent;
-    color: #6b7280;
+    color: var(--color-muted-foreground);
     cursor: pointer;
     transition: background 0.15s, color 0.15s;
   }
@@ -346,14 +346,14 @@
   .drawer__close:hover,
   .drawer__close:focus-visible {
     background: #f1f3f5;
-    color: #212529;
+    color: var(--color-foreground);
   }
 
   .drawer__message {
     margin: 0;
     padding: 0.75rem;
     font-size: 0.8rem;
-    color: #6b7280;
+    color: var(--color-muted-foreground);
   }
 
   .drawer__message--error {
@@ -393,7 +393,7 @@
 
   .instance-name {
     font-weight: 500;
-    color: #212529;
+    color: var(--color-foreground);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -405,13 +405,13 @@
        it would float in the middle. */
     margin-right: auto;
     padding: 0 0.3rem;
-    border: 1px solid #d1d5db;
+    border: 1px solid var(--color-border);
     border-radius: 0.25rem;
     font-size: 0.65rem;
     font-weight: 600;
     letter-spacing: 0.04em;
     line-height: 1.3;
-    color: #4b5563;
+    color: var(--color-muted-foreground);
   }
 
   .instance-row-end {
@@ -427,7 +427,7 @@
     padding: 0 0.15rem;
     font-size: 0.8rem;
     cursor: pointer;
-    color: #6b7280;
+    color: var(--color-muted-foreground);
     line-height: 1;
     border-radius: 3px;
   }
@@ -439,7 +439,7 @@
   }
 
   .instance-badge--importing {
-    background-color: #0d6efd;
+    background-color: var(--color-primary);
     color: #fff;
   }
 
@@ -457,7 +457,7 @@
     align-items: center;
     gap: 0.35rem;
     font-size: 0.72rem;
-    color: #6b7280;
+    color: var(--color-muted-foreground);
     margin-top: 0.15rem;
   }
 
@@ -481,7 +481,7 @@
 
   .completeness-pct {
     font-size: 0.68rem;
-    color: #6b7280;
+    color: var(--color-muted-foreground);
     white-space: nowrap;
     flex-shrink: 0;
     min-width: 2.5rem;
@@ -494,7 +494,7 @@
     height: 4px;
     border-radius: 2px;
     overflow: hidden;
-    background: #e5e7eb;
+    background: var(--color-muted);
   }
 
   .completeness-bar__seg {

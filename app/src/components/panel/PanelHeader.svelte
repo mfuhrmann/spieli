@@ -41,6 +41,8 @@
     rating = null,
     // Jumps to the reviews section, where the visitor can also add one.
     onRatingClick = null,
+    // Pills under name and place, inside the header (#1081).
+    children = null,
   } = $props();
 
   let shareConfirmed = $state(false);
@@ -101,6 +103,9 @@
       </Badge>
     {/if}
   </div>
+  {#if children}
+    <div class="ph-pills">{@render children()}</div>
+  {/if}
   <div class="ph-nav">
     {#if navUrl}
       <a
@@ -119,14 +124,15 @@
     grid-template-columns: minmax(0, 1fr) auto;
     grid-template-areas:
       "title icons"
-      "meta  nav";
+      "meta  nav"
+      "pills pills";
     column-gap: 0.75rem;
     row-gap: 0.25rem;
     padding: 1rem;
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 1px solid var(--color-border);
     position: sticky;
     top: 0;
-    background: #ffffff;
+    background: var(--color-background);
     z-index: 1;
   }
   .panel-header--embedded {
@@ -138,6 +144,8 @@
   .ph-icons { grid-area: icons; justify-self: end; display: flex; align-items: center; gap: 0.125rem; margin: -0.375rem -0.375rem 0 0; }
   .ph-meta  { grid-area: meta; }
   .ph-nav   { grid-area: nav; align-self: end; justify-self: end; }
+  .ph-pills { grid-area: pills; margin-top: 6px; }
+  .ph-pills :global(.pill-row) { margin-bottom: 0; }
   .ph-meta:empty, .ph-nav:empty { display: none; }
 
   .panel-kicker {
@@ -146,13 +154,14 @@
     font-weight: 700;
     letter-spacing: 0.04em;
     text-transform: uppercase;
-    color: #9ca3af;
+    color: var(--color-muted-foreground);
   }
   .panel-title {
-    font-size: 17px;
-    font-weight: 600;
-    color: #1f2937;
-    line-height: 1.3;
+    font-size: 23px;
+    font-weight: 900;
+    letter-spacing: -0.01em;
+    color: var(--color-foreground);
+    line-height: 1.2;
     margin: 0;
     /* The title shares its row with the action buttons and may shrink to
        nothing; a single long word ("Mehrzweckplatz" next to "Bring mich
@@ -164,7 +173,7 @@
   .panel-subtitle {
     margin: 0.125rem 0 0;
     font-size: 0.875rem;
-    color: #6b7280;
+    color: var(--color-muted-foreground);
   }
   .panel-rating {
     display: flex;
@@ -181,22 +190,22 @@
   }
   .panel-rating:disabled { cursor: default; }
   .panel-rating:hover:not(:disabled) .panel-rating__num { text-decoration: underline; }
-  .panel-rating__num { color: #6b7280; font-size: 0.8125rem; }
+  .panel-rating__num { color: var(--color-muted-foreground); font-size: 0.8125rem; }
   .backend-name {
     margin: 0.15rem 0 0;
     font-size: 11px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.07em;
-    color: #9ca3af;
+    color: var(--color-muted-foreground);
   }
   .navigate-btn {
-    padding: 6px 12px;
+    padding: 7px 13px;
     background: var(--color-primary);
     color: var(--color-primary-foreground);
-    border-radius: 6px;
+    border-radius: 10px;
     font-size: 13px;
-    font-weight: 600;
+    font-weight: 700;
     white-space: nowrap;
     text-decoration: none;
     transition: background 0.15s;
@@ -212,8 +221,8 @@
     background: transparent;
     border-radius: 0.375rem;
     cursor: pointer;
-    color: #6b7280;
+    color: var(--color-muted-foreground);
     transition: background 0.15s, color 0.15s;
   }
-  .panel-icon-btn:hover { background: #f3f4f6; color: #1f2937; }
+  .panel-icon-btn:hover { background: var(--color-muted); color: var(--color-foreground); }
 </style>

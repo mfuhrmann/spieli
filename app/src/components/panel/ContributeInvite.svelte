@@ -3,11 +3,11 @@
   // panel would otherwise be a title and nothing else. Invites the visitor to
   // send a hint without an account (#1073), add a photo or the details.
   import { _ } from 'svelte-i18n';
-  import { MessageCirclePlus } from 'lucide-svelte';
-  import MapCompleteLink from '../MapCompleteLink.svelte';
+  import { MessageCirclePlus, Camera, Pencil } from 'lucide-svelte';
 
   /** @type {{ mcUrl?: string, onHint?: (() => void) | null }} */
   let { mcUrl = '', onHint = null } = $props();
+  const safeMc = $derived(typeof mcUrl === 'string' && /^https?:\/\//i.test(mcUrl) ? mcUrl : '');
 </script>
 
 <div class="invite" data-testid="contribute-invite">
@@ -20,10 +20,12 @@
       <MessageCirclePlus class="h-4 w-4" aria-hidden="true" />{$_('report.hint.open')}
     </button>
   {/if}
-  <div class="invite__actions">
-    <MapCompleteLink href={mcUrl} label={$_('popup.addPhoto')} />
-    <MapCompleteLink href={mcUrl} label={$_('panel.invite.addDetails')} />
-  </div>
+  {#if safeMc}
+    <div class="invite__actions">
+      <a class="contrib-link" href={safeMc} target="_blank" rel="noopener noreferrer"><Camera class="h-3.5 w-3.5" aria-hidden="true" />{$_('popup.addPhoto')}</a>
+      <a class="contrib-link" href={safeMc} target="_blank" rel="noopener noreferrer"><Pencil class="h-3.5 w-3.5" aria-hidden="true" />{$_('panel.invite.addDetails')}</a>
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -31,8 +33,8 @@
     margin-bottom: 0.75rem;
     padding: 10px 12px;
     border-radius: 10px;
-    background: #f0fdf4;
-    border: 1px dashed #86efac;
+    background: var(--color-chip);
+    border: 1px dashed var(--color-chip-line);
   }
   .invite__text {
     display: flex;
@@ -40,13 +42,13 @@
     margin: 0 0 6px;
     font-size: 0.875rem;
     line-height: 1.4;
-    color: #14532d;
+    color: var(--color-ink);
   }
   .invite__hint {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    margin: 2px 0 8px 24px;
+    margin: 2px 0 10px 24px;
     padding: 6px 12px;
     border: none;
     border-radius: 8px;

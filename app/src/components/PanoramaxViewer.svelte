@@ -4,9 +4,12 @@
   import { panoramaxThumbUrl, panoramaxViewerUrl } from '../lib/panoramax.js';
   import { _ } from 'svelte-i18n';
   import MapCompleteLink from './MapCompleteLink.svelte';
+  import { Play, Camera } from 'lucide-svelte';
 
   /** @type {{ uuids?: string[], mcUrl?: string }} */
-  let { uuids: uuidsProp = [], mcUrl = '' } = $props();
+  // strip: thumbnails only, each opening the viewer (#1081). Still no iframe
+  // until the visitor activates one (#852).
+  let { uuids: uuidsProp = [], mcUrl = '', strip = false } = $props();
   // Defensive: a parent passing `uuids={null}` would bypass the destructure
   // default (which only fires for undefined). The derived form keeps the
   // rest of the component free of `uuids?.length` checks.
@@ -21,6 +24,7 @@
   let modalIndex = $state(0);
   let selectedIndex = $state(0);
   let thumbFailed = $state(false);
+  let failedThumbs = $state(new Set());   // strip mode: per photo
 
   // The component instance is REUSED across playgrounds: PlaygroundPanel keeps
   // rendering it as long as the photos section is open, so selecting a
@@ -34,6 +38,7 @@
     selectedIndex = 0;
     modalIndex = 0;
     thumbFailed = false;
+    failedThumbs = new Set();
   });
 
   function openModal(i) {
@@ -75,7 +80,23 @@
   }
 </script>
 
-{#if uuids.length === 0}
+{#if strip}
+  <!-- Same contract as the large preview below (panoramax-click-to-load.spec):
+       an image, no Referer, keyboard-activatable, a placeholder when the
+       thumbnail is gone upstream, and no iframe until activated. -->
+  {#each uuids as uuid, i (uuid)}
+    <button type="button" class="strip-thumb panoramax-preview" onclick={() => openModal(i)}
+            aria-label={$_('panoramax.loadViewer')} title={$_('panoramax.loadViewerHint')}>
+      {#if failedThumbs.has(uuid)}
+        <span class="panoramax-thumb-missing strip-missing"><Camera class="h-5 w-5" aria-hidden="true" /></span>
+      {:else}
+        <img src={thumbUrl(uuid)} alt={$_('modal.streetPhoto')} loading="lazy" referrerpolicy="no-referrer"
+             onerror={() => { failedThumbs = new Set([...failedThumbs, uuid]); }} />
+      {/if}
+      <span class="strip-play" aria-hidden="true"><Play class="h-3 w-3" fill="currentColor" /></span>
+    </button>
+  {/each}
+{:else if uuids.length === 0}
   <div class="text-center py-2">
     <span class="bi bi-camera" style="font-size:1.8rem; color:#d1d5db;"></span>
     <p class="text-muted mt-1 mb-2" style="font-size:smaller;">{$_('panoramax.noPhotos')}</p>
@@ -193,13 +214,13 @@
     width: 100%;
     padding: 0;
     border: none;
-    background: #f3f4f6;
+    background: var(--color-muted);
     cursor: pointer;
     border-radius: 4px;
     overflow: hidden;
   }
   .panoramax-preview:focus-visible {
-    outline: 2px solid #0d6efd;
+    outline: 2px solid var(--color-primary);
     outline-offset: 2px;
   }
   .panoramax-overlay {
@@ -232,7 +253,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #f3f4f6;
+    background: var(--color-muted);
     color: #d1d5db;
     font-size: 2.2rem;
   }
@@ -250,7 +271,7 @@
     background: none; border: 2px solid transparent; border-radius: 3px;
     padding: 0; cursor: pointer;
   }
-  .thumb-active { border-color: #0d6efd; }
+  .thumb-active { border-color: var(--color-primary); }
 
   .panoramax-modal-backdrop {
     position: fixed;
@@ -289,8 +310,8 @@
     align-items: center;
     justify-content: space-between;
     padding: 0.5rem 0.75rem;
-    border-bottom: 1px solid #e5e7eb;
-    background: #f9fafb;
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-muted);
     flex-shrink: 0;
   }
 
@@ -302,7 +323,7 @@
 
   .nav-btn {
     background: #ffffff;
-    border: 1px solid #d1d5db;
+    border: 1px solid var(--color-border);
     border-radius: 4px;
     width: 28px;
     height: 28px;
@@ -312,21 +333,21 @@
     font-size: 1.1rem;
     line-height: 1;
     cursor: pointer;
-    color: #374151;
+    color: var(--color-foreground);
     padding: 0;
   }
-  .nav-btn:hover:not(:disabled) { background: #f3f4f6; }
+  .nav-btn:hover:not(:disabled) { background: var(--color-muted); }
   .nav-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
   .photo-counter {
     font-size: 0.8rem;
-    color: #6b7280;
+    color: var(--color-muted-foreground);
   }
 
   .photo-title {
     font-size: 0.875rem;
     font-weight: 600;
-    color: #111827;
+    color: var(--color-foreground);
     margin-left: 0.25rem;
   }
 
@@ -334,12 +355,47 @@
     background: none;
     border: none;
     font-size: 1rem;
-    color: #6b7280;
+    color: var(--color-muted-foreground);
     cursor: pointer;
     padding: 0.25rem 0.5rem;
     border-radius: 4px;
     line-height: 1;
   }
-  .close-btn:hover { background: #f3f4f6; color: #111827; }
+  .close-btn:hover { background: var(--color-muted); color: var(--color-foreground); }
 
+  .strip-thumb {
+    position: relative;
+    flex: 0 0 auto;
+    width: 104px;
+    height: 78px;
+    padding: 0;
+    border: 0;
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: pointer;
+    background: var(--color-muted);
+    scroll-snap-align: start;
+  }
+  .strip-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .strip-thumb:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+  .strip-missing {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    place-items: center;
+    color: var(--color-subtle);
+  }
+  .strip-play {
+    position: absolute;
+    right: 6px;
+    bottom: 6px;
+    width: 22px;
+    height: 22px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.9);
+    color: var(--color-ink);
+    font-size: 14px;
+  }
 </style>

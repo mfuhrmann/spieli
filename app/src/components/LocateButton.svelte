@@ -162,13 +162,13 @@
     border-radius: 50%;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
     cursor: pointer;
-    color: #666;
+    color: var(--color-muted-foreground);
     transition: background 0.15s, color 0.15s;
   }
 
   .control-btn:hover {
-    background: #f5f5f5;
-    color: #333;
+    background: var(--color-muted);
+    color: var(--color-foreground);
   }
 
   .control-btn:disabled {

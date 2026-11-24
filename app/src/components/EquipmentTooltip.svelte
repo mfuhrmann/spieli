@@ -115,8 +115,8 @@
 <style>
   .equip-tooltip {
     background: #ffffff;
-    border-color: #e5e7eb;
-    color: #1f2937;
+    border-color: var(--color-border);
+    color: var(--color-foreground);
     max-width: 640px;
     overflow: hidden;
   }
