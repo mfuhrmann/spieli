@@ -2150,6 +2150,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="The detail panels">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#hints-about-a-known-playground-1073" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hints about a known playground (#1073)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -3659,6 +3676,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="The detail panels">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#hints-about-a-known-playground-1073" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hints about a known playground (#1073)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -4378,7 +4412,7 @@
 </tr>
 <tr>
 <td><code>ContributeInvite</code></td>
-<td>Replaces zone A when nothing is known, after equipment has loaded</td>
+<td>Replaces zone A when nothing is known, after equipment has loaded; its "tell us what is there" opens the hint (#1073). Otherwise PlaygroundPanel ends zone A with a "something missing? send a hint" link under the activities</td>
 </tr>
 <tr>
 <td><code>ZoneBackground</code></td>
@@ -4392,6 +4426,9 @@
 <li><strong>Anything a visitor can filter by is visible in the panel</strong> when it applies. A new filter needs a place in a zone.</li>
 <li><strong>Activities and highlights come from the catalogue.</strong> Every device in <code>objPlaygroundEquipment.js</code> declares <code>activity</code> (one of <code>ACTIVITIES</code> in <code>lib/activities.js</code>, or <code>null</code>) and <code>highlight</code>; <code>activities.test.js</code> fails when one is missing. Both read separately mapped devices and the area-level <code>playground:&lt;device&gt;=yes|&lt;n&gt;</code> tags.</li>
 </ul>
+<h3 id="hints-about-a-known-playground-1073">Hints about a known playground (#1073)<a class="headerlink" href="#hints-about-a-known-playground-1073" title="Permanent link">&para;</a></h3>
+<p>The "missing playground" flow (<code>ReportMissingFlow</code>, <code>stores/reportMissing.js</code>) has a second entry: <code>startHint(target)</code> opens the dialog at its form step with <code>reportTarget</code> set (OSM type and id, interior point, known device keys, fence/shade/name known, MapComplete URL). Unlike <code>startReport()</code> it keeps the selection, so the dialog's history entry sits on top of the panel's and back returns to the panel. The panel's Escape handler stands down while a report step is open (<code>ReportMissingFlow</code> marks the event with <code>preventDefault</code>).</p>
+<p>The form hides what is known, offers shade and a name only for a target, and <code>buildNoteText({ target })</code> writes a note with the object link and area tags (<code>playground:&lt;device&gt;=yes</code>, <code>shade=*</code>). Chips come from <code>REPORT_EQUIPMENT</code> (14 devices, shared by both flows) with the icon of the device's activity (<code>deviceIcon()</code> in <code>lib/activities.js</code>). The session limit is shared. A hint cannot be sent empty, gets no own-note pin (it would sit on the playground's interior point and swallow taps meant for it), and its link under the activities appears only once equipment has loaded. <code>selection.js</code> ignores landing on a report entry, and <code>reportMissing.js</code> steps back off a stale one, so browser Forward after closing a hint does not close the panel.</p>
 <h2 id="internationalisation">Internationalisation<a class="headerlink" href="#internationalisation" title="Permanent link">&para;</a></h2>
 <p>New UI strings go into <code>locales/en.json</code> and <code>locales/de.json</code> in the same commit, and no other locale file is edited by hand. The full workflow, including how strings reach Weblate and back: <a href="../translations/#adding-new-ui-strings-developer-workflow">Translation Workflow → Adding new UI strings</a>.</p>
 <p>Translations live in <code>locales/*.json</code> and are loaded by <code>lib/i18n.js</code> using svelte-i18n. In components, use the <code>$_</code> store, as every component does:</p>
