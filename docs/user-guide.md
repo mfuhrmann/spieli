@@ -42,8 +42,8 @@ Open the filter panel to show only playgrounds that match your needs:
 | Filter | Shows playgrounds that have… |
 |---|---|
 | Water playground | Water play equipment, such as a water pump or a splash pad |
-| Baby equipment | Equipment suitable for babies |
-| Toddler equipment | Equipment suitable for toddlers |
+| Baby equipment | Equipment suitable for babies: a baby seat or baby swing, a sandpit, a basket swing |
+| Toddler equipment | Equipment suitable for toddlers: anything mapped as for toddlers (for example a small climbing house), a spring rider, a basket swing |
 | Wheelchair-friendly | At least one piece of *play equipment* tagged wheelchair-accessible — see [Wheelchair accessibility](#wheelchair-accessibility) |
 | Bench | At least one bench |
 | Picnic table | At least one picnic table |
@@ -54,7 +54,7 @@ Open the filter panel to show only playgrounds that match your needs:
 | Fenced | A fence around the playground: recorded on the playground itself, or mapped along at least three quarters of its edge. A fence on one side only (say, towards the road) does not count |
 | Dogs allowed | Dogs are permitted |
 | Themed | Has a recognised theme — ship, octopus, castle, … (see [Playground themes](#playground-themes)) |
-| With shade | Recorded as shaded |
+| With shade | Recorded as shaded or partly shaded |
 | Lit at night | Recorded as lit, all night or at certain times |
 | Public only | Hide playgrounds that are private or for customers only — see [Who can use a playground](#who-can-use-a-playground) |
 | No private ones | Hide only private playgrounds (e.g. a kindergarten's or a school's); customers-only ones stay |
