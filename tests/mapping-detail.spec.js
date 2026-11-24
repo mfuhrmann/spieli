@@ -185,7 +185,7 @@ test.describe('?detail link parameter', () => {
     await expect(panel).toBeVisible({ timeout: 8000 });
     // The desktop panel has no share button; the copy-link button is the mobile one.
     await page.setViewportSize({ width: 390, height: 844 });
-    const share = page.locator('.mobile-detail-panel button[aria-label]').filter({ has: page.locator('svg') }).last();
+    const share = page.locator('.mobile-detail-panel [data-testid="share-btn"]');
     await share.click();
     expect(await page.evaluate(() => window.__copied)).not.toContain('detail=');
 

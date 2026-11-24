@@ -82,21 +82,14 @@
     ? navigationUrl({ ...centre, title: titleText, mobile, origin: $location })
     : null;
 
-  async function share() {
-    if (!attr) return false;
-    const url = `${window.location.origin}${window.location.pathname}${window.location.search}`
-      + writeHash({ slug: feature.get('_backendSlug') ?? null, osmId: attr.osm_id, kind: 'pitch' });
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: titleText, url });
-      } else if (navigator.clipboard) {
-        await navigator.clipboard.writeText(url);
-      }
-      return true;
-    } catch (err) {
-      if (err.name !== 'AbortError') console.warn('Share failed:', err);
-      return false;
-    }
+  // What the header shares (phones) or copies (computers), #1087.
+  function shareData() {
+    if (!attr) return null;
+    return {
+      title: titleText,
+      url: `${window.location.origin}${window.location.pathname}${window.location.search}`
+        + writeHash({ slug: feature.get('_backendSlug') ?? null, osmId: attr.osm_id, kind: 'pitch' }),
+    };
   }
 
   // Same close gesture as the playground panel: clear, and on desktop zoom
@@ -127,7 +120,7 @@
       {backendName}
       {navUrl}
       navMobile={mobile}
-      onShare={share}
+      {shareData}
       onClose={close}
     />
 

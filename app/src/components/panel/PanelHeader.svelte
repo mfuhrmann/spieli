@@ -3,7 +3,8 @@
   // hub region, access badge, navigate, share, close. Sticky in the desktop
   // side panel; inline in the phone panel, where AppShell owns "back".
   import { _, locale } from 'svelte-i18n';
-  import { X, Share2, Check, LockKeyhole, Coffee } from 'lucide-svelte';
+  import { X, Share2, Link as LinkIcon, Check, LockKeyhole, Coffee } from 'lucide-svelte';
+  import { shareOrCopy } from '../../lib/share.js';
   import Badge from '../ui/Badge.svelte';
   import { starsHtml } from '../../lib/reviews.js';
 
@@ -18,7 +19,7 @@
    *   access?: 'private' | 'customers' | null,
    *   navUrl?: string | null,
    *   navMobile?: boolean,
-   *   onShare?: () => Promise<boolean>,
+   *   shareData?: (() => { title: string, url: string } | null) | null,
    *   onClose?: () => void,
    *   rating?: { avg: number, count: number } | null,
    *   onRatingClick?: (() => void) | null,
@@ -34,7 +35,9 @@
     access = null,
     navUrl = null,
     navMobile = false,
-    onShare = null,
+    // Returns what to share; the header shares it on phones and copies it on
+    // computers (#1087).
+    shareData = null,
     onClose = null,
     // Average review rating, shown under the name (#1077). Its own line, so a
     // long name only wraps and never squeezes it.
@@ -45,19 +48,27 @@
     children = null,
   } = $props();
 
-  let shareConfirmed = $state(false);
+  // 'copied' shows a visible "Link copied"; 'shared' only the check mark (the
+  // share sheet was the feedback). Nothing is ever silent (#1087).
+  let shareResult = $state(null);
   let shareTimeout;
   async function share() {
-    if (!onShare) return;
-    if (await onShare()) {
-      shareConfirmed = true;
-      clearTimeout(shareTimeout);
-      shareTimeout = setTimeout(() => { shareConfirmed = false; }, 2000);
-    }
+    const data = shareData?.();
+    if (!data) return;
+    const result = await shareOrCopy(data, { mobile: navMobile });
+    if (result === 'cancelled') return;
+    shareResult = result;
+    clearTimeout(shareTimeout);
+    shareTimeout = setTimeout(() => { shareResult = null; }, 2500);
   }
 </script>
 
 <header class="panel-header" class:panel-header--embedded={embedded} data-testid="panel-header">
+  {#if shareResult === 'copied' || shareResult === 'failed'}
+    <span class="share-toast" class:share-toast--error={shareResult === 'failed'} role="status" data-testid="share-toast">
+      {shareResult === 'copied' ? $_('panel.linkCopied') : $_('panel.linkCopyFailed')}
+    </span>
+  {/if}
   <!-- Name across the top with the small icon actions beside it; place,
        rating and access below, "Take me there" at the bottom right (#1077). -->
   <div class="ph-title min-w-0">
@@ -65,9 +76,17 @@
     <h2 class="panel-title" lang={titleLang}>{title}</h2>
   </div>
   <div class="ph-icons">
-    {#if onShare}
-      <button class="panel-icon-btn" onclick={share} aria-label={$_('info.copyLink')}>
-        {#if shareConfirmed}<Check class="h-5 w-5 text-primary" />{:else}<Share2 class="h-5 w-5" />{/if}
+    {#if shareData}
+      <!-- Phone: share icon and share sheet. Computer: link icon, copy. -->
+      <button class="panel-icon-btn share-btn" onclick={share} data-testid="share-btn"
+              aria-label={navMobile ? $_('panel.share') : $_('info.copyLink')}>
+        {#if shareResult === 'shared' || shareResult === 'copied'}
+          <Check class="h-5 w-5 text-primary" />
+        {:else if navMobile}
+          <Share2 class="h-5 w-5" />
+        {:else}
+          <LinkIcon class="h-5 w-5" />
+        {/if}
       </button>
     {/if}
     {#if !embedded && onClose}
@@ -119,6 +138,22 @@
 </header>
 
 <style>
+  /* Visible outcome of a copy, next to the share button (#1087). */
+  .share-toast {
+    position: absolute;
+    top: 0.5rem;
+    right: 3rem;
+    z-index: 2;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--color-foreground);
+    color: var(--color-surface);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+  .share-toast--error { background: var(--color-destructive); color: #fff; }
   .panel-header {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
@@ -126,6 +161,7 @@
       "title icons"
       "meta  nav"
       "pills pills";
+    position: relative;
     column-gap: 0.75rem;
     row-gap: 0.25rem;
     padding: 1rem;
