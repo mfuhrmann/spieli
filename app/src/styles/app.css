@@ -19,8 +19,30 @@
      is not text. */
   --color-primary: #047857;
   --color-primary-hover: #065f46;
-  --color-primary-soft: #ecfdf5;
+  --color-primary-soft: #e7f4ee;
   --color-primary-foreground: #ffffff;
+
+  /* ─── Visual refresh (#1081) ──────────────────────────────────────────────
+     Green-tinted neutrals instead of Tailwind grey, so greys belong to the
+     brand. Contrast (WCAG): ink on background 13.2:1, on white 14.1:1;
+     muted text on background 5.0:1, on white 5.4:1; primary as heading text
+     on background 5.1:1; chip text on chip 9.0:1; highlight text on its fill
+     7.8:1. --color-subtle is 3.3:1 on white: icons and decoration only,
+     never text — text that should recede uses muted-foreground. */
+  --color-ink: #16302a;
+  --color-subtle: #7f918a;
+  --color-chip: #e7f4ee;
+  --color-chip-line: #c5e3d5;
+  --color-chip-foreground: #0f4a37;
+  --color-highlight: #fff3d6;
+  --color-highlight-line: #f3d48a;
+  --color-highlight-foreground: #6b4304;
+  --color-neutral-dot: #9aaaa3;
+  --color-surface: #ffffff;
+
+  /* Nunito, self-hosted from @fontsource-variable/nunito (imported in
+     main.js): same origin, so no font request leaves the instance. */
+  --font-sans: "Nunito Variable", "Nunito", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   
   /* Secondary - Sky blue for water playgrounds */
   --color-secondary: #0ea5e9;
@@ -35,24 +57,24 @@
   --color-destructive-foreground: #ffffff;
   
   /* Muted - Subtle backgrounds */
-  --color-muted: #f3f4f6;
-  --color-muted-foreground: #6b7280;
+  --color-muted: #eef3f0;
+  --color-muted-foreground: #5b6f68;
   
   /* Background & Foreground */
-  --color-background: #ffffff;
-  --color-foreground: #1f2937;
+  --color-background: #f6f8f6;
+  --color-foreground: #16302a;
   
   /* Card */
   --color-card: #ffffff;
-  --color-card-foreground: #1f2937;
+  --color-card-foreground: #16302a;
   
   /* Popover */
   --color-popover: #ffffff;
-  --color-popover-foreground: #1f2937;
+  --color-popover-foreground: #16302a;
   
   /* Border & Input */
-  --color-border: #e5e7eb;
-  --color-input: #e5e7eb;
+  --color-border: #dde6e1;
+  --color-input: #dde6e1;
   --color-ring: #047857;
   
   /* ─── Category Colors (for map markers) ──────────────────────────────────── */
@@ -118,9 +140,64 @@
   @apply border-border;
 }
 
+/* Bootstrap (imported above) sets its own body font and greys; point its
+   variables at ours so its utilities (text-muted, …) follow the palette. */
+:root {
+  --bs-body-font-family: var(--font-sans);
+  --bs-body-color: var(--color-foreground);
+  --bs-secondary-color: var(--color-muted-foreground);
+  --bs-border-color: var(--color-border);
+  --bs-link-color: var(--color-primary);
+  --bs-link-hover-color: var(--color-primary-hover);
+  /* Bootstrap 5.3 colours links from the -rgb variants: primary #047857 and
+     its hover #065f46. */
+  --bs-link-color-rgb: 4, 120, 87;
+  --bs-link-hover-color-rgb: 6, 95, 70;
+  --bs-secondary-color-rgb: 91, 111, 104;
+  --bs-body-color-rgb: 22, 48, 42;
+}
+
 body {
   @apply bg-background text-foreground;
+  font-family: var(--font-sans);
   font-feature-settings: "rlig" 1, "calt" 1;
+}
+
+/* Invitations to contribute — add a photo, send a hint, add details — share
+   one look: green, bold, sentence case, small icon (#1081). */
+.contrib-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-primary);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+.contrib-link:hover { color: var(--color-primary-hover); text-decoration: underline; }
+
+/* Detail panel sections (#1081): no cards — the panel is full screen on a
+   phone — but a hairline across the full panel width. The negative inline
+   margin equals the panel's own padding (1rem). */
+.panel-section {
+  border-top: 1px solid var(--color-border);
+  margin: 4px -1rem 0;
+  padding: 14px 1rem 2px;
+}
+
+/* The one section heading style (#1081): uppercase, extra bold, brand
+   green — a heading, not a caption. */
+.section-label {
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+  margin: 0 0 8px;
 }
 
 /* ─── Scrollbar Styling ────────────────────────────────────────────────────── */

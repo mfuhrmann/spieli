@@ -173,14 +173,14 @@
     border-radius: 50%;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
     cursor: pointer;
-    color: #666;
+    color: var(--color-muted-foreground);
     transition: background 0.15s, color 0.15s;
     position: relative;
   }
 
   .control-btn:hover {
-    background: #f5f5f5;
-    color: #333;
+    background: var(--color-muted);
+    color: var(--color-foreground);
   }
 
   .control-btn.active {
@@ -240,7 +240,7 @@
   .layer-hint {
     margin: -4px 16px 8px 46px;
     font-size: 12px;
-    color: #6b7280;
+    color: var(--color-muted-foreground);
   }
 
   .dropdown-header {
@@ -248,18 +248,18 @@
     align-items: center;
     justify-content: space-between;
     padding: 12px 16px;
-    border-bottom: 1px solid #e8eaed;
+    border-bottom: 1px solid var(--color-border);
   }
 
   .dropdown-title {
     font-size: 14px;
     font-weight: 600;
-    color: #202124;
+    color: var(--color-foreground);
   }
 
   .clear-btn {
     font-size: 12px;
-    color: #1a73e8;
+    color: var(--color-primary);
     background: none;
     border: none;
     cursor: pointer;
@@ -284,12 +284,12 @@
     padding: 10px 16px;
     cursor: pointer;
     font-size: 14px;
-    color: #5f6368;
+    color: var(--color-muted-foreground);
     transition: background 0.15s;
   }
 
   .filter-item:hover {
-    background: #f1f3f4;
+    background: var(--color-muted);
   }
 
   .filter-item.checked {
@@ -305,7 +305,7 @@
   }
 
   .layer-section {
-    border-top: 1px solid #e8eaed;
+    border-top: 1px solid var(--color-border);
     padding-top: 4px;
   }
 
@@ -315,7 +315,7 @@
     gap: 4px;
     font-size: 11px;
     font-weight: 600;
-    color: #80868b;
+    color: var(--color-muted-foreground);
     text-transform: uppercase;
     letter-spacing: 0.05em;
     padding: 6px 16px 2px;

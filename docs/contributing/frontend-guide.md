@@ -361,6 +361,38 @@ Mangrove matches a review on its coordinates *and* its `q` label, and clients fi
 
 The app uses Bootstrap 5 (component classes) and Tailwind CSS 4 (utility classes) side by side. The design system primitives in `src/components/ui/` (`Badge`, `Button`, `Card`, etc.) wrap Bootstrap with Tailwind utilities. Prefer these over raw Bootstrap classes in new components.
 
+### Palette, typeface and shared classes (#1081)
+
+The interface has one typeface and one palette, both defined in `src/styles/app.css`:
+
+- **Nunito**, self-hosted from `@fontsource-variable/nunito` (imported in `main.js`). Vite bundles the woff2 files and the instance serves them itself, so no font request leaves the origin (`tests/visual-refresh.spec.js` asserts it; CSP stays `font-src 'self'`). Licence: SIL Open Font License 1.1.
+- **Green-tinted neutrals** instead of Tailwind grey:
+
+| Token | Value | Use |
+|---|---|---|
+| `--color-background` | `#f6f8f6` | page and panel background |
+| `--color-surface` / `--color-card` | `#ffffff` | raised surfaces: pills, the phone panel's back bar, dialogs |
+| `--color-foreground` (= `--color-ink`) | `#16302a` | text (13.2:1 on the background) |
+| `--color-muted-foreground` | `#5b6f68` | secondary text (5.0:1) |
+| `--color-subtle` | `#7f918a` | icons and decoration only — 3.3:1, never text |
+| `--color-border` / `--color-input` | `#dde6e1` | lines |
+| `--color-muted` | `#eef3f0` | quiet fills |
+| `--color-chip` / `-line` / `-foreground` | `#e7f4ee` / `#c5e3d5` / `#0f4a37` | activity chips, positive pills |
+| `--color-highlight` / `-line` / `-foreground` | `#fff3d6` / `#f3d48a` / `#6b4304` | highlights, all of them, the theme included |
+| `--color-neutral-dot` | `#9aaaa3` | "closed": information, not an alarm |
+
+Bootstrap's own variables (`--bs-body-font-family`, `--bs-body-color`, `--bs-secondary-color`, `--bs-link-color-rgb`, …) point at these, so its utilities (`text-muted`, plain links) follow the palette.
+
+**No colour literals in components.** Use the tokens (`var(--color-…)` in `<style>`, `bg-…`/`text-…` utilities in markup). The exceptions are deliberate: white (`#fff`) on coloured buttons, the dark photo lightboxes, semantic colours that carry meaning (danger red, the access badges' grey and amber, the blue mapping-detail hint), and anything drawn on the map canvas, which cannot read CSS variables (`completenessPalette.js`, `finderStyle.js`).
+
+Shared classes:
+
+- `.section-label` — the one section heading: 12 px, uppercase, extra bold, brand green.
+- `.panel-section` — a detail-panel section: a hairline across the full panel width (no cards — the panel is full screen on a phone).
+- `.contrib-link` — every invitation to contribute ("Add a photo", "Something missing? Send a hint", the invite's actions): green, bold, sentence case.
+
+Photos in the detail panels are a horizontal strip (`PhotoStrip`, which puts `CommonsGallery` and `PanoramaxViewer` in their `strip` mode): thumbnails only, a tap opens the source's own full-screen view, and Panoramax still creates its iframe only on activation (`panoramax-click-to-load.spec.js` runs against the strip).
+
 ### The finder view (mapping detail off)
 
 Mapping detail is opt-in (#924). With it off, `Map.svelte` swaps the tier styles for the ones in `src/lib/finderStyle.js` (cluster discs, pins at each playground's interior point, the selected playground's outline) and `hub/macroRingStyle.js`'s `finderMacroRingStyleFn` (neutral discs; health variants unchanged). The `FINDER` colours sit in `completenessPalette.js` with their contrast measurements. Style functions take the mode from their caller rather than reading the store, so they stay pure and unit-testable. Canvas markers draw in CSS pixels through `hidpiStyleOptions` (`lib/hidpiRenderer.js`), which also supplies their 1:1 hit-detection renderer, so the existing click/hover path selects pins — but a click inside the undrawn polygon off the pin does not.
@@ -397,7 +429,7 @@ The UI accent is one emerald family, defined once as theme tokens in `src/styles
 |---|---|---|
 | `--color-primary` | `#047857` | buttons with text, links, accent text, active control icons, badges (Tailwind: `bg-primary`, `text-primary`) |
 | `--color-primary-hover` | `#065f46` | hover / pressed |
-| `--color-primary-soft` | `#ecfdf5` | background of an active control or checked row |
+| `--color-primary-soft` | `#e7f4ee` | background of an active control or checked row (the green-tinted chip fill since #1081) |
 
 Reference them with `var(--color-primary)` and friends, never as literals. The lighter emerald-500 (`#10b981`) the app used before is only 2.54:1 behind white text — every accent pair here clears 4.5:1. Map markers are the exception: canvas renderers cannot read CSS variables, so their colours live in `completenessPalette.js`.
 

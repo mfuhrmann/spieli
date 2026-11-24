@@ -65,21 +65,22 @@
 {/if}
 
 <style>
+  /* Full-width hairline like the panel sections (#1081). */
   .zone-c {
-    margin-top: 1rem;
-    padding-top: 0.75rem;
-    border-top: 1px solid #e5e7eb;
+    margin: 8px -1rem 0;
+    padding: 14px 1rem 4px;
+    border-top: 1px solid var(--color-border);
   }
   .info-label {
     display: block;
-    color: #9ca3af;
+    color: var(--color-muted-foreground);
     font-size: 11px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.04em;
   }
   .fact-item { display: flex; flex-direction: column; gap: 1px; }
-  .fact-value { font-size: 13px; color: #1f2937; }
+  .fact-value { font-size: 13px; color: var(--color-foreground); }
   .contact-row {
     display: flex;
     align-items: center;
@@ -97,11 +98,11 @@
   }
   .contact-link span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .contact-link:hover { text-decoration: underline; }
-  .contact-link--plain { color: #1f2937; cursor: default; }
+  .contact-link--plain { color: var(--color-foreground); cursor: default; }
   .contact-link--plain:hover { text-decoration: none; }
   .zone-c__note {
     font-size: 12px;
-    color: #6b7280;
+    color: var(--color-muted-foreground);
     margin: 0 0 0.5rem;
   }
 </style>

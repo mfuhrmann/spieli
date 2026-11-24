@@ -110,9 +110,9 @@
     border-radius: 9999px;
     font-size: 10px;
     font-weight: 600;
-    color: #6b7280;
-    background: #f3f4f6;
-    border: 1px solid #e5e7eb;
+    color: var(--color-muted-foreground);
+    background: var(--color-muted);
+    border: 1px solid var(--color-border);
     cursor: pointer;
     white-space: nowrap;
     transition: background 0.15s, color 0.15s;
@@ -120,15 +120,15 @@
   }
   .data-age-chip:hover,
   .data-age-chip[aria-expanded="true"] {
-    background: #e5e7eb;
-    color: #374151;
+    background: var(--color-muted);
+    color: var(--color-foreground);
   }
   /* position: fixed so the panel's overflow-y: auto cannot clip it. */
   .data-age-popover {
     position: fixed;
     z-index: 500;
     background: #ffffff;
-    border: 1px solid #e5e7eb;
+    border: 1px solid var(--color-border);
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
     padding: 10px 12px;
@@ -136,14 +136,14 @@
   .data-age-popover__title {
     font-size: 10px;
     font-weight: 700;
-    color: #374151;
+    color: var(--color-foreground);
     text-transform: uppercase;
     letter-spacing: 0.04em;
     margin: 0 0 4px;
   }
   .data-age-popover__body {
     font-size: 12px;
-    color: #6b7280;
+    color: var(--color-muted-foreground);
     line-height: 1.5;
     margin: 0;
   }

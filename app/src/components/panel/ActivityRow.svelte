@@ -8,16 +8,21 @@
   import { ACTIVITY_ICONS as ICONS } from '../../lib/activities.js';
 
   /**
-   * @type {{ activities: string[], highlights?: Array<Object>, areaTheme?: string|null, loading?: boolean }}
+   * @type {{ activities: string[], highlights?: Array<Object>, areaTheme?: string|null, loading?: boolean, after?: import('svelte').Snippet }}
    */
-  let { activities = [], highlights = [], areaTheme = null, loading = false } = $props();
+  // after: rendered at the end of the activity section (the hint link).
+  let { activities = [], highlights = [], areaTheme = null, loading = false, after = null } = $props();
 </script>
 
-{#if activities.length > 0 || highlights.length > 0}
-  <div class="activity-block" data-testid="activity-block">
-    <p class="row-label">{$_('panel.activities.label')}</p>
+{#if highlights.length > 0}
+  <div class="panel-section" data-testid="highlights-block">
+    <h3 class="section-label">{$_('panel.highlights.label')}</h3>
     <HighlightsLine items={highlights} {areaTheme} />
-    {#if activities.length > 0}
+  </div>
+{/if}
+{#if activities.length > 0}
+  <div class="panel-section activity-block" data-testid="activity-block">
+    <h3 class="section-label">{$_('panel.activities.label')}</h3>
     <ul class="activity-row" data-testid="activity-row">
       {#each activities as a (a)}
         <li class="activity-chip" data-activity={a}>
@@ -25,22 +30,14 @@
         </li>
       {/each}
     </ul>
-    {/if}
+    {@render after?.()}
   </div>
 {:else if loading}
   <p class="activity-loading" data-testid="activity-row-loading">{$_('details.loading')}</p>
 {/if}
 
 <style>
-  .activity-block { margin-bottom: 0.75rem; }
-  .row-label {
-    margin: 0 0 4px;
-    font-size: 0.7rem;
-    font-weight: 700;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    color: #9ca3af;
-  }
+  .activity-block { padding-bottom: 10px; }
   .activity-row {
     list-style: none;
     padding: 0;
@@ -55,11 +52,11 @@
     gap: 5px;
     padding: 3px 10px 3px 8px;
     border-radius: 999px;
-    border: 1px solid #a7f3d0;
-    background: var(--color-primary-soft);
-    color: #065f46;
-    font-size: 0.8125rem;
-    font-weight: 500;
+    border: 1px solid var(--color-chip-line);
+    background: var(--color-chip);
+    color: var(--color-chip-foreground);
+    font-size: 0.875rem;
+    font-weight: 700;
     line-height: 1.4;
   }
   .activity-icon { font-size: 1rem; }
@@ -67,6 +64,6 @@
     margin: 0 0 0.75rem;
     font-size: 0.8125rem;
     font-style: italic;
-    color: #9ca3af;
+    color: var(--color-muted-foreground);
   }
 </style>

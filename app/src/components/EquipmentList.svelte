@@ -418,19 +418,19 @@
 <style>
   .group-badge {
     font-size: 0.72rem;
-    color: #6b7280;
+    color: var(--color-muted-foreground);
     margin-left: 0.3rem;
   }
   .item-count {
     font-size: 0.72rem;
-    color: #6b7280;
+    color: var(--color-muted-foreground);
   }
   .group-children {
     list-style: none;
     padding-left: 0.8rem;
     margin: 0.25rem 0 0;
     font-size: smaller;
-    color: #374151;
+    color: var(--color-foreground);
   }
   .group-children li { margin-bottom: 0.15rem; }
   .pitch-sub-row { display: flex; align-items: center; gap: 0.3rem; flex-wrap: wrap; }
@@ -452,7 +452,7 @@
     border-radius: 4px;
     display: block;
   }
-  .device-list { padding-left: 0; list-style: none; font-size: 13px; color: #1f2937; }
+  .device-list { padding-left: 0; list-style: none; font-size: 13px; color: var(--color-foreground); }
   .device-list li { margin-bottom: 0.25rem; }
   .dev-theme {
     font-size: 0.95em;
@@ -490,7 +490,7 @@
   .photo-label {
     display: block;
     font-size: 0.75rem;
-    color: #6c757d;
+    color: var(--color-muted-foreground);
     margin-top: 2px;
   }
 
@@ -527,7 +527,7 @@
     display: flex;
     align-items: center;
     padding: 0.5rem 0.75rem;
-    border-bottom: 1px solid #dee2e6;
+    border-bottom: 1px solid var(--color-border);
     gap: 0.5rem;
   }
   .photo-modal-title {

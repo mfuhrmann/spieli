@@ -131,7 +131,7 @@
   /* Force light theme for hover preview card */
   .hover-card {
     background: #ffffff;
-    border-color: #e5e7eb;
+    border-color: var(--color-border);
     color-scheme: light;
 
     /* Override CSS variables for light theme */
@@ -142,7 +142,7 @@
     --color-muted: #f3f4f6;
     --color-muted-foreground: #6b7280;
     --color-border: #e5e7eb;
-    --color-primary: #047857; /* mirrors app.css (#930) */
+    --color-primary: var(--color-primary); /* mirrors app.css (#930) */
     --color-water: #3b82f6;
     --color-nature: #22c55e;
   }

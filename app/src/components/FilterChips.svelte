@@ -97,7 +97,7 @@
     background: rgba(0, 0, 0, 0.08);
     border-radius: 50%;
     cursor: pointer;
-    color: #5f6368;
+    color: var(--color-muted-foreground);
     transition: background 0.15s;
   }
 

@@ -137,22 +137,22 @@
     align-items: center;
     justify-content: space-between;
     padding: 1rem 1.125rem 0.75rem;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid var(--color-border);
   }
 
-  .modal-title { margin: 0; font-size: 1rem; font-weight: 700; color: #1a1a1a; }
+  .modal-title { margin: 0; font-size: 1rem; font-weight: 700; color: var(--color-foreground); }
 
   .close-btn {
     background: none;
     border: none;
     font-size: 1rem;
     line-height: 1;
-    color: #9ca3af;
+    color: var(--color-muted-foreground);
     cursor: pointer;
     padding: 0.25rem;
     border-radius: 4px;
   }
-  .close-btn:hover { color: #111; background: #f3f4f6; }
+  .close-btn:hover { color: var(--color-foreground); background: var(--color-muted); }
 
   .modal-body { padding: 1rem 1.125rem; }
 
@@ -165,7 +165,7 @@
 
   .intro {
     font-size: 0.875rem;
-    color: #374151;
+    color: var(--color-foreground);
     margin: 0;
     line-height: 1.55;
     flex: 1;
@@ -190,10 +190,10 @@
     gap: 0.5rem;
     padding: 0.5rem 0.625rem;
     border-radius: 7px;
-    background: #f8f9fa;
-    border: 1px solid #e9ecef;
+    background: var(--color-muted);
+    border: 1px solid var(--color-border);
     font-size: 0.8125rem;
-    color: #374151;
+    color: var(--color-foreground);
     text-decoration: none;
     transition: background 0.12s, border-color 0.12s;
   }
@@ -205,9 +205,9 @@
     width: 100%;
   }
   .link-card:hover {
-    background: #fff3e8;
-    border-color: #ed7014;
-    color: #c05e0f;
+    background: var(--color-chip);
+    border-color: var(--color-chip-line);
+    color: var(--color-chip-foreground);
   }
 
   .link-icon { font-size: 1rem; flex-shrink: 0; }
@@ -221,16 +221,16 @@
 
   .credit {
     font-size: 0.7rem;
-    color: #9ca3af;
+    color: var(--color-muted-foreground);
     margin: 0;
     line-height: 1.4;
   }
-  .credit :global(a) { color: #9ca3af; text-decoration: underline; }
-  .credit :global(a:hover) { color: #c05e0f; }
+  .credit :global(a) { color: var(--color-muted-foreground); text-decoration: underline; }
+  .credit :global(a:hover) { color: var(--color-primary-hover); }
 
   .version {
     font-size: 0.7rem;
-    color: #9ca3af;
+    color: var(--color-muted-foreground);
     margin: 0;
     text-align: right;
     white-space: nowrap;
@@ -238,22 +238,22 @@
 
   .modal-footer {
     padding: 0.625rem 1.125rem;
-    border-top: 1px solid #f0f0f0;
+    border-top: 1px solid var(--color-border);
     display: flex;
     justify-content: flex-end;
   }
 
   .ok-btn {
-    background: #ed7014;
-    color: #fff;
+    background: var(--color-primary);
+    color: var(--color-primary-foreground);
     border: none;
-    border-radius: 6px;
+    border-radius: 10px;
     padding: 0.375rem 1rem;
     font-size: 0.875rem;
     font-weight: 600;
     cursor: pointer;
     transition: background 0.12s;
   }
-  .ok-btn:hover { background: #d16212; }
+  .ok-btn:hover { background: var(--color-primary-hover); }
 </style>
 
