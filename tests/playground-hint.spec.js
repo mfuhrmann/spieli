@@ -61,10 +61,10 @@ test('every panel: "something missing?" sits right under what kids can do', asyn
   const { panel } = await open(page, { devices: [device(1, 'swing')] });
   const link = panel.locator('[data-testid="zone-a"] [data-testid="hint-open-inline"]');
   await expect(link).toBeVisible();
-  // directly after the activity block, not down in zone C
-  const follows = await panel.locator('[data-testid="activity-block"]').evaluate(
-    el => el.nextElementSibling?.dataset.testid);
-  expect(follows).toBe('hint-open-inline');
+  // at the end of the activity section, not down in zone C
+  const last = await panel.locator('[data-testid="activity-block"]').evaluate(
+    el => el.lastElementChild?.dataset.testid);
+  expect(last).toBe('hint-open-inline');
   await expect(panel.locator('[data-testid="zone-c"] [data-testid^="hint-open"]')).toHaveCount(0);
   await link.click();
   await expect(dialog(page)).toBeVisible();

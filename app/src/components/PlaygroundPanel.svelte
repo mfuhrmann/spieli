@@ -298,6 +298,7 @@
 
   // One line per topic, each only when something is recorded.
   $: goodToKnow = !attr ? [] : [
+    ...descriptionParts.map((text, i) => ({ key: i ? `description-${i}` : 'description', icon: '📝', text })),
     openingHoursInfo && {
       key: 'opening-hours', icon: '🕗',
       dot: openingHoursInfo.open === null ? undefined : openingHoursInfo.open,
@@ -314,7 +315,10 @@
       text: $_('equipment.fitnessCount', { values: { count: equipSummary.fitness } }),
     },
     (surfaceLabel || attr.area > 0 || attr.tree_count > 0 || treeRows.length > 0) && {
-      key: 'ground', icon: '🌳',
+      key: 'ground',
+      // The tree only when trees are part of the line; a size alone gets a
+      // ruler (#1081).
+      icon: (attr.tree_count > 0 || treeRows.length > 0) ? '🌳' : (surfaceLabel ? '🌱' : '📐'),
       text: [
         surfaceLabel,
         attr.area > 0 ? `${(Math.round(attr.area / 10) * 10 || attr.area).toLocaleString($locale ?? undefined)} m²` : null,
@@ -500,7 +504,9 @@
       onClose={closePanel}
       rating={headerRating}
       onRatingClick={showReviews}
-    />
+    >
+      {#if !knowsNothing}<PillRow {attr} />{/if}
+    </PanelHeader>
 
     <div class={cn(embedded ? '' : 'info-panel__body')}>
       <!-- Zone A: decide -->
@@ -519,29 +525,20 @@
         {#if knowsNothing}
           <ContributeInvite {mcUrl} {onHint} />
         {:else}
-          <PillRow {attr} />
-          <ActivityRow {activities} {highlights} {areaTheme} loading={equipmentLoading} />
-          <!-- Right under what is known: that is when a visitor notices what
-               is missing (#1073). Small, so it does not get in the way. Only
-               once equipment has loaded: the form hides known devices, and a
-               tap before that would offer what is already mapped. -->
-          {#if onHint && !equipmentLoading}
-            <button type="button" class="hint-link" onclick={onHint} data-testid="hint-open-inline">
-              <MessageCirclePlus class="h-3.5 w-3.5" aria-hidden="true" />{$_('report.hint.missing')}
-            </button>
-          {/if}
+          <ActivityRow {activities} {highlights} {areaTheme} loading={equipmentLoading} after={hintLink} />
+          {#if activities.length === 0}{@render hintLink()}{/if}
         {/if}
       </section>
 
       <!-- Zone B: go deeper -->
       <section data-testid="zone-b">
-        {#each descriptionParts as part}
-          <p class="text-sm text-muted-foreground italic mb-3" data-testid="description">{part}</p>
-        {/each}
-
-        <!-- "Good to know": the playground itself, one line per topic. -->
+        <!-- "Good to know": the playground itself, one line per topic. A
+             description is part of it (#1081): on its own it floated without
+             a heading, and on sparse playgrounds it often holds opening hours
+             typed in by hand. -->
         {#if goodToKnow.length}
-          <h3 class="zone-b-label">{$_('panel.goodToKnow')}</h3>
+          <div class="panel-section">
+          <h3 class="section-label">{$_('panel.goodToKnow')}</h3>
           <ul class="fact-list" data-testid="good-to-know">
             {#each goodToKnow as row (row.key)}
               <li data-fact={row.key}>
@@ -550,24 +547,27 @@
                   {#if row.dot !== undefined}
                     <span class="status-dot" class:status-dot--open={row.dot === true} class:status-dot--closed={row.dot === false} aria-hidden="true"></span>
                   {/if}
-                  {row.text}
+                  {#if row.key === 'description'}<span class="italic" data-testid="description">{row.text}</span>{:else}{row.text}{/if}
                 </span>
               </li>
             {/each}
           </ul>
+          </div>
         {/if}
 
         <!-- Nearby: the nearest place of each kind. -->
-        <h3 class="zone-b-label">{$_('panel.nearby')}</h3>
-        <div class="mb-4">
-          {#if poisLoading}
-            <p class="text-sm text-muted-foreground italic py-2">{$_('details.loading')}</p>
-          {:else}
-            <POIPanel {pois} {centerLat} {centerLon} />
-          {/if}
+        <div class="panel-section">
+          <h3 class="section-label">{$_('panel.nearby')}</h3>
+          <div class="mb-3">
+            {#if poisLoading}
+              <p class="text-sm text-muted-foreground italic py-2">{$_('details.loading')}</p>
+            {:else}
+              <POIPanel {pois} {centerLat} {centerLon} />
+            {/if}
+          </div>
         </div>
 
-        <div class="border-t border-border">
+        <div class="accordion-block">
           <!-- Equipment -->
           <div class="border-b border-border">
             <button class="section-btn" onclick={() => toggleSection('equipment')}>
@@ -617,6 +617,18 @@
   </aside>
 {/if}
 
+{#snippet hintLink()}
+  <!-- Right under what is known: that is when a visitor notices what is
+       missing (#1073). Small, so it does not get in the way. Only once
+       equipment has loaded: the form hides known devices, and a tap before
+       that would offer what is already mapped. -->
+  {#if onHint && !equipmentLoading}
+    <button type="button" class="contrib-link hint-link" onclick={onHint} data-testid="hint-open-inline">
+      <MessageCirclePlus class="h-3.5 w-3.5" aria-hidden="true" />{$_('report.hint.missing')}
+    </button>
+  {/if}
+{/snippet}
+
 <style>
   .info-panel {
     position: absolute;
@@ -624,27 +636,15 @@
     left: 0;
     width: 380px;
     height: 100%;
-    background: #ffffff;
-    box-shadow: 4px 0 15px -3px rgb(0 0 0 / 0.1);
+    background: var(--color-background);
+    box-shadow: 4px 0 15px -3px rgb(22 48 42 / 0.12);
     z-index: 100;
     overflow-y: auto;
     display: none;
     flex-direction: column;
-    border-right: 1px solid #e5e7eb;
+    border-right: 1px solid var(--color-border);
     touch-action: pan-y;
     color-scheme: light;
-
-    /* Force light theme variables */
-    --color-background: #ffffff;
-    --color-foreground: #1f2937;
-    --color-card: #ffffff;
-    --color-card-foreground: #1f2937;
-    --color-popover: #ffffff;
-    --color-popover-foreground: #1f2937;
-    --color-muted: #f3f4f6;
-    --color-muted-foreground: #6b7280;
-    --color-border: #e5e7eb;
-    --color-input: #e5e7eb;
   }
 
   .info-panel.lg\:flex {
@@ -672,7 +672,7 @@
     background: transparent;
     border: none;
     cursor: pointer;
-    color: #9ca3af;
+    color: var(--color-muted-foreground);
     font-size: 11px;
     font-weight: 700;
     text-transform: uppercase;
@@ -682,36 +682,17 @@
   }
 
   .section-btn:hover {
-    color: #374151;
-    background: #fafafa;
+    color: var(--color-foreground);
+    background: var(--color-muted);
   }
 
-  .hint-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    margin: 0 0 0.75rem;
-    padding: 0;
-    border: none;
-    background: transparent;
-    color: var(--color-primary);
-    font-size: 0.8125rem;
-    font-weight: 600;
-    cursor: pointer;
-  }
-  .hint-link:hover { text-decoration: underline; }
+  .hint-link { margin: 6px 0 4px; }
+  .accordion-block { border-top: 1px solid var(--color-border); margin: 4px -1rem 0; padding: 0 1rem; }
+  .accordion-block > div:last-child { border-bottom: 0 !important; }
 
   /* Clear the sticky desktop header when jumped to from the rating. */
   .reviews-section { scroll-margin-top: 5rem; }
 
-  .zone-b-label {
-    font-size: 0.7rem;
-    font-weight: 700;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    color: #9ca3af;
-    margin: 0 0 6px;
-  }
   .fact-list {
     list-style: none;
     padding: 0;
@@ -720,7 +701,7 @@
     flex-direction: column;
     gap: 6px;
     font-size: 0.875rem;
-    color: #1f2937;
+    color: var(--color-foreground);
   }
   .fact-list li { display: flex; gap: 8px; }
   .fact-icon { flex-shrink: 0; width: 1.25rem; text-align: center; }
@@ -732,5 +713,7 @@
     margin-right: 2px;
   }
   .status-dot--open   { background: var(--color-primary); }
-  .status-dot--closed { background: #ef4444; }
+  /* Closed is information, not an alarm: most playgrounds are closed at
+     night (#1081). */
+  .status-dot--closed { background: var(--color-neutral-dot); }
 </style>

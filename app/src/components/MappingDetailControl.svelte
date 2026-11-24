@@ -123,14 +123,14 @@
     border-radius: 50%;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
     cursor: pointer;
-    color: #666;
+    color: var(--color-muted-foreground);
     transition: background 0.15s, color 0.15s;
     position: relative;
   }
 
   .control-btn:hover {
-    background: #f5f5f5;
-    color: #333;
+    background: var(--color-muted);
+    color: var(--color-foreground);
   }
 
   .control-btn.active {
@@ -179,7 +179,7 @@
     align-items: flex-start;
     gap: 12px;
     padding: 12px 16px;
-    border-bottom: 1px solid #e8eaed;
+    border-bottom: 1px solid var(--color-border);
     cursor: pointer;
   }
 
@@ -193,12 +193,12 @@
   .switch-label {
     font-size: 14px;
     font-weight: 600;
-    color: #202124;
+    color: var(--color-foreground);
   }
 
   .switch-hint {
     font-size: 12px;
-    color: #5f6368;
+    color: var(--color-muted-foreground);
     line-height: 1.35;
   }
 
@@ -238,7 +238,7 @@
   }
 
   .switch:focus-visible {
-    outline: 2px solid #1a73e8;
+    outline: 2px solid var(--color-primary);
     outline-offset: 2px;
   }
 
@@ -260,14 +260,14 @@
   .section-title {
     font-size: 11px;
     font-weight: 600;
-    color: #80868b;
+    color: var(--color-muted-foreground);
     text-transform: uppercase;
     letter-spacing: 0.05em;
   }
 
   .clear-btn {
     font-size: 12px;
-    color: #1a73e8;
+    color: var(--color-primary);
     background: none;
     border: none;
     cursor: pointer;
@@ -285,12 +285,12 @@
     padding: 10px 16px;
     cursor: pointer;
     font-size: 14px;
-    color: #5f6368;
+    color: var(--color-muted-foreground);
     transition: background 0.15s;
   }
 
   .state-section:not(.disabled) .state-item:hover {
-    background: #f1f3f4;
+    background: var(--color-muted);
   }
 
   .state-section.disabled .state-item {

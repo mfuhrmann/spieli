@@ -342,9 +342,9 @@
     justify-content: space-between;
     gap: 0.5rem;
     padding: 0.625rem 0.75rem;
-    border-top: 1px solid #e5e7eb;
+    border-top: 1px solid var(--color-border);
     font-size: 0.8125rem;
-    color: #4b5563;
+    color: var(--color-muted-foreground);
   }
 
   .no-hits-report {
@@ -354,8 +354,8 @@
     padding: 0.25rem 0.625rem;
     border: none;
     border-radius: 999px;
-    background: #ecfdf5;
-    color: #065f46;
+    background: var(--color-chip);
+    color: var(--color-primary-hover);
     font: inherit;
     font-weight: 600;
     cursor: pointer;
@@ -394,7 +394,7 @@
     outline: none;
     font-size: 15px;
     background: transparent;
-    color: #202124;
+    color: var(--color-foreground);
   }
 
   .search-input::placeholder {
@@ -419,11 +419,11 @@
   }
 
   .clear-btn:hover {
-    background: #f1f3f4;
+    background: var(--color-muted);
   }
 
   .search-results {
-    border-top: 1px solid #e8eaed;
+    border-top: 1px solid var(--color-border);
     max-height: 280px;
     overflow-y: auto;
   }
@@ -447,12 +447,12 @@
    * highlight one row while `aria-activedescendant` named another.
    */
   .result-item.active {
-    background: #f1f3f4;
+    background: var(--color-muted);
   }
 
   .result-text {
     font-size: 14px;
-    color: #202124;
+    color: var(--color-foreground);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;

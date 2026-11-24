@@ -79,7 +79,7 @@
     align-items: center;
     justify-content: space-between;
     padding: 0.75rem 1rem;
-    border-bottom: 1px solid #dee2e6;
+    border-bottom: 1px solid var(--color-border);
     flex-shrink: 0;
   }
 
@@ -89,12 +89,12 @@
     background: none;
     border: none;
     font-size: 1rem;
-    color: #6c757d;
+    color: var(--color-muted-foreground);
     cursor: pointer;
     padding: 0.25rem;
     border-radius: 4px;
   }
-  .close-btn:hover { color: #000; background: #f0f0f0; }
+  .close-btn:hover { color: #000; background: var(--color-muted); }
 
   .modal-body {
     flex: 1;
@@ -113,7 +113,7 @@
   .status-msg {
     padding: 1rem;
     font-size: 0.875rem;
-    color: #6c757d;
+    color: var(--color-muted-foreground);
     margin: 0;
   }
   .status-msg--error { color: #b91c1c; }

@@ -31,7 +31,7 @@
 {#if items.length > 0}
   <ul class="highlights" data-testid="highlights" aria-label={$_('panel.highlights.label')}>
     {#each items as h (h.kind + (h.value ?? h.key ?? ''))}
-      <li class="highlight" class:highlight--theme={h.kind === 'theme'} data-highlight={h.kind === 'device' ? h.key : h.kind}>
+      <li class="highlight" data-highlight={h.kind === 'device' ? h.key : h.kind}>
         <span aria-hidden="true">{icon(h)}</span>{label(h, $_)}
       </li>
     {/each}
@@ -42,27 +42,24 @@
   .highlights {
     list-style: none;
     padding: 0;
-    margin: 0 0 6px;
+    margin: 0 0 10px;
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
   }
+  /* All highlights in one colour, the theme included (#1081): yellow,
+     because they are the highlights; activities stay green. */
   .highlight {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 4px 10px;
-    border-radius: 10px;
-    background: #fffbeb;
-    border: 1px solid #fde68a;
-    color: #78350f;
-    font-size: 0.8125rem;
-    font-weight: 600;
-  }
-  /* Same look as the former theme banner. */
-  .highlight--theme {
-    background: linear-gradient(135deg, #eef2ff, #faf5ff);
-    border-color: #e0e7ff;
-    color: #3730a3;
+    gap: 5px;
+    padding: 3px 11px 3px 8px;
+    border-radius: 999px;
+    background: var(--color-highlight);
+    border: 1px solid var(--color-highlight-line);
+    color: var(--color-highlight-foreground);
+    font-size: 0.875rem;
+    font-weight: 700;
+    line-height: 1.4;
   }
 </style>

@@ -109,9 +109,9 @@ test('activities and highlights replace the device count', async ({ page }) => {
   await expect(hl.nth(1)).toHaveAttribute('data-highlight', 'water');
   await expect(hl.nth(2)).toHaveAttribute('data-highlight', 'zipwire');
   await expect(panel.locator('.equip-summary')).toHaveCount(0);
-  // highlights lead the "what kids can do" block, above the activities,
-  // and the block comes after the pills
-  expect(await precedes(panel.locator('[data-testid="activity-block"] .row-label'), panel.locator('[data-testid="highlights"]'))).toBe(true);
+  // highlights are their own section with a "Highlights" heading, right
+  // before the activities (#1081)
+  await expect(panel.locator('[data-testid="highlights-block"] .section-label')).toHaveText(/Highlights/i);
   expect(await precedes(panel.locator('[data-testid="highlights"]'), panel.locator('[data-testid="activity-row"]'))).toBe(true);
 });
 

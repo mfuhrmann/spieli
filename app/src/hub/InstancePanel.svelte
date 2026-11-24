@@ -169,7 +169,7 @@
     border-radius: 999px;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
     cursor: pointer;
-    color: #212529;
+    color: var(--color-foreground);
     font-size: 0.8rem;
     font-weight: 500;
     line-height: 1;
@@ -179,7 +179,7 @@
 
   .pill:hover,
   .pill:focus-visible {
-    background: #f8f9fa;
+    background: var(--color-muted);
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.22);
   }
 
@@ -193,7 +193,7 @@
   }
 
   .pill--loading {
-    color: #6b7280;
+    color: var(--color-muted-foreground);
   }
 
   .pill--has-issues {
@@ -217,7 +217,7 @@
   }
 
   .pill__sep {
-    color: #adb5bd;
+    color: var(--color-muted-foreground);
   }
 
   .pill__text--compact {

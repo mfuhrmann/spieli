@@ -53,7 +53,7 @@
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
     padding: 0.5rem 0.65rem;
     font-size: 0.72rem;
-    color: #374151;
+    color: var(--color-foreground);
     max-width: 200px;
   }
 
@@ -63,7 +63,7 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    color: #6b7280;
+    color: var(--color-muted-foreground);
   }
 
   .legend-rows {

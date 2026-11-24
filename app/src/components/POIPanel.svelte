@@ -103,13 +103,13 @@
   .poi-row:hover .poi-name { text-decoration: underline; }
   .poi-icon { flex-shrink: 0; width: 1.25rem; }
   .poi-name { flex: 1; min-width: 0; }
-  .poi-cat { color: #6b7280; margin-right: 0.25rem; }
+  .poi-cat { color: var(--color-muted-foreground); margin-right: 0.25rem; }
   .poi-hint {
-    color: #6b7280;
+    color: var(--color-muted-foreground);
     margin-left: 0.25rem;
     font-size: 0.7rem;
   }
-  .poi-dist { white-space: nowrap; color: #6b7280; }
+  .poi-dist { white-space: nowrap; color: var(--color-muted-foreground); }
 
   /* geo: links open mobile nav apps — hide on desktop */
   .link-mobile-only  { display: flex; }

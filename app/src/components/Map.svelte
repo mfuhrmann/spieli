@@ -753,13 +753,13 @@
     border: none;
     font-size: 16px;
     line-height: 1;
-    color: #6b7280;
+    color: var(--color-muted-foreground);
     cursor: pointer;
     padding: 0 2px;
   }
 
   .backend-popup-close:hover {
-    color: #111827;
+    color: var(--color-foreground);
   }
 
   .backend-popup-name {
@@ -767,7 +767,7 @@
     font-size: 14px;
     margin-bottom: 5px;
     padding-right: 16px;
-    color: #111827;
+    color: var(--color-foreground);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -775,11 +775,11 @@
 
   .backend-popup-msg {
     margin: 0 0 8px;
-    color: #374151;
+    color: var(--color-foreground);
   }
 
   .backend-popup-link {
-    color: #2563eb;
+    color: var(--color-primary);
     text-decoration: none;
     font-weight: 500;
   }
@@ -797,14 +797,14 @@
     border-radius: 4px;
     padding: 2px 6px;
     font-size: 11px;
-    color: #333;
+    color: var(--color-foreground);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
   }
 
   :global(.custom-scale-line .ol-scale-line-inner) {
     border: 1px solid #333;
     border-top: none;
-    color: #333;
+    color: var(--color-foreground);
     font-size: 11px;
     text-align: center;
   }

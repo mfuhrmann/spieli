@@ -49,7 +49,7 @@
   .mapper-tools {
     margin-bottom: 0.75rem;
     padding-bottom: 0.75rem;
-    border-bottom: 1px dashed #e5e7eb;
+    border-bottom: 1px dashed var(--color-border);
   }
   .mapper-tools__row {
     display: flex;
