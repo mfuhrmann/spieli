@@ -110,8 +110,6 @@ The PostgREST connections are terminated inside the same transaction as the swap
 
 The completeness logic in `api.sql` must stay in sync with `app/src/lib/completeness.js` in the frontend. Both implement the same rule:
 
-The area-level fallback lives in `equip_stats`, which merges the per-object aggregate (`equip_raw`) with `area_devices`; `device_count` therefore already includes it, and the `has_equipment` expression is unchanged. Which `playground:*` keys count is `public.playground_device_keys()`, a copy of the catalogue's keys — `app/src/lib/deviceKeysParity.test.js` fails when the two drift apart.
-
 | Criterion | SQL (api.sql) | JS (completeness.js) |
 |---|---|---|
 | Has equipment | a `playground=*` object inside the area — or, when there is none, a catalogue device on the area itself (`playground:<device>=yes`, #1074) — or a soccer / basketball / table-tennis pitch | `device_count > 0 \|\| table_tennis_count > 0 \|\| has_soccer \|\| has_basketball` |
@@ -120,6 +118,8 @@ The area-level fallback lives in `equip_stats`, which merges the per-object aggr
 - `complete` = both criteria present
 - `partial` = exactly one present
 - `missing` = neither
+
+The area-level fallback lives in `equip_stats`, which merges the per-object aggregate (`equip_raw`) with `area_devices`; `device_count` therefore already includes it, and the `has_equipment` expression is unchanged. Which `playground:*` keys count is `public.playground_device_keys()`, a copy of the catalogue's keys — `app/src/lib/deviceKeysParity.test.js` fails when the two drift apart.
 
 ### Mapping detail rule
 

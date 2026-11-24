@@ -1,10 +1,10 @@
 // Shade state for the detail panel's pill (#1077, display half of #1072).
 //
-// The server's `has_shade` is a boolean that turns `shade=partial` into
-// `false`, so the panel showed "No shade" for partly shaded playgrounds. The
-// raw `shade` tag travels in the polygon tier's properties, so the panel reads
-// it first and keeps `has_shade` only as a fallback (older backends, data
-// without the raw tag).
+// The server's `has_shade` is a boolean: it cannot say "partly". Since #1072
+// it is true for `shade=partial` too (backends before that release return
+// false for it). The raw `shade` tag travels in the polygon tier's
+// properties, so the panel reads it first and keeps `has_shade` only as a
+// fallback for data without the raw tag.
 
 const KNOWN = new Set(['yes', 'partial', 'no']);
 

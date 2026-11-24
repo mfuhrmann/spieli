@@ -172,17 +172,6 @@ AS $$
   SELECT metres / cos(radians(LEAST(GREATEST(lat, -85.05), 85.05)));
 $$;
 
--- =========================================================================
--- lit_state(lit)
---    Tri-state reading of a `lit=*` value: true (some lighting), false
---    (none), NULL (untagged or a value we do not recognise). MIRRORS
---    litInfo()/litState() in app/src/lib/pitchInfo.js — the filter and the
---    panel's Lighting row must agree on the same tag. Case- and
---    whitespace-insensitive like the JS; an unrecognised value (`unknown`,
---    `fixme`, a typo) is NULL, never "lit". The db-smoke workflow asserts
---    the truth table in app/src/lib/litState.cases.json, which
---    pitchInfo.test.js runs against the JS. In `public`: a helper, not an RPC.
--- =========================================================================
 -- Device types spieli knows (#1074): the keys of objDevices in
 -- app/src/lib/objPlaygroundEquipment.js, in the same order. Used to read the
 -- area-level schema `playground:<device>=yes|<n>` without counting the
@@ -214,6 +203,18 @@ RETURNS text[] LANGUAGE sql IMMUTABLE PARALLEL SAFE AS $$
   ]::text[]
 $$;
 
+
+-- =========================================================================
+-- lit_state(lit)
+--    Tri-state reading of a `lit=*` value: true (some lighting), false
+--    (none), NULL (untagged or a value we do not recognise). MIRRORS
+--    litInfo()/litState() in app/src/lib/pitchInfo.js — the filter and the
+--    panel's Lighting row must agree on the same tag. Case- and
+--    whitespace-insensitive like the JS; an unrecognised value (`unknown`,
+--    `fixme`, a typo) is NULL, never "lit". The db-smoke workflow asserts
+--    the truth table in app/src/lib/litState.cases.json, which
+--    pitchInfo.test.js runs against the JS. In `public`: a helper, not an RPC.
+-- =========================================================================
 CREATE OR REPLACE FUNCTION public.lit_state(lit text)
 RETURNS boolean
 LANGUAGE sql IMMUTABLE PARALLEL SAFE
@@ -538,8 +539,10 @@ CREATE MATERIALIZED VIEW public.playground_stats_new AS
     GROUP BY pl.osm_id, pl.osm_type
   ),
   -- Separately mapped devices, with the area schema as the FALLBACK when a
-  -- playground has none — the same rule as the panel's equipment list, so a
-  -- playground mapped both ways is not counted twice. Everything downstream
+  -- playground has none, so a playground mapped both ways is not counted
+  -- twice. Close to, not identical with, the panel's equipment list: here any
+  -- playground=* object (also playground=yes) counts as separately mapped,
+  -- and only catalogue keys with yes or 1-9999 are read. Everything downstream
   -- (has_equipment / mapping detail, the flags, the filters) reads this.
   equip_stats AS (
     SELECT
@@ -564,25 +567,6 @@ CREATE MATERIALIZED VIEW public.playground_stats_new AS
       r.has_shade
     FROM equip_raw r
     LEFT JOIN area_devices ad ON ad.osm_id = r.osm_id AND ad.osm_type = r.osm_type
-  ),
-  -- The nearest named street (#1084), so the panel can say where a playground
-  -- without a name is ("near Florengasse"). 150 m on the ground; none → NULL.
-  nearest_street AS (
-    SELECT pl.osm_id, pl.osm_type, h.name AS nearest_highway
-    FROM all_playgrounds pl
-    CROSS JOIN LATERAL (
-      SELECT public.metres_to_3857(150, ST_Y(ST_Transform(ST_Centroid(pl.way), 4326))) AS d
-    ) geo
-    LEFT JOIN LATERAL (
-      SELECT l.name
-      FROM planet_osm_line l
-      WHERE l.highway IS NOT NULL
-        AND l.highway NOT IN ('proposed','construction','platform','bus_stop','elevator')
-        AND NULLIF(l.name, '') IS NOT NULL
-        AND ST_DWithin(l.way, pl.way, geo.d)
-      ORDER BY ST_Distance(l.way, pl.way), l.osm_id
-      LIMIT 1
-    ) h ON true
   ),
   -- Mirrors app/src/lib/completeness.js so the server classification and the
   -- client style function agree. Update both sides together if the rule changes.
@@ -687,7 +671,6 @@ CREATE MATERIALIZED VIEW public.playground_stats_new AS
     -- Tri-state from the playground's own lit=* tag; see lit_state() above.
     -- Not aggregated in equip_stats: it reads no equipment.
     public.lit_state(pl.tags->'lit') AS has_lit,
-    ns.nearest_highway,
     -- Tiered-delivery (P1): persisted centroid + per-playground completeness
     ST_Centroid(pl.way)                           AS centroid_3857,
     -- NULL-safe: untagged playgrounds (access IS NULL) are public, not NULL.
@@ -728,8 +711,7 @@ CREATE MATERIALIZED VIEW public.playground_stats_new AS
   LEFT JOIN tree_counts        tc ON tc.osm_id = pl.osm_id AND tc.osm_type = pl.osm_type
   LEFT JOIN equip_stats        es ON es.osm_id = pl.osm_id AND es.osm_type = pl.osm_type
   LEFT JOIN completeness_attrs ca ON ca.osm_id = pl.osm_id AND ca.osm_type = pl.osm_type
-  LEFT JOIN fence_cover        fc ON fc.osm_id = pl.osm_id AND fc.osm_type = pl.osm_type
-  LEFT JOIN nearest_street     ns ON ns.osm_id = pl.osm_id AND ns.osm_type = pl.osm_type;
+  LEFT JOIN fence_cover        fc ON fc.osm_id = pl.osm_id AND fc.osm_type = pl.osm_type;
 
 -- Indexed before the swap, so the view is fully indexed the moment it
 -- becomes visible — no window where readers hit an unindexed sequential
@@ -890,8 +872,7 @@ AS $$
               'has_dogs',           COALESCE(s.has_dogs, false),
               'has_theme',          COALESCE(s.has_theme, false),
               'has_shade',          s.has_shade,
-              'has_lit',            s.has_lit,
-              'nearest_highway',    s.nearest_highway
+              'has_lit',            s.has_lit
             ) || COALESCE(hstore_to_jsonb(pl.tags), '{}'::jsonb)
           )
         )
@@ -1212,8 +1193,7 @@ AS $$
               'has_dogs',           COALESCE(s.has_dogs, false),
               'has_theme',          COALESCE(s.has_theme, false),
               'has_shade',          s.has_shade,
-              'has_lit',            s.has_lit,
-              'nearest_highway',    s.nearest_highway
+              'has_lit',            s.has_lit
             ) || COALESCE(hstore_to_jsonb(pl.tags), '{}'::jsonb)
           )
         )
@@ -1312,8 +1292,7 @@ AS $$
         'has_dogs',           COALESCE(s.has_dogs, false),
         'has_theme',          COALESCE(s.has_theme, false),
         'has_shade',          s.has_shade,
-        'has_lit',            s.has_lit,
-        'nearest_highway',    s.nearest_highway
+        'has_lit',            s.has_lit
       ) || COALESCE(hstore_to_jsonb(p.tags), '{}'::jsonb)
     )
   )

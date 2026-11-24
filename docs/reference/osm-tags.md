@@ -63,10 +63,6 @@ Values separated by `;` are split for `sport` and `playground:theme`.
 
 Equipment can also be recorded on the playground area itself: `playground:<device>=yes`, or a count (`playground:swing=2`). spieli reads it for the devices in its catalogue only — `playground:theme`, `playground:type`, `playground:surface` and other sub-keys are not equipment — and only as a **fallback**: when at least one device is mapped as its own object, the area tags are ignored, so a playground mapped both ways is not counted twice. It then counts for mapping detail ("has equipment"), the water, baby and toddler filters, and the panel's activities and highlights (#1074).
 
-## Location of nameless playgrounds
-
-For each playground the server picks the nearest named street (`highway=*` with a `name`, within 150 m on the ground) and returns it as `nearest_highway`. The panel shows it under the title — "near Florengasse" — which tells nameless playgrounds apart (#1084).
-
 ## Activities and highlights (detail panel)
 
 The panel's *What kids can do* row and its highlights line are derived from the play devices inside the playground — separately mapped `playground=*` objects **and** `playground:<device>=yes|<n>` on the area itself. Each device type in `app/src/lib/objPlaygroundEquipment.js` declares its `activity` and whether it is a `highlight`:
