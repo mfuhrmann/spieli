@@ -118,7 +118,7 @@ Click any playground to open its detail panel. It is ordered by the question you
 
 **At the top: what decides a visit.** You see this without scrolling on a phone.
 
-- Name, place, the average review rating in stars when there are reviews (only on maps that reach Mangrove through their own server, which is the default), and a lock or cup badge when the playground is private or for customers only (see [Who can use a playground](#who-can-use-a-playground)). "Take me there" opens navigation (your phone's map app, or OpenStreetMap directions on a computer); **Share playground** copies a link (see [Sharing a playground](#sharing-a-playground))
+- Name, place, the average review rating in stars when there are reviews (only on maps that reach Mangrove through their own server, which is the default), and a lock or cup badge when the playground is private or for customers only (see [Who can use a playground](#who-can-use-a-playground)). "Take me there" opens navigation (your phone's map app, or OpenStreetMap directions on a computer); the share button shares or copies a link (see [Sharing a playground](#sharing-a-playground))
 - Photos — from Wikimedia Commons when the playground links them (tap one for full screen; the author and licence are shown with it), and street-level photos from Panoramax. The street-level viewer opens only when you tap the preview. Without a photo there is one short line with a link to add one
 - Labels for what is recorded, and only then: **Babies** and **Toddlers** (equipment suited to them), **Shaded** / **Partly shaded** / **No shade**, **Wheelchair-friendly** equipment (see [Wheelchair accessibility](#wheelchair-accessibility)), **Fenced** and **Dogs allowed**
 - **What kids can do** — first the highlights: the playground's theme (see [Playground themes](#playground-themes)), water play, and rare equipment worth a detour (zip line, trampoline, marble run, funnel ball, sledding hill, musical instruments and similar). Below them the activities: swing, slide, rock, climb, balance, spin, bounce, exercise, dig, explore — worked out from the equipment. Five swings are one "swing"; parts of a climbing frame (platforms, ladders) are not counted
@@ -144,7 +144,7 @@ Themes come straight from the `playground:theme` tag in OpenStreetMap — you ca
 
 ### Sharing a playground
 
-Each playground has a unique URL. When you open a playground, the address in your browser changes to end in something like `#W37808214`. Share that URL, or use **Share playground** in the panel, to link directly to a specific playground. A sports pitch's link uses `P` instead (`#P123456`). On the all-regions map the link also names the region, e.g. `#hessen/W37808214`.
+Each playground has a unique URL. When you open a playground, the address in your browser changes to end in something like `#W37808214`. Share that URL, or use the share button next to the name in the panel, to link directly to a specific playground. On a phone it opens your phone's share menu (messenger, mail, …); on a computer it copies the link and says "Link copied". If a phone's browser cannot open the share menu, the link is copied instead, so the button always does something. A sports pitch's link uses `P` instead (`#P123456`). On the all-regions map the link also names the region, e.g. `#hessen/W37808214`.
 
 ## The all-regions map
 

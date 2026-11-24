@@ -973,6 +973,9 @@
     "nearby": "Nearby",
     "allEquipment": "All equipment",
     "ratingLabel": "{rating} out of 5 stars, {count, plural, one {# rating} other {# ratings}}",
-    "ratingJump": "Show reviews and add one"
+    "ratingJump": "Show reviews and add one",
+    "linkCopied": "Link copied",
+    "linkCopyFailed": "Could not copy the link",
+    "share": "Share"
   }
 }
