@@ -12,6 +12,17 @@
 
 import { objDevices } from './objPlaygroundEquipment.js';
 
+/** Icon per activity, shared by the activity row and the hint form's chips. */
+export const ACTIVITY_ICONS = {
+  swing: '🪢', slide: '🛝', rock: '🐴', climb: '🧗', balance: '🪵',
+  spin: '🌀', bounce: '🦘', exercise: '🤸', dig: '🪣', explore: '🏠',
+};
+
+/** Icon for a device (`playground=*` value) via its activity, or null. */
+export function deviceIcon(key) {
+  return ACTIVITY_ICONS[objDevices[key]?.activity] ?? null;
+}
+
 /** Display order of the activity row. */
 export const ACTIVITIES = [
   'swing', 'slide', 'rock', 'climb', 'balance',

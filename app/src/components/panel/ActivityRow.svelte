@@ -5,16 +5,12 @@
   // replaces the device count.
   import { _ } from 'svelte-i18n';
   import HighlightsLine from './HighlightsLine.svelte';
+  import { ACTIVITY_ICONS as ICONS } from '../../lib/activities.js';
 
   /**
    * @type {{ activities: string[], highlights?: Array<Object>, areaTheme?: string|null, loading?: boolean }}
    */
   let { activities = [], highlights = [], areaTheme = null, loading = false } = $props();
-
-  const ICONS = {
-    swing: '🪢', slide: '🛝', rock: '🐴', climb: '🧗', balance: '🪵',
-    spin: '🌀', bounce: '🦘', exercise: '🤸', dig: '🪣', explore: '🏠',
-  };
 </script>
 
 {#if activities.length > 0 || highlights.length > 0}

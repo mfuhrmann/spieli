@@ -58,6 +58,10 @@ function createSelectionStore() {
                 if (current) history.pushState(PANEL_STATE, '', baseUrl() + pendingHash);
                 return;
             }
+            // A report's entry (#1000/#1073) belongs to reportMissing.js, which
+            // steps off it if it is stale. Landing on one never means "the
+            // panel's entry is gone": a hint sits on top of an open panel.
+            if (history.state?.spieliReport === true) return;
             if (onPanelEntry()) {
                 // Forward onto a panel entry whose panel is closed: the panel
                 // is not reopened, so make it a plain map entry.

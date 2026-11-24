@@ -1,8 +1,9 @@
 <script>
   // "Missing a playground?" (#1000): crosshair placement, duplicate check,
   // form, thank-you — plus the empty-area hint and the visitor's own sent
-  // hints as pins. The entry points only call startReport(); everything
-  // after that lives here. Note text, sending and storage are in
+  // hints as pins. The entry points only call startReport() — or, for a
+  // playground spieli already knows, startHint() (#1073), which opens the
+  // form directly over the panel; everything after that lives here. Note text, sending and storage are in
   // lib/osmNotes.js.
   import { onDestroy, tick } from 'svelte';
   import { get } from 'svelte/store';
@@ -24,13 +25,15 @@
   import { selection, hasSelection } from '../stores/selection.js';
   import { location } from '../stores/location.js';
   import { dataCoverage, coverageAt, isCovered } from '../stores/dataCoverage.js';
-  import { reportStep, reportBusy, startReport, cancelReport } from '../stores/reportMissing.js';
+  import { reportStep, reportBusy, reportTarget, startReport, cancelReport } from '../stores/reportMissing.js';
+  import { deviceLabel } from '../lib/deviceLabel.js';
+  import { deviceIcon } from '../lib/activities.js';
   import { fetchPlaygroundsBbox } from '../lib/api.js';
   import { tagWithBackend } from '../hub/backendTag.js';
   import { getPlaygroundTitle, fitViewToSelection } from '../lib/playgroundHelpers.js';
   import { osmNotesUrl, regionLang, privacyUrl, apiBaseUrl } from '../lib/config.js';
   import {
-    REPORT_EQUIPMENT, DETAILS_MAX, NAME_MAX, buildNoteText, createNote, fetchNoteStatus,
+    REPORT_EQUIPMENT, REPORT_SHADE, DETAILS_MAX, NAME_MAX, buildNoteText, createNote, fetchNoteStatus,
     mapCompleteAddUrl, readOwnNotes, addOwnNote, updateOwnNoteStatus,
     canSendMore, countSent, SESSION_LIMIT,
   } from '../lib/osmNotes.js';
@@ -53,6 +56,7 @@
   let spot = null;          // { lat, lon } chosen in the place step
   let equipment = [];
   let fenced = false;
+  let shade = null;         // hint form only: 'yes' | 'partial' | null
   let name = '';
   let details = '';
   // Opt-in: keeping the hint in localStorage is not something the visitor
@@ -187,7 +191,7 @@
   let lastStep = null;
   $: onStepChange($reportStep);
   function onStepChange(step) {
-    if (step === 'place' && lastStep === null) beginReport();
+    if (step && lastStep === null) beginReport();
     if (step !== lastStep) moveFocus(step);
     lastStep = step;
   }
@@ -209,6 +213,7 @@
     ownPopup = null;
     equipment = [];
     fenced = false;
+    shade = null;
     name = '';
     details = '';
     remember = false;
@@ -217,6 +222,12 @@
     dupeFeature = null;
     checking = false;
     flowId += 1;
+    // A hint about a known playground starts at the form; the note goes to
+    // the playground's interior point. Checked once per flow, so the send
+    // button does not change under the visitor's finger.
+    const target = get(reportTarget);
+    spot = target ? { lat: target.lat, lon: target.lon } : null;
+    limitAtOpen = !canSendMore();
   }
 
   function useMyLocation() {
@@ -324,6 +335,21 @@
 
   // ── form step ─────────────────────────────────────────────────────────────
 
+  // Hint about a known playground: offer only what is not known yet (#1073).
+  let limitAtOpen = false;
+  $: target = $reportTarget;
+  $: chipKeys = target
+    ? REPORT_EQUIPMENT.filter(k => !(target.knownDevices ?? []).includes(k))
+    : REPORT_EQUIPMENT;
+  $: offerFence = !target || !target.fenceKnown;
+  $: offerShade = !!target && !target.shadeKnown;
+  $: offerName = !target || !target.hasName;
+  // A missing-playground report carries information by its location alone; a
+  // hint about a known playground with nothing ticked or written carries
+  // none, so it cannot be sent.
+  $: hintEmpty = !!target && !equipment.length && !fenced && !shade
+    && !(offerName && name.trim()) && !details.trim();
+
   function toggleEquipment(key) {
     equipment = equipment.includes(key) ? equipment.filter(k => k !== key) : [...equipment, key];
   }
@@ -335,14 +361,19 @@
     reportBusy.set(true);
     sendError = false;
     try {
-      const text = buildNoteText({ equipment, fenced, name, details, lang: regionLang });
+      const text = buildNoteText({
+        equipment, fenced, shade, name: offerName ? name : '', details, lang: regionLang, target,
+      });
       const note = await createNote({ lat: spot.lat, lon: spot.lon, text, base: osmNotesUrl });
       countSent();
       // Closing is blocked while sending, but a restart in between would
       // still be overtaken by this answer.
       if (id !== flowId) return;
       sentNote = note;
-      if (remember) {
+      // Hints about a known playground get no own pin: the playground is on
+      // the map already, and a pin on its interior point would swallow taps
+      // meant for it.
+      if (remember && !target) {
         refreshOwnPins(addOwnNote({
           id: sentNote.id,
           lat: spot.lat,
@@ -365,7 +396,7 @@
     }
   }
 
-  $: mcUrl = spot ? mapCompleteAddUrl(spot.lat, spot.lon) : '';
+  $: mcUrl = target?.mcUrl || (spot ? mapCompleteAddUrl(spot.lat, spot.lon) : '');
   $: limitReached = $reportStep === 'choose' && !canSendMore();
 
   // ── own notes ─────────────────────────────────────────────────────────────
@@ -392,7 +423,12 @@
 
   function onKeydown(e) {
     if (e.key !== 'Escape') return;
-    if ($reportStep) cancelReport();   // a no-op while sending
+    if ($reportStep) {
+      // Tells the detail panel's Escape handler this one was ours, so a hint
+      // dialog closes without also closing the panel underneath.
+      e.preventDefault();
+      cancelReport();   // a no-op while sending
+    }
     else if (ownPopup) ownPopup = null;
   }
 </script>
@@ -500,36 +536,67 @@
         </div>
       {:else if $reportStep === 'form'}
         <div class="modal-header">
-          <h2 class="modal-title" id="report-title" tabindex="-1" data-report-focus>{$_('report.form.title')}</h2>
+          <h2 class="modal-title" id="report-title" tabindex="-1" data-report-focus>{target ? $_('report.hint.title') : $_('report.form.title')}</h2>
           <button type="button" class="icon-btn" onclick={cancelReport} aria-label={$_('report.cancel')} disabled={sending}>
             <X class="h-4 w-4" />
           </button>
         </div>
         <div class="modal-body">
-          <p class="card-text">{$_('report.form.intro')}</p>
+          <p class="card-text">{target ? $_('report.hint.intro') : $_('report.form.intro')}</p>
 
-          <fieldset class="field">
-            <legend class="field-label">{$_('report.form.equipmentLabel')}</legend>
-            <div class="chips">
-              {#each REPORT_EQUIPMENT as key}
-                <button type="button" class="chip" class:chip-on={equipment.includes(key)}
-                  aria-pressed={equipment.includes(key)} onclick={() => toggleEquipment(key)}>
-                  {#if equipment.includes(key)}<Check class="h-3 w-3" aria-hidden="true" />{/if}
-                  {$_(`report.equipment.${key}`)}
-                </button>
-              {/each}
-              <button type="button" class="chip" class:chip-on={fenced}
-                aria-pressed={fenced} onclick={() => fenced = !fenced}>
-                {#if fenced}<Check class="h-3 w-3" aria-hidden="true" />{/if}
-                {$_('report.form.fenced')}
-              </button>
-            </div>
-          </fieldset>
+          {#if limitAtOpen}
+            <p class="error" role="alert" data-testid="hint-limit">
+              {target
+                ? $_('report.hint.limit', { values: { count: SESSION_LIMIT } })
+                : $_('report.choose.limit', { values: { count: SESSION_LIMIT } })}
+              <a href={mcUrl} target="_blank" rel="noopener noreferrer">{$_('report.choose.mcTitle')}</a>
+            </p>
+          {/if}
 
-          <label class="field">
-            <span class="field-label">{$_('report.form.name')}</span>
-            <input class="input" type="text" maxlength={NAME_MAX} bind:value={name} />
-          </label>
+          {#if chipKeys.length || offerFence}
+            <fieldset class="field">
+              <legend class="field-label">{$_('report.form.equipmentLabel')}</legend>
+              <div class="chips">
+                {#each chipKeys as key (key)}
+                  {@const icon = deviceIcon(key)}
+                  <button type="button" class="chip" class:chip-on={equipment.includes(key)} data-chip={key}
+                    aria-pressed={equipment.includes(key)} onclick={() => toggleEquipment(key)}>
+                    {#if equipment.includes(key)}<Check class="h-3 w-3" aria-hidden="true" />{:else if icon}<span aria-hidden="true">{icon}</span>{/if}
+                    {deviceLabel(key, $_)}
+                  </button>
+                {/each}
+                {#if offerFence}
+                  <button type="button" class="chip" class:chip-on={fenced} data-chip="fenced"
+                    aria-pressed={fenced} onclick={() => fenced = !fenced}>
+                    {#if fenced}<Check class="h-3 w-3" aria-hidden="true" />{/if}
+                    {$_('report.form.fenced')}
+                  </button>
+                {/if}
+              </div>
+            </fieldset>
+          {/if}
+
+          {#if offerShade}
+            <fieldset class="field">
+              <legend class="field-label">{$_('report.hint.shadeLabel')}</legend>
+              <div class="chips">
+                {#each REPORT_SHADE as value (value)}
+                  <button type="button" class="chip" class:chip-on={shade === value} data-chip={`shade-${value}`}
+                    aria-pressed={shade === value} onclick={() => shade = shade === value ? null : value}>
+                    {#if shade === value}<Check class="h-3 w-3" aria-hidden="true" />{/if}
+                    {$_(value === 'yes' ? 'details.shaded' : 'panel.partlyShaded')}
+                  </button>
+                {/each}
+              </div>
+            </fieldset>
+          {/if}
+
+          {#if offerName}
+            <label class="field">
+              <span class="field-label">{$_('report.form.name')}</span>
+              <input class="input" type="text" maxlength={NAME_MAX} bind:value={name} />
+            </label>
+          {/if}
 
           <label class="field">
             <span class="field-label">{$_('report.form.details')}</span>
@@ -551,13 +618,15 @@
             </div>
           </div>
 
-          <label class="remember">
-            <input type="checkbox" bind:checked={remember} />
-            <span>
-              {$_('report.form.remember')}
-              <span class="remember-hint">{$_('report.form.rememberHint')}</span>
-            </span>
-          </label>
+          {#if !target}
+            <label class="remember">
+              <input type="checkbox" bind:checked={remember} />
+              <span>
+                {$_('report.form.remember')}
+                <span class="remember-hint">{$_('report.form.rememberHint')}</span>
+              </span>
+            </label>
+          {/if}
 
           {#if sendError === 'refused'}
             <p class="error" role="alert">
@@ -569,8 +638,9 @@
           {/if}
 
           <div class="card-actions">
-            <button type="button" class="btn btn-secondary" onclick={() => reportStep.set('choose')} disabled={sending}>{$_('report.form.back')}</button>
-            <button type="button" class="btn btn-primary" onclick={send} disabled={sending}>
+            <button type="button" class="btn btn-secondary" disabled={sending}
+              onclick={() => target ? cancelReport() : reportStep.set('choose')}>{$_('report.form.back')}</button>
+            <button type="button" class="btn btn-primary" onclick={send} disabled={sending || limitAtOpen || hintEmpty}>
               {sending ? $_('report.form.sending') : $_('report.form.send')}
             </button>
           </div>

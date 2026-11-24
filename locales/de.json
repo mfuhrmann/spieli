@@ -878,14 +878,6 @@
       "mcText": "Mit MapComplete trägst du den Spielplatz direkt in OpenStreetMap ein. Dafür brauchst du ein kostenloses OpenStreetMap-Konto.",
       "outside": "Für diese Gegend hat diese Karte keine Daten und kann nicht prüfen, ob der Spielplatz schon in OpenStreetMap ist. MapComplete zeigt, was dort eingetragen ist."
     },
-    "equipment": {
-      "swing": "Schaukel",
-      "slide": "Rutsche",
-      "sandpit": "Sandkasten",
-      "climbingframe": "Klettergerüst",
-      "seesaw": "Wippe",
-      "springy": "Federwippe"
-    },
     "form": {
       "title": "Was gibt es dort?",
       "intro": "Dein Hinweis geht als Notiz an OpenStreetMap. Mapper vor Ort prüfen ihn und tragen den Spielplatz ein. Ein Konto brauchst du nicht.",
@@ -928,6 +920,14 @@
         "hidden": "Von den OpenStreetMap-Moderatoren entfernt.",
         "unknown": "Der Status ließ sich gerade nicht prüfen."
       }
+    },
+    "hint": {
+      "title": "Was gibt es an diesem Spielplatz?",
+      "intro": "Tipp an, was du dort gesehen hast. Dein Hinweis geht als Notiz an OpenStreetMap, Mapper vor Ort tragen ihn ein. Ein Konto brauchst du nicht.",
+      "shadeLabel": "Schatten",
+      "open": "Sag uns, was es dort gibt",
+      "missing": "Fehlt etwas? Hinweis geben",
+      "limit": "Du hast in diesem Besuch schon {count} Hinweise gesendet. Weiteres trag bitte selbst ein:"
     }
   },
   "access": {
