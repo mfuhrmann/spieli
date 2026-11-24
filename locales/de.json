@@ -973,6 +973,9 @@
     "nearby": "In der Nähe",
     "allEquipment": "Alle Geräte & Ausstattung",
     "ratingLabel": "{rating} von 5 Sternen, {count, plural, one {# Bewertung} other {# Bewertungen}}",
-    "ratingJump": "Bewertungen anzeigen und selbst bewerten"
+    "ratingJump": "Bewertungen anzeigen und selbst bewerten",
+    "linkCopied": "Link kopiert",
+    "linkCopyFailed": "Link konnte nicht kopiert werden",
+    "share": "Teilen"
   }
 }

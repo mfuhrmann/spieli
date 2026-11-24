@@ -434,34 +434,16 @@
   onDestroy(() => ratingCtrl?.abort());
 
   // ── Share ─────────────────────────────────────────────────────────────────
-  async function sharePlayground() {
-    if (!attr) return false;
-    // Carry mapping detail only while it is on, so a contributor shares the
-    // view they are looking at and everyone else's links stay as before (#924).
+  // What the header shares (phones) or copies (computers), #1087. Carries
+  // mapping detail only while it is on, so a contributor shares the view
+  // they are looking at and everyone else's links stay as before (#924).
+  function shareData() {
+    if (!attr) return null;
     const detail = $mappingDetail ? `?${DETAIL_PARAM}=1` : '';
-    const url = `${window.location.origin}${window.location.pathname}${detail}#${attr.osm_type}${attr.osm_id}`;
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: getPlaygroundTitle(attr, $_), url });
-      } else if (navigator.clipboard) {
-        await navigator.clipboard.writeText(url);
-      } else {
-        // fallback for non-secure contexts
-        const ta = document.createElement('textarea');
-        ta.value = url;
-        ta.style.position = 'fixed';
-        ta.style.opacity = '0';
-        document.body.appendChild(ta);
-        ta.focus();
-        ta.select();
-        document.execCommand('copy');
-        document.body.removeChild(ta);
-      }
-      return true;
-    } catch (err) {
-      if (err.name !== 'AbortError') console.warn('Share failed:', err);
-      return false;
-    }
+    return {
+      title: getPlaygroundTitle(attr, $_),
+      url: `${window.location.origin}${window.location.pathname}${detail}#${attr.osm_type}${attr.osm_id}`,
+    };
   }
 
   // ── Navigation link ──────────────────────────────────────────────────────
@@ -500,7 +482,7 @@
       access={access === 'public' ? null : access}
       {navUrl}
       navMobile={navIsMobile}
-      onShare={sharePlayground}
+      {shareData}
       onClose={closePanel}
       rating={headerRating}
       onRatingClick={showReviews}
