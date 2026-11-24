@@ -2337,6 +2337,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#palette-typeface-and-shared-classes-1081" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Palette, typeface and shared classes (#1081)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#the-finder-view-mapping-detail-off" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3863,6 +3874,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#palette-typeface-and-shared-classes-1081" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Palette, typeface and shared classes (#1081)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#the-finder-view-mapping-detail-off" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4536,6 +4558,82 @@ unannotated name silently inherits the interface language.</p>
 </ul>
 <h2 id="style-system">Style system<a class="headerlink" href="#style-system" title="Permanent link">&para;</a></h2>
 <p>The app uses Bootstrap 5 (component classes) and Tailwind CSS 4 (utility classes) side by side. The design system primitives in <code>src/components/ui/</code> (<code>Badge</code>, <code>Button</code>, <code>Card</code>, etc.) wrap Bootstrap with Tailwind utilities. Prefer these over raw Bootstrap classes in new components.</p>
+<h3 id="palette-typeface-and-shared-classes-1081">Palette, typeface and shared classes (#1081)<a class="headerlink" href="#palette-typeface-and-shared-classes-1081" title="Permanent link">&para;</a></h3>
+<p>The interface has one typeface and one palette, both defined in <code>src/styles/app.css</code>:</p>
+<ul>
+<li><strong>Nunito</strong>, self-hosted from <code>@fontsource-variable/nunito</code> (imported in <code>main.js</code>). Vite bundles the woff2 files and the instance serves them itself, so no font request leaves the origin (<code>tests/visual-refresh.spec.js</code> asserts it; CSP stays <code>font-src 'self'</code>). Licence: SIL Open Font License 1.1.</li>
+<li><strong>Green-tinted neutrals</strong> instead of Tailwind grey:</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Token</th>
+<th>Value</th>
+<th>Use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--color-background</code></td>
+<td><code>#f6f8f6</code></td>
+<td>page and panel background</td>
+</tr>
+<tr>
+<td><code>--color-surface</code> / <code>--color-card</code></td>
+<td><code>#ffffff</code></td>
+<td>raised surfaces: pills, the phone panel's back bar, dialogs</td>
+</tr>
+<tr>
+<td><code>--color-foreground</code> (= <code>--color-ink</code>)</td>
+<td><code>#16302a</code></td>
+<td>text (13.2:1 on the background)</td>
+</tr>
+<tr>
+<td><code>--color-muted-foreground</code></td>
+<td><code>#5b6f68</code></td>
+<td>secondary text (5.0:1)</td>
+</tr>
+<tr>
+<td><code>--color-subtle</code></td>
+<td><code>#7f918a</code></td>
+<td>icons and decoration only — 3.3:1, never text</td>
+</tr>
+<tr>
+<td><code>--color-border</code> / <code>--color-input</code></td>
+<td><code>#dde6e1</code></td>
+<td>lines</td>
+</tr>
+<tr>
+<td><code>--color-muted</code></td>
+<td><code>#eef3f0</code></td>
+<td>quiet fills</td>
+</tr>
+<tr>
+<td><code>--color-chip</code> / <code>-line</code> / <code>-foreground</code></td>
+<td><code>#e7f4ee</code> / <code>#c5e3d5</code> / <code>#0f4a37</code></td>
+<td>activity chips, positive pills</td>
+</tr>
+<tr>
+<td><code>--color-highlight</code> / <code>-line</code> / <code>-foreground</code></td>
+<td><code>#fff3d6</code> / <code>#f3d48a</code> / <code>#6b4304</code></td>
+<td>highlights, all of them, the theme included</td>
+</tr>
+<tr>
+<td><code>--color-neutral-dot</code></td>
+<td><code>#9aaaa3</code></td>
+<td>"closed": information, not an alarm</td>
+</tr>
+</tbody>
+</table>
+<p>Bootstrap's own variables (<code>--bs-body-font-family</code>, <code>--bs-body-color</code>, <code>--bs-secondary-color</code>, <code>--bs-link-color-rgb</code>, …) point at these, so its utilities (<code>text-muted</code>, plain links) follow the palette.</p>
+<p><strong>No colour literals in components.</strong> Use the tokens (<code>var(--color-…)</code> in <code>&lt;style&gt;</code>, <code>bg-…</code>/<code>text-…</code> utilities in markup). The exceptions are deliberate: white (<code>#fff</code>) on coloured buttons, the dark photo lightboxes, semantic colours that carry meaning (danger red, the access badges' grey and amber, the blue mapping-detail hint), and anything drawn on the map canvas, which cannot read CSS variables (<code>completenessPalette.js</code>, <code>finderStyle.js</code>).</p>
+<p>Shared classes:</p>
+<ul>
+<li><code>.section-label</code> — the one section heading: 12 px, uppercase, extra bold, brand green.</li>
+<li><code>.panel-section</code> — a detail-panel section: a hairline across the full panel width (no cards — the panel is full screen on a phone).</li>
+<li><code>.contrib-link</code> — every invitation to contribute ("Add a photo", "Something missing? Send a hint", the invite's actions): green, bold, sentence case.</li>
+</ul>
+<p>Photos in the detail panels are a horizontal strip (<code>PhotoStrip</code>, which puts <code>CommonsGallery</code> and <code>PanoramaxViewer</code> in their <code>strip</code> mode): thumbnails only, a tap opens the source's own full-screen view, and Panoramax still creates its iframe only on activation (<code>panoramax-click-to-load.spec.js</code> runs against the strip).</p>
 <h3 id="the-finder-view-mapping-detail-off">The finder view (mapping detail off)<a class="headerlink" href="#the-finder-view-mapping-detail-off" title="Permanent link">&para;</a></h3>
 <p>Mapping detail is opt-in (#924). With it off, <code>Map.svelte</code> swaps the tier styles for the ones in <code>src/lib/finderStyle.js</code> (cluster discs, pins at each playground's interior point, the selected playground's outline) and <code>hub/macroRingStyle.js</code>'s <code>finderMacroRingStyleFn</code> (neutral discs; health variants unchanged). The <code>FINDER</code> colours sit in <code>completenessPalette.js</code> with their contrast measurements. Style functions take the mode from their caller rather than reading the store, so they stay pure and unit-testable. Canvas markers draw in CSS pixels through <code>hidpiStyleOptions</code> (<code>lib/hidpiRenderer.js</code>), which also supplies their 1:1 hit-detection renderer, so the existing click/hover path selects pins — but a click inside the undrawn polygon off the pin does not.</p>
 <p>Whether mapping detail is on lives in <code>stores/mappingDetail.js</code> (persisted in <code>localStorage</code>, overridable per page load with <code>?detail=1|0</code>). While it is off, the <code>showComplete</code> / <code>showPartial</code> / <code>showMissing</code> filters are ignored everywhere — rendering, cluster request parameters, badges, hub macro aggregates — via <code>effectiveFilterStore</code>; their stored values return when it is switched back on.</p>
@@ -4605,8 +4703,8 @@ unannotated name silently inherits the interface language.</p>
 </tr>
 <tr>
 <td><code>--color-primary-soft</code></td>
-<td><code>#ecfdf5</code></td>
-<td>background of an active control or checked row</td>
+<td><code>#e7f4ee</code></td>
+<td>background of an active control or checked row (the green-tinted chip fill since #1081)</td>
 </tr>
 </tbody>
 </table>
