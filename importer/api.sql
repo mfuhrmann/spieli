@@ -172,6 +172,38 @@ AS $$
   SELECT metres / cos(radians(LEAST(GREATEST(lat, -85.05), 85.05)));
 $$;
 
+-- Device types spieli knows (#1074): the keys of objDevices in
+-- app/src/lib/objPlaygroundEquipment.js, in the same order. Used to read the
+-- area-level schema `playground:<device>=yes|<n>` without counting the
+-- playground:* keys that are not equipment (theme, type, surface, …).
+-- app/src/lib/deviceKeysParity.test.js fails when the two lists differ.
+CREATE OR REPLACE FUNCTION public.playground_device_keys()
+RETURNS text[] LANGUAGE sql IMMUTABLE PARALLEL SAFE AS $$
+  SELECT ARRAY[
+    -- BEGIN device keys
+    'slide', 'seesaw', 'springy', 'structure', 'bridge', 'wobble_bridge',
+    'platform', 'steps', 'ladder', 'swing', 'baby_swing', 'basketswing',
+    'tire_swing', 'rope_swing', 'agility_trail', 'balancebeam',
+    'rope_traverse', 'stepping_stone', 'stepping_post', 'climbingframe',
+    'climbingwall', 'climbing_slope', 'climbing_pole', 'monkey_bars',
+    'roundabout', 'basketrotator', 'aerialrotator', 'spinner',
+    'spinning_disc', 'spinning_circle', 'spinner_bowl', 'sandpit', 'chute',
+    'sieve', 'sand_wheel', 'sand_seesaw', 'sand_pulley', 'excavator',
+    'splash_pad', 'pump', 'water_channel', 'water_stream', 'water_seesaw',
+    'water_basin', 'water_barrier', 'archimedes_screw', 'water_wheel',
+    'water_cannon', 'water_sprayer', 'horizontal_bar', 'parallel_bars',
+    'bannister_bars', 'hamster_wheel', 'activitypanel', 'exercise',
+    'zipwire', 'trampoline', 'cushion', 'belt_bridge', 'spring_board',
+    'playhouse', 'teenshelter', 'tunnel_tube', 'speaking_tube', 'hopscotch',
+    'funnel_ball', 'ball_pool', 'ride_on', 'track', 'marble_run', 'map',
+    'blackboard', 'musical_instrument', 'table', 'seat', 'hammock',
+    'sledding', 'youth_bench', 'mound', 'dome', 'balance', 'climbing',
+    'rotator', 'water', 'sand'
+    -- END device keys
+  ]::text[]
+$$;
+
+
 -- =========================================================================
 -- lit_state(lit)
 --    Tri-state reading of a `lit=*` value: true (some lighting), false
@@ -374,7 +406,7 @@ CREATE MATERIALIZED VIEW public.playground_stats_new AS
     SELECT osm_id, osm_type, amenity, leisure, sport, tags, way
     FROM public.playground_equipment_src
   ),
-  equip_stats AS (
+  equip_raw AS (
     -- COUNT(DISTINCT (osm_id, osm_type)): osm2pgsql emits a closed way to *both*
     -- planet_osm_polygon and planet_osm_line when it carries an area tag and a
     -- linear tag (e.g. leisure=pitch + barrier=fence), so the shared view can
@@ -398,11 +430,16 @@ CREATE MATERIALIZED VIEW public.playground_stats_new AS
       BOOL_OR(e.tags ? 'playground'
               AND (e.tags->'playground' ~* 'water'
                    OR e.tags->'playground' IN ('splash_pad','pump')))           AS is_water,
+      -- Age suitability (#1075). Babies: a baby seat (baby=yes,
+      -- capacity:baby), a baby swing, a sandpit, a basket swing. Toddlers: a
+      -- device tagged provided_for:toddler — a small structure or playhouse
+      -- with a step or two and a tiny slide — a spring rider, a basket swing.
+      -- The spring rider used to count for babies; it is toddler equipment.
       BOOL_OR((e.tags->'baby' = 'yes')
-              OR (e.tags->'playground' IN ('baby_swing','basketswing','sandpit','springy'))
+              OR (e.tags->'playground' IN ('baby_swing','basketswing','sandpit'))
               OR (e.tags ? 'playground' AND e.tags->'capacity:baby' IS NOT NULL)) AS for_baby,
       BOOL_OR((e.tags->'provided_for:toddler' = 'yes')
-              OR (e.tags->'playground' = 'basketswing'))                        AS for_toddler,
+              OR (e.tags->'playground' IN ('springy','basketswing')))           AS for_toddler,
       -- Wheelchair suitability is a statement about PLAY EQUIPMENT, not about
       -- site access. With an accompanying adult nearly every playground can be
       -- entered, and the age range served (roughly 0-14) makes the unaccompanied,
@@ -473,10 +510,63 @@ CREATE MATERIALIZED VIEW public.playground_stats_new AS
         OR regexp_split_to_array(btrim(lower(COALESCE(e.tags->'playground:theme',''))), '\s*;\s*')
           && ARRAY['ship','octopus','castle','rocket','spiderweb','circus','dragon','water','adventure']
       )                                                                       AS has_theme,
-      CASE WHEN BOOL_OR(pl.tags ? 'shade') THEN BOOL_OR(pl.tags->'shade' = 'yes') END AS has_shade
+      -- Partly shaded counts as shaded (#1072): a parent filtering for shade
+      -- would rather see a partly shaded playground than none. The panel
+      -- reads the raw tag and still says "partly".
+      CASE WHEN BOOL_OR(pl.tags ? 'shade') THEN BOOL_OR(pl.tags->'shade' IN ('yes','partial')) END AS has_shade
     FROM all_playgrounds pl
     LEFT JOIN all_equip e ON ST_Intersects(pl.way, e.way)
     GROUP BY pl.osm_id, pl.osm_type
+  ),
+  -- Equipment recorded on the playground area itself (#1074):
+  -- `playground:<device>=yes` or a count, for catalogue devices only. Many
+  -- playgrounds carry their equipment only this way (10 of 18 area-schema
+  -- playgrounds in Fulda have no separately mapped device).
+  area_devices AS (
+    SELECT
+      pl.osm_id,
+      pl.osm_type,
+      SUM(CASE WHEN t.value = 'yes' THEN 1 ELSE t.value::int END)::int AS device_count,
+      BOOL_OR(d.k ~* 'water' OR d.k IN ('splash_pad','pump'))             AS is_water,
+      BOOL_OR(d.k IN ('baby_swing','basketswing','sandpit'))              AS for_baby,
+      BOOL_OR(d.k IN ('springy','basketswing'))                           AS for_toddler
+    FROM all_playgrounds pl
+    CROSS JOIN LATERAL each(pl.tags) AS t(key, value)
+    CROSS JOIN LATERAL (SELECT substr(t.key, 12) AS k) d
+    WHERE t.key LIKE 'playground:%'
+      AND d.k = ANY (public.playground_device_keys())
+      AND (t.value = 'yes' OR t.value ~ '^[1-9][0-9]{0,3}$')
+    GROUP BY pl.osm_id, pl.osm_type
+  ),
+  -- Separately mapped devices, with the area schema as the FALLBACK when a
+  -- playground has none, so a playground mapped both ways is not counted
+  -- twice. Close to, not identical with, the panel's equipment list: here any
+  -- playground=* object (also playground=yes) counts as separately mapped,
+  -- and only catalogue keys with yes or 1-9999 are read. Everything downstream
+  -- (has_equipment / mapping detail, the flags, the filters) reads this.
+  equip_stats AS (
+    SELECT
+      r.osm_id,
+      r.osm_type,
+      CASE WHEN r.device_count > 0 THEN r.device_count
+           ELSE COALESCE(ad.device_count, 0) END                             AS device_count,
+      r.bench_count,
+      r.shelter_count,
+      r.picnic_count,
+      r.table_tennis_count,
+      r.has_soccer,
+      r.has_basketball,
+      COALESCE(r.is_water, false)    OR (r.device_count = 0 AND COALESCE(ad.is_water, false))    AS is_water,
+      COALESCE(r.for_baby, false)    OR (r.device_count = 0 AND COALESCE(ad.for_baby, false))    AS for_baby,
+      COALESCE(r.for_toddler, false) OR (r.device_count = 0 AND COALESCE(ad.for_toddler, false)) AS for_toddler,
+      r.wheelchair_play_yes,
+      r.wheelchair_surveyed,
+      r.has_fence,
+      r.has_dogs,
+      r.has_theme,
+      r.has_shade
+    FROM equip_raw r
+    LEFT JOIN area_devices ad ON ad.osm_id = r.osm_id AND ad.osm_type = r.osm_type
   ),
   -- Mirrors app/src/lib/completeness.js so the server classification and the
   -- client style function agree. Update both sides together if the rule changes.

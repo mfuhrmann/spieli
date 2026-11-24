@@ -16,7 +16,7 @@ The names in the first column are what the data carries internally; visitors onl
 
 ## Criteria
 
-A playground is judged on two things: whether its **play equipment** is mapped (any play device inside it, or a ball court), and whether it has **any detail** — its surface, opening hours, or restricted access. One qualifying item is enough on each side; a playground needs only one of the three details, not all of them. The exact tags: [OSM Tags spieli Reads → Mapping detail](osm-tags.md#mapping-detail).
+A playground is judged on two things: whether its **play equipment** is mapped (any play device inside it, or a ball court; equipment recorded on the area itself as `playground:<device>=yes` counts when no device is mapped separately), and whether it has **any detail** — its surface, opening hours, or restricted access. One qualifying item is enough on each side; a playground needs only one of the three details, not all of them. The exact tags: [OSM Tags spieli Reads → Mapping detail](osm-tags.md#mapping-detail).
 
 ### What does not count as equipment
 
