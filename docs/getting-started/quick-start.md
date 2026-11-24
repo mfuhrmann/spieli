@@ -27,7 +27,7 @@ All five combinations of deployment mode and app mode: [Deployment modes](../ref
 ## Install
 
 ```bash
-TAG=v0.14.0  # check https://github.com/mfuhrmann/spieli/releases for the latest tag
+TAG=v0.15.0  # check https://github.com/mfuhrmann/spieli/releases for the latest tag
 curl -fsSL "https://github.com/mfuhrmann/spieli/releases/download/${TAG}/install.sh" -o install.sh
 curl -fsSL "https://github.com/mfuhrmann/spieli/releases/download/${TAG}/install.sh.sha256" -o install.sh.sha256
 sha256sum --check install.sh.sha256 && bash install.sh
