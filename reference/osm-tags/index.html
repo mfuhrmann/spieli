@@ -2636,6 +2636,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#area-level-equipment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Area-level equipment
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#activities-and-highlights-detail-panel" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3225,6 +3236,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#area-level-equipment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Area-level equipment
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#activities-and-highlights-detail-panel" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3415,15 +3437,15 @@
 <tbody>
 <tr>
 <td>Water playground</td>
-<td>A device inside has a <code>playground</code> value containing <code>water</code>, or <code>playground=splash_pad</code> / <code>pump</code></td>
+<td>A device inside has a <code>playground</code> value containing <code>water</code>, or <code>playground=splash_pad</code> / <code>pump</code> — (or, when nothing is mapped separately, <code>playground:&lt;device&gt;=yes</code> / a count on the area itself)</td>
 </tr>
 <tr>
 <td>Baby-friendly</td>
-<td>A device inside has <code>baby=yes</code>, or is <code>playground=baby_swing</code>, <code>basketswing</code>, <code>sandpit</code> or <code>springy</code>, or carries <code>capacity:baby</code></td>
+<td>A device inside has <code>baby=yes</code>, or is <code>playground=baby_swing</code>, <code>basketswing</code> or <code>sandpit</code>, or carries <code>capacity:baby</code> — (or, when nothing is mapped separately, <code>playground:&lt;device&gt;=yes</code> / a count on the area itself). A spring rider counts for toddlers, not babies (#1075)</td>
 </tr>
 <tr>
 <td>Toddler-friendly</td>
-<td>A device inside has <code>provided_for:toddler=yes</code>, or is <code>playground=basketswing</code></td>
+<td>A device inside — any device, e.g. a small structure or playhouse — has <code>provided_for:toddler=yes</code>, or is <code>playground=springy</code> or <code>basketswing</code> — (or, when nothing is mapped separately, <code>playground:&lt;device&gt;=yes</code> / a count on the area itself)</td>
 </tr>
 <tr>
 <td>Wheelchair-friendly</td>
@@ -3467,7 +3489,7 @@
 </tr>
 <tr>
 <td>With shade</td>
-<td><code>shade=yes</code> on the area. The panel reads the tag itself: <code>yes</code> <em>Shaded</em>, <code>partial</code> <em>Partly shaded</em>, <code>no</code> <em>No shade</em>, untagged nothing (the filter does not match <code>partial</code> yet, #1072)</td>
+<td><code>shade=yes</code> or <code>shade=partial</code> on the area (#1072). The panel reads the tag itself: <code>yes</code> <em>Shaded</em>, <code>partial</code> <em>Partly shaded</em>, <code>no</code> <em>No shade</em>, untagged nothing</td>
 </tr>
 <tr>
 <td>Lit at night</td>
@@ -3476,6 +3498,8 @@
 </tbody>
 </table>
 <p>Values separated by <code>;</code> are split for <code>sport</code> and <code>playground:theme</code>.</p>
+<h2 id="area-level-equipment">Area-level equipment<a class="headerlink" href="#area-level-equipment" title="Permanent link">&para;</a></h2>
+<p>Equipment can also be recorded on the playground area itself: <code>playground:&lt;device&gt;=yes</code>, or a count (<code>playground:swing=2</code>). spieli reads it for the devices in its catalogue only — <code>playground:theme</code>, <code>playground:type</code>, <code>playground:surface</code> and other sub-keys are not equipment — and only as a <strong>fallback</strong>: when at least one device is mapped as its own object, the area tags are ignored, so a playground mapped both ways is not counted twice. It then counts for mapping detail ("has equipment"), the water, baby and toddler filters, and the panel's activities and highlights (#1074).</p>
 <h2 id="activities-and-highlights-detail-panel">Activities and highlights (detail panel)<a class="headerlink" href="#activities-and-highlights-detail-panel" title="Permanent link">&para;</a></h2>
 <p>The panel's <em>What kids can do</em> row and its highlights line are derived from the play devices inside the playground — separately mapped <code>playground=*</code> objects <strong>and</strong> <code>playground:&lt;device&gt;=yes|&lt;n&gt;</code> on the area itself. Each device type in <code>app/src/lib/objPlaygroundEquipment.js</code> declares its <code>activity</code> and whether it is a <code>highlight</code>:</p>
 <table>

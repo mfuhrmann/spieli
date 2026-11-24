@@ -3500,7 +3500,7 @@
 <tbody>
 <tr>
 <td>Has equipment</td>
-<td>a <code>playground=*</code> object inside the area, or a soccer / basketball / table-tennis pitch</td>
+<td>a <code>playground=*</code> object inside the area — or, when there is none, a catalogue device on the area itself (<code>playground:&lt;device&gt;=yes</code>, #1074) — or a soccer / basketball / table-tennis pitch</td>
 <td><code>device_count &gt; 0 \|\| table_tennis_count &gt; 0 \|\| has_soccer \|\| has_basketball</code></td>
 </tr>
 <tr>
@@ -3515,6 +3515,7 @@
 <li><code>partial</code> = exactly one present</li>
 <li><code>missing</code> = neither</li>
 </ul>
+<p>The area-level fallback lives in <code>equip_stats</code>, which merges the per-object aggregate (<code>equip_raw</code>) with <code>area_devices</code>; <code>device_count</code> therefore already includes it, and the <code>has_equipment</code> expression is unchanged. Which <code>playground:*</code> keys count is <code>public.playground_device_keys()</code>, a copy of the catalogue's keys — <code>app/src/lib/deviceKeysParity.test.js</code> fails when the two drift apart.</p>
 <h3 id="mapping-detail-rule">Mapping detail rule<a class="headerlink" href="#mapping-detail-rule" title="Permanent link">&para;</a></h3>
 <p>The rule itself, and why it is what it is, is explained in <a href="../../reference/completeness/">Mapping detail</a>.</p>
 <p>The identifiers <code>complete</code> / <code>partial</code> / <code>missing</code> are wire and storage values — they appear in API responses, in <code>playground_stats</code>, and in the <code>filterStore</code> keys. They deliberately differ from the labels shown to users (detailed / basic / no details yet); renaming them would break federation between backends on different versions.</p>
