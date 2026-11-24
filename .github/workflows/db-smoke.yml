@@ -94,6 +94,32 @@ jobs:
           SQL
         timeout-minutes: 2
 
+      - name: Load panel-signal fixtures
+        # #1072 shade=partial, #1074 area-level playground:<device> tags
+        # (catalogue devices only, a fallback when nothing is mapped
+        # separately), #1075 baby/toddler, #1084 nearest named street.
+        # Loaded before api.sql so the playground_stats build sees them.
+        run: |
+          set -euo pipefail
+          docker compose exec -T db psql -U osm -d osm -v ON_ERROR_STOP=1 --single-transaction <<'SQL'
+          INSERT INTO planet_osm_polygon (osm_id, leisure, tags, way) VALUES
+            (1084001, 'playground', 'playground:slide=>yes, playground:sandpit=>2, playground:theme=>ship, playground:surface=>sand, shade=>partial'::hstore,
+             ST_Transform(ST_MakeEnvelope(9.6000, 50.5000, 9.6006, 50.5004, 4326), 3857)),
+            (1084002, 'playground', 'playground:swing=>yes, shade=>no'::hstore,
+             ST_Transform(ST_MakeEnvelope(9.6100, 50.5000, 9.6106, 50.5004, 4326), 3857)),
+            (1084003, 'playground', 'playground:pump=>yes'::hstore,
+             ST_Transform(ST_MakeEnvelope(9.6300, 50.5000, 9.6306, 50.5004, 4326), 3857)),
+            (1084004, 'playground', ''::hstore,
+             ST_Transform(ST_MakeEnvelope(9.6500, 50.5000, 9.6506, 50.5004, 4326), 3857));
+          INSERT INTO planet_osm_point (osm_id, tags, way) VALUES
+            (1084102, 'playground=>springy'::hstore, ST_Transform(ST_SetSRID(ST_MakePoint(9.6103, 50.5002), 4326), 3857));
+          INSERT INTO planet_osm_line (osm_id, highway, name, way) VALUES
+            (1084201, 'residential', 'Florengasse', ST_Transform(ST_MakeLine(ST_SetSRID(ST_MakePoint(9.5995, 50.49964), 4326), ST_SetSRID(ST_MakePoint(9.6010, 50.49964), 4326)), 3857)),
+            (1084202, 'residential', 'Weiter weg',  ST_Transform(ST_MakeLine(ST_SetSRID(ST_MakePoint(9.5995, 50.49890), 4326), ST_SetSRID(ST_MakePoint(9.6010, 50.49890), 4326)), 3857)),
+            (1084203, 'footway', NULL,             ST_Transform(ST_MakeLine(ST_SetSRID(ST_MakePoint(9.5995, 50.49995), 4326), ST_SetSRID(ST_MakePoint(9.6010, 50.49995), 4326)), 3857));
+          SQL
+        timeout-minutes: 2
+
       - name: Apply api.sql on blank DB
         # Mirrors the two-pass logic in `make db-apply`:
         # ALTER SYSTEM runs outside a transaction; everything else in one.
@@ -221,6 +247,42 @@ jobs:
             RAISE NOTICE 'OK: playground_stats carries the equipment/info rule';
           END
           $parity$;
+          SQL
+        timeout-minutes: 2
+
+      - name: Assert panel signals (#1072, #1074, #1075, #1084)
+        run: |
+          set -eu
+          docker compose exec -T db psql -U osm -d osm -v ON_ERROR_STOP=1 <<'SQL'
+          DO $signals$
+          DECLARE r record;
+          BEGIN
+            -- area schema only: slide + 2 sandpits = 3; theme/surface are not devices
+            SELECT * INTO r FROM public.playground_stats WHERE osm_id = 1084001;
+            IF r.device_count <> 3 OR NOT r.has_equipment OR NOT r.for_baby OR r.for_toddler
+               OR r.has_shade IS DISTINCT FROM true OR r.nearest_highway IS DISTINCT FROM 'Florengasse' THEN
+              RAISE EXCEPTION 'area-schema playground wrong: %', row_to_json(r);
+            END IF;
+            -- a separate device wins over area tags; a spring rider is toddler, not baby
+            SELECT * INTO r FROM public.playground_stats WHERE osm_id = 1084002;
+            IF r.device_count <> 1 OR r.for_baby OR NOT r.for_toddler
+               OR r.has_shade IS DISTINCT FROM false OR r.nearest_highway IS NOT NULL THEN
+              RAISE EXCEPTION 'separate-device playground wrong: %', row_to_json(r);
+            END IF;
+            SELECT * INTO r FROM public.playground_stats WHERE osm_id = 1084003;
+            IF NOT r.is_water OR r.has_shade IS NOT NULL THEN
+              RAISE EXCEPTION 'area water playground wrong: %', row_to_json(r);
+            END IF;
+            SELECT * INTO r FROM public.playground_stats WHERE osm_id = 1084004;
+            IF r.has_equipment OR r.completeness <> 'missing' THEN
+              RAISE EXCEPTION 'empty playground wrong: %', row_to_json(r);
+            END IF;
+            IF (api.get_playground(1084001)->'properties'->>'nearest_highway') IS DISTINCT FROM 'Florengasse' THEN
+              RAISE EXCEPTION 'get_playground does not return nearest_highway';
+            END IF;
+            RAISE NOTICE 'OK: shade, area schema, age and nearest street';
+          END
+          $signals$;
           SQL
         timeout-minutes: 2
 

@@ -41,9 +41,9 @@ From `access` on the playground area:
 
 | Filter | Matches when |
 |---|---|
-| Water playground | A device inside has a `playground` value containing `water`, or `playground=splash_pad` / `pump` |
-| Baby-friendly | A device inside has `baby=yes`, or is `playground=baby_swing`, `basketswing`, `sandpit` or `springy`, or carries `capacity:baby` |
-| Toddler-friendly | A device inside has `provided_for:toddler=yes`, or is `playground=basketswing` |
+| Water playground | A device inside has a `playground` value containing `water`, or `playground=splash_pad` / `pump` — (or, when nothing is mapped separately, `playground:<device>=yes` / a count on the area itself) |
+| Baby-friendly | A device inside has `baby=yes`, or is `playground=baby_swing`, `basketswing` or `sandpit`, or carries `capacity:baby` — (or, when nothing is mapped separately, `playground:<device>=yes` / a count on the area itself). A spring rider counts for toddlers, not babies (#1075) |
+| Toddler-friendly | A device inside — any device, e.g. a small structure or playhouse — has `provided_for:toddler=yes`, or is `playground=springy` or `basketswing` — (or, when nothing is mapped separately, `playground:<device>=yes` / a count on the area itself) |
 | Wheelchair-friendly | A **play device** (`playground=*`) inside carries `wheelchair=yes`, `limited` or `designated`; a `playground=sandpit` counts only with `wheelchair=yes`. The area's own `wheelchair` tag, benches and pitches do not count. If devices carry `wheelchair` tags but none qualifies, the panel says *No wheelchair equipment*; if none carries one, it says nothing. A sandpit tagged anything other than `wheelchair=yes` does not count as surveyed, so a playground whose only tagged device is such a sandpit shows nothing either |
 | With bench | `amenity=bench` inside |
 | With picnic table | `leisure=picnic_table` inside |
@@ -54,10 +54,18 @@ From `access` on the playground area:
 | Fenced | The area has `enclosed=yes` or `barrier=fence`, **or** separately mapped `barrier=fence` ways run within 4 m of at least 75 % of its outline |
 | Dogs allowed | `dog=yes` on the area |
 | Themed | An allowlisted `playground:theme` on the area or on a device inside (see below) |
-| With shade | `shade=yes` on the area. The panel reads the tag itself: `yes` *Shaded*, `partial` *Partly shaded*, `no` *No shade*, untagged nothing (the filter does not match `partial` yet, #1072) |
+| With shade | `shade=yes` or `shade=partial` on the area (#1072). The panel reads the tag itself: `yes` *Shaded*, `partial` *Partly shaded*, `no` *No shade*, untagged nothing |
 | Lit at night | `lit` on the area reads as lit (see below) |
 
 Values separated by `;` are split for `sport` and `playground:theme`.
+
+## Area-level equipment
+
+Equipment can also be recorded on the playground area itself: `playground:<device>=yes`, or a count (`playground:swing=2`). spieli reads it for the devices in its catalogue only — `playground:theme`, `playground:type`, `playground:surface` and other sub-keys are not equipment — and only as a **fallback**: when at least one device is mapped as its own object, the area tags are ignored, so a playground mapped both ways is not counted twice. It then counts for mapping detail ("has equipment"), the water, baby and toddler filters, and the panel's activities and highlights (#1074).
+
+## Location of nameless playgrounds
+
+For each playground the server picks the nearest named street (`highway=*` with a `name`, within 150 m on the ground) and returns it as `nearest_highway`. The panel shows it under the title — "near Florengasse" — which tells nameless playgrounds apart (#1084).
 
 ## Activities and highlights (detail panel)
 
